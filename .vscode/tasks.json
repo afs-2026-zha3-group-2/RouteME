@@ -1,0 +1,104 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "backend: run",
+      "detail": "RouteME backend (Spring Boot, port 8080)",
+      "type": "shell",
+      "command": ".\\mvnw.cmd",
+      "args": ["spring-boot:run"],
+      "options": {
+        "cwd": "${workspaceFolder}\\ai4se-baseline\\RouteME\\backend"
+      },
+      "isBackground": true,
+      "problemMatcher": {
+        "owner": "routeme-backend",
+        "pattern": {
+          "regexp": "^(.*)$",
+          "message": 1
+        },
+        "background": {
+          "activeOnStart": true,
+          "beginsPattern": "\\[INFO\\]|Building routeme-backend",
+          "endsPattern": "Started .*Application in|Tomcat started on port"
+        }
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+        "group": "routeme"
+      }
+    },
+    {
+      "label": "frontend: dev",
+      "detail": "RouteME frontend (Vite, port 5173, /api proxied to 8080)",
+      "type": "shell",
+      "command": "npm",
+      "args": ["run", "dev"],
+      "options": {
+        "cwd": "${workspaceFolder}\\ai4se-baseline\\RouteME\\frontend"
+      },
+      "isBackground": true,
+      "problemMatcher": {
+        "owner": "routeme-frontend",
+        "pattern": {
+          "regexp": "^(.*)$",
+          "message": 1
+        },
+        "background": {
+          "activeOnStart": true,
+          "beginsPattern": "VITE v|vite v",
+          "endsPattern": "Local:\\s+http"
+        }
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+        "group": "routeme"
+      }
+    },
+    {
+      "label": "dev: start",
+      "detail": "Start backend and frontend together",
+      "dependsOn": ["backend: run", "frontend: dev"],
+      "dependsOrder": "parallel",
+      "problemMatcher": []
+    },
+    {
+      "label": "backend: test",
+      "detail": "Run backend tests (H2 in-memory + SQLite file)",
+      "type": "shell",
+      "command": ".\\mvnw.cmd",
+      "args": ["test"],
+      "options": {
+        "cwd": "${workspaceFolder}\\ai4se-baseline\\RouteME\\backend"
+      },
+      "group": "test",
+      "problemMatcher": []
+    },
+    {
+      "label": "frontend: verify",
+      "detail": "Typecheck, build and run frontend tests",
+      "type": "shell",
+      "command": "npm",
+      "args": ["run", "build"],
+      "options": {
+        "cwd": "${workspaceFolder}\\ai4se-baseline\\RouteME\\frontend"
+      },
+      "group": "test",
+      "problemMatcher": []
+    },
+    {
+      "label": "frontend: test",
+      "detail": "Run frontend unit tests (Vitest)",
+      "type": "shell",
+      "command": "npm",
+      "args": ["test"],
+      "options": {
+        "cwd": "${workspaceFolder}\\ai4se-baseline\\RouteME\\frontend"
+      },
+      "group": "test",
+      "problemMatcher": []
+    }
+  ]
+}
