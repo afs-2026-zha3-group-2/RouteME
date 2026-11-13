@@ -4,34 +4,17 @@ System architecture, C4, and topology notes.
 
 ## Declared layers
 
-Dependency-direction authority: `@rule:layer-boundaries` and `@rule:package-structure`
-([rules/architecture/rules.md](../rules/architecture/rules.md#package-structure)).
-
-Standard layered layout for Java projects once the layering trigger is met
-(single package > 15 classes, two or more business domains, or a new Spring Boot web project):
+依赖方向、包分类与类名后缀的权威是 `@rule:package-structure`
+([rules/architecture/rules.md](../rules/architecture/rules.md#package-structure))；本节只记录本仓库声明的层，不复制规则正文。
 
 ```text
-ui / controller -> service -> manager (optional) -> dao / mapper -> model
-controller / service -> dto / model / constant; config assembles beans only
+controller → service → manager（可选）→ dao / mapper → model
+controller / service → dto / model / constant；config 仅装配
 ```
 
-```text
-backend/src/main/java/staffing/
-├── Application.java
-├── controller/   Web 层
-├── service/      Service 层
-├── dao/          DAO 层（JPA/JDBC）
-├── dto/          边界传输对象
-├── model/        领域对象
-├── constant/     业务枚举与静态字典
-├── config/       Spring 配置与组件装配
-├── exception/    异常与统一错误处理
-└── utils/        无状态通用工具（按需）
-```
-
-- 根包固定 `staffing`；Web 型项目全局按层，不建业务域目录层。
-- `dao` (JPA/JDBC) 与 `mapper` (MyBatis) 二选一；`manager` 仅在确有第三方封装或多 DAO 组合时建立。
-- 非 Web 小项目才按特性平铺在 `staffing.<feature>`，类职责仍按包分类表；本项目为 Web 型，固定全局按层。跨层捷径需 ADR 或例外记录。
+- 本仓库当前应用是 RouteME：`RouteME/backend/src/main/java/routeme/`，层包直接位于根包下，不建业务域目录层；规则里的 `staffing` 是上一作业的示例根包。
+- `dao`（JPA/JDBC）与 `mapper`（MyBatis）二选一；`manager` 仅在确有第三方封装或多 DAO 组合时建立。
+- 非 Web 小项目才按特性平铺；本项目为 Web 型，固定全局按层。跨层捷径需 ADR 或例外记录。
 - The React frontend lives in `frontend/` per `@rule:web-coding-style`, outside Java packages.
 
 ## Application topology

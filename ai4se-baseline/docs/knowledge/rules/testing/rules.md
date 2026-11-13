@@ -1,16 +1,16 @@
 # 测试规则（testing）
 
-本目录只有这一个规则文件，它是该分类的权威正文。规则 ID 就是二级标题，`@rule:<id>` 与索引中的 `#<id>` 都指向本文件里的同名小节。
+本文件是该分类的权威正文。规则 ID 即二级标题，`@rule:<id>` 与索引中的 `#<id>` 都指向本文件里的同名小节。
 
 ## 适用范围
 
-`java-testing` 管后端 JUnit 5；`web-testing` 管前端单元、组件与端到端。两者共用一条底线：测试名描述可观察的业务行为，不描述实现细节。
+`java-testing` 管后端 JUnit 5；`web-testing` 管前端单元、组件与端到端。两者共用一条底线：测试名描述可观察的业务行为，不描述实现细节。金额字段语义见 `@rule:naming-conventions`，包结构见 `@rule:package-structure`，TDD 节奏与提交边界见 `@rule:tdd-cycle` / `@rule:git-commit-conventions`。
 
 ## 规则总表
 
 | ID | 规则 | 优先级 | 触发 | 适用栈 |
 |---|---|---|---|---|
-| java-testing | JUnit 5 测试命名与结构 | High | auto | java |
+| java-testing | JUnit 5 测试命名、结构与放置 | High | auto | java |
 | web-testing | 前端测试分层与写法 | High | auto | react,typescript |
 
 ## java-testing
@@ -22,21 +22,12 @@ Windows     mvnw.cmd test
 其他平台     ./mvnw test
 ```
 
-### 测试类命名
+### 测试类命名与放置
 
-默认 `被测类名 + Test`：`QuoteCalculatorTest`、`QuotePrinterTest`。
-
-场景明显不同或单类过大时用 `被测类名 + 场景 + Test`：
-
-```text
-QuoteCalculatorMemberTest
-QuoteCalculatorNonMemberTest
-QuoteCalculatorPromotionTest
-QuoteCalculatorBoundaryTest
-OpenApiTest
-```
-
-适合拆分的情况：会员与非会员规则明显不同；促销或运费规则包含较多独立用例；单类过大不易定位；不同场景初始化方式不同。禁止仅为减少行数而拆分，拆分后的类必须有清晰稳定的业务边界。
+- 默认 `被测类名 + Test`：`QuoteCalculatorTest`。
+- 场景明显不同或单类过大时用 `被测类名 + 场景 + Test`：`QuoteCalculatorMemberTest`、`QuoteCalculatorBoundaryTest`。
+- 适合拆分的情况：会员与非会员规则明显不同；促销或运费规则包含较多独立用例；不同场景初始化方式不同。禁止仅为减少行数而拆分。
+- HTTP 接口级测试（`@SpringBootTest` + MockMvc）放 `controller` 包，与被测入口同包；纯单元测试与被测类同包。
 
 ### 测试方法命名（Input / Output 风格）
 
@@ -49,16 +40,11 @@ in_nonMember_originalPrice95_out_noPromotion_shipping10()
 in_nonMember_originalPrice200_01_out_promotion20_freeShipping()
 ```
 
-不使用 `isMember_price100_noPromotion_freeShipping()`：没有区分输入与预期；`isMember` 易被当作普通布尔方法；`price100` 没说明是原价、会员价还是券后金额。
-
-四条细则：
-
 - 会员身份写 `member` / `nonMember`，不写 `isMember` / `isNotMember`。
 - 金额必须注明字段：`originalPrice`、`memberPrice`、`goods`，禁止 `price100`。
-- 小数用下划线：`79.99` → `79_99`，`200.01` → `200_01`，整数不写下划线。
+- 小数用下划线：`79.99` → `79_99`，`200.01` → `200_01`；整数不写下划线。
 - 输出只写本场景关注的关键结果；需要全字段时用 `allAmountsZero` 这类概括，完整期望值放 JavaDoc 与断言。
-
-输出使用肯定表达：`freeShipping`、`shipping10`、`noPromotion`、`promotion20`，禁止 `noFreeShipping` 这类双重否定。
+- 输出使用肯定表达：`freeShipping`、`shipping10`、`noPromotion`、`promotion20`，禁止 `noFreeShipping` 这类双重否定。
 
 ```java
 // 不推荐
@@ -68,7 +54,7 @@ in_member_originalPrice100_out_memberPrice80_promotion0_goods80_shipping0_total8
 in_member_originalPrice100_out_noPromotion_freeShipping()
 ```
 
-特别注意 `in_nonMember_originalPrice100_out_promotion20_shipping10()`：`originalPrice = 100.00`、`memberPrice = 100.00`、`promotion = 20.00`、`goods = 80.00`、`shipping = 10.00`、`total = 90.00`。非会员免运费门槛是 `goods >= 100.00`，促销后仅 `80.00`，因此仍需付 `10.00` 运费。
+特别注意 `in_nonMember_originalPrice100_out_promotion20_shipping10()`：`originalPrice = 100.00`、`promotion = 20.00`、`goods = 80.00`、`shipping = 10.00`、`total = 90.00`。非会员免运费门槛是 `goods >= 100.00`，促销后仅 `80.00`，因此仍需付 `10.00` 运费。
 
 ### 测试结构：Given / When / Then
 
@@ -95,45 +81,23 @@ void in_member_originalPrice100_out_noPromotion_freeShipping() {
 }
 ```
 
-禁止在同一项目混用 `Given / When / Then`、`Arrange / Act / Assert`、`input / execute / output`；若改用后者，须整体统一。
+- 禁止在同一项目混用 `Given / When / Then`、`Arrange / Act / Assert`、`input / execute / output`；改用后者须整体统一。
+- 断言顺序与业务计算顺序一致（`original` → `memberPrice` → `promotion` → `voucher` → `goods` → `shipping` → `total`），能直接看出从哪一步开始偏。
+- 多字段统一用 `assertAll`，每个断言带第三个参数写明字段名，失败信息里能定位。
+- 命名、注释与代码术语必须一致，统一 `memberPrice`，禁止 `member_price`。
 
 ### 测试 JavaDoc
 
-包含多个金额字段或规则容易误解时，写出输入与预期：
+包含多个金额字段或规则容易误解时，写出输入与预期，术语与 `@rule:naming-conventions` 一致：
 
 ```java
 /**
  * 会员情况下，在完成会员折扣和促销计算后，商品金额满 80 元免运费。
  *
- * 输入：
- * - originalPrice = 100.00
- * - member = true
- *
- * 预期：
- * - original = 100.00
- * - memberPrice = 80.00
- * - promotion = 0.00
- * - voucher = 0.00
- * - goods = 80.00
- * - shipping = 0.00
- * - total = 80.00
+ * 输入：originalPrice = 100.00, member = true
+ * 预期：original = 100.00, memberPrice = 80.00, promotion = 0.00,
+ *       voucher = 0.00, goods = 80.00, shipping = 0.00, total = 80.00
  */
-```
-
-命名、注释与代码术语必须一致，统一 `memberPrice`，禁止 `member_price`。
-
-### 断言顺序与多字段断言
-
-断言顺序与业务计算顺序一致：`original` → `memberPrice` → `promotion` → `voucher` → `goods` → `shipping` → `total`，能直接看出从哪一步开始偏。
-
-多字段统一用 `assertAll`，保证一个字段失败仍能看到其它结论；每个断言带第三个参数写明字段名，失败信息里能定位：
-
-```java
-assertAll(
-        () -> assertEquals(expectedOriginal, quote.original(), "original"),
-        () -> assertEquals(expectedMemberPrice, quote.memberPrice(), "memberPrice"),
-        () -> assertEquals(expectedTotal, quote.total(), "total")
-);
 ```
 
 ### 测试引用常量，不抄数字
@@ -153,10 +117,6 @@ BigDecimal threshold = Money.amount("80.00");
 
 「一个业务场景」可以包含多个相关输出（同一报价同时验证折扣、促销、券、商品金额、运费与总价）。禁止在一个方法里连续执行多个价格或会员身份的场景。同一规则需要大量输入时用 `@ParameterizedTest`，每组参数仍要有明确场景含义。
 
-### 不保留调试输出
-
-正式测试禁止保留 `System.out.println(quote)`。排查时临时加，提交前删除。
-
 ### 边界值
 
 所有金额门槛至少覆盖门槛以下、刚好等于、门槛以上：
@@ -167,9 +127,11 @@ goods = 80.00  -> shipping = 0.00
 goods = 80.01  -> shipping = 0.00
 ```
 
-促销门槛 `100.00`、`300.00`、`500.00` 同样各覆盖 `threshold - 0.01`、`threshold`、`threshold + 0.01`。
+促销门槛 `100.00`、`300.00`、`500.00` 同样各覆盖 `threshold - 0.01`、`threshold`、`threshold + 0.01`。写边界测试前先确认门槛基于哪个字段（见 `@rule:naming-conventions` 的金额字段语义）：判断依据写错，边界测试会全部通过却验证了错误行为。
 
-写测试前先确认门槛基于哪个字段：促销门槛基于 `memberPrice`，运费门槛基于券后的 `goods`，`originalPrice` 只是外部输入。判断依据写错，边界测试会全部通过却验证了错误行为。
+### 不保留调试输出
+
+正式测试禁止保留 `System.out.println(quote)`。排查时临时加，提交前删除。
 
 ### 历史测试迁移
 
@@ -179,7 +141,7 @@ goods = 80.01  -> shipping = 0.00
 
 | 检查 | 阻断点 |
 |---|---|
-| 测试类名是否为 `被测类名 + Test` 或 `被测类名 + 场景 + Test` | pr-merge |
+| 测试类名是否为 `被测类名 + Test` 或 `被测类名 + 场景 + Test`，放置包是否正确 | pr-merge |
 | 测试方法是否为 `in_*_out_*`，是否用 `member` / `nonMember`，金额是否带字段名 | pr-merge |
 | 是否使用 Given / When / Then 与 `assertAll`，断言顺序是否与计算顺序一致 | pr-merge |
 | 每个断言是否带字段名第三参数 | pr-merge |
@@ -210,18 +172,16 @@ goods = 80.01  -> shipping = 0.00
 
 - 文件名：单元 `xxx.test.ts`，组件 `Xxx.test.tsx`，端到端 `flow.spec.ts`。
 - 用例名写英文陈述句，描述可观察行为：`appends the task to Backlog with default detail fields`、`shows the same saved quote after reloading the list`。禁止 `test1`、`works`、`should work`。
-- `describe` 按被测函数或流程分组，与文件名一致。
-- 端到端目录按用户流程命名文件，不按页面。
+- `describe` 按被测函数或流程分组，与文件名一致；端到端目录按用户流程命名文件，不按页面。
 
 ### 写法
 
 - 查询优先 `getByRole`、`getByLabel`、`getByText`，CSS 选择器只用于结构断言（`.parcel-list li`）。
-- 断言用户看得到的东西：文案、可见性、URL、输入值。不直接断言组件内部 state。
+- 断言用户看得到的东西：文案、可见性、URL、输入值；不直接断言组件内部 state。
 - 端到端一条用例走完一条完整路径（填表 → 保存 → 列表 → 详情 → 刷新），不在一条用例里塞多个不相关场景。
-- 不保留 `console.log`。排查时临时加，提交前删。
-- 异步等待用 `expect(...).toHaveText` 这类自动重试断言，不用 `waitForTimeout`。
+- 不保留 `console.log`；异步等待用 `expect(...).toHaveText` 这类自动重试断言，不用 `waitForTimeout`。
 - 不假设新建记录落在第一页：共享数据库会累积数据并使列表分页，断言新记录前先按唯一姓名 / 编号筛选（实证：需求列表超一页致两处既有 spec 失败）。
-- 弹出菜单 MUST NOT 以 `scroll` 监听作为关闭手段：Playwright 点击前的自动滚动会误关菜单；用 outside-click / Escape / resize 关闭，近视口底部时向上翻转定位（实证：`RowActionsMenu`）。
+- 弹出菜单 MUST NOT 以 `scroll` 监听作为关闭手段：Playwright 点击前的自动滚动会误关菜单；用 outside-click / Escape / resize 关闭，接近视口底部时向上翻转定位（实证：`RowActionsMenu`）。
 
 ### 提交前验证
 
@@ -231,16 +191,10 @@ goods = 80.01  -> shipping = 0.00
 npm run typecheck     # tsc --noEmit
 npm run build         # tsc --noEmit && vite build
 npm test              # 有 Vitest 的仓库
-node --test tests/request.test.mjs   # 请求层脚本测试
 npx playwright test   # 端到端，需要后端已启动
 ```
 
-要求：类型检查零错误；改动的模块有对应测试；界面改动时至少跑通受影响的那条端到端用例。
-
-### 与 SDD 的接点
-
-- 规格里的验收场景直接落成端到端用例名，术语保持一致。
-- `tasks.md` 中前端测试任务标注验证方式（类型检查、哪条 e2e）。
+要求：类型检查零错误；改动的模块有对应测试；界面改动时至少跑通受影响的那条端到端用例。验收场景与端到端用例名的对应关系见 `@rule:sdd-artifacts`。
 
 ### 检查项
 
@@ -270,13 +224,6 @@ it('works', async () => { /* ... */ });
 
 ## 为什么这样定
 
-Input / Output 风格的方法名让输入条件与预期结果在同一行内可直接区分，配合 Given / When / Then 与 `assertAll` 断言顺序，失败信息直接指向出错的业务计算步骤。前端三层测试各回答一个问题：纯逻辑层验证「业务规则算得对」，组件层验证「用户看到的和能点的对」，端到端验证「整条路径在真实接口下走得通」。混层会让失败定位变慢——组件测试里做端到端的事，失败后无法判断是规则错还是渲染错。
+Input / Output 风格的方法名让输入条件与预期结果在同一行内可直接区分；配合 Given / When / Then 与 `assertAll` 的断言顺序，失败信息直接指向出错的业务计算步骤。前端三层测试各回答一个问题：纯逻辑层验证「业务规则算得对」，组件层验证「用户看到的和能点的对」，端到端验证「整条路径在真实接口下走得通」。混层会让失败定位变慢——组件测试里做端到端的事，失败后无法判断是规则错还是渲染错。
 
-## 全分类检查清单
-
-| 检查 | 阻断点 |
-|---|---|
-| 测试名是否描述可观察行为，术语是否与规格一致 | pr-merge |
-| 断言是否覆盖业务计算顺序，失败信息能否直接定位字段 | pr-merge |
-| 门槛类规则是否覆盖减 0.01、等于、加 0.01 | pr-merge |
-| 后端 `mvnw.cmd test`、前端 `typecheck` + `build` 是否全绿 | pr-merge |
+测试规则不重复金额字段与术语定义，是因为测试名、断言字段与 JavaDoc 都在引用同一套业务词汇；定义散落时，改名只改一处就会出现测试与实现各说各话。

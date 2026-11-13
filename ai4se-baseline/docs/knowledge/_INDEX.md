@@ -1,6 +1,6 @@
 # 知识库索引
 
-本文件由 `scripts/kb-lint.sh` 编译；手工修改会在下次运行时被覆盖。
+本文件由 `scripts/kb-lint.sh` 编译；本仓库该脚本仍是占位实现（`SKIP`），当前由人工维护，新增或合并条目时同步更新。
 
 规则条目指向分类文件 `rules/<category>/rules.md`，规则本身是该文件内的二级标题锚点，引用时写 `rules/<category>/rules.md#<id>`。
 
@@ -15,9 +15,9 @@
 | rules | 规则总览（权威区；host 投影是派生副本） | [rules/README.md](rules/README.md) |
 | rules/_SCHEMA | 规则文件格式：每分类一个文件、ID 即锚点 | [rules/_SCHEMA.md](rules/_SCHEMA.md) |
 | rules/_LOG | 规则变更日志（只追加） | [rules/_LOG.md](rules/_LOG.md) |
-| rules/architecture | 架构规则 6 条：`api-contract`、`layer-boundaries`、`package-structure`、`no-circular-dependency`、`orchestration-execution-separation`、`java-patterns` | [rules/architecture/rules.md](rules/architecture/rules.md) |
+| rules/architecture | 架构规则 5 条：`api-contract`、`package-structure`、`no-circular-dependency`、`orchestration-execution-separation`、`java-patterns` | [rules/architecture/rules.md](rules/architecture/rules.md) |
 | rules/documentation | 文档规则 2 条：`document-conventions`、`sdd-artifacts` | [rules/documentation/rules.md](rules/documentation/rules.md) |
-| rules/process | 流程规则 6 条：`spec-first`、`tdd-cycle`、`git-commit-conventions`、`git-branching-and-pr`、`code-review-checklist`、`java-hooks` | [rules/process/rules.md](rules/process/rules.md) |
+| rules/process | 流程规则 5 条：`spec-first`、`tdd-cycle`、`git-commit-conventions`、`git-branching-and-pr`、`code-review-checklist` | [rules/process/rules.md](rules/process/rules.md) |
 | rules/quality | 质量规则 4 条：`coding-style`、`java-coding-style`、`naming-conventions`、`web-coding-style` | [rules/quality/rules.md](rules/quality/rules.md) |
 | rules/security | 安全规则 5 条：`security-baseline`、`no-hardcoded-secrets`、`pii-scrubbing`、`prompt-injection-defense`、`java-security` | [rules/security/rules.md](rules/security/rules.md) |
 | rules/testing | 测试规则 2 条：`java-testing`、`web-testing` | [rules/testing/rules.md](rules/testing/rules.md) |

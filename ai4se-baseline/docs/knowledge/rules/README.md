@@ -2,30 +2,32 @@
 
 规则权威区，按 MECE 分类组织。Host 侧规则文件（如 `.qoder/rules/ai4se/`）是派生副本，冲突时以本目录为准。
 
-**每个分类目录只有一个 `rules.md`**，规则 ID 是文件内的二级标题。格式约定见 [_SCHEMA.md](_SCHEMA.md)。
+**每个分类目录只有一个 `rules.md`**，规则 ID 是文件内的二级标题。格式约定见 [_SCHEMA.md](_SCHEMA.md)；每条规范只写一处，其它规则用 `@rule:<id>` 引用。
 
 ## 分类入口
 
 | 分类 | 文件 | 规则数 | 管什么 |
 |---|---|---|---|
-| process | [rules/process/rules.md](process/rules.md) | 6 | 规格先行、TDD 循环、提交时机与 message、分支与 PR、评审清单、Java 编辑钩子 |
-| architecture | [rules/architecture/rules.md](architecture/rules.md) | 6 | 接口契约、分层边界、应用分层与包/目录分类、无循环依赖、编排与执行分离、Java 模式与持久化 |
-| quality | [rules/quality/rules.md](quality/rules.md) | 4 | 语言无关编码风格、Java 编码风格、跨端命名、前端 Web 编码风格 |
-| testing | [rules/testing/rules.md](testing/rules.md) | 2 | Java 测试命名与结构、前端三层测试 |
+| process | [rules/process/rules.md](process/rules.md) | 5 | 规格先行、TDD 纪律、提交时机/message/提交前检查、分支与 PR、评审方式 |
+| architecture | [rules/architecture/rules.md](architecture/rules.md) | 5 | 接口契约、分层与依赖方向、无循环依赖、编排与执行分离、Java 模式与持久化 |
+| quality | [rules/quality/rules.md](quality/rules.md) | 4 | 语言无关编码风格、Java 编码风格、跨端命名与术语、前端 Web 编码风格 |
+| testing | [rules/testing/rules.md](testing/rules.md) | 2 | Java 测试命名/结构/放置、前端三层测试 |
 | security | [rules/security/rules.md](security/rules.md) | 5 | 安全基线、凭据、脱敏、提示注入、Java 安全做法 |
-| documentation | [rules/documentation/rules.md](documentation/rules.md) | 2 | 文档命名结构与语言、SDD 工件目录与命名 |
+| documentation | [rules/documentation/rules.md](documentation/rules.md) | 2 | 文档命名/结构/语言/引用、SDD 工件目录与命名 |
 | modules/&lt;id&gt; | `modules/<id>/rules.md` | — | 单模块覆盖规则，仅在确有需要时创建 |
 
 ## 规则 ID 一览
 
-共 25 条。括号内是优先级。
+共 23 条。括号内是优先级。
 
-- **process** — `spec-first`(Critical)、`tdd-cycle`(Critical)、`git-commit-conventions`(Critical)、`git-branching-and-pr`(High)、`code-review-checklist`(High)、`java-hooks`(Medium)
-- **architecture** — `api-contract`(Critical)、`layer-boundaries`(High)、`package-structure`(High)、`no-circular-dependency`(High)、`orchestration-execution-separation`(High)、`java-patterns`(Medium)
-- **quality** — `coding-style`(Critical)、`java-coding-style`(Critical)、`naming-conventions`(High)、`web-coding-style`(High)
+- **process** — `spec-first`(Critical)、`tdd-cycle`(Critical)、`git-commit-conventions`(Critical)、`git-branching-and-pr`(High)、`code-review-checklist`(High)
+- **architecture** — `api-contract`(Critical)、`package-structure`(Critical)、`no-circular-dependency`(Critical)、`orchestration-execution-separation`(Critical)、`java-patterns`(High)
+- **quality** — `coding-style`(Critical)、`java-coding-style`(High)、`naming-conventions`(High)、`web-coding-style`(High)
 - **testing** — `java-testing`(High)、`web-testing`(High)
 - **security** — `security-baseline`(Critical)、`no-hardcoded-secrets`(Critical)、`pii-scrubbing`(Critical)、`prompt-injection-defense`(Critical)、`java-security`(Critical)
 - **documentation** — `document-conventions`(Medium)、`sdd-artifacts`(High)
+
+已合并的 ID：`layer-boundaries` → `package-structure`（分层与依赖方向是同一个决定），`java-hooks` → `git-commit-conventions`（钩子只做格式化与编译检查，属于提交前检查）。见 [_LOG.md](_LOG.md)。
 
 ## 团队六条原则
 
@@ -50,4 +52,4 @@
 
 在评审意见、提交说明或 `AGENTS.md` 中使用 `@rule:<id>`，需要指到具体分类时用 `rules/<category>/rules.md#<id>`。不要复制规则正文，也不要在 host 投影里改规则——改权威区再重投影。
 
-`_INDEX.md` 由 `scripts/kb-lint.sh` 编译；`_LOG.md` 只追加。
+新增规则前先检查是否已有规则覆盖同一决定：能补进现有规则就补，确实新增才加 ID，并在 `_LOG.md` 记录理由。`_INDEX.md` 按本文件与各规则标题维护；`_LOG.md` 只追加。

@@ -69,25 +69,23 @@ Windows     mvnw.cmd spring-boot:run     # 启动 8080
 ```
 
 - H2 Console：`http://localhost:8080/h2-console`，JDBC URL `jdbc:h2:file:./data/staffing;MODE=PostgreSQL;AUTO_SERVER=TRUE`，用户名 `sa`、密码留空；`web-allow-others=false`，仅本机可访问。
-- `V8__reset_demo_data.sql` 在首次升级时清空业务表并重灌演示基线，保留 `app_users`：1 个项目、2 个需求、3 条技能要求、11 名候选人、1 条通知，推荐与答复为零。E2E 与人员统计用例依赖这份基线（如 `吴迪`、`零售中台升级`、候选人总数 11）。
+- `V8__reset_demo_data.sql` 在首次升级时清空业务表并重灌演示基线，保留 `app_users`；基线内容与 E2E 依赖见 [domain/README.md](../domain/README.md#demo-data-baseline)。
 - 重置演示数据：停止后端，删除 `backend/data/staffing.mv.db`（及 `staffing.lock.db` / `staffing.trace.db`），重新启动即从 `V1` 全量迁移到 `V8`。删除前先备份，文件库是唯一持久化副本。
-- 导入演示文件：候选池页面「批量导入」选择 `records/data/candidates-valid.csv` 或 `.xlsx`（8 行正常数据）；`candidates-invalid.csv` / `.xlsx` 含重复编号、非法职级与缺失日期，用于展示失败清单。文件中的编号为 `DEMO-*` 演示值，不含真实 PII。
 
 ## 人员数据交换运行说明
 
-- 导入模板：`GET /api/candidates/import-template?format=csv|xlsx`。CSV 带 UTF-8 BOM、逗号分隔、首行为固定中文表头；XLSX 为单 sheet，不接受合并单元格与多 sheet。
-- 导入：`POST /api/candidates/import`（multipart 字段 `file`），仅资源协调员可用；按 `人员编号` upsert，`档案状态` 列被忽略，导入不改变档案状态与复审日期。文件级校验失败返回 422 且整份拒绝；行级失败返回 200 与 `failures[{row_number, column, reason}]`，前端可下载失败清单 CSV。
-- 导出：候选池 `GET /api/candidates/export?format=csv|xlsx`（跟随 `name` / `role` / `include_inactive` 筛选）；名单 `GET /api/demands/{id}/roster/export?format=csv|xlsx`。两者均覆盖全部命中行而不是当前页；无命中时仅输出表头；资源协调员与项目负责人均可在各自可见范围内导出。
-- 编码约定：CSV 一律 UTF-8 + BOM（Excel 直接打开不乱码），行分隔符 CRLF；XLSX 一律单 sheet、首行加粗并冻结。导出列与导入模板同源（候选池），名单导出列为姓名、岗位角色、职级、技能摘要、到岗时间、确认时间。
-- 分页：`GET /api/candidates` 与 `GET /api/demands/{id}/roster` 返回 `{items, total, page, size}`；`size` 仅允许 20 / 50 / 100，非法参数返回 400 `INVALID_INPUT`。
-- 限制与注意：multipart 仍使用 Spring 默认 1MB 上限（约 5,000 行 CSV）；导入/导出不触发邮件通知；名单只读，不提供导入或手工增删。
+契约字段、状态码与分页参数以 [interfaces/README.md](../interfaces/README.md#候选池分页与导入导出契约) 为准；本节只记运行侧约束。
+
+- 编码约定：CSV 一律 UTF-8 + BOM（Excel 直接打开不乱码），行分隔符 CRLF；XLSX 一律单 sheet、首行加粗并冻结。导出列与导入模板同源。
+- 限制与注意：multipart 使用 Spring 默认 1MB 上限（约 5,000 行 CSV）。导入/导出不触发通知、名单只读等接口级约束见 [interfaces/README.md](../interfaces/README.md#候选池分页与导入导出契约)。
+- 演示文件：候选池页面「批量导入」选择 `records/data/candidates-valid.csv` 或 `.xlsx`（8 行正常数据）；`candidates-invalid.csv` / `.xlsx` 含重复编号、非法职级与缺失日期，用于展示失败清单。文件中的编号为 `DEMO-*` 演示值，不含真实 PII。
 
 ## 前端交互约定
 
 - 导航按 `需求 / 人才 / 结果 / 洞察` 四组呈现（`AppShell` 的 `NAV_GROUPS`），当前项带 `aria-current="page"`；原型草稿已随 `optimize-ui-experience` 删除，仓库内不再保留 `docs/prototypes/`。
 - 破坏性操作（停用候选人、关闭需求、撤回推荐）统一走 `ConfirmDialog`：说明后果、支持 `busy` 禁用，取消不调用后端；释放与申请释放沿用带原因的 `Modal`。
 - 加载态用 `Skeleton`、空态用 `EmptyState`、分页用 `Pager`（页大小 20 / 50 / 100，纯函数在 `utils/pager.ts`）；Toast 分 `success / warning / error` 三档，导入存在失败行时用 `warning`。
-- `Modal` 打开时聚焦对话框、Tab 在内部循环、卸载后焦点回到触发元素，`Escape` 关闭；窄屏断点 1280 / 640，表格在 640 以下横向滚动，`prefers-reduced-motion` 下过渡降至 0。
+- `Modal` 打开时聚焦对话框、Tab 在内部循环、卸载后焦点回到触发元素，`Escape` 关闭；断点与动效取值以 [architecture/README.md](../architecture/README.md#设计令牌对照表) 的令牌表为准，`prefers-reduced-motion` 下过渡降至 0。
 
 ## RouteME 本地启动与验证
 
