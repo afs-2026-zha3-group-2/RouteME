@@ -1,0 +1,105 @@
+# Operations knowledge
+
+Ops, monitoring, incident, and release notes.
+
+## 通知与复审提醒运行说明
+
+- 邮件发送通过 `MailGateway` 适配：默认 `LoggingMailGateway` 只记录收件人与摘要，不连接真实 SMTP；接入真实邮件服务时替换该 Bean。
+- 发送异常由 `NotificationService.record` 捕获并记为 `failed`，业务事务不回滚；失败记录在 `GET /api/notifications` 可见，并可用 `POST /api/notifications/{id}/retry` 重试。
+- 复审提醒由 `ReviewReminderService` 扫描：复审到期日取自 `travel_reviewed_at + 6 个月`，到期前 30 天向“全体资源协调员”发送一封；同一候选人同一到期日只发一封（`payload` 中的候选人 + 到期日去重）。
+- 演示数据 `V5` 预置一条失败的复审提醒（吴迪，到期日 2026-11-07），用于展示失败列表与重试；`V6` 回填该候选人的复审日期，使其状态推导为过期。
+- 复审完成入口：`POST /api/candidates/{id}/travel-review`，将最近复审日期置为当天并顺延六个月。
+- 演示环境不提供定时任务；提醒扫描由协调员在通知页手动触发（`POST /api/notifications/review-reminders/scan`），生产环境接入调度器时复用同一服务方法。
+
+## 前端工具链基线
+
+`frontend/` 的依赖版本以本节为准，升级前先核对本表。
+
+| 依赖 | 版本基线 | 说明 |
+|---|---|---|
+| `vite` | ^8.3.5（实测 8.3.8） | Vite 8 内置 Rolldown，**不再依赖 esbuild** |
+| `@vitejs/plugin-react` | ^6.3.0 | 与 Vite 8 配套 |
+| `vitest` | ^5.1.0 | 配置文件从 `vitest/config` 导入 `defineConfig` |
+| `typescript` | ^5.9 | `npm run build` 先执行 `tsc --noEmit` |
+| `react` / `react-dom` | ^19 | — |
+
+- 配置文件固定 `frontend/vite.config.ts`，不再使用 `vite.config.mjs`。
+- `/api` 代理指向 `http://localhost:8080`；后端未启动时出现 `ECONNREFUSED` 属正常。
+- 现有 5 个测试文件均为纯函数测试，**不安装** `jsdom` 与 `@testing-library`；新增 DOM 测试时再补。
+
+### 已知故障：`Cannot read directory ... Access is denied`
+
+**症状**
+
+```text
+X [ERROR] Cannot read directory "../../../../../../..": Access is denied.
+X [ERROR] Could not resolve "...\frontend\vite.config.ts"
+failed to load config from ...\frontend\vite.config.ts
+```
+
+**根因**：`vite` 7.x 依赖 `esbuild`；本机 Windows 下 esbuild 0.28.x 解析配置文件时会向上遍历到盘符根目录被拒，导致连已存在的配置文件都无法加载。Vite 8 改用 Rolldown，不经过 esbuild，因此不会触发。
+
+**排查顺序**
+
+1. 读取 `node_modules/vite/package.json` 确认主版本为 8，并检查 `node_modules/esbuild` **不存在**。
+2. 若 `esbuild` 仍在，说明依赖树仍是 Vite 7：把 `package.json` 的 `vite`、`@vitejs/plugin-react`、`vitest` 对齐上表后执行 `npm install`（会移除 esbuild 及旧依赖）。
+3. 确认配置文件为 `vite.config.ts`，且从 `vitest/config` 导入 `defineConfig`。
+4. 三项验证：`npm run build`、`npm test`、`npm run dev`；dev 启动后访问 `http://localhost:5173/` 应为 HTTP 200。
+
+**不要**回退到 Vite 7 + esbuild 组合。“依赖装齐、版本自洽”不代表可运行，必须以上述三项验证为准。
+
+## 后端运行与验证
+
+```text
+Windows     mvnw.cmd clean test          # 全量测试
+Windows     mvnw.cmd spring-boot:run     # 启动 8080
+其他平台     ./mvnw clean test / ./mvnw spring-boot:run
+```
+
+- 工作目录为 `backend/`；数据文件 `backend/data/staffing.mv.db`，Flyway 启动时自动应用 `V1`-`V8`，迁移只增不改。
+- 冒烟：`GET http://localhost:8080/api/health`；其余请求通过 `X-User-Id` 演示桩识别身份。
+- 契约校验：仓库根执行 `npm run lint:api`（Redocly 校验 `openapi.yaml`）。
+- 端到端：仓库根执行 `npm run test:e2e`（`e2e/playwright.config.ts`），需后端已启动。
+
+## 本地启动与数据基线
+
+```text
+后端   cd backend; .\mvnw.cmd spring-boot:run     # http://localhost:8080
+前端   cd frontend; npm run dev                    # http://localhost:5173，/api 代理到 8080
+```
+
+- H2 Console：`http://localhost:8080/h2-console`，JDBC URL `jdbc:h2:file:./data/staffing;MODE=PostgreSQL;AUTO_SERVER=TRUE`，用户名 `sa`、密码留空；`web-allow-others=false`，仅本机可访问。
+- `V8__reset_demo_data.sql` 在首次升级时清空业务表并重灌演示基线，保留 `app_users`：1 个项目、2 个需求、3 条技能要求、11 名候选人、1 条通知，推荐与答复为零。E2E 与人员统计用例依赖这份基线（如 `吴迪`、`零售中台升级`、候选人总数 11）。
+- 重置演示数据：停止后端，删除 `backend/data/staffing.mv.db`（及 `staffing.lock.db` / `staffing.trace.db`），重新启动即从 `V1` 全量迁移到 `V8`。删除前先备份，文件库是唯一持久化副本。
+- 导入演示文件：候选池页面「批量导入」选择 `records/data/candidates-valid.csv` 或 `.xlsx`（8 行正常数据）；`candidates-invalid.csv` / `.xlsx` 含重复编号、非法职级与缺失日期，用于展示失败清单。文件中的编号为 `DEMO-*` 演示值，不含真实 PII。
+
+## 人员数据交换运行说明
+
+- 导入模板：`GET /api/candidates/import-template?format=csv|xlsx`。CSV 带 UTF-8 BOM、逗号分隔、首行为固定中文表头；XLSX 为单 sheet，不接受合并单元格与多 sheet。
+- 导入：`POST /api/candidates/import`（multipart 字段 `file`），仅资源协调员可用；按 `人员编号` upsert，`档案状态` 列被忽略，导入不改变档案状态与复审日期。文件级校验失败返回 422 且整份拒绝；行级失败返回 200 与 `failures[{row_number, column, reason}]`，前端可下载失败清单 CSV。
+- 导出：候选池 `GET /api/candidates/export?format=csv|xlsx`（跟随 `name` / `role` / `include_inactive` 筛选）；名单 `GET /api/demands/{id}/roster/export?format=csv|xlsx`。两者均覆盖全部命中行而不是当前页；无命中时仅输出表头；资源协调员与项目负责人均可在各自可见范围内导出。
+- 编码约定：CSV 一律 UTF-8 + BOM（Excel 直接打开不乱码），行分隔符 CRLF；XLSX 一律单 sheet、首行加粗并冻结。导出列与导入模板同源（候选池），名单导出列为姓名、岗位角色、职级、技能摘要、到岗时间、确认时间。
+- 分页：`GET /api/candidates` 与 `GET /api/demands/{id}/roster` 返回 `{items, total, page, size}`；`size` 仅允许 20 / 50 / 100，非法参数返回 400 `INVALID_INPUT`。
+- 限制与注意：multipart 仍使用 Spring 默认 1MB 上限（约 5,000 行 CSV）；导入/导出不触发邮件通知；名单只读，不提供导入或手工增删。
+
+## 前端交互约定
+
+- 导航按 `需求 / 人才 / 结果 / 洞察` 四组呈现（`AppShell` 的 `NAV_GROUPS`），当前项带 `aria-current="page"`；原型草稿已随 `optimize-ui-experience` 删除，仓库内不再保留 `docs/prototypes/`。
+- 破坏性操作（停用候选人、关闭需求、撤回推荐）统一走 `ConfirmDialog`：说明后果、支持 `busy` 禁用，取消不调用后端；释放与申请释放沿用带原因的 `Modal`。
+- 加载态用 `Skeleton`、空态用 `EmptyState`、分页用 `Pager`（页大小 20 / 50 / 100，纯函数在 `utils/pager.ts`）；Toast 分 `success / warning / error` 三档，导入存在失败行时用 `warning`。
+- `Modal` 打开时聚焦对话框、Tab 在内部循环、卸载后焦点回到触发元素，`Escape` 关闭；窄屏断点 1280 / 640，表格在 640 以下横向滚动，`prefers-reduced-motion` 下过渡降至 0。
+
+## RouteME 本地启动与验证
+
+```text
+后端   cd RouteME/backend; .\mvnw.cmd spring-boot:run    # http://localhost:8080
+前端   cd RouteME/frontend; npm run dev                  # http://localhost:5173，/api 代理到 8080
+```
+
+- 首次启动自动创建 `backend/data/routeme.db`，Flyway 应用 `V1__create_greetings.sql`、`V2__seed_greeting.sql`；`GET /api/greeting` 应返回 `{"id":1,"message":"Hello World"}`。
+- 重置数据库：停止后端，删除 `backend/data/routeme.db`，重启后重新迁移。
+- 后端测试 `mvnw.cmd test`：接口测试走 H2 内存库，`DatabaseGreetingRepositorySqliteTest` 用临时 SQLite 文件库跑同一组迁移，CI 同样覆盖 SQLite。
+- 前端验证 `npm run build`（`tsc --noEmit && vite build`）与 `npm test`（Vitest 纯函数测试），不依赖后端启动。
+- 前端依赖安装：CI（Node 22 / npm 10）执行 `npm ci`；本机 npm 11.x 会把 rolldown 的平台可选依赖判为锁文件缺项而拒绝 `npm ci`，本地改用 `npm install`，要复现 CI 用 `npx npm@10 ci`。
+- 构建产物 `dist/assets/index-*.js` 约 612 kB，来源是 Ant Design 整包；保留警告不静默调高阈值，出现路由级拆分需求时再分包。
+- 本机 TLS：该开发机 Maven 经 TLS 代理下载依赖，代理根证书已导入 JDK `cacerts`（alias `forward-trust-root`）；换机器或换 JDK 需重做一次，CI 使用公有 CA 不受影响。

@@ -1,0 +1,48 @@
+:root {
+  --app-bg: #f5f5f5;
+  --app-surface: #ffffff;
+  --app-border: #f0f0f0;
+  --app-space-lg: 24px;
+  --app-space-xl: 64px;
+  --home-card-width: 480px;
+}
+
+body {
+  margin: 0;
+  background: var(--app-bg);
+}
+
+.app-shell {
+  min-height: 100vh;
+  background: var(--app-bg);
+}
+
+.app-header {
+  display: flex;
+  align-items: center;
+  background: var(--app-surface);
+  border-bottom: 1px solid var(--app-border);
+}
+
+.home-page {
+  display: flex;
+  justify-content: center;
+  padding: var(--app-space-xl) var(--app-space-lg);
+}
+
+.home-card {
+  width: 100%;
+  max-width: var(--home-card-width);
+}
+
+.home-stack {
+  width: 100%;
+}
+
+.home-greeting {
+  margin: 0;
+}
+
+.home-description {
+  margin: 0;
+}

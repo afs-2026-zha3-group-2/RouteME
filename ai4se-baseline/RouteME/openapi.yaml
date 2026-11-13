@@ -1,0 +1,73 @@
+openapi: 3.0.3
+info:
+  title: RouteME API
+  version: 0.1.0
+  description: |
+    RouteME 后端对外契约。本文件是前后端唯一事实源，字段名、类型、状态码与错误码只在这里定稿。
+    当前只包含脚手架验收所需的最小接口：读取问候语。
+servers:
+  - url: http://localhost:8080/api
+    description: 本地开发
+paths:
+  /greeting:
+    get:
+      operationId: loadGreeting
+      summary: 读取当前问候语
+      description: |
+        问候语是单例资源：greetings 表中只有一条记录，因此路径用单数名词。
+        文本由 Flyway 迁移写入，接口只读。
+      responses:
+        '200':
+          description: 当前问候语
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Greeting'
+              examples:
+                seeded:
+                  value:
+                    id: 1
+                    message: Hello World
+        '404':
+          description: greetings 表没有记录，问候语尚未写入
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                notFound:
+                  value:
+                    code: GREETING_NOT_FOUND
+        '500':
+          description: 未预期异常，响应不携带堆栈
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                unexpected:
+                  value:
+                    code: INTERNAL_ERROR
+components:
+  schemas:
+    Greeting:
+      type: object
+      required: [id, message]
+      properties:
+        id:
+          type: integer
+          format: int64
+          readOnly: true
+          description: 问候语记录标识
+        message:
+          type: string
+          readOnly: true
+          description: 问候语文本，来自 greetings 表的 message 列
+    Error:
+      type: object
+      required: [code]
+      properties:
+        code:
+          type: string
+          description: 大写下划线错误码，前端按原值判断
+          enum: [GREETING_NOT_FOUND, INTERNAL_ERROR]

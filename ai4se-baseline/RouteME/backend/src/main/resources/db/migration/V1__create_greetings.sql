@@ -1,0 +1,4 @@
+CREATE TABLE greetings (
+    id INTEGER NOT NULL PRIMARY KEY,
+    message VARCHAR(255) NOT NULL
+);

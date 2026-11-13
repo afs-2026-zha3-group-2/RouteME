@@ -1,0 +1,13 @@
+spring:
+  application:
+    name: routeme-backend
+  datasource:
+    url: jdbc:sqlite:./data/routeme.db
+    driver-class-name: org.sqlite.JDBC
+    hikari:
+      # Flyway 迁移期间需要同时占用迁移连接与历史表连接；SQLite 的写事务本身串行。
+      maximum-pool-size: 4
+  flyway:
+    locations: classpath:db/migration
+server:
+  port: 8080

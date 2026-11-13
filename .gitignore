@@ -1,0 +1,29 @@
+# Maven
+target/
+.mvn/wrapper/maven-wrapper.jar
+
+# Node
+node_modules/
+dist/
+*.local
+
+# Database files
+*.db
+*.db-journal
+*.sqlite
+
+# IDE
+.idea/
+*.iml
+.vscode/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Playwright (预留)
+test-results/
+playwright-report/
+
+# Logs
+*.log
