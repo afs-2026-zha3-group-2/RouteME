@@ -71,6 +71,11 @@ export async function loadMatches(userId: number, filters: TripFilters = {}): Pr
   return (await response.json()) as MatchCandidate[];
 }
 
+export async function loadMatch(userId: number, tripId: number): Promise<MatchCandidate> {
+  const response = await request(`/matches/${tripId}`, undefined, userId);
+  return (await response.json()) as MatchCandidate;
+}
+
 export async function loadTrip(userId: number, tripId: number): Promise<TripDetail> {
   const response = await request(`/trips/${tripId}`, undefined, userId);
   return (await response.json()) as TripDetail;

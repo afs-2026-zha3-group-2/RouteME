@@ -88,15 +88,15 @@
 
 - [x] `api.ts`/`types.ts`/`route.ts` 增加 companions 端点与路由。
 - [x] 首页改用 `/matches`，新增「按匹配度」排序并默认选中；卡片展示理由与百分比。
-- [ ] 详情页展示单条匹配理由。
+- [x] 详情页展示单条匹配理由。
 
 **验证：** `cd RouteME/frontend; npm test; npm run build`
 **覆盖：** R1 的 4 个场景
 
 ### T12 [frontend] 申请与发布者处理
 
-- [ ] 详情页申请弹窗（说明选填 ≤120）、状态展示、取消；发布者申请列表页 accept/reject。
-- [ ] 接受后人数与状态立即刷新。
+- [x] 详情页申请弹窗（说明选填 ≤120）、状态展示、取消；发布者申请列表页 accept/reject。
+- [x] 接受后人数与状态立即刷新。
 
 **验证：** `cd RouteME/frontend; npm test; npm run build`
 **覆盖：** R2/R3 的 9 个场景

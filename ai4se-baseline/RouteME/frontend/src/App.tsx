@@ -7,6 +7,7 @@ import { IdentityGate } from './identity/IdentityGate';
 import { parseRoute, routeToHash, type Route } from './route';
 import { TripCreatePage } from './trips/TripCreatePage';
 import { TripDetailPage } from './trips/TripDetailPage';
+import { ApplicationsPage } from './trips/ApplicationsPage';
 import type { DemoUser } from './types';
 
 const CURRENT_USER_KEY = 'routeme.currentUserId';
@@ -103,6 +104,9 @@ export function App() {
         {route.name === 'detail' && (
           <TripDetailPage currentUser={currentUser} tripId={route.tripId} />
         )}
+                {route.name === 'applications' && (
+                  <ApplicationsPage currentUser={currentUser} tripId={route.tripId} />
+                )}
         {route.name === 'notFound' && <PlaceholderPage text={tripMessages.detailNotFound} />}
       </Content>
     </Layout>
