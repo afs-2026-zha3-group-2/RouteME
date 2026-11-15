@@ -1,7 +1,8 @@
 # hello-world Specification
 
 ## Purpose
-TBD - created by archiving change bootstrap-hello-world. Update Purpose after archive.
+
+RouteME 脚手架能力：首页从 SQLite 读取并展示问候语；后端与前端各自具备可在 CI 中独立执行的验证命令。
 
 ## Requirements
 

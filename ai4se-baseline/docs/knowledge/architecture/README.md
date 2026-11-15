@@ -83,7 +83,7 @@ RouteME/backend   Spring Boot 4.1.2 (Java 21) :8080
 RouteME/openapi.yaml   契约 SoT（info.version 0.1.0）
 ```
 
-- 根包 `routeme`：`@rule:package-structure` 的 `staffing` 根包是上一作业的领域名，RouteME 按产品名建包，层包与依赖方向不变；例外记录在 `openspec/changes/bootstrap-hello-world/design.md`。
+- 根包 `routeme`：`@rule:package-structure` 的 `staffing` 根包是上一作业的领域名，RouteME 按产品名建包，层包与依赖方向不变；例外记录在 `openspec/changes/archive/2026-11-15-bootstrap-hello-world/design.md`。
 - 运行时 SQLite、测试 H2 内存库，共用一组迁移脚本；SQL 只用两库通用语法（`INTEGER PRIMARY KEY` + 显式 id 插入），避免两份迁移漂移。
 - 仓储接口 `GreetingRepository`、JDBC 实现与行对象 `GreetingRow` 都在 `dao`；`GET /api/greeting` 是单例资源（表内单条记录），为复数资源规约的已记录例外。
 - 前端业务状态在 `src/home/useGreeting.ts`，请求只走 `src/api.ts`，文案在 `src/i18n/messages.ts`；Ant Design 由需求方指定引入。

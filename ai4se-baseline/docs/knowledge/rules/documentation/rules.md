@@ -228,6 +228,7 @@ openspec/
 
 - 预规格阶段的探索产物放 `requirement-workspace/`，不进入 `openspec/changes/`；交接完成后按 change 拆包。
 - 纯文档或工具配置类变更可不产出 `design.md`，但需在 `proposal.md` 说明省略原因。
+- 手工归档允许保留 `<yyyymmdd>-<change-id>` 目录名（如 `changes/archive/2026-11-15-bootstrap-hello-world/`），`openspec archive` 自动归档仍用 `<change-id>`；两种写法都必须让索引、`impact-brief` 与知识库指针指向实际路径。
 
 ## 为什么这样定
 

@@ -25,6 +25,7 @@ Bash (for example Git Bash on Windows); their use depends on the selected skill.
 ## Project content
 
 - [Knowledge base](docs/knowledge/_INDEX.md)
+- [UI prototype](docs/prototype/index.html)
 - [Requirement workspace](requirement-workspace/README.md)
 - [OpenSpec workspace](openspec/README.md)
 - [Harness scripts](scripts/README.md)
