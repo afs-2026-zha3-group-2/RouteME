@@ -73,7 +73,7 @@ export function ApplicationsPage({ currentUser, tripId }: Props) {
         <a href={`#/trips/${tripId}`} className="detail-back">
           {tripMessages.detailTitle}
         </a>
-        <Card>
+        <Card className="panel">
           <Space orientation="vertical" size="small" className="home-stack">
             <Typography.Title level={2} className="trip-title">
               {tripMessages.applicationsTitle}

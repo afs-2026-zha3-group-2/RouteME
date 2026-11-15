@@ -2,8 +2,8 @@ import { useCallback, useEffect, useState } from 'react';
 import { Alert, Button, Card, Skeleton, Space, Tabs, Tag, Typography } from 'antd';
 import { loadMyExperiences, loadMyTrips } from '../api';
 import { tripMessages } from '../i18n/tripMessages';
-import type { DemoUser, Experience, MyTrips, TripApplication, TripSummary } from '../types';
-import { statusColor, statusLabel } from '../trips/tripStatus';
+import { TripCard } from '../trips/TripCard';
+import type { DemoUser, Experience, MyTrips, TripApplication } from '../types';
 
 type Props = {
   currentUser: DemoUser;
@@ -20,27 +20,6 @@ function applicationLabel(status: TripApplication['status']): string {
     return tripMessages.applyStatusRejected;
   }
   return tripMessages.applyStatusCancelled;
-}
-
-function TripCard({ trip }: { trip: TripSummary }) {
-  return (
-    <a className="trip-card-link" href={`#/trips/${trip.id}`}>
-      <Card hoverable size="small">
-        <Space orientation="vertical" size={4} className="home-stack">
-          <Space size="small" wrap>
-            <Tag color={statusColor(trip.status)}>{statusLabel(trip.status)}</Tag>
-            <Tag>{trip.destination}</Tag>
-          </Space>
-          <Typography.Text strong>{trip.title}</Typography.Text>
-          <Typography.Text type="secondary">
-            {trip.start_date} → {trip.end_date} · {tripMessages.joinedLabel} {trip.joined_count}/
-            {trip.capacity}
-            {tripMessages.peopleUnit}
-          </Typography.Text>
-        </Space>
-      </Card>
-    </a>
-  );
 }
 
 export function MyTripsPage({ currentUser }: Props) {

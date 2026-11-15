@@ -11,6 +11,18 @@ export function statusLabel(status: TripStatus): string {
   return tripMessages.statusRecruiting;
 }
 
+export type StatusTone = 'surf' | 'amber' | 'muted';
+
+export function statusTone(status: TripStatus): StatusTone {
+  if (status === 'full') {
+    return 'amber';
+  }
+  if (status === 'completed') {
+    return 'muted';
+  }
+  return 'surf';
+}
+
 export function statusColor(status: TripStatus): string {
   if (status === 'full') {
     return 'orange';

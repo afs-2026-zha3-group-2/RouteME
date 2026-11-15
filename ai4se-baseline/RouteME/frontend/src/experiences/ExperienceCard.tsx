@@ -1,12 +1,12 @@
-import { Button, Card, Space, Tag, Typography } from 'antd';
 import { tripMessages } from '../i18n/tripMessages';
+import { Avatar } from '../shell/Avatar';
 import { intensityLabel } from './experienceForm';
 import type { Experience } from '../types';
 
-const INTENSITY_COLOR: Record<Experience['intensity'], string> = {
-  relaxed: 'green',
-  moderate: 'gold',
-  tiring: 'red',
+const INTENSITY_TONE: Record<Experience['intensity'], string> = {
+  relaxed: 'jade',
+  moderate: 'amber',
+  tiring: 'danger',
 };
 
 type Props = {
@@ -14,39 +14,39 @@ type Props = {
 };
 
 export function ExperienceCard({ experience }: Props) {
-  const summary =
-    experience.content.length > 90 ? `${experience.content.slice(0, 90)}…` : experience.content;
   return (
-    <Card className="experience-card">
-      <Space orientation="vertical" size="small" className="home-stack">
-        <div className={`experience-cover experience-cover-${experience.trip.destination}`} />
-        <Space size="small" wrap>
-          <Tag color={INTENSITY_COLOR[experience.intensity]}>
-            {tripMessages.experienceIntensityLabel} · {intensityLabel(experience.intensity)}
-          </Tag>
-          <Tag>{experience.trip.destination}</Tag>
-        </Space>
-        <a className="experience-title" href={`#/trips/${experience.trip.id}`}>
-          {experience.trip.title}
+    <article className="exp-card">
+      <div className="exp-head">
+        <Avatar user={experience.author} size="sm" />
+        <span className="exp-author">
+          <b>{experience.author.nickname}</b>
+          <span>
+            {experience.trip.destination} · {experience.trip.start_date} → {experience.trip.end_date}
+          </span>
+        </span>
+        <span className={`badge ${INTENSITY_TONE[experience.intensity]}`}>
+          {tripMessages.experienceIntensityLabel} · {intensityLabel(experience.intensity)}
+        </span>
+      </div>
+
+      <p className="exp-quote">{experience.content}</p>
+
+      <div className="exp-advice">
+        <b>{tripMessages.experienceAdviceLabel}</b>
+        {experience.advice}
+      </div>
+
+      <div className="exp-foot">
+        <span className="exp-origin">
+          来自 <b>{experience.trip.title}</b>
+        </span>
+        <a className="btn sm ghost" href={`#/trips/${experience.trip.id}`}>
+          {tripMessages.detailTitle}
         </a>
-        <Typography.Text type="secondary">
-          {experience.author.nickname} · {experience.trip.start_date} → {experience.trip.end_date}
-        </Typography.Text>
-        <Typography.Paragraph className="experience-summary">{summary}</Typography.Paragraph>
-        <Typography.Text>
-          <Typography.Text strong>{tripMessages.experienceAdviceLabel}：</Typography.Text>
-          {experience.advice}
-        </Typography.Text>
-        <Space size="small" wrap>
-          <a href={`#/trips/${experience.trip.id}`}>{tripMessages.detailTitle}</a>
-          <Button
-            size="small"
-            onClick={() => (window.location.hash = `#/trips/new?from=${experience.trip.id}`)}
-          >
-            {tripMessages.referencePublish}
-          </Button>
-        </Space>
-      </Space>
-    </Card>
+        <a className="btn sm primary" href={`#/trips/new?from=${experience.trip.id}`}>
+          {tripMessages.referencePublish}
+        </a>
+      </div>
+    </article>
   );
 }

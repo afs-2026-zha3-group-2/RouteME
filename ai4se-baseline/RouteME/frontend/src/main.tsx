@@ -1,6 +1,5 @@
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
-import { ConfigProvider } from 'antd';
 import { App } from './App';
 import './styles.css';
 
@@ -11,8 +10,6 @@ if (container === null) {
 
 createRoot(container).render(
   <StrictMode>
-    <ConfigProvider>
-      <App />
-    </ConfigProvider>
+    <App />
   </StrictMode>,
 );

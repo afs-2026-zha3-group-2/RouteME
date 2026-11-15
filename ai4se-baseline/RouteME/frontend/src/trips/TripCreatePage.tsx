@@ -1,5 +1,5 @@
 import { useEffect, useState, type ReactNode } from 'react';
-import { Alert, Button, Card, Input, Select, Space, Tag, Typography } from 'antd';
+import { Alert, Button, Card, Input, Select, Space, Typography } from 'antd';
 import { createTrip, loadTrip } from '../api';
 import { tripMessages } from '../i18n/tripMessages';
 import type { DemoUser } from '../types';
@@ -146,15 +146,18 @@ export function TripCreatePage({ currentUser, fromTripId }: Props) {
             </Field>
           </div>
 
-          <Field label={tripMessages.fieldTags} error={errors.tags}>
-            <Space size={[4, 4]} wrap>
+          <div className="form-field">
+            <span className="form-label">{tripMessages.fieldTags}</span>
+            <span className="chip-row">
               {INTEREST_TAGS.map((tag) => {
                 const checked = values.tags.includes(tag);
                 return (
-                  <Tag.CheckableTag
+                  <button
                     key={tag}
-                    checked={checked}
-                    onChange={() =>
+                    type="button"
+                    className={checked ? 'chip on' : 'chip'}
+                    aria-pressed={checked}
+                    onClick={() =>
                       update({
                         tags: checked
                           ? values.tags.filter((item) => item !== tag)
@@ -165,11 +168,14 @@ export function TripCreatePage({ currentUser, fromTripId }: Props) {
                     }
                   >
                     {tag}
-                  </Tag.CheckableTag>
+                  </button>
                 );
               })}
-            </Space>
-          </Field>
+            </span>
+            {errors.tags !== undefined && (
+              <Typography.Text type="danger">{errors.tags}</Typography.Text>
+            )}
+          </div>
 
           <Field label={tripMessages.fieldNote}>
             <Input.TextArea rows={3} value={values.note} onChange={(event) => update({ note: event.target.value })} />

@@ -1,3 +1,4 @@
+import { tripMessages } from '../i18n/tripMessages';
 import type { TripFilters } from '../types';
 
 export type FilterState = {
@@ -50,4 +51,36 @@ export function hasActiveFilters(state: FilterState): boolean {
 
 export function toggleTag(tags: string[], tag: string): string[] {
   return tags.includes(tag) ? tags.filter((item) => item !== tag) : [...tags, tag];
+}
+
+const SORT_LABELS: Record<FilterState['sort'], string> = {
+  match: tripMessages.sortMatch,
+  date: tripMessages.sortDate,
+  new: tripMessages.sortNew,
+};
+
+/**
+ * 把已应用的筛选条件渲染成一句可读摘要，供首页展示。
+ */
+export function describeFilters(state: FilterState): string {
+  const parts: string[] = [];
+  if (state.q.trim() !== '') {
+    parts.push(`关键词「${state.q.trim()}」`);
+  }
+  if (state.destination !== '') {
+    parts.push(`目的地 ${state.destination}`);
+  }
+  if (state.dateFrom !== '') {
+    parts.push(`${tripMessages.dateFromLabel} ${state.dateFrom}`);
+  }
+  if (state.dateTo !== '') {
+    parts.push(`${tripMessages.dateToLabel} ${state.dateTo}`);
+  }
+  if (state.tags.length > 0) {
+    parts.push(`兴趣 ${state.tags.join(' / ')}`);
+  }
+  if (state.sort !== 'match') {
+    parts.push(SORT_LABELS[state.sort]);
+  }
+  return parts.join(' · ');
 }

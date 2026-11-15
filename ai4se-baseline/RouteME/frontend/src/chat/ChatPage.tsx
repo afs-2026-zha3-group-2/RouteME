@@ -98,7 +98,7 @@ export function ChatPage({ currentUser, tripId, otherUserId }: Props) {
         <a href={`#/trips/${tripId}`} className="detail-back">
           {tripMessages.detailTitle}
         </a>
-        <Card>
+        <Card className="panel chat-panel">
           <Space orientation="vertical" size="small" className="home-stack">
             <Typography.Title level={3} className="trip-title">
               {tripMessages.chatTitle}

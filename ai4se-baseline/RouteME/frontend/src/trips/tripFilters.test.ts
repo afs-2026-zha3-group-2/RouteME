@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+  describeFilters,
   emptyFilterState,
   hasActiveFilters,
   normalizeRange,
@@ -54,5 +55,27 @@ describe('hasActiveFilters', () => {
     expect(hasActiveFilters(emptyFilterState)).toBe(false);
     expect(hasActiveFilters({ ...emptyFilterState, tags: ['摄影'] })).toBe(true);
     expect(hasActiveFilters({ ...emptyFilterState, sort: 'new' })).toBe(true);
+  });
+});
+
+describe('describeFilters', () => {
+  it('returns an empty summary for the default state', () => {
+    expect(describeFilters(emptyFilterState)).toBe('');
+  });
+
+  it('lists every applied condition in a stable order', () => {
+    const summary = describeFilters({
+      ...emptyFilterState,
+      q: ' 海岸 ',
+      destination: '珠海',
+      dateFrom: '2026-11-16',
+      dateTo: '2026-11-20',
+      tags: ['摄影', '海边'],
+      sort: 'new',
+    });
+
+    expect(summary).toBe(
+      '关键词「海岸」 · 目的地 珠海 · 出发不早于 2026-11-16 · 出发不晚于 2026-11-20 · 兴趣 摄影 / 海边 · 按最新发布',
+    );
   });
 });

@@ -215,7 +215,7 @@ export function TripDetailPage({ currentUser, tripId }: Props) {
         <a href="#/" className="detail-back">
           {tripMessages.backHome}
         </a>
-        <Card>
+        <Card className="panel detail-card">
           <Space orientation="vertical" size="small" className="home-stack">
             <Space size="small" wrap>
               <Tag color={statusColor(trip.status)}>{statusLabel(trip.status)}</Tag>
