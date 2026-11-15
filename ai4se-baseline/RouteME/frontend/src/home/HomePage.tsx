@@ -9,7 +9,7 @@ import {
 } from '../trips/tripFilters';
 import { DESTINATIONS, INTEREST_TAGS } from '../trips/tripOptions';
 import { statusColor, statusLabel } from '../trips/tripStatus';
-import { useTrips } from '../trips/useTrips';
+import { useMatches } from '../trips/useMatches';
 import { useGreeting } from './useGreeting';
 import type { DemoUser } from '../types';
 
@@ -19,7 +19,7 @@ type Props = {
 
 export function HomePage({ currentUser }: Props) {
   const [filters, setFilters] = useState<FilterState>(emptyFilterState);
-  const { state, reload } = useTrips(currentUser.id, filters);
+  const { state, reload } = useMatches(currentUser.id, filters);
 
   const update = (patch: Partial<FilterState>) => {
     setFilters((previous) => ({ ...previous, ...patch }));
@@ -66,9 +66,10 @@ export function HomePage({ currentUser }: Props) {
                 aria-label={tripMessages.sortLabel}
                 value={filters.sort}
                 options={[
-                  { value: 'date', label: tripMessages.sortDate },
-                  { value: 'new', label: tripMessages.sortNew },
-                ]}
+                                  { value: 'match', label: tripMessages.sortMatch },
+                                  { value: 'date', label: tripMessages.sortDate },
+                                  { value: 'new', label: tripMessages.sortNew },
+                                ]}
                 onChange={(sort) => update({ sort })}
               />
             </div>
@@ -119,7 +120,7 @@ export function HomePage({ currentUser }: Props) {
           />
         )}
 
-        {state.status === 'ready' && state.trips.length === 0 && (
+        {state.status === 'ready' && state.matches.length === 0 && (
           <Empty description={`${tripMessages.emptyTitle} ${tripMessages.emptyHint}`}>
             <Button type="primary" onClick={() => (window.location.hash = '#/trips/new')}>
               {tripMessages.publish}
@@ -127,41 +128,53 @@ export function HomePage({ currentUser }: Props) {
           </Empty>
         )}
 
-        {state.status === 'ready' && state.trips.length > 0 && (
+        {        state.status === 'ready' && state.matches.length > 0 && (
           <div className="trip-grid">
-            {state.trips.map((trip) => (
+                    {state.matches.map(({ trip, match }) => (
               <a key={trip.id} className="trip-card-link" href={`#/trips/${trip.id}`}>
                 <Card hoverable className="trip-card">
                   <Space orientation="vertical" size="small" className="home-stack">
                     <Space size="small" wrap>
                       <Tag color={statusColor(trip.status)}>{statusLabel(trip.status)}</Tag>
                       <Tag>{trip.destination}</Tag>
-                    </Space>
-                    <Typography.Title level={4} className="trip-title">
-                      {trip.title}
-                    </Typography.Title>
-                    <Typography.Text type="secondary">
-                      {trip.start_date} → {trip.end_date}
-                    </Typography.Text>
-                    <Typography.Text>{trip.stops.slice(0, 2).join(' · ')}</Typography.Text>
-                    <Space size={[4, 4]} wrap>
-                      {trip.tags.map((tag) => (
-                        <Tag key={tag}>{tag}</Tag>
-                      ))}
-                    </Space>
-                    <Space size="middle">
-                      <Typography.Text type="secondary">{trip.publisher.nickname}</Typography.Text>
-                      <Typography.Text>
-                        {tripMessages.joinedLabel} {trip.joined_count}/{trip.capacity}
-                        {tripMessages.peopleUnit}
-                      </Typography.Text>
-                    </Space>
-                  </Space>
-                </Card>
-              </a>
-            ))}
-          </div>
-        )}
+                              <Tag color="blue">
+                                {tripMessages.matchPercentage} {match.percentage}%
+                              </Tag>
+                            </Space>
+                            <Typography.Title level={4} className="trip-title">
+                              {trip.title}
+                            </Typography.Title>
+                            <Typography.Text type="secondary">
+                              {trip.start_date} → {trip.end_date}
+                            </Typography.Text>
+                            <Typography.Text>{trip.stops.slice(0, 2).join(' · ')}</Typography.Text>
+                            <Space size={[4, 4]} wrap>
+                              {trip.tags.map((tag) => (
+                                <Tag key={tag}>{tag}</Tag>
+                              ))}
+                            </Space>
+                            <div className="match-reasons">
+                              <Typography.Text strong>{tripMessages.matchReasons}</Typography.Text>
+                              <ul className="match-reason-list">
+                                {match.reasons.map((reason) => (
+                                  <li key={reason}>{reason}</li>
+                                ))}
+                              </ul>
+                              <Typography.Text type="secondary">{match.basis}</Typography.Text>
+                            </div>
+                            <Space size="middle">
+                              <Typography.Text type="secondary">{trip.publisher.nickname}</Typography.Text>
+                              <Typography.Text>
+                                {tripMessages.joinedLabel} {trip.joined_count}/{trip.capacity}
+                                {tripMessages.peopleUnit}
+                              </Typography.Text>
+                            </Space>
+                          </Space>
+                        </Card>
+                      </a>
+                    ))}
+                  </div>
+                )}
                 <ConnectivityNote />
               </Space>
             </main>

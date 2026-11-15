@@ -86,8 +86,8 @@
 
 ### T11 [frontend] 匹配展示与首页默认排序
 
-- [ ] `api.ts`/`types.ts`/`route.ts` 增加 companions 端点与路由。
-- [ ] 首页改用 `/matches`，新增「按匹配度」排序并默认选中；卡片展示理由与百分比。
+- [x] `api.ts`/`types.ts`/`route.ts` 增加 companions 端点与路由。
+- [x] 首页改用 `/matches`，新增「按匹配度」排序并默认选中；卡片展示理由与百分比。
 - [ ] 详情页展示单条匹配理由。
 
 **验证：** `cd RouteME/frontend; npm test; npm run build`

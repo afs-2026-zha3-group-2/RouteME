@@ -1,6 +1,12 @@
 import type {
+  ChatMessage,
+  ChatPartner,
   DemoUser,
   Greeting,
+  MatchCandidate,
+  MyTrips,
+  ReportRequest,
+  TripApplication,
   TripCreateRequest,
   TripDetail,
   TripFilters,
@@ -31,7 +37,7 @@ export async function loadUsers(): Promise<DemoUser[]> {
   return (await response.json()) as DemoUser[];
 }
 
-export async function loadTrips(userId: number, filters: TripFilters = {}): Promise<TripSummary[]> {
+function tripQuery(filters: TripFilters): string {
   const params = new URLSearchParams();
   if (filters.q) {
     params.set('q', filters.q);
@@ -52,8 +58,17 @@ export async function loadTrips(userId: number, filters: TripFilters = {}): Prom
     params.set('sort', filters.sort);
   }
   const query = params.toString();
-  const response = await request(`/trips${query ? `?${query}` : ''}`, undefined, userId);
+  return query ? `?${query}` : '';
+}
+
+export async function loadTrips(userId: number, filters: TripFilters = {}): Promise<TripSummary[]> {
+  const response = await request(`/trips${tripQuery(filters)}`, undefined, userId);
   return (await response.json()) as TripSummary[];
+}
+
+export async function loadMatches(userId: number, filters: TripFilters = {}): Promise<MatchCandidate[]> {
+  const response = await request(`/matches${tripQuery(filters)}`, undefined, userId);
+  return (await response.json()) as MatchCandidate[];
 }
 
 export async function loadTrip(userId: number, tripId: number): Promise<TripDetail> {
@@ -77,4 +92,104 @@ export async function createTrip(userId: number, body: TripCreateRequest): Promi
 export async function completeTrip(userId: number, tripId: number): Promise<TripDetail> {
   const response = await request(`/trips/${tripId}/complete`, { method: 'POST' }, userId);
   return (await response.json()) as TripDetail;
+}
+
+export async function loadTripApplications(userId: number, tripId: number): Promise<TripApplication[]> {
+  const response = await request(`/trips/${tripId}/applications`, undefined, userId);
+  return (await response.json()) as TripApplication[];
+}
+
+export async function applyForTrip(
+  userId: number,
+  tripId: number,
+  message: string | null,
+): Promise<TripApplication> {
+  const response = await request(
+    `/trips/${tripId}/applications`,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ message }),
+    },
+    userId,
+  );
+  return (await response.json()) as TripApplication;
+}
+
+export async function loadMyApplications(userId: number): Promise<TripApplication[]> {
+  const response = await request('/me/applications', undefined, userId);
+  return (await response.json()) as TripApplication[];
+}
+
+export async function cancelApplication(userId: number, applicationId: number): Promise<TripApplication> {
+  const response = await request(`/applications/${applicationId}/cancel`, { method: 'POST' }, userId);
+  return (await response.json()) as TripApplication;
+}
+
+export async function acceptApplication(userId: number, applicationId: number): Promise<TripApplication> {
+  const response = await request(`/applications/${applicationId}/accept`, { method: 'POST' }, userId);
+  return (await response.json()) as TripApplication;
+}
+
+export async function rejectApplication(userId: number, applicationId: number): Promise<TripApplication> {
+  const response = await request(`/applications/${applicationId}/reject`, { method: 'POST' }, userId);
+  return (await response.json()) as TripApplication;
+}
+
+export async function leaveTrip(userId: number, tripId: number): Promise<void> {
+  await request(`/trips/${tripId}/leave`, { method: 'POST' }, userId);
+}
+
+export async function loadMyTrips(userId: number): Promise<MyTrips> {
+  const response = await request('/me/trips', undefined, userId);
+  return (await response.json()) as MyTrips;
+}
+
+export async function loadChatPartners(userId: number): Promise<ChatPartner[]> {
+  const response = await request('/me/chat-partners', undefined, userId);
+  return (await response.json()) as ChatPartner[];
+}
+
+export async function loadMessages(
+  userId: number,
+  tripId: number,
+  withUserId: number,
+): Promise<ChatMessage[]> {
+  const params = new URLSearchParams({ with: String(withUserId) });
+  const response = await request(`/trips/${tripId}/messages?${params.toString()}`, undefined, userId);
+  return (await response.json()) as ChatMessage[];
+}
+
+export async function sendMessage(
+  userId: number,
+  tripId: number,
+  receiverId: number,
+  content: string,
+): Promise<ChatMessage> {
+  const response = await request(
+    `/trips/${tripId}/messages`,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ receiver_id: receiverId, content }),
+    },
+    userId,
+  );
+  return (await response.json()) as ChatMessage;
+}
+
+export async function submitReport(
+  userId: number,
+  body: ReportRequest,
+): Promise<{ received: boolean }> {
+  const response = await request(
+    '/reports',
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    },
+    userId,
+  );
+  return (await response.json()) as { received: boolean };
 }

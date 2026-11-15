@@ -6,7 +6,7 @@ export type FilterState = {
   dateFrom: string;
   dateTo: string;
   tags: string[];
-  sort: 'date' | 'new';
+  sort: 'match' | 'date' | 'new';
 };
 
 export const emptyFilterState: FilterState = {
@@ -15,7 +15,7 @@ export const emptyFilterState: FilterState = {
   dateFrom: '',
   dateTo: '',
   tags: [],
-  sort: 'date',
+  sort: 'match',
 };
 
 export function normalizeRange(dateFrom: string, dateTo: string): [string, string] {
@@ -44,7 +44,7 @@ export function hasActiveFilters(state: FilterState): boolean {
     state.dateFrom !== '' ||
     state.dateTo !== '' ||
     state.tags.length > 0 ||
-    state.sort !== 'date'
+        state.sort !== 'match'
   );
 }
 

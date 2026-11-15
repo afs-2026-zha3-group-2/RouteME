@@ -58,5 +58,63 @@ export type TripFilters = {
   date_from?: string;
   date_to?: string;
   tags?: string[];
-  sort?: 'date' | 'new';
+  sort?: 'match' | 'date' | 'new';
+};
+
+export type Match = {
+  score: number;
+  percentage: number;
+  reasons: string[];
+  basis: string;
+};
+
+export type MatchCandidate = {
+  trip: TripSummary;
+  match: Match;
+};
+
+export type ApplicationStatus = 'pending' | 'accepted' | 'rejected' | 'cancelled';
+
+export type TripApplication = {
+  id: number;
+  trip_id: number;
+  applicant: DemoUser;
+  message: string | null;
+  status: ApplicationStatus;
+  created_at: string;
+  decided_at: string | null;
+  trip: TripSummary;
+};
+
+export type ChatMessage = {
+  id: number;
+  trip_id: number;
+  sender_id: number;
+  receiver_id: number;
+  content: string;
+  sent_at: string;
+};
+
+export type ChatPartner = {
+  trip: TripSummary;
+  other: DemoUser;
+  last_message: ChatMessage | null;
+  message_count: number;
+};
+
+export type MyTrips = {
+  published: TripSummary[];
+  applied: TripApplication[];
+  matched: TripSummary[];
+  completed: TripSummary[];
+  pending_application_count: number;
+};
+
+export type ReportReason = 'harassment' | 'fake' | 'safety' | 'other';
+
+export type ReportRequest = {
+  target_type: 'trip' | 'user';
+  target_id: number;
+  reason: ReportReason;
+  note?: string | null;
 };

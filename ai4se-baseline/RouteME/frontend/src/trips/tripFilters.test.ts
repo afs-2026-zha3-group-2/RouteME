@@ -15,7 +15,7 @@ describe('toTripFilters', () => {
       date_from: undefined,
       date_to: undefined,
       tags: undefined,
-      sort: 'date',
+            sort: 'match',
     });
   });
 
