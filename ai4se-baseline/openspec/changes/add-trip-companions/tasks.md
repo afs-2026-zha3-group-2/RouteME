@@ -70,8 +70,8 @@
 
 ### T9 [backend] 我的旅行聚合
 
-- [ ] `GET /me/trips`：published / applied / matched / completed + `pending_application_count`。
-- [ ] 与详情/申请状态一致（接受、取消后刷新同步）。
+- [x] `GET /me/trips`：published / applied / matched / completed + `pending_application_count`。
+- [x] 与详情/申请状态一致（接受、取消后刷新同步）。
 
 **验证：** `cd RouteME/backend; .\mvnw.cmd -Dtest=MyTripsControllerTest test`
 **覆盖：** R6 的分区与提醒

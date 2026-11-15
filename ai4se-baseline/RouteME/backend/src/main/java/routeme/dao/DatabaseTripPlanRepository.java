@@ -25,7 +25,14 @@ public class DatabaseTripPlanRepository implements TripPlanRepository {
     }
 
     @Override
-    public List<TripPlan> findUnfinished() {
+        public List<TripPlan> findAll() {
+            return jdbcClient.sql(SELECT_TRIP + " ORDER BY created_at DESC, id DESC")
+                    .query((resultSet, rowNumber) -> TripPlanRow.from(resultSet).toTripPlan())
+                    .list();
+        }
+
+        @Override
+        public List<TripPlan> findUnfinished() {
         return jdbcClient.sql(SELECT_TRIP + " WHERE completed_at IS NULL ORDER BY start_date, created_at DESC")
                 .query((resultSet, rowNumber) -> TripPlanRow.from(resultSet).toTripPlan())
                 .list();

@@ -7,6 +7,8 @@ import routeme.model.TripPlan;
 
 public interface TripPlanRepository {
 
+    List<TripPlan> findAll();
+
     List<TripPlan> findUnfinished();
 
     Optional<TripPlan> findById(long id);
