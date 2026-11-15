@@ -55,39 +55,39 @@
 
 ### T7 [frontend] 请求层与路由
 
-- [ ] `types.ts`/`api.ts` 增加体验类型与 5 个请求函数；`route.ts` 增加 `#/share/{tripId}`，`#/trips/new` 支持 `?from=`。
-- [ ] 路由与请求层单测更新。
+- [x] `types.ts`/`api.ts` 增加体验类型与 5 个请求函数；`route.ts` 增加 `#/share/{tripId}`，`#/trips/new` 支持 `?from=`。
+- [x] 路由与请求层单测更新。
 
 **验证：** `cd RouteME/frontend; npm test`
 **覆盖：** 全部前端场景的入口
 
 ### T8 [frontend] 游后分享页
 
-- [ ] `ShareExperiencePage`：感受（10–400）、强度三选一、建议（≤120）、隐私提示、发布/保存修改、无资格提示。
-- [ ] `experienceForm.ts` 纯函数校验 + 单测（边界与强度文案）。
+- [x] `ShareExperiencePage`：感受（10–400）、强度三选一、建议（≤120）、隐私提示、发布/保存修改、无资格提示。
+- [x] `experienceForm.ts` 纯函数校验 + 单测（边界与强度文案）。
 
 **验证：** `cd RouteME/frontend; npm test; npm run build`
 **覆盖：** R1/R2/R6 的界面场景
 
 ### T9 [frontend] 首页旅行体验视图
 
-- [ ] 首页视图切换（旅行计划 / 旅行体验）+ 体验数量；体验卡展示内置封面、强度、摘要与建议。
-- [ ] 关键词/目的地/兴趣筛选接入体验列表，空态提示；体验卡提供「参考此行程发布」。
+- [x] 首页视图切换（旅行计划 / 旅行体验）+ 体验数量；体验卡展示内置封面、强度、摘要与建议。
+- [x] 关键词/目的地/兴趣筛选接入体验列表，空态提示；体验卡提供「参考此行程发布」。
 
 **验证：** `cd RouteME/frontend; npm run build`
 **覆盖：** R4
 
 ### T10 [frontend] 详情体验区与参考发布预填
 
-- [ ] 详情页游后体验区：作者、强度、感受、建议、空态、发表/修改入口。
-- [ ] `TripCreatePage` 读取 `?from=` 预填目的地/途经点/标签，清空标题/日期/人数/集合/说明，并提示需重填。
+- [x] 详情页游后体验区：作者、强度、感受、建议、空态、发表/修改入口。
+- [x] `TripCreatePage` 读取 `?from=` 预填目的地/途经点/标签，清空标题/日期/人数/集合/说明，并提示需重填。
 
 **验证：** `cd RouteME/frontend; npm run build`
 **覆盖：** R3/R5
 
 ### T11 [frontend] 我的旅行分享入口
 
-- [ ] 已完成分组显示已分享标记与「发表/修改体验」入口；复用 `/me/experiences`。
+- [x] 已完成分组显示已分享标记与「发表/修改体验」入口；复用 `/me/experiences`。
 
 **验证：** `cd RouteME/frontend; npm run build`
 **覆盖：** R6

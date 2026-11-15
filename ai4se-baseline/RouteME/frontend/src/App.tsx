@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Alert, Button, Layout, Select, Space, Spin, Typography } from 'antd';
 import { loadUsers } from './api';
 import { ChatPage } from './chat/ChatPage';
+import { ShareExperiencePage } from './experiences/ShareExperiencePage';
 import { HomePage } from './home/HomePage';
 import { tripMessages } from './i18n/tripMessages';
 import { IdentityGate } from './identity/IdentityGate';
@@ -105,7 +106,12 @@ export function App() {
       </Header>
       <Content>
         {route.name === 'home' && <HomePage currentUser={currentUser} />}
-        {route.name === 'create' && <TripCreatePage currentUser={currentUser} />}
+        {route.name === 'create' && (
+          <TripCreatePage currentUser={currentUser} fromTripId={route.fromTripId} />
+        )}
+        {route.name === 'share' && (
+          <ShareExperiencePage currentUser={currentUser} tripId={route.tripId} />
+        )}
         {route.name === 'detail' && (
           <TripDetailPage currentUser={currentUser} tripId={route.tripId} />
         )}

@@ -118,3 +118,28 @@ export type ReportRequest = {
   reason: ReportReason;
   note?: string | null;
 };
+
+export type ExperienceIntensity = 'relaxed' | 'moderate' | 'tiring';
+
+export type Experience = {
+  id: number;
+  trip: TripSummary;
+  author: DemoUser;
+  content: string;
+  intensity: ExperienceIntensity;
+  advice: string;
+  created_at: string;
+  updated_at: string;
+};
+
+export type ExperienceWriteRequest = {
+  content: string;
+  intensity: ExperienceIntensity;
+  advice: string;
+};
+
+export type ExperienceFilters = {
+  q?: string;
+  destination?: string;
+  tags?: string[];
+};

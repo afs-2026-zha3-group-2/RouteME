@@ -19,6 +19,12 @@ describe('parseRoute', () => {
       expect(parseRoute('#/mine')).toEqual({ name: 'mine' });
       expect(parseRoute('#/trips/12/applications')).toEqual({ name: 'applications', tripId: 12 });
       expect(parseRoute('#/chat/12/3')).toEqual({ name: 'chat', tripId: 12, userId: 3 });
+      expect(parseRoute('#/share/12')).toEqual({ name: 'share', tripId: 12 });
+    });
+
+    it('keeps the reference source when creating from a trip', () => {
+      expect(parseRoute('#/trips/new?from=7')).toEqual({ name: 'create', fromTripId: 7 });
+      expect(parseRoute('#/trips/new')).toEqual({ name: 'create' });
     });
 
     it('falls back to notFound for unknown paths', () => {
@@ -31,10 +37,12 @@ describe('parseRoute', () => {
       const routes = [
         { name: 'home' as const },
         { name: 'create' as const },
+        { name: 'create' as const, fromTripId: 7 },
         { name: 'detail' as const, tripId: 7 },
         { name: 'applications' as const, tripId: 7 },
         { name: 'mine' as const },
         { name: 'chat' as const, tripId: 7, userId: 2 },
+        { name: 'share' as const, tripId: 7 },
       ];
       expect(routes.map((route) => parseRoute(routeToHash(route)))).toEqual(routes);
     });

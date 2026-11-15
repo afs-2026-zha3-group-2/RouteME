@@ -1,6 +1,8 @@
 import { useState } from 'react';
-import { Alert, Button, Card, Empty, Input, Select, Skeleton, Space, Tag, Typography } from 'antd';
+import { Alert, Button, Card, Empty, Input, Segmented, Select, Skeleton, Space, Tag, Typography } from 'antd';
 import { tripMessages } from '../i18n/tripMessages';
+import { ExperienceCard } from '../experiences/ExperienceCard';
+import { useExperiences } from '../experiences/useExperiences';
 import {
   emptyFilterState,
   hasActiveFilters,
@@ -18,8 +20,10 @@ type Props = {
 };
 
 export function HomePage({ currentUser }: Props) {
+  const [view, setView] = useState<'plans' | 'experiences'>('plans');
   const [filters, setFilters] = useState<FilterState>(emptyFilterState);
   const { state, reload } = useMatches(currentUser.id, filters);
+  const experiences = useExperiences(currentUser.id, filters);
 
   const update = (patch: Partial<FilterState>) => {
     setFilters((previous) => ({ ...previous, ...patch }));
@@ -28,9 +32,19 @@ export function HomePage({ currentUser }: Props) {
   return (
     <main className="trip-page">
       <Space orientation="vertical" size="large" className="trip-stack">
-        <Typography.Title level={2} className="trip-heading">
-          {tripMessages.homeTitle}
-        </Typography.Title>
+        <Space size="middle" wrap>
+          <Typography.Title level={2} className="trip-heading">
+            {tripMessages.homeTitle}
+          </Typography.Title>
+          <Segmented
+            value={view}
+            options={[
+              { value: 'plans', label: tripMessages.plansView },
+              { value: 'experiences', label: tripMessages.experiencesView },
+            ]}
+            onChange={(value) => setView(value as 'plans' | 'experiences')}
+          />
+        </Space>
 
         <Card className="filter-card">
           <Space orientation="vertical" size="small" className="home-stack">
@@ -62,16 +76,18 @@ export function HomePage({ currentUser }: Props) {
                 value={filters.dateTo}
                 onChange={(event) => update({ dateTo: event.target.value })}
               />
-              <Select
-                aria-label={tripMessages.sortLabel}
-                value={filters.sort}
-                options={[
-                                  { value: 'match', label: tripMessages.sortMatch },
-                                  { value: 'date', label: tripMessages.sortDate },
-                                  { value: 'new', label: tripMessages.sortNew },
-                                ]}
-                onChange={(sort) => update({ sort })}
-              />
+              {view === 'plans' && (
+                                <Select
+                                  aria-label={tripMessages.sortLabel}
+                                  value={filters.sort}
+                                  options={[
+                                    { value: 'match', label: tripMessages.sortMatch },
+                                    { value: 'date', label: tripMessages.sortDate },
+                                    { value: 'new', label: tripMessages.sortNew },
+                                  ]}
+                                  onChange={(sort) => update({ sort })}
+                                />
+                            )}
             </div>
             <Space size={[4, 4]} wrap>
               <Typography.Text type="secondary">{tripMessages.tagsLabel}</Typography.Text>
@@ -100,7 +116,7 @@ export function HomePage({ currentUser }: Props) {
           </Space>
         </Card>
 
-        {state.status === 'loading' && (
+        {view === 'plans' && state.status === 'loading' && (
           <div className="trip-grid">
             {[0, 1, 2].map((key) => (
               <Card key={key} className="trip-card">
@@ -110,7 +126,7 @@ export function HomePage({ currentUser }: Props) {
           </div>
         )}
 
-        {state.status === 'failed' && (
+                {view === 'plans' && state.status === 'failed' && (
           <Alert
             type="error"
             showIcon
@@ -120,7 +136,7 @@ export function HomePage({ currentUser }: Props) {
           />
         )}
 
-        {state.status === 'ready' && state.matches.length === 0 && (
+        {view === 'plans' && state.status === 'ready' && state.matches.length === 0 && (
           <Empty description={`${tripMessages.emptyTitle} ${tripMessages.emptyHint}`}>
             <Button type="primary" onClick={() => (window.location.hash = '#/trips/new')}>
               {tripMessages.publish}
@@ -128,7 +144,7 @@ export function HomePage({ currentUser }: Props) {
           </Empty>
         )}
 
-        {        state.status === 'ready' && state.matches.length > 0 && (
+        {view === 'plans' && state.status === 'ready' && state.matches.length > 0 && (
           <div className="trip-grid">
                     {state.matches.map(({ trip, match }) => (
               <a key={trip.id} className="trip-card-link" href={`#/trips/${trip.id}`}>
@@ -175,16 +191,61 @@ export function HomePage({ currentUser }: Props) {
                     ))}
                   </div>
                 )}
-                <ConnectivityNote />
-              </Space>
-            </main>
-          );
-        }
 
-        /**
-         * 保留 hello-world 的验收能力：首页仍能证明问候语来自后端 SQLite。
-         */
-        function ConnectivityNote() {
+                        {view === 'experiences' && experiences.state.status === 'loading' && (
+                          <div className="trip-grid">
+                            {[0, 1].map((key) => (
+                              <Card key={key} className="experience-card">
+                                <Skeleton active paragraph={{ rows: 4 }} />
+                              </Card>
+                            ))}
+                          </div>
+                        )}
+
+                        {view === 'experiences' && experiences.state.status === 'failed' && (
+                          <Alert
+                            type="error"
+                            showIcon
+                            title={tripMessages.failedTitle}
+                            description={experiences.state.code}
+                            action={<Button onClick={experiences.reload}>{tripMessages.retry}</Button>}
+                          />
+                        )}
+
+                        {view === 'experiences' && experiences.state.status === 'ready' && (
+                          <Typography.Text type="secondary">
+                            {experiences.state.experiences.length} {tripMessages.experienceCount}
+                          </Typography.Text>
+                        )}
+
+                        {view === 'experiences' &&
+                          experiences.state.status === 'ready' &&
+                          experiences.state.experiences.length === 0 && (
+                            <Empty
+                              description={`${tripMessages.experienceEmpty} ${tripMessages.experienceEmptyHint}`}
+                            />
+                          )}
+
+                        {view === 'experiences' &&
+                          experiences.state.status === 'ready' &&
+                          experiences.state.experiences.length > 0 && (
+                            <div className="experience-grid">
+                              {experiences.state.experiences.map((experience) => (
+                                <ExperienceCard key={experience.id} experience={experience} />
+                              ))}
+                            </div>
+                          )}
+
+                        <ConnectivityNote />
+                      </Space>
+                    </main>
+                  );
+                }
+
+                /**
+                 * 保留 hello-world 的验收能力：首页仍能证明问候语来自后端 SQLite。
+                 */
+                function ConnectivityNote() {
           const { state } = useGreeting();
           if (state.status !== 'ready') {
             return null;

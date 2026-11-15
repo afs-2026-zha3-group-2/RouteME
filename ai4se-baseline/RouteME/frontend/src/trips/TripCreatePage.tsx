@@ -1,6 +1,6 @@
-import { useState, type ReactNode } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { Alert, Button, Card, Input, Select, Space, Tag, Typography } from 'antd';
-import { createTrip } from '../api';
+import { createTrip, loadTrip } from '../api';
 import { tripMessages } from '../i18n/tripMessages';
 import type { DemoUser } from '../types';
 import {
@@ -14,13 +14,38 @@ import { DESTINATIONS, INTEREST_TAGS, MAX_TAGS } from './tripOptions';
 
 type Props = {
   currentUser: DemoUser;
+  fromTripId?: number;
 };
 
-export function TripCreatePage({ currentUser }: Props) {
+export function TripCreatePage({ currentUser, fromTripId }: Props) {
   const [values, setValues] = useState<TripFormValues>(emptyTripForm);
   const [errors, setErrors] = useState<TripFieldErrors>({});
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+
+  useEffect(() => {
+    if (fromTripId === undefined) {
+      return;
+    }
+    let active = true;
+    loadTrip(currentUser.id, fromTripId)
+      .then((source) => {
+        if (!active) {
+          return;
+        }
+        setValues({
+          ...emptyTripForm,
+          destination: source.destination,
+          stopsText: source.stops.join('\n'),
+          tags: source.tags.slice(0, MAX_TAGS),
+          capacity: '',
+        });
+      })
+      .catch(() => undefined);
+    return () => {
+      active = false;
+    };
+  }, [currentUser.id, fromTripId]);
 
   const update = (patch: Partial<TripFormValues>) => {
     setValues((previous) => ({ ...previous, ...patch }));
@@ -51,6 +76,10 @@ export function TripCreatePage({ currentUser }: Props) {
           <Typography.Title level={2} className="trip-heading">
             {tripMessages.createTitle}
           </Typography.Title>
+
+                    {fromTripId !== undefined && (
+                      <Alert type="info" showIcon title={tripMessages.referenceHint} />
+                    )}
 
           <Field label={tripMessages.fieldTitle} error={errors.title}>
             <Input value={values.title} onChange={(event) => update({ title: event.target.value })} />

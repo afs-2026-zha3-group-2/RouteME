@@ -20,11 +20,13 @@ import {
   loadMatch,
   loadMyApplications,
   loadTripApplications,
+  loadTripExperiences,
 } from '../api';
 import { tripMessages } from '../i18n/tripMessages';
+import { intensityLabel } from '../experiences/experienceForm';
 import { ReportModal } from '../safety/ReportModal';
 import { SafetyNote } from '../safety/SafetyNote';
-import type { DemoUser, MatchCandidate, TripApplication } from '../types';
+import type { DemoUser, Experience, MatchCandidate, TripApplication } from '../types';
 import { statusColor, statusLabel } from './tripStatus';
 import { useTrip } from './useTrip';
 
@@ -60,6 +62,7 @@ export function TripDetailPage({ currentUser, tripId }: Props) {
   const [submitting, setSubmitting] = useState(false);
     const [leaving, setLeaving] = useState(false);
     const [reportOpen, setReportOpen] = useState(false);
+    const [experiences, setExperiences] = useState<Experience[] | null>(null);
 
   useEffect(() => {
     let active = true;
@@ -80,6 +83,13 @@ export function TripDetailPage({ currentUser, tripId }: Props) {
         }
       })
       .catch(() => undefined);
+        loadTripExperiences(currentUser.id, tripId)
+          .then((loaded) => {
+            if (active) {
+              setExperiences(loaded);
+            }
+          })
+          .catch(() => undefined);
     return () => {
       active = false;
     };
@@ -191,6 +201,9 @@ export function TripDetailPage({ currentUser, tripId }: Props) {
     myApplication !== null &&
     (myApplication.status === 'pending' || myApplication.status === 'accepted');
   const canApply = !isPublisher && !isCompleted && !isFull && !hasActiveApplication;
+  const participant = trip.participants.some((member) => member.id === currentUser.id);
+  const canShare = isCompleted && participant;
+  const hasShared = experiences?.some((experience) => experience.author.id === currentUser.id) ?? false;
   const budget =
     trip.budget_min_cents === null
       ? null
@@ -264,6 +277,49 @@ export function TripDetailPage({ currentUser, tripId }: Props) {
                 <li key={participant.id}>{participant.nickname}</li>
               ))}
             </ul>
+
+                        <Typography.Title level={5} className="trip-title">
+                          {tripMessages.experienceSectionTitle}
+                        </Typography.Title>
+                        {experiences !== null && experiences.length === 0 && (
+                          <Typography.Text type="secondary">{tripMessages.experienceSectionEmpty}</Typography.Text>
+                        )}
+                        {experiences !== null && experiences.length > 0 && (
+                          <ul className="experience-list">
+                            {experiences.map((experience) => (
+                              <li key={experience.id}>
+                                <Space size="small" wrap>
+                                  <Tag>{experience.author.avatar_initial}</Tag>
+                                  <Typography.Text strong>{experience.author.nickname}</Typography.Text>
+                                  <Tag color="gold">
+                                    {tripMessages.experienceIntensityLabel} · {intensityLabel(experience.intensity)}
+                                  </Tag>
+                                </Space>
+                                <Typography.Paragraph className="experience-full">
+                                  {experience.content}
+                                </Typography.Paragraph>
+                                <Typography.Text>
+                                  <Typography.Text strong>{tripMessages.experienceAdviceLabel}：</Typography.Text>
+                                  {experience.advice}
+                                </Typography.Text>
+                              </li>
+                            ))}
+                          </ul>
+                        )}
+                        <Space wrap>
+                          {canShare && (
+                            <Button onClick={() => (window.location.hash = `#/share/${trip.id}`)}>
+                              {hasShared ? tripMessages.experienceEditEntry : tripMessages.experienceShareEntry}
+                            </Button>
+                          )}
+                          {isCompleted && (
+                            <Button
+                              onClick={() => (window.location.hash = `#/trips/new?from=${trip.id}`)}
+                            >
+                              {tripMessages.referencePublish}
+                            </Button>
+                          )}
+                        </Space>
 
             {match !== null && (
               <div className="match-reasons">

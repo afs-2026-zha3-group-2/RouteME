@@ -2,6 +2,9 @@ import type {
   ChatMessage,
   ChatPartner,
   DemoUser,
+  Experience,
+  ExperienceFilters,
+  ExperienceWriteRequest,
   Greeting,
   MatchCandidate,
   MyTrips,
@@ -197,4 +200,50 @@ export async function submitReport(
     userId,
   );
   return (await response.json()) as { received: boolean };
+}
+
+export async function loadExperiences(
+  userId: number,
+  filters: ExperienceFilters = {},
+): Promise<Experience[]> {
+  const params = new URLSearchParams();
+  if (filters.q) {
+    params.set('q', filters.q);
+  }
+  if (filters.destination) {
+    params.set('destination', filters.destination);
+  }
+  if (filters.tags && filters.tags.length > 0) {
+    params.set('tags', filters.tags.join(','));
+  }
+  const query = params.toString();
+  const response = await request(`/experiences${query ? `?${query}` : ''}`, undefined, userId);
+  return (await response.json()) as Experience[];
+}
+
+export async function loadTripExperiences(userId: number, tripId: number): Promise<Experience[]> {
+  const response = await request(`/trips/${tripId}/experiences`, undefined, userId);
+  return (await response.json()) as Experience[];
+}
+
+export async function loadMyExperiences(userId: number): Promise<Experience[]> {
+  const response = await request('/me/experiences', undefined, userId);
+  return (await response.json()) as Experience[];
+}
+
+export async function shareExperience(
+  userId: number,
+  tripId: number,
+  body: ExperienceWriteRequest,
+): Promise<Experience> {
+  const response = await request(
+    `/trips/${tripId}/experiences`,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    },
+    userId,
+  );
+  return (await response.json()) as Experience;
 }

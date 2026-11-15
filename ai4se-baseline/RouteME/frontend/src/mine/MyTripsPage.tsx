@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Alert, Button, Card, Skeleton, Space, Tabs, Tag, Typography } from 'antd';
-import { loadMyTrips } from '../api';
+import { loadMyExperiences, loadMyTrips } from '../api';
 import { tripMessages } from '../i18n/tripMessages';
-import type { DemoUser, MyTrips, TripApplication, TripSummary } from '../types';
+import type { DemoUser, Experience, MyTrips, TripApplication, TripSummary } from '../types';
 import { statusColor, statusLabel } from '../trips/tripStatus';
 
 type Props = {
@@ -45,16 +45,20 @@ function TripCard({ trip }: { trip: TripSummary }) {
 
 export function MyTripsPage({ currentUser }: Props) {
   const [data, setData] = useState<MyTrips | null>(null);
-  const [error, setError] = useState<string | null>(null);
+    const [experiences, setExperiences] = useState<Experience[]>([]);
+    const [error, setError] = useState<string | null>(null);
 
-  const reload = useCallback(() => {
-    setError(null);
-    loadMyTrips(currentUser.id)
-      .then((loaded) => setData(loaded))
-      .catch((caught: unknown) => {
-        setError(caught instanceof Error ? caught.message : 'UNKNOWN_ERROR');
-      });
-  }, [currentUser.id]);
+    const reload = useCallback(() => {
+      setError(null);
+      Promise.all([loadMyTrips(currentUser.id), loadMyExperiences(currentUser.id)])
+        .then(([loaded, loadedExperiences]) => {
+          setData(loaded);
+          setExperiences(loadedExperiences);
+        })
+        .catch((caught: unknown) => {
+          setError(caught instanceof Error ? caught.message : 'UNKNOWN_ERROR');
+        });
+    }, [currentUser.id]);
 
   useEffect(() => {
     reload();
@@ -180,10 +184,30 @@ export function MyTripsPage({ currentUser }: Props) {
                     <Typography.Text type="secondary">{tripMessages.mineEmpty}</Typography.Text>
                   ) : (
                     <Space orientation="vertical" size="small" className="trip-stack">
-                      {data.completed.map((trip) => (
-                        <TripCard key={trip.id} trip={trip} />
-                      ))}
-                    </Space>
+                                          {data.completed.map((trip) => {
+                                            const shared = experiences.some(
+                                              (experience) => experience.trip.id === trip.id,
+                                            );
+                                            return (
+                                              <Space key={trip.id} size="small" wrap>
+                                                <TripCard trip={trip} />
+                                                <Tag color={shared ? 'green' : 'default'}>
+                                                  {shared
+                                                    ? tripMessages.experienceEditEntry
+                                                    : tripMessages.experienceShareEntry}
+                                                </Tag>
+                                                <Button
+                                                  size="small"
+                                                  onClick={() => (window.location.hash = `#/share/${trip.id}`)}
+                                                >
+                                                  {shared
+                                                    ? tripMessages.experienceEditEntry
+                                                    : tripMessages.experienceShareEntry}
+                                                </Button>
+                                              </Space>
+                                            );
+                                          })}
+                                        </Space>
                   ),
               },
             ]}
