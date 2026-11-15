@@ -5,6 +5,7 @@ import { HomePage } from './home/HomePage';
 import { tripMessages } from './i18n/tripMessages';
 import { IdentityGate } from './identity/IdentityGate';
 import { parseRoute, routeToHash, type Route } from './route';
+import { TripCreatePage } from './trips/TripCreatePage';
 import type { DemoUser } from './types';
 
 const CURRENT_USER_KEY = 'routeme.currentUserId';
@@ -97,7 +98,7 @@ export function App() {
       </Header>
       <Content>
         {route.name === 'home' && <HomePage currentUser={currentUser} />}
-        {route.name === 'create' && <PlaceholderPage text={tripMessages.createTitle} />}
+        {route.name === 'create' && <TripCreatePage currentUser={currentUser} />}
         {route.name === 'detail' && <PlaceholderPage text={tripMessages.detailTitle} />}
         {route.name === 'notFound' && <PlaceholderPage text={tripMessages.detailNotFound} />}
       </Content>

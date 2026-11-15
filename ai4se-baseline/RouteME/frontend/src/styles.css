@@ -109,6 +109,35 @@ body {
   margin: 0;
 }
 
+.form-page {
+  display: flex;
+  justify-content: center;
+  padding: var(--app-space-lg);
+}
+
+.form-card {
+  width: 100%;
+  max-width: 640px;
+}
+
+.form-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  width: 100%;
+}
+
+.form-label {
+  font-weight: 500;
+}
+
+.form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--app-space-sm);
+  width: 100%;
+}
+
 @media (max-width: 768px) {
   .filter-row {
     grid-template-columns: 1fr 1fr;
