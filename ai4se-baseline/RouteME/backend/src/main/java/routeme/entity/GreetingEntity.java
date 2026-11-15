@@ -4,7 +4,7 @@ import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 
-import routeme.model.Greeting;
+import routeme.pojo.Greeting;
 
 /**
  * greetings 行对象。

@@ -2,20 +2,45 @@
 
 大学生旅行灵感与同行匹配应用：浏览/发布旅行计划、看可解释的匹配原因、申请同行、发布者处理申请、匹配后一对一聊天、结束后分享游后体验并「参考此行程发布」。
 
-- **后端** Spring Boot 4.1.2 / Java 21 / SQLite + Flyway（测试用 H2）
+- **后端** Spring Boot 4.1.2 / Java 21 / SQLite + Flyway（测试用 H2）/ MyBatis-Plus 3.5.18
 - **前端** React 19 + Vite 8 + Ant Design 6
-- **契约** [openapi.yaml](openapi.yaml)（v0.4.0，前后端唯一事实源）
+- **契约** [openapi.yaml](openapi.yaml)（v0.5.0，前后端唯一事实源）
 - **规格** [openspec/specs](../openspec/specs)（hello-world / trip-plans / trip-companions / trip-experiences）
+
+## 后端结构
+
+```text
+backend/src/main/java/routeme/
+├── controller/    Web 层（XxxController）
+├── param/         入参解析（TripQueryParam / PageParam）
+├── service/       业务接口（拥有数据表的继承 IService<XxxEntity>，方法带 Javadoc）
+├── service/impl/  ServiceImpl<XxxMapper, XxxEntity> 实现，事务边界
+├── mapper/        MyBatis-Plus 映射（BaseMapper + @Mapper）
+├── entity/        表结构映射实体（XxxEntity，@TableName）
+├── pojo/          领域对象 record（业务语义，无持久化注解）
+├── request/ response/   契约入参 / 出参 record
+├── enums/ constant/ config/ exception/ handler/ utils/
+└── annotation/ aspect/ interceptor/ mq/ sql/    预留占位
+```
+
+- `entity` 与 `pojo` 分工：实体随表变（只被 mapper 与 `service/impl` 使用），领域 record 随业务变（跨层传递）。
+- SQL 位置：注解里不写 SQL；单表条件用 `LambdaQueryWrapper`，跨表 join / 分组 / 分页写 `backend/src/main/resources/mapper/*.xml`。
+- 日志：Lombok `@Slf4j`，`logback-spring.xml` 输出 `STDOUT` / `TRACE_FILE` / `ERROR_FILE`，文件落在 `backend/logs/`（已忽略）。
+
+- SQL 位置：注解里不写 SQL；单表条件用 `LambdaQueryWrapper`，跨表 join / 分组 / 分页写 `backend/src/main/resources/mapper/*.xml`。
+- 日志：Lombok `@Slf4j`，`logback-spring.xml` 输出 `STDOUT` / `TRACE_FILE` / `ERROR_FILE`，文件落在 `backend/logs/`（已忽略）。
 
 ## 目录结构
 
 ```text
 ai4se-baseline/RouteME/
 ├── backend/            Spring Boot 服务（/api）
-│   └── src/main/resources/db/migration/   Flyway V1–V8
+│   ├── src/main/resources/db/migration/   Flyway V1–V8
+│   └── src/main/resources/mapper/         复杂查询 XML
 ├── frontend/           React SPA（开发时 /api 代理到 8080）
 ├── e2e/                Playwright 端到端（本地门禁）
 ├── SqlLite/            本地 SQLite 数据目录（*.db 已被 git 忽略）
+├── logs/               运行日志（已忽略）
 └── openapi.yaml        接口契约
 ```
 

@@ -4,7 +4,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import routeme.response.GreetingResponse;
-import routeme.model.Greeting;
+import routeme.pojo.Greeting;
 import routeme.service.GreetingService;
 
 @RestController

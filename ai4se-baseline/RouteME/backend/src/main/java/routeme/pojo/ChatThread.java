@@ -1,4 +1,4 @@
-package routeme.model;
+package routeme.pojo;
 
 /**
  * 一位聊天对象在某条行程下的会话摘要。

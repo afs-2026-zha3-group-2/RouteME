@@ -16,8 +16,8 @@ import org.springframework.web.bind.annotation.RestController;
 import routeme.request.ChatMessageRequest;
 import routeme.response.ChatMessageResponse;
 import routeme.response.ChatPartnerResponse;
-import routeme.model.ChatMessage;
-import routeme.model.DemoUser;
+import routeme.pojo.ChatMessage;
+import routeme.pojo.DemoUser;
 import routeme.service.ChatService;
 import routeme.service.DemoUserService;
 

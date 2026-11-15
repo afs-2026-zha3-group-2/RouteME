@@ -7,7 +7,7 @@ import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 
 import routeme.enums.ApplicationStatusEnum;
-import routeme.model.TripApplication;
+import routeme.pojo.TripApplication;
 
 /**
  * trip_applications 行对象。

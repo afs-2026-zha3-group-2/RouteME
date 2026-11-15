@@ -7,7 +7,7 @@ import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 
-import routeme.model.TripPlan;
+import routeme.pojo.TripPlan;
 import routeme.utils.JsonListUtils;
 
 /**

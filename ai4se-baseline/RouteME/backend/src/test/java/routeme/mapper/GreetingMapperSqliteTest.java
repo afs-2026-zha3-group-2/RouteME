@@ -21,7 +21,7 @@ import com.baomidou.mybatisplus.core.MybatisSqlSessionFactoryBuilder;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 
 import routeme.entity.GreetingEntity;
-import routeme.model.Greeting;
+import routeme.pojo.Greeting;
 
 /**
  * 用临时 SQLite 文件库执行同一组迁移脚本，验证运行时数据库与 MyBatis-Plus 映射真的可用，

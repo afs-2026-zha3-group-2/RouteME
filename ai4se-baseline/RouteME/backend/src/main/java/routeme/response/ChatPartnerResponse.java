@@ -1,8 +1,8 @@
 package routeme.response;
 
-import routeme.model.ChatThread;
-import routeme.model.DemoUser;
-import routeme.model.TripPlan;
+import routeme.pojo.ChatThread;
+import routeme.pojo.DemoUser;
+import routeme.pojo.TripPlan;
 
 public record ChatPartnerResponse(
         TripSummaryResponse trip,

@@ -2,7 +2,7 @@ package routeme.response;
 
 import java.util.List;
 
-import routeme.model.DemoUser;
+import routeme.pojo.DemoUser;
 
 public record DemoUserResponse(
         long id,

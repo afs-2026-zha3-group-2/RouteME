@@ -2,30 +2,27 @@ package routeme.service;
 
 import java.util.List;
 
-import org.springframework.stereotype.Service;
+import routeme.entity.UserEntity;
+import routeme.pojo.DemoUser;
+import com.baomidou.mybatisplus.spring.service.IService;
 
-import routeme.exception.DemoUserRequiredException;
-import routeme.model.DemoUser;
-import routeme.repository.UserRepository;
+/**
+ * 演示账户：身份门的账户列表与 {@code X-User-Id} 解析。
+ */
+public interface DemoUserService extends IService<UserEntity> {
 
-@Service
-public class DemoUserService {
+    /**
+     * 全部演示账户。
+     *
+     * @return 按 id 升序的账户列表
+     */
+    List<DemoUser> findAll();
 
-    private final UserRepository userRepository;
-
-    public DemoUserService(UserRepository userRepository) {
-        this.userRepository = userRepository;
-    }
-
-    public List<DemoUser> findAll() {
-        return userRepository.findAll();
-    }
-
-    public DemoUser require(Long userId) {
-        if (userId == null) {
-            throw new DemoUserRequiredException("missing X-User-Id header");
-        }
-        return userRepository.findById(userId)
-                .orElseThrow(() -> new DemoUserRequiredException("unknown demo user: " + userId));
-    }
+    /**
+     * 解析请求头里的演示身份；缺失与未知都映射为 401 {@code DEMO_USER_REQUIRED}。
+     *
+     * @param userId 请求头 {@code X-User-Id}，可为 null
+     * @return 演示账户资料
+     */
+    DemoUser require(Long userId);
 }

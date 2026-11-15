@@ -17,7 +17,7 @@ import routeme.response.ExperienceResponse;
 import routeme.response.ExperienceSaveResponse;
 import routeme.response.PageResponse;
 import routeme.request.ExperienceWriteRequest;
-import routeme.model.DemoUser;
+import routeme.pojo.DemoUser;
 import routeme.param.PageParam;
 import routeme.param.TripQueryParam;
 import routeme.service.DemoUserService;

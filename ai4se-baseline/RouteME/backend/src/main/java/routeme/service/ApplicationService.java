@@ -1,176 +1,112 @@
 package routeme.service;
 
-import java.time.Clock;
-import java.time.Instant;
-import java.util.ArrayList;
 import java.util.List;
 
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
+import com.baomidou.mybatisplus.spring.service.IService;
 
+import routeme.entity.TripApplicationEntity;
+import routeme.pojo.DemoUser;
+import routeme.pojo.TripApplication;
 import routeme.request.ApplicationCreateRequest;
 import routeme.response.TripApplicationResponse;
-import routeme.enums.ApplicationStatusEnum;
-import routeme.enums.TripStatusEnum;
-import routeme.exception.ApplicationNotFoundException;
-import routeme.exception.ApplicationNotPendingException;
-import routeme.exception.DuplicateApplicationException;
-import routeme.exception.ForbiddenActionException;
-import routeme.exception.InvalidInputException;
-import routeme.exception.TripNotOpenException;
-import routeme.model.DemoUser;
-import routeme.model.TripApplication;
-import routeme.model.TripPlan;
-import routeme.repository.TripApplicationRepository;
 
-@Service
-public class ApplicationService {
+/**
+ * 同行申请：提交、取消、接受 / 拒绝、退出同行与当前同行者。
+ */
+public interface ApplicationService extends IService<TripApplicationEntity> {
 
-    private static final int MAX_MESSAGE_LENGTH = 120;
+    /**
+     * 提交同行申请。
+     *
+     * @param tripId      被申请的行程 id
+     * @param applicantId 申请人 id，不能是发布者
+     * @param request     申请说明，选填且不超过 120 字
+     * @return 新建的申请（状态 pending）
+     */
+    TripApplication apply(long tripId, long applicantId, ApplicationCreateRequest request);
 
-    private final TripApplicationRepository applicationRepository;
-    private final TripPlanService tripPlanService;
-    private final DemoUserService demoUserService;
-    private final Clock clock;
+    /**
+     * 申请人取消自己待处理的申请。
+     *
+     * @param applicationId 申请 id
+     * @param userId        当前身份 id，必须等于申请人
+     * @return 取消后的申请（状态 cancelled）
+     */
+    TripApplication cancel(long applicationId, long userId);
 
-    public ApplicationService(
-            TripApplicationRepository applicationRepository,
-            TripPlanService tripPlanService,
-            DemoUserService demoUserService,
-            Clock clock) {
-        this.applicationRepository = applicationRepository;
-        this.tripPlanService = tripPlanService;
-        this.demoUserService = demoUserService;
-        this.clock = clock;
-    }
+    /**
+     * 已接受同行者退出该行程：人数 -1 并把申请置为 cancelled。
+     *
+     * @param tripId 行程 id
+     * @param userId 当前身份 id，不能是发布者且必须是已接受同行者
+     */
+    void leave(long tripId, long userId);
 
-    @Transactional
-    public TripApplication apply(long tripId, long applicantId, ApplicationCreateRequest request) {
-        TripPlan trip = tripPlanService.require(tripId);
-        if (trip.publisherId() == applicantId) {
-            throw new ForbiddenActionException("publisher cannot apply to own trip " + tripId);
-        }
-        if (applicationRepository.existsActive(tripId, applicantId)) {
-            throw new DuplicateApplicationException(tripId, applicantId);
-        }
-        if (trip.status() != TripStatusEnum.RECRUITING) {
-            throw new TripNotOpenException(tripId);
-        }
-        String message = normalizeMessage(request == null ? null : request.message());
-        TripApplication created = new TripApplication(
-                applicationRepository.nextId(),
-                tripId,
-                applicantId,
-                message,
-                ApplicationStatusEnum.PENDING,
-                clock.instant(),
-                null);
-        applicationRepository.insert(created);
-        return created;
-    }
+    /**
+     * 判断某个用户在该行程上是否已被接受为同行者。
+     *
+     * @param tripId 行程 id
+     * @param userId 待判断的用户 id
+     * @return 存在已接受申请时为 true
+     */
+    boolean isAccepted(long tripId, long userId);
 
-    @Transactional
-    public TripApplication cancel(long applicationId, long userId) {
-        TripApplication application = require(applicationId);
-        if (application.applicantId() != userId) {
-            throw new ForbiddenActionException("only the applicant can cancel application " + applicationId);
-        }
-        if (!application.isPending()) {
-            throw new ApplicationNotPendingException(applicationId);
-        }
-        Instant now = clock.instant();
-        applicationRepository.updateStatus(applicationId, ApplicationStatusEnum.CANCELLED, now);
-        return application.withStatus(ApplicationStatusEnum.CANCELLED, now);
-    }
+    /**
+     * 我提交过的申请。
+     *
+     * @param userId 当前身份 id
+     * @return 按创建时间倒序的申请列表
+     */
+    List<TripApplication> mine(long userId);
 
-    @Transactional
-    public void leave(long tripId, long userId) {
-        TripPlan trip = tripPlanService.require(tripId);
-        if (trip.publisherId() == userId) {
-            throw new ForbiddenActionException("publisher cannot leave own trip " + tripId);
-        }
-        TripApplication accepted = applicationRepository.findAccepted(tripId, userId)
-                .orElseThrow(() -> new ForbiddenActionException("only accepted companions can leave trip " + tripId));
-        tripPlanService.removeCompanion(tripId);
-        applicationRepository.updateStatus(accepted.id(), ApplicationStatusEnum.CANCELLED, clock.instant());
-    }
+    /**
+     * 发布者查看某行程的全部申请。
+     *
+     * @param tripId 行程 id
+     * @param userId 当前身份 id，必须等于发布者
+     * @return 按提交时间升序的申请列表
+     */
+    List<TripApplication> listForPublisher(long tripId, long userId);
 
-    public boolean isAccepted(long tripId, long userId) {
-        return applicationRepository.findAccepted(tripId, userId).isPresent();
-    }
+    /**
+     * 发布者接受一条待处理申请，行程人数 +1。
+     *
+     * @param applicationId 申请 id
+     * @param publisherId   当前身份 id，必须等于该行程发布者
+     * @return 处理后的申请（状态 accepted）
+     */
+    TripApplication accept(long applicationId, long publisherId);
 
-    public List<TripApplication> mine(long userId) {
-        return applicationRepository.findByApplicant(userId);
-    }
+    /**
+     * 发布者拒绝一条待处理申请，人数不变。
+     *
+     * @param applicationId 申请 id
+     * @param publisherId   当前身份 id，必须等于该行程发布者
+     * @return 处理后的申请（状态 rejected）
+     */
+    TripApplication reject(long applicationId, long publisherId);
 
-        public List<TripApplication> listForPublisher(long tripId, long userId) {
-            TripPlan trip = tripPlanService.require(tripId);
-            if (trip.publisherId() != userId) {
-                throw new ForbiddenActionException("only the publisher can review applications of trip " + tripId);
-            }
-            return applicationRepository.findByTrip(tripId);
-        }
+    /**
+     * 按 id 取申请，不存在时抛 {@link routeme.exception.ApplicationNotFoundException}。
+     *
+     * @param applicationId 申请 id
+     * @return 申请领域对象
+     */
+    TripApplication require(long applicationId);
 
-        @Transactional
-        public TripApplication accept(long applicationId, long publisherId) {
-            return decide(applicationId, publisherId, ApplicationStatusEnum.ACCEPTED);
-        }
+    /**
+     * 把申请组装成契约响应（含申请人、行程与发布者资料）。
+     *
+     * @param application 申请领域对象
+     * @return 契约出参
+     */
+    TripApplicationResponse describe(TripApplication application);
 
-        @Transactional
-        public TripApplication reject(long applicationId, long publisherId) {
-            return decide(applicationId, publisherId, ApplicationStatusEnum.REJECTED);
-        }
-
-        private TripApplication decide(long applicationId, long publisherId, ApplicationStatusEnum next) {
-            TripApplication application = require(applicationId);
-            TripPlan trip = tripPlanService.require(application.tripId());
-            if (trip.publisherId() != publisherId) {
-                throw new ForbiddenActionException("only the publisher can decide application " + applicationId);
-            }
-            if (!application.isPending()) {
-                throw new ApplicationNotPendingException(applicationId);
-            }
-            if (next == ApplicationStatusEnum.ACCEPTED) {
-                tripPlanService.addCompanion(trip.id());
-            }
-            Instant now = clock.instant();
-            applicationRepository.updateStatus(applicationId, next, now);
-            return application.withStatus(next, now);
-        }
-
-    public TripApplication require(long applicationId) {
-        return applicationRepository.findById(applicationId)
-                .orElseThrow(() -> new ApplicationNotFoundException(applicationId));
-    }
-
-    public TripApplicationResponse describe(TripApplication application) {
-        TripPlan trip = tripPlanService.require(application.tripId());
-        DemoUser applicant = demoUserService.require(application.applicantId());
-        return TripApplicationResponse.from(application, applicant, trip, tripPlanService.publisherOf(trip));
-    }
-
-        /** 当前同行者：发布者在最前，其后按申请时间排列的已接受同行者。 */
-        public List<DemoUser> participants(long tripId) {
-            TripPlan trip = tripPlanService.require(tripId);
-            List<DemoUser> participants = new ArrayList<>();
-            participants.add(tripPlanService.publisherOf(trip));
-            applicationRepository.findByTrip(tripId).stream()
-                    .filter(TripApplication::isAccepted)
-                    .forEach(application -> participants.add(demoUserService.require(application.applicantId())));
-            return participants;
-        }
-
-    private String normalizeMessage(String message) {
-        if (message == null) {
-            return null;
-        }
-        String trimmed = message.trim();
-        if (trimmed.isEmpty()) {
-            return null;
-        }
-        if (trimmed.length() > MAX_MESSAGE_LENGTH) {
-            throw new InvalidInputException("application message exceeds " + MAX_MESSAGE_LENGTH + " characters");
-        }
-        return trimmed;
-    }
+    /**
+     * 当前同行者：发布者在最前，其后按申请时间排列的已接受同行者。
+     *
+     * @param tripId 行程 id
+     * @return 发布者 + 已接受同行者
+     */
+    List<DemoUser> participants(long tripId);
 }

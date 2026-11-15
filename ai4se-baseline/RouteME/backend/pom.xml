@@ -47,6 +47,12 @@
 			<artifactId>sqlite-jdbc</artifactId>
 			<scope>runtime</scope>
 		</dependency>
+		<!-- Lombok：日志统一用 @Slf4j，不手写 LoggerFactory。 -->
+		<dependency>
+			<groupId>org.projectlombok</groupId>
+			<artifactId>lombok</artifactId>
+			<optional>true</optional>
+		</dependency>
 		<!-- Flyway 12 把 SQLite 支持拆成独立模块，版本必须与 flyway-core 一致。 -->
 		<dependency>
 			<groupId>org.flywaydb</groupId>

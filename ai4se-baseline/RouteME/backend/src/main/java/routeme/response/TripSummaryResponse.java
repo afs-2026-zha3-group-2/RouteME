@@ -4,8 +4,8 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.util.List;
 
-import routeme.model.DemoUser;
-import routeme.model.TripPlan;
+import routeme.pojo.DemoUser;
+import routeme.pojo.TripPlan;
 
 public record TripSummaryResponse(
         long id,

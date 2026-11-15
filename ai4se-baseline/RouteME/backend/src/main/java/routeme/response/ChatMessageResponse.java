@@ -2,7 +2,7 @@ package routeme.response;
 
 import java.time.Instant;
 
-import routeme.model.ChatMessage;
+import routeme.pojo.ChatMessage;
 
 public record ChatMessageResponse(
         long id,

@@ -12,7 +12,7 @@ import org.springframework.transaction.annotation.Transactional;
 import routeme.enums.TripStatusEnum;
 import routeme.exception.InvalidInputException;
 import routeme.exception.TripNotOpenException;
-import routeme.model.TripPlan;
+import routeme.pojo.TripPlan;
 
 @SpringBootTest
 @Transactional

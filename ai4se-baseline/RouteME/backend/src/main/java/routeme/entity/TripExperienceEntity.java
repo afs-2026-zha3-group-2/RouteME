@@ -7,7 +7,7 @@ import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 
 import routeme.enums.ExperienceIntensityEnum;
-import routeme.model.TripExperience;
+import routeme.pojo.TripExperience;
 
 /**
  * trip_experiences 行对象。

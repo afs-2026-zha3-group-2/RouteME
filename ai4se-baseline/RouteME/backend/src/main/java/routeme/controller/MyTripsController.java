@@ -6,7 +6,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import routeme.response.MyTripsResponse;
-import routeme.model.DemoUser;
+import routeme.pojo.DemoUser;
 import routeme.service.DemoUserService;
 import routeme.service.MyTripsService;
 

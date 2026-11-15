@@ -6,7 +6,7 @@ import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 
-import routeme.model.ChatMessage;
+import routeme.pojo.ChatMessage;
 
 /**
  * chat_messages 行对象。

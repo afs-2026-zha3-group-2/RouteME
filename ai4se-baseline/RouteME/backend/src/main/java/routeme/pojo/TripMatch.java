@@ -1,4 +1,4 @@
-package routeme.model;
+package routeme.pojo;
 
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;

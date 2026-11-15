@@ -32,9 +32,12 @@ Bash (for example Git Bash on Windows); their use depends on the selected skill.
 - [Harness scripts](scripts/README.md)
 - [Bundled dependency versions and licenses](vendor/README.md)
 
-This baseline has no application implementation or CI/CD pipeline. The four
-original harness scripts are intentional placeholders and exit with a message
-until the project supplies an implementation.
+This baseline now hosts one application, RouteME (`RouteME/`, Spring Boot 4.1 + React 19 +
+MyBatis-Plus). Its layout, run instructions and contract live in [RouteME/README.md](RouteME/README.md);
+the backend package conventions (`service` / `service/impl` / `mapper` / `entity` / `pojo`, SQL placement,
+Javadoc on service interfaces) are recorded in
+[the architecture knowledge base](docs/knowledge/architecture/README.md) and
+[`@rule:package-structure`](docs/knowledge/rules/architecture/rules.md).
 
 ## Create your own skill
 

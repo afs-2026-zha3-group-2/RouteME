@@ -2,7 +2,7 @@ package routeme.response;
 
 import java.util.List;
 
-import routeme.model.TripMatch;
+import routeme.pojo.TripMatch;
 
 public record MatchResponse(int score, int percentage, List<String> reasons, String basis) {
 

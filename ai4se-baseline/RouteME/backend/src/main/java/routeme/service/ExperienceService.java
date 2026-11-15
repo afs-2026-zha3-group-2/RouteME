@@ -1,138 +1,66 @@
 package routeme.service;
 
-import java.time.Clock;
-import java.time.Instant;
 import java.util.List;
 import java.util.Set;
 
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
+import com.baomidou.mybatisplus.spring.service.IService;
 
+import routeme.entity.TripExperienceEntity;
+import routeme.param.PageParam;
+import routeme.pojo.PageResult;
+import routeme.request.ExperienceWriteRequest;
 import routeme.response.ExperienceResponse;
 import routeme.response.ExperienceSaveResponse;
-import routeme.request.ExperienceWriteRequest;
-import routeme.enums.TripStatusEnum;
-import routeme.exception.ExperienceNotAllowedException;
-import routeme.model.DemoUser;
-import routeme.model.PageResult;
-import routeme.model.TripExperience;
-import routeme.model.TripPlan;
-import routeme.param.PageParam;
-import routeme.repository.TripExperienceRepository;
-import routeme.repository.UserRepository;
 
-@Service
-public class ExperienceService {
-
-    private final TripExperienceRepository experienceRepository;
-    private final TripPlanService tripPlanService;
-    private final ApplicationService applicationService;
-    private final UserRepository userRepository;
-    private final Clock clock;
-
-    public ExperienceService(
-            TripExperienceRepository experienceRepository,
-            TripPlanService tripPlanService,
-            ApplicationService applicationService,
-            UserRepository userRepository,
-            Clock clock) {
-        this.experienceRepository = experienceRepository;
-        this.tripPlanService = tripPlanService;
-        this.applicationService = applicationService;
-        this.userRepository = userRepository;
-        this.clock = clock;
-    }
-
-    @Transactional
-    public ExperienceSaveResponse upsert(long tripId, long authorId, ExperienceWriteRequest request) {
-        TripPlan trip = tripPlanService.require(tripId);
-        requireCanShare(trip, authorId);
-        Instant now = clock.instant();
-        TripExperience existing = experienceRepository.findByTripAndAuthor(tripId, authorId).orElse(null);
-        TripExperience saved;
-        boolean created;
-        if (existing == null) {
-            saved = TripExperience.create(
-                            tripId, authorId, request.content(), request.intensity(), request.advice(), now)
-                    .withId(experienceRepository.nextId());
-            experienceRepository.insert(saved);
-            created = true;
-        } else {
-            saved = existing.withContent(request.content(), request.intensity(), request.advice(), now);
-            experienceRepository.update(saved);
-            created = false;
-        }
-        return new ExperienceSaveResponse(describe(saved), created);
-    }
-
-    public List<ExperienceResponse> listAll(String q, String destination, Set<String> tags) {
-        return experienceRepository.findAll().stream()
-                .filter(experience -> matches(experience, q, destination, tags))
-                .map(this::describe)
-                .toList();
-    }
+/**
+ * 游后体验：仅「已结束且参加过」的行程可写，每人每行程一条。
+ */
+public interface ExperienceService extends IService<TripExperienceEntity> {
 
     /**
-     * 分页浏览游后体验：过滤、排序与分页在数据库完成（join 行程表）。
+     * 发布或更新我的体验（同一 (行程, 作者) 上 upsert）。
+     *
+     * @param tripId  行程 id，必须已结束
+     * @param authorId 作者 id，必须是发布者或已接受同行者
+     * @param request 正文、强度与给后来者的建议
+     * @return 保存结果与是否首次创建
      */
-    public PageResult<ExperienceResponse> listPage(String q, String destination, Set<String> tags, PageParam param) {
-        String keyword = q == null || q.isBlank() ? null : q.trim();
-        PageResult<TripExperience> page =
-                experienceRepository.findPage(keyword, destination, tags == null ? Set.of() : tags,
-                        param.page(), param.size());
-        return new PageResult<>(
-                page.items().stream().map(this::describe).toList(),
-                page.page(),
-                page.size(),
-                page.total());
-    }
+    ExperienceSaveResponse upsert(long tripId, long authorId, ExperienceWriteRequest request);
 
-    public List<ExperienceResponse> listByTrip(long tripId) {
-        tripPlanService.require(tripId);
-        return experienceRepository.findByTrip(tripId).stream()
-                .map(this::describe)
-                .toList();
-    }
+    /**
+     * 不分页的体验列表（测试与小数据量场景）。
+     *
+     * @param q           关键词，命中行程标题/目的地/正文/建议
+     * @param destination 目的地精确匹配，可为 null
+     * @param tags        兴趣标签，命中任一即保留，可为空集
+     * @return 按最近保存时间倒序的体验
+     */
+    List<ExperienceResponse> listAll(String q, String destination, Set<String> tags);
 
-    public List<ExperienceResponse> mine(long authorId) {
-        return experienceRepository.findByAuthor(authorId).stream()
-                .map(this::describe)
-                .toList();
-    }
+    /**
+     * 分页浏览体验：过滤、排序与分页都在数据库完成。
+     *
+     * @param q           关键词，可为 null
+     * @param destination 目的地精确匹配，可为 null
+     * @param tags        兴趣标签，可为空集
+     * @param param       页码与每页条数（已校验）
+     * @return 当前页体验与筛选后的命中总数
+     */
+    PageResult<ExperienceResponse> listPage(String q, String destination, Set<String> tags, PageParam param);
 
-    private boolean matches(TripExperience experience, String q, String destination, Set<String> tags) {
-        TripPlan trip = tripPlanService.require(experience.tripId());
-        if (destination != null && !destination.isBlank() && !destination.equals(trip.destination())) {
-            return false;
-        }
-        if (tags != null && !tags.isEmpty() && trip.tags().stream().noneMatch(tags::contains)) {
-            return false;
-        }
-        if (q == null || q.isBlank()) {
-            return true;
-        }
-        String needle = q.trim().toLowerCase();
-        String haystack = String.join(" ",
-                        trip.title(), trip.destination(), experience.content(), experience.advice())
-                .toLowerCase();
-        return haystack.contains(needle);
-    }
+    /**
+     * 某条行程下的全部体验。
+     *
+     * @param tripId 行程 id，必须存在
+     * @return 按首次发布时间升序的体验
+     */
+    List<ExperienceResponse> listByTrip(long tripId);
 
-    private void requireCanShare(TripPlan trip, long authorId) {
-        if (trip.status() != TripStatusEnum.COMPLETED) {
-            throw new ExperienceNotAllowedException(trip.id(), authorId);
-        }
-        boolean participant = applicationService.participants(trip.id()).stream()
-                .anyMatch(user -> user.id() == authorId);
-        if (!participant) {
-            throw new ExperienceNotAllowedException(trip.id(), authorId);
-        }
-    }
-
-    private ExperienceResponse describe(TripExperience experience) {
-        TripPlan trip = tripPlanService.require(experience.tripId());
-        DemoUser publisher = tripPlanService.publisherOf(trip);
-        DemoUser author = userRepository.findById(experience.authorId()).orElseThrow();
-        return ExperienceResponse.from(experience, trip, publisher, author);
-    }
+    /**
+     * 我写过的体验。
+     *
+     * @param authorId 作者 id
+     * @return 按最近保存时间倒序的体验
+     */
+    List<ExperienceResponse> mine(long authorId);
 }

@@ -27,4 +27,12 @@ public interface TripPlanMapper extends BaseMapper<TripPlanEntity> {
             @Param("dateTo") String dateTo,
             @Param("tags") List<String> tags,
             @Param("sort") String sort);
+
+    List<TripPlanEntity> selectOpenList(
+            @Param("q") String keyword,
+            @Param("destination") String destination,
+            @Param("dateFrom") String dateFrom,
+            @Param("dateTo") String dateTo,
+            @Param("tags") List<String> tags,
+            @Param("sort") String sort);
 }

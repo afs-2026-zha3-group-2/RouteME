@@ -1,4 +1,4 @@
-package routeme.model;
+package routeme.pojo;
 
 import static routeme.constant.TripCatalogConstant.DESTINATIONS;
 import static routeme.constant.TripCatalogConstant.MAX_CAPACITY;

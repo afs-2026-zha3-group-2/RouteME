@@ -2,9 +2,9 @@ package routeme.response;
 
 import java.time.Instant;
 
-import routeme.model.DemoUser;
-import routeme.model.TripApplication;
-import routeme.model.TripPlan;
+import routeme.pojo.DemoUser;
+import routeme.pojo.TripApplication;
+import routeme.pojo.TripPlan;
 
 public record TripApplicationResponse(
         long id,

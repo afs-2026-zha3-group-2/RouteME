@@ -3,7 +3,7 @@ package routeme.response;
 import java.util.List;
 import java.util.function.Function;
 
-import routeme.model.PageResult;
+import routeme.pojo.PageResult;
 
 /**
  * 列表端点的分页响应：items / page / size / total / total_pages。

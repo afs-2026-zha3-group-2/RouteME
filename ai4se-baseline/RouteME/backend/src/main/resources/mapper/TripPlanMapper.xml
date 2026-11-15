@@ -8,12 +8,9 @@
         t.capacity, t.joined_count, t.completed_at, t.created_at, t.updated_at
     </sql>
 
-    <!-- 未结束行程的分页查询：关键词覆盖标题/目的地/途经点/标签/发布者昵称，标签命中任一即保留。 -->
-    <select id="selectOpenPage" resultType="routeme.entity.TripPlanEntity">
-        SELECT <include refid="tripColumns"/>
-          FROM trip_plans t
-          JOIN app_users u ON u.id = t.publisher_id
-         WHERE t.completed_at IS NULL
+    <!-- 未结束行程的过滤条件：关键词覆盖标题/目的地/途经点/标签/发布者昵称，标签命中任一即保留。 -->
+    <sql id="openTripFilter">
+        WHERE t.completed_at IS NULL
         <if test="destination != null and destination != ''">
             AND t.destination = #{destination}
         </if>
@@ -34,6 +31,9 @@
             AND LOWER(t.title || ' ' || t.destination || ' ' || t.stops || ' ' || t.tags || ' ' || u.nickname)
                 LIKE ('%' || LOWER(#{q}) || '%')
         </if>
+    </sql>
+
+    <sql id="openTripOrder">
         <choose>
             <when test="sort == 'new'">
                 ORDER BY t.created_at DESC, t.id DESC
@@ -42,5 +42,23 @@
                 ORDER BY t.start_date ASC, t.created_at DESC, t.id DESC
             </otherwise>
         </choose>
+    </sql>
+
+    <!-- 分页：由 PaginationInnerInterceptor 追加 LIMIT/OFFSET。 -->
+    <select id="selectOpenPage" resultType="routeme.entity.TripPlanEntity">
+        SELECT <include refid="tripColumns"/>
+          FROM trip_plans t
+          JOIN app_users u ON u.id = t.publisher_id
+        <include refid="openTripFilter"/>
+        <include refid="openTripOrder"/>
+    </select>
+
+    <!-- 全量：匹配分只能在应用层排序，搜索先取完整候选集。 -->
+    <select id="selectOpenList" resultType="routeme.entity.TripPlanEntity">
+        SELECT <include refid="tripColumns"/>
+          FROM trip_plans t
+          JOIN app_users u ON u.id = t.publisher_id
+        <include refid="openTripFilter"/>
+        <include refid="openTripOrder"/>
     </select>
 </mapper>

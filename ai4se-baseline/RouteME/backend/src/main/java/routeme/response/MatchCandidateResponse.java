@@ -1,6 +1,6 @@
 package routeme.response;
 
-import routeme.model.MatchCandidate;
+import routeme.pojo.MatchCandidate;
 
 public record MatchCandidateResponse(TripSummaryResponse trip, MatchResponse match) {
 

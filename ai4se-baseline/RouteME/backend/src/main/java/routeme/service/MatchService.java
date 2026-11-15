@@ -1,83 +1,44 @@
 package routeme.service;
 
-import java.util.Comparator;
 import java.util.List;
 
-import org.springframework.stereotype.Service;
-
-import routeme.request.TripQuery;
-import routeme.exception.TripNotFoundException;
-import routeme.model.DemoUser;
-import routeme.model.MatchCandidate;
-import routeme.model.PageResult;
-import routeme.model.TripMatch;
-import routeme.model.TripPlan;
 import routeme.param.PageParam;
-import routeme.repository.TripPlanRepository;
-import routeme.repository.UserRepository;
+import routeme.pojo.MatchCandidate;
+import routeme.pojo.PageResult;
+import routeme.request.TripQuery;
 
-@Service
-public class MatchService {
-
-    private final TripPlanRepository tripPlanRepository;
-    private final UserRepository userRepository;
-    private final TripPlanQueryService tripPlanQueryService;
-
-    public MatchService(
-            TripPlanRepository tripPlanRepository,
-            UserRepository userRepository,
-            TripPlanQueryService tripPlanQueryService) {
-        this.tripPlanRepository = tripPlanRepository;
-        this.userRepository = userRepository;
-        this.tripPlanQueryService = tripPlanQueryService;
-    }
-
-    public List<MatchCandidate> search(TripQuery query, long userId) {
-        DemoUser me = requireUser(userId);
-        TripPlan reference = tripPlanRepository.findLatestUnfinishedByPublisher(userId).orElse(null);
-        List<TripPlan> trips = tripPlanQueryService.search(
-                tripPlanRepository.findUnfinished(),
-                query,
-                publisherId -> userRepository.findById(publisherId).map(DemoUser::nickname).orElse(""));
-        List<MatchCandidate> candidates = trips.stream()
-                .map(trip -> new MatchCandidate(trip, requirePublisher(trip), match(trip, reference, query, me)))
-                .toList();
-        if (query.sort() == TripQuery.SortOrder.MATCH) {
-            return candidates.stream()
-                    .sorted(Comparator.comparingInt((MatchCandidate candidate) -> candidate.match().score())
-                            .reversed()
-                            .thenComparing(candidate -> candidate.trip().createdAt(), Comparator.reverseOrder()))
-                    .toList();
-        }
-        return candidates;
-    }
+/**
+ * 同行匹配：在未结束行程上追加可解释的匹配分与理由。
+ *
+ * <p>不拥有数据表，是纯计算服务，因此不继承 {@code IService}。</p>
+ */
+public interface MatchService {
 
     /**
-     * 匹配分在 Java 中计算（SQL 无法排序），因此先算出完整候选再切页；total 反映筛选后的命中数。
+     * 计算候选行程与匹配理由。
+     *
+     * @param query  筛选条件；{@code sort=match} 时按匹配分倒序
+     * @param userId 当前身份 id，其兴趣与最近行程作为匹配对照
+     * @return 带 match 的候选行程
      */
-    public PageResult<MatchCandidate> searchPage(TripQuery query, long userId, PageParam param) {
-        List<MatchCandidate> all = search(query, userId);
-        return new PageResult<>(param.slice(all), param.page(), param.size(), all.size());
-    }
+    List<MatchCandidate> search(TripQuery query, long userId);
 
-    public MatchCandidate matchFor(long tripId, long userId) {
-        DemoUser me = requireUser(userId);
-        TripPlan trip = tripPlanRepository.findById(tripId).orElseThrow(() -> new TripNotFoundException(tripId));
-        TripPlan reference = tripPlanRepository.findLatestUnfinishedByPublisher(userId).orElse(null);
-        TripQuery empty = TripQuery.empty();
-        return new MatchCandidate(trip, requirePublisher(trip), match(trip, reference, empty, me));
-    }
+    /**
+     * 分页版候选列表：匹配分在应用层计算后再切页。
+     *
+     * @param query  筛选条件
+     * @param userId 当前身份 id
+     * @param param  页码与每页条数（已校验）
+     * @return 当前页候选与筛选后的命中总数
+     */
+    PageResult<MatchCandidate> searchPage(TripQuery query, long userId, PageParam param);
 
-    private TripMatch match(TripPlan trip, TripPlan reference, TripQuery query, DemoUser me) {
-        return TripMatch.of(trip, reference, query.destination(), query.dateFrom(), me.interests());
-    }
-
-    private DemoUser requireUser(long userId) {
-        return userRepository.findById(userId).orElseThrow(() -> new IllegalStateException("unknown user " + userId));
-    }
-
-    private DemoUser requirePublisher(TripPlan trip) {
-        return userRepository.findById(trip.publisherId())
-                .orElseThrow(() -> new IllegalStateException("unknown publisher " + trip.publisherId()));
-    }
+    /**
+     * 单条行程相对当前身份的匹配度。
+     *
+     * @param tripId 行程 id
+     * @param userId 当前身份 id
+     * @return 行程与其匹配分、理由
+     */
+    MatchCandidate matchFor(long tripId, long userId);
 }

@@ -1,4 +1,4 @@
-package routeme.repository;
+package routeme.service;
 
 import static org.junit.jupiter.api.Assertions.assertAll;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -9,27 +9,28 @@ import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.transaction.annotation.Transactional;
 
 import routeme.enums.TripStatusEnum;
-import routeme.model.TripPlan;
-import routeme.repository.TripPlanRepository;
-import routeme.repository.UserRepository;
+import routeme.pojo.TripPlan;
+import routeme.request.TripQuery;
 
 @SpringBootTest
-class TripPlanRepositoryTest {
+@Transactional
+class TripPlanServicePersistenceTest {
 
     @Autowired
-    private TripPlanRepository tripPlanRepository;
+    private TripPlanService tripPlanService;
 
     @Autowired
-    private UserRepository userRepository;
+    private DemoUserService demoUserService;
 
     @Test
     void in_seededData_out_unfinishedTripsWithProjectedStatus() {
         // When
-        List<TripPlan> unfinished = tripPlanRepository.findUnfinished();
-        TripPlan full = tripPlanRepository.findById(6L).orElseThrow();
-        TripPlan completed = tripPlanRepository.findById(1L).orElseThrow();
+        List<TripPlan> unfinished = tripPlanService.findOpen(TripQuery.empty());
+        TripPlan full = tripPlanService.require(6L);
+        TripPlan completed = tripPlanService.require(1L);
 
         // Then
         assertAll(
@@ -41,7 +42,7 @@ class TripPlanRepositoryTest {
                 () -> assertEquals(TripStatusEnum.COMPLETED, completed.status(), "completed_at wins"),
                 () -> assertTrue(full.tags().contains("历史"), "tags parsed from json"),
                 () -> assertEquals(2, full.joinedCount(), "joined count"),
-                () -> assertEquals(3, userRepository.findAll().size(), "demo users")
+                () -> assertEquals(3, demoUserService.findAll().size(), "demo users")
         );
     }
 }

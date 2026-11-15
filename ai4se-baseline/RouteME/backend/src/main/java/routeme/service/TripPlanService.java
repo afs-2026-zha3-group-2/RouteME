@@ -1,124 +1,105 @@
 package routeme.service;
 
-import java.time.Clock;
-import java.time.Instant;
 import java.util.List;
+import java.util.Optional;
 
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
+import com.baomidou.mybatisplus.spring.service.IService;
 
+import routeme.entity.TripPlanEntity;
+import routeme.param.PageParam;
+import routeme.pojo.DemoUser;
+import routeme.pojo.PageResult;
+import routeme.pojo.TripPlan;
 import routeme.request.TripCreateRequest;
 import routeme.request.TripQuery;
-import routeme.enums.TripStatusEnum;
-import routeme.exception.ForbiddenActionException;
-import routeme.exception.InvalidInputException;
-import routeme.exception.TripNotFoundException;
-import routeme.exception.TripNotOpenException;
-import routeme.model.DemoUser;
-import routeme.model.PageResult;
-import routeme.model.TripPlan;
-import routeme.model.TripPlanDraft;
-import routeme.param.PageParam;
-import routeme.repository.TripPlanRepository;
-import routeme.repository.UserRepository;
 
-@Service
-public class TripPlanService {
+/**
+ * 行程能力：发布、浏览、详情、结束与同行人数联动。
+ *
+ * <p>继承 {@link IService} 以获得表 CRUD；业务方法只收发领域对象 {@link TripPlan}，
+ * 不把实体 {@link TripPlanEntity} 暴露给上层。</p>
+ */
+public interface TripPlanService extends IService<TripPlanEntity> {
 
-    private final TripPlanRepository tripPlanRepository;
-    private final UserRepository userRepository;
-    private final TripPlanQueryService tripPlanQueryService;
-    private final Clock clock;
-
-    public TripPlanService(
-            TripPlanRepository tripPlanRepository,
-            UserRepository userRepository,
-            TripPlanQueryService tripPlanQueryService,
-            Clock clock) {
-        this.tripPlanRepository = tripPlanRepository;
-        this.userRepository = userRepository;
-        this.tripPlanQueryService = tripPlanQueryService;
-        this.clock = clock;
-    }
-
-    @Transactional
-    public TripPlan create(TripCreateRequest request, long publisherId) {
-        Instant now = clock.instant();
-        TripPlanDraft draft = new TripPlanDraft(
-                publisherId,
-                request.title(),
-                request.destination(),
-                request.startDate(),
-                request.endDate(),
-                request.stops(),
-                request.meetingArea(),
-                request.note(),
-                request.budgetMinCents(),
-                request.budgetMaxCents(),
-                request.tags(),
-                request.capacity());
-        TripPlan validated = TripPlan.create(draft, now);
-        TripPlan saved = validated.withId(tripPlanRepository.nextId());
-        tripPlanRepository.insert(saved);
-        return saved;
-    }
-
-    public List<TripPlan> search(TripQuery query) {
-        return tripPlanQueryService.search(
-                tripPlanRepository.findUnfinished(),
-                query,
-                publisherId -> userRepository.findById(publisherId).map(DemoUser::nickname).orElse(""));
-    }
+    /**
+     * 发布一条行程，校验全部发布约束后落库。
+     *
+     * @param request     发布入参，必填项与约束见契约 TripCreateRequest
+     * @param publisherId 发布者（演示身份）id，创建后 joined_count 计为 1
+     * @return 已落库的行程领域对象（含生成的 id 与 recruiting 状态）
+     */
+    TripPlan create(TripCreateRequest request, long publisherId);
 
     /**
      * 分页浏览未结束行程：过滤、排序与分页都在数据库完成。
+     *
+     * @param query 关键词、目的地、日期区间、兴趣标签与排序条件
+     * @param param 页码与每页条数（已校验）
+     * @return 当前页行程与筛选后的命中总数
      */
-    public PageResult<TripPlan> searchPage(TripQuery query, PageParam param) {
-        return tripPlanRepository.findOpenPage(query, param.page(), param.size());
-    }
+    PageResult<TripPlan> searchPage(TripQuery query, PageParam param);
 
-    public TripPlan require(long tripId) {
-        return tripPlanRepository.findById(tripId)
-                .orElseThrow(() -> new TripNotFoundException(tripId));
-    }
+    /**
+     * 未结束行程的全量筛选结果；匹配分只能在应用层排序，故搜索先取全量。
+     *
+     * @param query 关键词、目的地、日期区间、兴趣标签与排序条件
+     * @return 命中全部行程，已按 query 的排序键有序
+     */
+    List<TripPlan> findOpen(TripQuery query);
 
-        @Transactional
-            public TripPlan complete(long tripId, long userId) {
-                TripPlan trip = require(tripId);
-                if (trip.publisherId() != userId) {
-                    throw new ForbiddenActionException("only the publisher can complete trip " + tripId);
-                }
-                if (trip.status() == TripStatusEnum.COMPLETED) {
-                    throw new TripNotOpenException(tripId);
-                }
-                tripPlanRepository.markCompleted(tripId, clock.instant());
-                return require(tripId);
-            }
+    /**
+     * 全部行程（含已结束）：我的旅行需要跨发布者聚合，故提供全量列表。
+     *
+     * @return 按创建时间倒序的行程
+     */
+    List<TripPlan> findAllTrips();
 
-            @Transactional
-            public TripPlan addCompanion(long tripId) {
-                TripPlan trip = require(tripId);
-                if (trip.status() != TripStatusEnum.RECRUITING) {
-                    throw new TripNotOpenException(tripId);
-                }
-                tripPlanRepository.updateJoinedCount(tripId, trip.joinedCount() + 1, clock.instant());
-                return require(tripId);
-            }
+    /**
+     * 按 id 取行程，不存在时抛 {@link routeme.exception.TripNotFoundException}。
+     *
+     * @param tripId 行程 id
+     * @return 行程领域对象
+     */
+    TripPlan require(long tripId);
 
-            @Transactional
-            public TripPlan removeCompanion(long tripId) {
-                TripPlan trip = require(tripId);
-                if (trip.status() == TripStatusEnum.COMPLETED) {
-                    throw new TripNotOpenException(tripId);
-                }
-                if (trip.joinedCount() <= 1) {
-                    throw new InvalidInputException("trip has no companion to remove: " + tripId);
-                }
-                tripPlanRepository.updateJoinedCount(tripId, trip.joinedCount() - 1, clock.instant());
-                return require(tripId);
-            }
+    /**
+     * 取发布者最近发布且未结束的行程，用于匹配对照。
+     *
+     * @param publisherId 发布者 id
+     * @return 最近一条未结束行程；没有则返回空
+     */
+    Optional<TripPlan> latestOpenByPublisher(long publisherId);
 
-    public DemoUser publisherOf(TripPlan trip) {
-        return userRepository.findById(trip.publisherId()).orElseThrow();
-    }
+    /**
+     * 取行程发布者资料。
+     *
+     * @param trip 行程领域对象
+     * @return 发布者的演示账户资料
+     */
+    DemoUser publisherOf(TripPlan trip);
+
+    /**
+     * 发布者把自己的行程标记为已结束（写 completed_at）。
+     *
+     * @param tripId 行程 id
+     * @param userId 当前身份 id，必须等于发布者
+     * @return 结束后的行程（状态 completed）
+     */
+    TripPlan complete(long tripId, long userId);
+
+    /**
+     * 接受同行后人数 +1；达上限时状态自动转为 full。
+     *
+     * @param tripId 行程 id
+     * @return 更新后的行程
+     */
+    TripPlan addCompanion(long tripId);
+
+    /**
+     * 退出同行后人数 -1；已结束行程不允许退出。
+     *
+     * @param tripId 行程 id
+     * @return 更新后的行程
+     */
+    TripPlan removeCompanion(long tripId);
 }

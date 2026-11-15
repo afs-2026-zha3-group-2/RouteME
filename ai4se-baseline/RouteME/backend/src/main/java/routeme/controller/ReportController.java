@@ -10,7 +10,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import routeme.response.ReportReceiptResponse;
 import routeme.request.ReportRequest;
-import routeme.model.DemoUser;
+import routeme.pojo.DemoUser;
 import routeme.service.DemoUserService;
 import routeme.service.ReportService;
 

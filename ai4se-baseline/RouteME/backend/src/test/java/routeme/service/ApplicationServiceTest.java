@@ -18,9 +18,9 @@ import routeme.enums.TripStatusEnum;
 import routeme.exception.ApplicationNotPendingException;
 import routeme.exception.ForbiddenActionException;
 import routeme.exception.TripNotOpenException;
-import routeme.model.DemoUser;
-import routeme.model.TripApplication;
-import routeme.model.TripPlan;
+import routeme.pojo.DemoUser;
+import routeme.pojo.TripApplication;
+import routeme.pojo.TripPlan;
 
 @SpringBootTest
 @Transactional

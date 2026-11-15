@@ -14,8 +14,8 @@ import org.springframework.web.bind.annotation.RestController;
 
 import routeme.request.ApplicationCreateRequest;
 import routeme.response.TripApplicationResponse;
-import routeme.model.DemoUser;
-import routeme.model.TripApplication;
+import routeme.pojo.DemoUser;
+import routeme.pojo.TripApplication;
 import routeme.service.ApplicationService;
 import routeme.service.DemoUserService;
 
