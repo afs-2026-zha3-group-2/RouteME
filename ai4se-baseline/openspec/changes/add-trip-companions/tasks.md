@@ -15,8 +15,8 @@
 
 ### T2 [backend] 迁移与种子
 
-- [ ] `V5__create_trip_applications.sql`（含与 V4 `joined_count` 一致的 ACCEPTED 种子 + 2 条 PENDING）、`V6__create_chat_messages.sql`（会话种子）、`V7__create_reports.sql`（空表）。
-- [ ] `CompanionDataMigrationSqliteTest` 用临时 SQLite 跑迁移，断言申请状态分布、消息条数与 `joined_count` 一致。
+- [x] `V5__create_trip_applications.sql`（含与 V4 `joined_count` 一致的 5 条 ACCEPTED + 2 条 PENDING）、`V6__create_chat_messages.sql`（4 条会话种子）、`V7__create_reports.sql`（空表）。
+- [x] `CompanionDataMigrationSqliteTest` 用临时 SQLite 跑迁移，断言申请状态分布、消息条数与 `joined_count` 一致。
 
 **验证：** `cd RouteME/backend; .\mvnw.cmd -Dtest=CompanionDataMigrationSqliteTest test`
 **覆盖：** R2/R3/R5 的数据前提
