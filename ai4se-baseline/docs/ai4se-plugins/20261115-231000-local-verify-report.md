@@ -80,7 +80,7 @@ npm test        → Test Files 7 passed (7) / Tests 47 passed (47)
 | 日志 appender | `logback-spring.xml` 仅 `STDOUT` / `TRACE_FILE` / `ERROR_FILE`；启动后 `backend/logs/` 生成 `routeme-trace.log` 与 `routeme-error.log`（后者 0 字节），旧 `routeme-backend.log` 不再产生 |
 | `LOG_LEVEL_ROUTEME=TRACE` | 实测 TRACE 行写入 `routeme-trace.log`，控制台仍只到 INFO |
 | 散落日志 | 删除 `ai4se-baseline/RouteME/logs/`；`.gitignore` 增补 `logs/`；构建/测试日志改写到 `$env:TEMP` |
-| 后端测试 | `.\mvnw.cmd -B clean test` → 139 项全绿 |
+| 后端测试 | `.\mvnw.cmd -B clean test` → 133 项全绿 |
 | 前端 | `npm run build` 退出码 0；`npm test` → 47 项全绿 |
 | 运行时 | `/api/matches?size=4` → total 32；`/api/me/chat-partners` → 9（XML 聚合生效）；`/api/greeting` → Hello World |
 | 页面 | 首页 20 卡 + 分页条；我的旅行 34 行、四项卡可见、无溢出；详情 5 个分区、3 个操作按钮 |
