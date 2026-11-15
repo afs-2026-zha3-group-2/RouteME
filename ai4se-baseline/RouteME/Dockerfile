@@ -4,8 +4,8 @@
 FROM node:22-bookworm-slim AS web
 WORKDIR /web
 COPY frontend/package.json frontend/package-lock.json ./
-# npm 10.9.9 bundled with Node 22 crashes while resolving rolldown optional deps.
-RUN npm install -g npm@11 && npm ci --no-audit --no-fund
+# Lockfile lacks rolldown platform optional deps, so `npm ci` refuses; use install like CI.
+RUN npm install -g npm@11 && npm install --no-audit --no-fund
 COPY frontend/ ./
 RUN npm run build
 
