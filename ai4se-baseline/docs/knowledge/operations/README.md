@@ -51,18 +51,19 @@ failed to load config from ...\frontend\vite.config.ts
 
 **不要**回退到 Vite 7 + esbuild 组合。“依赖装齐、版本自洽”不代表可运行，必须以上述三项验证为准。
 
-## 后端运行与验证
+## RouteME 后端运行与验证
 
 ```text
-Windows     mvnw.cmd clean test          # 全量测试
-Windows     mvnw.cmd spring-boot:run     # 启动 8080
-其他平台     ./mvnw clean test / ./mvnw spring-boot:run
+Windows     cd RouteME/backend; .\mvnw.cmd -B verify          # 全量测试（H2 + SQLite）
+Windows     cd RouteME/backend; .\mvnw.cmd spring-boot:run    # 启动 8080
+其他平台     ./mvnw -B verify / ./mvnw spring-boot:run
 ```
 
-- 工作目录为 `backend/`；数据文件 `backend/data/staffing.mv.db`，Flyway 启动时自动应用 `V1`-`V8`，迁移只增不改。
-- 冒烟：`GET http://localhost:8080/api/health`；其余请求通过 `X-User-Id` 演示桩识别身份。
-- 契约校验：仓库根执行 `npm run lint:api`（Redocly 校验 `openapi.yaml`）。
-- 端到端：仓库根执行 `npm run test:e2e`（`e2e/playwright.config.ts`），需后端已启动。
+- 数据文件 `backend/data/routeme.db`；Flyway 启动时应用 `V1`-`V4`（greetings、app_users、trip_plans），迁移只增不改；重置演示数据时停止后端并删除该文件后重启。
+- 冒烟：`GET /api/greeting`、`GET /api/users`、`GET /api/trips`（`/trips*` 需 `X-User-Id`，1–3 为演示账户）。
+- 契约校验：`cd RouteME; npx @redocly/cli lint openapi.yaml`（0 error），或 `cd RouteME/backend; .\mvnw.cmd -Dtest=OpenApiTest test`。
+- 前端：`cd RouteME/frontend; npm run build; npm test`。
+- 端到端：后端与前端启动后 `cd RouteME/e2e; npx playwright test`（5 个用例；本地门禁，CI 不跑 Playwright）。
 
 ## 本地启动与数据基线
 

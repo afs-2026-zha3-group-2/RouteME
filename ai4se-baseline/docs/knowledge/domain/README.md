@@ -6,6 +6,20 @@
 Bounded contexts and the ubiquitous language of the talent-borrowing application.
 This file owns the vocabulary; `shared/` only links back here, so terms stay unique.
 
+## RouteME 领域词汇（2026-11-15，`trip-plans`）
+
+| 术语 | 中文 | 说明 |
+|---|---|---|
+| Trip plan | 旅行计划 / 行程 | 一条可被他人理解并申请的公开路线 |
+| Trip status | 行程状态 | `recruiting` 招募中 / `full` 已满员 / `completed` 已结束；由 `completed_at` 与人数推导 |
+| Stops | 途经点 | 有序路线节点，至少两个 |
+| Capacity | 计划人数 | 含发布者，2–12 |
+| Joined count | 已加入人数 | 含发布者；唯一写入方是 `trip-plans`，REQ-003 通过服务方法维护 |
+| Interest tags | 兴趣标签 | 最多 5 个，来自固定集合（摄影、美食、海边…） |
+| Demo user | 演示身份 | 3 个预设账户；`X-User-Id` 指定，无注册与鉴权 |
+
+不变量：行程归 `trip-plans`；结束行程后不再出现在默认列表；状态不是独立写入的列；同行申请与「参加过」判定属 REQ-003，游后体验属 REQ-004。
+
 ## Context map
 
 | Context | Capability | Responsibility | Code anchors |

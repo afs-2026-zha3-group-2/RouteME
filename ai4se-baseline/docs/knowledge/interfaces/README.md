@@ -5,6 +5,23 @@
 
 API、事件与集成契约。字段一律 snake_case；时间字段为 RFC3339 UTC；错误响应只返回 `code`。
 
+## RouteME 行程接口（2026-11-15，`trip-plans`）
+
+契约源：`RouteME/openapi.yaml`（v0.2.0）。校验：`cd RouteME; npx @redocly/cli lint openapi.yaml`（配置见 `RouteME/redocly.yaml`），或 `cd RouteME/backend; .\mvnw.cmd -Dtest=OpenApiTest test`。
+
+| 方法 | 路径 | 说明 |
+|---|---|---|
+| GET | `/users` | 3 个演示账户（身份门） |
+| GET | `/trips` | 未结束行程列表；`q`、`destination`、`date_from`、`date_to`、`tags`（逗号分隔，任一命中）、`sort=date\|new` |
+| GET | `/trips/{id}` | 行程详情 + 发布者 + 当前同行者 |
+| POST | `/trips` | 发布行程（201） |
+| POST | `/trips/{id}/complete` | 发布者标记已结束 |
+
+- 所有 `/trips*` 请求要求 `X-User-Id`（`app_users.id`）；缺失或未知返回 401 `DEMO_USER_REQUIRED`。
+- 列表只返回未结束行程；`sort` 非法返回 400。
+- 错误码：`INVALID_INPUT`(400)、`DEMO_USER_REQUIRED`(401)、`FORBIDDEN`(403)、`TRIP_NOT_FOUND`(404)、`TRIP_NOT_OPEN`(409)、`INTERNAL_ERROR`(500)。
+- 状态由 `completed_at` 与人数推导，不是独立写入的字段；映射与字段约束以 `openapi.yaml` 为准。
+
 ## REST 面
 
 机器可读契约以 `openapi.yaml` 为准，`npm run lint:api` 必须通过。按能力分组：

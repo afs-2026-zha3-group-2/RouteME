@@ -104,10 +104,10 @@
 
 ### T12 [docs] 知识库与文档
 
-- [ ] `docs/knowledge/architecture`、`interfaces`、`domain` 补 RouteME 的行程能力、接口与术语（替换仍以 staffing 为主的描述）。
-- [ ] `requirement-workspace/registry.md` 更新 REQ-002 状态与 change 进度。
+- [x] `docs/knowledge/architecture`、`interfaces`、`domain`、`operations` 补 RouteME 的行程能力、接口、术语与验证命令。
+- [x] `requirement-workspace/registry.md` 更新 REQ-002 状态与 change 进度。
 
-**验证：** 相对链接可点开、术语与 `spec.md` 一致
+**验证：** 相对链接可点开（脚本检查 0 断链）、术语与 `spec.md` 一致
 **覆盖：** 文档交付
 
 ### T13 [verify] 全量验证与报告
