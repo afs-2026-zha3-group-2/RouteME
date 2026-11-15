@@ -6,6 +6,7 @@ import { tripMessages } from './i18n/tripMessages';
 import { IdentityGate } from './identity/IdentityGate';
 import { parseRoute, routeToHash, type Route } from './route';
 import { TripCreatePage } from './trips/TripCreatePage';
+import { TripDetailPage } from './trips/TripDetailPage';
 import type { DemoUser } from './types';
 
 const CURRENT_USER_KEY = 'routeme.currentUserId';
@@ -50,7 +51,7 @@ export function App() {
         <Alert
           type="error"
           showIcon
-          message={tripMessages.failedTitle}
+          title={tripMessages.failedTitle}
           description={loadError}
           action={<Button onClick={() => window.location.reload()}>{tripMessages.retry}</Button>}
         />
@@ -99,7 +100,9 @@ export function App() {
       <Content>
         {route.name === 'home' && <HomePage currentUser={currentUser} />}
         {route.name === 'create' && <TripCreatePage currentUser={currentUser} />}
-        {route.name === 'detail' && <PlaceholderPage text={tripMessages.detailTitle} />}
+        {route.name === 'detail' && (
+          <TripDetailPage currentUser={currentUser} tripId={route.tripId} />
+        )}
         {route.name === 'notFound' && <PlaceholderPage text={tripMessages.detailNotFound} />}
       </Content>
     </Layout>

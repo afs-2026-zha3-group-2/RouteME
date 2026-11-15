@@ -147,7 +147,7 @@ export function TripCreatePage({ currentUser }: Props) {
           </Field>
 
           {submitError !== null && (
-            <Alert type="error" showIcon message={tripMessages.failedTitle} description={submitError} />
+            <Alert type="error" showIcon title={tripMessages.failedTitle} description={submitError} />
           )}
 
           <Space>

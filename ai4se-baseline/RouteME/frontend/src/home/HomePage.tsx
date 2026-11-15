@@ -113,7 +113,7 @@ export function HomePage({ currentUser }: Props) {
           <Alert
             type="error"
             showIcon
-            message={tripMessages.failedTitle}
+            title={tripMessages.failedTitle}
             description={state.code}
             action={<Button onClick={reload}>{tripMessages.retry}</Button>}
           />
