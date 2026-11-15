@@ -55,7 +55,7 @@
 
 ### T7 [backend] 退出同行
 
-- [ ] `POST /trips/{tripId}/leave`：仅 ACCEPTED 同行者、发布者 403；人数 -1、申请转 CANCELLED。
+- [x] `POST /trips/{tripId}/leave`：仅 ACCEPTED 同行者、发布者 403；人数 -1、申请转 CANCELLED。
 
 **验证：** `cd RouteME/backend; .\mvnw.cmd -Dtest=ApplicationControllerTest#leave* test`
 **覆盖：** R4 的 3 个场景

@@ -85,4 +85,13 @@ public class ApplicationController {
                 TripApplication rejected = applicationService.reject(applicationId, publisher.id());
                 return applicationService.describe(rejected);
             }
+
+            @PostMapping("/trips/{tripId}/leave")
+            public ResponseEntity<Void> leave(
+                    @RequestHeader(value = "X-User-Id", required = false) Long userId,
+                    @PathVariable long tripId) {
+                DemoUser companion = demoUserService.require(userId);
+                applicationService.leave(tripId, companion.id());
+                return ResponseEntity.noContent().build();
+            }
         }

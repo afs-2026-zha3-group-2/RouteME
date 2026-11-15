@@ -81,6 +81,18 @@ public class ApplicationService {
         return application.withStatus(ApplicationStatus.CANCELLED, now);
     }
 
+    @Transactional
+    public void leave(long tripId, long userId) {
+        TripPlan trip = tripPlanService.require(tripId);
+        if (trip.publisherId() == userId) {
+            throw new ForbiddenAction("publisher cannot leave own trip " + tripId);
+        }
+        TripApplication accepted = applicationRepository.findAccepted(tripId, userId)
+                .orElseThrow(() -> new ForbiddenAction("only accepted companions can leave trip " + tripId));
+        tripPlanService.removeCompanion(tripId);
+        applicationRepository.updateStatus(accepted.id(), ApplicationStatus.CANCELLED, clock.instant());
+    }
+
     public List<TripApplication> mine(long userId) {
         return applicationRepository.findByApplicant(userId);
     }

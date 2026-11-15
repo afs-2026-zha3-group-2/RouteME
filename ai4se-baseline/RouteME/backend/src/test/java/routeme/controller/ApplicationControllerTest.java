@@ -193,6 +193,45 @@ class ApplicationControllerTest {
         }
 
         @Test
+        void in_acceptedCompanion_out_leavesAndCanReapply() throws Exception {
+            mockMvc.perform(post("/api/trips/4/leave").header("X-User-Id", "1"))
+                    .andExpect(status().isNoContent());
+
+            mockMvc.perform(get("/api/trips/4").header("X-User-Id", "1"))
+                    .andExpect(jsonPath("$.joined_count").value(1))
+                    .andExpect(jsonPath("$.status").value("recruiting"))
+                    .andExpect(jsonPath("$.participants.length()").value(1));
+
+            mockMvc.perform(post("/api/trips/4/applications")
+                            .header("X-User-Id", "1")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("{\"message\":\"退出后想再跟一次。\"}"))
+                    .andExpect(status().isCreated())
+                    .andExpect(jsonPath("$.status").value("pending"));
+        }
+
+        @Test
+        void in_publisherLeave_out_forbidden() throws Exception {
+            mockMvc.perform(post("/api/trips/3/leave").header("X-User-Id", "2"))
+                    .andExpect(status().isForbidden())
+                    .andExpect(jsonPath("$.code").value("FORBIDDEN"));
+        }
+
+        @Test
+        void in_nonCompanionLeave_out_forbidden() throws Exception {
+            mockMvc.perform(post("/api/trips/5/leave").header("X-User-Id", "1"))
+                    .andExpect(status().isForbidden())
+                    .andExpect(jsonPath("$.code").value("FORBIDDEN"));
+        }
+
+        @Test
+        void in_completedTripLeave_out_notOpen() throws Exception {
+            mockMvc.perform(post("/api/trips/1/leave").header("X-User-Id", "2"))
+                    .andExpect(status().isConflict())
+                    .andExpect(jsonPath("$.code").value("TRIP_NOT_OPEN"));
+        }
+
+        @Test
         void in_myApplications_out_withTripAndApplicant() throws Exception {
         mockMvc.perform(get("/api/me/applications").header("X-User-Id", "1"))
                 .andExpect(status().isOk())
