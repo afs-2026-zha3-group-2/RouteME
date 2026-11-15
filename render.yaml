@@ -13,12 +13,12 @@ services:
     autoDeploy: false
     envVars:
       - key: SPRING_DATASOURCE_URL
-            value: jdbc:sqlite:/data/routeme.db
+        value: jdbc:sqlite:/data/routeme.db
       - key: JAVA_TOOL_OPTIONS
         value: -XX:MaxRAMPercentage=75
-        # 免费实例没有持久盘：/data 随实例重建而清空，重启后回到 Flyway 种子数据。
-        # 需要保留用户数据时，把 plan 改成 starter 并取消下面三行注释。
-        # disk:
-        #   name: routeme-data
-        #   mountPath: /data
-        #   sizeGB: 1
+    # 免费实例没有持久盘：/data 随实例重建而清空，重启后回到 Flyway 种子数据。
+    # 需要保留用户数据时，把 plan 改成 starter 并取消下面四行注释。
+    # disk:
+    #   name: routeme-data
+    #   mountPath: /data
+    #   sizeGB: 1

@@ -68,11 +68,12 @@ Windows     cd RouteME/backend; .\mvnw.cmd spring-boot:run    # 启动 8080
 ## CI / CD
 
 ```text
-CI  .github/workflows/ci.yml   push/PR：backend verify、frontend build+test、Docker 镜像构建校验
-CD  .github/workflows/cd.yml   CI 在 main 全绿后：打包 jar + dist 工件，触发 Render deploy hook
+CI  .github/workflows/ci.yml   push/PR：backend verify、frontend build+test（不依赖 Docker）
+CD  .github/workflows/cd.yml   CI 在 main 全绿后：打包 jar+dist 工件、构建部署镜像、触发 Render deploy hook
 ```
 
-- **CI（已跑通）**：三个 job —— `backend`（JDK 21，`./mvnw -B -ntp verify`）、`frontend`（Node 22 + npm 11，`npm install` + `build` + `test`）、`docker`（Buildx 构建 `ai4se-baseline/RouteME/Dockerfile`，不推送，验证部署产物可构建）。
+- **CI（已跑通）**：两个 job —— `backend`（JDK 21，`./mvnw -B -ntp verify`）、`frontend`（Node 22 + npm 11，`npm install` + `build` + `test`）。CI 不装 Docker，镜像问题不再阻塞 CI。
+- **CD 三步**：`package`（jar + dist 工件）→ `Build deploy image`（用同一 `Dockerfile` 构建，失败则不部署）→ `Deploy to Render`（`curl -X POST $RENDER_DEPLOY_HOOK_URL`）。
 - **CD（Render，单容器）**：`render.yaml` 定义 web 服务 `routeme`（`runtime: docker`，health check `/api/greeting`，`autoDeploy: false`）。镜像内前端 `dist` 打进 Spring Boot `static/`，同域提供页面与 `/api`，SQLite 落在 `/data/routeme.db`（镜像声明 `VOLUME /data`；免费实例无持久盘，重启即回到种子数据）。
 - **账号与凭证**：Render 账号、Blueprint 创建与 Deploy Hook 由仓库所有者本人完成（邮箱验证与账号所有权），步骤见 [RouteME/README.md](../../RouteME/README.md#cdrender需要你完成账号与密钥)；密钥只放 GitHub Secrets，不落仓库。
 - **启用步骤**：Render → New → Blueprint → 选本仓库（读取 `render.yaml`）→ 创建服务 → Settings → Deploy Hook → 复制 URL → GitHub 仓库 Settings → Secrets and variables → Actions → 新增 `RENDER_DEPLOY_HOOK_URL`。未配置该 secret 时 CD 只打包并给出 warning，不判失败。

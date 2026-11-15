@@ -63,6 +63,8 @@ Playwright 不进 CI，是本地门禁；E2E 会在开发库新增带唯一标�
 
 ## Docker
 
+Docker 只在部署时需要（Render 侧构建），本地开发与 CI 都不需要安装 Docker。想在本机验证镜像时：
+
 ```powershell
 cd ai4se-baseline/RouteME
 docker build -t routeme .
@@ -74,17 +76,24 @@ docker run --rm -p 8080:8080 -v routeme-data:/data routeme
 
 ## CI（已跑通）
 
-[`.github/workflows/ci.yml`](../../.github/workflows/ci.yml)，push `main` 与 PR 触发：
+[`.github/workflows/ci.yml`](../../.github/workflows/ci.yml)，push `main` 与 PR 触发，**不依赖 Docker**：
 
 | Job | 内容 |
 |---|---|
-| Backend (Java 21) | `./mvnw -B -ntp verify` |
-| Frontend (Node 22) | npm 11 + `npm install` + `build` + `test` |
-| Docker image | Buildx 构建镜像（不推送），保证部署产物可构建 |
+| Backend (Java 21) | `./mvnw -B -ntp verify`（132 tests，H2 + SQLite） |
+| Frontend (Node 22) | npm 11 + `npm install` + `build` + `test`（34 tests） |
 
 ## CD（Render，需要你完成账号与密钥）
 
-流水线已就绪：[`.github/workflows/cd.yml`](../../.github/workflows/cd.yml) 在 CI 于 `main` 全绿后打包 `jar + dist` 工件，并调用 Render Deploy Hook；[`render.yaml`](../../render.yaml) 定义服务。
+流水线已就绪：[`.github/workflows/cd.yml`](../../.github/workflows/cd.yml) 在 CI 于 `main` 全绿后执行三个 job，[`render.yaml`](../../render.yaml) 定义服务。
+
+| Job | 内容 |
+|---|---|
+| Package deployables | 打包 `jar + dist` 并上传工件（`routeme-deployables-<sha>`） |
+| Build deploy image | 用与 Render 相同的 `Dockerfile` 构建镜像；**镜像构建失败则不会触发部署** |
+| Deploy to Render | 调用 `RENDER_DEPLOY_HOOK_URL`，由 Render 按同一 Dockerfile 重建上线 |
+
+**你需要 Docker 吗？** 不需要。本地开发、CI 都不跑 Docker；只有 Render 的构建环境会用 `Dockerfile` 打包（你既不用装 Docker，也不用自己构建镜像）。Render 原生产运行时只支持 Node/Python/Ruby/Go/Rust/Elixir，Spring Boot 没有原生运行时，所以那个 `Dockerfile` 是 Render 侧的必需产物，但对你完全透明。
 
 **账号与凭证需要你本人操作**（涉及邮箱验证、服务条款与账号所有权，我不能代注册或代持密钥）：
 
@@ -108,7 +117,7 @@ docker run --rm -p 8080:8080 -v routeme-data:/data routeme
 | Linux 上 npm 报 `Exit handler never called!` | Node 22 自带 npm 10.9.9 的已知问题；先 `npm install -g npm@11` |
 | 后端启动报 YAML 解析失败 | `application.yaml` 缩进必须 2/4/6 空格，`datasource` 子项是 4 空格 |
 | 端口占用 | `PORT` / `server.port` 可用环境变量覆盖；前端开发端口在 `vite.config.ts` |
-| CI Docker job 失败 | 看 Buildx 日志；通常是前端依赖安装或 jar 名变化（`routeme-backend-0.0.1-SNAPSHOT.jar`） |
+| CI Docker job 失败 | 该 job 已从 CI 移出；镜像构建校验现在位于 CD 的 `Build deploy image` job，失败会阻止部署 |
 
 ## 相关文档
 
