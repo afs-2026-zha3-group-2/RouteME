@@ -98,6 +98,13 @@ public class ApiErrorHandler {
                         .body(new ErrorResponse("CHAT_READ_ONLY"));
             }
 
+            @ExceptionHandler(ExperienceNotAllowed.class)
+            public ResponseEntity<ErrorResponse> handleExperienceNotAllowed(ExperienceNotAllowed exception) {
+                LOGGER.warn("experience not allowed: {}", exception.getMessage());
+                return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                        .body(new ErrorResponse("EXPERIENCE_NOT_ALLOWED"));
+            }
+
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErrorResponse> handleUnexpected(Exception exception) {
         LOGGER.error("unexpected error while serving api request", exception);

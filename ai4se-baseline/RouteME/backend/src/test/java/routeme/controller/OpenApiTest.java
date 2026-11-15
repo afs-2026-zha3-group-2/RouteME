@@ -58,7 +58,7 @@ class OpenApiTest {
 
         // Then
         assertAll(
-                () -> assertEquals("0.3.0", info.get("version"), "info.version"),
+                () -> assertEquals("0.4.0", info.get("version"), "info.version"),
                 () -> assertTrue(paths(document).containsKey("/users"), "/users declared"),
                 () -> assertTrue(paths(document).containsKey("/trips/{tripId}"), "detail path declared"),
                 () -> assertTrue(
@@ -139,6 +139,45 @@ class OpenApiTest {
                                         "CHAT_NOT_ALLOWED",
                                         "CHAT_READ_ONLY")),
                         "companion error codes")
+        );
+    }
+
+    @Test
+    void in_openApiFile_out_experienceContractDeclared() throws IOException {
+        // Given
+        Map<String, Object> document = loadYaml(SPEC_PATH);
+
+        // When
+        Map<String, Object> getExperiences = operation(document, "/experiences", "get");
+        Map<String, Object> postExperience = operation(document, "/trips/{tripId}/experiences", "post");
+        Map<String, Object> writeRequest = schema(document, "ExperienceWriteRequest");
+        Map<String, Object> experience = schema(document, "Experience");
+        Map<String, Object> errorSchema = schema(document, "Error");
+
+        // Then
+        assertAll(
+                () -> assertTrue(paths(document).containsKey("/me/experiences"), "/me/experiences declared"),
+                () -> assertTrue(
+                        responses(postExperience).containsKey("201")
+                                && responses(postExperience).containsKey("200"),
+                        "experience create/update statuses"),
+                () -> assertTrue(
+                        parameterNames(document, getExperiences).containsAll(List.of("X-User-Id", "q", "destination", "tags")),
+                        "experience query parameters"),
+                () -> assertTrue(
+                        required(writeRequest).containsAll(List.of("content", "intensity", "advice")),
+                        "experience write required fields"),
+                () -> assertTrue(
+                        enums(properties(writeRequest).get("intensity"))
+                                .containsAll(List.of("relaxed", "moderate", "tiring")),
+                        "intensity enum"),
+                () -> assertTrue(
+                        required(experience)
+                                .containsAll(List.of("id", "trip", "author", "content", "intensity", "advice")),
+                        "experience required fields"),
+                () -> assertTrue(
+                        enums(properties(errorSchema).get("code")).contains("EXPERIENCE_NOT_ALLOWED"),
+                        "experience error code")
         );
     }
 

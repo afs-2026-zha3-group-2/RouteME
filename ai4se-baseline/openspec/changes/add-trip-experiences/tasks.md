@@ -7,48 +7,48 @@
 
 ### T1 [contract] 契约先行
 
-- [ ] `openapi.yaml` 新增 `GET /experiences`、`GET/POST /trips/{tripId}/experiences`、`GET /me/experiences`，以及 `Experience`、`ExperienceWriteRequest` schema 与 `EXPERIENCE_NOT_ALLOWED` 错误码（v0.4.0）。
-- [ ] `OpenApiTest` 断言新路径、`intensity` 枚举与 400/403；Redocly 0 error。
+- [x] `openapi.yaml` 新增 `GET /experiences`、`GET/POST /trips/{tripId}/experiences`、`GET /me/experiences`，以及 `Experience`、`ExperienceWriteRequest` schema 与 `EXPERIENCE_NOT_ALLOWED` 错误码（v0.4.0）。
+- [x] `OpenApiTest` 断言新路径、`intensity` 枚举与 400/403；Redocly 0 error。
 
 **验证：** `cd RouteME; npx @redocly/cli lint openapi.yaml`；`cd RouteME/backend; .\mvnw.cmd -Dtest=OpenApiTest test`
 **覆盖：** 全部需求的字段与状态码
 
 ### T2 [backend] 迁移与种子
 
-- [ ] `V8__create_trip_experiences.sql`：唯一约束 `(trip_id, author_id)`，2 条种子对齐原型（trip 1 → user 2 `MODERATE`，trip 2 → user 3 `TIRING`）。
-- [ ] `ExperienceDataMigrationSqliteTest` 用临时 SQLite 跑迁移，断言条数、唯一约束与作者资格一致。
+- [x] `V8__create_trip_experiences.sql`：唯一约束 `(trip_id, author_id)`，2 条种子对齐原型（trip 1 → user 2 `MODERATE`，trip 2 → user 3 `TIRING`）。
+- [x] `ExperienceDataMigrationSqliteTest` 用临时 SQLite 跑迁移，断言条数、唯一约束与作者资格一致。
 
 **验证：** `cd RouteME/backend; .\mvnw.cmd -Dtest=ExperienceDataMigrationSqliteTest test`
 **覆盖：** R1/R3 的数据前提
 
 ### T3 [backend] 体验领域
 
-- [ ] `ExperienceIntensity`（relaxed/moderate/tiring + 中文标签）与 `TripExperience`（trim、感受 10–400、建议 1–120、`withContent` 更新）。
-- [ ] 非法内容抛 `InvalidInput`；边界值 10/400/120 通过。
+- [x] `ExperienceIntensity`（relaxed/moderate/tiring + 中文标签）与 `TripExperience`（trim、感受 10–400、建议 1–120、`withContent` 更新）。
+- [x] 非法内容抛 `InvalidInput`；边界值 10/400/120 通过。
 
 **验证：** `cd RouteME/backend; .\mvnw.cmd -Dtest=TripExperienceTest test`
 **覆盖：** R2 的全部内容口径场景
 
 ### T4 [backend] 体验仓储
 
-- [ ] `TripExperienceRepository` 与行对象：`findByTrip`、`findByAuthor`、`findByTripAndAuthor`、`findAll`、`nextId`、`insert`、`update`。
-- [ ] `DatabaseTripExperienceRepositoryTest` 覆盖查询与唯一性冲突。
+- [x] `TripExperienceRepository` 与行对象：`findByTrip`、`findByAuthor`、`findByTripAndAuthor`、`findAll`、`nextId`、`insert`、`update`。
+- [x] `DatabaseTripExperienceRepositoryTest` 覆盖查询与唯一性冲突。
 
 **验证：** `cd RouteME/backend; .\mvnw.cmd -Dtest=DatabaseTripExperienceRepositoryTest test`
 **覆盖：** R1/R3/R4 的读取
 
 ### T5 [backend] 体验服务
 
-- [ ] `ExperienceService`：资格（已完成 + `participants` 含当前用户）、upsert、按行程/我的/首页列表、关键词/目的地/标签筛选、`updated_at` 倒序。
-- [ ] `ExperienceServiceTest` 覆盖发布者与同行者资格、非参加者 403、未结束 403、重复提交更新、筛选与排序。
+- [x] `ExperienceService`：资格（已完成 + `participants` 含当前用户）、upsert、按行程/我的/首页列表、关键词/目的地/标签筛选、`updated_at` 倒序。
+- [x] `ExperienceServiceTest` 覆盖发布者与同行者资格、非参加者 403、未结束 403、重复提交更新、筛选与排序。
 
 **验证：** `cd RouteME/backend; .\mvnw.cmd -Dtest=ExperienceServiceTest test`
 **覆盖：** R1/R2/R4
 
 ### T6 [backend] 体验接口
 
-- [ ] `ExperienceController` 四个端点；首次 201、更新 200、空列表 200。
-- [ ] `ExperienceControllerTest` 覆盖成功、非法内容、无资格、未结束、未知行程、缺少身份。
+- [x] `ExperienceController` 四个端点；首次 201、更新 200、空列表 200。
+- [x] `ExperienceControllerTest` 覆盖成功、非法内容、无资格、未结束、未知行程、缺少身份。
 
 **验证：** `cd RouteME/backend; .\mvnw.cmd -Dtest=ExperienceControllerTest test`
 **覆盖：** R1/R2/R3

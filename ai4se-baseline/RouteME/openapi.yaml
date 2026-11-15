@@ -1,10 +1,10 @@
 openapi: 3.0.3
 info:
   title: RouteME API
-  version: 0.3.0
+  version: 0.4.0
   description: |
     RouteME 后端对外契约。本文件是前后端唯一事实源，字段名、类型、状态码与错误码只在这里定稿。
-        当前包含：脚手架问候语、演示账户、旅行计划（浏览/筛选/发布/详情/结束），以及同行匹配、申请、退出、聊天、我的旅行与举报。
+        当前包含：脚手架问候语、演示账户、旅行计划（浏览/筛选/发布/详情/结束），同行匹配、申请、退出、聊天、我的旅行与举报，以及游后体验分享与参考发布所需数据。
 servers:
   - url: http://localhost:8080/api
     description: 本地开发
@@ -787,6 +787,143 @@ paths:
           $ref: '#/components/responses/DemoUserRequired'
         '500':
           $ref: '#/components/responses/Unexpected'
+  /experiences:
+    get:
+      operationId: loadExperiences
+      summary: 旅行体验列表
+      description: 已发布体验，按最近保存时间倒序；支持关键词、目的地与兴趣筛选。
+      parameters:
+        - $ref: '#/components/parameters/DemoUserId'
+        - name: q
+          in: query
+          required: false
+          description: 关键词，命中行程标题/目的地/感受/建议
+          schema:
+            type: string
+        - name: destination
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: tags
+          in: query
+          required: false
+          description: 逗号分隔，任一命中
+          schema:
+            type: string
+      responses:
+        '200':
+          description: 体验列表
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Experience'
+        '400':
+          $ref: '#/components/responses/InvalidInput'
+        '401':
+          $ref: '#/components/responses/DemoUserRequired'
+        '500':
+          $ref: '#/components/responses/Unexpected'
+  /me/experiences:
+    get:
+      operationId: loadMyExperiences
+      summary: 我的旅行体验
+      parameters:
+        - $ref: '#/components/parameters/DemoUserId'
+      responses:
+        '200':
+          description: 我的体验列表
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Experience'
+        '401':
+          $ref: '#/components/responses/DemoUserRequired'
+        '500':
+          $ref: '#/components/responses/Unexpected'
+  /trips/{tripId}/experiences:
+    get:
+      operationId: loadTripExperiences
+      summary: 某条行程的游后体验
+      parameters:
+        - $ref: '#/components/parameters/DemoUserId'
+        - name: tripId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: 体验列表，按首次发布时间升序
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Experience'
+        '401':
+          $ref: '#/components/responses/DemoUserRequired'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/Unexpected'
+    post:
+      operationId: shareTripExperience
+      summary: 发布或修改我的游后体验
+      description: 仅已结束且自己参加过的行程；同一用户对同一行程只有一条体验，再次提交即修改。
+      parameters:
+        - $ref: '#/components/parameters/DemoUserId'
+        - name: tripId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ExperienceWriteRequest'
+            examples:
+              success:
+                value:
+                  content: 整条线基本没有爬升，骑行段风很大但很值。日落前四十分钟到海滨泳场刚好。
+                  intensity: moderate
+                  advice: 带一件防风外套，海边傍晚温差比市区大。
+              rejected:
+                value:
+                  content: 太短
+                  intensity: relaxed
+                  advice: ''
+      responses:
+        '200':
+          description: 已更新我的体验
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Experience'
+        '201':
+          description: 已创建我的体验
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Experience'
+        '400':
+          $ref: '#/components/responses/InvalidInput'
+        '401':
+          $ref: '#/components/responses/DemoUserRequired'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/Unexpected'
 components:
   parameters:
     DemoUserId:
@@ -1177,6 +1314,53 @@ components:
         pending_application_count:
           type: integer
           minimum: 0
+    ExperienceWriteRequest:
+      type: object
+      required: [content, intensity, advice]
+      properties:
+        content:
+          type: string
+          minLength: 10
+          maxLength: 400
+          description: 真实感受，去空白后 10–400 字
+        intensity:
+          type: string
+          enum: [relaxed, moderate, tiring]
+          description: 路线强度
+        advice:
+          type: string
+          minLength: 1
+          maxLength: 120
+          description: 给后来者的一条建议
+    Experience:
+      type: object
+      required: [id, trip, author, content, intensity, advice, created_at, updated_at]
+      properties:
+        id:
+          type: integer
+          format: int64
+          readOnly: true
+        trip:
+          $ref: '#/components/schemas/TripPlan'
+        author:
+          $ref: '#/components/schemas/DemoUser'
+        content:
+          type: string
+          maxLength: 400
+        intensity:
+          type: string
+          enum: [relaxed, moderate, tiring]
+        advice:
+          type: string
+          maxLength: 120
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
     ReportRequest:
       type: object
       required: [target_type, target_id, reason]
@@ -1211,4 +1395,4 @@ components:
           enum:
             [GREETING_NOT_FOUND, INVALID_INPUT, DEMO_USER_REQUIRED, FORBIDDEN, TRIP_NOT_FOUND, TRIP_NOT_OPEN,
              APPLICATION_NOT_FOUND, APPLICATION_NOT_PENDING, DUPLICATE_APPLICATION, CHAT_NOT_ALLOWED, CHAT_READ_ONLY,
-             INTERNAL_ERROR]
+             EXPERIENCE_NOT_ALLOWED, INTERNAL_ERROR]
