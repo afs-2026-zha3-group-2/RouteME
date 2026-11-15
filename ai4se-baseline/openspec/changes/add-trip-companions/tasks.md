@@ -62,8 +62,8 @@
 
 ### T8 [backend] 一对一聊天
 
-- [ ] `GET/POST /trips/{tripId}/messages`、`GET /me/chat-partners`；参与者校验、空白/超长 400、已完成只读 409、升序。
-- [ ] `ChatMessageRepository` 与行对象。
+- [x] `GET/POST /trips/{tripId}/messages`、`GET /me/chat-partners`；参与者校验、空白/超长 400、已完成只读 409、升序。
+- [x] `ChatMessageRepository` 与行对象。
 
 **验证：** `cd RouteME/backend; .\mvnw.cmd -Dtest=ChatControllerTest test`
 **覆盖：** R5 的 4 个场景

@@ -84,6 +84,20 @@ public class ApiErrorHandler {
                         .body(new ErrorResponse("DUPLICATE_APPLICATION"));
             }
 
+            @ExceptionHandler(ChatNotAllowed.class)
+            public ResponseEntity<ErrorResponse> handleChatNotAllowed(ChatNotAllowed exception) {
+                LOGGER.warn("chat not allowed: {}", exception.getMessage());
+                return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                        .body(new ErrorResponse("CHAT_NOT_ALLOWED"));
+            }
+
+            @ExceptionHandler(ChatReadOnly.class)
+            public ResponseEntity<ErrorResponse> handleChatReadOnly(ChatReadOnly exception) {
+                LOGGER.warn("chat read only: {}", exception.getMessage());
+                return ResponseEntity.status(HttpStatus.CONFLICT)
+                        .body(new ErrorResponse("CHAT_READ_ONLY"));
+            }
+
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErrorResponse> handleUnexpected(Exception exception) {
         LOGGER.error("unexpected error while serving api request", exception);

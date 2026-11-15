@@ -93,6 +93,10 @@ public class ApplicationService {
         applicationRepository.updateStatus(accepted.id(), ApplicationStatus.CANCELLED, clock.instant());
     }
 
+    public boolean isAccepted(long tripId, long userId) {
+        return applicationRepository.findAccepted(tripId, userId).isPresent();
+    }
+
     public List<TripApplication> mine(long userId) {
         return applicationRepository.findByApplicant(userId);
     }
