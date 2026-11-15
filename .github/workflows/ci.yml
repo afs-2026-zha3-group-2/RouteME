@@ -43,12 +43,11 @@ jobs:
           node-version: '22'
           cache: npm
           cache-dependency-path: ai4se-baseline/RouteME/frontend/package-lock.json
+      - name: Upgrade npm
+        # npm 10.9.9 bundled with Node 22 crashes with "Exit handler never called!"
+        # while resolving rolldown platform optional dependencies on Linux.
+        run: npm install -g npm@11
       - name: Install dependencies
-        # npm 10.9.9 crashes with "Exit handler never called!" while resolving
-        # rolldown platform optional dependencies on the Linux runner. Keep npm ci
-        # as the primary path and fall back to npm install, which still honours
-        # package-lock.json.
-        run: |
-          npm ci --no-audit --no-fund || npm install --no-audit --no-fund
+        run: npm install --no-audit --no-fund
       - name: Build and test
         run: npm run build && npm test
