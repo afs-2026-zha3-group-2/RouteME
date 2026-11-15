@@ -44,6 +44,9 @@ jobs:
           cache: npm
           cache-dependency-path: ai4se-baseline/RouteME/frontend/package-lock.json
       - name: Install dependencies
-        run: npm ci
+              # npm 10.9.9 在 Linux runner 上对 rolldown 的平台可选依赖会以
+              # "Exit handler never called!" 崩溃（npm 自身 bug）；失败时回退到
+              # npm install，仍按 package-lock.json 解析版本。
+              run: npm ci --no-audit --no-fund || npm install --no-audit --no-fund
       - name: Build and test
         run: npm run build && npm test
