@@ -43,10 +43,10 @@
 
 ### T5 [backend] 列表、详情与身份解析
 
-- [ ] `GET /users` 返回 3 个演示账户。
-- [ ] `GET /trips` 只返回未结束行程，应用 T3 的筛选/排序；`X-User-Id` 缺失/未知返回 401 `DEMO_USER_REQUIRED`。
-- [ ] `GET /trips/{id}` 返回行程 + 发布者 + 当前同行者（MVP 仅发布者）；不存在返回 404。
-- [ ] 统一异常处理器映射 400/401/403/404/409。
+- [x] `GET /users` 返回 3 个演示账户。
+- [x] `GET /trips` 只返回未结束行程，应用 T3 的筛选/排序；`X-User-Id` 缺失/未知返回 401 `DEMO_USER_REQUIRED`；`sort` 非法返回 400。
+- [x] `GET /trips/{id}` 返回行程 + 发布者 + 当前同行者（MVP 仅发布者）；不存在返回 404 `TRIP_NOT_FOUND`。
+- [x] 统一异常处理器已映射 400 / 401 / 404（403 / 409 随 T6 的结束行程补齐）。
 
 **验证：** `cd RouteME/backend; .\mvnw.cmd -Dtest=TripControllerTest,DemoUserControllerTest test`
 **覆盖：** R1 身份、R2 卡片数据、R5 详情与状态

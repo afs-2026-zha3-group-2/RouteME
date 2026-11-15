@@ -42,6 +42,13 @@ public class ApiErrorHandler {
                 .body(new ErrorResponse("DEMO_USER_REQUIRED"));
     }
 
+        @ExceptionHandler(TripNotFound.class)
+        public ResponseEntity<ErrorResponse> handleTripNotFound(TripNotFound exception) {
+            LOGGER.warn("trip not found: {}", exception.getMessage());
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body(new ErrorResponse("TRIP_NOT_FOUND"));
+        }
+
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErrorResponse> handleUnexpected(Exception exception) {
         LOGGER.error("unexpected error while serving api request", exception);

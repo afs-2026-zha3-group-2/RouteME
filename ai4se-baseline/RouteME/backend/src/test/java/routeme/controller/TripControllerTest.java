@@ -1,5 +1,10 @@
 package routeme.controller;
 
+import static org.hamcrest.Matchers.hasItem;
+import static org.hamcrest.Matchers.hasItems;
+import static org.hamcrest.Matchers.hasSize;
+import static org.hamcrest.Matchers.not;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -96,6 +101,74 @@ class TripControllerTest {
     void in_unknownUser_out_demoUserRequired() throws Exception {
         postTrip(VALID_TRIP, "99").andExpect(status().isUnauthorized())
                 .andExpect(jsonPath("$.code").value("DEMO_USER_REQUIRED"));
+    }
+
+    @Test
+    void in_demoUsersEndpoint_out_threeAccounts() throws Exception {
+        mockMvc.perform(get("/api/users"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$", hasSize(3)))
+                .andExpect(jsonPath("$[0].nickname").value("林见夏"))
+                .andExpect(jsonPath("$[0].avatar_initial").value("夏"));
+    }
+
+    @Test
+    void in_defaultList_out_unfinishedTripsOnly() throws Exception {
+        mockMvc.perform(get("/api/trips").header("X-User-Id", "1"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[*].id", hasItems(3, 4, 5, 6)))
+                .andExpect(jsonPath("$[*].id", not(hasItem(1))))
+                .andExpect(jsonPath("$[*].status", not(hasItem("completed"))))
+                .andExpect(jsonPath("$[0].start_date").exists())
+                .andExpect(jsonPath("$[0].publisher.nickname").exists());
+    }
+
+    @Test
+    void in_filters_out_matchingTrips() throws Exception {
+        mockMvc.perform(get("/api/trips").header("X-User-Id", "1").param("destination", "珠海"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$", hasSize(1)))
+                .andExpect(jsonPath("$[0].destination").value("珠海"));
+
+        mockMvc.perform(get("/api/trips").header("X-User-Id", "1").param("tags", "历史"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[*].id", hasItem(6)));
+
+        mockMvc.perform(get("/api/trips").header("X-User-Id", "1").param("date_from", "2026-11-20"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[*].id", hasItems(5, 6)));
+    }
+
+    @Test
+    void in_detail_out_publisherAndParticipants() throws Exception {
+        mockMvc.perform(get("/api/trips/3").header("X-User-Id", "1"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(3))
+                .andExpect(jsonPath("$.status").value("recruiting"))
+                .andExpect(jsonPath("$.publisher.id").value(2))
+                .andExpect(jsonPath("$.participants", hasSize(1)))
+                .andExpect(jsonPath("$.participants[0].id").value(2));
+    }
+
+    @Test
+    void in_unknownTrip_out_tripNotFound() throws Exception {
+        mockMvc.perform(get("/api/trips/9999").header("X-User-Id", "1"))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.code").value("TRIP_NOT_FOUND"));
+    }
+
+    @Test
+    void in_listWithoutIdentity_out_demoUserRequired() throws Exception {
+        mockMvc.perform(get("/api/trips"))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.code").value("DEMO_USER_REQUIRED"));
+    }
+
+    @Test
+    void in_unsupportedSort_out_invalidInput() throws Exception {
+        mockMvc.perform(get("/api/trips").header("X-User-Id", "1").param("sort", "match"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("INVALID_INPUT"));
     }
 
     private ResultActions postTrip(String body, String userId) throws Exception {
