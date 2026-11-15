@@ -16,11 +16,11 @@
 
 ### T2 [backend] 迁移与演示数据
 
-- [ ] `V3__create_demo_users.sql`：3 个演示账户（显式 id 1..3）。
-- [ ] `V4__seed_demo_trips.sql`：6 条行程（2 条 `completed_at` 非空、3 条招募中、1 条已满员），覆盖 8 个目的地中的 4 个与多组标签。
-- [ ] `DatabaseTripPlanRepositorySqliteTest` 用临时 SQLite 文件库跑同一组迁移，断言种子数量与状态投影。
+- [x] `V3__create_demo_users.sql`：3 个演示账户（显式 id 1..3）。
+- [x] `V4__seed_demo_trips.sql`：6 条行程（2 条 `completed_at` 非空、3 条招募中、1 条已满员），覆盖 4 个目的地与多组标签。
+- [x] `DemoDataMigrationSqliteTest` 用临时 SQLite 文件库跑同一组迁移，断言种子数量与「状态由 `completed_at` / 人数推导」在数据层成立。
 
-**验证：** `cd RouteME/backend; .\mvnw.cmd -Dtest=DatabaseTripPlanRepositorySqliteTest test`
+**验证：** `cd RouteME/backend; .\mvnw.cmd -Dtest=DemoDataMigrationSqliteTest test`
 **覆盖：** R2 默认列表、R5 状态展示、R6 已结束
 
 ### T3 [backend] 模型、仓储与查询
