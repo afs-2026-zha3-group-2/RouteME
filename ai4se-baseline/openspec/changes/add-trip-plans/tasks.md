@@ -112,10 +112,10 @@
 
 ### T13 [verify] 全量验证与报告
 
-- [ ] 跑完 `npm run lint:api`、`.\mvnw.cmd -B verify`、`npm run build`、`npm test`、`npx playwright test`。
-- [ ] 写验证报告（真实命令 + 输出摘要），贴入 PR/变更摘要。
+- [x] 跑完 `npx @redocly/cli lint openapi.yaml`、`.\mvnw.cmd -B verify`、`npm run build`、`npm test`、`npx playwright test`。
+- [x] 写验证报告（真实命令 + 输出摘要），见 `docs/ai4se-plugins/20261115-160141-local-verify-report.md`。
 
-**验证：** 上述命令全绿
+**验证：** 上述命令全绿（32 + 25 + 5 测试通过）
 **覆盖：** 全部验收场景
 
 ## 对齐自检（Spec ↔ Design ↔ Tasks ↔ ATDD）
