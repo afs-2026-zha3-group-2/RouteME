@@ -1,0 +1,11 @@
+{
+    "files.watcherExclude": {
+        "**/target/**": true
+    },
+    "git.ignoredRepositories": [
+        "ai4se-baseline",
+        "ai4se-baseline/RouteME",
+        "RouteME/ai4se-baseline",
+        "RouteME/ai4se-baseline/RouteME"
+    ]
+}

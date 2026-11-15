@@ -9,6 +9,9 @@ This guide applies to coding agents working in this repository. Read the relevan
 3. **Make focused changes.** Each edit should serve the task and follow local naming, structure, and formatting. Remove imports, variables, and functions your change makes obsolete. Record unrelated issues for a separate change.
 4. **Work toward verifiable outcomes.** Express the goal as observable behavior, such as “a quote request with zero weight returns a validation error.” Reproduce a bug before fixing it. For a refactor, run the same tests before and after. Pair each step of a multi-step task with a check, act on the results, and report what you verified and what remains open.
 
+## Repository
+This workspace is exactly one Git repository, rooted at the folder that contains `ai4se-baseline/`. Keep it that way: never run `git init` (or `git clone`) inside `ai4se-baseline/` or any other subdirectory, because a nested repository makes the same history appear twice in Source Control and history views. Commit from the workspace root only.
+
 ## Knowledge
 Please refer to the [knowledge base](docs/knowledge/_INDEX.md) for additional information.
 

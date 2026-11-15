@@ -17,6 +17,7 @@ dist/
 *.iml
 .vscode/*
 !.vscode/tasks.json
+!.vscode/settings.json
 
 # OS
 .DS_Store
