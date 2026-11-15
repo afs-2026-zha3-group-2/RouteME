@@ -99,7 +99,7 @@ test('publisher marks a trip completed and sees the experience placeholder', asy
 
 test('keeps out-of-scope actions off the screens', async ({ page }) => {
   await loginAs(page, 1);
-  await page.goto('/#/trips/3');
+  await page.goto('/#/trips/5');
 
   await expect(page.getByRole('button', { name: '申请同行' })).toBeVisible();
   await expect(page.getByRole('button', { name: '标记为已结束' })).toHaveCount(0);
