@@ -14,7 +14,7 @@
       "problemMatcher": {
         "owner": "routeme-backend",
         "pattern": {
-          "regexp": "^(.*)$",
+                "regexp": "^(?!.*)$",
           "message": 1
         },
         "background": {
@@ -42,7 +42,7 @@
       "problemMatcher": {
         "owner": "routeme-frontend",
         "pattern": {
-          "regexp": "^(.*)$",
+                "regexp": "^(?!.*)$",
           "message": 1
         },
         "background": {
