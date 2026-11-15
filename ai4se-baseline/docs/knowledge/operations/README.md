@@ -1,3 +1,6 @@
+> ⚠️ **已作废 / OBSOLETE（2026-11-15）** — 本文运行说明（`MailGateway`、`ReviewReminderService`、`staffing.mv.db`、H2 Console、`V5`/`V6` 演示数据、travel-review、review-reminders 扫描等）针对**已移除的 "staffing" 应用**，与当前唯一应用 **RouteME 路觅** 无关。RouteME 的运维说明尚未在此登记。
+> 保留仅作历史参考，**不得作为 RouteME 的运维证据**。`_LOG.md` 与 `rules/` 不受影响。
+
 # Operations knowledge
 
 Ops, monitoring, incident, and release notes.

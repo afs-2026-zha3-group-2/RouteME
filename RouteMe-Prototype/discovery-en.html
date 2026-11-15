@@ -1,0 +1,158 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>RouteMe Discovery</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%230f4c5c'/%3E%3Cpath d='M8 22c4-10 12-10 16 0' stroke='%23ff6b35' stroke-width='3' fill='none' stroke-linecap='round'/%3E%3Ccircle cx='16' cy='11' r='3' fill='%23ffb703'/%3E%3C/svg%3E">
+  <style>
+    /* --muted carries small copy, so it must clear 4.5:1 on paper / cream / #f7f3e9 */
+    :root{--ink:#102b3a;--ink-soft:#415b68;--muted:#4e646f;--teal:#2d7f8c;--teal-dark:#1f6571;--gold:#d7a23b;--red:#b8412f;--paper:#fffdf8;--canvas:#f2efe7;--cream:#f1eadb;--blue:#a9c1ca;--rule:#d9d4c7;--rule-dark:#b9b3a5;--shadow:0 1px 2px rgba(16,43,58,.04)}
+    *{box-sizing:border-box} body{margin:0;background:var(--canvas);color:var(--ink);font-family:"Segoe UI","Helvetica Neue",Arial,sans-serif;font-size:16px;line-height:1.55;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}.page{width:min(1180px,100%);margin:0 auto;padding:28px 24px 60px}.sr-only{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;clip-path:inset(50%)}
+    .report-meta{border:1px solid var(--rule);background:var(--paper);box-shadow:var(--shadow);padding:18px 30px}.meta{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:24px;margin:0}.meta dt{color:var(--muted);font-size:10px;font-weight:700;letter-spacing:.16em;text-transform:uppercase}.meta dd{min-height:1.7em;margin:4px 0 0;border-bottom:1px solid var(--rule);padding:2px 0 6px;color:var(--ink-soft);font-size:.96rem}
+    .section{margin-top:16px;border:1px solid var(--rule);background:var(--paper);box-shadow:var(--shadow);padding:34px 40px 40px;scroll-margin-top:18px}.section-head{display:grid;grid-template-columns:58px minmax(0,1fr);gap:18px;align-items:center;margin-bottom:24px;border-bottom:1px solid var(--rule);padding-bottom:18px}.section-no{color:var(--teal);font-size:42px;font-weight:700;letter-spacing:-.06em;line-height:.9}.section h2{margin:0;font-size:clamp(1.4rem,2.6vw,1.85rem);letter-spacing:-.025em;line-height:1.12}.as-is .section-no{color:var(--red)}.to-be .section-no{color:var(--teal)}
+    .pitch{display:grid;gap:0;max-width:940px}.pitch-line{display:grid;grid-template-columns:174px minmax(0,1fr);gap:20px;align-items:baseline;border-bottom:1px solid var(--rule);padding:16px 0}.pitch-line:first-child{padding-top:2px}.pitch-key{color:var(--teal);font-size:11px;font-weight:700;letter-spacing:.12em;text-transform:uppercase}.pitch-text{color:var(--ink-soft);font-size:1.12rem;line-height:1.5}.vision{margin:24px 0 0;border-left:4px solid var(--gold);background:#f8f5ed;padding:15px 18px;color:var(--ink);font-family:Georgia,"Times New Roman",serif;font-size:1.08rem;font-style:italic}
+    .persona{display:grid;grid-template-columns:292px minmax(0,1fr);gap:22px;align-items:stretch}.persona-card{display:flex;flex-direction:column;gap:18px;border:1px solid var(--rule);background:var(--cream);padding:18px}.photo{position:relative;display:grid;place-items:center;aspect-ratio:4/3;overflow:hidden;border:1px solid #d4cbb8;background:#e7dfcd;color:#9a8e78;text-align:center}.photo svg{position:absolute;width:64%;max-width:180px;opacity:.55;fill:currentColor}.photo-label{position:absolute;top:9px;right:10px;left:10px;color:#5f5647;font-size:9px;font-weight:700;letter-spacing:.14em;text-transform:uppercase}.mini-label{margin:0 0 4px;color:var(--teal-dark);font-size:9px;font-weight:700;letter-spacing:.14em;text-transform:uppercase}.persona-name{margin:0;font-size:1.3rem;font-weight:700;line-height:1.2}.persona-role{margin:2px 0 0;color:var(--ink-soft);font-size:.88rem}.persona-quote{margin:auto 0 0;border-top:1px solid #d5cbb7;padding-top:16px;color:var(--ink-soft);font-family:Georgia,"Times New Roman",serif;font-size:1rem;font-style:italic;line-height:1.5}.persona-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}.persona-panel{border-top:3px solid var(--teal);background:#f8f5ed;padding:18px 20px 16px}.persona-panel.span-2{grid-column:span 2}.persona-panel h3{margin:0 0 9px;color:var(--teal-dark);font-size:10px;font-weight:700;letter-spacing:.14em;text-transform:uppercase}.fill-list{margin:0;padding-left:19px}.fill-list li{margin:0 0 5px;color:var(--ink-soft);font-size:.9rem}
+    .journey-wrap{overflow-x:auto;border:1px solid var(--rule)}.journey{width:100%;min-width:900px;border-collapse:collapse;table-layout:fixed}.journey th,.journey td{border:1px solid var(--rule);padding:12px;text-align:left;vertical-align:top}.journey thead th{background:var(--ink);color:#fff;font-size:10px;font-weight:700;letter-spacing:.09em;line-height:1.35;text-align:center;text-transform:uppercase}.journey thead th:first-child{width:132px;background:#0b2635;color:rgba(255,255,255,.62);text-align:left}.journey tbody th{width:132px;background:#f7f3e9;color:var(--muted);font-size:9px;font-weight:700;letter-spacing:.13em;line-height:1.5;text-transform:uppercase;vertical-align:middle}.journey tbody td{color:var(--ink-soft);font-size:.84rem;line-height:1.42}.journey tbody tr.pains td{color:#a34a3f}.journey tbody tr.gains td{color:var(--teal-dark)}.journey tbody tr.emotion td{font-style:italic}.emotion-dot{display:inline-block;width:8px;height:8px;margin-right:6px;border-radius:50%;background:var(--gold);vertical-align:1px}
+    .storymap-wrap{overflow-x:auto}.storymap{width:100%;min-width:900px;border-collapse:separate;border-spacing:7px;table-layout:fixed}.storymap th,.storymap td{vertical-align:top}.storymap thead th{padding:7px 10px;color:var(--ink-soft);font-size:.84rem;font-weight:700;line-height:1.3;text-align:center}.storymap thead th.row-label,.storymap tbody th{width:128px;padding:9px 10px;color:var(--muted);font-size:9px;font-weight:700;letter-spacing:.13em;line-height:1.45;text-align:left;text-transform:uppercase}.storymap tbody th{background:#f7f3e9;vertical-align:middle}.storymap tbody th small{display:block;margin-top:2px;color:var(--red);font-size:8px;letter-spacing:.1em}.storymap td{padding:12px;font-size:.82rem;line-height:1.4}.storymap td.activity{background:var(--gold);color:#45320d;font-weight:700}.storymap td.task{background:var(--blue);color:#17333f}.storymap td.story{border-top:2px solid var(--red);background:var(--cream);color:#5f594d}.loop{margin-top:22px;padding:17px 20px;background:var(--ink);color:white;text-align:center;font-weight:700;letter-spacing:.04em}.loop span{color:#f1c86f}
+    @media screen and (max-width:820px){.page{padding:16px 12px 40px}.report-meta{padding:14px 18px}.meta{grid-template-columns:1fr;gap:10px}.section{padding:24px 18px 28px}.section-head{grid-template-columns:1fr;gap:7px}.section-no{font-size:30px}.pitch-line{grid-template-columns:1fr;gap:3px;padding:13px 0}.persona{grid-template-columns:1fr}.persona-grid{grid-template-columns:1fr}.persona-panel.span-2{grid-column:auto}}
+    @media print{@page{size:A4 landscape;margin:10mm}body{background:#fff;font-size:10pt}.page{width:auto;max-width:none;padding:0}.report-meta,.section{border-color:#ccc;box-shadow:none;break-inside:avoid}.section-head{break-after:avoid}.persona-card,.persona-panel,.journey-wrap,.storymap-wrap,tr{break-inside:avoid}.journey,.storymap{min-width:0}thead{display:table-header-group}}
+    /* ---------- Dark: follows the package-wide preference, screen only; print stays light ---------- */
+    @media screen{
+      [data-theme="dark"]{
+        --ink:#e6eef2;--ink-soft:#b0bfc7;--muted:#879aa3;--teal:#6fb3c0;--teal-dark:#8ecbd6;
+        --gold:#e0b45c;--red:#e08a78;--paper:#121a1e;--canvas:#0b1013;--cream:#192227;
+        --blue:#3c4f58;--rule:#2a373e;--rule-dark:#3a4a52;--shadow:0 1px 2px rgba(0,0,0,.5)
+      }
+      /* These panels and table heads were hard-coded light; flip them or dark mode reads white-on-white */
+      [data-theme="dark"] .vision{background:#162024}
+      [data-theme="dark"] .photo{border-color:var(--rule);background:#192227;color:var(--muted)}
+      [data-theme="dark"] .photo-label{color:var(--muted)}
+      [data-theme="dark"] .persona-quote{border-top-color:var(--rule)}
+      [data-theme="dark"] .persona-panel{background:#162024}
+      [data-theme="dark"] .journey thead th{background:#0b2635;color:#eaf1f4}
+      [data-theme="dark"] .journey thead th:first-child{background:#071a24;color:rgba(234,241,244,.66)}
+      [data-theme="dark"] .journey tbody th{background:#162024}
+      [data-theme="dark"] .journey tbody tr.pains td{color:#e08a78}
+      [data-theme="dark"] .storymap tbody th{background:#162024}
+      [data-theme="dark"] .storymap td.task{color:#e6eef2}
+      [data-theme="dark"] .storymap td.story{color:var(--ink-soft)}
+      [data-theme="dark"] .loop{background:#0b2635;color:#eaf1f4}
+    }
+    /* ---------- Package nav bar (hidden when printing) ---------- */
+    .pkg-bar{position:sticky;top:0;z-index:40;display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:9px 20px;background:var(--paper);border-bottom:1px solid var(--rule);box-shadow:var(--shadow)}
+    .pkg-bar a,.pkg-bar button{font-family:inherit;font-size:12.5px;font-weight:700;line-height:1.4;text-decoration:none;padding:5px 11px;border-radius:8px;border:1px solid var(--rule);background:transparent;color:var(--ink-soft);cursor:pointer;transition:color .16s,border-color .16s}
+    .pkg-bar a:hover,.pkg-bar button:hover{color:var(--teal);border-color:var(--teal)}
+    .pkg-bar a:focus-visible,.pkg-bar button:focus-visible{outline:2px solid var(--teal);outline-offset:2px}
+    .pkg-bar .pkg-back{color:var(--teal);border-color:var(--teal)}
+    .pkg-bar .pkg-name{font-size:10.5px;font-weight:700;letter-spacing:.15em;text-transform:uppercase;color:var(--muted);padding:0 4px}
+    .pkg-bar .pkg-sp{flex:1 1 12px}
+    .pkg-bar .pkg-theme{display:inline-flex;align-items:center;gap:6px}
+    .pkg-bar .pkg-theme svg{width:14px;height:14px}
+    .pkg-bar .pkg-theme .i-moon{display:none}
+    [data-theme="dark"] .pkg-bar .pkg-theme .i-sun{display:none}
+    [data-theme="dark"] .pkg-bar .pkg-theme .i-moon{display:block}
+    @media print{.pkg-bar{display:none}}
+    @media (max-width:640px){.pkg-bar{padding:8px 12px}.pkg-bar .pkg-name{display:none}}
+  </style>
+<script>
+/* Shares one local theme preference with the rest of the package; set in head to avoid a flash. */
+(function(){
+  var K='routeme.theme',r=document.documentElement;
+  function read(){try{var t=localStorage.getItem(K);if(t==='light'||t==='dark')return t;}catch(e){}
+    return window.matchMedia&&window.matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';}
+  function apply(t){r.setAttribute('data-theme',t);try{localStorage.setItem(K,t);}catch(e){}
+    var b=document.getElementById('pkg-theme');
+    if(b)b.setAttribute('aria-label',t==='dark'?'Switch to light mode':'Switch to dark mode');}
+  apply(read());
+  document.addEventListener('DOMContentLoaded',function(){
+    apply(read());
+    var b=document.getElementById('pkg-theme');
+    if(b)b.addEventListener('click',function(){apply(r.getAttribute('data-theme')==='dark'?'light':'dark');});
+  });
+})();
+</script>
+</head>
+<body>
+<nav class="pkg-bar" aria-label="Package navigation">
+  <a class="pkg-back" href="index.html">← Package</a>
+  <span class="pkg-name">Discovery · EN</span>
+  <span class="pkg-sp"></span>
+  <a href="prototype.html">Prototype</a>
+  <a href="stories.html">Stories</a>
+  <a href="discovery-cn.html">中文</a>
+  <button class="pkg-theme" id="pkg-theme" type="button" aria-label="Switch to dark mode">
+    <svg class="i-sun" viewBox="0 0 20 20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.7"><circle cx="10" cy="10" r="4"/><path d="M10 1.6v2.2M10 16.2v2.2M1.6 10h2.2M16.2 10h2.2M4.1 4.1l1.6 1.6M14.3 14.3l1.6 1.6M15.9 4.1l-1.6 1.6M5.7 14.3l-1.6 1.6" stroke-linecap="round"/></svg>
+    <svg class="i-moon" viewBox="0 0 20 20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"><path d="M16 12.4A6.8 6.8 0 0 1 7.6 4a6.9 6.9 0 1 0 8.4 8.4Z"/></svg>
+    <span>Theme</span>
+  </button>
+</nav>
+<div class="page">
+  <h1 class="sr-only">RouteMe Discovery</h1>
+  <header class="report-meta"><dl class="meta">
+    <div><dt>Group</dt><dd>大肥鱼粉丝俱乐部</dd></div>
+    <div><dt>Product</dt><dd>RouteMe 路觅</dd></div>
+    <div><dt>Date</dt><dd>12 Nov 2026</dd></div>
+  </dl></header>
+  <main>
+    <section class="section"><div class="section-head"><div class="section-no">01</div><h2>Elevator Pitch</h2></div>
+      <div class="pitch">
+        <div class="pitch-line"><span class="pitch-key">For</span><span class="pitch-text">University students and young independent travelers</span></div>
+        <div class="pitch-line"><span class="pitch-key">Who want</span><span class="pitch-text">to find compatible travel companions, discover authentic travel experiences, and make travel planning easier</span></div>
+        <div class="pitch-line"><span class="pitch-key">The</span><span class="pitch-text"><strong>RouteMe 路觅</strong> is a travel-based social platform</span></div>
+        <div class="pitch-line"><span class="pitch-key">That</span><span class="pitch-text">allows users to publish travel plans, find people with similar destinations and schedules, and share real travel experiences with the community</span></div>
+        <div class="pitch-line"><span class="pitch-key">Unlike</span><span class="pitch-text">traditional travel and map applications, RouteMe connects travel planning, travel companions, and experience sharing in one community</span></div>
+      </div>
+      <blockquote class="vision">“RouteMe helps young travelers turn ‘where I want to go’ into ‘who I can go with and what we can experience together.’”</blockquote>
+    </section>
+
+    <section class="section"><div class="section-head"><div class="section-no">02</div><h2>User Persona</h2></div>
+      <div class="persona">
+        <aside class="persona-card"><div class="photo"><svg viewBox="0 0 120 120" aria-hidden="true"><circle cx="60" cy="40" r="23"></circle><path d="M14 120c0-27 20-46 46-46s46 19 46 46z"></path></svg><span class="photo-label">Primary Persona</span></div>
+          <div><p class="mini-label">Name / Role</p><p class="persona-name">Alex</p><p class="persona-role">University Student · Independent Traveler</p></div>
+          <blockquote class="persona-quote">“I already know where I want to go. I just want to find someone suitable to travel with and see what other people actually did there.”</blockquote>
+        </aside>
+        <div class="persona-grid">
+          <article class="persona-panel span-2"><h3>Background / Context</h3><ul class="fill-list"><li>20–24 years old and travels during weekends, holidays and semester breaks</li><li>Prefers independent travel to traditional group tours</li><li>Uses social media, map apps and travel platforms to collect information</li><li>Has a limited budget and often cannot align schedules with friends</li></ul></article>
+          <article class="persona-panel"><h3>Goals / Needs</h3><ul class="fill-list"><li>Find people with the same destination and similar dates</li><li>Evaluate travel interests and compatibility before connecting</li><li>Discover authentic experiences instead of generic guides</li><li>Publish a plan and attract suitable companions</li><li>Share routes, photos and tips after the trip</li></ul></article>
+          <article class="persona-panel"><h3>Pains / Frustrations</h3><ul class="fill-list"><li>Friends are not always available</li><li>Strangers are difficult to trust</li><li>Information is fragmented across platforms</li><li>Commercial and repetitive content creates overload</li><li>Planning alone takes too much time</li></ul></article>
+          <article class="persona-panel span-2"><h3>Motivations</h3><ul class="fill-list"><li>Meet new people through shared travel interests</li><li>Reduce the cost and effort of travelling alone</li><li>Make travel more social and memorable</li><li>Help future travelers through real personal experience</li></ul></article>
+        </div>
+      </div>
+    </section>
+
+    <section class="section as-is"><div class="section-head"><div class="section-no">03</div><h2>User Journey Map — AS-IS</h2></div>
+      <div class="journey-wrap"><table class="journey"><thead><tr><th>Phases</th><th>1. Get Travel Idea</th><th>2. Search Information</th><th>3. Plan the Trip</th><th>4. Find Companion</th><th>5. Travel &amp; Share</th></tr></thead><tbody>
+        <tr><th>Actions</th><td>Decide destination and possible dates</td><td>Search attractions, routes, prices and tips</td><td>Build an itinerary and estimate the budget</td><td>Ask friends or post on social media</td><td>Travel, take photos and publish highlights</td></tr>
+        <tr><th>Touchpoints</th><td>Friends and social media</td><td>Map apps, travel apps and social media</td><td>Notes, maps and spreadsheets</td><td>WeChat, social platforms and personal contacts</td><td>Social media and travel platforms</td></tr>
+        <tr class="emotion"><th>Emotion</th><td><span class="emotion-dot"></span>Excited</td><td><span class="emotion-dot"></span>Overwhelmed</td><td><span class="emotion-dot"></span>Tired</td><td><span class="emotion-dot"></span>Uncertain</td><td><span class="emotion-dot"></span>Satisfied</td></tr>
+        <tr class="pains"><th>Pains</th><td>Hard to identify distinctive experiences</td><td>Information is fragmented, repetitive and commercial</td><td>Manual planning takes time and tools do not connect</td><td>Friends are unavailable and strangers are hard to assess</td><td>The experience is disconnected from the original plan</td></tr>
+        <tr class="gains"><th>Gains</th><td>Discover possible destinations</td><td>Learn practical information from others</td><td>Gain a basic usable itinerary</td><td>May find someone interested in the trip</td><td>Create memories and useful travel content</td></tr>
+      </tbody></table></div>
+    </section>
+
+    <section class="section to-be"><div class="section-head"><div class="section-no">04</div><h2>User Journey Map — TO-BE</h2></div>
+      <div class="journey-wrap"><table class="journey"><thead><tr><th>Phases</th><th>1. Discover</th><th>2. Create &amp; Publish</th><th>3. Connect</th><th>4. Travel Together</th><th>5. Share &amp; Inspire</th></tr></thead><tbody>
+        <tr><th>Actions</th><td>Browse real plans and travel experiences</td><td>Add destination, dates, budget, activities and companion needs</td><td>Review matching plans and traveler profiles, then request to join</td><td>Coordinate through a shared trip plan and travel together</td><td>Publish photos, routes, tips and reflections</td></tr>
+        <tr><th>Touchpoints</th><td>RouteMe Feed and Search</td><td>Travel Plan Creator</td><td>Plan Detail, Profile, Join Request and Chat</td><td>Shared Trip Plan</td><td>Experience Post and Community Feed</td></tr>
+        <tr class="emotion"><th>Emotion</th><td><span class="emotion-dot"></span>Inspired</td><td><span class="emotion-dot"></span>Confident</td><td><span class="emotion-dot"></span>Connected</td><td><span class="emotion-dot"></span>Engaged</td><td><span class="emotion-dot"></span>Accomplished</td></tr>
+        <tr class="pains"><th>Pains</th><td>Content quality still needs evaluation</td><td>Plan details require time to complete</td><td>Trust and compatibility remain important</td><td>Schedules and activities may change</td><td>Creating a useful post requires effort</td></tr>
+        <tr class="gains"><th>Gains</th><td>Real experiences become inspiration</td><td>One plan works as both itinerary and social invitation</td><td>Find people with similar travel time and interests</td><td>Shared information reduces coordination effort</td><td>Help others while building personal credibility</td></tr>
+      </tbody></table></div>
+      <div class="loop">TRAVEL SOCIAL LOOP: <span>Discover → Plan → Publish → Connect → Travel → Share → Discover</span></div>
+    </section>
+
+    <section class="section"><div class="section-head"><div class="section-no">05</div><h2>User Story Map / Backlog</h2></div>
+      <div class="storymap-wrap"><table class="storymap"><thead><tr><th class="row-label"></th><th>Discover</th><th>Plan</th><th>Connect</th><th>Share</th></tr></thead><tbody>
+        <tr><th>Activities</th><td class="activity">Discover trips and people</td><td class="activity">Create a travel plan</td><td class="activity">Find travel companions</td><td class="activity">Share travel experience</td></tr>
+        <tr><th>Tasks</th><td class="task">Browse, search and filter plans and experiences</td><td class="task">Add destination, dates, budget, activities and companion needs</td><td class="task">View profiles, evaluate compatibility and request to join</td><td class="task">Create posts with photos, routes, tips and reflections</td></tr>
+        <tr><th>Stories<small>Release 1 · MVP</small></th><td class="story">Browse travel plans and experience posts<br>Filter by destination and date</td><td class="story">Create, edit and publish a travel plan</td><td class="story">View traveler profiles<br>Send and manage join requests</td><td class="story">Publish a travel experience with photos and tips</td></tr>
+        <tr><th>Stories<small>Release 2</small></th><td class="story">Personalized feed<br>Advanced interest and budget filters</td><td class="story">Save drafts<br>Reuse another user's itinerary</td><td class="story">Companion recommendations<br>In-app chat</td><td class="story">Like, comment, save and follow creators</td></tr>
+        <tr><th>Stories<small>Later</small></th><td class="story">AI-based travel and content recommendations</td><td class="story">AI itinerary generation and collaborative planning</td><td class="story">Compatibility scoring, verification and safety features</td><td class="story">Reputation, badges and creator tools</td></tr>
+      </tbody></table></div>
+      <blockquote class="vision"><strong>MVP hypothesis:</strong> Will students publish their travel plans and use those plans to connect with potential travel companions?</blockquote>
+    </section>
+  </main>
+</div>
+</body>
+</html>

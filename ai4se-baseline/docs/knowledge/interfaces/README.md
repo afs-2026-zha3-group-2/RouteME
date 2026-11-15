@@ -1,3 +1,6 @@
+> ⚠️ **已作废 / OBSOLETE（2026-11-15）** — 本文接口契约（projects / demands / candidates / recommendations / notifications 端点、候选池分页导入导出、人员统计、邮件通知契约）针对**已移除的 "staffing" 应用**，与当前唯一应用 **RouteME 路觅** 无关。RouteME 的接口契约（属 dev P2）尚未编写。
+> 保留仅作历史参考，**不得作为 RouteME 的接口证据**。`_LOG.md` 与 `rules/` 不受影响。
+
 # Interfaces knowledge
 
 API、事件与集成契约。字段一律 snake_case；时间字段为 RFC3339 UTC；错误响应只返回 `code`。

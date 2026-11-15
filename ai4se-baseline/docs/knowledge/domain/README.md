@@ -1,3 +1,6 @@
+> ⚠️ **已作废 / OBSOLETE（2026-11-15）** — 本文描述的是**已从本仓库移除的 "staffing"（talent-borrowing）应用**的领域词汇（demand-management / roster-and-gap / headcount-report / 候选人 / 人员编号），与当前唯一应用 **RouteME 路觅**（领域为旅行计划 / 同行匹配 / 游后体验）无关。RouteME 领域知识尚未在此登记。
+> 保留仅作历史参考，**不得作为 RouteME 的领域证据**。作废范围仅限本描述文档；`_LOG.md`（历史审计）与 `rules/`（通用规范）不受影响。
+
 # Domain knowledge
 
 Bounded contexts and the ubiquitous language of the talent-borrowing application.

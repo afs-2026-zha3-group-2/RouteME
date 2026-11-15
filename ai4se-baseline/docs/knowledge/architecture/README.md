@@ -1,3 +1,6 @@
+> ⚠️ **部分作废 / PARTIALLY OBSOLETE（2026-11-15）** — 本文拓扑与运行时描述（`V1`–`V8` 迁移、26 个端点、`X-User-Id` 认证桩、review-reminders、`staffing.Application` 等）针对**已移除的 "staffing" 应用**，与当前唯一应用 **RouteME 路觅** 不符；仅少数行（如第 15 / 71 / 83 行）提及 RouteME。RouteME 的架构描述尚未在此登记。
+> 保留仅作历史参考，**staffing 部分不得作为 RouteME 的架构证据**。`_LOG.md` 与 `rules/` 不受影响。
+
 # Architecture knowledge
 
 System architecture, C4, and topology notes.
