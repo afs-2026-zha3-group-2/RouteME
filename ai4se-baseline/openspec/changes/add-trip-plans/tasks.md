@@ -53,7 +53,7 @@
 
 ### T6 [backend] 结束行程
 
-- [ ] `POST /trips/{id}/complete`：发布者写 `completed_at`，返回 200；非发布者 403 `FORBIDDEN`；已结束 409 `TRIP_NOT_OPEN`；不存在 404。
+- [x] `POST /trips/{id}/complete`：发布者写 `completed_at`，返回 200；非发布者 403 `FORBIDDEN`；已结束 409 `TRIP_NOT_OPEN`；不存在 404 `TRIP_NOT_FOUND`。
 
 **验证：** `cd RouteME/backend; .\mvnw.cmd -Dtest=TripControllerTest#complete* test`
 **覆盖：** R6 的 3 个场景

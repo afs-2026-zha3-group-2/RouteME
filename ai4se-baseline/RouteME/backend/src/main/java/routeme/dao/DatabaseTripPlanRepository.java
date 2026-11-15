@@ -1,5 +1,6 @@
 package routeme.dao;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import org.springframework.jdbc.core.simple.JdbcClient;
@@ -77,5 +78,13 @@ public class DatabaseTripPlanRepository implements TripPlanRepository {
 
         private String toJson(List<String> values) {
             return JsonListCodec.write(values);
+        }
+
+        @Override
+        public void markCompleted(long id, Instant completedAt) {
+            jdbcClient.sql("UPDATE trip_plans SET completed_at = :completedAt, updated_at = :completedAt WHERE id = :id")
+                    .param("completedAt", completedAt.toString())
+                    .param("id", id)
+                    .update();
         }
     }

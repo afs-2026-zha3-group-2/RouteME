@@ -171,6 +171,36 @@ class TripControllerTest {
                 .andExpect(jsonPath("$.code").value("INVALID_INPUT"));
     }
 
+    @Test
+    void in_publisherCompletesTrip_out_completedStatus() throws Exception {
+        mockMvc.perform(post("/api/trips/3/complete").header("X-User-Id", "2"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(3))
+                .andExpect(jsonPath("$.status").value("completed"))
+                .andExpect(jsonPath("$.completed_at").exists());
+    }
+
+    @Test
+    void in_nonPublisherCompletesTrip_out_forbidden() throws Exception {
+        mockMvc.perform(post("/api/trips/3/complete").header("X-User-Id", "1"))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.code").value("FORBIDDEN"));
+    }
+
+    @Test
+    void in_alreadyCompletedTrip_out_tripNotOpen() throws Exception {
+        mockMvc.perform(post("/api/trips/1/complete").header("X-User-Id", "1"))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.code").value("TRIP_NOT_OPEN"));
+    }
+
+    @Test
+    void in_completeUnknownTrip_out_tripNotFound() throws Exception {
+        mockMvc.perform(post("/api/trips/9999/complete").header("X-User-Id", "1"))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.code").value("TRIP_NOT_FOUND"));
+    }
+
     private ResultActions postTrip(String body, String userId) throws Exception {
         var request = post("/api/trips")
                 .contentType(MediaType.APPLICATION_JSON)

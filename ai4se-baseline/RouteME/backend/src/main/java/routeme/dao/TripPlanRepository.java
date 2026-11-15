@@ -1,5 +1,6 @@
 package routeme.dao;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import routeme.model.TripPlan;
@@ -13,4 +14,6 @@ public interface TripPlanRepository {
     long nextId();
 
     void insert(TripPlan trip);
-}
+
+        void markCompleted(long id, Instant completedAt);
+    }

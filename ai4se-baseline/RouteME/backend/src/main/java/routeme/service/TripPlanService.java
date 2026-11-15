@@ -9,10 +9,13 @@ import routeme.dao.TripPlanRepository;
 import routeme.dao.UserRepository;
 import routeme.dto.TripCreateRequest;
 import routeme.dto.TripQuery;
+import routeme.exception.ForbiddenAction;
 import routeme.exception.TripNotFound;
+import routeme.exception.TripNotOpen;
 import routeme.model.DemoUser;
 import routeme.model.TripPlan;
 import routeme.model.TripPlanDraft;
+import routeme.model.TripStatus;
 
 @Service
 public class TripPlanService {
@@ -66,6 +69,19 @@ public class TripPlanService {
         return tripPlanRepository.findById(tripId)
                 .orElseThrow(() -> new TripNotFound(tripId));
     }
+
+        @Transactional
+        public TripPlan complete(long tripId, long userId) {
+            TripPlan trip = require(tripId);
+            if (trip.publisherId() != userId) {
+                throw new ForbiddenAction("only the publisher can complete trip " + tripId);
+            }
+            if (trip.status() == TripStatus.COMPLETED) {
+                throw new TripNotOpen(tripId);
+            }
+            tripPlanRepository.markCompleted(tripId, clock.instant());
+            return require(tripId);
+        }
 
     public DemoUser publisherOf(TripPlan trip) {
         return userRepository.findById(trip.publisherId()).orElseThrow();

@@ -49,6 +49,20 @@ public class ApiErrorHandler {
                     .body(new ErrorResponse("TRIP_NOT_FOUND"));
         }
 
+        @ExceptionHandler(ForbiddenAction.class)
+        public ResponseEntity<ErrorResponse> handleForbidden(ForbiddenAction exception) {
+            LOGGER.warn("forbidden action: {}", exception.getMessage());
+            return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                    .body(new ErrorResponse("FORBIDDEN"));
+        }
+
+        @ExceptionHandler(TripNotOpen.class)
+        public ResponseEntity<ErrorResponse> handleTripNotOpen(TripNotOpen exception) {
+            LOGGER.warn("trip not open: {}", exception.getMessage());
+            return ResponseEntity.status(HttpStatus.CONFLICT)
+                    .body(new ErrorResponse("TRIP_NOT_OPEN"));
+        }
+
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErrorResponse> handleUnexpected(Exception exception) {
         LOGGER.error("unexpected error while serving api request", exception);

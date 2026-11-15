@@ -76,6 +76,15 @@ public class TripController {
                 .body(TripDetailResponse.from(saved, publisher, List.of(publisher)));
     }
 
+        @PostMapping("/{tripId}/complete")
+        public TripDetailResponse complete(
+                @RequestHeader(value = "X-User-Id", required = false) Long userId,
+                @PathVariable long tripId) {
+            DemoUser publisher = demoUserService.require(userId);
+            TripPlan completed = tripPlanService.complete(tripId, publisher.id());
+            return TripDetailResponse.from(completed, publisher, List.of(publisher));
+        }
+
     private Set<String> parseTags(String raw) {
         if (raw == null || raw.isBlank()) {
             return Set.of();
