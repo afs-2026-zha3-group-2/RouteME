@@ -25,7 +25,7 @@
 - `GET /me/trips`、`GET /me/experiences`、`GET /me/applications`、`GET /trips/{id}/experiences` 保持数组返回：它们是「我的」聚合与单行程上下文，条目数量由一次旅行决定。
 - 搜索/筛选语义、排序键、匹配打分、状态推导、错误码集合不变。
 - 不引入分页游标、不实现无限滚动、不做服务端缓存。
-- 不重命名业务 `service`（`TripPlanService` 等）；MyBatis-Plus 的 `ServiceImpl` 落在 `repository/impl`，作为持久化适配层出现。
+- 不重命名业务语义：`XxxService` 仍是业务契约（接口），`XxxServiceImpl` 只是其 MyBatis-Plus 实现；`XxxEntity` 与领域 record 继续分开。
 - 不修复 `apply-prototype-visual-design` 之外的视觉重构（配色、外壳结构不变）。
 
 ## 原型对齐决议
@@ -41,8 +41,8 @@
 | 位置 | 改动 |
 |---|---|
 | `backend/pom.xml` | 新增 MyBatis-Plus starter |
-| `backend/src/main/java/routeme/{entity,mapper,repository/impl,config,param,response,controller,service}` | 实体注解化、mapper、ServiceImpl 适配、分页拦截器、`PageParam` / `PageResponse`、三个列表端点 |
-| `backend/src/main/java/routeme/dao/**` | 删除（7 个手写 SQL 实现） |
+| `backend/src/main/java/routeme/{entity,mapper,pojo,service,service/impl,config,param,response,controller}` | 实体注解化、mapper、service 接口 + ServiceImpl 实现、分页拦截器、`PageParam` / `PageResponse`、三个列表端点 |
+| `backend/src/main/java/routeme/{dao,repository}/**` | 删除（与 `mapper`、`service` 职责重合） |
 | `backend/src/main/resources/application.yaml`、`mapper/*.xml` | MyBatis-Plus 配置与分页查询 SQL |
 | `openapi.yaml`、`redocly.yaml` | 契约 0.5.0、分页 schema 与参数 |
 | `frontend/src/shell/Pager.tsx`、`trips/useMatches.ts`、`experiences/useExperiences.ts`、`api.ts`、`types.ts`、`home/HomePage.tsx`、`mine/MyTripsPage.tsx`、`trips/TripDetailPage.tsx`、`styles.css` | 分页控件、分页状态、列表行布局、详情分区、窄屏 Tabs |

@@ -5,18 +5,18 @@
 
 ## 1. 关键取舍
 
-### MyBatis-Plus 落在持久层，业务分层不变
+### MyBatis-Plus 落在 service/impl，持久层只剩 mapper
 
 ```text
-controller → service（业务规则）→ repository（端口）→ repository/impl（ServiceImpl）→ mapper（BaseMapper）→ 表
+controller → service（IService 接口，业务规则）→ service/impl（ServiceImpl）→ mapper（BaseMapper）→ entity → 表
 ```
 
 - 采用 `mybatis-plus-spring-boot4-starter:3.5.18` + `mybatis-plus-jsqlparser`（3.5.9 起分页拦截器独立成模块），已验证依赖树。
-- `repository/impl/XxxRepositoryImpl extends AbstractRepositoryImpl<XxxMapper, XxxEntity> implements XxxRepository`：基类继承 `ServiceImpl` 并只放 `nextId` / `firstBy` 这类跨表重复查询，实现类只写端口方法，保住 controller/service 对 `repository` 端口的依赖（service 单测仍可 mock 端口）。
+- `service/impl/XxxServiceImpl extends AbstractServiceImpl<XxxMapper, XxxEntity> implements XxxService`：接口继承 `IService<XxxEntity>` 获得通用 CRUD，实现类只管业务规则与事务边界；`AbstractServiceImpl` 只放 `nextId` / `firstBy` 这类跳表重复取数。
 - **SQL 位置约定**：`@Select` / `@Update` 等注解里不写 SQL；单表条件、排序与「取一行」用 `LambdaQueryWrapper`（`nextId` 不再为每张表重复写 `SELECT MAX(id)`），跨表 join / 分组 / 分页写 `resources/mapper/*.xml`。
 - 所有 mapper 接口显式标 `@Mapper`，与 `config/MybatisPlusConfig` 的 `@MapperScan` 并存（显式声明便于单文件阅读，扫描保证装配）。
-- 删除 `dao` 包（7 个 `JdbcClient` 实现）。规则「mapper 与 dao 二选一」由此从 `dao` 切到 `mapper`，`entity` 保留为行对象层。
-- 否决把业务 service 改名成 `ServiceImpl`：`TripPlanService`、`ApplicationService` 等承载业务规则，MyBatis-Plus 的 `ServiceImpl` 只做数据访问，两者职责不同；混名会让「业务规则」和「表操作」再次纠缠。
+- 删除 `dao` **与** `repository` 两个包：它们与 `mapper`、`service` 职责重合；`model` 并入 `pojo`（领域 record），而 `entity` 保持独立（表结构映射）。
+- 否决「保留 repository 端口 + ServiceImpl 适配」的中间态：多一层空接口只增加跳转成本，而 service 接口本身已是可 mock 的契约。
 - 手工 id 生成（`MAX(id)+1`，演示环境低并发）保留，`@TableId(type = IdType.INPUT)`。
 
 ### 分页在数据库层，评分排序在应用层
@@ -60,12 +60,13 @@ GET /api/trips?page=1&size=20&q=&destination=&date_from=&date_to=&tags=&sort=
 
 ```text
 backend/src/main/java/routeme/
-  entity/            GreetingEntity, UserEntity, TripPlanEntity, TripApplicationEntity,
-                     TripExperienceEntity, ChatMessageEntity, ChatThreadEntity, ReportEntity（均为 MyBatis-Plus 实体）
+  service/           XxxService 接口（拥有表的 extends IService<XxxEntity>；方法带 @param/@return Javadoc）
+  service/impl/      XxxServiceImpl extends AbstractServiceImpl<XxxMapper, XxxEntity>
   mapper/            GreetingMapper, UserMapper, TripPlanMapper, TripApplicationMapper,
                      TripExperienceMapper, ChatMessageMapper, ReportMapper（extends BaseMapper，均标 @Mapper）
-  repository/        端口接口（不变）
-  repository/impl/   XxxRepositoryImpl extends AbstractRepositoryImpl<XxxMapper, XxxEntity>
+  entity/            GreetingEntity, UserEntity, TripPlanEntity, TripApplicationEntity,
+                     TripExperienceEntity, ChatMessageEntity, ChatThreadEntity, ReportEntity（@TableName）
+  pojo/              领域 record（TripPlan / TripMatch / PageResult 等，无持久化注解）
   config/            MybatisPlusConfig（@MapperScan + PaginationInnerInterceptor）
   param/             PageParam
   response/          PageResponse
@@ -76,8 +77,10 @@ backend/src/main/resources/mapper/
 ```
 
 - 实体字段与列名靠 `map-underscore-to-camel-case` 对齐；`stops` / `tags` / `interests` 仍是 JSON 文本，解析留在实体的 `toXxx()`。
+- `entity`（随表变，只被 mapper 与 `service/impl` 引用）与 `pojo`（随业务变，跨层传递）分工明确；`TripPlanQueryService` 已删除，过滤下沉到 `TripPlanMapper.xml` 的共享 `<sql>` 片段。
 - 自定义 SQL 只在三处 XML：两个分页 join 与一个会话聚合；其余全用 `LambdaQueryWrapper`，接口里没有注解 SQL。
 - `application.yaml` 增加 `mybatis-plus.mapper-locations: classpath*:mapper/**/*.xml`（未配置时的默认值相同，显式写出便于评审）。
+- 日志统一 Lombok `@Slf4j`；`logback-spring.xml` 输出 `STDOUT` / `TRACE_FILE` / `ERROR_FILE`。
 
 ## 3. 前端契约与状态
 
@@ -101,8 +104,9 @@ shell/Pager   受控组件：{ page, size, total, totalPages, onChange }
 | H2 与 SQLite 的 SQL 差异 | 只用 `LIMIT/OFFSET`、`||` 拼接与 `LIKE`；两库均支持 |
 | 分页后排序稳定性 | 所有排序追加 `id DESC` 作为最后一级，避免同分/同日期翻页抖动 |
 | 契约改动破坏既有调用方 | 同步改前端、E2E 断言与 `OpenApiTest`；`/me/*` 保持数组 |
-| 删除 `dao` 影响测试 | 7 个 dao 测试通过 `@SpringBootTest` 注入 `repository` 端口，端口不变即无需改写 |
+| 删除 `dao` / `repository` 影响测试 | 持久化断言改为 `service/*PersistenceTest`，通过 `@SpringBootTest` 注入 service 接口，行为不变 |
 | 布局回归 | 浏览器在 1440 / 1024 / 768 / 390 四档测量「溢出容器」「重叠」两类几何问题 |
+| 历史会话被权限校验挡住 | `partners()` 走无权限校验的私有 `messages()`；`conversation()` 仍先校验，再由接口测试覆盖 |
 
 ## 5. 验证方式
 

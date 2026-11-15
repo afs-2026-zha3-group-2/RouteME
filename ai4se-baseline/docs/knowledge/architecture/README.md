@@ -11,12 +11,12 @@ System architecture, C4, and topology notes.
 ([rules/architecture/rules.md](../rules/architecture/rules.md#package-structure))；本节只记录本仓库声明的层，不复制规则正文。
 
 ```text
-controller → service → manager（可选）→ dao / mapper → model
-controller / service → dto / model / constant；config 仅装配
+controller → service（IService 接口）→ service/impl（ServiceImpl）→ mapper（BaseMapper）→ entity
+controller / service → request / response / pojo / constant；config 仅装配
 ```
 
 - 本仓库当前应用是 RouteME：`RouteME/backend/src/main/java/routeme/`，层包直接位于根包下，不建业务域目录层；规则里的 `staffing` 是上一作业的示例根包。
-- `dao`（JPA/JDBC）与 `mapper`（MyBatis）二选一；`manager` 仅在确有第三方封装或多 DAO 组合时建立。
+- 持久化只用 `mapper`（MyBatis-Plus），不再建 `repository` / `dao`；`manager` 仅在确有第三方封装或需要多服务组合时建立。
 - 非 Web 小项目才按特性平铺；本项目为 Web 型，固定全局按层。跨层捷径需 ADR 或例外记录。
 - The React frontend lives in `frontend/` per `@rule:web-coding-style`, outside Java packages.
 
@@ -78,7 +78,7 @@ browser (RouteME/frontend, React 19 + Vite 8 + Ant Design)
         |  /api（dev: Vite proxy → 8080）
         v
 RouteME/backend   Spring Boot 4.1.2 (Java 21) :8080
-  controller → service → repository → repository/impl (ServiceImpl) → mapper (BaseMapper) → SQLite SqlLite/routeme.db
+  controller → service (IService 接口) → service/impl (ServiceImpl) → mapper (BaseMapper) → entity → SQLite SqlLite/routeme.db
   Flyway migrations: backend/src/main/resources/db/migration（V1-V8，只增不改）
 RouteME/openapi.yaml   契约 SoT（info.version 0.5.0）
 ```

@@ -12,12 +12,12 @@ cd RouteME/backend
 ```
 
 ```text
-Tests run: 139, Failures: 0, Errors: 0, Skipped: 0
+Tests run: 133, Failures: 0, Errors: 0, Skipped: 0
 BUILD SUCCESS
 ```
 
 - 新增：`TripControllerTest`（分页窗口、越界页、`page=0`/`size=51` → 400）、`MatchControllerTest`（`size=1` 切页与 `size=51`）、`ExperienceControllerTest`（`page=2&size=1`、`size=0`）、`GreetingMapperSqliteTest`（临时 SQLite 文件库 + MyBatis-Plus 映射）。
-- 迁移影响：`dao` 测试改名为 `repository/*RepositoryTest`（仍通过端口断言），三个迁移测试移入 `routeme.migration`。
+- 迁移影响：`dao` / `repository` 移除后，持久化断言改为 `service/ApplicationServicePersistenceTest`、`service/ExperienceServicePersistenceTest`、`service/TripPlanServicePersistenceTest`（注入 service 接口）；三个迁移测试保留在 `routeme.migration`。
 
 ## 2. 契约
 
@@ -75,7 +75,7 @@ npm test        → Test Files 7 passed (7) / Tests 47 passed (47)
 | 注解 SQL | `@Select` / `@Insert` / `@Update` / `@Delete` 出现次数：**0**（`grep` 全量源码） |
 | `@Mapper` | 7 个 mapper 接口全部标注；`@MapperScan` 保留 |
 | 复杂 SQL 落点 | `resources/mapper/` 三份 XML：`TripPlanMapper.xml`、`TripExperienceMapper.xml`、`ChatMessageMapper.xml`（会话聚合从 `@Select` 迁入） |
-| 简单查询 | `nextId` / `firstBy` 收敛到 `AbstractRepositoryImpl`，用 `LambdaQueryWrapper` + 单行分页，无 `SELECT MAX(id)` 文本 |
+| 简单查询 | `nextId` / `firstBy` 收敛到 `AbstractServiceImpl`（`ServiceImpl` 基类），用 `LambdaQueryWrapper` + 单行分页，无 `SELECT MAX(id)` 文本 |
 | `.gitkeep` | 删除 `mapper/`、`docs/ai4se-plugins/`、`vendor/ai4se-plugins/agents/` 三处（同目录已有文件）；空占位包与 `SqlLite/` 保留 |
 | 日志 appender | `logback-spring.xml` 仅 `STDOUT` / `TRACE_FILE` / `ERROR_FILE`；启动后 `backend/logs/` 生成 `routeme-trace.log` 与 `routeme-error.log`（后者 0 字节），旧 `routeme-backend.log` 不再产生 |
 | `LOG_LEVEL_ROUTEME=TRACE` | 实测 TRACE 行写入 `routeme-trace.log`，控制台仍只到 INFO |
@@ -85,11 +85,40 @@ npm test        → Test Files 7 passed (7) / Tests 47 passed (47)
 | 运行时 | `/api/matches?size=4` → total 32；`/api/me/chat-partners` → 9（XML 聚合生效）；`/api/greeting` → Hello World |
 | 页面 | 首页 20 卡 + 分页条；我的旅行 34 行、四项卡可见、无溢出；详情 5 个分区、3 个操作按钮 |
 
-## 7. 未执行
+## 7. 结构收敛复验（同日 23:47，commit `95033f4`）
+
+| 项目 | 结果 |
+|---|---|
+| `repository` / `dao` 包 | 已删除；`routeme.repository.*`、`routeme.dao.*` 在源码与 XML 中出现 0 次 |
+| `service` 形态 | 9 个接口（拥有表的 `extends IService<XxxEntity>`）+ `service/impl` 8 个 `XxxServiceImpl` + `AbstractServiceImpl` |
+| `@Mapper` | 7 个 mapper 全部标注 |
+| `entity` 与 `pojo` 分离 | `entity` 8 个 `@TableName` 实体；`pojo` 12 个领域 record（含 `PageResult`）；`routeme.pojo.*Entity` 残留 0 次 |
+| service 注释 | 9 个接口的每个方法均有 `/** ... @param ... @return ... */`；实现类只用类级注释 |
+| 注解 SQL | `@Select` / `@Insert` / `@Update` / `@Delete` 出现 0 次 |
+| `@Slf4j` | `GlobalExceptionHandler` 改用 Lombok `@Slf4j`；全仓库无 `LoggerFactory` |
+| 后端测试 | `.\mvnw.cmd -B clean test` → **133 项全绿** |
+| 运行时 | `/api/trips?size=5` total 32；`/api/matches?size=3` total 32；`/api/experiences?size=2` total 9；`/api/me/chat-partners` 9；`/api/trips/4/messages?with=3` 4 条；`/api/greeting` Hello World |
+| 前端 | `npm run build` 退出码 0；`npm test` 47 项全绿；首页 20 卡 + 分页条，我的旅行 34 行无溢出 |
+
+- 顺带修复：`partners()` 原复用带权限校验的 `conversation()`，会让已退出行程的历史会话整体 403；现拆出无校验的私有 `messages()`，`conversation()` 仍先校验。
+
+## 8. CI/CD 验证（GitHub Actions）
+
+| 工作流 | 结果 |
+|---|---|
+| CI run #74（commit `95033f4`） | **success** —— `Backend (Java 21)` success、`Frontend (Node 22)` success |
+| CD run #9（同 commit） | **success** —— `Build and publish release` success |
+| Release | `build-95033f4` 已发布，资产 `routeme-standalone-95033f4e156a3922ac43d0e08533999bb693f775.jar`、`routeme-frontend-dist.zip` |
+| 历史对照 | `51d61df`、`0c49fdd`、`a664046` 的 CI 与 CD 均为 success |
+
+- CI 步骤：`./mvnw -B -ntp verify`（backend）、`npm install && npm run build && npm test`（frontend）。
+- CD 由 CI 成功后触发：构建前端 dist → 打进 backend static → 打包单 jar → 上传工件 + 发布 GitHub Release。
+
+## 9. 未执行
 
 - `cd RouteME/e2e; npx playwright test`：E2E 依赖本地真实数据且不在 CI 内；本次仅把卡片选择器由 `.trip-card-link` 更新为 `.trip-card`。
 - 并发写入下的 id 唯一性验证：仍为演示用「最大 id + 1」。
 
 ## 结论
 
-后端 139 项、前端 47 项测试全绿，契约 lint 0 error；分页在数据库（`/trips`、`/experiences`）与应用层（`/matches`）按设计生效，四档视口无溢出、无重叠，卡片与操作区对齐。评审修复项（注解无 SQL、`@Mapper`、`.gitkeep` 清理、日志 appender 与落点）已单独复验。残余风险见 `summary.md`。
+后端 133 项、前端 47 项测试全绿，契约 lint 0 error；分页在数据库（`/trips`、`/experiences`）与应用层（`/matches`）按设计生效，四档视口无溢出、无重叠，卡片与操作区对齐。持久层收敛为 `service` / `service/impl` / `mapper` / `entity` / `pojo`，注释与 `@Slf4j` 齐备。CI run #74 与 CD run #9（commit `95033f4`）均绿，release `build-95033f4` 已产出。残余风险见 `summary.md`。

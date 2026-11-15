@@ -1,7 +1,7 @@
 # 任务：add-paged-lists-mybatis-plus
 
 - **依据：** [`spec.md`](specs/trip-plans/spec.md)、[`spec.md`](specs/trip-experiences/spec.md)、[`spec.md`](specs/design-system/spec.md)、[`design.md`](design.md)
-- **约束：** 契约任务先于两端；实体与 mapper 先于 repository 适配；布局任务只改表现层。
+- **约束：** 契约任务先于两端；mapper 与实体先于 service 适配；布局任务只改表现层。
 
 ## 任务清单
 
@@ -22,15 +22,16 @@
 **验证：** `.\mvnw.cmd -B -q compile`
 **覆盖：** 持久层迁移（proposal In scope）
 
-### T3 [backend] mapper 与 ServiceImpl 适配
+### T3 [backend] mapper 与 ServiceImpl 实现
 
-- [x] `mapper` 包 7 个 `BaseMapper`；`TripPlanMapper`、`TripExperienceMapper` 的分页查询放 `resources/mapper/*.xml`，其余用 `LambdaQueryWrapper`。
-- [x] `repository/impl` 7 个 `ServiceImpl` 适配类实现既有端口；删除 `dao` 包。
-- [x] 端口新增分页方法：`TripPlanRepository.findOpenPage`、`TripExperienceRepository.findPage`。
-- [x] 评审修复：mapper 接口全部标 `@Mapper`；移除全部 `@Select` 注解 SQL（`selectNextId` / `selectFirst` / 会话聚合），后者改为 `LambdaQueryWrapper` 或 `ChatMessageMapper.xml`；新增 `AbstractRepositoryImpl` 收敛 `nextId` / `firstBy`；删除 `mapper/.gitkeep` 与其它已有文件的 `.gitkeep`。
-- [x] 日志与产物：`logback-spring.xml` 改为 `STDOUT` / `TRACE_FILE` / `ERROR_FILE`，目录用 `LOG_PATH`、级别用 `LOG_LEVEL_ROUTEME`；清理散落在 `RouteME/logs/` 的日志，`.gitignore` 补 `logs/`，构建/测试日志输出到系统临时目录。
+- [x] `mapper` 包 7 个 `BaseMapper`，全部标 `@Mapper`；`TripPlanMapper`、`TripExperienceMapper` 的分页查询放 `resources/mapper/*.xml`，其余用 `LambdaQueryWrapper`。
+- [x] `service` 改为接口（拥有表的 `extends IService<XxxEntity>`），实现移入 `service/impl`（`extends AbstractServiceImpl<XxxMapper, XxxEntity>`）；删除 `repository` 与 `dao` 两个包。
+- [x] 分页取数：`TripPlanMapper.selectOpenPage`、`TripExperienceMapper.selectExperiencePage`；匹配用 `selectOpenList` 取全量后在应用层切页。
+- [x] 评审修复：移除全部 `@Select` 注解 SQL（`selectNextId` / `selectFirst` / 会话聚合），改为 `LambdaQueryWrapper` 或 `ChatMessageMapper.xml`；`AbstractServiceImpl` 收敛 `nextId` / `firstBy`；删除已有文件的 `.gitkeep`。
+- [x] 结构收敛（用户裁决）：`model` 并入 `pojo`（领域 record），`entity` 保持独立（表结构映射）；`TripPlanQueryService` 删除，过滤下沉到 XML 共享 `<sql>`；service 接口方法补 `/** @param @return */` Javadoc。
+- [x] 日志与产物：全局统一 Lombok `@Slf4j`；`logback-spring.xml` 改为 `STDOUT` / `TRACE_FILE` / `ERROR_FILE`，目录用 `LOG_PATH`、级别用 `LOG_LEVEL_ROUTEME`；清理散落的运行日志，`.gitignore` 补 `logs/`。
 
-**验证：** `.\mvnw.cmd -B clean test`（139 项）；启动后 `backend/logs/` 只出现 `routeme-trace.log` 与 `routeme-error.log`
+**验证：** `.\mvnw.cmd -B clean test`（133 项）；启动后 `backend/logs/` 只出现 `routeme-trace.log` 与 `routeme-error.log`
 **覆盖：** 持久层迁移、日志落点
 
 ### T4 [backend] 分页参数、响应与端点
