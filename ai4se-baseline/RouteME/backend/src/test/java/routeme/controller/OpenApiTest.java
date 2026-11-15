@@ -58,7 +58,7 @@ class OpenApiTest {
 
         // Then
         assertAll(
-                () -> assertEquals("0.2.0", info.get("version"), "info.version"),
+                () -> assertEquals("0.3.0", info.get("version"), "info.version"),
                 () -> assertTrue(paths(document).containsKey("/users"), "/users declared"),
                 () -> assertTrue(paths(document).containsKey("/trips/{tripId}"), "detail path declared"),
                 () -> assertTrue(
@@ -87,6 +87,58 @@ class OpenApiTest {
                                         "TRIP_NOT_OPEN")),
                         "error codes"),
                 () -> assertEquals(Boolean.TRUE, properties(tripPlan).get("status").get("readOnly"), "status readOnly")
+        );
+    }
+
+    @Test
+    void in_openApiFile_out_companionContractDeclared() throws IOException {
+        // Given
+        Map<String, Object> document = loadYaml(SPEC_PATH);
+
+        // When
+        Map<String, Object> getMatches = operation(document, "/matches", "get");
+        Map<String, Object> postApplications = operation(document, "/trips/{tripId}/applications", "post");
+        Map<String, Object> postMessages = operation(document, "/trips/{tripId}/messages", "post");
+        Map<String, Object> application = schema(document, "TripApplication");
+        Map<String, Object> match = schema(document, "Match");
+        Map<String, Object> myTrips = schema(document, "MyTrips");
+        Map<String, Object> reportRequest = schema(document, "ReportRequest");
+        Map<String, Object> errorSchema = schema(document, "Error");
+
+        // Then
+        assertAll(
+                () -> assertTrue(paths(document).containsKey("/me/trips"), "/me/trips declared"),
+                () -> assertTrue(paths(document).containsKey("/matches/{tripId}"), "match detail declared"),
+                () -> assertTrue(responses(postApplications).containsKey("201"), "apply returns 201"),
+                () -> assertTrue(responses(postMessages).containsKey("409"), "chat read-only conflict"),
+                () -> assertTrue(
+                        parameterNames(document, getMatches).containsAll(List.of("X-User-Id", "q", "sort")),
+                        "match query parameters"),
+                () -> assertTrue(
+                        required(match).containsAll(List.of("score", "percentage", "reasons", "basis")),
+                        "match required fields"),
+                () -> assertTrue(
+                        enums(properties(application).get("status"))
+                                .containsAll(List.of("pending", "accepted", "rejected", "cancelled")),
+                        "application status enum"),
+                () -> assertTrue(
+                        required(myTrips)
+                                .containsAll(List.of(
+                                        "published", "applied", "matched", "completed", "pending_application_count")),
+                        "my trips groups"),
+                () -> assertTrue(
+                        enums(properties(reportRequest).get("reason"))
+                                .containsAll(List.of("harassment", "fake", "safety", "other")),
+                        "report reasons"),
+                () -> assertTrue(
+                        enums(properties(errorSchema).get("code"))
+                                .containsAll(List.of(
+                                        "APPLICATION_NOT_FOUND",
+                                        "APPLICATION_NOT_PENDING",
+                                        "DUPLICATE_APPLICATION",
+                                        "CHAT_NOT_ALLOWED",
+                                        "CHAT_READ_ONLY")),
+                        "companion error codes")
         );
     }
 

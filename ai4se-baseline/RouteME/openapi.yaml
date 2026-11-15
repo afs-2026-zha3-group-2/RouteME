@@ -1,10 +1,10 @@
 openapi: 3.0.3
 info:
   title: RouteME API
-  version: 0.2.0
+  version: 0.3.0
   description: |
     RouteME 后端对外契约。本文件是前后端唯一事实源，字段名、类型、状态码与错误码只在这里定稿。
-    当前包含：脚手架问候语、演示账户，以及旅行计划的浏览 / 筛选 / 发布 / 详情 / 结束。
+        当前包含：脚手架问候语、演示账户、旅行计划（浏览/筛选/发布/详情/结束），以及同行匹配、申请、退出、聊天、我的旅行与举报。
 servers:
   - url: http://localhost:8080/api
     description: 本地开发
@@ -370,6 +370,423 @@ paths:
                 unexpected:
                   value:
                     code: INTERNAL_ERROR
+  /matches:
+    get:
+      operationId: loadMatches
+      summary: 浏览带匹配原因的候选行程
+      description: |
+        在未结束行程上追加匹配分与理由：目的地相同 50、出发日期相同 30、相差一天 20、
+        共同兴趣每项 10 且合计不超过 20；默认按匹配分倒序。筛选参数与 /trips 相同。
+      parameters:
+        - $ref: '#/components/parameters/DemoUserId'
+        - name: q
+          in: query
+          schema:
+            type: string
+        - name: destination
+          in: query
+          schema:
+            type: string
+            enum: [珠海, 广州, 深圳, 佛山, 清远, 中山, 江门, 肇庆]
+        - name: date_from
+          in: query
+          schema:
+            type: string
+            format: date
+        - name: date_to
+          in: query
+          schema:
+            type: string
+            format: date
+        - name: tags
+          in: query
+          schema:
+            type: string
+        - name: sort
+          in: query
+          schema:
+            type: string
+            enum: [match, date, new]
+            default: match
+      responses:
+        '200':
+          description: 候选行程与匹配信息
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/MatchCandidate'
+        '401':
+          $ref: '#/components/responses/DemoUserRequired'
+        '500':
+          $ref: '#/components/responses/Unexpected'
+  /matches/{tripId}:
+    get:
+      operationId: loadMatch
+      summary: 查看单条行程的匹配信息
+      parameters:
+        - $ref: '#/components/parameters/DemoUserId'
+        - name: tripId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: 匹配信息
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MatchCandidate'
+        '401':
+          $ref: '#/components/responses/DemoUserRequired'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/Unexpected'
+  /trips/{tripId}/applications:
+    get:
+      operationId: loadTripApplications
+      summary: 发布者查看行程申请
+      parameters:
+        - $ref: '#/components/parameters/DemoUserId'
+        - name: tripId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: 申请列表
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/TripApplication'
+        '401':
+          $ref: '#/components/responses/DemoUserRequired'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/Unexpected'
+    post:
+      operationId: applyForTrip
+      summary: 提交同行申请
+      parameters:
+        - $ref: '#/components/parameters/DemoUserId'
+        - name: tripId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ApplicationCreateRequest'
+            examples:
+              success:
+                value:
+                  message: 这条线我走过一半，想补上日落那段。
+              rejected:
+                value:
+                  message: 重复申请会在服务端被拒绝，说明为选填且不超过 120 字。
+      responses:
+        '201':
+          description: 已创建待处理申请
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TripApplication'
+        '400':
+          $ref: '#/components/responses/InvalidInput'
+        '401':
+          $ref: '#/components/responses/DemoUserRequired'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '500':
+          $ref: '#/components/responses/Unexpected'
+  /me/applications:
+    get:
+      operationId: loadMyApplications
+      summary: 我的同行申请
+      parameters:
+        - $ref: '#/components/parameters/DemoUserId'
+      responses:
+        '200':
+          description: 我的申请列表
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/TripApplication'
+        '401':
+          $ref: '#/components/responses/DemoUserRequired'
+        '500':
+          $ref: '#/components/responses/Unexpected'
+  /applications/{applicationId}/cancel:
+    post:
+      operationId: cancelApplication
+      summary: 申请者取消待处理申请
+      parameters:
+        - $ref: '#/components/parameters/DemoUserId'
+        - name: applicationId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: 已取消的申请
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TripApplication'
+        '401':
+          $ref: '#/components/responses/DemoUserRequired'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+  /applications/{applicationId}/accept:
+    post:
+      operationId: acceptApplication
+      summary: 发布者接受申请
+      parameters:
+        - $ref: '#/components/parameters/DemoUserId'
+        - name: applicationId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: 已接受的申请
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TripApplication'
+        '401':
+          $ref: '#/components/responses/DemoUserRequired'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+  /applications/{applicationId}/reject:
+    post:
+      operationId: rejectApplication
+      summary: 发布者拒绝申请
+      parameters:
+        - $ref: '#/components/parameters/DemoUserId'
+        - name: applicationId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: 已拒绝的申请
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TripApplication'
+        '401':
+          $ref: '#/components/responses/DemoUserRequired'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+  /trips/{tripId}/leave:
+    post:
+      operationId: leaveTrip
+      summary: 已接受的同行者退出
+      parameters:
+        - $ref: '#/components/parameters/DemoUserId'
+        - name: tripId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '204':
+          description: 已退出
+        '401':
+          $ref: '#/components/responses/DemoUserRequired'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+  /trips/{tripId}/messages:
+    get:
+      operationId: loadMessages
+      summary: 读取与某位同行者的消息
+      parameters:
+        - $ref: '#/components/parameters/DemoUserId'
+        - name: tripId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+        - name: with
+          in: query
+          required: true
+          description: 对方用户 id
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: 消息列表，按发送时间升序
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ChatMessage'
+        '401':
+          $ref: '#/components/responses/DemoUserRequired'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    post:
+      operationId: sendMessage
+      summary: 发送文字消息
+      parameters:
+        - $ref: '#/components/parameters/DemoUserId'
+        - name: tripId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChatMessageRequest'
+            examples:
+              success:
+                value:
+                  receiver_id: 2
+                  content: 周六九点陈家祠 D 口集合，可以吗？
+              rejected:
+                value:
+                  receiver_id: 2
+                  content: ''
+      responses:
+        '201':
+          description: 已保存的消息
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChatMessage'
+        '400':
+          $ref: '#/components/responses/InvalidInput'
+        '401':
+          $ref: '#/components/responses/DemoUserRequired'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+  /me/chat-partners:
+    get:
+      operationId: loadChatPartners
+      summary: 我的聊天对象
+      parameters:
+        - $ref: '#/components/parameters/DemoUserId'
+      responses:
+        '200':
+          description: 按最后一条消息时间倒序
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ChatPartner'
+        '401':
+          $ref: '#/components/responses/DemoUserRequired'
+  /me/trips:
+    get:
+      operationId: loadMyTrips
+      summary: 我的旅行聚合
+      parameters:
+        - $ref: '#/components/parameters/DemoUserId'
+      responses:
+        '200':
+          description: 我发布的、我申请的、已匹配、已完成与待处理数
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MyTrips'
+        '401':
+          $ref: '#/components/responses/DemoUserRequired'
+        '500':
+          $ref: '#/components/responses/Unexpected'
+  /reports:
+    post:
+      operationId: submitReport
+      summary: 举报行程或用户
+      parameters:
+        - $ref: '#/components/parameters/DemoUserId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReportRequest'
+            examples:
+              success:
+                value:
+                  target_type: trip
+                  target_id: 3
+                  reason: safety
+                  note: 集合地点与描述不符。
+              rejected:
+                value:
+                  target_type: planet
+                  target_id: 3
+                  reason: safety
+      responses:
+        '201':
+          description: 举报已记录
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReportReceipt'
+        '400':
+          $ref: '#/components/responses/InvalidInput'
+        '401':
+          $ref: '#/components/responses/DemoUserRequired'
+        '500':
+          $ref: '#/components/responses/Unexpected'
 components:
   parameters:
     DemoUserId:
@@ -380,6 +797,67 @@ components:
       schema:
         type: integer
         format: int64
+  responses:
+    DemoUserRequired:
+      description: 缺少或未知的演示身份
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          examples:
+            missing:
+              value:
+                code: DEMO_USER_REQUIRED
+    InvalidInput:
+      description: 输入不满足契约或业务约束
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          examples:
+            invalid:
+              value:
+                code: INVALID_INPUT
+    Forbidden:
+      description: 当前身份无权执行该操作
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          examples:
+            forbidden:
+              value:
+                code: FORBIDDEN
+    NotFound:
+      description: 资源不存在
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          examples:
+            notFound:
+              value:
+                code: TRIP_NOT_FOUND
+    Conflict:
+      description: 当前状态不允许该操作
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          examples:
+            conflict:
+              value:
+                code: DUPLICATE_APPLICATION
+    Unexpected:
+      description: 未预期异常，响应不携带堆栈
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          examples:
+            unexpected:
+              value:
+                code: INTERNAL_ERROR
   schemas:
     Greeting:
       type: object
@@ -558,6 +1036,171 @@ components:
         note:
           type: string
           maxLength: 500
+    Match:
+      type: object
+      required: [score, percentage, reasons, basis]
+      properties:
+        score:
+          type: integer
+          minimum: 0
+          maximum: 100
+        percentage:
+          type: integer
+          minimum: 0
+          maximum: 100
+        reasons:
+          type: array
+          items:
+            type: string
+        basis:
+          type: string
+          description: 参照物说明（最近一条未结束的已发布行程，或我的兴趣与当前筛选）
+    MatchCandidate:
+      allOf:
+        - $ref: '#/components/schemas/TripPlan'
+        - type: object
+          required: [match]
+          properties:
+            match:
+              $ref: '#/components/schemas/Match'
+    ApplicationCreateRequest:
+      type: object
+      properties:
+        message:
+          type: string
+          maxLength: 120
+          nullable: true
+          description: 选填的一句申请说明，未填时对方看到「未填写申请说明」
+    TripApplication:
+      type: object
+      required: [id, trip_id, applicant, status, created_at]
+      properties:
+        id:
+          type: integer
+          format: int64
+          readOnly: true
+        trip_id:
+          type: integer
+          format: int64
+          readOnly: true
+        applicant:
+          $ref: '#/components/schemas/DemoUser'
+        message:
+          type: string
+          maxLength: 120
+          nullable: true
+        status:
+          type: string
+          enum: [pending, accepted, rejected, cancelled]
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        decided_at:
+          type: string
+          format: date-time
+          nullable: true
+          readOnly: true
+        trip:
+          $ref: '#/components/schemas/TripPlan'
+    ChatMessage:
+      type: object
+      required: [id, trip_id, sender_id, receiver_id, content, sent_at]
+      properties:
+        id:
+          type: integer
+          format: int64
+          readOnly: true
+        trip_id:
+          type: integer
+          format: int64
+          readOnly: true
+        sender_id:
+          type: integer
+          format: int64
+          readOnly: true
+        receiver_id:
+          type: integer
+          format: int64
+          readOnly: true
+        content:
+          type: string
+          maxLength: 500
+        sent_at:
+          type: string
+          format: date-time
+          readOnly: true
+    ChatMessageRequest:
+      type: object
+      required: [receiver_id, content]
+      properties:
+        receiver_id:
+          type: integer
+          format: int64
+        content:
+          type: string
+          maxLength: 500
+    ChatPartner:
+      type: object
+      required: [trip, other, message_count]
+      properties:
+        trip:
+          $ref: '#/components/schemas/TripPlan'
+        other:
+          $ref: '#/components/schemas/DemoUser'
+        last_message:
+          $ref: '#/components/schemas/ChatMessage'
+        message_count:
+          type: integer
+          minimum: 0
+    MyTrips:
+      type: object
+      required: [published, applied, matched, completed, pending_application_count]
+      properties:
+        published:
+          type: array
+          items:
+            $ref: '#/components/schemas/TripPlan'
+        applied:
+          type: array
+          items:
+            $ref: '#/components/schemas/TripApplication'
+        matched:
+          type: array
+          items:
+            $ref: '#/components/schemas/TripPlan'
+        completed:
+          type: array
+          items:
+            $ref: '#/components/schemas/TripPlan'
+        pending_application_count:
+          type: integer
+          minimum: 0
+    ReportRequest:
+      type: object
+      required: [target_type, target_id, reason]
+      properties:
+        target_type:
+          type: string
+          enum: [trip, user]
+        target_id:
+          type: integer
+          format: int64
+        reason:
+          type: string
+          enum: [harassment, fake, safety, other]
+        note:
+          type: string
+          maxLength: 200
+          nullable: true
+    ReportReceipt:
+      type: object
+      required: [received]
+      properties:
+        received:
+          type: boolean
+          readOnly: true
     Error:
       type: object
       required: [code]
@@ -566,4 +1209,6 @@ components:
           type: string
           description: 大写下划线错误码，前端按原值判断
           enum:
-            [GREETING_NOT_FOUND, INVALID_INPUT, DEMO_USER_REQUIRED, FORBIDDEN, TRIP_NOT_FOUND, TRIP_NOT_OPEN, INTERNAL_ERROR]
+            [GREETING_NOT_FOUND, INVALID_INPUT, DEMO_USER_REQUIRED, FORBIDDEN, TRIP_NOT_FOUND, TRIP_NOT_OPEN,
+             APPLICATION_NOT_FOUND, APPLICATION_NOT_PENDING, DUPLICATE_APPLICATION, CHAT_NOT_ALLOWED, CHAT_READ_ONLY,
+             INTERNAL_ERROR]

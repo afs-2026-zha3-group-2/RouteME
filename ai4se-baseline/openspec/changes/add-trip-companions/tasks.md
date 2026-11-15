@@ -7,10 +7,10 @@
 
 ### T1 [contract] 契约先行
 
-- [ ] `openapi.yaml` 新增 `/matches`、`/matches/{tripId}`、`/trips/{tripId}/applications`（GET/POST）、`/me/applications`、`/applications/{id}/cancel|accept|reject`、`/trips/{tripId}/leave`、`/trips/{tripId}/messages`（GET/POST）、`/me/chat-partners`、`/me/trips`、`/reports`，以及 `Match`、`Application`、`ChatMessage`、`MyTrips`、`Report` schema 与错误码。
-- [ ] `OpenApiTest` 断言新路径、必填与状态枚举；Redocly 0 error。
+- [x] `openapi.yaml` 新增 `/matches`、`/matches/{tripId}`、`/trips/{tripId}/applications`（GET/POST）、`/me/applications`、`/applications/{id}/cancel|accept|reject`、`/trips/{tripId}/leave`、`/trips/{tripId}/messages`（GET/POST）、`/me/chat-partners`、`/me/trips`、`/reports`，以及 `Match`、`Application`、`ChatMessage`、`MyTrips`、`Report` schema 与错误码（v0.3.0）。
+- [x] `OpenApiTest` 断言新路径、必填与状态枚举；Redocly 0 error。
 
-**验证：** `cd RouteME; npx @redocly/cli lint openapi.yaml`；`cd RouteME/backend; .\mvnw.cmd -Dtest=OpenApiTest test`
+**验证：** `cd RouteME; npx @redocly/cli lint openapi.yaml`（0 error）；`cd RouteME/backend; .\mvnw.cmd -Dtest=OpenApiTest test`（3 tests）
 **覆盖：** 全部需求的字段与状态码
 
 ### T2 [backend] 迁移与种子
