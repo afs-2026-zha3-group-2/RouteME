@@ -23,8 +23,8 @@
 
 ### T3 [backend] 申请领域与仓储
 
-- [ ] `TripApplication`、`ApplicationStatus`、`TripApplicationRepository` 与行对象：按行程/申请人查询、唯一性校验、状态更新。
-- [ ] 状态机校验（PENDING 才能 cancel/decide；ACCEPTED 才能 leave）。
+- [x] `TripApplication`、`ApplicationStatus`、`TripApplicationRepository` 与行对象：按行程/申请人查询、唯一性校验、状态更新。
+- [x] 状态机校验（PENDING 才能 cancel/decide；ACCEPTED 才能 leave）由领域方法与服务层守卫。
 
 **验证：** `cd RouteME/backend; .\mvnw.cmd -Dtest=DatabaseTripApplicationRepositoryTest,ApplicationStatusTest test`
 **覆盖：** R2/R3/R4 的状态与权限
