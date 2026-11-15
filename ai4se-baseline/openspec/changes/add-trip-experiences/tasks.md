@@ -103,16 +103,16 @@
 
 ### T13 [docs] 知识库与登记
 
-- [ ] `docs/knowledge/domain`、`interfaces`、`architecture` 补体验能力（口径、展示位、参考发布、隐私边界）。
-- [ ] `requirement-workspace/registry.md` 更新 REQ-004 状态。
+- [x] `docs/knowledge/domain`、`interfaces`、`architecture` 补体验能力（口径、展示位、参考发布、隐私边界）。
+- [x] `requirement-workspace/registry.md` 更新 REQ-004 状态。
 
 **验证：** 相对链接 0 断链；术语与 spec 一致
 **覆盖：** 文档交付
 
 ### T14 [verify] 全量验证与报告
 
-- [ ] Redocly、`.\mvnw.cmd -B verify`、`npm run build`、`npm test`、`npx playwright test` 全绿。
-- [ ] 写 `docs/ai4se-plugins/<ts>-local-verify-report.md`。
+- [x] Redocly、`.\mvnw.cmd -B verify`、`npm run build`、`npm test`、`npx playwright test` 全绿。
+- [x] 写 `docs/ai4se-plugins/<ts>-local-verify-report.md`。
 
 **验证：** 上述命令全绿
 **覆盖：** 全部验收场景

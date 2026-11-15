@@ -35,6 +35,18 @@ This file owns the vocabulary; `shared/` only links back here, so terms stay uni
 
 不变量：接受申请必须与 `joined_count` 在同一事务内联动；满员与回退由状态投影自动得出；聊天权限由「已接受」推导，退出后自动关闭；举报不公开电话、证件与精确住址。
 
+## RouteME 游后体验词汇（2026-11-15，`trip-experiences`）
+
+| 术语 | 中文 | 说明 |
+|---|---|---|
+| Trip experience | 游后体验 | 参加者对已结束行程的真实感受、强度与建议；每人每行程一条 |
+| Share eligibility | 分享资格 | 行程已结束，且当前用户是发布者或已接受同行者 |
+| Intensity | 路线强度 | `relaxed` 轻松 / `moderate` 适中 / `tiring` 较累 |
+| Experience view | 旅行体验视图 | 灵感首页与「旅行计划」并列的视图，按最近保存时间倒序 |
+| Reference publish | 参考此行程发布 | 预填目的地、途经点、兴趣标签；标题/日期/人数/集合区域/说明必须重填 |
+
+不变量：体验不改变行程数据所有权；`joined_count` 仍由 `trip-plans` 单一写入；体验为纯文字 + 内置封面，不做图片上传；分享资格由 REQ-003 的 `participants` 推导，不重复定义。
+
 ## Context map
 
 | Context | Capability | Responsibility | Code anchors |

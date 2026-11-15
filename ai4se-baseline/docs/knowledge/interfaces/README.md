@@ -5,9 +5,9 @@
 
 API、事件与集成契约。字段一律 snake_case；时间字段为 RFC3339 UTC；错误响应只返回 `code`。
 
-## RouteME 行程与同行接口（2026-11-15，`trip-plans` + `trip-companions`）
+## RouteME 行程、同行与体验接口（2026-11-15，`trip-plans` + `trip-companions` + `trip-experiences`）
 
-契约源：`RouteME/openapi.yaml`（v0.3.0）。校验：`cd RouteME; npx @redocly/cli lint openapi.yaml`（配置见 `RouteME/redocly.yaml`），或 `cd RouteME/backend; .\mvnw.cmd -Dtest=OpenApiTest test`。
+契约源：`RouteME/openapi.yaml`（v0.4.0）。校验：`cd RouteME; npx @redocly/cli lint openapi.yaml`（配置见 `RouteME/redocly.yaml`），或 `cd RouteME/backend; .\mvnw.cmd -Dtest=OpenApiTest test`。
 
 | 方法 | 路径 | 说明 |
 |---|---|---|
@@ -30,12 +30,17 @@ API、事件与集成契约。字段一律 snake_case；时间字段为 RFC3339 
 | GET | `/me/chat-partners` | 聊天对象列表（含最后一条消息与条数） |
 | GET | `/me/trips` | 我的旅行四组（published/applied/matched/completed）+ `pending_application_count` |
 | POST | `/reports` | 举报行程或用户 `{target_type, target_id, reason, note?}`，返回 `{received: true}` |
+| GET | `/experiences` | 旅行体验列表；`q`、`destination`、`tags`，按最近保存时间倒序 |
+| GET | `/me/experiences` | 我的体验（我的旅行「已完成」入口用） |
+| GET | `/trips/{tripId}/experiences` | 某行程的体验，按首次发布时间升序 |
+| POST | `/trips/{tripId}/experiences` | 发布或修改我的体验；首次 201、更新 200；`{content, intensity, advice}` |
 
 - 所有 `/trips*`、`/matches*`、`/me/*`、`/applications/*`、`/reports` 请求要求 `X-User-Id`（`app_users.id`）；缺失或未知返回 401 `DEMO_USER_REQUIRED`。
 - 列表只返回未结束行程；`sort` 非法返回 400。
 - 同行关系 = 发布者 + 该行程 `ACCEPTED` 的申请者；`joined_count` 仍由 `trip-plans` 单一写入，接受/退出经服务方法联动。
 - 聊天仅对已匹配双方开放；行程 `completed` 后可读不可写；只有 `PENDING` 申请不能进入。
-- 错误码：`INVALID_INPUT`(400)、`DEMO_USER_REQUIRED`(401)、`FORBIDDEN`(403)、`TRIP_NOT_FOUND`/`APPLICATION_NOT_FOUND`(404)、`TRIP_NOT_OPEN`/`APPLICATION_NOT_PENDING`/`DUPLICATE_APPLICATION`/`CHAT_READ_ONLY`(409)、`CHAT_NOT_ALLOWED`(403)、`INTERNAL_ERROR`(500)。
+- 体验仅对「已结束且参加过（发布者或已接受同行者）」开放；每人每行程一条，再次提交即更新；`content` 10–400 字、`intensity` ∈ relaxed/moderate/tiring、`advice` 必填 ≤120 字。
+- 错误码：`INVALID_INPUT`(400)、`DEMO_USER_REQUIRED`(401)、`FORBIDDEN`/`CHAT_NOT_ALLOWED`/`EXPERIENCE_NOT_ALLOWED`(403)、`TRIP_NOT_FOUND`/`APPLICATION_NOT_FOUND`(404)、`TRIP_NOT_OPEN`/`APPLICATION_NOT_PENDING`/`DUPLICATE_APPLICATION`/`CHAT_READ_ONLY`(409)、`INTERNAL_ERROR`(500)。
 - 状态由 `completed_at` 与人数推导，不是独立写入的字段；映射与字段约束以 `openapi.yaml` 为准。
 
 ## REST 面
