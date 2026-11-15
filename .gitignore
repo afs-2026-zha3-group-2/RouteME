@@ -36,3 +36,9 @@ playwright-report/
 
 # Logs
 *.log
+
+# Local SQLite workspace (keep the folder, ignore data files)
+ai4se-baseline/RouteME/SqlLite/*.db
+ai4se-baseline/RouteME/SqlLite/*.db-journal
+ai4se-baseline/RouteME/SqlLite/*.lock.db
+ai4se-baseline/RouteME/backend/data/

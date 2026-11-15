@@ -59,7 +59,7 @@ Windows     cd RouteME/backend; .\mvnw.cmd spring-boot:run    # 启动 8080
 其他平台     ./mvnw -B verify / ./mvnw spring-boot:run
 ```
 
-- 数据文件 `backend/data/routeme.db`；Flyway 启动时应用 `V1`–`V8`（greetings、app_users、trip_plans、trip_applications、chat_messages、reports、trip_experiences），迁移只增不改；重置演示数据时停止后端并删除该文件后重启。
+- 数据文件 `RouteME/SqlLite/routeme.db`（默认 `jdbc:sqlite:../SqlLite/routeme.db`，可用 `SPRING_DATASOURCE_URL` 覆盖；容器内为 `/data/routeme.db`）；Flyway 启动时应用 `V1`–`V8`（greetings、app_users、trip_plans、trip_applications、chat_messages、reports、trip_experiences），迁移只增不改；重置演示数据时停止后端并删除该文件后重启。
 - 冒烟：`GET /api/greeting`、`GET /api/users`、`GET /api/trips`、`GET /api/experiences`（其余 `/trips*`、`/me/*`、`/matches*` 需 `X-User-Id`，1–3 为演示账户）。
 - 契约校验：`cd RouteME; npx @redocly/cli lint openapi.yaml`（0 error），或 `cd RouteME/backend; .\mvnw.cmd -Dtest=OpenApiTest test`。
 - 前端：`cd RouteME/frontend; npm run build; npm test`。
@@ -73,7 +73,8 @@ CD  .github/workflows/cd.yml   CI 在 main 全绿后：打包 jar + dist 工件�
 ```
 
 - **CI（已跑通）**：三个 job —— `backend`（JDK 21，`./mvnw -B -ntp verify`）、`frontend`（Node 22 + npm 11，`npm install` + `build` + `test`）、`docker`（Buildx 构建 `ai4se-baseline/RouteME/Dockerfile`，不推送，验证部署产物可构建）。
-- **CD（Render，单容器）**：`render.yaml` 定义 web 服务 `routeme`（`runtime: docker`，health check `/api/greeting`，`autoDeploy: false`）。镜像内前端 `dist` 打进 Spring Boot `static/`，同域提供页面与 `/api`，SQLite 落在 `/tmp/routeme.db`（免费实例无持久盘，重启即回到种子数据）。
+- **CD（Render，单容器）**：`render.yaml` 定义 web 服务 `routeme`（`runtime: docker`，health check `/api/greeting`，`autoDeploy: false`）。镜像内前端 `dist` 打进 Spring Boot `static/`，同域提供页面与 `/api`，SQLite 落在 `/data/routeme.db`（镜像声明 `VOLUME /data`；免费实例无持久盘，重启即回到种子数据）。
+- **账号与凭证**：Render 账号、Blueprint 创建与 Deploy Hook 由仓库所有者本人完成（邮箱验证与账号所有权），步骤见 [RouteME/README.md](../../RouteME/README.md#cdrender需要你完成账号与密钥)；密钥只放 GitHub Secrets，不落仓库。
 - **启用步骤**：Render → New → Blueprint → 选本仓库（读取 `render.yaml`）→ 创建服务 → Settings → Deploy Hook → 复制 URL → GitHub 仓库 Settings → Secrets and variables → Actions → 新增 `RENDER_DEPLOY_HOOK_URL`。未配置该 secret 时 CD 只打包并给出 warning，不判失败。
 - **触发顺序**：push `main` → CI 全绿 → CD `workflow_run` 打包并 `curl -X POST $RENDER_DEPLOY_HOOK_URL` → Render 按同一 Dockerfile 重建上线。`autoDeploy: false` 保证 Render 不会抢在 CI 之前发布未验证提交。
 - **回滚**：Render → Deploys → 选上一成功部署 → Redeploy；数据库为临时盘，回滚不涉及数据迁移。

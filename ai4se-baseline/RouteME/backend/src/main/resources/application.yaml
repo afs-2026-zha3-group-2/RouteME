@@ -4,7 +4,8 @@ spring:
   jackson:
     property-naming-strategy: SNAKE_CASE
   datasource:
-    url: jdbc:sqlite:./data/routeme.db
+    # 本地从 backend 目录启动时，数据库落在同级 SqlLite/；容器内由 SPRING_DATASOURCE_URL 覆盖为 /data。
+    url: ${SPRING_DATASOURCE_URL:jdbc:sqlite:../SqlLite/routeme.db}
     driver-class-name: org.sqlite.JDBC
     hikari:
       # Flyway 迁移期间需要同时占用迁移连接与历史表连接；SQLite 的写事务本身串行。

@@ -24,6 +24,7 @@ Bash (for example Git Bash on Windows); their use depends on the selected skill.
 
 ## Project content
 
+- [RouteME application](RouteME/README.md)（本地运行 / Docker / CI-CD）
 - [Knowledge base](docs/knowledge/_INDEX.md)
 - [UI prototype](docs/prototype/index.html)
 - [Requirement workspace](requirement-workspace/README.md)

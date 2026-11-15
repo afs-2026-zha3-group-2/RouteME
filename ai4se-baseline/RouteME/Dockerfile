@@ -20,10 +20,11 @@ RUN ./mvnw -B -ntp -DskipTests package
 
 FROM eclipse-temurin:21-jre
 WORKDIR /app
-RUN useradd --system --uid 1001 routeme
+RUN useradd --system --uid 1001 routeme && mkdir -p /data && chown routeme:routeme /data
 COPY --from=api /build/target/routeme-backend-0.0.1-SNAPSHOT.jar app.jar
 USER routeme
 ENV PORT=8080 \
-    SPRING_DATASOURCE_URL=jdbc:sqlite:/tmp/routeme.db
+    SPRING_DATASOURCE_URL=jdbc:sqlite:/data/routeme.db
+VOLUME ["/data"]
 EXPOSE 8080
 ENTRYPOINT ["java", "-jar", "app.jar"]
