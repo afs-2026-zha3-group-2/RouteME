@@ -133,9 +133,17 @@ src/
 | 列表分页 | MVP 数据量小；后续加分页按破坏性变更处理 |
 | 按匹配度排序在本 change 实现 | 打分属 REQ-003，避免重复能力 |
 
-## 7. 风险
+## 8. 风险
 
 - `X-User-Id` 可伪造：仅演示；`security-baseline` 的真实认证替换列入残留风险。
 - 前后端校验重复：约束表只在 `spec.md` 定义一次，两端测试引用同一组边界值；漂移由 API 测试兜底。
 - SQLite 并发写：MVP 只有发布与结束两个写操作，低并发；沿用现有连接池配置。
 - `joined_count` 冗余：REQ-003 必须通过服务方法更新，禁止直接改表（写进 REQ-003 的设计约束）。
+
+## 9. 提交策略（例外记录）
+
+`@rule:git-commit-conventions` 要求一个 change 只在 verify 与 archive 各提交一次。本 change 按需求方要求「每完成一步提交并推送」，规划（delta/G1/ATDD/design/tasks）与实现（T1–T13）分别提交。已推送历史不改写（规则禁止对 `main` force push），因此：
+
+- 以 `9b5928b`（`docs: record local verify report for add-trip-plans`）作为 verify 提交凭据；
+- 归档结果单独提交 `chore(archive): add-trip-plans ...`；
+- 后续 change 恢复「verify + archive 两次提交」，除非需求方再次明确要求分步提交。
