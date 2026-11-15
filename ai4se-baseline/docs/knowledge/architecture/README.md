@@ -88,4 +88,5 @@ RouteME/openapi.yaml   契约 SoT（info.version 0.2.0）
 - 仓储接口 `GreetingRepository`、JDBC 实现与行对象 `GreetingRow` 都在 `dao`；`GET /api/greeting` 是单例资源（表内单条记录），为复数资源规约的已记录例外。
 - 前端业务状态在 `src/home/useGreeting.ts`，请求只走 `src/api.ts`，文案在 `src/i18n/messages.ts`；Ant Design 由需求方指定引入。
 - 行程能力（`trip-plans`，2026-11-15）：`app_users` + `trip_plans`（V3/V4）；状态由 `completed_at` 与 `joined_count`/`capacity` 投影；`TripPlanQueryService` 做搜索/目的地/日期区间/标签/排序；前端 `src/home/HomePage.tsx`（列表）、`src/trips/`（发布、详情、表单与筛选纯函数）、`src/identity/IdentityGate.tsx`；接口见 `interfaces/README.md`。
+- 同行能力（`trip-companions`，2026-11-15）：`trip_applications`/`chat_messages`/`reports`（V5–V7）；无独立 companions 表，同行关系 = 发布者 + `ACCEPTED` 申请；`ApplicationService` 在事务内调用 `TripPlanService.addCompanion/removeCompanion` 单一写入 `joined_count`；`MatchService`/`TripMatch` 只读行程；`ChatService` 由「已接受」推导权限；前端 `src/trips/ApplicationsPage.tsx`、`src/mine/MyTripsPage.tsx`、`src/chat/ChatPage.tsx`、`src/safety/`。
 - CI：仓库根 `.github/workflows/ci.yml`，backend `./mvnw -B verify`，frontend `npm ci && npm run build && npm test`；Playwright 端到端（`RouteME/e2e`）按 bootstrap 决定不进 CI，作为本地门禁。

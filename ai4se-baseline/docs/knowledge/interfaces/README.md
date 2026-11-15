@@ -5,21 +5,37 @@
 
 API、事件与集成契约。字段一律 snake_case；时间字段为 RFC3339 UTC；错误响应只返回 `code`。
 
-## RouteME 行程接口（2026-11-15，`trip-plans`）
+## RouteME 行程与同行接口（2026-11-15，`trip-plans` + `trip-companions`）
 
-契约源：`RouteME/openapi.yaml`（v0.2.0）。校验：`cd RouteME; npx @redocly/cli lint openapi.yaml`（配置见 `RouteME/redocly.yaml`），或 `cd RouteME/backend; .\mvnw.cmd -Dtest=OpenApiTest test`。
+契约源：`RouteME/openapi.yaml`（v0.3.0）。校验：`cd RouteME; npx @redocly/cli lint openapi.yaml`（配置见 `RouteME/redocly.yaml`），或 `cd RouteME/backend; .\mvnw.cmd -Dtest=OpenApiTest test`。
 
 | 方法 | 路径 | 说明 |
 |---|---|---|
 | GET | `/users` | 3 个演示账户（身份门） |
 | GET | `/trips` | 未结束行程列表；`q`、`destination`、`date_from`、`date_to`、`tags`（逗号分隔，任一命中）、`sort=date\|new` |
-| GET | `/trips/{id}` | 行程详情 + 发布者 + 当前同行者 |
+| GET | `/trips/{id}` | 行程详情 + 发布者 + 当前同行者（发布者在前，其后为已接受同行者） |
 | POST | `/trips` | 发布行程（201） |
 | POST | `/trips/{id}/complete` | 发布者标记已结束 |
+| GET | `/matches` | 候选行程 + `match{score, percentage, reasons[], basis}`；`sort=match`（默认）\|`date`\|`new` |
+| GET | `/matches/{tripId}` | 单条行程相对我的匹配信息 |
+| POST | `/trips/{tripId}/applications` | 提交同行申请（`message` 选填 ≤120，201） |
+| GET | `/trips/{tripId}/applications` | 发布者查看该行程申请 |
+| GET | `/me/applications` | 我的申请（含状态与行程摘要） |
+| POST | `/applications/{id}/cancel` | 申请者取消待处理申请 |
+| POST | `/applications/{id}/accept` | 发布者接受（人数 +1，满员自动转 `full`） |
+| POST | `/applications/{id}/reject` | 发布者拒绝 |
+| POST | `/trips/{tripId}/leave` | 已接受同行者退出（204；人数 -1，聊天关闭） |
+| GET | `/trips/{tripId}/messages?with={userId}` | 与某位同行者的消息，按时间升序 |
+| POST | `/trips/{tripId}/messages` | 发送消息 `{receiver_id, content}`（201；≤500 字） |
+| GET | `/me/chat-partners` | 聊天对象列表（含最后一条消息与条数） |
+| GET | `/me/trips` | 我的旅行四组（published/applied/matched/completed）+ `pending_application_count` |
+| POST | `/reports` | 举报行程或用户 `{target_type, target_id, reason, note?}`，返回 `{received: true}` |
 
-- 所有 `/trips*` 请求要求 `X-User-Id`（`app_users.id`）；缺失或未知返回 401 `DEMO_USER_REQUIRED`。
+- 所有 `/trips*`、`/matches*`、`/me/*`、`/applications/*`、`/reports` 请求要求 `X-User-Id`（`app_users.id`）；缺失或未知返回 401 `DEMO_USER_REQUIRED`。
 - 列表只返回未结束行程；`sort` 非法返回 400。
-- 错误码：`INVALID_INPUT`(400)、`DEMO_USER_REQUIRED`(401)、`FORBIDDEN`(403)、`TRIP_NOT_FOUND`(404)、`TRIP_NOT_OPEN`(409)、`INTERNAL_ERROR`(500)。
+- 同行关系 = 发布者 + 该行程 `ACCEPTED` 的申请者；`joined_count` 仍由 `trip-plans` 单一写入，接受/退出经服务方法联动。
+- 聊天仅对已匹配双方开放；行程 `completed` 后可读不可写；只有 `PENDING` 申请不能进入。
+- 错误码：`INVALID_INPUT`(400)、`DEMO_USER_REQUIRED`(401)、`FORBIDDEN`(403)、`TRIP_NOT_FOUND`/`APPLICATION_NOT_FOUND`(404)、`TRIP_NOT_OPEN`/`APPLICATION_NOT_PENDING`/`DUPLICATE_APPLICATION`/`CHAT_READ_ONLY`(409)、`CHAT_NOT_ALLOWED`(403)、`INTERNAL_ERROR`(500)。
 - 状态由 `completed_at` 与人数推导，不是独立写入的字段；映射与字段约束以 `openapi.yaml` 为准。
 
 ## REST 面
