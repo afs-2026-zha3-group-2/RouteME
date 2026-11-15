@@ -6,7 +6,6 @@ import java.util.Optional;
 import org.springframework.stereotype.Repository;
 
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
-import com.baomidou.mybatisplus.spring.service.impl.ServiceImpl;
 
 import routeme.entity.UserEntity;
 import routeme.mapper.UserMapper;
@@ -17,7 +16,7 @@ import routeme.repository.UserRepository;
  * app_users 的持久化适配。
  */
 @Repository
-public class UserRepositoryImpl extends ServiceImpl<UserMapper, UserEntity> implements UserRepository {
+public class UserRepositoryImpl extends AbstractRepositoryImpl<UserMapper, UserEntity> implements UserRepository {
 
     @Override
     public List<DemoUser> findAll() {

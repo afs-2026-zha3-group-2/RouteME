@@ -1,2 +1,0 @@
-Placeholder so the mapper package exists in git.
-MyBatis mapper interfaces; XML would live in src/main/resources/mapper. The project uses JDBC today, so this package is a placeholder.

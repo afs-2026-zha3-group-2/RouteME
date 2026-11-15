@@ -9,7 +9,6 @@ import org.springframework.stereotype.Repository;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
-import com.baomidou.mybatisplus.spring.service.impl.ServiceImpl;
 
 import routeme.entity.TripExperienceEntity;
 import routeme.mapper.TripExperienceMapper;
@@ -21,7 +20,8 @@ import routeme.repository.TripExperienceRepository;
  * trip_experiences 的持久化适配。分页查询走 TripExperienceMapper.xml（join 行程）。
  */
 @Repository
-public class TripExperienceRepositoryImpl extends ServiceImpl<TripExperienceMapper, TripExperienceEntity>
+public class TripExperienceRepositoryImpl
+        extends AbstractRepositoryImpl<TripExperienceMapper, TripExperienceEntity>
         implements TripExperienceRepository {
 
     @Override
@@ -75,7 +75,7 @@ public class TripExperienceRepositoryImpl extends ServiceImpl<TripExperienceMapp
 
     @Override
     public long nextId() {
-        return getBaseMapper().selectNextId();
+        return nextId(TripExperienceEntity::getId);
     }
 
     @Override

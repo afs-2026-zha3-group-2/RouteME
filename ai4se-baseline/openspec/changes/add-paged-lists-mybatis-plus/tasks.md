@@ -27,9 +27,11 @@
 - [x] `mapper` 包 7 个 `BaseMapper`；`TripPlanMapper`、`TripExperienceMapper` 的分页查询放 `resources/mapper/*.xml`，其余用 `LambdaQueryWrapper`。
 - [x] `repository/impl` 7 个 `ServiceImpl` 适配类实现既有端口；删除 `dao` 包。
 - [x] 端口新增分页方法：`TripPlanRepository.findOpenPage`、`TripExperienceRepository.findPage`。
+- [x] 评审修复：mapper 接口全部标 `@Mapper`；移除全部 `@Select` 注解 SQL（`selectNextId` / `selectFirst` / 会话聚合），后者改为 `LambdaQueryWrapper` 或 `ChatMessageMapper.xml`；新增 `AbstractRepositoryImpl` 收敛 `nextId` / `firstBy`；删除 `mapper/.gitkeep` 与其它已有文件的 `.gitkeep`。
+- [x] 日志与产物：`logback-spring.xml` 改为 `STDOUT` / `TRACE_FILE` / `ERROR_FILE`，目录用 `LOG_PATH`、级别用 `LOG_LEVEL_ROUTEME`；清理散落在 `RouteME/logs/` 的日志，`.gitignore` 补 `logs/`，构建/测试日志输出到系统临时目录。
 
-**验证：** `.\mvnw.cmd -B test`（既有 132 项通过）
-**覆盖：** 持久层迁移
+**验证：** `.\mvnw.cmd -B clean test`（139 项）；启动后 `backend/logs/` 只出现 `routeme-trace.log` 与 `routeme-error.log`
+**覆盖：** 持久层迁移、日志落点
 
 ### T4 [backend] 分页参数、响应与端点
 

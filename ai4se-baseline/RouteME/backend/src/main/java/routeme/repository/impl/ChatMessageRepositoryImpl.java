@@ -5,7 +5,6 @@ import java.util.List;
 import org.springframework.stereotype.Repository;
 
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
-import com.baomidou.mybatisplus.spring.service.impl.ServiceImpl;
 
 import routeme.entity.ChatMessageEntity;
 import routeme.entity.ChatThreadEntity;
@@ -15,10 +14,11 @@ import routeme.model.ChatThread;
 import routeme.repository.ChatMessageRepository;
 
 /**
- * chat_messages 的持久化适配。
+ * chat_messages 的持久化适配。会话聚合走 ChatMessageMapper.xml。
  */
 @Repository
-public class ChatMessageRepositoryImpl extends ServiceImpl<ChatMessageMapper, ChatMessageEntity>
+public class ChatMessageRepositoryImpl
+        extends AbstractRepositoryImpl<ChatMessageMapper, ChatMessageEntity>
         implements ChatMessageRepository {
 
     @Override
@@ -53,7 +53,7 @@ public class ChatMessageRepositoryImpl extends ServiceImpl<ChatMessageMapper, Ch
 
     @Override
     public long nextId() {
-        return getBaseMapper().selectNextId();
+        return nextId(ChatMessageEntity::getId);
     }
 
     @Override

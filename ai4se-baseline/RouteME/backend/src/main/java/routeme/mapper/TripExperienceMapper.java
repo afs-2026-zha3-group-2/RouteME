@@ -2,8 +2,8 @@ package routeme.mapper;
 
 import java.util.List;
 
+import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
-import org.apache.ibatis.annotations.Select;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
@@ -11,8 +11,12 @@ import com.baomidou.mybatisplus.core.metadata.IPage;
 import routeme.entity.TripExperienceEntity;
 
 /**
- * trip_experiences 的 MyBatis-Plus 映射。分页查询在 resources/mapper/TripExperienceMapper.xml。
+ * trip_experiences 的 MyBatis-Plus 映射。
+ *
+ * <p>复杂查询（join 行程表做目的地、标签与关键词过滤）写在
+ * {@code resources/mapper/TripExperienceMapper.xml}。</p>
  */
+@Mapper
 public interface TripExperienceMapper extends BaseMapper<TripExperienceEntity> {
 
     IPage<TripExperienceEntity> selectExperiencePage(
@@ -20,7 +24,4 @@ public interface TripExperienceMapper extends BaseMapper<TripExperienceEntity> {
             @Param("q") String keyword,
             @Param("destination") String destination,
             @Param("tags") List<String> tags);
-
-    @Select("SELECT COALESCE(MAX(id), 0) + 1 FROM trip_experiences")
-    long selectNextId();
 }

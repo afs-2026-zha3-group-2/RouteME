@@ -1,16 +1,14 @@
 package routeme.mapper;
 
-import org.apache.ibatis.annotations.Select;
+import org.apache.ibatis.annotations.Mapper;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 
 import routeme.entity.ReportEntity;
 
 /**
- * reports 的 MyBatis-Plus 映射。
+ * reports 的 MyBatis-Plus 映射。查询由 {@code BaseMapper} 与 {@code LambdaQueryWrapper} 承担。
  */
+@Mapper
 public interface ReportMapper extends BaseMapper<ReportEntity> {
-
-    @Select("SELECT COALESCE(MAX(id), 0) + 1 FROM reports")
-    long selectNextId();
 }

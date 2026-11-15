@@ -2,18 +2,24 @@
 <configuration>
     <property name="LOG_PATTERN"
               value="%d{yyyy-MM-dd HH:mm:ss.SSS} %-5level [%thread] %logger{40} - %msg%n"/>
+    <!-- 日志统一落在 backend/logs；用 LOG_PATH 环境变量或 -DLOG_PATH 覆盖，避免在不同工作目录散落。 -->
+    <property name="LOG_PATH" value="${LOG_PATH:-logs}"/>
 
-    <appender name="CONSOLE" class="ch.qos.logback.core.ConsoleAppender">
+    <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
+        <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
+            <level>INFO</level>
+        </filter>
         <encoder>
             <pattern>${LOG_PATTERN}</pattern>
             <charset>UTF-8</charset>
         </encoder>
     </appender>
 
-    <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
-        <file>logs/routeme-backend.log</file>
+    <!-- 全量日志（含 TRACE）：排查问题时的主要文件。 -->
+    <appender name="TRACE_FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${LOG_PATH}/routeme-trace.log</file>
         <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
-            <fileNamePattern>logs/routeme-backend.%d{yyyy-MM-dd}.%i.log.gz</fileNamePattern>
+            <fileNamePattern>${LOG_PATH}/routeme-trace.%d{yyyy-MM-dd}.%i.log.gz</fileNamePattern>
             <maxFileSize>10MB</maxFileSize>
             <maxHistory>14</maxHistory>
             <totalSizeCap>200MB</totalSizeCap>
@@ -24,12 +30,36 @@
         </encoder>
     </appender>
 
-    <logger name="routeme" level="INFO"/>
+    <!-- 仅错误：告警与值班查看，内容与 TRACE_FILE 中的 ERROR 行一致。 -->
+    <appender name="ERROR_FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <file>${LOG_PATH}/routeme-error.log</file>
+        <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
+            <level>ERROR</level>
+        </filter>
+        <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+            <fileNamePattern>${LOG_PATH}/routeme-error.%d{yyyy-MM-dd}.%i.log.gz</fileNamePattern>
+            <maxFileSize>10MB</maxFileSize>
+            <maxHistory>30</maxHistory>
+            <totalSizeCap>100MB</totalSizeCap>
+        </rollingPolicy>
+        <encoder>
+            <pattern>${LOG_PATTERN}</pattern>
+            <charset>UTF-8</charset>
+        </encoder>
+    </appender>
+
+    <!-- 应用日志级别可调：默认 INFO；排查问题时用 LOG_LEVEL_ROUTEME=TRACE 打开细粒度追踪，
+         此时 TRACE_FILE 会记下完整 SQL 与调用链，控制台仍只看到 INFO 及以上。 -->
+    <logger name="routeme" level="${LOG_LEVEL_ROUTEME:-INFO}"/>
     <logger name="org.springframework.jdbc.core" level="WARN"/>
+    <logger name="com.baomidou.mybatisplus" level="WARN"/>
     <logger name="org.flywaydb" level="INFO"/>
 
+    <!-- STDOUT 过滤器把控制台锁在 INFO：即使应用日志开到 TRACE，终端也不被 SQL 刷屏。
+         root 固定 INFO，避免 LOG_LEVEL_ROUTEME=TRACE 时把框架内部 TRACE 一起灌进文件。 -->
     <root level="INFO">
-        <appender-ref ref="CONSOLE"/>
-        <appender-ref ref="FILE"/>
+        <appender-ref ref="STDOUT"/>
+        <appender-ref ref="TRACE_FILE"/>
+        <appender-ref ref="ERROR_FILE"/>
     </root>
 </configuration>

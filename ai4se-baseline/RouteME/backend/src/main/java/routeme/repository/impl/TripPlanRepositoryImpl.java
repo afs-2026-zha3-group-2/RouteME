@@ -6,10 +6,10 @@ import java.util.Optional;
 
 import org.springframework.stereotype.Repository;
 
+import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
-import com.baomidou.mybatisplus.spring.service.impl.ServiceImpl;
 
 import routeme.entity.TripPlanEntity;
 import routeme.mapper.TripPlanMapper;
@@ -22,7 +22,7 @@ import routeme.request.TripQuery;
  * trip_plans 的持久化适配。分页查询走 TripPlanMapper.xml，其余用条件构造器。
  */
 @Repository
-public class TripPlanRepositoryImpl extends ServiceImpl<TripPlanMapper, TripPlanEntity>
+public class TripPlanRepositoryImpl extends AbstractRepositoryImpl<TripPlanMapper, TripPlanEntity>
         implements TripPlanRepository {
 
     @Override
@@ -67,19 +67,19 @@ public class TripPlanRepositoryImpl extends ServiceImpl<TripPlanMapper, TripPlan
 
     @Override
     public Optional<TripPlan> findLatestUnfinishedByPublisher(long publisherId) {
-        return lambdaQuery()
+        LambdaQueryWrapper<TripPlanEntity> query = Wrappers.<TripPlanEntity>lambdaQuery()
                 .eq(TripPlanEntity::getPublisherId, publisherId)
                 .isNull(TripPlanEntity::getCompletedAt)
                 .orderByDesc(TripPlanEntity::getCreatedAt)
-                .orderByDesc(TripPlanEntity::getId)
-                .last("LIMIT 1")
-                .oneOpt()
+                .orderByDesc(TripPlanEntity::getId);
+        return page(new Page<>(1, 1, false), query).getRecords().stream()
+                .findFirst()
                 .map(TripPlanEntity::toTripPlan);
     }
 
     @Override
     public long nextId() {
-        return getBaseMapper().selectNextId();
+        return nextId(TripPlanEntity::getId);
     }
 
     @Override

@@ -7,7 +7,6 @@ import java.util.Optional;
 import org.springframework.stereotype.Repository;
 
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
-import com.baomidou.mybatisplus.spring.service.impl.ServiceImpl;
 
 import routeme.entity.TripApplicationEntity;
 import routeme.enums.ApplicationStatusEnum;
@@ -19,7 +18,8 @@ import routeme.repository.TripApplicationRepository;
  * trip_applications 的持久化适配。
  */
 @Repository
-public class TripApplicationRepositoryImpl extends ServiceImpl<TripApplicationMapper, TripApplicationEntity>
+public class TripApplicationRepositoryImpl
+        extends AbstractRepositoryImpl<TripApplicationMapper, TripApplicationEntity>
         implements TripApplicationRepository {
 
     @Override
@@ -69,7 +69,7 @@ public class TripApplicationRepositoryImpl extends ServiceImpl<TripApplicationMa
 
     @Override
     public long nextId() {
-        return getBaseMapper().selectNextId();
+        return nextId(TripApplicationEntity::getId);
     }
 
     @Override

@@ -34,8 +34,9 @@ Thumbs.db
 test-results/
 playwright-report/
 
-# Logs
+# Logs (logback writes to backend/logs via LOG_PATH; never commit log files)
 *.log
+logs/
 
 # Local SQLite workspace (keep the folder, ignore data files)
 ai4se-baseline/RouteME/SqlLite/*.db

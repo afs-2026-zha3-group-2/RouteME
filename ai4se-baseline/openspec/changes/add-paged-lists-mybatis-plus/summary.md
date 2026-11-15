@@ -6,7 +6,9 @@
 
 ## What shipped
 
-- **持久层（后端）**：`pom.xml` 增加 `mybatis-plus-spring-boot4-starter:3.5.18` 与 `mybatis-plus-jsqlparser`（3.5.9 起分页拦截器独立成模块）；`entity` 改为 MyBatis-Plus 实体（`@TableName` / `@TableId(INPUT)`），新增 `ChatMessageEntity`、`ChatThreadEntity`、`ReportEntity`；新增 `mapper` 包 7 个 `BaseMapper`；新增 `repository/impl` 7 个 `XxxRepositoryImpl extends ServiceImpl<...>` 替换全部手写 `JdbcClient` 的 `dao`（已删除）。
+- **持久层（后端）**：`pom.xml` 增加 `mybatis-plus-spring-boot4-starter:3.5.18` 与 `mybatis-plus-jsqlparser`（3.5.9 起分页拦截器独立成模块）；`entity` 改为 MyBatis-Plus 实体（`@TableName` / `@TableId(INPUT)`），新增 `ChatMessageEntity`、`ChatThreadEntity`、`ReportEntity`；新增 `mapper` 包 7 个 `BaseMapper`（全部标 `@Mapper`）；新增 `repository/impl` 7 个 `XxxRepositoryImpl`（基类 `AbstractRepositoryImpl` 继承 `ServiceImpl`）替换全部手写 `JdbcClient` 的 `dao`（已删除）。
+- **SQL 位置**：接口里没有 `@Select` / `@Update` 等注解 SQL。单表条件、排序与「取一行」用 `LambdaQueryWrapper`（`nextId` 不再每张表重复写 `SELECT MAX(id)`）；跨表 join / 分组写在 `TripPlanMapper.xml`、`TripExperienceMapper.xml`、`ChatMessageMapper.xml`。
+- **日志**：`logback-spring.xml` 的 appender 改为 `STDOUT`（阈值 INFO）、`TRACE_FILE`（`logs/routeme-trace.log`，全量）、`ERROR_FILE`（`logs/routeme-error.log`，仅 ERROR）；目录可用 `LOG_PATH`、级别可用 `LOG_LEVEL_ROUTEME` 覆盖（排障设 TRACE，SQL 只进文件）。`*.log` 与 `logs/` 已忽略，散落在 `RouteME/logs/` 与 backend 根目录的临时日志已清理。
 - **分页**：`config/MybatisPlusConfig` 注册 `@MapperScan` + `PaginationInnerInterceptor`（上限 50，不固定 DbType，SQLite 与 H2 通用）；`param/PageParam` 与 `response/PageResponse<T>`；`/trips`、`/matches`、`/experiences` 返回 `{items, page, size, total, total_pages}`，`/me/*` 与 `/trips/{id}/experiences` 仍为数组。
 - **契约**：`openapi.yaml` 升至 `0.5.0`，新增 `Page` / `Size` 参数与 `TripPage` / `MatchPage` / `ExperiencePage` schema、更新 `/trips` 成功示例。
 - **前端分页**：`types.Page<T>`、`api` 三处列表函数带 `page`/`size`、`shell/usePaging`（筛选变化立即回到第 1 页，且不产生多余请求）、`shell/paging.pageWindow`（页码窗口，含单测）、`shell/Pager`（共 N 条 / 页码 / 上一页 / 下一页 / 每页条数，单页不渲染）。
@@ -15,7 +17,8 @@
 
 ## Verify highlights
 
-- `cd RouteME/backend; .\mvnw.cmd -B test` → `Tests run: 139, Failures: 0, Errors: 0`。
+- `cd RouteME/backend; .\mvnw.cmd -B clean test` → `Tests run: 139, Failures: 0, Errors: 0`。
+- 启动后 `backend/logs/` 仅生成 `routeme-trace.log` 与空的 `routeme-error.log`（旧 `CONSOLE`/`FILE` appender 已移除）；`LOG_LEVEL_ROUTEME=TRACE` 时 TRACE 行只出现在文件、不进终端。
 - `cd RouteME; npx @redocly/cli lint openapi.yaml` → 契约合法（0 error，6 warning）。
 - `cd RouteME/frontend; npm run build` → 退出码 0；`npm test` → 7 文件 / 47 项通过。
 - 运行时接口：`/api/matches?page=1&size=5` → `items=5, total=32, total_pages=7`；`page=2` 返回第二批；`/api/experiences?size=3` → `total=9, total_pages=3`；`/api/trips?size=51` → 400。

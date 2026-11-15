@@ -18,6 +18,7 @@ import org.springframework.jdbc.datasource.DriverManagerDataSource;
 
 import com.baomidou.mybatisplus.core.MybatisConfiguration;
 import com.baomidou.mybatisplus.core.MybatisSqlSessionFactoryBuilder;
+import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 
 import routeme.entity.GreetingEntity;
 import routeme.model.Greeting;
@@ -46,7 +47,8 @@ class GreetingMapperSqliteTest {
         // When
         GreetingEntity entity;
         try (SqlSession session = factory.openSession(true)) {
-            entity = session.getMapper(GreetingMapper.class).selectFirst();
+            entity = session.getMapper(GreetingMapper.class).selectOne(
+                    Wrappers.<GreetingEntity>lambdaQuery().eq(GreetingEntity::getId, 1L));
         }
 
         // Then

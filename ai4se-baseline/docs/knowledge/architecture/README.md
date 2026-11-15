@@ -95,8 +95,8 @@ RouteME/openapi.yaml   契约 SoT（info.version 0.5.0）
 | param | `TripQueryParam` | 入参解析（标签拆分、排序取值、默认值），无业务判断 |
 | service | `ApplicationService`、`ChatService`、`DemoUserService`、`ExperienceService`、`GreetingService`、`MatchService`、`MyTripsService`、`ReportService`、`TripPlanService`、`TripPlanQueryService` | 业务规则与编排、事务边界；`TripPlanQueryService` 被 `TripPlanService` 与 `MatchService` 复用 |
 | repository | 7 个 `XxxRepository` 接口 | 仓储契约，service 只依赖这一层 |
-| repository/impl | 7 个 `XxxRepositoryImpl`（`extends ServiceImpl<XxxMapper, XxxEntity>`） | MyBatis-Plus 持久化适配：通用 CRUD + `LambdaQueryWrapper`，保住 service 对端口的依赖 |
-| mapper | 7 个 `XxxMapper extends BaseMapper` | MyBatis-Plus 映射；`TripPlanMapper` / `TripExperienceMapper` 的分页 join 查询在 `resources/mapper/*.xml` |
+| repository/impl | 7 个 `XxxRepositoryImpl`（`extends AbstractRepositoryImpl<XxxMapper, XxxEntity>`，基类继承 `ServiceImpl`） | MyBatis-Plus 持久化适配：通用 CRUD + `LambdaQueryWrapper`，保住 service 对端口的依赖；基类只放 `nextId` / `firstBy` 这类重复查询 |
+| mapper | 7 个 `XxxMapper extends BaseMapper`，全部标 `@Mapper` | MyBatis-Plus 映射；**注解里不写 SQL**：简单条件用 `LambdaQueryWrapper`，复杂 join / 分组写 `resources/mapper/*.xml`（`TripPlanMapper.xml`、`TripExperienceMapper.xml`、`ChatMessageMapper.xml`） |
 | entity | `GreetingEntity`、`TripPlanEntity`、`TripApplicationEntity`、`TripExperienceEntity`、`ChatMessageEntity`、`ChatThreadEntity`、`ReportEntity`、`UserEntity` | MyBatis-Plus 实体（`@TableName` / `@TableId(INPUT)`），只允许 mapper 与 impl 引用，向上转 `model` |
 | model | `TripPlan`、`TripPlanDraft`、`TripApplication`、`TripExperience`、`TripMatch`、`ChatThread`、`ChatMessage`、`Greeting`、`Report`、`DemoUser`、`MatchCandidate` | 领域 record，无持久化注解；`ChatThread` 是领域聚合而非行对象 |
 | request | `ApplicationCreateRequest`、`ChatMessageRequest`、`ExperienceWriteRequest`、`ReportRequest`、`TripCreateRequest`、`TripQuery` | 入参 record，与 `openapi.yaml` 入参 schema 一一对应 |
@@ -111,7 +111,9 @@ RouteME/openapi.yaml   契约 SoT（info.version 0.5.0）
 | annotation / aspect / interceptor / mq / sql / vo | 空占位（`.gitkeep`） | 为 AOP、拦截器、消息队列、SQL 片段与 VO 预留；持久化映射统一用 `mapper`，不再有 `dao` |
 
 - 后缀约定：`XxxController`、`XxxParam`、`XxxService`、`XxxRepository`、`XxxRepositoryImpl`、`XxxMapper`、`XxxEntity`、`XxxEnum`、`XxxConstant`、`XxxRequest`/`XxxQuery`（request）、`XxxResponse`/`XxxResult`（response）、`XxxVo`、`XxxUtils`、`XxxConfig`、`XxxException`；看到后缀即可定位包。
-- 仓储四段式：service → `repository`（接口）→ `repository/impl`（`ServiceImpl`）→ `mapper`（`BaseMapper`）→ `entity`（实体）→ `model`（领域）。
+- 仓储四段式：service → `repository`（接口）→ `repository/impl`（`ServiceImpl` 子类）→ `mapper`（`BaseMapper`，带 `@Mapper`）→ `entity`（实体）→ `model`（领域）。
+- SQL 位置约定：**注解（`@Select` / `@Update` 等）不写 SQL**；单表条件与排序用 `LambdaQueryWrapper`，跨表 join、分组、聚合与分页写 `resources/mapper/*.xml`。`mapper` 目录已有 `.java` 文件，`.gitkeep` 已删除。
+- 日志：`resources/logback-spring.xml` 定义 `STDOUT`（控制台，阈值 INFO）、`TRACE_FILE`（全量，`logs/routeme-trace.log`）与 `ERROR_FILE`（仅 ERROR，`logs/routeme-error.log`）；日志目录用 `LOG_PATH` 覆盖，应用日志级别用 `LOG_LEVEL_ROUTEME`（默认 INFO，临时排查可设 TRACE）。日志统一落在 `backend/logs/`，`*.log` 与 `logs/` 均被 `.gitignore` 忽略，不得在工作区根目录留下临时日志。
 - 异常两段式：业务异常继承 `exception/BusinessException`（构造时给契约错误码与 `HttpStatus`），`handler/GlobalExceptionHandler` 只写 3 个 `@ExceptionHandler`；新增错误码只加子类，不改处理器。
 - 2026-11-15 定稿动作：枚举类加 `Enum` 后缀并从 `constant` 移入 `enums`（`TripCatalog` → `TripCatalogConstant`）；`XxxRow` 更名 `XxxEntity` 并移入 `entity`；`XxxRepository` 接口移入 `repository`，`DatabaseXxxRepository` 更名 `XxxDao` 留在 `dao`；`JsonListCodec` 更名 `JsonListUtils` 移入 `utils`；`TripQueryParams` 更名 `TripQueryParam` 移入 `param`；恢复 `annotation`/`aspect`/`interceptor`/`mapper`/`mq`/`sql`/`vo` 占位包与 `resources/logback-spring.xml`。`mvnw -B -o clean test` 132 项全绿。
 - 2026-11-15 定稿动作（续）：`dto` 拆为 `request`（6 个入参）/`response`（14 个出参），`ExperienceSaveResult` → `ExperienceSaveResponse`；异常统一为 `BusinessException` + 12 个子类并加 `Exception` 后缀（`TripNotOpen`→`TripNotOpenException` 等），`ApiErrorHandler` 重写为 `handler/GlobalExceptionHandler`，处理点从 14 个方法兼为 3 个。
