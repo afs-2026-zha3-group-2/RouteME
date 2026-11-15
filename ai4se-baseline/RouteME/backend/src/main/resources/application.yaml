@@ -12,5 +12,10 @@ spring:
       maximum-pool-size: 4
   flyway:
     locations: classpath:db/migration
+mybatis-plus:
+  # 自定义分页查询的 XML 位置；其余查询由 BaseMapper 与 LambdaQueryWrapper 生成。
+  mapper-locations: classpath*:mapper/**/*.xml
+  configuration:
+    map-underscore-to-camel-case: true
 server:
   port: ${PORT:8080}

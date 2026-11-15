@@ -3,6 +3,22 @@ export type Greeting = {
   message: string;
 };
 
+/**
+ * 列表接口的分页对象：total 是筛选后的命中数，total_pages 为向上取整的页数。
+ */
+export type Page<T> = {
+  items: T[];
+  page: number;
+  size: number;
+  total: number;
+  total_pages: number;
+};
+
+export type Paging = {
+  page: number;
+  size: number;
+};
+
 export type DemoUser = {
   id: number;
   nickname: string;

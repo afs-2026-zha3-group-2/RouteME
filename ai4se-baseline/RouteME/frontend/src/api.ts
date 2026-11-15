@@ -8,6 +8,8 @@ import type {
   Greeting,
   MatchCandidate,
   MyTrips,
+  Page,
+  Paging,
   ReportRequest,
   TripApplication,
   TripCreateRequest,
@@ -40,7 +42,7 @@ export async function loadUsers(): Promise<DemoUser[]> {
   return (await response.json()) as DemoUser[];
 }
 
-function tripQuery(filters: TripFilters): string {
+function tripQuery(filters: TripFilters, paging?: Paging): string {
   const params = new URLSearchParams();
   if (filters.q) {
     params.set('q', filters.q);
@@ -60,18 +62,30 @@ function tripQuery(filters: TripFilters): string {
   if (filters.sort) {
     params.set('sort', filters.sort);
   }
+  if (paging !== undefined) {
+    params.set('page', String(paging.page));
+    params.set('size', String(paging.size));
+  }
   const query = params.toString();
   return query ? `?${query}` : '';
 }
 
-export async function loadTrips(userId: number, filters: TripFilters = {}): Promise<TripSummary[]> {
-  const response = await request(`/trips${tripQuery(filters)}`, undefined, userId);
-  return (await response.json()) as TripSummary[];
+export async function loadTrips(
+  userId: number,
+  filters: TripFilters = {},
+  paging?: Paging,
+): Promise<Page<TripSummary>> {
+  const response = await request(`/trips${tripQuery(filters, paging)}`, undefined, userId);
+  return (await response.json()) as Page<TripSummary>;
 }
 
-export async function loadMatches(userId: number, filters: TripFilters = {}): Promise<MatchCandidate[]> {
-  const response = await request(`/matches${tripQuery(filters)}`, undefined, userId);
-  return (await response.json()) as MatchCandidate[];
+export async function loadMatches(
+  userId: number,
+  filters: TripFilters = {},
+  paging?: Paging,
+): Promise<Page<MatchCandidate>> {
+  const response = await request(`/matches${tripQuery(filters, paging)}`, undefined, userId);
+  return (await response.json()) as Page<MatchCandidate>;
 }
 
 export async function loadMatch(userId: number, tripId: number): Promise<MatchCandidate> {
@@ -205,7 +219,8 @@ export async function submitReport(
 export async function loadExperiences(
   userId: number,
   filters: ExperienceFilters = {},
-): Promise<Experience[]> {
+  paging?: Paging,
+): Promise<Page<Experience>> {
   const params = new URLSearchParams();
   if (filters.q) {
     params.set('q', filters.q);
@@ -216,9 +231,13 @@ export async function loadExperiences(
   if (filters.tags && filters.tags.length > 0) {
     params.set('tags', filters.tags.join(','));
   }
+  if (paging !== undefined) {
+    params.set('page', String(paging.page));
+    params.set('size', String(paging.size));
+  }
   const query = params.toString();
   const response = await request(`/experiences${query ? `?${query}` : ''}`, undefined, userId);
-  return (await response.json()) as Experience[];
+  return (await response.json()) as Page<Experience>;
 }
 
 export async function loadTripExperiences(userId: number, tripId: number): Promise<Experience[]> {

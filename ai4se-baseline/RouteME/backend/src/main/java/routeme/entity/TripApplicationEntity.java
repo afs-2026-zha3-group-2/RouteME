@@ -1,30 +1,45 @@
 package routeme.entity;
 
-import java.sql.ResultSet;
-import java.sql.SQLException;
 import java.time.Instant;
+
+import com.baomidou.mybatisplus.annotation.IdType;
+import com.baomidou.mybatisplus.annotation.TableId;
+import com.baomidou.mybatisplus.annotation.TableName;
 
 import routeme.enums.ApplicationStatusEnum;
 import routeme.model.TripApplication;
 
-public record TripApplicationEntity(
-        long id,
-        long tripId,
-        long applicantId,
-        String message,
-        String status,
-        String createdAt,
-        String decidedAt) {
+/**
+ * trip_applications 行对象。
+ */
+@TableName("trip_applications")
+public class TripApplicationEntity {
 
-    public static TripApplicationEntity from(ResultSet resultSet) throws SQLException {
-        return new TripApplicationEntity(
-                resultSet.getLong("id"),
-                resultSet.getLong("trip_id"),
-                resultSet.getLong("applicant_id"),
-                resultSet.getString("message"),
-                resultSet.getString("status"),
-                resultSet.getString("created_at"),
-                resultSet.getString("decided_at"));
+    @TableId(type = IdType.INPUT)
+    private Long id;
+
+    private Long tripId;
+
+    private Long applicantId;
+
+    private String message;
+
+    private String status;
+
+    private String createdAt;
+
+    private String decidedAt;
+
+    public static TripApplicationEntity from(TripApplication application) {
+        TripApplicationEntity entity = new TripApplicationEntity();
+        entity.setId(application.id());
+        entity.setTripId(application.tripId());
+        entity.setApplicantId(application.applicantId());
+        entity.setMessage(application.message());
+        entity.setStatus(application.status().name());
+        entity.setCreatedAt(application.createdAt().toString());
+        entity.setDecidedAt(application.decidedAt() == null ? null : application.decidedAt().toString());
+        return entity;
     }
 
     public TripApplication toApplication() {
@@ -36,5 +51,61 @@ public record TripApplicationEntity(
                 ApplicationStatusEnum.valueOf(status),
                 Instant.parse(createdAt),
                 decidedAt == null ? null : Instant.parse(decidedAt));
+    }
+
+    public Long getId() {
+        return id;
+    }
+
+    public void setId(Long id) {
+        this.id = id;
+    }
+
+    public Long getTripId() {
+        return tripId;
+    }
+
+    public void setTripId(Long tripId) {
+        this.tripId = tripId;
+    }
+
+    public Long getApplicantId() {
+        return applicantId;
+    }
+
+    public void setApplicantId(Long applicantId) {
+        this.applicantId = applicantId;
+    }
+
+    public String getMessage() {
+        return message;
+    }
+
+    public void setMessage(String message) {
+        this.message = message;
+    }
+
+    public String getStatus() {
+        return status;
+    }
+
+    public void setStatus(String status) {
+        this.status = status;
+    }
+
+    public String getCreatedAt() {
+        return createdAt;
+    }
+
+    public void setCreatedAt(String createdAt) {
+        this.createdAt = createdAt;
+    }
+
+    public String getDecidedAt() {
+        return decidedAt;
+    }
+
+    public void setDecidedAt(String decidedAt) {
+        this.decidedAt = decidedAt;
     }
 }

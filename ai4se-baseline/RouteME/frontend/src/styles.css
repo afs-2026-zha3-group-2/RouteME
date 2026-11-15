@@ -1525,6 +1525,325 @@ svg {
   opacity: 0.85;
 }
 
+/* ---------- 列表分页 ---------- */
+.list-block {
+  scroll-margin-top: calc(var(--topbar-h) + 16px);
+}
+
+.pager {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-top: 20px;
+  padding: 10px 14px;
+  border-radius: var(--r-lg);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  box-shadow: var(--sh-1);
+}
+
+.pager-total {
+  font-size: 12.5px;
+  color: var(--ink-3);
+}
+
+.pager-pages {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+}
+
+.pager-btn {
+  min-width: 34px;
+  height: 32px;
+  padding: 0 10px;
+  border-radius: 9px;
+  border: 1px solid var(--line);
+  background: var(--surface);
+  color: var(--ink-2);
+  font-size: 12.5px;
+  font-weight: 650;
+  transition: border-color 0.16s, color 0.16s, background 0.16s;
+}
+
+.pager-btn:hover:not(:disabled) {
+  border-color: var(--lagoon);
+  color: var(--t-lagoon);
+  background: var(--surface-2);
+}
+
+.pager-btn.on {
+  background: var(--grad-shore);
+  border-color: transparent;
+  color: #f2fffd;
+  box-shadow: 0 6px 16px -10px var(--tide);
+}
+
+.pager-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.pager-gap {
+  padding: 0 4px;
+  color: var(--ink-3);
+}
+
+.pager-size {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--ink-3);
+}
+
+/* ---------- 我的旅行：行式列表 ---------- */
+.page-stack {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 20px;
+  align-content: start;
+}
+
+.mine-list {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 12px;
+  margin-top: 4px;
+}
+
+.mine-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 14px;
+  align-items: center;
+}
+
+.mine-row > .trip-card {
+  min-width: 0;
+}
+
+.mine-row-link {
+  padding: 14px 16px;
+  border-radius: var(--r-lg);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  box-shadow: var(--sh-1);
+  transition: transform 0.2s var(--ease-out), box-shadow 0.2s, border-color 0.2s;
+}
+
+.mine-row-link:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--sh-2);
+  border-color: var(--lagoon);
+}
+
+.mine-row-main {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+
+.mine-row-title {
+  font-size: 14.5px;
+  font-weight: 700;
+  color: var(--ink);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mine-row-meta {
+  font-size: 12px;
+  color: var(--ink-3);
+}
+
+.mine-row-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 8px;
+  flex: none;
+}
+
+/* 紧凑行程卡：封面缩成窄条，用于我的旅行等行式列表 */
+.trip-card.compact {
+  display: grid;
+  grid-template-columns: 104px minmax(0, 1fr);
+  align-items: stretch;
+}
+
+.trip-card.compact .tc-cover {
+  height: auto;
+  min-height: 112px;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: flex-start;
+  gap: 6px;
+  border-bottom: 0;
+  border-right: 1px solid var(--line);
+}
+
+.trip-card.compact .tc-body {
+  padding: 13px 16px;
+  gap: 7px;
+}
+
+.trip-card.compact .tc-title {
+  font-size: 15px;
+}
+
+.trip-card.compact .tc-foot {
+  padding-top: 9px;
+}
+
+/* ---------- 详情页分区 ---------- */
+.detail-head {
+  display: grid;
+  gap: 8px;
+}
+
+.detail-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.detail-title {
+  font-size: clamp(1.4rem, 2.6vw, 1.9rem) !important;
+  font-weight: 800 !important;
+  line-height: 1.2 !important;
+}
+
+.detail-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  font-size: 13px;
+  color: var(--ink-3);
+}
+
+.detail-section {
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid var(--line);
+}
+
+.detail-section-plain {
+  border-top-style: dashed;
+}
+
+.section-title {
+  margin: 0 0 10px;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+  color: var(--t-lagoon);
+}
+
+.detail-facts {
+  display: grid;
+  gap: 8px;
+  margin: 12px 0 0;
+}
+
+.detail-facts > div {
+  display: grid;
+  grid-template-columns: 4.5em minmax(0, 1fr);
+  gap: 10px;
+}
+
+.detail-facts dt {
+  font-size: 12px;
+  color: var(--ink-3);
+}
+
+.detail-facts dd {
+  margin: 0;
+  font-size: 13.5px;
+  color: var(--ink-2);
+  overflow-wrap: anywhere;
+}
+
+.publisher-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.publisher-initial {
+  flex: none;
+}
+
+.publisher-body {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.publisher-name {
+  font-size: 13.5px;
+  font-weight: 700;
+}
+
+.publisher-bio {
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--ink-2);
+}
+
+.publisher-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+
+.detail-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.detail-actions-primary {
+  margin-top: 18px;
+  padding-top: 16px;
+  border-top: 1px solid var(--line);
+}
+
+.application-status {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.experience-list-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.experience-full {
+  margin: 6px 0;
+  font-size: 13.5px;
+  line-height: 1.7;
+  color: var(--ink);
+  white-space: pre-wrap;
+}
+
+.experience-advice-line {
+  font-size: 13px;
+  color: var(--ink-2);
+}
+
 /* ---------- 详情 / 申请 / 聊天 ---------- */
 .panel.ant-card,
 .form-card.ant-card,
@@ -1854,6 +2173,54 @@ svg {
   .detail-stack,
   .trip-stack {
     max-width: 100%;
+  }
+
+  /* 行式列表在窄屏改为上下排布，操作区不遮挡卡片 */
+  .mine-row {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 10px;
+  }
+
+  .mine-row-actions {
+    flex-direction: row;
+    align-items: center;
+    justify-content: flex-start;
+    flex-wrap: wrap;
+  }
+
+  .trip-card.compact {
+    grid-template-columns: 84px minmax(0, 1fr);
+  }
+
+  .trip-card.compact .tc-cover {
+    min-height: 96px;
+  }
+
+  /* 窄屏选项卡换行展示，避免第四项被裁切或藏进不可点开的「更多」 */
+  .mine-tabs .ant-tabs-nav-wrap {
+    overflow: visible;
+  }
+
+  .mine-tabs .ant-tabs-nav-list {
+    flex-wrap: wrap;
+    row-gap: 2px;
+  }
+
+  .mine-tabs .ant-tabs-nav-operations {
+    display: none;
+  }
+
+  .pager {
+    justify-content: center;
+  }
+
+  .pager-size {
+    justify-content: center;
+  }
+
+  .detail-facts > div {
+    grid-template-columns: 1fr;
+    gap: 2px;
   }
 }
 

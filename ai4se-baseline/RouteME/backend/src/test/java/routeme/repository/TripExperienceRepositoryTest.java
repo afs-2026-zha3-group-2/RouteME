@@ -1,4 +1,4 @@
-package routeme.dao;
+package routeme.repository;
 
 import static org.junit.jupiter.api.Assertions.assertAll;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -18,7 +18,7 @@ import routeme.repository.TripExperienceRepository;
 
 @SpringBootTest
 @Transactional
-class TripExperienceDaoTest {
+class TripExperienceRepositoryTest {
 
     @Autowired
     private TripExperienceRepository repository;

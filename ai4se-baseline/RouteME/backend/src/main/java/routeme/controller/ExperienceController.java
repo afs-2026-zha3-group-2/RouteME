@@ -15,8 +15,10 @@ import org.springframework.web.bind.annotation.RestController;
 
 import routeme.response.ExperienceResponse;
 import routeme.response.ExperienceSaveResponse;
+import routeme.response.PageResponse;
 import routeme.request.ExperienceWriteRequest;
 import routeme.model.DemoUser;
+import routeme.param.PageParam;
 import routeme.param.TripQueryParam;
 import routeme.service.DemoUserService;
 import routeme.service.ExperienceService;
@@ -34,13 +36,16 @@ public class ExperienceController {
     }
 
     @GetMapping("/experiences")
-    public List<ExperienceResponse> list(
+    public PageResponse<ExperienceResponse> list(
             @RequestHeader(value = "X-User-Id", required = false) Long userId,
             @RequestParam(required = false) String q,
             @RequestParam(required = false) String destination,
-            @RequestParam(required = false) String tags) {
+            @RequestParam(required = false) String tags,
+            @RequestParam(required = false) Integer page,
+            @RequestParam(required = false) Integer size) {
         demoUserService.require(userId);
-        return experienceService.listAll(q, destination, TripQueryParam.parseTags(tags));
+        return PageResponse.from(experienceService.listPage(
+                q, destination, TripQueryParam.parseTags(tags), PageParam.parse(page, size)));
     }
 
     @GetMapping("/me/experiences")

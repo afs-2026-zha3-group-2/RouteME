@@ -9,8 +9,10 @@ import routeme.request.TripQuery;
 import routeme.exception.TripNotFoundException;
 import routeme.model.DemoUser;
 import routeme.model.MatchCandidate;
+import routeme.model.PageResult;
 import routeme.model.TripMatch;
 import routeme.model.TripPlan;
+import routeme.param.PageParam;
 import routeme.repository.TripPlanRepository;
 import routeme.repository.UserRepository;
 
@@ -48,6 +50,14 @@ public class MatchService {
                     .toList();
         }
         return candidates;
+    }
+
+    /**
+     * 匹配分在 Java 中计算（SQL 无法排序），因此先算出完整候选再切页；total 反映筛选后的命中数。
+     */
+    public PageResult<MatchCandidate> searchPage(TripQuery query, long userId, PageParam param) {
+        List<MatchCandidate> all = search(query, userId);
+        return new PageResult<>(param.slice(all), param.page(), param.size(), all.size());
     }
 
     public MatchCandidate matchFor(long tripId, long userId) {

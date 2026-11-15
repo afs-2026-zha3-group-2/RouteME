@@ -59,12 +59,14 @@ class OpenApiTest {
 
         // Then
         assertAll(
-                () -> assertEquals("0.4.0", info.get("version"), "info.version"),
+                () -> assertEquals("0.5.0", info.get("version"), "info.version"),
                 () -> assertTrue(paths(document).containsKey("/users"), "/users declared"),
                 () -> assertTrue(paths(document).containsKey("/trips/{tripId}"), "detail path declared"),
                 () -> assertTrue(
                         parameterNames(document, getTrips)
-                                .containsAll(List.of("X-User-Id", "q", "destination", "date_from", "date_to", "tags")),
+                                .containsAll(List.of(
+                                        "X-User-Id", "q", "destination", "date_from", "date_to", "tags",
+                                        "page", "size")),
                         "list query parameters"),
                 () -> assertTrue(responses(postTrips).containsKey("201"), "create returns 201"),
                 () -> assertTrue(responses(postTrips).containsKey("400"), "create returns 400"),
@@ -115,6 +117,13 @@ class OpenApiTest {
                 () -> assertTrue(
                         parameterNames(document, getMatches).containsAll(List.of("X-User-Id", "q", "sort")),
                         "match query parameters"),
+                () -> assertTrue(
+                        parameterNames(document, getMatches).containsAll(List.of("page", "size")),
+                        "match paging parameters"),
+                () -> assertTrue(
+                        required(schema(document, "MatchPage"))
+                                .containsAll(List.of("items", "page", "size", "total", "total_pages")),
+                        "match page envelope"),
                 () -> assertTrue(
                         required(match).containsAll(List.of("score", "percentage", "reasons", "basis")),
                         "match required fields"),

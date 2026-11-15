@@ -1,5 +1,6 @@
 package routeme.controller;
 
+import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.junit.jupiter.api.Assertions.assertAll;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -30,10 +31,12 @@ class MatchControllerTest {
         // When
         String body = mockMvc.perform(get("/api/matches").header("X-User-Id", "1"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$[0].trip.title").exists())
-                .andExpect(jsonPath("$[0].match.reasons").isArray())
+                .andExpect(jsonPath("$.page").value(1))
+                .andExpect(jsonPath("$.size").value(20))
+                .andExpect(jsonPath("$.items[0].trip.title").exists())
+                .andExpect(jsonPath("$.items[0].match.reasons").isArray())
                 .andReturn().getResponse().getContentAsString();
-        List<Integer> scores = JsonPath.read(body, "$[*].match.score");
+        List<Integer> scores = JsonPath.read(body, "$.items[*].match.score");
 
         // Then
         assertAll(
@@ -71,6 +74,20 @@ class MatchControllerTest {
     @Test
     void in_invalidSort_out_invalidInput() throws Exception {
         mockMvc.perform(get("/api/matches").header("X-User-Id", "1").param("sort", "score"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("INVALID_INPUT"));
+    }
+
+    @Test
+    void in_pageWindow_out_slicedCandidates() throws Exception {
+        mockMvc.perform(get("/api/matches").header("X-User-Id", "1").param("page", "1").param("size", "1"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.items.length()").value(1))
+                .andExpect(jsonPath("$.page").value(1))
+                .andExpect(jsonPath("$.size").value(1))
+                .andExpect(jsonPath("$.total_pages", greaterThanOrEqualTo(2)));
+
+        mockMvc.perform(get("/api/matches").header("X-User-Id", "1").param("size", "51"))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value("INVALID_INPUT"));
     }

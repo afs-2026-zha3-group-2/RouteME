@@ -1,9 +1,10 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { Alert, Button, Input, Segmented, Select, Skeleton, Typography } from 'antd';
 import { ExperienceCard } from '../experiences/ExperienceCard';
 import { useExperiences } from '../experiences/useExperiences';
 import { tripMessages } from '../i18n/tripMessages';
 import { EmptyState } from '../shell/EmptyState';
+import { Pager } from '../shell/Pager';
 import { TripCard } from '../trips/TripCard';
 import {
   describeFilters,
@@ -25,16 +26,21 @@ type Props = {
 export function HomePage({ currentUser }: Props) {
   const [view, setView] = useState<'plans' | 'experiences'>('plans');
   const [filters, setFilters] = useState<FilterState>(emptyFilterState);
-  const { state, reload } = useMatches(currentUser.id, filters);
+  const { state, reload, setPage, setSize } = useMatches(currentUser.id, filters);
   const experiences = useExperiences(currentUser.id, filters);
+  const resultsRef = useRef<HTMLDivElement>(null);
 
   const update = (patch: Partial<FilterState>) => {
     setFilters((previous) => ({ ...previous, ...patch }));
   };
 
-  const openTripCount = state.status === 'ready' ? String(state.matches.length) : '—';
+  const scrollToResults = () => {
+    resultsRef.current?.scrollIntoView({ block: 'start', behavior: 'smooth' });
+  };
+
+  const openTripCount = state.status === 'ready' ? String(state.total) : '—';
   const experienceCount =
-    experiences.state.status === 'ready' ? String(experiences.state.experiences.length) : '—';
+    experiences.state.status === 'ready' ? String(experiences.state.total) : '—';
   const basis =
     currentUser.interests.length > 0
       ? `匹配对照你的旅行兴趣：${currentUser.interests.join('、')}`
@@ -190,7 +196,7 @@ export function HomePage({ currentUser }: Props) {
         />
       )}
 
-      {view === 'plans' && state.status === 'ready' && state.matches.length === 0 && (
+      {view === 'plans' && state.status === 'ready' && state.total === 0 && (
         <EmptyState title={tripMessages.emptyTitle} text={tripMessages.emptyHint}>
           <div className="empty-actions">
             <Button disabled={!hasActiveFilters(filters)} onClick={() => setFilters(emptyFilterState)}>
@@ -203,11 +209,27 @@ export function HomePage({ currentUser }: Props) {
         </EmptyState>
       )}
 
-      {view === 'plans' && state.status === 'ready' && state.matches.length > 0 && (
-        <div className="trip-grid">
-          {state.matches.map(({ trip, match }) => (
-            <TripCard key={trip.id} trip={trip} match={match} />
-          ))}
+      {view === 'plans' && state.status === 'ready' && state.total > 0 && (
+        <div ref={resultsRef} className="list-block">
+          <div className="trip-grid">
+            {state.matches.map(({ trip, match }) => (
+              <TripCard key={trip.id} trip={trip} match={match} />
+            ))}
+          </div>
+          <Pager
+            page={state.page}
+            size={state.size}
+            total={state.total}
+            totalPages={state.totalPages}
+            onPageChange={(next) => {
+              setPage(next);
+              scrollToResults();
+            }}
+            onSizeChange={(nextSize) => {
+              setSize(nextSize);
+              scrollToResults();
+            }}
+          />
         </div>
       )}
 
@@ -233,13 +255,13 @@ export function HomePage({ currentUser }: Props) {
 
       {view === 'experiences' && experiences.state.status === 'ready' && (
         <p className="result-count">
-          {experiences.state.experiences.length} {tripMessages.experienceCount}
+          {experiences.state.total} {tripMessages.experienceCount}
         </p>
       )}
 
       {view === 'experiences' &&
         experiences.state.status === 'ready' &&
-        experiences.state.experiences.length === 0 && (
+        experiences.state.total === 0 && (
           <EmptyState
             title={tripMessages.experienceEmpty}
             text={tripMessages.experienceEmptyHint}
@@ -248,11 +270,27 @@ export function HomePage({ currentUser }: Props) {
 
       {view === 'experiences' &&
         experiences.state.status === 'ready' &&
-        experiences.state.experiences.length > 0 && (
-          <div className="experience-grid">
-            {experiences.state.experiences.map((experience) => (
-              <ExperienceCard key={experience.id} experience={experience} />
-            ))}
+        experiences.state.total > 0 && (
+          <div className="list-block">
+            <div className="experience-grid">
+              {experiences.state.experiences.map((experience) => (
+                <ExperienceCard key={experience.id} experience={experience} />
+              ))}
+            </div>
+            <Pager
+              page={experiences.state.page}
+              size={experiences.state.size}
+              total={experiences.state.total}
+              totalPages={experiences.state.totalPages}
+              onPageChange={(next) => {
+                experiences.setPage(next);
+                scrollToResults();
+              }}
+              onSizeChange={(nextSize) => {
+                experiences.setSize(nextSize);
+                scrollToResults();
+              }}
+            />
           </div>
         )}
 

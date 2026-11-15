@@ -12,8 +12,12 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import routeme.response.MatchCandidateResponse;
+import routeme.response.PageResponse;
 import routeme.request.TripQuery;
 import routeme.model.DemoUser;
+import routeme.model.MatchCandidate;
+import routeme.model.PageResult;
+import routeme.param.PageParam;
 import routeme.param.TripQueryParam;
 import routeme.service.DemoUserService;
 import routeme.service.MatchService;
@@ -31,7 +35,7 @@ public class MatchController {
     }
 
     @GetMapping
-    public List<MatchCandidateResponse> list(
+    public PageResponse<MatchCandidateResponse> list(
             @RequestHeader(value = "X-User-Id", required = false) Long userId,
             @RequestParam(required = false) String q,
             @RequestParam(required = false) String destination,
@@ -40,14 +44,15 @@ public class MatchController {
             @RequestParam(name = "date_to", required = false)
             @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate dateTo,
             @RequestParam(required = false) String tags,
-            @RequestParam(required = false) String sort) {
+            @RequestParam(required = false) String sort,
+            @RequestParam(required = false) Integer page,
+            @RequestParam(required = false) Integer size) {
         DemoUser me = demoUserService.require(userId);
         TripQuery query = new TripQuery(
                 q, destination, dateFrom, dateTo,
                 TripQueryParam.parseTags(tags), TripQueryParam.parseSortWithMatch(sort));
-        return matchService.search(query, me.id()).stream()
-                .map(MatchCandidateResponse::from)
-                .toList();
+        PageResult<MatchCandidate> result = matchService.searchPage(query, me.id(), PageParam.parse(page, size));
+        return PageResponse.from(result, MatchCandidateResponse::from);
     }
 
     @GetMapping("/{tripId}")

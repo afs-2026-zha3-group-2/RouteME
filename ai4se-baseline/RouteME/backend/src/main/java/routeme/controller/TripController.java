@@ -16,11 +16,14 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import routeme.request.TripCreateRequest;
+import routeme.response.PageResponse;
 import routeme.response.TripDetailResponse;
 import routeme.request.TripQuery;
 import routeme.response.TripSummaryResponse;
 import routeme.model.DemoUser;
+import routeme.model.PageResult;
 import routeme.model.TripPlan;
+import routeme.param.PageParam;
 import routeme.param.TripQueryParam;
 import routeme.service.ApplicationService;
 import routeme.service.DemoUserService;
@@ -44,7 +47,7 @@ public class TripController {
     }
 
     @GetMapping
-    public List<TripSummaryResponse> list(
+    public PageResponse<TripSummaryResponse> list(
             @RequestHeader(value = "X-User-Id", required = false) Long userId,
             @RequestParam(required = false) String q,
             @RequestParam(required = false) String destination,
@@ -53,13 +56,14 @@ public class TripController {
             @RequestParam(name = "date_to", required = false)
             @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate dateTo,
             @RequestParam(required = false) String tags,
-            @RequestParam(required = false) String sort) {
+            @RequestParam(required = false) String sort,
+            @RequestParam(required = false) Integer page,
+            @RequestParam(required = false) Integer size) {
         demoUserService.require(userId);
         TripQuery query = new TripQuery(
                 q, destination, dateFrom, dateTo, TripQueryParam.parseTags(tags), TripQueryParam.parseSort(sort));
-        return tripPlanService.search(query).stream()
-                .map(trip -> TripSummaryResponse.from(trip, tripPlanService.publisherOf(trip)))
-                .toList();
+        PageResult<TripPlan> result = tripPlanService.searchPage(query, PageParam.parse(page, size));
+        return PageResponse.from(result, trip -> TripSummaryResponse.from(trip, tripPlanService.publisherOf(trip)));
     }
 
     @GetMapping("/{tripId}")

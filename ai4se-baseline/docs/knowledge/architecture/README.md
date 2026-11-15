@@ -78,9 +78,9 @@ browser (RouteME/frontend, React 19 + Vite 8 + Ant Design)
         |  /api（dev: Vite proxy → 8080）
         v
 RouteME/backend   Spring Boot 4.1.2 (Java 21) :8080
-  controller → service → dao (JdbcClient) → SQLite backend/data/routeme.db
-  Flyway migrations: backend/src/main/resources/db/migration（V1-V4，只增不改）
-RouteME/openapi.yaml   契约 SoT（info.version 0.2.0）
+  controller → service → repository → repository/impl (ServiceImpl) → mapper (BaseMapper) → SQLite SqlLite/routeme.db
+  Flyway migrations: backend/src/main/resources/db/migration（V1-V8，只增不改）
+RouteME/openapi.yaml   契约 SoT（info.version 0.5.0）
 ```
 
 - 根包 `routeme`：`@rule:package-structure` 的 `staffing` 根包是上一作业的领域名，RouteME 按产品名建包，层包与依赖方向不变；例外记录在 `openspec/changes/archive/2026-11-15-bootstrap-hello-world/design.md`。
@@ -95,28 +95,31 @@ RouteME/openapi.yaml   契约 SoT（info.version 0.2.0）
 | param | `TripQueryParam` | 入参解析（标签拆分、排序取值、默认值），无业务判断 |
 | service | `ApplicationService`、`ChatService`、`DemoUserService`、`ExperienceService`、`GreetingService`、`MatchService`、`MyTripsService`、`ReportService`、`TripPlanService`、`TripPlanQueryService` | 业务规则与编排、事务边界；`TripPlanQueryService` 被 `TripPlanService` 与 `MatchService` 复用 |
 | repository | 7 个 `XxxRepository` 接口 | 仓储契约，service 只依赖这一层 |
-| dao | 7 个 `XxxDao` | JDBC 实现与 SQL（`JdbcClient`） |
-| entity | `GreetingEntity`、`TripPlanEntity`、`TripApplicationEntity`、`TripExperienceEntity`、`UserEntity` | 行对象与列映射，只允许 dao 引用，向上转 `model` |
+| repository/impl | 7 个 `XxxRepositoryImpl`（`extends ServiceImpl<XxxMapper, XxxEntity>`） | MyBatis-Plus 持久化适配：通用 CRUD + `LambdaQueryWrapper`，保住 service 对端口的依赖 |
+| mapper | 7 个 `XxxMapper extends BaseMapper` | MyBatis-Plus 映射；`TripPlanMapper` / `TripExperienceMapper` 的分页 join 查询在 `resources/mapper/*.xml` |
+| entity | `GreetingEntity`、`TripPlanEntity`、`TripApplicationEntity`、`TripExperienceEntity`、`ChatMessageEntity`、`ChatThreadEntity`、`ReportEntity`、`UserEntity` | MyBatis-Plus 实体（`@TableName` / `@TableId(INPUT)`），只允许 mapper 与 impl 引用，向上转 `model` |
 | model | `TripPlan`、`TripPlanDraft`、`TripApplication`、`TripExperience`、`TripMatch`、`ChatThread`、`ChatMessage`、`Greeting`、`Report`、`DemoUser`、`MatchCandidate` | 领域 record，无持久化注解；`ChatThread` 是领域聚合而非行对象 |
 | request | `ApplicationCreateRequest`、`ChatMessageRequest`、`ExperienceWriteRequest`、`ReportRequest`、`TripCreateRequest`、`TripQuery` | 入参 record，与 `openapi.yaml` 入参 schema 一一对应 |
 | response | `ChatMessageResponse`、`ChatPartnerResponse`、`DemoUserResponse`、`ErrorResponse`、`ExperienceResponse`、`ExperienceSaveResponse`、`GreetingResponse`、`MatchCandidateResponse`、`MatchResponse`、`MyTripsResponse`、`ReportReceiptResponse`、`TripApplicationResponse`、`TripDetailResponse`、`TripSummaryResponse` | 出参 record 与错误体，与 `openapi.yaml` 出参 schema 一一对应 |
 | vo | 空占位 | 响应形状与 `model` 显著不同时才启用 |
 | enums | `ApplicationStatusEnum`、`TripStatusEnum`、`ExperienceIntensityEnum` | 业务枚举（wire 值 + 显示文案） |
 | constant | `TripCatalogConstant` | 静态字典与阀值（目的地、长度/容量/标签上限） |
-| config | `ClockConfig` | Spring 装配，无业务判断 |
+| config | `ClockConfig`、`MybatisPlusConfig` | Spring 装配，无业务判断；`MybatisPlusConfig` 注册 `@MapperScan` 与分页拦截器（上限 50，不固定 DbType） |
 | exception | `BusinessException`（基类，带 `code` + `HttpStatus`）与 12 个子类（`InvalidInputException`、`TripNotFoundException`、`ForbiddenActionException` 等） | 业务异常，全部以 `Exception` 结尾 |
 | handler | `GlobalExceptionHandler` | 唯一 `@RestControllerAdvice`：`BusinessException` + 框架解析异常 + 兵底 `Exception`，三个方法覆盖全部错误映射 |
 | utils | `JsonListUtils` | 无状态工具，叶子包 |
-| annotation / aspect / interceptor / mq / sql / mapper | 空占位（`.gitkeep`） | 为 AOP、拦截器、消息队列、SQL 片段、MyBatis 预留；`mapper` 与 `dao` 二选一（本项目选 `dao`） |
+| annotation / aspect / interceptor / mq / sql / vo | 空占位（`.gitkeep`） | 为 AOP、拦截器、消息队列、SQL 片段与 VO 预留；持久化映射统一用 `mapper`，不再有 `dao` |
 
-- 后缀约定：`XxxController`、`XxxParam`、`XxxService`、`XxxRepository`、`XxxDao`、`XxxEntity`、`XxxEnum`、`XxxConstant`、`XxxRequest`/`XxxQuery`（request）、`XxxResponse`/`XxxResult`（response）、`XxxVo`、`XxxUtils`、`XxxConfig`、`XxxException`；看到后缀即可定位包。
-- 仓储三段式：service → `repository`（接口）→ `dao`（实现）→ `entity`（行对象）→ `model`（领域）。
+- 后缀约定：`XxxController`、`XxxParam`、`XxxService`、`XxxRepository`、`XxxRepositoryImpl`、`XxxMapper`、`XxxEntity`、`XxxEnum`、`XxxConstant`、`XxxRequest`/`XxxQuery`（request）、`XxxResponse`/`XxxResult`（response）、`XxxVo`、`XxxUtils`、`XxxConfig`、`XxxException`；看到后缀即可定位包。
+- 仓储四段式：service → `repository`（接口）→ `repository/impl`（`ServiceImpl`）→ `mapper`（`BaseMapper`）→ `entity`（实体）→ `model`（领域）。
 - 异常两段式：业务异常继承 `exception/BusinessException`（构造时给契约错误码与 `HttpStatus`），`handler/GlobalExceptionHandler` 只写 3 个 `@ExceptionHandler`；新增错误码只加子类，不改处理器。
 - 2026-11-15 定稿动作：枚举类加 `Enum` 后缀并从 `constant` 移入 `enums`（`TripCatalog` → `TripCatalogConstant`）；`XxxRow` 更名 `XxxEntity` 并移入 `entity`；`XxxRepository` 接口移入 `repository`，`DatabaseXxxRepository` 更名 `XxxDao` 留在 `dao`；`JsonListCodec` 更名 `JsonListUtils` 移入 `utils`；`TripQueryParams` 更名 `TripQueryParam` 移入 `param`；恢复 `annotation`/`aspect`/`interceptor`/`mapper`/`mq`/`sql`/`vo` 占位包与 `resources/logback-spring.xml`。`mvnw -B -o clean test` 132 项全绿。
 - 2026-11-15 定稿动作（续）：`dto` 拆为 `request`（6 个入参）/`response`（14 个出参），`ExperienceSaveResult` → `ExperienceSaveResponse`；异常统一为 `BusinessException` + 12 个子类并加 `Exception` 后缀（`TripNotOpen`→`TripNotOpenException` 等），`ApiErrorHandler` 重写为 `handler/GlobalExceptionHandler`，处理点从 14 个方法兼为 3 个。
 - 真实同义包仍禁止：`pojo` / `do` / `bo` / `req` / `resp` 不建；`param`（入参解析）与 `request`（入参 record）职责不同，两者并存；`constant`（字典/阀值）与 `enums`（枚举）不混放。
 - 运行时 SQLite、测试 H2 内存库，共用一组迁移脚本；SQL 只用两库通用语法（`INTEGER PRIMARY KEY` + 显式 id 插入），避免两份迁移漂移。
-- 仓储接口 `GreetingRepository`（`repository`）、JDBC 实现 `GreetingDao`（`dao`）与行对象 `GreetingEntity`（`entity`）分三处；`GET /api/greeting` 是单例资源（表内单条记录），为复数资源规约的已记录例外。
+- 仓储接口 `GreetingRepository`（`repository`）、`ServiceImpl` 适配 `GreetingRepositoryImpl`（`repository/impl`）、`GreetingMapper` 与实体 `GreetingEntity` 分四处；`GET /api/greeting` 是单例资源（表内单条记录），为复数资源规约的已记录例外。
+- 持久层（`add-paged-lists-mybatis-plus`，2026-11-15）：`mybatis-plus-spring-boot4-starter:3.5.18` + `mybatis-plus-jsqlparser`（3.5.9 起分页拦截器拆到此模块）；删除 7 个手写 `JdbcClient` 的 `dao`；`map-underscore-to-camel-case` 负责列名映射，`@TableId(type = INPUT)` 保留 `MAX(id)+1` 的演示用 id 策略。
+- 分页口径：`page` 从 1 起、`size` 默认 20、上限 50（`param/PageParam`，非法值 400 `INVALID_INPUT`）；响应 `response/PageResponse` 为 `{items,page,size,total,total_pages}`。`/trips` 与 `/experiences` 在 SQL 层分页（`LIMIT/OFFSET`），`/matches` 先算匹配分再在应用层切页；`/me/*` 与 `/trips/{id}/experiences` 仍返回数组。排序末尾统一追加 `id DESC` 保证翻页稳定。
 - 前端业务状态在 `src/home/useGreeting.ts`，请求只走 `src/api.ts`，文案在 `src/i18n/messages.ts`；Ant Design 由需求方指定引入。
 - 行程能力（`trip-plans`，2026-11-15）：`app_users` + `trip_plans`（V3/V4）；状态由 `completed_at` 与 `joined_count`/`capacity` 投影；`TripPlanQueryService` 做搜索/目的地/日期区间/标签/排序；前端 `src/home/HomePage.tsx`（列表）、`src/trips/`（发布、详情、表单与筛选纯函数）、`src/identity/IdentityGate.tsx`；接口见 `interfaces/README.md`。
 - 同行能力（`trip-companions`，2026-11-15）：`trip_applications`/`chat_messages`/`reports`（V5–V7）；无独立 companions 表，同行关系 = 发布者 + `ACCEPTED` 申请；`ApplicationService` 在事务内调用 `TripPlanService.addCompanion/removeCompanion` 单一写入 `joined_count`；`MatchService`/`TripMatch` 只读行程；`ChatService` 由「已接受」推导权限；前端 `src/trips/ApplicationsPage.tsx`、`src/mine/MyTripsPage.tsx`、`src/chat/ChatPage.tsx`、`src/safety/`。

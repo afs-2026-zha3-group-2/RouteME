@@ -3,7 +3,6 @@ import {
   Alert,
   Button,
   Card,
-  Descriptions,
   Input,
   Modal,
   Popconfirm,
@@ -60,9 +59,9 @@ export function TripDetailPage({ currentUser, tripId }: Props) {
   const [applyOpen, setApplyOpen] = useState(false);
   const [applyMessage, setApplyMessage] = useState('');
   const [submitting, setSubmitting] = useState(false);
-    const [leaving, setLeaving] = useState(false);
-    const [reportOpen, setReportOpen] = useState(false);
-    const [experiences, setExperiences] = useState<Experience[] | null>(null);
+  const [leaving, setLeaving] = useState(false);
+  const [reportOpen, setReportOpen] = useState(false);
+  const [experiences, setExperiences] = useState<Experience[] | null>(null);
 
   useEffect(() => {
     let active = true;
@@ -83,13 +82,13 @@ export function TripDetailPage({ currentUser, tripId }: Props) {
         }
       })
       .catch(() => undefined);
-        loadTripExperiences(currentUser.id, tripId)
-          .then((loaded) => {
-            if (active) {
-              setExperiences(loaded);
-            }
-          })
-          .catch(() => undefined);
+    loadTripExperiences(currentUser.id, tripId)
+      .then((loaded) => {
+        if (active) {
+          setExperiences(loaded);
+        }
+      })
+      .catch(() => undefined);
     return () => {
       active = false;
     };
@@ -153,19 +152,19 @@ export function TripDetailPage({ currentUser, tripId }: Props) {
     }
   };
 
-    const leave = async () => {
-      setLeaving(true);
-      setActionError(null);
-      try {
-        await leaveTrip(currentUser.id, tripId);
-        setMyApplication(null);
-        reload();
-      } catch (error: unknown) {
-        setActionError(error instanceof Error ? error.message : 'UNKNOWN_ERROR');
-      } finally {
-        setLeaving(false);
-      }
-    };
+  const leave = async () => {
+    setLeaving(true);
+    setActionError(null);
+    try {
+      await leaveTrip(currentUser.id, tripId);
+      setMyApplication(null);
+      reload();
+    } catch (error: unknown) {
+      setActionError(error instanceof Error ? error.message : 'UNKNOWN_ERROR');
+    } finally {
+      setLeaving(false);
+    }
+  };
 
   if (state.status === 'loading') {
     return (
@@ -211,146 +210,159 @@ export function TripDetailPage({ currentUser, tripId }: Props) {
 
   return (
     <main className="form-page">
-      <Space orientation="vertical" size="middle" className="detail-stack">
+      <div className="detail-stack">
         <a href="#/" className="detail-back">
           {tripMessages.backHome}
         </a>
+
         <Card className="panel detail-card">
-          <Space orientation="vertical" size="small" className="home-stack">
-            <Space size="small" wrap>
+          <header className="detail-head">
+            <div className="detail-badges">
               <Tag color={statusColor(trip.status)}>{statusLabel(trip.status)}</Tag>
               <Tag>{trip.destination}</Tag>
-            </Space>
-            <Typography.Title level={2} className="trip-title">
+            </div>
+            <Typography.Title level={2} className="trip-title detail-title">
               {trip.title}
             </Typography.Title>
-            <Typography.Text type="secondary">
-              {trip.start_date} → {trip.end_date}
-            </Typography.Text>
-            <Typography.Text>
-              {tripMessages.joinedLabel} {trip.joined_count}/{trip.capacity}
-              {tripMessages.peopleUnit}
-            </Typography.Text>
+            <p className="detail-meta">
+              <span>{trip.start_date} → {trip.end_date}</span>
+              <span>
+                {tripMessages.joinedLabel} {trip.joined_count}/{trip.capacity}
+                {tripMessages.peopleUnit}
+              </span>
+            </p>
+          </header>
 
-            <Descriptions column={1} size="small" className="detail-descriptions">
-              <Descriptions.Item label={tripMessages.detailStops}>
-                <ol className="detail-stops">
-                  {trip.stops.map((stop) => (
-                    <li key={stop}>{stop}</li>
-                  ))}
-                </ol>
-              </Descriptions.Item>
+          <section className="detail-section">
+            <h3 className="section-title">{tripMessages.detailStops}</h3>
+            <ol className="detail-stops">
+              {trip.stops.map((stop) => (
+                <li key={stop}>{stop}</li>
+              ))}
+            </ol>
+            <dl className="detail-facts">
               {trip.meeting_area !== null && (
-                <Descriptions.Item label={tripMessages.detailMeetingArea}>{trip.meeting_area}</Descriptions.Item>
+                <div>
+                  <dt>{tripMessages.detailMeetingArea}</dt>
+                  <dd>{trip.meeting_area}</dd>
+                </div>
               )}
               {budget !== null && (
-                <Descriptions.Item label={tripMessages.detailBudget}>{budget}</Descriptions.Item>
+                <div>
+                  <dt>{tripMessages.detailBudget}</dt>
+                  <dd>{budget}</dd>
+                </div>
               )}
               {trip.note !== null && (
-                <Descriptions.Item label={tripMessages.detailNote}>{trip.note}</Descriptions.Item>
+                <div>
+                  <dt>{tripMessages.detailNote}</dt>
+                  <dd>{trip.note}</dd>
+                </div>
               )}
-            </Descriptions>
+            </dl>
+          </section>
 
-            <Typography.Title level={5} className="trip-title">
-              {tripMessages.detailPublisher}
-            </Typography.Title>
-            <Space align="start">
-              <Tag>{trip.publisher.avatar_initial}</Tag>
-              <Space orientation="vertical" size={0}>
-                <Typography.Text strong>
+          <section className="detail-section">
+            <h3 className="section-title">{tripMessages.detailPublisher}</h3>
+            <div className="publisher-row">
+              <Tag className="publisher-initial">{trip.publisher.avatar_initial}</Tag>
+              <div className="publisher-body">
+                <p className="publisher-name">
                   {trip.publisher.nickname} · {trip.publisher.school}
-                </Typography.Text>
-                <Typography.Text type="secondary">{trip.publisher.bio}</Typography.Text>
-                <Space size={[4, 4]} wrap>
+                </p>
+                <p className="publisher-bio">{trip.publisher.bio}</p>
+                <div className="publisher-tags">
                   {trip.publisher.interests.map((interest) => (
-                    <Tag key={interest}>{interest}</Tag>
+                    <span key={interest} className="tag">
+                      {interest}
+                    </span>
                   ))}
-                </Space>
-              </Space>
-            </Space>
+                </div>
+              </div>
+            </div>
+          </section>
 
-            <Typography.Title level={5} className="trip-title">
-              {tripMessages.detailParticipants}
-            </Typography.Title>
+          <section className="detail-section">
+            <h3 className="section-title">{tripMessages.detailParticipants}</h3>
             <ul className="detail-participants">
-              {trip.participants.map((participant) => (
-                <li key={participant.id}>{participant.nickname}</li>
+              {trip.participants.map((member) => (
+                <li key={member.id}>{member.nickname}</li>
               ))}
             </ul>
+          </section>
 
-                        <Typography.Title level={5} className="trip-title">
-                          {tripMessages.experienceSectionTitle}
-                        </Typography.Title>
-                        {experiences !== null && experiences.length === 0 && (
-                          <Typography.Text type="secondary">{tripMessages.experienceSectionEmpty}</Typography.Text>
-                        )}
-                        {experiences !== null && experiences.length > 0 && (
-                          <ul className="experience-list">
-                            {experiences.map((experience) => (
-                              <li key={experience.id}>
-                                <Space size="small" wrap>
-                                  <Tag>{experience.author.avatar_initial}</Tag>
-                                  <Typography.Text strong>{experience.author.nickname}</Typography.Text>
-                                  <Tag color="gold">
-                                    {tripMessages.experienceIntensityLabel} · {intensityLabel(experience.intensity)}
-                                  </Tag>
-                                </Space>
-                                <Typography.Paragraph className="experience-full">
-                                  {experience.content}
-                                </Typography.Paragraph>
-                                <Typography.Text>
-                                  <Typography.Text strong>{tripMessages.experienceAdviceLabel}：</Typography.Text>
-                                  {experience.advice}
-                                </Typography.Text>
-                              </li>
-                            ))}
-                          </ul>
-                        )}
-                        <Space wrap>
-                          {canShare && (
-                            <Button onClick={() => (window.location.hash = `#/share/${trip.id}`)}>
-                              {hasShared ? tripMessages.experienceEditEntry : tripMessages.experienceShareEntry}
-                            </Button>
-                          )}
-                          {isCompleted && (
-                            <Button
-                              onClick={() => (window.location.hash = `#/trips/new?from=${trip.id}`)}
-                            >
-                              {tripMessages.referencePublish}
-                            </Button>
-                          )}
-                        </Space>
-
-            {match !== null && (
-              <div className="match-reasons">
-                <Typography.Title level={5} className="trip-title">
-                  {tripMessages.matchPanelTitle}
-                </Typography.Title>
-                <ul className="match-reason-list">
-                  {match.match.reasons.map((reason) => (
-                    <li key={reason}>{reason}</li>
-                  ))}
-                </ul>
-                <Typography.Text type="secondary">
-                  {tripMessages.matchPercentage} {match.match.percentage}% · {match.match.basis}
-                </Typography.Text>
+          <section className="detail-section">
+            <h3 className="section-title">{tripMessages.experienceSectionTitle}</h3>
+            {experiences !== null && experiences.length === 0 && (
+              <Typography.Text type="secondary">{tripMessages.experienceSectionEmpty}</Typography.Text>
+            )}
+            {experiences !== null && experiences.length > 0 && (
+              <ul className="experience-list">
+                {experiences.map((experience) => (
+                  <li key={experience.id}>
+                    <div className="experience-list-head">
+                      <Tag>{experience.author.avatar_initial}</Tag>
+                      <strong>{experience.author.nickname}</strong>
+                      <span className="badge amber">
+                        {tripMessages.experienceIntensityLabel} · {intensityLabel(experience.intensity)}
+                      </span>
+                    </div>
+                    <p className="experience-full">{experience.content}</p>
+                    <p className="experience-advice-line">
+                      <b>{tripMessages.experienceAdviceLabel}：</b>
+                      {experience.advice}
+                    </p>
+                  </li>
+                ))}
+              </ul>
+            )}
+            {(canShare || isCompleted) && (
+              <div className="detail-actions">
+                {canShare && (
+                  <Button onClick={() => (window.location.hash = `#/share/${trip.id}`)}>
+                    {hasShared ? tripMessages.experienceEditEntry : tripMessages.experienceShareEntry}
+                  </Button>
+                )}
+                {isCompleted && (
+                  <Button onClick={() => (window.location.hash = `#/trips/new?from=${trip.id}`)}>
+                    {tripMessages.referencePublish}
+                  </Button>
+                )}
               </div>
             )}
+          </section>
 
-            {actionError !== null && (
-              <Alert type="error" showIcon title={tripMessages.applyFailed} description={actionError} />
-            )}
+          {match !== null && (
+            <section className="detail-section">
+              <h3 className="section-title">{tripMessages.matchPanelTitle}</h3>
+              <ul className="match-reason-list">
+                {match.match.reasons.map((reason) => (
+                  <li key={reason}>{reason}</li>
+                ))}
+              </ul>
+              <p className="detail-meta">
+                {tripMessages.matchPercentage} {match.match.percentage}% · {match.match.basis}
+              </p>
+            </section>
+          )}
 
-                        <SafetyNote onReport={() => setReportOpen(true)} />
+          {actionError !== null && (
+            <Alert type="error" showIcon title={tripMessages.applyFailed} description={actionError} />
+          )}
 
-            {myApplication !== null && (
-              <Space size="small" wrap>
+          <SafetyNote onReport={() => setReportOpen(true)} />
+
+          {myApplication !== null && (
+            <section className="detail-section detail-section-plain">
+              <div className="application-status">
                 <Tag color={myApplication.status === 'accepted' ? 'green' : 'default'}>
                   {applicationLabel(myApplication.status)}
                 </Tag>
                 {myApplication.message !== null && (
                   <Typography.Text type="secondary">{myApplication.message}</Typography.Text>
                 )}
+              </div>
+              <div className="detail-actions">
                 {myApplication.status === 'pending' && (
                   <Popconfirm
                     title={tripMessages.applyCancelConfirm}
@@ -369,53 +381,55 @@ export function TripDetailPage({ currentUser, tripId }: Props) {
                     {tripMessages.chatEntry}
                   </Button>
                 )}
-                                {myApplication.status === 'accepted' && (
-                                  <Popconfirm
-                                    title={tripMessages.leaveConfirm}
-                                    onConfirm={leave}
-                                    okText={tripMessages.leaveTrip}
-                                    cancelText={tripMessages.createCancel}
-                                  >
-                                    <Button size="small" danger loading={leaving}>
-                                      {tripMessages.leaveTrip}
-                                    </Button>
-                                  </Popconfirm>
-                                )}
-              </Space>
+                {myApplication.status === 'accepted' && (
+                  <Popconfirm
+                    title={tripMessages.leaveConfirm}
+                    onConfirm={leave}
+                    okText={tripMessages.leaveTrip}
+                    cancelText={tripMessages.createCancel}
+                  >
+                    <Button size="small" danger loading={leaving}>
+                      {tripMessages.leaveTrip}
+                    </Button>
+                  </Popconfirm>
+                )}
+              </div>
+            </section>
+          )}
+
+          <div className="detail-actions detail-actions-primary">
+            {canApply && (
+              <Button type="primary" onClick={() => setApplyOpen(true)}>
+                {tripMessages.applyEntry}
+              </Button>
             )}
+            {isPublisher && !isCompleted && (
+              <Popconfirm
+                title={tripMessages.detailMarkCompleted}
+                onConfirm={complete}
+                okText={tripMessages.detailMarkCompleted}
+                cancelText={tripMessages.createCancel}
+              >
+                <Button loading={completing}>{tripMessages.detailMarkCompleted}</Button>
+              </Popconfirm>
+            )}
+            {isPublisher && (
+              <Button onClick={() => (window.location.hash = `#/trips/${trip.id}/applications`)}>
+                {tripMessages.applicationsEntry}
+                {pendingCount > 0 ? `（${pendingCount}）` : ''}
+              </Button>
+            )}
+            {isPublisher && <span className="badge dusk">{tripMessages.applyEntryOwn}</span>}
+            {!canApply && !isPublisher && !hasActiveApplication && (
+              <span className="badge muted">
+                {isCompleted ? tripMessages.detailCompleted : tripMessages.applyEntryDisabled}
+              </span>
+            )}
+          </div>
+        </Card>
+      </div>
 
-            <Space wrap>
-              {canApply && (
-                <Button type="primary" onClick={() => setApplyOpen(true)}>
-                  {tripMessages.applyEntry}
-                </Button>
-              )}
-              {isPublisher && !isCompleted && (
-                <Popconfirm
-                  title={tripMessages.detailMarkCompleted}
-                  onConfirm={complete}
-                  okText={tripMessages.detailMarkCompleted}
-                  cancelText={tripMessages.createCancel}
-                >
-                  <Button loading={completing}>{tripMessages.detailMarkCompleted}</Button>
-                </Popconfirm>
-              )}
-              {isPublisher && (
-                <Button onClick={() => (window.location.hash = `#/trips/${trip.id}/applications`)}>
-                  {tripMessages.applicationsEntry}
-                  {pendingCount > 0 ? `（${pendingCount}）` : ''}
-                </Button>
-              )}
-              {isPublisher && <Tag>{tripMessages.applyEntryOwn}</Tag>}
-              {!canApply && !isPublisher && !hasActiveApplication && (
-                <Tag>{isCompleted ? tripMessages.detailCompleted : tripMessages.applyEntryDisabled}</Tag>
-              )}
-            </Space>
-                      </Space>
-                    </Card>
-                  </Space>
-
-                  <Modal
+      <Modal
         open={applyOpen}
         title={tripMessages.applyDialogTitle}
         okText={tripMessages.applySubmit}
@@ -436,13 +450,13 @@ export function TripDetailPage({ currentUser, tripId }: Props) {
           />
         </Space>
       </Modal>
-            <ReportModal
-              userId={currentUser.id}
-              open={reportOpen}
-              targetType="trip"
-              targetId={tripId}
-              onClose={() => setReportOpen(false)}
-            />
-          </main>
-        );
-      }
+      <ReportModal
+        userId={currentUser.id}
+        open={reportOpen}
+        targetType="trip"
+        targetId={tripId}
+        onClose={() => setReportOpen(false)}
+      />
+    </main>
+  );
+}

@@ -14,8 +14,10 @@ import routeme.request.ExperienceWriteRequest;
 import routeme.enums.TripStatusEnum;
 import routeme.exception.ExperienceNotAllowedException;
 import routeme.model.DemoUser;
+import routeme.model.PageResult;
 import routeme.model.TripExperience;
 import routeme.model.TripPlan;
+import routeme.param.PageParam;
 import routeme.repository.TripExperienceRepository;
 import routeme.repository.UserRepository;
 
@@ -68,6 +70,21 @@ public class ExperienceService {
                 .filter(experience -> matches(experience, q, destination, tags))
                 .map(this::describe)
                 .toList();
+    }
+
+    /**
+     * 分页浏览游后体验：过滤、排序与分页在数据库完成（join 行程表）。
+     */
+    public PageResult<ExperienceResponse> listPage(String q, String destination, Set<String> tags, PageParam param) {
+        String keyword = q == null || q.isBlank() ? null : q.trim();
+        PageResult<TripExperience> page =
+                experienceRepository.findPage(keyword, destination, tags == null ? Set.of() : tags,
+                        param.page(), param.size());
+        return new PageResult<>(
+                page.items().stream().map(this::describe).toList(),
+                page.page(),
+                page.size(),
+                page.total());
     }
 
     public List<ExperienceResponse> listByTrip(long tripId) {

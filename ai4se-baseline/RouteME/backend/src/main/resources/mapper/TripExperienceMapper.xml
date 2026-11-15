@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="routeme.mapper.TripExperienceMapper">
+
+    <!-- 游后体验的分页查询：目的地、兴趣标签与关键词都来自关联行程。 -->
+    <select id="selectExperiencePage" resultType="routeme.entity.TripExperienceEntity">
+        SELECT e.id, e.trip_id, e.author_id, e.content, e.intensity, e.advice, e.created_at, e.updated_at
+          FROM trip_experiences e
+          JOIN trip_plans t ON t.id = e.trip_id
+        <where>
+            <if test="destination != null and destination != ''">
+                AND t.destination = #{destination}
+            </if>
+            <if test="tags != null and tags.size() > 0">
+                AND (
+                <foreach collection="tags" item="tag" separator=" OR ">
+                    t.tags LIKE ('%"' || #{tag} || '"%')
+                </foreach>
+                )
+            </if>
+            <if test="q != null and q != ''">
+                AND LOWER(t.title || ' ' || t.destination || ' ' || e.content || ' ' || e.advice)
+                    LIKE ('%' || LOWER(#{q}) || '%')
+            </if>
+        </where>
+         ORDER BY e.updated_at DESC, e.id DESC
+    </select>
+</mapper>

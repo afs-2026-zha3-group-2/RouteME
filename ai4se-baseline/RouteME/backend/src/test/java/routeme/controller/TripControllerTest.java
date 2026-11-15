@@ -1,5 +1,6 @@
 package routeme.controller;
 
+import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.hasItem;
 import static org.hamcrest.Matchers.hasItems;
 import static org.hamcrest.Matchers.hasSize;
@@ -116,27 +117,63 @@ class TripControllerTest {
     void in_defaultList_out_unfinishedTripsOnly() throws Exception {
         mockMvc.perform(get("/api/trips").header("X-User-Id", "1"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$[*].id", hasItems(3, 4, 5, 6)))
-                .andExpect(jsonPath("$[*].id", not(hasItem(1))))
-                .andExpect(jsonPath("$[*].status", not(hasItem("completed"))))
-                .andExpect(jsonPath("$[0].start_date").exists())
-                .andExpect(jsonPath("$[0].publisher.nickname").exists());
+                .andExpect(jsonPath("$.page").value(1))
+                .andExpect(jsonPath("$.size").value(20))
+                .andExpect(jsonPath("$.total_pages", greaterThanOrEqualTo(1)))
+                .andExpect(jsonPath("$.items[*].id", hasItems(3, 4, 5, 6)))
+                .andExpect(jsonPath("$.items[*].id", not(hasItem(1))))
+                .andExpect(jsonPath("$.items[*].status", not(hasItem("completed"))))
+                .andExpect(jsonPath("$.items[0].start_date").exists())
+                .andExpect(jsonPath("$.items[0].publisher.nickname").exists());
     }
 
     @Test
     void in_filters_out_matchingTrips() throws Exception {
         mockMvc.perform(get("/api/trips").header("X-User-Id", "1").param("destination", "珠海"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$", hasSize(1)))
-                .andExpect(jsonPath("$[0].destination").value("珠海"));
+                .andExpect(jsonPath("$.total").value(1))
+                .andExpect(jsonPath("$.items[0].destination").value("珠海"));
 
         mockMvc.perform(get("/api/trips").header("X-User-Id", "1").param("tags", "历史"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$[*].id", hasItem(6)));
+                .andExpect(jsonPath("$.items[*].id", hasItem(6)));
 
         mockMvc.perform(get("/api/trips").header("X-User-Id", "1").param("date_from", "2026-11-20"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$[*].id", hasItems(5, 6)));
+                .andExpect(jsonPath("$.items[*].id", hasItems(5, 6)));
+    }
+
+    @Test
+    void in_pageWindow_out_slicedItemsAndRealTotal() throws Exception {
+        mockMvc.perform(get("/api/trips").header("X-User-Id", "1").param("page", "1").param("size", "2"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.items.length()").value(2))
+                .andExpect(jsonPath("$.page").value(1))
+                .andExpect(jsonPath("$.size").value(2))
+                .andExpect(jsonPath("$.total").value(4))
+                .andExpect(jsonPath("$.total_pages").value(2));
+
+        mockMvc.perform(get("/api/trips").header("X-User-Id", "1").param("page", "2").param("size", "2"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.items.length()").value(2))
+                .andExpect(jsonPath("$.page").value(2));
+
+        mockMvc.perform(get("/api/trips").header("X-User-Id", "1").param("page", "9").param("size", "2"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.items.length()").value(0))
+                .andExpect(jsonPath("$.total").value(4))
+                .andExpect(jsonPath("$.total_pages").value(2));
+    }
+
+    @Test
+    void in_invalidPaging_out_invalidInput() throws Exception {
+        mockMvc.perform(get("/api/trips").header("X-User-Id", "1").param("page", "0"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("INVALID_INPUT"));
+
+        mockMvc.perform(get("/api/trips").header("X-User-Id", "1").param("size", "51"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("INVALID_INPUT"));
     }
 
     @Test

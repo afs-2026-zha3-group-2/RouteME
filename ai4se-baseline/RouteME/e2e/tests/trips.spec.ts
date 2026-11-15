@@ -37,10 +37,10 @@ test('shows the identity gate with three demo accounts and the unfinished trip l
   await page.getByRole('button', { name: /林见夏/ }).click();
 
   await expect(page.getByRole('heading', { name: '旅行灵感' })).toBeVisible();
-  await expect(page.locator('.trip-card-link', { hasText: '珠海情侣路日落机位二刷' })).toBeVisible();
-  await expect(page.locator('.trip-card-link', { hasText: '佛山祖庙与岭南天地一日' })).toBeVisible();
+  await expect(page.locator('.trip-card', { hasText: '珠海情侣路日落机位二刷' })).toBeVisible();
+  await expect(page.locator('.trip-card', { hasText: '佛山祖庙与岭南天地一日' })).toBeVisible();
   await expect(page.getByText('已满员').first()).toBeVisible();
-  await expect(page.locator('.trip-card-link', { hasText: '珠海情侣路摄影一日游' })).toHaveCount(0);
+  await expect(page.locator('.trip-card', { hasText: '珠海情侣路摄影一日游' })).toHaveCount(0);
 });
 
 test('filters the list by interest tag and keeps the filters visible', async ({ page }) => {
@@ -50,12 +50,12 @@ test('filters the list by interest tag and keeps the filters visible', async ({ 
   await page.getByRole('checkbox', { name: '摄影' }).click();
 
   await expect(page.getByText('已应用筛选')).toBeVisible();
-  await expect(page.locator('.trip-card-link', { hasText: '珠海情侣路日落机位二刷' })).toBeVisible();
-  await expect(page.locator('.trip-card-link', { hasText: '广州老城骑楼扫街半日' })).toBeVisible();
-  await expect(page.locator('.trip-card-link', { hasText: '深圳大鹏半岛海岸线徒步' })).toHaveCount(0);
+  await expect(page.locator('.trip-card', { hasText: '珠海情侣路日落机位二刷' })).toBeVisible();
+  await expect(page.locator('.trip-card', { hasText: '广州老城骑楼扫街半日' })).toBeVisible();
+  await expect(page.locator('.trip-card', { hasText: '深圳大鹏半岛海岸线徒步' })).toHaveCount(0);
 
   await page.getByRole('button', { name: '清除全部条件' }).click();
-  await expect(page.locator('.trip-card-link', { hasText: '深圳大鹏半岛海岸线徒步' })).toBeVisible();
+  await expect(page.locator('.trip-card', { hasText: '深圳大鹏半岛海岸线徒步' })).toBeVisible();
 });
 
 test('publishes a trip and finds it from the home search', async ({ page }) => {
@@ -78,7 +78,7 @@ test('publishes a trip and finds it from the home search', async ({ page }) => {
 
   await page.goto('/');
   await page.getByPlaceholder('搜索路线、地点或发布者').fill(title);
-  await expect(page.locator('.trip-card-link', { hasText: title })).toBeVisible();
+  await expect(page.locator('.trip-card', { hasText: title })).toBeVisible();
 });
 
 test('publisher marks a trip completed and sees the experience section', async ({ page }) => {

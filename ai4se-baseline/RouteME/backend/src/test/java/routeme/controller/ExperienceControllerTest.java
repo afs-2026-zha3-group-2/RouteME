@@ -29,23 +29,40 @@ class ExperienceControllerTest {
     void in_seededData_out_experienceList() throws Exception {
         mockMvc.perform(get("/api/experiences").header("X-User-Id", "1"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.length()").value(2))
-                .andExpect(jsonPath("$[0].trip.title").exists())
-                .andExpect(jsonPath("$[0].author.nickname").exists())
-                .andExpect(jsonPath("$[0].intensity").value("moderate"))
-                .andExpect(jsonPath("$[0].advice").isNotEmpty());
+                .andExpect(jsonPath("$.total").value(2))
+                .andExpect(jsonPath("$.page").value(1))
+                .andExpect(jsonPath("$.size").value(20))
+                .andExpect(jsonPath("$.total_pages").value(1))
+                .andExpect(jsonPath("$.items[0].trip.title").exists())
+                .andExpect(jsonPath("$.items[0].author.nickname").exists())
+                .andExpect(jsonPath("$.items[0].intensity").value("moderate"))
+                .andExpect(jsonPath("$.items[0].advice").isNotEmpty());
     }
 
     @Test
     void in_filters_out_matchingExperiences() throws Exception {
         mockMvc.perform(get("/api/experiences").header("X-User-Id", "1").param("destination", "珠海"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.length()").value(1))
-                .andExpect(jsonPath("$[0].trip.id").value(1));
+                .andExpect(jsonPath("$.total").value(1))
+                .andExpect(jsonPath("$.items[0].trip.id").value(1));
 
         mockMvc.perform(get("/api/experiences").header("X-User-Id", "1").param("tags", "露营"))
-                .andExpect(jsonPath("$.length()").value(1))
-                .andExpect(jsonPath("$[0].trip.id").value(2));
+                .andExpect(jsonPath("$.total").value(1))
+                .andExpect(jsonPath("$.items[0].trip.id").value(2));
+    }
+
+    @Test
+    void in_pageWindow_out_slicedExperienceItems() throws Exception {
+        mockMvc.perform(get("/api/experiences").header("X-User-Id", "1").param("page", "2").param("size", "1"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.items.length()").value(1))
+                .andExpect(jsonPath("$.page").value(2))
+                .andExpect(jsonPath("$.total").value(2))
+                .andExpect(jsonPath("$.total_pages").value(2));
+
+        mockMvc.perform(get("/api/experiences").header("X-User-Id", "1").param("size", "0"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("INVALID_INPUT"));
     }
 
     @Test

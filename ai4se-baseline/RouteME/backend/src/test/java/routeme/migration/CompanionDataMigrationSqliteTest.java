@@ -1,4 +1,4 @@
-package routeme.dao;
+package routeme.migration;
 
 import static org.junit.jupiter.api.Assertions.assertAll;
 import static org.junit.jupiter.api.Assertions.assertEquals;

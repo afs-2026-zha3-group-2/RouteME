@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { Alert, Button, Card, Skeleton, Space, Tabs, Tag, Typography } from 'antd';
+import { Alert, Button, Skeleton, Tabs, Typography } from 'antd';
 import { loadMyExperiences, loadMyTrips } from '../api';
 import { tripMessages } from '../i18n/tripMessages';
 import { TripCard } from '../trips/TripCard';
@@ -22,22 +22,26 @@ function applicationLabel(status: TripApplication['status']): string {
   return tripMessages.applyStatusCancelled;
 }
 
+function EmptyGroup() {
+  return <Typography.Text type="secondary">{tripMessages.mineEmpty}</Typography.Text>;
+}
+
 export function MyTripsPage({ currentUser }: Props) {
   const [data, setData] = useState<MyTrips | null>(null);
-    const [experiences, setExperiences] = useState<Experience[]>([]);
-    const [error, setError] = useState<string | null>(null);
+  const [experiences, setExperiences] = useState<Experience[]>([]);
+  const [error, setError] = useState<string | null>(null);
 
-    const reload = useCallback(() => {
-      setError(null);
-      Promise.all([loadMyTrips(currentUser.id), loadMyExperiences(currentUser.id)])
-        .then(([loaded, loadedExperiences]) => {
-          setData(loaded);
-          setExperiences(loadedExperiences);
-        })
-        .catch((caught: unknown) => {
-          setError(caught instanceof Error ? caught.message : 'UNKNOWN_ERROR');
-        });
-    }, [currentUser.id]);
+  const reload = useCallback(() => {
+    setError(null);
+    Promise.all([loadMyTrips(currentUser.id), loadMyExperiences(currentUser.id)])
+      .then(([loaded, loadedExperiences]) => {
+        setData(loaded);
+        setExperiences(loadedExperiences);
+      })
+      .catch((caught: unknown) => {
+        setError(caught instanceof Error ? caught.message : 'UNKNOWN_ERROR');
+      });
+  }, [currentUser.id]);
 
   useEffect(() => {
     reload();
@@ -59,7 +63,7 @@ export function MyTripsPage({ currentUser }: Props) {
 
   return (
     <main className="trip-page">
-      <Space orientation="vertical" size="large" className="trip-stack">
+      <div className="page-stack">
         <Typography.Title level={2} className="trip-heading">
           {tripMessages.mineTitle}
         </Typography.Title>
@@ -88,19 +92,22 @@ export function MyTripsPage({ currentUser }: Props) {
 
         {data !== null && (
           <Tabs
+            className="mine-tabs"
             items={[
               {
                 key: 'published',
                 label: `${tripMessages.minePublished}（${data.published.length}）`,
                 children:
                   data.published.length === 0 ? (
-                    <Typography.Text type="secondary">{tripMessages.mineEmpty}</Typography.Text>
+                    <EmptyGroup />
                   ) : (
-                    <Space orientation="vertical" size="small" className="trip-stack">
+                    <div className="mine-list">
                       {data.published.map((trip) => (
-                        <TripCard key={trip.id} trip={trip} />
+                        <div key={trip.id} className="mine-row">
+                          <TripCard trip={trip} compact />
+                        </div>
                       ))}
-                    </Space>
+                    </div>
                   ),
               },
               {
@@ -108,27 +115,28 @@ export function MyTripsPage({ currentUser }: Props) {
                 label: `${tripMessages.mineApplied}（${data.applied.length}）`,
                 children:
                   data.applied.length === 0 ? (
-                    <Typography.Text type="secondary">{tripMessages.mineEmpty}</Typography.Text>
+                    <EmptyGroup />
                   ) : (
-                    <Space orientation="vertical" size="small" className="trip-stack">
+                    <div className="mine-list">
                       {data.applied.map((application) => (
                         <a
                           key={application.id}
-                          className="trip-card-link"
+                          className="mine-row mine-row-link"
                           href={`#/trips/${application.trip.id}`}
                         >
-                          <Card hoverable size="small">
-                            <Space size="small" wrap>
-                              <Tag>{applicationLabel(application.status)}</Tag>
-                              <Typography.Text strong>{application.trip.title}</Typography.Text>
-                              <Typography.Text type="secondary">
-                                {application.trip.start_date} → {application.trip.end_date}
-                              </Typography.Text>
-                            </Space>
-                          </Card>
+                          <span className="mine-row-main">
+                            <span className="mine-row-title">{application.trip.title}</span>
+                            <span className="mine-row-meta">
+                              {application.trip.destination} · {application.trip.start_date} →{' '}
+                              {application.trip.end_date}
+                            </span>
+                          </span>
+                          <span className="mine-row-actions">
+                            <span className="badge muted">{applicationLabel(application.status)}</span>
+                          </span>
                         </a>
                       ))}
-                    </Space>
+                    </div>
                   ),
               },
               {
@@ -136,23 +144,25 @@ export function MyTripsPage({ currentUser }: Props) {
                 label: `${tripMessages.mineMatched}（${data.matched.length}）`,
                 children:
                   data.matched.length === 0 ? (
-                    <Typography.Text type="secondary">{tripMessages.mineEmpty}</Typography.Text>
+                    <EmptyGroup />
                   ) : (
-                    <Space orientation="vertical" size="small" className="trip-stack">
+                    <div className="mine-list">
                       {data.matched.map((trip) => (
-                        <Space key={trip.id} size="small" wrap>
-                          <TripCard trip={trip} />
-                          <Button
-                            size="small"
-                            onClick={() =>
-                              (window.location.hash = `#/chat/${trip.id}/${trip.publisher.id}`)
-                            }
-                          >
-                            {tripMessages.mineChatEntry}
-                          </Button>
-                        </Space>
+                        <div key={trip.id} className="mine-row">
+                          <TripCard trip={trip} compact />
+                          <div className="mine-row-actions">
+                            <Button
+                              size="small"
+                              onClick={() =>
+                                (window.location.hash = `#/chat/${trip.id}/${trip.publisher.id}`)
+                              }
+                            >
+                              {tripMessages.mineChatEntry}
+                            </Button>
+                          </div>
+                        </div>
                       ))}
-                    </Space>
+                    </div>
                   ),
               },
               {
@@ -160,39 +170,41 @@ export function MyTripsPage({ currentUser }: Props) {
                 label: `${tripMessages.mineCompleted}（${data.completed.length}）`,
                 children:
                   data.completed.length === 0 ? (
-                    <Typography.Text type="secondary">{tripMessages.mineEmpty}</Typography.Text>
+                    <EmptyGroup />
                   ) : (
-                    <Space orientation="vertical" size="small" className="trip-stack">
-                                          {data.completed.map((trip) => {
-                                            const shared = experiences.some(
-                                              (experience) => experience.trip.id === trip.id,
-                                            );
-                                            return (
-                                              <Space key={trip.id} size="small" wrap>
-                                                <TripCard trip={trip} />
-                                                <Tag color={shared ? 'green' : 'default'}>
-                                                  {shared
-                                                    ? tripMessages.experienceEditEntry
-                                                    : tripMessages.experienceShareEntry}
-                                                </Tag>
-                                                <Button
-                                                  size="small"
-                                                  onClick={() => (window.location.hash = `#/share/${trip.id}`)}
-                                                >
-                                                  {shared
-                                                    ? tripMessages.experienceEditEntry
-                                                    : tripMessages.experienceShareEntry}
-                                                </Button>
-                                              </Space>
-                                            );
-                                          })}
-                                        </Space>
+                    <div className="mine-list">
+                      {data.completed.map((trip) => {
+                        const shared = experiences.some(
+                          (experience) => experience.trip.id === trip.id,
+                        );
+                        return (
+                          <div key={trip.id} className="mine-row">
+                            <TripCard trip={trip} compact />
+                            <div className="mine-row-actions">
+                              <span className={shared ? 'badge jade' : 'badge muted'}>
+                                {shared
+                                  ? tripMessages.experienceEditEntry
+                                  : tripMessages.experienceShareEntry}
+                              </span>
+                              <Button
+                                size="small"
+                                onClick={() => (window.location.hash = `#/share/${trip.id}`)}
+                              >
+                                {shared
+                                  ? tripMessages.experienceEditEntry
+                                  : tripMessages.experienceShareEntry}
+                              </Button>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
                   ),
               },
             ]}
           />
         )}
-      </Space>
+      </div>
     </main>
   );
 }

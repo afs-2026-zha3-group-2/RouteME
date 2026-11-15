@@ -12,11 +12,11 @@ API、事件与集成契约。字段一律 snake_case；时间字段为 RFC3339 
 | 方法 | 路径 | 说明 |
 |---|---|---|
 | GET | `/users` | 3 个演示账户（身份门） |
-| GET | `/trips` | 未结束行程列表；`q`、`destination`、`date_from`、`date_to`、`tags`（逗号分隔，任一命中）、`sort=date\|new` |
+| GET | `/trips` | 未结束行程分页列表；`q`、`destination`、`date_from`、`date_to`、`tags`（逗号分隔，任一命中）、`sort=date\|new`、`page`、`size` |
 | GET | `/trips/{id}` | 行程详情 + 发布者 + 当前同行者（发布者在前，其后为已接受同行者） |
 | POST | `/trips` | 发布行程（201） |
 | POST | `/trips/{id}/complete` | 发布者标记已结束 |
-| GET | `/matches` | 候选行程 + `match{score, percentage, reasons[], basis}`；`sort=match`（默认）\|`date`\|`new` |
+| GET | `/matches` | 候选行程 + `match{score, percentage, reasons[], basis}`；`sort=match`（默认）\|`date`\|`new`；`page`、`size` |
 | GET | `/matches/{tripId}` | 单条行程相对我的匹配信息 |
 | POST | `/trips/{tripId}/applications` | 提交同行申请（`message` 选填 ≤120，201） |
 | GET | `/trips/{tripId}/applications` | 发布者查看该行程申请 |
@@ -30,13 +30,14 @@ API、事件与集成契约。字段一律 snake_case；时间字段为 RFC3339 
 | GET | `/me/chat-partners` | 聊天对象列表（含最后一条消息与条数） |
 | GET | `/me/trips` | 我的旅行四组（published/applied/matched/completed）+ `pending_application_count` |
 | POST | `/reports` | 举报行程或用户 `{target_type, target_id, reason, note?}`，返回 `{received: true}` |
-| GET | `/experiences` | 旅行体验列表；`q`、`destination`、`tags`，按最近保存时间倒序 |
+| GET | `/experiences` | 旅行体验分页列表；`q`、`destination`、`tags`、`page`、`size`，按最近保存时间倒序 |
 | GET | `/me/experiences` | 我的体验（我的旅行「已完成」入口用） |
 | GET | `/trips/{tripId}/experiences` | 某行程的体验，按首次发布时间升序 |
 | POST | `/trips/{tripId}/experiences` | 发布或修改我的体验；首次 201、更新 200；`{content, intensity, advice}` |
 
 - 所有 `/trips*`、`/matches*`、`/me/*`、`/applications/*`、`/reports` 请求要求 `X-User-Id`（`app_users.id`）；缺失或未知返回 401 `DEMO_USER_REQUIRED`。
 - 列表只返回未结束行程；`sort` 非法返回 400。
+- 分页：`/trips`、`/matches`、`/experiences` 返回 `{items, page, size, total, total_pages}`；`page` 从 1 起、`size` 默认 20 且上限 50，越界返回 400 `INVALID_INPUT`。`/me/*` 与 `/trips/{id}/experiences` 仍返回数组。
 - 同行关系 = 发布者 + 该行程 `ACCEPTED` 的申请者；`joined_count` 仍由 `trip-plans` 单一写入，接受/退出经服务方法联动。
 - 聊天仅对已匹配双方开放；行程 `completed` 后可读不可写；只有 `PENDING` 申请不能进入。
 - 体验仅对「已结束且参加过（发布者或已接受同行者）」开放；每人每行程一条，再次提交即更新；`content` 10–400 字、`intensity` ∈ relaxed/moderate/tiring、`advice` 必填 ≤120 字。

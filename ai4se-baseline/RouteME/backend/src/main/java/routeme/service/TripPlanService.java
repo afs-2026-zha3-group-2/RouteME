@@ -15,8 +15,10 @@ import routeme.exception.InvalidInputException;
 import routeme.exception.TripNotFoundException;
 import routeme.exception.TripNotOpenException;
 import routeme.model.DemoUser;
+import routeme.model.PageResult;
 import routeme.model.TripPlan;
 import routeme.model.TripPlanDraft;
+import routeme.param.PageParam;
 import routeme.repository.TripPlanRepository;
 import routeme.repository.UserRepository;
 
@@ -66,6 +68,13 @@ public class TripPlanService {
                 tripPlanRepository.findUnfinished(),
                 query,
                 publisherId -> userRepository.findById(publisherId).map(DemoUser::nickname).orElse(""));
+    }
+
+    /**
+     * 分页浏览未结束行程：过滤、排序与分页都在数据库完成。
+     */
+    public PageResult<TripPlan> searchPage(TripQuery query, PageParam param) {
+        return tripPlanRepository.findOpenPage(query, param.page(), param.size());
     }
 
     public TripPlan require(long tripId) {

@@ -26,14 +26,16 @@ const RING_LENGTH = 94.25;
 type Props = {
   trip: TripSummary;
   match?: Match;
+  /** 紧凑行式卡片：用于「我的旅行」列表，封面缩成窄条，信息单行排布。 */
+  compact?: boolean;
 };
 
-export function TripCard({ trip, match }: Props) {
+export function TripCard({ trip, match, compact = false }: Props) {
   const joinedRate = trip.capacity === 0 ? 0 : Math.round((trip.joined_count / trip.capacity) * 100);
   const width = Math.min(100, Math.max(0, joinedRate));
 
   return (
-    <a className="trip-card" href={`#/trips/${trip.id}`}>
+    <a className={compact ? 'trip-card compact' : 'trip-card'} href={`#/trips/${trip.id}`}>
       <div className={`tc-cover cover-${coverTone(trip.destination)}`}>
         <span className="tc-dest">{trip.destination}</span>
         <span className={`badge ${statusTone(trip.status)}`}>{statusLabel(trip.status)}</span>

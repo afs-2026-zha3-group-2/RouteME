@@ -1,10 +1,11 @@
 openapi: 3.0.3
 info:
   title: RouteME API
-  version: 0.4.0
+  version: 0.5.0
   description: |
     RouteME 后端对外契约。本文件是前后端唯一事实源，字段名、类型、状态码与错误码只在这里定稿。
         当前包含：脚手架问候语、演示账户、旅行计划（浏览/筛选/发布/详情/结束），同行匹配、申请、退出、聊天、我的旅行与举报，以及游后体验分享与参考发布所需数据。
+        行程与体验列表按页返回：`page` 从 1 起，`size` 默认 20、上限 50。
 servers:
   - url: http://localhost:8080/api
     description: 本地开发
@@ -87,9 +88,11 @@ paths:
       summary: 浏览未结束的旅行计划
       description: |
         只返回未结束（completed_at 为空）的行程；已结束与已取消不在列表中。
-        列表不分页，一次返回全部命中项。
+        结果为分页对象：`total` 是筛选后的命中总数，`total_pages` 为向上取整的页数。
       parameters:
         - $ref: '#/components/parameters/DemoUserId'
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/Size'
         - name: q
           in: query
           description: 关键词，匹配标题、目的地、途经点、标签与发布者昵称（大小写不敏感包含）
@@ -120,34 +123,37 @@ paths:
             type: string
       responses:
         '200':
-          description: 未结束行程列表
+          description: 未结束行程的一页
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/TripPlan'
+                $ref: '#/components/schemas/TripPage'
               examples:
                 filtered:
                   value:
-                    - id: 3
-                      title: 珠海情侣路日落机位二刷
-                      destination: 珠海
-                      start_date: '2026-11-16'
-                      end_date: '2026-11-16'
-                      stops: [香洲港集合, 情侣北路步行, 海滨泳场日落]
-                      tags: [摄影, 海边]
-                      capacity: 3
-                      joined_count: 1
-                      status: recruiting
-                      publisher:
-                        id: 2
-                        nickname: 陈屿
-                        avatar_initial: 屿
-                        school: 研一 · 地理科学
-                        bio: 周末基本在山里。
-                        interests: [徒步, 自然, 露营]
-                      created_at: '2026-11-12T14:05:00Z'
+                    items:
+                      - id: 3
+                        title: 珠海情侣路日落机位二刷
+                        destination: 珠海
+                        start_date: '2026-11-16'
+                        end_date: '2026-11-16'
+                        stops: [香洲港集合, 情侣北路步行, 海滨泳场日落]
+                        tags: [摄影, 海边]
+                        capacity: 3
+                        joined_count: 1
+                        status: recruiting
+                        publisher:
+                          id: 2
+                          nickname: 陈屿
+                          avatar_initial: 屿
+                          school: 研一 · 地理科学
+                          bio: 周末基本在山里。
+                          interests: [徒步, 自然, 露营]
+                        created_at: '2026-11-12T14:05:00Z'
+                    page: 1
+                    size: 20
+                    total: 1
+                    total_pages: 1
         '400':
           description: 查询参数不合法
           content:
@@ -377,8 +383,11 @@ paths:
       description: |
         在未结束行程上追加匹配分与理由：目的地相同 50、出发日期相同 30、相差一天 20、
         共同兴趣每项 10 且合计不超过 20；默认按匹配分倒序。筛选参数与 /trips 相同。
+        匹配分在应用层计算，因此先算完整候选再切页；`total` 仍是筛选后的命中数。
       parameters:
         - $ref: '#/components/parameters/DemoUserId'
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/Size'
         - name: q
           in: query
           schema:
@@ -410,13 +419,13 @@ paths:
             default: match
       responses:
         '200':
-          description: 候选行程与匹配信息
+          description: 候选行程与匹配信息的一页
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/MatchCandidate'
+                $ref: '#/components/schemas/MatchPage'
+        '400':
+          $ref: '#/components/responses/InvalidInput'
         '401':
           $ref: '#/components/responses/DemoUserRequired'
         '500':
@@ -791,9 +800,11 @@ paths:
     get:
       operationId: loadExperiences
       summary: 旅行体验列表
-      description: 已发布体验，按最近保存时间倒序；支持关键词、目的地与兴趣筛选。
+      description: 已发布体验，按最近保存时间倒序；支持关键词、目的地与兴趣筛选，结果按页返回。
       parameters:
         - $ref: '#/components/parameters/DemoUserId'
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/Size'
         - name: q
           in: query
           required: false
@@ -813,13 +824,11 @@ paths:
             type: string
       responses:
         '200':
-          description: 体验列表
+          description: 体验列表的一页
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/Experience'
+                $ref: '#/components/schemas/ExperiencePage'
         '400':
           $ref: '#/components/responses/InvalidInput'
         '401':
@@ -934,6 +943,25 @@ components:
       schema:
         type: integer
         format: int64
+    Page:
+      name: page
+      in: query
+      required: false
+      description: 页码，从 1 起；小于 1 视为非法输入。
+      schema:
+        type: integer
+        minimum: 1
+        default: 1
+    Size:
+      name: size
+      in: query
+      required: false
+      description: 每页条数，默认 20，最大 50；超出范围视为非法输入。
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 50
+        default: 20
   responses:
     DemoUserRequired:
       description: 缺少或未知的演示身份
@@ -1200,6 +1228,56 @@ components:
           $ref: '#/components/schemas/TripPlan'
         match:
           $ref: '#/components/schemas/Match'
+    TripPage:
+      type: object
+      required: [items, page, size, total, total_pages]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/TripPlan'
+          description: 当前页的行程
+        page:
+          type: integer
+          minimum: 1
+          description: 当前页码，从 1 起
+        size:
+          type: integer
+          minimum: 1
+          maximum: 50
+          description: 每页条数
+        total:
+          type: integer
+          format: int64
+          minimum: 0
+          description: 筛选后的命中总数，不是全量行程数
+        total_pages:
+          type: integer
+          minimum: 0
+          description: 命中总数按 size 向上取整的页数
+    MatchPage:
+      type: object
+      required: [items, page, size, total, total_pages]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/MatchCandidate'
+        page:
+          type: integer
+          minimum: 1
+        size:
+          type: integer
+          minimum: 1
+          maximum: 50
+        total:
+          type: integer
+          format: int64
+          minimum: 0
+          description: 筛选后的候选总数
+        total_pages:
+          type: integer
+          minimum: 0
     ApplicationCreateRequest:
       type: object
       properties:
@@ -1361,6 +1439,30 @@ components:
           type: string
           format: date-time
           readOnly: true
+    ExperiencePage:
+      type: object
+      required: [items, page, size, total, total_pages]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/Experience'
+          description: 当前页的游后体验
+        page:
+          type: integer
+          minimum: 1
+        size:
+          type: integer
+          minimum: 1
+          maximum: 50
+        total:
+          type: integer
+          format: int64
+          minimum: 0
+          description: 筛选后的体验总数
+        total_pages:
+          type: integer
+          minimum: 0
     ReportRequest:
       type: object
       required: [target_type, target_id, reason]
