@@ -8,10 +8,11 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.transaction.annotation.Transactional;
-import routeme.exception.InvalidInput;
-import routeme.exception.TripNotOpen;
+
+import routeme.enums.TripStatusEnum;
+import routeme.exception.InvalidInputException;
+import routeme.exception.TripNotOpenException;
 import routeme.model.TripPlan;
-import routeme.model.TripStatus;
 
 @SpringBootTest
 @Transactional
@@ -28,17 +29,17 @@ class TripPlanServiceTest {
         // Then
         assertAll(
                 () -> assertEquals(2, updated.joinedCount(), "joined count +1"),
-                () -> assertEquals(TripStatus.RECRUITING, updated.status(), "still recruiting"));
+                () -> assertEquals(TripStatusEnum.RECRUITING, updated.status(), "still recruiting"));
     }
 
     @Test
     void in_fullTrip_out_addCompanionRejected() {
-        assertThrows(TripNotOpen.class, () -> tripPlanService.addCompanion(6));
+        assertThrows(TripNotOpenException.class, () -> tripPlanService.addCompanion(6));
     }
 
     @Test
     void in_completedTrip_out_addCompanionRejected() {
-        assertThrows(TripNotOpen.class, () -> tripPlanService.addCompanion(1));
+        assertThrows(TripNotOpenException.class, () -> tripPlanService.addCompanion(1));
     }
 
     @Test
@@ -49,11 +50,11 @@ class TripPlanServiceTest {
         // Then
         assertAll(
                 () -> assertEquals(1, updated.joinedCount(), "joined count -1"),
-                () -> assertEquals(TripStatus.RECRUITING, updated.status(), "status falls back to recruiting"));
+                () -> assertEquals(TripStatusEnum.RECRUITING, updated.status(), "status falls back to recruiting"));
     }
 
     @Test
     void in_tripWithPublisherOnly_out_removeCompanionRejected() {
-        assertThrows(InvalidInput.class, () -> tripPlanService.removeCompanion(3));
+        assertThrows(InvalidInputException.class, () -> tripPlanService.removeCompanion(3));
     }
 }

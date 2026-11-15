@@ -7,8 +7,9 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-import routeme.dto.ReportReceiptResponse;
-import routeme.dto.ReportRequest;
+
+import routeme.response.ReportReceiptResponse;
+import routeme.request.ReportRequest;
 import routeme.model.DemoUser;
 import routeme.service.DemoUserService;
 import routeme.service.ReportService;

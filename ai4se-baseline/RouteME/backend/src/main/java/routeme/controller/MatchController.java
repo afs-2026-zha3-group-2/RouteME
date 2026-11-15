@@ -2,6 +2,7 @@ package routeme.controller;
 
 import java.time.LocalDate;
 import java.util.List;
+
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -9,9 +10,11 @@ import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
-import routeme.dto.MatchCandidateResponse;
-import routeme.dto.TripQuery;
+
+import routeme.response.MatchCandidateResponse;
+import routeme.request.TripQuery;
 import routeme.model.DemoUser;
+import routeme.param.TripQueryParam;
 import routeme.service.DemoUserService;
 import routeme.service.MatchService;
 
@@ -41,7 +44,7 @@ public class MatchController {
         DemoUser me = demoUserService.require(userId);
         TripQuery query = new TripQuery(
                 q, destination, dateFrom, dateTo,
-                TripQueryParams.parseTags(tags), TripQueryParams.parseSortWithMatch(sort));
+                TripQueryParam.parseTags(tags), TripQueryParam.parseSortWithMatch(sort));
         return matchService.search(query, me.id()).stream()
                 .map(MatchCandidateResponse::from)
                 .toList();

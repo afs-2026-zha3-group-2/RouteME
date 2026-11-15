@@ -2,17 +2,19 @@ package routeme.service;
 
 import java.time.Clock;
 import java.util.List;
+
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import routeme.dao.ChatMessageRepository;
-import routeme.dto.ChatMessageRequest;
-import routeme.dto.ChatPartnerResponse;
-import routeme.exception.ChatNotAllowed;
-import routeme.exception.ChatReadOnly;
-import routeme.exception.InvalidInput;
+
+import routeme.request.ChatMessageRequest;
+import routeme.response.ChatPartnerResponse;
+import routeme.enums.TripStatusEnum;
+import routeme.exception.ChatNotAllowedException;
+import routeme.exception.ChatReadOnlyException;
+import routeme.exception.InvalidInputException;
 import routeme.model.ChatMessage;
 import routeme.model.TripPlan;
-import routeme.model.TripStatus;
+import routeme.repository.ChatMessageRepository;
 
 @Service
 public class ChatService {
@@ -49,8 +51,8 @@ public class ChatService {
         TripPlan trip = tripPlanService.require(tripId);
         long receiverId = request == null ? 0 : request.receiverId();
         requireMatched(trip, senderId, receiverId);
-        if (trip.status() == TripStatus.COMPLETED) {
-            throw new ChatReadOnly(tripId);
+        if (trip.status() == TripStatusEnum.COMPLETED) {
+            throw new ChatReadOnlyException(tripId);
         }
         String content = normalizeContent(request == null ? null : request.content());
         ChatMessage message = new ChatMessage(
@@ -83,16 +85,16 @@ public class ChatService {
                 return;
             }
         }
-        throw new ChatNotAllowed(trip.id(), userId);
+        throw new ChatNotAllowedException(trip.id(), userId);
     }
 
     private String normalizeContent(String content) {
         String trimmed = content == null ? "" : content.trim();
         if (trimmed.isEmpty()) {
-            throw new InvalidInput("chat content is required");
+            throw new InvalidInputException("chat content is required");
         }
         if (trimmed.length() > MAX_CONTENT_LENGTH) {
-            throw new InvalidInput("chat content exceeds " + MAX_CONTENT_LENGTH + " characters");
+            throw new InvalidInputException("chat content exceeds " + MAX_CONTENT_LENGTH + " characters");
         }
         return trimmed;
     }

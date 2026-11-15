@@ -4,7 +4,8 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-import routeme.dto.MyTripsResponse;
+
+import routeme.response.MyTripsResponse;
 import routeme.model.DemoUser;
 import routeme.service.DemoUserService;
 import routeme.service.MyTripsService;

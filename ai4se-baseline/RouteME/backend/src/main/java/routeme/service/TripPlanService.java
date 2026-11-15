@@ -3,20 +3,22 @@ package routeme.service;
 import java.time.Clock;
 import java.time.Instant;
 import java.util.List;
+
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import routeme.dao.TripPlanRepository;
-import routeme.dao.UserRepository;
-import routeme.dto.TripCreateRequest;
-import routeme.dto.TripQuery;
-import routeme.exception.ForbiddenAction;
-import routeme.exception.InvalidInput;
-import routeme.exception.TripNotFound;
-import routeme.exception.TripNotOpen;
+
+import routeme.request.TripCreateRequest;
+import routeme.request.TripQuery;
+import routeme.enums.TripStatusEnum;
+import routeme.exception.ForbiddenActionException;
+import routeme.exception.InvalidInputException;
+import routeme.exception.TripNotFoundException;
+import routeme.exception.TripNotOpenException;
 import routeme.model.DemoUser;
 import routeme.model.TripPlan;
 import routeme.model.TripPlanDraft;
-import routeme.model.TripStatus;
+import routeme.repository.TripPlanRepository;
+import routeme.repository.UserRepository;
 
 @Service
 public class TripPlanService {
@@ -68,17 +70,17 @@ public class TripPlanService {
 
     public TripPlan require(long tripId) {
         return tripPlanRepository.findById(tripId)
-                .orElseThrow(() -> new TripNotFound(tripId));
+                .orElseThrow(() -> new TripNotFoundException(tripId));
     }
 
         @Transactional
             public TripPlan complete(long tripId, long userId) {
                 TripPlan trip = require(tripId);
                 if (trip.publisherId() != userId) {
-                    throw new ForbiddenAction("only the publisher can complete trip " + tripId);
+                    throw new ForbiddenActionException("only the publisher can complete trip " + tripId);
                 }
-                if (trip.status() == TripStatus.COMPLETED) {
-                    throw new TripNotOpen(tripId);
+                if (trip.status() == TripStatusEnum.COMPLETED) {
+                    throw new TripNotOpenException(tripId);
                 }
                 tripPlanRepository.markCompleted(tripId, clock.instant());
                 return require(tripId);
@@ -87,8 +89,8 @@ public class TripPlanService {
             @Transactional
             public TripPlan addCompanion(long tripId) {
                 TripPlan trip = require(tripId);
-                if (trip.status() != TripStatus.RECRUITING) {
-                    throw new TripNotOpen(tripId);
+                if (trip.status() != TripStatusEnum.RECRUITING) {
+                    throw new TripNotOpenException(tripId);
                 }
                 tripPlanRepository.updateJoinedCount(tripId, trip.joinedCount() + 1, clock.instant());
                 return require(tripId);
@@ -97,11 +99,11 @@ public class TripPlanService {
             @Transactional
             public TripPlan removeCompanion(long tripId) {
                 TripPlan trip = require(tripId);
-                if (trip.status() == TripStatus.COMPLETED) {
-                    throw new TripNotOpen(tripId);
+                if (trip.status() == TripStatusEnum.COMPLETED) {
+                    throw new TripNotOpenException(tripId);
                 }
                 if (trip.joinedCount() <= 1) {
-                    throw new InvalidInput("trip has no companion to remove: " + tripId);
+                    throw new InvalidInputException("trip has no companion to remove: " + tripId);
                 }
                 tripPlanRepository.updateJoinedCount(tripId, trip.joinedCount() - 1, clock.instant());
                 return require(tripId);

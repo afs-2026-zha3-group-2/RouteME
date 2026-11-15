@@ -7,8 +7,10 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Set;
+
 import org.junit.jupiter.api.Test;
-import routeme.dto.TripQuery;
+
+import routeme.request.TripQuery;
 import routeme.model.TripPlan;
 
 class TripPlanQueryServiceTest {

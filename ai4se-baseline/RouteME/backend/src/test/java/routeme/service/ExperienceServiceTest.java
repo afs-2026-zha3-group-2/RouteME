@@ -8,14 +8,16 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.util.List;
 import java.util.Set;
+
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.transaction.annotation.Transactional;
-import routeme.dto.ExperienceResponse;
-import routeme.dto.ExperienceSaveResult;
-import routeme.dto.ExperienceWriteRequest;
-import routeme.exception.ExperienceNotAllowed;
+
+import routeme.response.ExperienceResponse;
+import routeme.response.ExperienceSaveResponse;
+import routeme.request.ExperienceWriteRequest;
+import routeme.exception.ExperienceNotAllowedException;
 
 @SpringBootTest
 @Transactional
@@ -30,7 +32,7 @@ class ExperienceServiceTest {
     @Test
     void in_publisherOfCompletedTrip_out_createdExperience() {
         // When
-        ExperienceSaveResult result = experienceService.upsert(1L, 1L, VALID);
+        ExperienceSaveResponse result = experienceService.upsert(1L, 1L, VALID);
 
         // Then
         assertAll(
@@ -49,7 +51,7 @@ class ExperienceServiceTest {
         long existingId = experienceService.listByTrip(1L).get(0).id();
 
         // When
-        ExperienceSaveResult result = experienceService.upsert(
+        ExperienceSaveResponse result = experienceService.upsert(
                 1L, 2L, new ExperienceWriteRequest("改成更具体的感受：风很大，日落机位要早到。", "relaxed", "防风外套必带。"));
 
         // Then
@@ -62,12 +64,12 @@ class ExperienceServiceTest {
 
     @Test
     void in_nonParticipant_out_rejected() {
-        assertThrows(ExperienceNotAllowed.class, () -> experienceService.upsert(1L, 3L, VALID));
+        assertThrows(ExperienceNotAllowedException.class, () -> experienceService.upsert(1L, 3L, VALID));
     }
 
     @Test
     void in_unfinishedTrip_out_rejected() {
-        assertThrows(ExperienceNotAllowed.class, () -> experienceService.upsert(3L, 1L, VALID));
+        assertThrows(ExperienceNotAllowedException.class, () -> experienceService.upsert(3L, 1L, VALID));
     }
 
     @Test

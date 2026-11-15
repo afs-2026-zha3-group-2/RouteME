@@ -23,6 +23,8 @@ dist/
 .vscode/*
 !.vscode/tasks.json
 !.vscode/settings.json
+.metals/
+.bloop/
 
 # OS
 .DS_Store

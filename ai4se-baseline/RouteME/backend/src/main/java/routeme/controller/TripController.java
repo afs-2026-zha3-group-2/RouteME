@@ -2,6 +2,7 @@ package routeme.controller;
 
 import java.time.LocalDate;
 import java.util.List;
+
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -13,12 +14,14 @@ import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
-import routeme.dto.TripCreateRequest;
-import routeme.dto.TripDetailResponse;
-import routeme.dto.TripQuery;
-import routeme.dto.TripSummaryResponse;
+
+import routeme.request.TripCreateRequest;
+import routeme.response.TripDetailResponse;
+import routeme.request.TripQuery;
+import routeme.response.TripSummaryResponse;
 import routeme.model.DemoUser;
 import routeme.model.TripPlan;
+import routeme.param.TripQueryParam;
 import routeme.service.ApplicationService;
 import routeme.service.DemoUserService;
 import routeme.service.TripPlanService;
@@ -53,7 +56,7 @@ public class TripController {
             @RequestParam(required = false) String sort) {
         demoUserService.require(userId);
         TripQuery query = new TripQuery(
-                q, destination, dateFrom, dateTo, TripQueryParams.parseTags(tags), TripQueryParams.parseSort(sort));
+                q, destination, dateFrom, dateTo, TripQueryParam.parseTags(tags), TripQueryParam.parseSort(sort));
         return tripPlanService.search(query).stream()
                 .map(trip -> TripSummaryResponse.from(trip, tripPlanService.publisherOf(trip)))
                 .toList();

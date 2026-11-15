@@ -2,12 +2,14 @@ package routeme.service;
 
 import java.time.Clock;
 import java.util.Set;
+
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import routeme.dao.ReportRepository;
-import routeme.dto.ReportRequest;
-import routeme.exception.InvalidInput;
+
+import routeme.request.ReportRequest;
+import routeme.exception.InvalidInputException;
 import routeme.model.Report;
+import routeme.repository.ReportRepository;
 
 @Service
 public class ReportService {
@@ -27,12 +29,12 @@ public class ReportService {
     @Transactional
     public Report submit(long reporterId, ReportRequest request) {
         if (request == null) {
-            throw new InvalidInput("report body is required");
+            throw new InvalidInputException("report body is required");
         }
         String targetType = requireOption(request.targetType(), TARGET_TYPES, "target_type");
         String reason = requireOption(request.reason(), REASONS, "reason");
         if (request.targetId() == null || request.targetId() <= 0) {
-            throw new InvalidInput("target_id is required");
+            throw new InvalidInputException("target_id is required");
         }
         Report report = new Report(
                 reportRepository.nextId(),
@@ -49,7 +51,7 @@ public class ReportService {
     private String requireOption(String value, Set<String> allowed, String field) {
         String trimmed = value == null ? "" : value.trim();
         if (!allowed.contains(trimmed)) {
-            throw new InvalidInput(field + " must be one of " + allowed);
+            throw new InvalidInputException(field + " must be one of " + allowed);
         }
         return trimmed;
     }
@@ -63,7 +65,7 @@ public class ReportService {
             return null;
         }
         if (trimmed.length() > MAX_NOTE_LENGTH) {
-            throw new InvalidInput("note exceeds " + MAX_NOTE_LENGTH + " characters");
+            throw new InvalidInputException("note exceeds " + MAX_NOTE_LENGTH + " characters");
         }
         return trimmed;
     }

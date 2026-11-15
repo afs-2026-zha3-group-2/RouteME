@@ -1,7 +1,9 @@
 package routeme.model;
 
 import java.time.Instant;
-import routeme.exception.InvalidInput;
+
+import routeme.enums.ExperienceIntensityEnum;
+import routeme.exception.InvalidInputException;
 
 /**
  * 游后体验：同一用户对同一行程只有一条，再次提交即更新。
@@ -11,7 +13,7 @@ public record TripExperience(
         long tripId,
         long authorId,
         String content,
-        ExperienceIntensity intensity,
+        ExperienceIntensityEnum intensity,
         String advice,
         Instant createdAt,
         Instant updatedAt) {
@@ -29,7 +31,7 @@ public record TripExperience(
                 tripId,
                 authorId,
                 trimmedContent,
-                ExperienceIntensity.fromWire(intensity),
+                ExperienceIntensityEnum.fromWire(intensity),
                 trimmedAdvice,
                 now,
                 now);
@@ -41,7 +43,7 @@ public record TripExperience(
                 tripId,
                 authorId,
                 requireContent(content),
-                ExperienceIntensity.fromWire(intensity),
+                ExperienceIntensityEnum.fromWire(intensity),
                 requireAdvice(advice),
                 createdAt,
                 now);
@@ -54,7 +56,7 @@ public record TripExperience(
     private static String requireContent(String content) {
         String trimmed = content == null ? "" : content.trim();
         if (trimmed.length() < MIN_CONTENT_LENGTH || trimmed.length() > MAX_CONTENT_LENGTH) {
-            throw new InvalidInput("experience content must be between " + MIN_CONTENT_LENGTH
+            throw new InvalidInputException("experience content must be between " + MIN_CONTENT_LENGTH
                     + " and " + MAX_CONTENT_LENGTH + " characters");
         }
         return trimmed;
@@ -63,10 +65,10 @@ public record TripExperience(
     private static String requireAdvice(String advice) {
         String trimmed = advice == null ? "" : advice.trim();
         if (trimmed.isEmpty()) {
-            throw new InvalidInput("experience advice is required");
+            throw new InvalidInputException("experience advice is required");
         }
         if (trimmed.length() > MAX_ADVICE_LENGTH) {
-            throw new InvalidInput("experience advice must be at most " + MAX_ADVICE_LENGTH + " characters");
+            throw new InvalidInputException("experience advice must be at most " + MAX_ADVICE_LENGTH + " characters");
         }
         return trimmed;
     }

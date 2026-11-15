@@ -1,0 +1,2 @@
+Placeholder so the annotation package exists in git.
+Custom annotations (for example a future @CurrentUser or @RateLimited) belong here.

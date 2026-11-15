@@ -2,15 +2,17 @@ package routeme.service;
 
 import java.util.Comparator;
 import java.util.List;
+
 import org.springframework.stereotype.Service;
-import routeme.dao.TripPlanRepository;
-import routeme.dao.UserRepository;
-import routeme.dto.TripQuery;
-import routeme.exception.TripNotFound;
+
+import routeme.request.TripQuery;
+import routeme.exception.TripNotFoundException;
 import routeme.model.DemoUser;
 import routeme.model.MatchCandidate;
 import routeme.model.TripMatch;
 import routeme.model.TripPlan;
+import routeme.repository.TripPlanRepository;
+import routeme.repository.UserRepository;
 
 @Service
 public class MatchService {
@@ -50,7 +52,7 @@ public class MatchService {
 
     public MatchCandidate matchFor(long tripId, long userId) {
         DemoUser me = requireUser(userId);
-        TripPlan trip = tripPlanRepository.findById(tripId).orElseThrow(() -> new TripNotFound(tripId));
+        TripPlan trip = tripPlanRepository.findById(tripId).orElseThrow(() -> new TripNotFoundException(tripId));
         TripPlan reference = tripPlanRepository.findLatestUnfinishedByPublisher(userId).orElse(null);
         TripQuery empty = TripQuery.empty();
         return new MatchCandidate(trip, requirePublisher(trip), match(trip, reference, empty, me));

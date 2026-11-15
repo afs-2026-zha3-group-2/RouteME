@@ -5,10 +5,12 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.util.Optional;
+
 import org.junit.jupiter.api.Test;
-import routeme.dao.GreetingRepository;
-import routeme.exception.GreetingNotFound;
+
+import routeme.exception.GreetingNotFoundException;
 import routeme.model.Greeting;
+import routeme.repository.GreetingRepository;
 
 class GreetingServiceTest {
 
@@ -36,6 +38,6 @@ class GreetingServiceTest {
         GreetingService greetingService = new GreetingService(greetingRepository);
 
         // Then
-        assertThrows(GreetingNotFound.class, greetingService::loadGreeting);
+        assertThrows(GreetingNotFoundException.class, greetingService::loadGreeting);
     }
 }

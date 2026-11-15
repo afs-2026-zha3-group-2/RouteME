@@ -4,18 +4,20 @@ import java.time.Clock;
 import java.time.Instant;
 import java.util.List;
 import java.util.Set;
+
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import routeme.dao.TripExperienceRepository;
-import routeme.dao.UserRepository;
-import routeme.dto.ExperienceResponse;
-import routeme.dto.ExperienceSaveResult;
-import routeme.dto.ExperienceWriteRequest;
-import routeme.exception.ExperienceNotAllowed;
+
+import routeme.response.ExperienceResponse;
+import routeme.response.ExperienceSaveResponse;
+import routeme.request.ExperienceWriteRequest;
+import routeme.enums.TripStatusEnum;
+import routeme.exception.ExperienceNotAllowedException;
 import routeme.model.DemoUser;
 import routeme.model.TripExperience;
 import routeme.model.TripPlan;
-import routeme.model.TripStatus;
+import routeme.repository.TripExperienceRepository;
+import routeme.repository.UserRepository;
 
 @Service
 public class ExperienceService {
@@ -40,7 +42,7 @@ public class ExperienceService {
     }
 
     @Transactional
-    public ExperienceSaveResult upsert(long tripId, long authorId, ExperienceWriteRequest request) {
+    public ExperienceSaveResponse upsert(long tripId, long authorId, ExperienceWriteRequest request) {
         TripPlan trip = tripPlanService.require(tripId);
         requireCanShare(trip, authorId);
         Instant now = clock.instant();
@@ -58,7 +60,7 @@ public class ExperienceService {
             experienceRepository.update(saved);
             created = false;
         }
-        return new ExperienceSaveResult(describe(saved), created);
+        return new ExperienceSaveResponse(describe(saved), created);
     }
 
     public List<ExperienceResponse> listAll(String q, String destination, Set<String> tags) {
@@ -100,13 +102,13 @@ public class ExperienceService {
     }
 
     private void requireCanShare(TripPlan trip, long authorId) {
-        if (trip.status() != TripStatus.COMPLETED) {
-            throw new ExperienceNotAllowed(trip.id(), authorId);
+        if (trip.status() != TripStatusEnum.COMPLETED) {
+            throw new ExperienceNotAllowedException(trip.id(), authorId);
         }
         boolean participant = applicationService.participants(trip.id()).stream()
                 .anyMatch(user -> user.id() == authorId);
         if (!participant) {
-            throw new ExperienceNotAllowed(trip.id(), authorId);
+            throw new ExperienceNotAllowedException(trip.id(), authorId);
         }
     }
 

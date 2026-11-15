@@ -1,6 +1,7 @@
 package routeme.controller;
 
 import java.util.List;
+
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -11,10 +12,12 @@ import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
-import routeme.dto.ExperienceResponse;
-import routeme.dto.ExperienceSaveResult;
-import routeme.dto.ExperienceWriteRequest;
+
+import routeme.response.ExperienceResponse;
+import routeme.response.ExperienceSaveResponse;
+import routeme.request.ExperienceWriteRequest;
 import routeme.model.DemoUser;
+import routeme.param.TripQueryParam;
 import routeme.service.DemoUserService;
 import routeme.service.ExperienceService;
 
@@ -37,7 +40,7 @@ public class ExperienceController {
             @RequestParam(required = false) String destination,
             @RequestParam(required = false) String tags) {
         demoUserService.require(userId);
-        return experienceService.listAll(q, destination, TripQueryParams.parseTags(tags));
+        return experienceService.listAll(q, destination, TripQueryParam.parseTags(tags));
     }
 
     @GetMapping("/me/experiences")
@@ -61,7 +64,7 @@ public class ExperienceController {
             @PathVariable long tripId,
             @RequestBody ExperienceWriteRequest request) {
         DemoUser author = demoUserService.require(userId);
-        ExperienceSaveResult result = experienceService.upsert(tripId, author.id(), request);
+        ExperienceSaveResponse result = experienceService.upsert(tripId, author.id(), request);
         return ResponseEntity.status(result.created() ? HttpStatus.CREATED : HttpStatus.OK)
                 .body(result.experience());
     }

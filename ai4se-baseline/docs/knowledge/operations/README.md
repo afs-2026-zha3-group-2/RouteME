@@ -100,7 +100,7 @@ Windows     cd RouteME/backend; .\mvnw.cmd spring-boot:run    # 启动 8080
 
 - 首次启动自动创建 `backend/data/routeme.db`，Flyway 应用 `V1__create_greetings.sql`、`V2__seed_greeting.sql`；`GET /api/greeting` 应返回 `{"id":1,"message":"Hello World"}`。
 - 重置数据库：停止后端，删除 `backend/data/routeme.db`，重启后重新迁移。
-- 后端测试 `mvnw.cmd test`：接口测试走 H2 内存库，`DatabaseGreetingRepositorySqliteTest` 用临时 SQLite 文件库跑同一组迁移，CI 同样覆盖 SQLite。
+- 后端测试 `mvnw.cmd test`：接口测试走 H2 内存库，`GreetingDaoSqliteTest` 用临时 SQLite 文件库跑同一组迁移，CI 同样覆盖 SQLite。
 - 前端验证 `npm run build`（`tsc --noEmit && vite build`）与 `npm test`（Vitest 纯函数测试），不依赖后端启动。
 - 前端依赖安装：CI（Node 22 / npm 10）执行 `npm ci`；本机 npm 11.x 会把 rolldown 的平台可选依赖判为锁文件缺项而拒绝 `npm ci`，本地改用 `npm install`，要复现 CI 用 `npx npm@10 ci`。
 - 构建产物 `dist/assets/index-*.js` 约 612 kB，来源是 Ant Design 整包；保留警告不静默调高阈值，出现路由级拆分需求时再分包。

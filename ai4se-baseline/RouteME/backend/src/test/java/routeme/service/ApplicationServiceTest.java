@@ -6,19 +6,21 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.util.List;
+
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.transaction.annotation.Transactional;
-import routeme.exception.ApplicationNotPending;
-import routeme.exception.ForbiddenAction;
-import routeme.exception.TripNotOpen;
-import routeme.model.ApplicationStatus;
+
+import routeme.enums.ApplicationStatusEnum;
+import routeme.enums.TripStatusEnum;
+import routeme.exception.ApplicationNotPendingException;
+import routeme.exception.ForbiddenActionException;
+import routeme.exception.TripNotOpenException;
 import routeme.model.DemoUser;
 import routeme.model.TripApplication;
 import routeme.model.TripPlan;
-import routeme.model.TripStatus;
 
 @SpringBootTest
 @Transactional
@@ -41,7 +43,7 @@ class ApplicationServiceTest {
         // Then
         TripPlan trip = tripPlanService.require(5);
         assertAll(
-                () -> assertEquals(ApplicationStatus.ACCEPTED, decided.status(), "status accepted"),
+                () -> assertEquals(ApplicationStatusEnum.ACCEPTED, decided.status(), "status accepted"),
                 () -> assertNotNull(decided.decidedAt(), "decided at"),
                 () -> assertEquals(2, trip.joinedCount(), "joined count +1"));
     }
@@ -61,8 +63,8 @@ class ApplicationServiceTest {
             TripPlan trip = tripPlanService.require(3);
             assertAll(
                     () -> assertEquals(3, trip.joinedCount(), "capacity reached"),
-                    () -> assertEquals(TripStatus.FULL, trip.status(), "auto full"),
-                    () -> assertThrows(TripNotOpen.class, () -> applicationService.apply(3, 5, null),
+                    () -> assertEquals(TripStatusEnum.FULL, trip.status(), "auto full"),
+                    () -> assertThrows(TripNotOpenException.class, () -> applicationService.apply(3, 5, null),
                             "new applications rejected when full"));
         }
 
@@ -73,24 +75,24 @@ class ApplicationServiceTest {
 
         // Then
         assertAll(
-                () -> assertEquals(ApplicationStatus.REJECTED, decided.status(), "status rejected"),
+                () -> assertEquals(ApplicationStatusEnum.REJECTED, decided.status(), "status rejected"),
                 () -> assertEquals(1, tripPlanService.require(5).joinedCount(), "joined count unchanged"));
     }
 
     @Test
     void in_decideByNonPublisher_out_forbidden() {
-        assertThrows(ForbiddenAction.class, () -> applicationService.accept(6, 1));
-        assertThrows(ForbiddenAction.class, () -> applicationService.reject(6, 1));
+        assertThrows(ForbiddenActionException.class, () -> applicationService.accept(6, 1));
+        assertThrows(ForbiddenActionException.class, () -> applicationService.reject(6, 1));
     }
 
     @Test
     void in_decideNonPendingApplication_out_notPending() {
-        assertThrows(ApplicationNotPending.class, () -> applicationService.accept(1, 1));
+        assertThrows(ApplicationNotPendingException.class, () -> applicationService.accept(1, 1));
     }
 
     @Test
     void in_listByNonPublisher_out_forbidden() {
-        assertThrows(ForbiddenAction.class, () -> applicationService.listForPublisher(3, 1));
+        assertThrows(ForbiddenActionException.class, () -> applicationService.listForPublisher(3, 1));
     }
 
     @Test

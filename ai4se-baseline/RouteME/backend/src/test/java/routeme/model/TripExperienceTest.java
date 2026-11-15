@@ -6,8 +6,11 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.time.Instant;
+
 import org.junit.jupiter.api.Test;
-import routeme.exception.InvalidInput;
+
+import routeme.enums.ExperienceIntensityEnum;
+import routeme.exception.InvalidInputException;
 
 class TripExperienceTest {
 
@@ -23,7 +26,7 @@ class TripExperienceTest {
         assertAll(
                 () -> assertEquals("整条线基本没有爬升，日落前四十分钟到海边刚好。", experience.content(), "content trimmed"),
                 () -> assertEquals("带一件防风外套。", experience.advice(), "advice trimmed"),
-                () -> assertEquals(ExperienceIntensity.MODERATE, experience.intensity(), "intensity parsed"),
+                () -> assertEquals(ExperienceIntensityEnum.MODERATE, experience.intensity(), "intensity parsed"),
                 () -> assertEquals(NOW, experience.createdAt(), "created at"),
                 () -> assertEquals(NOW, experience.updatedAt(), "updated at"));
     }
@@ -40,24 +43,24 @@ class TripExperienceTest {
     @Test
     void in_contentOutOfRange_out_invalidInput() {
         assertAll(
-                () -> assertThrows(InvalidInput.class,
+                () -> assertThrows(InvalidInputException.class,
                         () -> TripExperience.create(1, 2, "字".repeat(9), "relaxed", "建议", NOW)),
-                () -> assertThrows(InvalidInput.class,
+                () -> assertThrows(InvalidInputException.class,
                         () -> TripExperience.create(1, 2, "字".repeat(401), "relaxed", "建议", NOW)));
     }
 
     @Test
     void in_blankOrTooLongAdvice_out_invalidInput() {
         assertAll(
-                () -> assertThrows(InvalidInput.class,
+                () -> assertThrows(InvalidInputException.class,
                         () -> TripExperience.create(1, 2, "字".repeat(10), "relaxed", "   ", NOW)),
-                () -> assertThrows(InvalidInput.class,
+                () -> assertThrows(InvalidInputException.class,
                         () -> TripExperience.create(1, 2, "字".repeat(10), "relaxed", "字".repeat(121), NOW)));
     }
 
     @Test
     void in_unknownIntensity_out_invalidInput() {
-        assertThrows(InvalidInput.class,
+        assertThrows(InvalidInputException.class,
                 () -> TripExperience.create(1, 2, "字".repeat(10), "extreme", "建议", NOW));
     }
 
@@ -76,6 +79,6 @@ class TripExperienceTest {
                 () -> assertEquals(5, updated.id(), "id kept"),
                 () -> assertEquals(NOW, updated.createdAt(), "created at kept"),
                 () -> assertEquals(later, updated.updatedAt(), "updated at moves"),
-                () -> assertEquals(ExperienceIntensity.TIRING, updated.intensity(), "intensity updated"));
+                () -> assertEquals(ExperienceIntensityEnum.TIRING, updated.intensity(), "intensity updated"));
     }
 }

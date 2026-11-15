@@ -2,7 +2,8 @@ package routeme.controller;
 
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RestController;
-import routeme.dto.GreetingResponse;
+
+import routeme.response.GreetingResponse;
 import routeme.model.Greeting;
 import routeme.service.GreetingService;
 

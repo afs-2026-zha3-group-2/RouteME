@@ -3,14 +3,16 @@ package routeme.service;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
+
 import org.springframework.stereotype.Service;
-import routeme.dao.TripApplicationRepository;
-import routeme.dao.TripPlanRepository;
-import routeme.dto.MyTripsResponse;
-import routeme.dto.TripSummaryResponse;
+
+import routeme.response.MyTripsResponse;
+import routeme.response.TripSummaryResponse;
 import routeme.model.DemoUser;
 import routeme.model.TripApplication;
 import routeme.model.TripPlan;
+import routeme.repository.TripApplicationRepository;
+import routeme.repository.TripPlanRepository;
 
 @Service
 public class MyTripsService {

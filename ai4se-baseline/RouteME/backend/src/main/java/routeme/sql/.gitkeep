@@ -1,0 +1,2 @@
+Placeholder so the sql package exists in git.
+SQL fragments and builders shared by DAO classes.

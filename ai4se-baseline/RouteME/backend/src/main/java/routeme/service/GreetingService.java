@@ -1,9 +1,10 @@
 package routeme.service;
 
 import org.springframework.stereotype.Service;
-import routeme.dao.GreetingRepository;
-import routeme.exception.GreetingNotFound;
+
+import routeme.exception.GreetingNotFoundException;
 import routeme.model.Greeting;
+import routeme.repository.GreetingRepository;
 
 @Service
 public class GreetingService {
@@ -15,6 +16,6 @@ public class GreetingService {
     }
 
     public Greeting loadGreeting() {
-        return greetingRepository.findGreeting().orElseThrow(GreetingNotFound::new);
+        return greetingRepository.findGreeting().orElseThrow(GreetingNotFoundException::new);
     }
 }

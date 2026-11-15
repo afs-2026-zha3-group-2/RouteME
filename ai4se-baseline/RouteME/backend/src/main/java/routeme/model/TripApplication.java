@@ -2,6 +2,8 @@ package routeme.model;
 
 import java.time.Instant;
 
+import routeme.enums.ApplicationStatusEnum;
+
 /**
  * 同行申请。已接受申请即同行关系；状态流转由领域方法保持不可变。
  */
@@ -10,19 +12,19 @@ public record TripApplication(
         long tripId,
         long applicantId,
         String message,
-        ApplicationStatus status,
+        ApplicationStatusEnum status,
         Instant createdAt,
         Instant decidedAt) {
 
     public boolean isPending() {
-        return status == ApplicationStatus.PENDING;
+        return status == ApplicationStatusEnum.PENDING;
     }
 
     public boolean isAccepted() {
-        return status == ApplicationStatus.ACCEPTED;
+        return status == ApplicationStatusEnum.ACCEPTED;
     }
 
-    public TripApplication withStatus(ApplicationStatus next, Instant at) {
+    public TripApplication withStatus(ApplicationStatusEnum next, Instant at) {
         return new TripApplication(id, tripId, applicantId, message, next, createdAt, at);
     }
 

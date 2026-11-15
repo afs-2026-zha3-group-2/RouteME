@@ -149,76 +149,121 @@ Quote:
 | 层 | Java 包 | 前端对应 | 职责 |
 |---|---|---|---|
 | 开放接口 / Web 层 | controller | `api.ts` 请求出口 | 路由、参数校验、转换、错误码映射；无业务判断 |
+| 入参封装 | param | — | 控制器入参解析与聚合（`XxxParam`），不含业务判断 |
 | 终端显示层 | ui（可选） | `components/` + `XxxPage` | 渲染与交互，无业务逻辑 |
 | Service 层 | service | `<feature>/*.ts` 纯逻辑 | 业务规则与编排 |
 | Manager 层 | manager（可选） | `<feature>` 内通用逻辑 / hooks | 第三方封装、通用能力下沉、DAO 组合复用 |
-| DAO 层 | dao / mapper | 本地存储放 `<feature>` | 数据访问、行对象 |
-| 外部接口或第三方平台 | manager 封装 | `api.ts` 统一出口 | 外部 RPC/HTTP，返回值预处理与异常转化 |
+| 数据访问接口 | repository | 本地存储放 `<feature>` | 仓储接口；service 只依赖这一层 |
+| 数据访问实现 | dao | 本地存储放 `<feature>` | JDBC/JPA 实现与 SQL |
+| 行对象 | entity | — | 数据库行到对象的映射（`XxxEntity`） |
+| ORM 映射 | mapper | — | MyBatis 映射接口（与 dao 二选一） |
+| SQL 片段 | sql | — | 复用的 SQL 片段与构建器 |
+| 领域对象 | model | `types.ts` | 业务语义 record，无持久化注解 |
+| 入参传输 | request | `types.ts` | 请求体与查询参数 record（`XxxRequest` / `XxxQuery`） |
+| 出参传输 | response | `types.ts` | 响应体 record（`XxxResponse` / `XxxResult`）与 `ErrorResponse` |
+| 视图输出 | vo（按需） | — | 与领域形状不同的接口视图对象 |
+| 静态字典 | constant | — | 阈值与静态字典（`XxxConstant`） |
+| 业务枚举 | enums | — | 业务枚举（`XxxEnum`） |
+| 异常 | exception | — | 业务异常基类 `BusinessException` 与子类（`XxxException`） |
+| 异常处理器 | handler | — | 全局异常处理器 `GlobalExceptionHandler` |
+| 横切 | aspect / interceptor | — | AOP 切面与 MVC 拦截器 |
+| 自定义注解 | annotation | — | 自定义注解定义 |
+| 消息队列 | mq | — | 生产者与消费者 |
 | 配置装配 | config | — | Spring 配置类、Bean 与 Web 组件装配 |
-| 业务常量 | constant | — | 业务枚举、状态码、静态字典 |
+| 通用工具 | utils | `utils/` | 无状态工具，叶子包 |
 
 ### 标准包分类（Java）
 
 ```text
 <root-package>/
-├── Application.java  启动类
-├── controller/   Web 层
-├── service/      Service 层（含 XxxGateway 端口及其实现）
-├── manager/      Manager 层（可选）
-├── dao/          DAO 层（JPA/JDBC）
-├── mapper/       MyBatis 映射（与 dao 二选一）
-├── model/        领域对象，无持久化注解
-├── dto/          边界传输对象
-├── constant/     业务枚举、状态码与静态字典
-├── config/       Spring 配置与组件装配
-├── exception/    领域异常与统一错误处理器
-├── utils/        无状态通用工具，叶子包
-└── ui/           终端显示层，Web 项目不建
+├── Application.java   启动类
+├── annotation/        自定义注解
+├── aspect/            AOP 切面
+├── config/            Spring 配置与组件装配
+├── constant/          静态字典与阈值（XxxConstant）
+├── controller/        Web 层（XxxController）
+├── dao/               数据访问实现（XxxDao）
+├── entity/            数据库行对象（XxxEntity）
+├── enums/             业务枚举（XxxEnum）
+├── exception/         业务异常基类与子类（XxxException）
+├── handler/           全局异常处理器（GlobalExceptionHandler）
+├── interceptor/       MVC 拦截器
+├── mapper/            MyBatis 映射（与 dao 二选一）
+├── model/             领域对象，无持久化注解
+├── mq/                消息队列生产/消费
+├── param/             入参解析与封装（XxxParam）
+├── repository/        仓储接口（XxxRepository）
+├── request/           请求传输对象（XxxRequest / XxxQuery）
+├── response/          响应传输对象（XxxResponse / ErrorResponse）
+├── service/           Service 层（XxxService / XxxGateway）
+├── sql/               SQL 片段与构建器
+├── utils/             无状态通用工具，叶子包
+├── vo/                视图输出对象（按需，XxxVo）
+└── ui/                终端显示层，Web 项目不建
 ```
 
 | 包 | 放什么 | 不放什么 | 命名 |
 |---|---|---|---|
-| controller | 路由、参数绑定与校验、DTO↔领域转换、状态码映射入口 | 业务判断、直调 dao/mapper、SQL | `XxxController` |
+| controller | 路由、参数绑定与校验、DTO↔领域转换、状态码映射入口 | 业务判断、直调 repository/dao、SQL | `XxxController` |
+| param | 请求参数的解析、聚合与默认值（如标签拆分、排序取值） | 业务判断、数据库访问 | `XxxParam` |
 | service | 业务规则与编排、事务边界、领域对象组装；读取端口与外部系统端口（`XxxGateway`）及实现 | HTTP 框架类型、SQL、行对象 | `XxxService` / `XxxGateway`；实现按来源前缀 `DatabaseXxx…` / `LoggingXxx…` |
-| manager | 第三方封装（返回值预处理、异常转化）、缓存等通用能力、多 DAO 组合复用 | 具体业务规则、对 controller 直接暴露 | `XxxManager` |
-| dao | 仓储接口与实现、行对象 | 业务规则、行对象向上泄漏 | `XxxRepository`、`DatabaseXxxRepository`、`XxxRow` |
+| manager | 第三方封装（返回值预处理、异常转化）、缓存等通用能力、多仓储组合复用 | 具体业务规则、对 controller 直接暴露 | `XxxManager` |
+| repository | 仓储接口（service 依赖的唯一持久化契约） | 实现代码、SQL、行对象 | `XxxRepository` |
+| dao | 仓储的 JDBC/JPA 实现、SQL 语句 | 业务规则、向上泄漏行对象 | `XxxDao` |
+| entity | 数据库行对象与列→字段映射 | 业务方法、跨层向上传递 | `XxxEntity` |
 | mapper | MyBatis 映射接口；XML 固定 `src/main/resources/mapper/` | 与 dao 并存、业务规则 | `XxxMapper` |
 | model | 业务语义的领域对象（record） | JPA/JSON 注解、传输对象、框架类型 | 领域名词（`Quote`） |
-| dto | 请求/响应/查询传输 record，与契约 schema 语义一一对应 | 业务方法、持久化注解、超过 2 个参数用 Map | `XxxRequest` / `XxxResponse` / `XxxSummary` / `XxxQuery` |
-| constant | 业务枚举、状态码、静态字典 | 业务规则、可变状态、依赖其他业务包 | 领域名词或 `XxxCatalog` |
+| request | 请求体 / 查询参数 record，与契约入参 schema 一一对应 | 业务方法、持久化注解、出参对象 | `XxxRequest` / `XxxQuery` |
+| response | 响应体 record，与契约出参 schema 一一对应；service→controller 的结果载体也放这里 | 业务方法、持久化注解、入参对象 | `XxxResponse` / `XxxResult` / `ErrorResponse` |
+| vo | 响应形状与领域 record 显著不同的视图对象 | 复制粘贴领域字段、持久化注解 | `XxxVo` |
+| constant | 静态字典、阈值、上限值 | 枚举、业务规则、可变状态 | `XxxConstant` |
+| enums | 业务枚举（含 wire 值与显示文案） | 静态字典、带条件判断的分类逻辑 | `XxxEnum` |
+| sql | 复用的 SQL 片段、构建器 | 业务规则、结果集映射 | `XxxSql` |
+| utils | 无状态通用工具（如 `JsonListUtils`） | 业务状态、依赖业务包 | `XxxUtils` 或通用名词 |
+| aspect | AOP 切面（日志、耗时、审计） | 业务规则 | `XxxAspect` |
+| annotation | 自定义注解定义 | 切面实现、业务逻辑 | `Xxx` 或 `@Xxx` |
+| interceptor | MVC 拦截器（认证、限流） | 业务规则 | `XxxInterceptor` |
+| mq | 生产者、监听器 | 业务规则（编排留在 service） | `XxxProducer` / `XxxListener` |
 | config | `@Configuration` 装配类、Web 组件注册 | 业务判断、数据访问逻辑 | `XxxConfig` |
-| exception | 领域异常、统一错误处理器 | 用异常做正常分支控制 | `XxxRejected` / `XxxNotFound` / `XxxErrorHandler` |
-| utils | 无状态通用工具（如 `Money`） | 业务状态、依赖业务包 | `XxxUtils` 或通用名词 |
-| ui | 桌面视图、服务端模板 | 业务规则、直调 dao | `XxxView` / `XxxFrame` |
+| exception | 业务异常基类 `BusinessException`（带 `code` 与 `HttpStatus`）及其子类 | `@RestControllerAdvice`、状态码映射、正常分支控制 | `XxxException`（含 `BusinessException`） |
+| handler | 全局异常处理器（`@RestControllerAdvice`）、参数解析器等 Web 横切组件 | 业务异常定义（放 exception）、业务规则 | `GlobalExceptionHandler` / `XxxHandler` |
+| ui | 桌面视图、服务端模板 | 业务规则、直调 repository/dao | `XxxView` / `XxxFrame` |
 
-- manager 是可选层：只有引入第三方 SDK 且需要返回值预处理、异常转化或缓存等横切能力时才建；单纯端口与本地桩实现留在 service，不为「齐全」建空包。
-- constant 只放枚举与静态字典，带条件判断的分类逻辑留在 service；config 只做装配。
-- mapper 与 dao 是同一持久化层的两种形态，一个项目二选一，不得两包并存。
-- 行对象只留在 dao/mapper 内，向上跨边界必须转成 model；dto 只出现在 controller 与 service 的边界签名。
+- **后缀区分语义，不许含糊。** 每个类必须以所在包的后缀结尾：`XxxController`、`XxxParam`、`XxxService`、`XxxRepository`、`XxxDao`、`XxxEntity`、`XxxEnum`、`XxxConstant`、`XxxRequest`/`XxxQuery`（request）、`XxxResponse`/`XxxResult`（response）、`XxxVo`、`XxxUtils`、`XxxConfig`、`XxxException`。看到后缀即可判断该放哪个包，反之亦然。
+- **异常两段式（唯一入口）。** 所有业务异常 MUST 继承 `exception/BusinessException`，构造时给契约错误码与 HTTP 状态；`handler/GlobalExceptionHandler` 只写一到三个 `@ExceptionHandler`（`BusinessException`、框架解析异常、`Exception` 兵底），不得再为每个异常手写一个方法。新增错误码时只加子类，不改处理器。
+- **仓储三段式。** service 只依赖 `repository` 的接口；JDBC/JPA 实现放 `dao`（`XxxDao`）；行对象放 `entity`（`XxxEntity`），只允许 `dao` 引用，向上跨边界必须转成 `model`。
+- **请求与响应分包。** 入参（请求体、查询参数）放 `request`，出参（响应体、`ErrorResponse`、service→controller 的结果载体）放 `response`，不再用单一 `dto` 包混放。
+- 仍然禁止真正的同义包：`pojo` / `do` / `bo` / `req` / `resp` 与 `model` / `request` / `response` 语义重复，不建。`param`（入参解析）与 `request`（入参 record）职责不同，两者都保留；`vo` 只在响应形状与 `model` 明显不同时才建。
+- `constant` 只放静态字典与阈值（`XxxConstant`），`enums` 只放枚举（`XxxEnum`，含 wire 值与显示文案）；两类不混放，带条件判断的分类逻辑留在 service。config 只做装配。
+- `mapper` 与 `dao` 是同一持久化层的两种形态，一个项目二选一（RouteME 选 `dao`），不得两包并存；未使用的包以占位文件保留，不写实现。
+- manager 是可选层：只有引入第三方 SDK 且需要返回值预处理、异常转化或缓存等横切能力时才建；单纯端口与本地桩实现留在 service。
 - 前端目录与文件命名以 `@rule:web-coding-style` 为准，不进 Java 包；Web 项目不建 ui 包。
-- 阿里手册的 DO/DTO/BO/Query/VO 是概念分类，映射到本仓库既有命名：DO→`XxxRow`（dao）、DTO→`XxxRequest`/`XxxResponse`/`XxxSummary`（dto）、BO→领域 record（model）、Query→`XxxQuery`（dto）、VO→前端 `types.ts`；**不整体改名 `XxxDO`/`XxxDTO`**。
+- 阿里手册的 DO/DTO/BO/Query/VO 是概念分类，映射到本仓库既有命名：DO→`XxxEntity`（entity）、DTO→`XxxRequest`（request）/`XxxResponse`（response）、BO→领域 record（model）、Query→`XxxQuery`（request）、VO→`XxxVo`（vo，按需）；**不整体改名 `XxxDO`/`XxxDTO`**。
 
 ### 依赖方向
 
 ```text
-ui / controller → service → manager（可选） → dao / mapper
-controller / service → dto / model / constant
-dao / mapper → model / constant
+ui / controller → param / service → manager（可选） → repository → dao → entity
+controller → request / response；service → request / response / model / vo / constant / enums
+repository / dao → entity / model
 config → 各层（仅装配）
 各层 → exception / utils；utils 不反向依赖任何业务包
+handler → exception / response / 各层（仅横切，不反向）
+aspect / interceptor → 各层（仅横切）
 ```
 
-- controller 不得绕过 service 直调 dao/mapper；service 不得反向依赖 controller/ui；model 与 constant 不导入框架类型。
-- 有 manager 层时第三方调用只走 manager；无 manager 时 service 直连 dao。
-- 仓储接口放 dao，service/manager 只依赖接口不依赖实现（依赖倒置见 `@rule:java-patterns`）。
+- controller 不得绕过 service 直调 repository/dao；service 不得反向依赖 controller/ui；model、constant、enums 不导入框架类型。
+- 有 manager 层时第三方调用只走 manager；无 manager 时 service 直连 repository。
+- 仓储接口放 `repository`、实现放 `dao`，service/manager 只依赖接口不依赖实现（依赖倒置见 `@rule:java-patterns`）。
+- `handler` 只做异常→响应的横切映射，不得承载业务判断；异常类型定义留在 `exception`。
 
 ### 分层异常职责
 
 | 层 | 异常职责 |
 |---|---|
-| dao/mapper | 包装存储异常向上抛，不吞掉、不打日志 |
-| service/manager | 向上抛时带参数上下文记录日志；业务拒绝用专门异常（`XxxRejected`） |
-| controller | 统一处理器按契约映射状态码与错误码，不返回堆栈、不继续上抛 |
+| repository/dao/mapper | 包装存储异常向上抛，不吞掉、不打日志 |
+| service/manager | 向上抛时带参数上下文记录日志；业务拒绝抛 `exception` 下继承 `BusinessException` 的子类 |
+| handler | `GlobalExceptionHandler` 按 `BusinessException.code()/status()` 映射错误码与状态码，不返回堆栈 |
 | 前端 `api.ts` | 抛 `Error(code)`，用契约错误码原值 |
 
 ### 仓库级结构
@@ -246,20 +291,28 @@ config → 各层（仅装配）
 | 跨层捷径是否有 ADR 或例外记录 | pr-merge |
 | 包是否按 `<root-package>/<layer>` 组织，是否混入业务域目录或半平铺半分层 | pr-merge |
 | constant 是否只放枚举与静态字典，config 是否只做装配 | pr-merge |
-| controller 是否含业务判断或直调 dao/mapper | pr-merge |
-| 行对象是否泄漏出 dao/mapper，dto 是否进入 dao/model | pr-merge |
+| controller 是否含业务判断或直调 repository/dao | pr-merge |
+| 业务异常是否继承 `BusinessException` 并以 `Exception` 结尾，`GlobalExceptionHandler` 是否为唯一异常映射入口 | pr-merge |
+| 请求对象是否在 `request`、响应对象是否在 `response`（不得再建笼统的 `dto`） | pr-merge |
+| 行对象（`XxxEntity`）是否只在 dao 内使用，request/response/param 是否进入 repository/dao/model | pr-merge |
 | mapper 与 dao 是否并存，Web 项目是否建 ui，是否建空 manager | pr-merge |
-| 类名后缀是否符合包分类 | pr-merge |
+| 是否出现同义包（`pojo`/`do`/`bo`/`req`/`resp`）或无声明用途的空包目录 | pr-merge |
+| 类名后缀是否与所在包一致（`XxxDao` 在 dao、`XxxRepository` 在 repository、`XxxEntity` 在 entity、`XxxEnum` 在 enums、`XxxException` 在 exception…） | pr-merge |
 | 前端目录是否符合层语义，业务逻辑是否进组件 | pr-merge |
 | 包依赖图中是否有环（见 `no-circular-dependency`） | pre-commit / pr-merge |
 
 ### 示例
 
 ```text
-推荐：routeme.controller.QuoteController → routeme.service.QuoteService → routeme.dao.QuoteRepository
+推荐：routeme.controller.QuoteController → routeme.param.QuoteQueryParam
+      → routeme.service.QuoteService → routeme.repository.QuoteRepository
+      → routeme.dao.QuoteDao → routeme.entity.QuoteEntity → routeme.model.Quote
+推荐：QuoteController 用 routeme.request.QuoteCreateRequest 入参、routeme.response.QuoteResponse 出参
+推荐：service 抛 QuoteNotFoundException extends BusinessException → GlobalExceptionHandler 统一映射
 推荐：QuoteService → PaymentGatewayManager（第三方封装）→ 外部支付接口
 不推荐：QuoteController 直接 new DatabaseQuoteRepository()（跨层捷径）
 不推荐：QuoteUtils 里写会员折扣等业务判断（utils 承载业务）
+不推荐：新增一个异常就在处理器里加一个 @ExceptionHandler（应继承 BusinessException）
 不推荐：整体改名 QuoteDO/QuoteDTO（概念映射不改团队命名）
 ```
 

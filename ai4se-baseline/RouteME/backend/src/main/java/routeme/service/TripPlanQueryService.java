@@ -1,13 +1,15 @@
 package routeme.service;
 
 import java.util.Comparator;
+import java.util.function.Function;
 import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
-import java.util.function.Function;
 import java.util.stream.Stream;
+
 import org.springframework.stereotype.Service;
-import routeme.dto.TripQuery;
+
+import routeme.request.TripQuery;
 import routeme.model.TripPlan;
 
 /**

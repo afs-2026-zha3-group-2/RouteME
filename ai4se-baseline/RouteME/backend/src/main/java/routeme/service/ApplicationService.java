@@ -4,22 +4,24 @@ import java.time.Clock;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
+
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import routeme.dao.TripApplicationRepository;
-import routeme.dto.ApplicationCreateRequest;
-import routeme.dto.TripApplicationResponse;
-import routeme.exception.ApplicationNotFound;
-import routeme.exception.ApplicationNotPending;
-import routeme.exception.DuplicateApplication;
-import routeme.exception.ForbiddenAction;
-import routeme.exception.InvalidInput;
-import routeme.exception.TripNotOpen;
-import routeme.model.ApplicationStatus;
+
+import routeme.request.ApplicationCreateRequest;
+import routeme.response.TripApplicationResponse;
+import routeme.enums.ApplicationStatusEnum;
+import routeme.enums.TripStatusEnum;
+import routeme.exception.ApplicationNotFoundException;
+import routeme.exception.ApplicationNotPendingException;
+import routeme.exception.DuplicateApplicationException;
+import routeme.exception.ForbiddenActionException;
+import routeme.exception.InvalidInputException;
+import routeme.exception.TripNotOpenException;
 import routeme.model.DemoUser;
 import routeme.model.TripApplication;
 import routeme.model.TripPlan;
-import routeme.model.TripStatus;
+import routeme.repository.TripApplicationRepository;
 
 @Service
 public class ApplicationService {
@@ -46,13 +48,13 @@ public class ApplicationService {
     public TripApplication apply(long tripId, long applicantId, ApplicationCreateRequest request) {
         TripPlan trip = tripPlanService.require(tripId);
         if (trip.publisherId() == applicantId) {
-            throw new ForbiddenAction("publisher cannot apply to own trip " + tripId);
+            throw new ForbiddenActionException("publisher cannot apply to own trip " + tripId);
         }
         if (applicationRepository.existsActive(tripId, applicantId)) {
-            throw new DuplicateApplication(tripId, applicantId);
+            throw new DuplicateApplicationException(tripId, applicantId);
         }
-        if (trip.status() != TripStatus.RECRUITING) {
-            throw new TripNotOpen(tripId);
+        if (trip.status() != TripStatusEnum.RECRUITING) {
+            throw new TripNotOpenException(tripId);
         }
         String message = normalizeMessage(request == null ? null : request.message());
         TripApplication created = new TripApplication(
@@ -60,7 +62,7 @@ public class ApplicationService {
                 tripId,
                 applicantId,
                 message,
-                ApplicationStatus.PENDING,
+                ApplicationStatusEnum.PENDING,
                 clock.instant(),
                 null);
         applicationRepository.insert(created);
@@ -71,26 +73,26 @@ public class ApplicationService {
     public TripApplication cancel(long applicationId, long userId) {
         TripApplication application = require(applicationId);
         if (application.applicantId() != userId) {
-            throw new ForbiddenAction("only the applicant can cancel application " + applicationId);
+            throw new ForbiddenActionException("only the applicant can cancel application " + applicationId);
         }
         if (!application.isPending()) {
-            throw new ApplicationNotPending(applicationId);
+            throw new ApplicationNotPendingException(applicationId);
         }
         Instant now = clock.instant();
-        applicationRepository.updateStatus(applicationId, ApplicationStatus.CANCELLED, now);
-        return application.withStatus(ApplicationStatus.CANCELLED, now);
+        applicationRepository.updateStatus(applicationId, ApplicationStatusEnum.CANCELLED, now);
+        return application.withStatus(ApplicationStatusEnum.CANCELLED, now);
     }
 
     @Transactional
     public void leave(long tripId, long userId) {
         TripPlan trip = tripPlanService.require(tripId);
         if (trip.publisherId() == userId) {
-            throw new ForbiddenAction("publisher cannot leave own trip " + tripId);
+            throw new ForbiddenActionException("publisher cannot leave own trip " + tripId);
         }
         TripApplication accepted = applicationRepository.findAccepted(tripId, userId)
-                .orElseThrow(() -> new ForbiddenAction("only accepted companions can leave trip " + tripId));
+                .orElseThrow(() -> new ForbiddenActionException("only accepted companions can leave trip " + tripId));
         tripPlanService.removeCompanion(tripId);
-        applicationRepository.updateStatus(accepted.id(), ApplicationStatus.CANCELLED, clock.instant());
+        applicationRepository.updateStatus(accepted.id(), ApplicationStatusEnum.CANCELLED, clock.instant());
     }
 
     public boolean isAccepted(long tripId, long userId) {
@@ -104,31 +106,31 @@ public class ApplicationService {
         public List<TripApplication> listForPublisher(long tripId, long userId) {
             TripPlan trip = tripPlanService.require(tripId);
             if (trip.publisherId() != userId) {
-                throw new ForbiddenAction("only the publisher can review applications of trip " + tripId);
+                throw new ForbiddenActionException("only the publisher can review applications of trip " + tripId);
             }
             return applicationRepository.findByTrip(tripId);
         }
 
         @Transactional
         public TripApplication accept(long applicationId, long publisherId) {
-            return decide(applicationId, publisherId, ApplicationStatus.ACCEPTED);
+            return decide(applicationId, publisherId, ApplicationStatusEnum.ACCEPTED);
         }
 
         @Transactional
         public TripApplication reject(long applicationId, long publisherId) {
-            return decide(applicationId, publisherId, ApplicationStatus.REJECTED);
+            return decide(applicationId, publisherId, ApplicationStatusEnum.REJECTED);
         }
 
-        private TripApplication decide(long applicationId, long publisherId, ApplicationStatus next) {
+        private TripApplication decide(long applicationId, long publisherId, ApplicationStatusEnum next) {
             TripApplication application = require(applicationId);
             TripPlan trip = tripPlanService.require(application.tripId());
             if (trip.publisherId() != publisherId) {
-                throw new ForbiddenAction("only the publisher can decide application " + applicationId);
+                throw new ForbiddenActionException("only the publisher can decide application " + applicationId);
             }
             if (!application.isPending()) {
-                throw new ApplicationNotPending(applicationId);
+                throw new ApplicationNotPendingException(applicationId);
             }
-            if (next == ApplicationStatus.ACCEPTED) {
+            if (next == ApplicationStatusEnum.ACCEPTED) {
                 tripPlanService.addCompanion(trip.id());
             }
             Instant now = clock.instant();
@@ -138,7 +140,7 @@ public class ApplicationService {
 
     public TripApplication require(long applicationId) {
         return applicationRepository.findById(applicationId)
-                .orElseThrow(() -> new ApplicationNotFound(applicationId));
+                .orElseThrow(() -> new ApplicationNotFoundException(applicationId));
     }
 
     public TripApplicationResponse describe(TripApplication application) {
@@ -167,7 +169,7 @@ public class ApplicationService {
             return null;
         }
         if (trimmed.length() > MAX_MESSAGE_LENGTH) {
-            throw new InvalidInput("application message exceeds " + MAX_MESSAGE_LENGTH + " characters");
+            throw new InvalidInputException("application message exceeds " + MAX_MESSAGE_LENGTH + " characters");
         }
         return trimmed;
     }
