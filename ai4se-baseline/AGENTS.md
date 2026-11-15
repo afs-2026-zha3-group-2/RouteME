@@ -12,6 +12,8 @@ This guide applies to coding agents working in this repository. Read the relevan
 ## Repository
 This workspace is exactly one Git repository, rooted at the folder that contains `ai4se-baseline/`. Keep it that way: never run `git init` (or `git clone`) inside `ai4se-baseline/` or any other subdirectory, because a nested repository makes the same history appear twice in Source Control and history views. Commit from the workspace root only.
 
+If an IDE reports `ai4se-baseline` as a separate or invalid VCS root, delete that mapping in the IDE settings; the only Git root is the workspace root. `.idea/vcs.xml` and `.vscode/settings.json` are tracked so all clones agree on this.
+
 ## Knowledge
 Please refer to the [knowledge base](docs/knowledge/_INDEX.md) for additional information.
 

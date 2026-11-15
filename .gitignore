@@ -13,7 +13,12 @@ dist/
 *.sqlite
 
 # IDE
+# Ignore every IntelliJ project folder, but share the root VCS root mapping so
+# every clone knows the only Git root is the workspace root (no ai4se-baseline).
 .idea/
+!/.idea/
+/.idea/*
+!/.idea/vcs.xml
 *.iml
 .vscode/*
 !.vscode/tasks.json
