@@ -1,10 +1,10 @@
 openapi: 3.0.3
 info:
   title: RouteME API
-  version: 0.1.0
+  version: 0.2.0
   description: |
     RouteME 后端对外契约。本文件是前后端唯一事实源，字段名、类型、状态码与错误码只在这里定稿。
-    当前只包含脚手架验收所需的最小接口：读取问候语。
+    当前包含：脚手架问候语、演示账户，以及旅行计划的浏览 / 筛选 / 发布 / 详情 / 结束。
 servers:
   - url: http://localhost:8080/api
     description: 本地开发
@@ -48,7 +48,338 @@ paths:
                 unexpected:
                   value:
                     code: INTERNAL_ERROR
+  /users:
+    get:
+      operationId: loadDemoUsers
+      summary: 读取演示账户
+      description: 身份门使用。演示环境固定 3 个账户，不做注册与鉴权。
+      responses:
+        '200':
+          description: 演示账户列表
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/DemoUser'
+              examples:
+                seeded:
+                  value:
+                    - id: 1
+                      nickname: 林见夏
+                      avatar_initial: 夏
+                      school: 大三 · 视觉传达
+                      bio: 拍照比走路多。
+                      interests: [摄影, 海边, 美食]
+        '500':
+          description: 未预期异常，响应不携带堆栈
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                unexpected:
+                  value:
+                    code: INTERNAL_ERROR
+  /trips:
+    get:
+      operationId: loadTrips
+      summary: 浏览未结束的旅行计划
+      description: |
+        只返回未结束（completed_at 为空）的行程；已结束与已取消不在列表中。
+        列表不分页，一次返回全部命中项。
+      parameters:
+        - $ref: '#/components/parameters/DemoUserId'
+        - name: q
+          in: query
+          description: 关键词，匹配标题、目的地、途经点、标签与发布者昵称（大小写不敏感包含）
+          schema:
+            type: string
+        - name: destination
+          in: query
+          description: 目的地，固定候选之一，精确匹配
+          schema:
+            type: string
+            enum: [珠海, 广州, 深圳, 佛山, 清远, 中山, 江门, 肇庆]
+        - name: date_from
+          in: query
+          description: 出发不早于（与行程日期区间取交集）
+          schema:
+            type: string
+            format: date
+        - name: date_to
+          in: query
+          description: 出发不晚于（与行程日期区间取交集）
+          schema:
+            type: string
+            format: date
+        - name: tags
+          in: query
+          description: 兴趣标签，逗号分隔，命中任一即保留
+          schema:
+            type: string
+      responses:
+        '200':
+          description: 未结束行程列表
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/TripPlan'
+              examples:
+                filtered:
+                  value:
+                    - id: 3
+                      title: 珠海情侣路日落机位二刷
+                      destination: 珠海
+                      start_date: '2026-11-16'
+                      end_date: '2026-11-16'
+                      stops: [香洲港集合, 情侣北路步行, 海滨泳场日落]
+                      tags: [摄影, 海边]
+                      capacity: 3
+                      joined_count: 1
+                      status: recruiting
+                      publisher:
+                        id: 2
+                        nickname: 陈屿
+                        avatar_initial: 屿
+                        school: 研一 · 地理科学
+                        bio: 周末基本在山里。
+                        interests: [徒步, 自然, 露营]
+                      created_at: '2026-11-12T14:05:00Z'
+        '400':
+          description: 查询参数不合法
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                invalid:
+                  value:
+                    code: INVALID_INPUT
+        '401':
+          description: 缺少或未知的演示身份
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                missingUser:
+                  value:
+                    code: DEMO_USER_REQUIRED
+        '500':
+          description: 未预期异常，响应不携带堆栈
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                unexpected:
+                  value:
+                    code: INTERNAL_ERROR
+    post:
+      operationId: createTrip
+      summary: 发布旅行计划
+      description: |
+        必填与约束见 TripCreateRequest。发布成功后状态为 recruiting，joined_count 计入发布者本人。
+        字段级提示由前端表单给出；后端校验失败统一返回 400 INVALID_INPUT。
+      parameters:
+        - $ref: '#/components/parameters/DemoUserId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TripCreateRequest'
+            examples:
+              success:
+                value:
+                  title: 广州老城骑楼扫街半日
+                  destination: 广州
+                  start_date: '2026-11-16'
+                  end_date: '2026-11-16'
+                  stops: [陈家祠地铁站集合, 恩宁路骑楼, 永庆坊]
+                  meeting_area: 陈家祠地铁站 D 口
+                  budget_min_cents: 8000
+                  budget_max_cents: 15000
+                  tags: [摄影, 历史, 美食]
+                  capacity: 4
+                  note: 走街串巷为主，随时可以停下来吃东西。
+              rejected:
+                value:
+                  title: ''
+                  destination: 广州
+                  start_date: '2026-11-16'
+                  end_date: '2026-11-15'
+                  stops: [只有一处]
+                  capacity: 1
+      responses:
+        '201':
+          description: 发布成功，返回行程详情
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TripDetail'
+        '400':
+          description: 必填缺失或约束不满足
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                invalid:
+                  value:
+                    code: INVALID_INPUT
+        '401':
+          description: 缺少或未知的演示身份
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                missingUser:
+                  value:
+                    code: DEMO_USER_REQUIRED
+        '500':
+          description: 未预期异常，响应不携带堆栈
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                unexpected:
+                  value:
+                    code: INTERNAL_ERROR
+  /trips/{tripId}:
+    get:
+      operationId: loadTrip
+      summary: 查看行程详情
+      parameters:
+        - $ref: '#/components/parameters/DemoUserId'
+        - name: tripId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: 行程详情
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TripDetail'
+        '401':
+          description: 缺少或未知的演示身份
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                missingUser:
+                  value:
+                    code: DEMO_USER_REQUIRED
+        '404':
+          description: 行程不存在
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                notFound:
+                  value:
+                    code: TRIP_NOT_FOUND
+        '500':
+          description: 未预期异常，响应不携带堆栈
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                unexpected:
+                  value:
+                    code: INTERNAL_ERROR
+  /trips/{tripId}/complete:
+    post:
+      operationId: completeTrip
+      summary: 标记行程已结束
+      description: 仅行程发布者可调用。结束后 completed_at 写入，行程不再出现在默认列表。
+      parameters:
+        - $ref: '#/components/parameters/DemoUserId'
+        - name: tripId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: 已结束的行程详情
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TripDetail'
+        '401':
+          description: 缺少或未知的演示身份
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                missingUser:
+                  value:
+                    code: DEMO_USER_REQUIRED
+        '403':
+          description: 非发布者不能结束行程
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                forbidden:
+                  value:
+                    code: FORBIDDEN
+        '404':
+          description: 行程不存在
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                notFound:
+                  value:
+                    code: TRIP_NOT_FOUND
+        '409':
+          description: 行程已结束
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                alreadyCompleted:
+                  value:
+                    code: TRIP_NOT_OPEN
+        '500':
+          description: 未预期异常，响应不携带堆栈
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                unexpected:
+                  value:
+                    code: INTERNAL_ERROR
 components:
+  parameters:
+    DemoUserId:
+      name: X-User-Id
+      in: header
+      required: true
+      description: 演示身份标识（app_users.id）。演示环境无真实鉴权，生产前必须替换。
+      schema:
+        type: integer
+        format: int64
   schemas:
     Greeting:
       type: object
@@ -63,6 +394,170 @@ components:
           type: string
           readOnly: true
           description: 问候语文本，来自 greetings 表的 message 列
+    DemoUser:
+      type: object
+      required: [id, nickname, avatar_initial, school, bio, interests]
+      properties:
+        id:
+          type: integer
+          format: int64
+          readOnly: true
+        nickname:
+          type: string
+          readOnly: true
+          description: 发布者昵称
+        avatar_initial:
+          type: string
+          readOnly: true
+          description: 头像首字
+        school:
+          type: string
+          readOnly: true
+          description: 学校与年级
+        bio:
+          type: string
+          readOnly: true
+          description: 简介
+        interests:
+          type: array
+          readOnly: true
+          items:
+            type: string
+          description: 旅行兴趣标签
+    TripPlan:
+      type: object
+      required:
+        [id, title, destination, start_date, end_date, stops, tags, capacity, joined_count, status, publisher, created_at]
+      properties:
+        id:
+          type: integer
+          format: int64
+          readOnly: true
+        title:
+          type: string
+          maxLength: 40
+        destination:
+          type: string
+          enum: [珠海, 广州, 深圳, 佛山, 清远, 中山, 江门, 肇庆]
+        start_date:
+          type: string
+          format: date
+          description: 出发日期（日历日期）
+        end_date:
+          type: string
+          format: date
+          description: 结束日期（日历日期，不早于 start_date）
+        stops:
+          type: array
+          minItems: 2
+          items:
+            type: string
+          description: 途经点，至少两个
+        tags:
+          type: array
+          maxItems: 5
+          items:
+            type: string
+        capacity:
+          type: integer
+          minimum: 2
+          maximum: 12
+          description: 计划人数，含发布者
+        joined_count:
+          type: integer
+          minimum: 1
+          readOnly: true
+          description: 已加入人数，含发布者；由 trip-plans 维护
+        status:
+          type: string
+          enum: [recruiting, full, completed]
+          readOnly: true
+          description: 由 completed_at 与人数推导，不是独立写入的列
+        publisher:
+          $ref: '#/components/schemas/DemoUser'
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+          description: 创建时间，UTC
+    TripDetail:
+      allOf:
+        - $ref: '#/components/schemas/TripPlan'
+        - type: object
+          required: [participants]
+          properties:
+            meeting_area:
+              type: string
+              nullable: true
+              description: 集合区域，选填
+            note:
+              type: string
+              nullable: true
+              description: 补充说明，选填
+            budget_min_cents:
+              type: integer
+              nullable: true
+              minimum: 0
+              description: 预算下限，整数分
+            budget_max_cents:
+              type: integer
+              nullable: true
+              minimum: 0
+              description: 预算上限，整数分，不高于下限
+            participants:
+              type: array
+              readOnly: true
+              items:
+                $ref: '#/components/schemas/DemoUser'
+              description: 当前同行者；MVP 只含发布者，REQ-003 落地后补已接受同行者
+            completed_at:
+              type: string
+              format: date-time
+              nullable: true
+              readOnly: true
+              description: 结束时间；非空表示已结束
+    TripCreateRequest:
+      type: object
+      required: [title, destination, start_date, end_date, stops, capacity]
+      properties:
+        title:
+          type: string
+          maxLength: 40
+        destination:
+          type: string
+          enum: [珠海, 广州, 深圳, 佛山, 清远, 中山, 江门, 肇庆]
+        start_date:
+          type: string
+          format: date
+        end_date:
+          type: string
+          format: date
+        stops:
+          type: array
+          minItems: 2
+          items:
+            type: string
+        meeting_area:
+          type: string
+          maxLength: 100
+        budget_min_cents:
+          type: integer
+          minimum: 0
+        budget_max_cents:
+          type: integer
+          minimum: 0
+        tags:
+          type: array
+          maxItems: 5
+          items:
+            type: string
+        capacity:
+          type: integer
+          minimum: 2
+          maximum: 12
+        note:
+          type: string
+          maxLength: 500
     Error:
       type: object
       required: [code]
@@ -70,4 +565,5 @@ components:
         code:
           type: string
           description: 大写下划线错误码，前端按原值判断
-          enum: [GREETING_NOT_FOUND, INTERNAL_ERROR]
+          enum:
+            [GREETING_NOT_FOUND, INVALID_INPUT, DEMO_USER_REQUIRED, FORBIDDEN, TRIP_NOT_FOUND, TRIP_NOT_OPEN, INTERNAL_ERROR]

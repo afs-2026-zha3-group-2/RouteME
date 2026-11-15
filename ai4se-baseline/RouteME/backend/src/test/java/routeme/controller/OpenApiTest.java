@@ -7,6 +7,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
@@ -41,15 +42,66 @@ class OpenApiTest {
         );
     }
 
-    @SuppressWarnings("unchecked")
+    @Test
+    void in_openApiFile_out_tripPlanContractDeclared() throws IOException {
+        // Given
+        Map<String, Object> document = loadYaml(SPEC_PATH);
+
+        // When
+        Map<String, Object> info = asMap(document.get("info"));
+        Map<String, Object> getTrips = operation(document, "/trips", "get");
+        Map<String, Object> postTrips = operation(document, "/trips", "post");
+        Map<String, Object> completeTrip = operation(document, "/trips/{tripId}/complete", "post");
+        Map<String, Object> createRequest = schema(document, "TripCreateRequest");
+        Map<String, Object> tripPlan = schema(document, "TripPlan");
+        Map<String, Object> errorSchema = schema(document, "Error");
+
+        // Then
+        assertAll(
+                () -> assertEquals("0.2.0", info.get("version"), "info.version"),
+                () -> assertTrue(paths(document).containsKey("/users"), "/users declared"),
+                () -> assertTrue(paths(document).containsKey("/trips/{tripId}"), "detail path declared"),
+                () -> assertTrue(
+                        parameterNames(document, getTrips)
+                                .containsAll(List.of("X-User-Id", "q", "destination", "date_from", "date_to", "tags")),
+                        "list query parameters"),
+                () -> assertTrue(responses(postTrips).containsKey("201"), "create returns 201"),
+                () -> assertTrue(responses(postTrips).containsKey("400"), "create returns 400"),
+                () -> assertTrue(responses(completeTrip).containsKey("403"), "complete returns 403"),
+                () -> assertTrue(responses(completeTrip).containsKey("409"), "complete returns 409"),
+                () -> assertTrue(
+                        required(createRequest)
+                                .containsAll(List.of("title", "destination", "start_date", "end_date", "stops", "capacity")),
+                        "create required fields"),
+                () -> assertTrue(
+                        enums(properties(tripPlan).get("status"))
+                                .containsAll(List.of("recruiting", "full", "completed")),
+                        "status enum"),
+                () -> assertTrue(
+                                        enums(properties(errorSchema).get("code"))
+                                .containsAll(List.of(
+                                        "INVALID_INPUT",
+                                        "DEMO_USER_REQUIRED",
+                                        "FORBIDDEN",
+                                        "TRIP_NOT_FOUND",
+                                        "TRIP_NOT_OPEN")),
+                        "error codes"),
+                () -> assertEquals(Boolean.TRUE, properties(tripPlan).get("status").get("readOnly"), "status readOnly")
+        );
+    }
+
     private Map<String, Object> loadYaml(Path specPath) throws IOException {
         return new Yaml().load(Files.readString(specPath));
     }
 
     @SuppressWarnings("unchecked")
+    private Map<String, Object> paths(Map<String, Object> document) {
+        return (Map<String, Object>) document.get("paths");
+    }
+
+    @SuppressWarnings("unchecked")
     private Map<String, Object> operation(Map<String, Object> document, String path, String method) {
-        Map<String, Object> paths = (Map<String, Object>) document.get("paths");
-        Map<String, Object> pathItem = (Map<String, Object>) paths.get(path);
+        Map<String, Object> pathItem = (Map<String, Object>) paths(document).get(path);
         return (Map<String, Object>) pathItem.get(method);
     }
 
@@ -59,9 +111,13 @@ class OpenApiTest {
     }
 
     @SuppressWarnings("unchecked")
+    private Map<String, Object> components(Map<String, Object> document) {
+        return (Map<String, Object>) document.get("components");
+    }
+
+    @SuppressWarnings("unchecked")
     private Map<String, Object> schema(Map<String, Object> document, String name) {
-        Map<String, Object> components = (Map<String, Object>) document.get("components");
-        Map<String, Object> schemas = (Map<String, Object>) components.get("schemas");
+        Map<String, Object> schemas = (Map<String, Object>) components(document).get("schemas");
         return (Map<String, Object>) schemas.get(name);
     }
 
@@ -71,7 +127,34 @@ class OpenApiTest {
     }
 
     @SuppressWarnings("unchecked")
-    private Map<String, Map<String, Object>> properties(Map<String, Object> schema) {
-        return (Map<String, Map<String, Object>>) schema.get("properties");
+        private Map<String, Map<String, Object>> properties(Map<String, Object> schema) {
+            return (Map<String, Map<String, Object>>) schema.get("properties");
+    }
+
+    @SuppressWarnings("unchecked")
+    private List<String> enums(Map<String, Object> schema) {
+        return (List<String>) schema.get("enum");
+    }
+
+    @SuppressWarnings("unchecked")
+    private List<String> parameterNames(Map<String, Object> document, Map<String, Object> operation) {
+        List<Map<String, Object>> declared = (List<Map<String, Object>>) operation.get("parameters");
+        Map<String, Object> shared = (Map<String, Object>) components(document).get("parameters");
+        List<String> names = new ArrayList<>();
+        for (Map<String, Object> parameter : declared) {
+            String reference = (String) parameter.get("$ref");
+            if (reference == null) {
+                names.add((String) parameter.get("name"));
+                continue;
+            }
+            String key = reference.substring(reference.lastIndexOf('/') + 1);
+            names.add((String) ((Map<String, Object>) shared.get(key)).get("name"));
+        }
+        return names;
+    }
+
+    @SuppressWarnings("unchecked")
+    private Map<String, Object> asMap(Object value) {
+        return (Map<String, Object>) value;
     }
 }

@@ -7,10 +7,11 @@
 
 ### T1 [contract] 契约先行
 
-- [ ] 在 `RouteME/openapi.yaml` 新增 `/users`、`/trips`、`/trips/{id}`、`/trips/{id}/complete`，以及 `DemoUser`、`TripPlan`、`TripCreateRequest`、`TripSummary`、`TripDetail`、`Error` 错误码；写成功与拒绝两个 example。
-- [ ] `OpenApiTest` 断言新路径存在、必填字段在 `required`、状态枚举为小写。
+- [x] 在 `RouteME/openapi.yaml` 新增 `/users`、`/trips`、`/trips/{id}`、`/trips/{id}/complete`，以及 `DemoUser`、`TripPlan`、`TripCreateRequest`、`TripSummary`、`TripDetail`、`Error` 错误码；写成功与拒绝两个 example。
+- [x] `OpenApiTest` 断言新路径存在、必填字段在 `required`、状态枚举为小写。
+- [x] 新增 `RouteME/redocly.yaml`（关闭 `security-defined` / `info-license` / `no-server-example.com`，示例规则降为 warning），让 Redocly lint 可作为契约门禁。
 
-**验证：** `npm run lint:api`；`cd RouteME/backend; .\mvnw.cmd -Dtest=OpenApiTest test`
+**验证：** `cd RouteME; npx @redocly/cli lint openapi.yaml`（0 error）；`cd RouteME/backend; .\mvnw.cmd -Dtest=OpenApiTest test`
 **覆盖：** 全部需求的输入/输出字段来源
 
 ### T2 [backend] 迁移与演示数据

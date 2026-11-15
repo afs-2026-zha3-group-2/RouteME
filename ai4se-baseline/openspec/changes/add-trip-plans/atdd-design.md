@@ -49,7 +49,7 @@ ATDD 原则：先写失败的 API/E2E 检查，再写生产代码；本文件不
 
 ## 3. 生产代码之前先写什么
 
-1. **契约先行**：`openapi.yaml` 增加 `/users`、`/trips`、`/trips/{id}`、`/trips/{id}/complete` 与 `TripPlan` schema，`npm run lint:api` 通过；`OpenApiTest` 断言关键路径与 `required`。
+1. **契约先行**：`openapi.yaml` 增加 `/users`、`/trips`、`/trips/{id}`、`/trips/{id}/complete` 与 `TripPlan` schema，`OpenApiTest` 通过（可选 `npx @redocly/cli lint RouteME/openapi.yaml`；本仓库无根 `package.json`，不设 `npm run lint:api`）。
 2. **API 验收测试（红）**：`routeme/controller` 包下按 Scenario 3/4/7–20/24/25 写 MockMvc 测试，先全部失败。
 3. **E2E 验收用例（红）**：`e2e/tests/` 下按 Scenario 1/2/5/6/12/13/21–23/26 写用户路径，先全部失败。
 4. 再按 `/sdd:atdd-apply` 做 Red → Green → Refactor。
@@ -58,7 +58,7 @@ ATDD 原则：先写失败的 API/E2E 检查，再写生产代码；本文件不
 
 | 门禁 | 命令 | 说明 |
 |---|---|---|
-| 契约 | `npm run lint:api` | 仓库根；`openapi.yaml` 必须通过 |
+| 契约 | `cd backend; .\mvnw.cmd -Dtest=OpenApiTest test`（可选 `npx @redocly/cli lint RouteME/openapi.yaml`） | `OpenApiTest` 断言路径、必填与枚举；本仓库无根 `package.json`，不设 `npm run lint:api` |
 | 后端 | `cd backend; .\mvnw.cmd -B verify` | H2 接口测试 + SQLite 直连迁移测试 |
 | 前端 | `cd frontend; npm run build; npm test` | `tsc --noEmit && vite build` + Vitest |
 | E2E | `npx playwright test`（后端已启动） | 本地门禁；CI 仍只跑后端 verify + 前端 build/test（bootstrap 决策，Playwright 不进 CI） |
