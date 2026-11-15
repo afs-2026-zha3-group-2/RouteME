@@ -25,11 +25,11 @@
 
 ### T3 [backend] 模型、仓储与查询
 
-- [ ] `TripPlan` / `DemoUser` 领域 record，`status` 按 `completed_at` / `joined_count` / `capacity` 投影。
-- [ ] `TripPlanRepository`、`UserRepository` 与行对象（行对象不出 `dao`）。
-- [ ] `TripQuery` 与筛选/排序：`q` 跨标题/目的地/途经点/标签/发布者昵称、`destination` 精确、日期交集、`tags` 任一命中、`sort=date|new`。
+- [x] `TripPlan` / `DemoUser` 领域 record，`status` 按 `completed_at` / `joined_count` / `capacity` 投影。
+- [x] `TripPlanRepository`、`UserRepository` 与行对象（行对象不出 `dao`，JSON 列表在行对象内解析）。
+- [x] `TripQuery` 与筛选/排序：`q` 跨标题/目的地/途经点/标签/发布者昵称、`destination` 精确、日期交集、`tags` 任一命中、`sort=date|new`。
 
-**验证：** `cd RouteME/backend; .\mvnw.cmd -Dtest=TripPlanRepositoryTest,TripQueryServiceTest test`
+**验证：** `cd RouteME/backend; .\mvnw.cmd -Dtest=DatabaseTripPlanRepositoryTest,TripPlanQueryServiceTest test`
 **覆盖：** R2 浏览、R3 搜索/筛选/排序
 
 ### T4 [backend] 发布与校验

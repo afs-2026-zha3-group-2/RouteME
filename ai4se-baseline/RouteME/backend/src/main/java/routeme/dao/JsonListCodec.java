@@ -1,0 +1,26 @@
+package routeme.dao;
+
+import java.util.List;
+import tools.jackson.core.type.TypeReference;
+import tools.jackson.databind.ObjectMapper;
+
+/**
+ * 列表字段以 JSON 文本存储（SQLite 与 H2 共用一套迁移，不用 JSON 扩展函数）。
+ */
+final class JsonListCodec {
+
+    private static final ObjectMapper MAPPER = new ObjectMapper();
+    private static final TypeReference<List<String>> STRING_LIST = new TypeReference<>() {
+    };
+
+    private JsonListCodec() {
+    }
+
+    static List<String> parse(String json) {
+        try {
+            return List.copyOf(MAPPER.readValue(json, STRING_LIST));
+        } catch (RuntimeException exception) {
+            throw new IllegalStateException("invalid json list in database: " + json, exception);
+        }
+    }
+}
