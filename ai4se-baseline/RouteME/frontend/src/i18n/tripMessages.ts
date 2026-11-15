@@ -1,5 +1,6 @@
 export const tripMessages = {
   appName: 'RouteME',
+  homeTitle: '旅行灵感',
   publish: '发布行程',
   backHome: '返回灵感首页',
   identityTitle: '选择一个演示身份',
@@ -11,6 +12,8 @@ export const tripMessages = {
   emptyTitle: '还没有符合条件的行程',
   emptyHint: '换个条件试试，或者发布一条属于你的路线。',
   clearFilters: '清除全部条件',
+  appliedFilters: '已应用筛选',
+  connectivityLabel: '后端问候语',
   searchPlaceholder: '搜索路线、地点或发布者',
   destinationLabel: '目的地',
   anyDestination: '全部目的地',

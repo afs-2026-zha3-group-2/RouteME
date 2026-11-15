@@ -96,7 +96,7 @@ export function App() {
         </Space>
       </Header>
       <Content>
-        {route.name === 'home' && <HomePage />}
+        {route.name === 'home' && <HomePage currentUser={currentUser} />}
         {route.name === 'create' && <PlaceholderPage text={tripMessages.createTitle} />}
         {route.name === 'detail' && <PlaceholderPage text={tripMessages.detailTitle} />}
         {route.name === 'notFound' && <PlaceholderPage text={tripMessages.detailNotFound} />}
