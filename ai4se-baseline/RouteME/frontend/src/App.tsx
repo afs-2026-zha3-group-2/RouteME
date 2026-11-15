@@ -1,9 +1,11 @@
 import { useEffect, useState } from 'react';
 import { Alert, Button, Layout, Select, Space, Spin, Typography } from 'antd';
 import { loadUsers } from './api';
+import { ChatPage } from './chat/ChatPage';
 import { HomePage } from './home/HomePage';
 import { tripMessages } from './i18n/tripMessages';
 import { IdentityGate } from './identity/IdentityGate';
+import { MyTripsPage } from './mine/MyTripsPage';
 import { parseRoute, routeToHash, type Route } from './route';
 import { TripCreatePage } from './trips/TripCreatePage';
 import { TripDetailPage } from './trips/TripDetailPage';
@@ -82,9 +84,12 @@ export function App() {
           {tripMessages.appName}
         </a>
         <Space size="middle">
-          <Button onClick={() => (window.location.hash = routeToHash({ name: 'create' }))}>
-            {tripMessages.publish}
+                  <Button onClick={() => (window.location.hash = routeToHash({ name: 'mine' }))}>
+                    {tripMessages.mineTitle}
           </Button>
+                  <Button onClick={() => (window.location.hash = routeToHash({ name: 'create' }))}>
+                    {tripMessages.publish}
+                  </Button>
           <Select
             value={currentUser.id}
             aria-label={tripMessages.identitySwitch}
@@ -106,6 +111,14 @@ export function App() {
         )}
                 {route.name === 'applications' && (
                   <ApplicationsPage currentUser={currentUser} tripId={route.tripId} />
+                )}
+                {route.name === 'mine' && <MyTripsPage currentUser={currentUser} />}
+                {route.name === 'chat' && (
+                  <ChatPage
+                    currentUser={currentUser}
+                    tripId={route.tripId}
+                    otherUserId={route.userId}
+                  />
                 )}
         {route.name === 'notFound' && <PlaceholderPage text={tripMessages.detailNotFound} />}
       </Content>

@@ -16,11 +16,14 @@ import {
   applyForTrip,
   cancelApplication,
   completeTrip,
+  leaveTrip,
   loadMatch,
   loadMyApplications,
   loadTripApplications,
 } from '../api';
 import { tripMessages } from '../i18n/tripMessages';
+import { ReportModal } from '../safety/ReportModal';
+import { SafetyNote } from '../safety/SafetyNote';
 import type { DemoUser, MatchCandidate, TripApplication } from '../types';
 import { statusColor, statusLabel } from './tripStatus';
 import { useTrip } from './useTrip';
@@ -55,6 +58,8 @@ export function TripDetailPage({ currentUser, tripId }: Props) {
   const [applyOpen, setApplyOpen] = useState(false);
   const [applyMessage, setApplyMessage] = useState('');
   const [submitting, setSubmitting] = useState(false);
+    const [leaving, setLeaving] = useState(false);
+    const [reportOpen, setReportOpen] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -137,6 +142,20 @@ export function TripDetailPage({ currentUser, tripId }: Props) {
       setActionError(error instanceof Error ? error.message : 'UNKNOWN_ERROR');
     }
   };
+
+    const leave = async () => {
+      setLeaving(true);
+      setActionError(null);
+      try {
+        await leaveTrip(currentUser.id, tripId);
+        setMyApplication(null);
+        reload();
+      } catch (error: unknown) {
+        setActionError(error instanceof Error ? error.message : 'UNKNOWN_ERROR');
+      } finally {
+        setLeaving(false);
+      }
+    };
 
   if (state.status === 'loading') {
     return (
@@ -266,6 +285,8 @@ export function TripDetailPage({ currentUser, tripId }: Props) {
               <Alert type="error" showIcon title={tripMessages.applyFailed} description={actionError} />
             )}
 
+                        <SafetyNote onReport={() => setReportOpen(true)} />
+
             {myApplication !== null && (
               <Space size="small" wrap>
                 <Tag color={myApplication.status === 'accepted' ? 'green' : 'default'}>
@@ -292,6 +313,18 @@ export function TripDetailPage({ currentUser, tripId }: Props) {
                     {tripMessages.chatEntry}
                   </Button>
                 )}
+                                {myApplication.status === 'accepted' && (
+                                  <Popconfirm
+                                    title={tripMessages.leaveConfirm}
+                                    onConfirm={leave}
+                                    okText={tripMessages.leaveTrip}
+                                    cancelText={tripMessages.createCancel}
+                                  >
+                                    <Button size="small" danger loading={leaving}>
+                                      {tripMessages.leaveTrip}
+                                    </Button>
+                                  </Popconfirm>
+                                )}
               </Space>
             )}
 
@@ -349,6 +382,13 @@ export function TripDetailPage({ currentUser, tripId }: Props) {
           />
         </Space>
       </Modal>
-    </main>
-  );
-}
+            <ReportModal
+              userId={currentUser.id}
+              open={reportOpen}
+              targetType="trip"
+              targetId={tripId}
+              onClose={() => setReportOpen(false)}
+            />
+          </main>
+        );
+      }

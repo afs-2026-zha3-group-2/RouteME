@@ -103,8 +103,8 @@
 
 ### T13 [frontend] 我的旅行、聊天与安全
 
-- [ ] `MyTripsPage` 四个 tab + 待处理提醒；`ChatPage` 列表/发送/刷新/5s 轮询/只读；安全提示与举报弹窗。
-- [ ] 退出同行二次确认（仅同行者）。
+- [x] `MyTripsPage` 四个 tab + 待处理提醒；`ChatPage` 列表/发送/刷新/5s 轮询/只读；安全提示与举报弹窗。
+- [x] 退出同行二次确认（仅同行者）。
 
 **验证：** `cd RouteME/frontend; npm test; npm run build`
 **覆盖：** R4/R5/R6 的界面场景
