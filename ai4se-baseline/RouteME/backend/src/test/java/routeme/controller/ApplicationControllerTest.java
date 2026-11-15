@@ -139,7 +139,61 @@ class ApplicationControllerTest {
     }
 
     @Test
-    void in_myApplications_out_withTripAndApplicant() throws Exception {
+        void in_publisherListsApplications_out_sortedWithApplicant() throws Exception {
+            mockMvc.perform(get("/api/trips/3/applications").header("X-User-Id", "2"))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$[0].id").value(4))
+                    .andExpect(jsonPath("$[0].applicant.nickname").value("林见夏"))
+                    .andExpect(jsonPath("$[0].message").isNotEmpty());
+        }
+
+        @Test
+        void in_nonPublisherListsApplications_out_forbidden() throws Exception {
+            mockMvc.perform(get("/api/trips/3/applications").header("X-User-Id", "1"))
+                    .andExpect(status().isForbidden())
+                    .andExpect(jsonPath("$.code").value("FORBIDDEN"));
+        }
+
+        @Test
+        void in_acceptPendingApplication_out_acceptedAndJoined() throws Exception {
+            mockMvc.perform(post("/api/applications/6/accept").header("X-User-Id", "2"))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.status").value("accepted"))
+                    .andExpect(jsonPath("$.decided_at").isNotEmpty());
+
+            mockMvc.perform(get("/api/trips/5").header("X-User-Id", "2"))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.joined_count").value(2))
+                    .andExpect(jsonPath("$.participants.length()").value(2))
+                    .andExpect(jsonPath("$.participants[1].id").value(3));
+        }
+
+        @Test
+        void in_rejectPendingApplication_out_rejected() throws Exception {
+            mockMvc.perform(post("/api/applications/6/reject").header("X-User-Id", "2"))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.status").value("rejected"));
+
+            mockMvc.perform(get("/api/trips/5").header("X-User-Id", "2"))
+                    .andExpect(jsonPath("$.joined_count").value(1));
+        }
+
+        @Test
+        void in_acceptByNonPublisher_out_forbidden() throws Exception {
+            mockMvc.perform(post("/api/applications/6/accept").header("X-User-Id", "1"))
+                    .andExpect(status().isForbidden())
+                    .andExpect(jsonPath("$.code").value("FORBIDDEN"));
+        }
+
+        @Test
+        void in_acceptAlreadyAccepted_out_notPending() throws Exception {
+            mockMvc.perform(post("/api/applications/1/accept").header("X-User-Id", "1"))
+                    .andExpect(status().isConflict())
+                    .andExpect(jsonPath("$.code").value("APPLICATION_NOT_PENDING"));
+        }
+
+        @Test
+        void in_myApplications_out_withTripAndApplicant() throws Exception {
         mockMvc.perform(get("/api/me/applications").header("X-User-Id", "1"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].id").value(4))

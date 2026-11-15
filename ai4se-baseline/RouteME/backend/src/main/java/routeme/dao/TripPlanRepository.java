@@ -17,5 +17,7 @@ public interface TripPlanRepository {
 
         void insert(TripPlan trip);
 
+        void updateJoinedCount(long id, int joinedCount, Instant updatedAt);
+
         void markCompleted(long id, Instant completedAt);
     }

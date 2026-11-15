@@ -10,6 +10,7 @@ import routeme.dao.UserRepository;
 import routeme.dto.TripCreateRequest;
 import routeme.dto.TripQuery;
 import routeme.exception.ForbiddenAction;
+import routeme.exception.InvalidInput;
 import routeme.exception.TripNotFound;
 import routeme.exception.TripNotOpen;
 import routeme.model.DemoUser;
@@ -71,17 +72,40 @@ public class TripPlanService {
     }
 
         @Transactional
-        public TripPlan complete(long tripId, long userId) {
-            TripPlan trip = require(tripId);
-            if (trip.publisherId() != userId) {
-                throw new ForbiddenAction("only the publisher can complete trip " + tripId);
+            public TripPlan complete(long tripId, long userId) {
+                TripPlan trip = require(tripId);
+                if (trip.publisherId() != userId) {
+                    throw new ForbiddenAction("only the publisher can complete trip " + tripId);
+                }
+                if (trip.status() == TripStatus.COMPLETED) {
+                    throw new TripNotOpen(tripId);
+                }
+                tripPlanRepository.markCompleted(tripId, clock.instant());
+                return require(tripId);
             }
-            if (trip.status() == TripStatus.COMPLETED) {
-                throw new TripNotOpen(tripId);
+
+            @Transactional
+            public TripPlan addCompanion(long tripId) {
+                TripPlan trip = require(tripId);
+                if (trip.status() != TripStatus.RECRUITING) {
+                    throw new TripNotOpen(tripId);
+                }
+                tripPlanRepository.updateJoinedCount(tripId, trip.joinedCount() + 1, clock.instant());
+                return require(tripId);
             }
-            tripPlanRepository.markCompleted(tripId, clock.instant());
-            return require(tripId);
-        }
+
+            @Transactional
+            public TripPlan removeCompanion(long tripId) {
+                TripPlan trip = require(tripId);
+                if (trip.status() == TripStatus.COMPLETED) {
+                    throw new TripNotOpen(tripId);
+                }
+                if (trip.joinedCount() <= 1) {
+                    throw new InvalidInput("trip has no companion to remove: " + tripId);
+                }
+                tripPlanRepository.updateJoinedCount(tripId, trip.joinedCount() - 1, clock.instant());
+                return require(tripId);
+            }
 
     public DemoUser publisherOf(TripPlan trip) {
         return userRepository.findById(trip.publisherId()).orElseThrow();

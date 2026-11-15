@@ -47,8 +47,8 @@
 
 ### T6 [backend] 处理申请与人数联动
 
-- [ ] `GET /trips/{tripId}/applications`（仅发布者）、`accept`、`reject`。
-- [ ] `TripPlanService.addCompanion/removeCompanion`（事务内更新 `joined_count`，状态投影自动满员/回退）。
+- [x] `GET /trips/{tripId}/applications`（仅发布者）、`accept`、`reject`。
+- [x] `TripPlanService.addCompanion/removeCompanion`（事务内更新 `joined_count`，状态投影自动满员/回退）。
 
 **验证：** `cd RouteME/backend; .\mvnw.cmd -Dtest=ApplicationControllerTest,TripPlanServiceTest test`
 **覆盖：** R3 的 4 个场景

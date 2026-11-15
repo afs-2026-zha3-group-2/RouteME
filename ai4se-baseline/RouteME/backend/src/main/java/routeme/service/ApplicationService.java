@@ -2,6 +2,7 @@ package routeme.service;
 
 import java.time.Clock;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.List;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -84,6 +85,41 @@ public class ApplicationService {
         return applicationRepository.findByApplicant(userId);
     }
 
+        public List<TripApplication> listForPublisher(long tripId, long userId) {
+            TripPlan trip = tripPlanService.require(tripId);
+            if (trip.publisherId() != userId) {
+                throw new ForbiddenAction("only the publisher can review applications of trip " + tripId);
+            }
+            return applicationRepository.findByTrip(tripId);
+        }
+
+        @Transactional
+        public TripApplication accept(long applicationId, long publisherId) {
+            return decide(applicationId, publisherId, ApplicationStatus.ACCEPTED);
+        }
+
+        @Transactional
+        public TripApplication reject(long applicationId, long publisherId) {
+            return decide(applicationId, publisherId, ApplicationStatus.REJECTED);
+        }
+
+        private TripApplication decide(long applicationId, long publisherId, ApplicationStatus next) {
+            TripApplication application = require(applicationId);
+            TripPlan trip = tripPlanService.require(application.tripId());
+            if (trip.publisherId() != publisherId) {
+                throw new ForbiddenAction("only the publisher can decide application " + applicationId);
+            }
+            if (!application.isPending()) {
+                throw new ApplicationNotPending(applicationId);
+            }
+            if (next == ApplicationStatus.ACCEPTED) {
+                tripPlanService.addCompanion(trip.id());
+            }
+            Instant now = clock.instant();
+            applicationRepository.updateStatus(applicationId, next, now);
+            return application.withStatus(next, now);
+        }
+
     public TripApplication require(long applicationId) {
         return applicationRepository.findById(applicationId)
                 .orElseThrow(() -> new ApplicationNotFound(applicationId));
@@ -94,6 +130,17 @@ public class ApplicationService {
         DemoUser applicant = demoUserService.require(application.applicantId());
         return TripApplicationResponse.from(application, applicant, trip, tripPlanService.publisherOf(trip));
     }
+
+        /** 当前同行者：发布者在最前，其后按申请时间排列的已接受同行者。 */
+        public List<DemoUser> participants(long tripId) {
+            TripPlan trip = tripPlanService.require(tripId);
+            List<DemoUser> participants = new ArrayList<>();
+            participants.add(tripPlanService.publisherOf(trip));
+            applicationRepository.findByTrip(tripId).stream()
+                    .filter(TripApplication::isAccepted)
+                    .forEach(application -> participants.add(demoUserService.require(application.applicantId())));
+            return participants;
+        }
 
     private String normalizeMessage(String message) {
         if (message == null) {

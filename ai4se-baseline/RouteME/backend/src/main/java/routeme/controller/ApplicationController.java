@@ -40,16 +40,26 @@ public class ApplicationController {
                 .body(applicationService.describe(created));
     }
 
-    @GetMapping("/me/applications")
-    public List<TripApplicationResponse> mine(
-            @RequestHeader(value = "X-User-Id", required = false) Long userId) {
-        DemoUser applicant = demoUserService.require(userId);
-        return applicationService.mine(applicant.id()).stream()
-                .map(applicationService::describe)
-                .toList();
-    }
+    @GetMapping("/trips/{tripId}/applications")
+        public List<TripApplicationResponse> listForPublisher(
+                @RequestHeader(value = "X-User-Id", required = false) Long userId,
+                @PathVariable long tripId) {
+            DemoUser publisher = demoUserService.require(userId);
+            return applicationService.listForPublisher(tripId, publisher.id()).stream()
+                    .map(applicationService::describe)
+                    .toList();
+        }
 
-    @PostMapping("/applications/{applicationId}/cancel")
+        @GetMapping("/me/applications")
+        public List<TripApplicationResponse> mine(
+                @RequestHeader(value = "X-User-Id", required = false) Long userId) {
+            DemoUser applicant = demoUserService.require(userId);
+            return applicationService.mine(applicant.id()).stream()
+                    .map(applicationService::describe)
+                    .toList();
+        }
+
+        @PostMapping("/applications/{applicationId}/cancel")
     public TripApplicationResponse cancel(
             @RequestHeader(value = "X-User-Id", required = false) Long userId,
             @PathVariable long applicationId) {
@@ -57,4 +67,22 @@ public class ApplicationController {
         TripApplication cancelled = applicationService.cancel(applicationId, applicant.id());
         return applicationService.describe(cancelled);
     }
-}
+
+            @PostMapping("/applications/{applicationId}/accept")
+            public TripApplicationResponse accept(
+                    @RequestHeader(value = "X-User-Id", required = false) Long userId,
+                    @PathVariable long applicationId) {
+                DemoUser publisher = demoUserService.require(userId);
+                TripApplication accepted = applicationService.accept(applicationId, publisher.id());
+                return applicationService.describe(accepted);
+            }
+
+            @PostMapping("/applications/{applicationId}/reject")
+            public TripApplicationResponse reject(
+                    @RequestHeader(value = "X-User-Id", required = false) Long userId,
+                    @PathVariable long applicationId) {
+                DemoUser publisher = demoUserService.require(userId);
+                TripApplication rejected = applicationService.reject(applicationId, publisher.id());
+                return applicationService.describe(rejected);
+            }
+        }

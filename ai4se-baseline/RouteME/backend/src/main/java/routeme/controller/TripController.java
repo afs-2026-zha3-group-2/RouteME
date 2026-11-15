@@ -19,6 +19,7 @@ import routeme.dto.TripQuery;
 import routeme.dto.TripSummaryResponse;
 import routeme.model.DemoUser;
 import routeme.model.TripPlan;
+import routeme.service.ApplicationService;
 import routeme.service.DemoUserService;
 import routeme.service.TripPlanService;
 
@@ -28,10 +29,15 @@ public class TripController {
 
     private final DemoUserService demoUserService;
     private final TripPlanService tripPlanService;
+    private final ApplicationService applicationService;
 
-    public TripController(DemoUserService demoUserService, TripPlanService tripPlanService) {
+    public TripController(
+            DemoUserService demoUserService,
+            TripPlanService tripPlanService,
+            ApplicationService applicationService) {
         this.demoUserService = demoUserService;
         this.tripPlanService = tripPlanService;
+        this.applicationService = applicationService;
     }
 
     @GetMapping
@@ -60,7 +66,7 @@ public class TripController {
         demoUserService.require(userId);
         TripPlan trip = tripPlanService.require(tripId);
         DemoUser publisher = tripPlanService.publisherOf(trip);
-        return TripDetailResponse.from(trip, publisher, List.of(publisher));
+            return TripDetailResponse.from(trip, publisher, applicationService.participants(tripId));
     }
 
     @PostMapping
@@ -74,11 +80,11 @@ public class TripController {
     }
 
         @PostMapping("/{tripId}/complete")
-        public TripDetailResponse complete(
-                @RequestHeader(value = "X-User-Id", required = false) Long userId,
-                @PathVariable long tripId) {
-            DemoUser publisher = demoUserService.require(userId);
-                        TripPlan completed = tripPlanService.complete(tripId, publisher.id());
-                        return TripDetailResponse.from(completed, publisher, List.of(publisher));
-                    }
+            public TripDetailResponse complete(
+                    @RequestHeader(value = "X-User-Id", required = false) Long userId,
+                    @PathVariable long tripId) {
+                DemoUser publisher = demoUserService.require(userId);
+                TripPlan completed = tripPlanService.complete(tripId, publisher.id());
+                return TripDetailResponse.from(completed, publisher, applicationService.participants(tripId));
             }
+        }
