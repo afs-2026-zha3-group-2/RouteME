@@ -40,6 +40,16 @@ public class DatabaseTripPlanRepository implements TripPlanRepository {
     }
 
         @Override
+        public Optional<TripPlan> findLatestUnfinishedByPublisher(long publisherId) {
+            return jdbcClient.sql(SELECT_TRIP
+                            + " WHERE publisher_id = :publisherId AND completed_at IS NULL"
+                            + " ORDER BY created_at DESC LIMIT 1")
+                    .param("publisherId", publisherId)
+                    .query((resultSet, rowNumber) -> TripPlanRow.from(resultSet).toTripPlan())
+                    .optional();
+        }
+
+        @Override
         public long nextId() {
             return jdbcClient.sql("SELECT COALESCE(MAX(id), 0) + 1 FROM trip_plans")
                     .query(Long.class)

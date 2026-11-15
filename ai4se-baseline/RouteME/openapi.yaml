@@ -1056,13 +1056,13 @@ components:
           type: string
           description: 参照物说明（最近一条未结束的已发布行程，或我的兴趣与当前筛选）
     MatchCandidate:
-      allOf:
-        - $ref: '#/components/schemas/TripPlan'
-        - type: object
-          required: [match]
-          properties:
-            match:
-              $ref: '#/components/schemas/Match'
+      type: object
+      required: [trip, match]
+      properties:
+        trip:
+          $ref: '#/components/schemas/TripPlan'
+        match:
+          $ref: '#/components/schemas/Match'
     ApplicationCreateRequest:
       type: object
       properties:

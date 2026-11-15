@@ -31,8 +31,8 @@
 
 ### T4 [backend] 匹配服务与接口
 
-- [ ] `TripMatch` 纯函数：参照行程（最近未结束发布）或兴趣 + 筛选；计分 50/30/20/兴趣 10 上限 20；理由文案与百分比。
-- [ ] `GET /matches`（默认分数排序）与 `GET /matches/{tripId}`。
+- [x] `TripMatch` 纯函数：参照行程（最近未结束发布）或兴趣 + 筛选；计分 50/30/20/兴趣 10 上限 20；理由文案与百分比。
+- [x] `GET /matches`（默认分数排序）与 `GET /matches/{tripId}`。
 
 **验证：** `cd RouteME/backend; .\mvnw.cmd -Dtest=TripMatchTest,MatchControllerTest test`
 **覆盖：** R1 的 4 个场景

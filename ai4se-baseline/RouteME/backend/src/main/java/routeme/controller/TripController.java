@@ -1,10 +1,7 @@
 package routeme.controller;
 
 import java.time.LocalDate;
-import java.util.Arrays;
-import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.Set;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -20,7 +17,6 @@ import routeme.dto.TripCreateRequest;
 import routeme.dto.TripDetailResponse;
 import routeme.dto.TripQuery;
 import routeme.dto.TripSummaryResponse;
-import routeme.exception.InvalidInput;
 import routeme.model.DemoUser;
 import routeme.model.TripPlan;
 import routeme.service.DemoUserService;
@@ -50,7 +46,8 @@ public class TripController {
             @RequestParam(required = false) String tags,
             @RequestParam(required = false) String sort) {
         demoUserService.require(userId);
-        TripQuery query = new TripQuery(q, destination, dateFrom, dateTo, parseTags(tags), parseSort(sort));
+        TripQuery query = new TripQuery(
+                q, destination, dateFrom, dateTo, TripQueryParams.parseTags(tags), TripQueryParams.parseSort(sort));
         return tripPlanService.search(query).stream()
                 .map(trip -> TripSummaryResponse.from(trip, tripPlanService.publisherOf(trip)))
                 .toList();
@@ -81,27 +78,7 @@ public class TripController {
                 @RequestHeader(value = "X-User-Id", required = false) Long userId,
                 @PathVariable long tripId) {
             DemoUser publisher = demoUserService.require(userId);
-            TripPlan completed = tripPlanService.complete(tripId, publisher.id());
-            return TripDetailResponse.from(completed, publisher, List.of(publisher));
-        }
-
-    private Set<String> parseTags(String raw) {
-        if (raw == null || raw.isBlank()) {
-            return Set.of();
-        }
-        return Arrays.stream(raw.split(","))
-                .map(String::trim)
-                .filter(tag -> !tag.isEmpty())
-                .collect(LinkedHashSet::new, LinkedHashSet::add, LinkedHashSet::addAll);
-    }
-
-    private TripQuery.SortOrder parseSort(String raw) {
-        if (raw == null || raw.isBlank() || "date".equals(raw)) {
-            return TripQuery.SortOrder.DATE;
-        }
-        if ("new".equals(raw)) {
-            return TripQuery.SortOrder.NEW;
-        }
-        throw new InvalidInput("unsupported sort: " + raw);
-    }
-}
+                        TripPlan completed = tripPlanService.complete(tripId, publisher.id());
+                        return TripDetailResponse.from(completed, publisher, List.of(publisher));
+                    }
+            }

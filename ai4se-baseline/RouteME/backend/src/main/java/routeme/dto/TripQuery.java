@@ -15,9 +15,10 @@ public record TripQuery(
         SortOrder sort) {
 
     public enum SortOrder {
-        DATE,
-        NEW
-    }
+            MATCH,
+            DATE,
+            NEW
+        }
 
     public TripQuery {
         keyword = keyword == null ? "" : keyword.trim();

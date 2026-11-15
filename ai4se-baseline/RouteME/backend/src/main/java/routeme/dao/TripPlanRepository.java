@@ -11,9 +11,11 @@ public interface TripPlanRepository {
 
     Optional<TripPlan> findById(long id);
 
-    long nextId();
+        Optional<TripPlan> findLatestUnfinishedByPublisher(long publisherId);
 
-    void insert(TripPlan trip);
+        long nextId();
+
+        void insert(TripPlan trip);
 
         void markCompleted(long id, Instant completedAt);
     }
