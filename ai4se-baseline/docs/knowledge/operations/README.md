@@ -59,7 +59,7 @@ Windows     cd RouteME/backend; .\mvnw.cmd spring-boot:run    # 启动 8080
 其他平台     ./mvnw -B verify / ./mvnw spring-boot:run
 ```
 
-- 数据文件 `RouteME/SqlLite/routeme.db`（默认 `jdbc:sqlite:../SqlLite/routeme.db`，可用 `SPRING_DATASOURCE_URL` 覆盖；容器内为 `/data/routeme.db`）；Flyway 启动时应用 `V1`–`V8`（greetings、app_users、trip_plans、trip_applications、chat_messages、reports、trip_experiences），迁移只增不改；重置演示数据时停止后端并删除该文件后重启。
+- 数据文件 `RouteME/SqlLite/routeme.db`（默认 `jdbc:sqlite:../SqlLite/routeme.db`，可用 `SPRING_DATASOURCE_URL` 覆盖；启动时由 `SqliteDirectory` 自动建父目录）；Flyway 启动时应用 `V1`–`V8`（greetings、app_users、trip_plans、trip_applications、chat_messages、reports、trip_experiences），迁移只增不改；重置演示数据时停止后端并删除该文件后重启。
 - 冒烟：`GET /api/greeting`、`GET /api/users`、`GET /api/trips`、`GET /api/experiences`（其余 `/trips*`、`/me/*`、`/matches*` 需 `X-User-Id`，1–3 为演示账户）。
 - 契约校验：`cd RouteME; npx @redocly/cli lint openapi.yaml`（0 error），或 `cd RouteME/backend; .\mvnw.cmd -Dtest=OpenApiTest test`。
 - 前端：`cd RouteME/frontend; npm run build; npm test`。
@@ -68,17 +68,16 @@ Windows     cd RouteME/backend; .\mvnw.cmd spring-boot:run    # 启动 8080
 ## CI / CD
 
 ```text
-CI  .github/workflows/ci.yml   push/PR：backend verify、frontend build+test（不依赖 Docker）
-CD  .github/workflows/cd.yml   CI 在 main 全绿后：打包 jar+dist 工件、构建部署镜像、触发 Render deploy hook
+CI  .github/workflows/ci.yml   push/PR：backend verify、frontend build+test（无 Docker）
+CD  .github/workflows/cd.yml   CI 在 main 全绿后：构建单文件 jar + dist，上传工件并发布 GitHub Release
 ```
 
-- **CI（已跑通）**：两个 job —— `backend`（JDK 21，`./mvnw -B -ntp verify`）、`frontend`（Node 22 + npm 11，`npm install` + `build` + `test`）。CI 不装 Docker，镜像问题不再阻塞 CI。
-- **CD 三步**：`package`（jar + dist 工件）→ `Build deploy image`（用同一 `Dockerfile` 构建，失败则不部署）→ `Deploy to Render`（`curl -X POST $RENDER_DEPLOY_HOOK_URL`）。
-- **CD（Render，单容器）**：`render.yaml` 定义 web 服务 `routeme`（`runtime: docker`，health check `/api/greeting`，`autoDeploy: false`）。镜像内前端 `dist` 打进 Spring Boot `static/`，同域提供页面与 `/api`，SQLite 落在 `/data/routeme.db`（镜像声明 `VOLUME /data`；免费实例无持久盘，重启即回到种子数据）。
-- **账号与凭证**：Render 账号、Blueprint 创建与 Deploy Hook 由仓库所有者本人完成（邮箱验证与账号所有权），步骤见 [RouteME/README.md](../../RouteME/README.md#cdrender需要你完成账号与密钥)；密钥只放 GitHub Secrets，不落仓库。
-- **启用步骤**：Render → New → Blueprint → 选本仓库（读取 `render.yaml`）→ 创建服务 → Settings → Deploy Hook → 复制 URL → GitHub 仓库 Settings → Secrets and variables → Actions → 新增 `RENDER_DEPLOY_HOOK_URL`。未配置该 secret 时 CD 只打包并给出 warning，不判失败。
-- **触发顺序**：push `main` → CI 全绿 → CD `workflow_run` 打包并 `curl -X POST $RENDER_DEPLOY_HOOK_URL` → Render 按同一 Dockerfile 重建上线。`autoDeploy: false` 保证 Render 不会抢在 CI 之前发布未验证提交。
-- **回滚**：Render → Deploys → 选上一成功部署 → Redeploy；数据库为临时盘，回滚不涉及数据迁移。
+- **CI（已跑通）**：两个 job —— `backend`（JDK 21，`./mvnw -B -ntp verify`）、`frontend`（Node 22 + npm 11，`npm install` + `build` + `test`）。CI 不装 Docker。
+- **CD（GitHub 原生）**：`Build and publish release` — 构建前端 `dist` → 复制进 `backend/src/main/resources/static` → 打包可执行 jar → 上传 `routeme-standalone-<sha>.jar` 与 `routeme-frontend-dist.zip` → `gh release create build-<sha>`（`permissions: contents: write`，标签已存在则只上传工件）。
+- **没有第三方部署平台**：不再使用 Render 或 Docker。GitHub Actions 只提供构建/测试/交付能力，没有 Java 运行时，也没有公网地址；运行交付物用 `java -jar`（jar 内含前端），入口见 [RouteME/README.md](../../RouteME/README.md#ci--cd全部在-github无外部服务)。
+- **`SQLITE_CANTOPEN` 防护**：`routeme.config.SqliteDirectory` 在启动前按 `SPRING_DATASOURCE_URL` 创建数据库父目录（H2 与 `:memory:` 跳过），独立 jar 首次运行不需要手工建目录。
+- **回滚**：Release 是不可变的，回滚即下载上一版 `build-<sha>` 的 jar 重新运行；数据库由使用者自己持有，不涉及平台回滚。
+- **为什么不能「全部用 GitHub」部署**：GitHub Actions 是构建/测试/交付平台，没有 Java 运行时；GitHub Pages 只能托管静态站点。故 CD 收敛为「构建 + Release 交付」，运行在本地或自有服务器。
 
 ## 本地启动与数据基线
 
@@ -117,6 +116,6 @@ CD  .github/workflows/cd.yml   CI 在 main 全绿后：打包 jar+dist 工件、
 - 重置数据库：停止后端，删除 `backend/data/routeme.db`，重启后重新迁移。
 - 后端测试 `mvnw.cmd test`：接口测试走 H2 内存库，`*SqliteTest` 用临时 SQLite 文件库跑同一组迁移，CI 同样覆盖 SQLite。
 - 前端验证 `npm run build`（`tsc --noEmit && vite build`）与 `npm test`（Vitest 纯函数测试），不依赖后端启动。
-- 前端依赖安装：CI 与 Docker 镜像固定 Node 22 + `npm install -g npm@11` 后执行 `npm install`（npm 10.9.9 在 Linux 解析 rolldown 可选依赖会崩 “Exit handler never called”）；锁文件 `resolved` 必须是 `registry.npmjs.org`，不得提交公司 Artifactory 地址。
+- 前端依赖安装：CI 固定 Node 22 + `npm install -g npm@11` 后执行 `npm install`（npm 10.9.9 在 Linux 解析 rolldown 可选依赖会崩 “Exit handler never called”）；锁文件 `resolved` 必须是 `registry.npmjs.org`，不得提交公司 Artifactory 地址。
 - 构建产物 `dist/assets/index-*.js` 约 612 kB，来源是 Ant Design 整包；保留警告不静默调高阈值，出现路由级拆分需求时再分包。
 - 本机 TLS：该开发机 Maven 经 TLS 代理下载依赖，代理根证书已导入 JDK `cacerts`（alias `forward-trust-root`）；换机器或换 JDK 需重做一次，CI 使用公有 CA 不受影响。

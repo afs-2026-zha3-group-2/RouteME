@@ -4,7 +4,7 @@ spring:
   jackson:
     property-naming-strategy: SNAKE_CASE
   datasource:
-    # 本地从 backend 目录启动时，数据库落在同级 SqlLite/；容器内由 SPRING_DATASOURCE_URL 覆盖为 /data。
+      # 本地从 backend 目录启动时，数据库落在同级 SqlLite/；独立 jar 或自定义路径用 SPRING_DATASOURCE_URL 覆盖。
     url: ${SPRING_DATASOURCE_URL:jdbc:sqlite:../SqlLite/routeme.db}
     driver-class-name: org.sqlite.JDBC
     hikari:

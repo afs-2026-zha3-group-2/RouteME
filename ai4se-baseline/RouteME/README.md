@@ -16,9 +16,10 @@ ai4se-baseline/RouteME/
 ├── frontend/           React SPA（开发时 /api 代理到 8080）
 ├── e2e/                Playwright 端到端（本地门禁）
 ├── SqlLite/            本地 SQLite 数据目录（*.db 已被 git 忽略）
-├── openapi.yaml        接口契约
-└── Dockerfile          单镜像：前端 dist + 后端 jar
+└── openapi.yaml        接口契约
 ```
+
+> 交付物只有一个 jar：CD 会把前端 `dist` 打进 `backend/src/main/resources/static`，再打包成可执行 jar。
 
 ## 本地运行
 
@@ -43,10 +44,11 @@ npm run dev                          # http://localhost:5173，/api 代理到 80
 
 | 场景 | 路径 | 说明 |
 |---|---|---|
-| 本地默认 | `ai4se-baseline/RouteME/SqlLite/routeme.db` | `spring.datasource.url` 默认 `jdbc:sqlite:../SqlLite/routeme.db`；可用 `SPRING_DATASOURCE_URL` 覆盖 |
-| Docker | `/data/routeme.db` | 镜像内 `VOLUME /data`，本地 `docker run -v routeme-data:/data` 可持久化 |
-| Render 免费实例 | `/data/routeme.db` | 无持久盘，实例重建即清空并回到 Flyway 种子数据 |
+| 本地开发（`mvnw spring-boot:run`，CWD=backend） | `ai4se-baseline/RouteME/SqlLite/routeme.db` | 默认 `jdbc:sqlite:../SqlLite/routeme.db` |
+| 独立 jar（任意目录） | 由 `SPRING_DATASOURCE_URL` 决定 | 建议 `jdbc:sqlite:./routeme.db`；缺目录会自动创建 |
 | 测试 | H2 内存库 | 临时 SQLite 文件另跑 `V1–V8` 迁移校验 |
+
+`SqliteDirectory` 在启动前按数据源 URL 创建父目录，因此首次运行不会出现 `SQLITE_CANTOPEN`。用 `SPRING_DATASOURCE_URL` 可指向任意位置。
 
 重置演示数据：停止后端 → 删除 `SqlLite/routeme.db` → 重启，Flyway 会重新迁移并写入种子数据（3 个账户、6 条行程、7 条申请、4 条聊天、2 条体验）。
 
@@ -61,63 +63,60 @@ cd ai4se-baseline/RouteME/e2e;      npx playwright test           # 11 个用例
 
 Playwright 不进 CI，是本地门禁；E2E 会在开发库新增带唯一标题/内容的行程与体验，断言不依赖总数。
 
-## Docker
+## 单文件 jar（无 Docker）
 
-Docker 只在部署时需要（Render 侧构建），本地开发与 CI 都不需要安装 Docker。想在本机验证镜像时：
+不需要 Docker 就能得到「页面 + API 同源」的产物：
 
 ```powershell
-cd ai4se-baseline/RouteME
-docker build -t routeme .
-docker run --rm -p 8080:8080 -v routeme-data:/data routeme
-# 打开 http://localhost:8080（页面与 /api 同源）
+cd ai4se-baseline/RouteME/frontend; npm run build
+mkdir ..\backend\src\main\resources\static -Force
+Copy-Item -Recurse -Force dist\* ..\backend\src\main\resources\static\
+cd ..\backend; .\mvnw.cmd -B -ntp -DskipTests package
+java -jar target\routeme-backend-0.0.1-SNAPSHOT.jar
+# 打开 http://localhost:8080
 ```
 
-镜像内先构建前端 `dist`，再打进 Spring Boot `static/`，所以只需要一个服务、一个端口。
+`backend/src/main/resources/static/` 是构建输出，已被 git 忽略；CD 里用同样的步骤自动完成。
 
-## CI（已跑通）
+## CI / CD（全部在 GitHub，无外部服务）
 
-[`.github/workflows/ci.yml`](../../.github/workflows/ci.yml)，push `main` 与 PR 触发，**不依赖 Docker**：
+```text
+CI  .github/workflows/ci.yml   push/PR：backend verify、frontend build+test
+CD  .github/workflows/cd.yml   CI 在 main 全绿后：构建单文件 jar + dist，上传工件并发布 GitHub Release
+```
 
-| Job | 内容 |
-|---|---|
-| Backend (Java 21) | `./mvnw -B -ntp verify`（132 tests，H2 + SQLite） |
-| Frontend (Node 22) | npm 11 + `npm install` + `build` + `test`（34 tests） |
+| 流水线 | Job | 内容 |
+|---|---|---|
+| CI | Backend (Java 21) | `./mvnw -B -ntp verify`（132 tests，H2 + SQLite） |
+| CI | Frontend (Node 22) | npm 11 + `npm install` + `build` + `test`（34 tests） |
+| CD | Build and publish release | 构建前端 dist → 打进 Spring Boot `static` → 打包 jar → 上传工件 → `gh release create build-<sha>` |
 
-## CD（Render，需要你完成账号与密钥）
+- **不使用 Docker、不使用 Render 或任何第三方部署平台**：GitHub Actions 负责构建、测试与交付，交付物是 GitHub Release 附件。
+- 每次 `main` 绿灯自动产出 Release `build-<sha>`（若标签已存在只上传工件，不重复发布），可在 **Releases** 页或 Actions 运行页的 Artifacts 下载。
+- GitHub 不提供 Java 运行时托管，因此没有公网地址；演示用下面的「单文件 jar」在本地跑，或用任意机器托管该 jar。
 
-流水线已就绪：[`.github/workflows/cd.yml`](../../.github/workflows/cd.yml) 在 CI 于 `main` 全绿后执行三个 job，[`render.yaml`](../../render.yaml) 定义服务。
+### 下载并本地演示
 
-| Job | 内容 |
-|---|---|
-| Package deployables | 打包 `jar + dist` 并上传工件（`routeme-deployables-<sha>`） |
-| Build deploy image | 用与 Render 相同的 `Dockerfile` 构建镜像；**镜像构建失败则不会触发部署** |
-| Deploy to Render | 调用 `RENDER_DEPLOY_HOOK_URL`，由 Render 按同一 Dockerfile 重建上线 |
+```powershell
+# 从 GitHub Releases 下载 routeme-standalone-<sha>.jar，然后：
+$env:SPRING_DATASOURCE_URL="jdbc:sqlite:./routeme.db"   # 可选，默认用 ../SqlLite/routeme.db
+java -jar routeme-standalone-<sha>.jar
+# 打开 http://localhost:8080 —— 页面与 /api 同源，无需再跑前端
+```
 
-**你需要 Docker 吗？** 不需要。本地开发、CI 都不跑 Docker；只有 Render 的构建环境会用 `Dockerfile` 打包（你既不用装 Docker，也不用自己构建镜像）。Render 原生产运行时只支持 Node/Python/Ruby/Go/Rust/Elixir，Spring Boot 没有原生运行时，所以那个 `Dockerfile` 是 Render 侧的必需产物，但对你完全透明。
+jar 里已包含前端静态文件，`SqliteDirectory` 会在启动前自动创建数据库目录，首次运行不会报 `SQLITE_CANTOPEN`。
 
-**账号与凭证需要你本人操作**（涉及邮箱验证、服务条款与账号所有权，我不能代注册或代持密钥）：
-
-1. 打开 <https://render.com> → **Get Started** → 选 **GitHub** 登录并授权（免费，无需信用卡）
-2. Dashboard → **New → Blueprint** → 选择 `afs-2026-zha3-group-2/RouteME` → Render 读取根目录 `render.yaml` → **Apply**
-3. 等待首次部署完成，得到地址 `https://<service>.onrender.com`
-4. 服务页 → **Settings → Deploy Hook** → 复制 URL
-5. GitHub 仓库 → **Settings → Secrets and variables → Actions → New repository secret**
-   - Name：`RENDER_DEPLOY_HOOK_URL`
-   - Secret：粘贴第 4 步的 URL（不要发到聊天或提交进仓库）
-
-完成后任意 push 到 `main`：CI 全绿 → CD 打包 → 触发 Render 重建上线。未配置 secret 时 CD 只打包并给出 warning，不会误报部署成功。
-
-免费实例限制：15 分钟无访问会休眠（首次访问冷启动）、无持久盘（SQLite 每次重建回到种子数据）、内存 512 MB。需要保留用户数据：把 `render.yaml` 的 `plan` 改为 `starter` 并取消 `disk` 三行注释（挂载 `/data`）。
+**为什么不能「全部用 GitHub」部署**：GitHub Actions 是构建/测试/交付平台，没有 Java 应用运行时；GitHub Pages 只能托管纯静态站点，无法运行 Spring Boot 后端。所以本仓库的 CD 收敛为「构建 + Release 交付」，运行在本地或你已有的服务器。
 
 ## 常见问题
 
 | 现象 | 原因与处理 |
 |---|---|
-| `npm ci` 报 lockfile 不同步 / `Missing: @rolldown/binding-*` | 锁文件缺平台可选依赖；本地、CI、Docker 统一用 `npm install` |
+| `npm ci` 报 lockfile 不同步 / `Missing: @rolldown/binding-*` | 锁文件缺平台可选依赖；本地与 CI 统一用 `npm install` |
 | Linux 上 npm 报 `Exit handler never called!` | Node 22 自带 npm 10.9.9 的已知问题；先 `npm install -g npm@11` |
 | 后端启动报 YAML 解析失败 | `application.yaml` 缩进必须 2/4/6 空格，`datasource` 子项是 4 空格 |
 | 端口占用 | `PORT` / `server.port` 可用环境变量覆盖；前端开发端口在 `vite.config.ts` |
-| CI Docker job 失败 | 该 job 已从 CI 移出；镜像构建校验现在位于 CD 的 `Build deploy image` job，失败会阻止部署 |
+| 启动报 `SQLITE_CANTOPEN` | 数据库父目录不存在；`SqliteDirectory` 已自动创建，仍失败时检查 `SPRING_DATASOURCE_URL` 是否指向只读位置 |
 
 ## 相关文档
 

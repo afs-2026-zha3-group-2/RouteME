@@ -42,3 +42,6 @@ ai4se-baseline/RouteME/SqlLite/*.db
 ai4se-baseline/RouteME/SqlLite/*.db-journal
 ai4se-baseline/RouteME/SqlLite/*.lock.db
 ai4se-baseline/RouteME/backend/data/
+
+# Build output that CI copies the frontend dist into
+ai4se-baseline/RouteME/backend/src/main/resources/static/

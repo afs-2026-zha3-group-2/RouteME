@@ -8,7 +8,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
   actions: read
 
 concurrency:
@@ -16,28 +16,14 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  package:
-    name: Package deployables
+  release:
+    name: Build and publish release
     if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
         with:
           ref: ${{ github.event.workflow_run.head_sha || github.sha }}
-
-      - name: Set up JDK 21
-        uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: '21'
-          cache: maven
-          cache-dependency-path: ai4se-baseline/RouteME/backend/pom.xml
-
-      - name: Build backend jar
-        working-directory: ai4se-baseline/RouteME/backend
-        run: |
-          chmod +x mvnw
-          ./mvnw -B -ntp -DskipTests package
 
       - name: Set up Node 22
         uses: actions/setup-node@v4
@@ -53,54 +39,65 @@ jobs:
           npm install --no-audit --no-fund
           npm run build
 
-      - name: Upload deployables
+      - name: Pack frontend into backend static
+        run: |
+          mkdir -p ai4se-baseline/RouteME/backend/src/main/resources/static
+          cp -r ai4se-baseline/RouteME/frontend/dist/. ai4se-baseline/RouteME/backend/src/main/resources/static/
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+          cache-dependency-path: ai4se-baseline/RouteME/backend/pom.xml
+
+      - name: Build standalone jar
+        working-directory: ai4se-baseline/RouteME/backend
+        run: |
+          chmod +x mvnw
+          ./mvnw -B -ntp -DskipTests package
+
+      - name: Stage deliverables
+        env:
+          SHA: ${{ github.event.workflow_run.head_sha || github.sha }}
+        run: |
+          mkdir -p dist-out
+          cp ai4se-baseline/RouteME/backend/target/routeme-backend-0.0.1-SNAPSHOT.jar \
+             "dist-out/routeme-standalone-${SHA}.jar"
+          cd ai4se-baseline/RouteME/frontend
+          zip -qr "$GITHUB_WORKSPACE/dist-out/routeme-frontend-dist.zip" dist
+
+      - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: routeme-deployables-${{ github.event.workflow_run.head_sha || github.sha }}
+          name: routeme-${{ github.event.workflow_run.head_sha || github.sha }}
           if-no-files-found: error
-          path: |
-            ai4se-baseline/RouteME/backend/target/routeme-backend-0.0.1-SNAPSHOT.jar
-            ai4se-baseline/RouteME/frontend/dist
+          path: dist-out/*
 
-  image:
-    name: Build deploy image
-    needs: package
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      # Render 用同一个 Dockerfile 重建镜像；这里先构建一次，镜像构建失败就不触发部署。
-      - name: Build image without pushing
-        uses: docker/build-push-action@v6
-        with:
-          context: ai4se-baseline/RouteME
-          file: ai4se-baseline/RouteME/Dockerfile
-          push: false
-          tags: routeme:cd
-          cache-from: type=gha,scope=routeme-image
-          cache-to: type=gha,mode=max,scope=routeme-image
-
-  deploy:
-    name: Deploy to Render
-    needs: [package, image]
-    runs-on: ubuntu-latest
-    environment: production
-    steps:
-      - name: Trigger Render deploy hook
+      - name: Publish GitHub release
         env:
-          RENDER_DEPLOY_HOOK_URL: ${{ secrets.RENDER_DEPLOY_HOOK_URL }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SHA: ${{ github.event.workflow_run.head_sha || github.sha }}
         run: |
-          if [ -z "$RENDER_DEPLOY_HOOK_URL" ]; then
-            echo "::warning title=Render deploy skipped::Add the RENDER_DEPLOY_HOOK_URL repository secret to enable CD."
-            echo "### CD skipped" >> "$GITHUB_STEP_SUMMARY"
-            echo "Add \`RENDER_DEPLOY_HOOK_URL\` (Render -> routeme -> Settings -> Deploy Hook) to enable automatic deployment." >> "$GITHUB_STEP_SUMMARY"
+          TAG="build-${SHA:0:7}"
+          if gh release view "$TAG" >/dev/null 2>&1; then
+            echo "::notice title=Release exists::$TAG already published; artifacts uploaded only."
+            echo "### Release $TAG already exists" >> "$GITHUB_STEP_SUMMARY"
             exit 0
           fi
-          curl -fsS -X POST "$RENDER_DEPLOY_HOOK_URL"
-          echo "### Render deploy triggered" >> "$GITHUB_STEP_SUMMARY"
-          echo "Image is rebuilt by Render from \`ai4se-baseline/RouteME/Dockerfile\`." >> "$GITHUB_STEP_SUMMARY"
+          {
+            echo "自动交付：提交 \`$SHA\` 通过 CI 后构建。"
+            echo ""
+            echo "- \`routeme-standalone-<sha>.jar\`：前端 dist 已打进 Spring Boot static，单个 jar 同时提供页面与 /api"
+            echo "- \`routeme-frontend-dist.zip\`：纯前端静态产物"
+            echo ""
+            echo "本地演示：\`java -jar routeme-standalone-<sha>.jar\`，打开 http://localhost:8080"
+            echo "数据库默认 \`../SqlLite/routeme.db\`，可用 \`SPRING_DATASOURCE_URL\` 覆盖。"
+          } > release-notes.md
+          gh release create "$TAG" \
+            --title "RouteME $TAG" \
+            --target "$SHA" \
+            --notes-file release-notes.md \
+            dist-out/*
+          echo "### Release $TAG published" >> "$GITHUB_STEP_SUMMARY"
