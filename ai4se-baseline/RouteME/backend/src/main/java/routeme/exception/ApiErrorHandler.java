@@ -43,25 +43,46 @@ public class ApiErrorHandler {
     }
 
         @ExceptionHandler(TripNotFound.class)
-        public ResponseEntity<ErrorResponse> handleTripNotFound(TripNotFound exception) {
-            LOGGER.warn("trip not found: {}", exception.getMessage());
-            return ResponseEntity.status(HttpStatus.NOT_FOUND)
-                    .body(new ErrorResponse("TRIP_NOT_FOUND"));
-        }
+            public ResponseEntity<ErrorResponse> handleTripNotFound(TripNotFound exception) {
+                LOGGER.warn("trip not found: {}", exception.getMessage());
+                return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                        .body(new ErrorResponse("TRIP_NOT_FOUND"));
+            }
 
-        @ExceptionHandler(ForbiddenAction.class)
-        public ResponseEntity<ErrorResponse> handleForbidden(ForbiddenAction exception) {
-            LOGGER.warn("forbidden action: {}", exception.getMessage());
-            return ResponseEntity.status(HttpStatus.FORBIDDEN)
-                    .body(new ErrorResponse("FORBIDDEN"));
-        }
+            @ExceptionHandler(ApplicationNotFound.class)
+            public ResponseEntity<ErrorResponse> handleApplicationNotFound(ApplicationNotFound exception) {
+                LOGGER.warn("application not found: {}", exception.getMessage());
+                return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                        .body(new ErrorResponse("APPLICATION_NOT_FOUND"));
+            }
 
-        @ExceptionHandler(TripNotOpen.class)
-        public ResponseEntity<ErrorResponse> handleTripNotOpen(TripNotOpen exception) {
-            LOGGER.warn("trip not open: {}", exception.getMessage());
-            return ResponseEntity.status(HttpStatus.CONFLICT)
-                    .body(new ErrorResponse("TRIP_NOT_OPEN"));
-        }
+            @ExceptionHandler(ForbiddenAction.class)
+            public ResponseEntity<ErrorResponse> handleForbidden(ForbiddenAction exception) {
+                LOGGER.warn("forbidden action: {}", exception.getMessage());
+                return ResponseEntity.status(HttpStatus.FORBIDDEN)
+                        .body(new ErrorResponse("FORBIDDEN"));
+            }
+
+            @ExceptionHandler(TripNotOpen.class)
+            public ResponseEntity<ErrorResponse> handleTripNotOpen(TripNotOpen exception) {
+                LOGGER.warn("trip not open: {}", exception.getMessage());
+                return ResponseEntity.status(HttpStatus.CONFLICT)
+                        .body(new ErrorResponse("TRIP_NOT_OPEN"));
+            }
+
+            @ExceptionHandler(ApplicationNotPending.class)
+            public ResponseEntity<ErrorResponse> handleApplicationNotPending(ApplicationNotPending exception) {
+                LOGGER.warn("application not pending: {}", exception.getMessage());
+                return ResponseEntity.status(HttpStatus.CONFLICT)
+                        .body(new ErrorResponse("APPLICATION_NOT_PENDING"));
+            }
+
+            @ExceptionHandler(DuplicateApplication.class)
+            public ResponseEntity<ErrorResponse> handleDuplicateApplication(DuplicateApplication exception) {
+                LOGGER.warn("duplicate application: {}", exception.getMessage());
+                return ResponseEntity.status(HttpStatus.CONFLICT)
+                        .body(new ErrorResponse("DUPLICATE_APPLICATION"));
+            }
 
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErrorResponse> handleUnexpected(Exception exception) {

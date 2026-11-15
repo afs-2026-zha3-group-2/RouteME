@@ -39,8 +39,8 @@
 
 ### T5 [backend] 提交与取消申请
 
-- [ ] `POST /trips/{tripId}/applications`：说明选填 ≤120、自己/重复/满员/结束拒绝。
-- [ ] `POST /applications/{id}/cancel`：仅申请者、仅 PENDING。
+- [x] `POST /trips/{tripId}/applications`：说明选填 ≤120、自己/重复/满员/结束拒绝。
+- [x] `POST /applications/{id}/cancel`：仅申请者、仅 PENDING。
 
 **验证：** `cd RouteME/backend; .\mvnw.cmd -Dtest=ApplicationControllerTest#apply*+cancel* test`
 **覆盖：** R2 的 5 个场景
