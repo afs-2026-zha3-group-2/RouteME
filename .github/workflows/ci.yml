@@ -51,3 +51,22 @@ jobs:
         run: npm install --no-audit --no-fund
       - name: Build and test
         run: npm run build && npm test
+
+  docker:
+    name: Docker image (deployable)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build image without pushing
+        uses: docker/build-push-action@v6
+        with:
+          context: ai4se-baseline/RouteME
+          file: ai4se-baseline/RouteME/Dockerfile
+          push: false
+          tags: routeme:ci
+          cache-from: type=gha,scope=routeme-image
+          cache-to: type=gha,mode=max,scope=routeme-image

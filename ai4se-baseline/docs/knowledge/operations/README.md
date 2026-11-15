@@ -59,11 +59,24 @@ Windows     cd RouteME/backend; .\mvnw.cmd spring-boot:run    # 启动 8080
 其他平台     ./mvnw -B verify / ./mvnw spring-boot:run
 ```
 
-- 数据文件 `backend/data/routeme.db`；Flyway 启动时应用 `V1`-`V4`（greetings、app_users、trip_plans），迁移只增不改；重置演示数据时停止后端并删除该文件后重启。
-- 冒烟：`GET /api/greeting`、`GET /api/users`、`GET /api/trips`（`/trips*` 需 `X-User-Id`，1–3 为演示账户）。
+- 数据文件 `backend/data/routeme.db`；Flyway 启动时应用 `V1`–`V8`（greetings、app_users、trip_plans、trip_applications、chat_messages、reports、trip_experiences），迁移只增不改；重置演示数据时停止后端并删除该文件后重启。
+- 冒烟：`GET /api/greeting`、`GET /api/users`、`GET /api/trips`、`GET /api/experiences`（其余 `/trips*`、`/me/*`、`/matches*` 需 `X-User-Id`，1–3 为演示账户）。
 - 契约校验：`cd RouteME; npx @redocly/cli lint openapi.yaml`（0 error），或 `cd RouteME/backend; .\mvnw.cmd -Dtest=OpenApiTest test`。
 - 前端：`cd RouteME/frontend; npm run build; npm test`。
-- 端到端：后端与前端启动后 `cd RouteME/e2e; npx playwright test`（5 个用例；本地门禁，CI 不跑 Playwright）。
+- 端到端：后端与前端启动后 `cd RouteME/e2e; npx playwright test`（11 个用例；本地门禁，CI 不跑 Playwright）。
+
+## CI / CD
+
+```text
+CI  .github/workflows/ci.yml   push/PR：backend verify、frontend build+test、Docker 镜像构建校验
+CD  .github/workflows/cd.yml   CI 在 main 全绿后：打包 jar + dist 工件，触发 Render deploy hook
+```
+
+- **CI（已跑通）**：三个 job —— `backend`（JDK 21，`./mvnw -B -ntp verify`）、`frontend`（Node 22 + npm 11，`npm install` + `build` + `test`）、`docker`（Buildx 构建 `ai4se-baseline/RouteME/Dockerfile`，不推送，验证部署产物可构建）。
+- **CD（Render，单容器）**：`render.yaml` 定义 web 服务 `routeme`（`runtime: docker`，health check `/api/greeting`，`autoDeploy: false`）。镜像内前端 `dist` 打进 Spring Boot `static/`，同域提供页面与 `/api`，SQLite 落在 `/tmp/routeme.db`（免费实例无持久盘，重启即回到种子数据）。
+- **启用步骤**：Render → New → Blueprint → 选本仓库（读取 `render.yaml`）→ 创建服务 → Settings → Deploy Hook → 复制 URL → GitHub 仓库 Settings → Secrets and variables → Actions → 新增 `RENDER_DEPLOY_HOOK_URL`。未配置该 secret 时 CD 只打包并给出 warning，不判失败。
+- **触发顺序**：push `main` → CI 全绿 → CD `workflow_run` 打包并 `curl -X POST $RENDER_DEPLOY_HOOK_URL` → Render 按同一 Dockerfile 重建上线。`autoDeploy: false` 保证 Render 不会抢在 CI 之前发布未验证提交。
+- **回滚**：Render → Deploys → 选上一成功部署 → Redeploy；数据库为临时盘，回滚不涉及数据迁移。
 
 ## 本地启动与数据基线
 
@@ -100,8 +113,8 @@ Windows     cd RouteME/backend; .\mvnw.cmd spring-boot:run    # 启动 8080
 
 - 首次启动自动创建 `backend/data/routeme.db`，Flyway 应用 `V1__create_greetings.sql`、`V2__seed_greeting.sql`；`GET /api/greeting` 应返回 `{"id":1,"message":"Hello World"}`。
 - 重置数据库：停止后端，删除 `backend/data/routeme.db`，重启后重新迁移。
-- 后端测试 `mvnw.cmd test`：接口测试走 H2 内存库，`GreetingDaoSqliteTest` 用临时 SQLite 文件库跑同一组迁移，CI 同样覆盖 SQLite。
+- 后端测试 `mvnw.cmd test`：接口测试走 H2 内存库，`*SqliteTest` 用临时 SQLite 文件库跑同一组迁移，CI 同样覆盖 SQLite。
 - 前端验证 `npm run build`（`tsc --noEmit && vite build`）与 `npm test`（Vitest 纯函数测试），不依赖后端启动。
-- 前端依赖安装：CI（Node 22 / npm 10）执行 `npm ci`；本机 npm 11.x 会把 rolldown 的平台可选依赖判为锁文件缺项而拒绝 `npm ci`，本地改用 `npm install`，要复现 CI 用 `npx npm@10 ci`。
+- 前端依赖安装：CI 与 Docker 镜像固定 Node 22 + `npm install -g npm@11` 后执行 `npm install`（npm 10.9.9 在 Linux 解析 rolldown 可选依赖会崩 “Exit handler never called”）；锁文件 `resolved` 必须是 `registry.npmjs.org`，不得提交公司 Artifactory 地址。
 - 构建产物 `dist/assets/index-*.js` 约 612 kB，来源是 Ant Design 整包；保留警告不静默调高阈值，出现路由级拆分需求时再分包。
 - 本机 TLS：该开发机 Maven 经 TLS 代理下载依赖，代理根证书已导入 JDK `cacerts`（alias `forward-trust-root`）；换机器或换 JDK 需重做一次，CI 使用公有 CA 不受影响。

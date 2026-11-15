@@ -1,0 +1,18 @@
+services:
+  - type: web
+    name: routeme
+    runtime: docker
+    plan: free
+    region: singapore
+    branch: main
+    dockerfilePath: ./ai4se-baseline/RouteME/Dockerfile
+    dockerContext: ./ai4se-baseline/RouteME
+    healthCheckPath: /api/greeting
+    # CD 由 .github/workflows/cd.yml 在 CI 全绿后触发 deploy hook；
+    # 关掉自动部署，避免 Render 抢在 CI 之前上线未验证的提交。
+    autoDeploy: false
+    envVars:
+      - key: SPRING_DATASOURCE_URL
+        value: jdbc:sqlite:/tmp/routeme.db
+      - key: JAVA_TOOL_OPTIONS
+        value: -XX:MaxRAMPercentage=75

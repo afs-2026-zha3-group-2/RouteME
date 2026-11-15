@@ -1,0 +1,83 @@
+name: CD
+
+on:
+  workflow_run:
+    workflows: [CI]
+    types: [completed]
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read
+
+concurrency:
+  group: cd-main
+  cancel-in-progress: true
+
+jobs:
+  package:
+    name: Package deployables
+    if: github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
+
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+          cache-dependency-path: ai4se-baseline/RouteME/backend/pom.xml
+
+      - name: Build backend jar
+        working-directory: ai4se-baseline/RouteME/backend
+        run: |
+          chmod +x mvnw
+          ./mvnw -B -ntp -DskipTests package
+
+      - name: Set up Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: ai4se-baseline/RouteME/frontend/package-lock.json
+
+      - name: Build frontend dist
+        working-directory: ai4se-baseline/RouteME/frontend
+        run: |
+          npm install -g npm@11
+          npm install --no-audit --no-fund
+          npm run build
+
+      - name: Upload deployables
+        uses: actions/upload-artifact@v4
+        with:
+          name: routeme-deployables-${{ github.event.workflow_run.head_sha || github.sha }}
+          if-no-files-found: error
+          path: |
+            ai4se-baseline/RouteME/backend/target/routeme-backend-0.0.1-SNAPSHOT.jar
+            ai4se-baseline/RouteME/frontend/dist
+
+  deploy:
+    name: Deploy to Render
+    needs: package
+    runs-on: ubuntu-latest
+    environment: production
+    steps:
+      - name: Trigger Render deploy hook
+        env:
+          RENDER_DEPLOY_HOOK_URL: ${{ secrets.RENDER_DEPLOY_HOOK_URL }}
+        run: |
+          if [ -z "$RENDER_DEPLOY_HOOK_URL" ]; then
+            echo "::warning title=Render deploy skipped::Add the RENDER_DEPLOY_HOOK_URL repository secret to enable CD."
+            echo "### CD skipped" >> "$GITHUB_STEP_SUMMARY"
+            echo "Add \`RENDER_DEPLOY_HOOK_URL\` (Render → routeme → Settings → Deploy Hook) to enable automatic deployment." >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+          curl -fsS -X POST "$RENDER_DEPLOY_HOOK_URL"
+          echo "### Render deploy triggered" >> "$GITHUB_STEP_SUMMARY"
+          echo "Image is rebuilt by Render from \`ai4se-baseline/RouteME/Dockerfile\`." >> "$GITHUB_STEP_SUMMARY"
