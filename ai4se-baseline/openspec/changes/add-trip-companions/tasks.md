@@ -78,8 +78,8 @@
 
 ### T10 [backend] 举报
 
-- [ ] `POST /reports`：target trip/user、原因枚举、说明 ≤200、返回 `{received: true}`。
-- [ ] `ReportRepository`；不提供处置接口。
+- [x] `POST /reports`：target trip/user、原因枚举、说明 ≤200、返回 `{received: true}`。
+- [x] `ReportRepository`；不提供处置接口。
 
 **验证：** `cd RouteME/backend; .\mvnw.cmd -Dtest=ReportControllerTest test`
 **覆盖：** R6 的举报场景
