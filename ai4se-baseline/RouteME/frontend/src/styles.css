@@ -20,8 +20,30 @@ body {
 .app-header {
   display: flex;
   align-items: center;
+  justify-content: space-between;
   background: var(--app-surface);
   border-bottom: 1px solid var(--app-border);
+}
+
+.brand {
+  font-weight: 600;
+  color: inherit;
+  text-decoration: none;
+}
+
+.gate-page {
+  display: flex;
+  justify-content: center;
+  padding: var(--app-space-xl) var(--app-space-lg);
+}
+
+.gate-card {
+  width: 100%;
+  max-width: var(--home-card-width);
+}
+
+.gate-list {
+  width: 100%;
 }
 
 .home-page {

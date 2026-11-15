@@ -60,9 +60,9 @@
 
 ### T7 [frontend] 契约类型、请求层、路由与身份门
 
-- [ ] `types.ts` 增加契约类型（字段保持 snake_case）；`api.ts` 增加 5 个请求函数，错误按 `code` 原值抛出。
-- [ ] `route.ts` 纯函数解析 `#/`、`#/trips/new`、`#/trips/{id}`；单元测试覆盖未知路由回退。
-- [ ] `IdentityGate` 展示 3 个账户；选择后写 localStorage，请求带 `X-User-Id`；顶栏可切换。
+- [x] `types.ts` 增加契约类型（字段保持 snake_case）；`api.ts` 增加 5 个请求函数，错误按 `code` 原值抛出。
+- [x] `route.ts` 纯函数解析 `#/`、`#/trips/new`、`#/trips/{id}`；单元测试覆盖未知路由回退。
+- [x] `IdentityGate` 展示 3 个账户；选择后写 localStorage，请求带 `X-User-Id`；顶栏可切换。
 
 **验证：** `cd RouteME/frontend; npm run build; npm test`
 **覆盖：** R1 的 2 个场景
