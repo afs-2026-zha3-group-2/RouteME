@@ -9,4 +9,8 @@ public interface TripPlanRepository {
     List<TripPlan> findUnfinished();
 
     Optional<TripPlan> findById(long id);
+
+    long nextId();
+
+    void insert(TripPlan trip);
 }

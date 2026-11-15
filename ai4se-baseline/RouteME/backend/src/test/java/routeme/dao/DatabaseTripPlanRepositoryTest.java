@@ -29,7 +29,10 @@ class DatabaseTripPlanRepositoryTest {
 
         // Then
         assertAll(
-                () -> assertEquals(4, unfinished.size(), "unfinished trips"),
+                () -> assertTrue(unfinished.stream().noneMatch(trip -> trip.status() == TripStatus.COMPLETED),
+                        "unfinished list excludes completed trips"),
+                () -> assertTrue(unfinished.stream().map(TripPlan::id).toList().containsAll(List.of(3L, 4L, 5L, 6L)),
+                        "seeded unfinished trips are returned"),
                 () -> assertEquals(TripStatus.FULL, full.status(), "joined_count reaches capacity"),
                 () -> assertEquals(TripStatus.COMPLETED, completed.status(), "completed_at wins"),
                 () -> assertTrue(full.tags().contains("历史"), "tags parsed from json"),

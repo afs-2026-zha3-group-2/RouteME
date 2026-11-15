@@ -4,8 +4,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import routeme.dto.ErrorResponse;
 
 @RestControllerAdvice(basePackages = "routeme.controller")
@@ -17,6 +19,27 @@ public class ApiErrorHandler {
     public ResponseEntity<ErrorResponse> handleGreetingNotFound(GreetingNotFound exception) {
         return ResponseEntity.status(HttpStatus.NOT_FOUND)
                 .body(new ErrorResponse("GREETING_NOT_FOUND"));
+    }
+
+    @ExceptionHandler(InvalidInput.class)
+    public ResponseEntity<ErrorResponse> handleInvalidInput(InvalidInput exception) {
+        LOGGER.warn("invalid input: {}", exception.getMessage());
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(new ErrorResponse("INVALID_INPUT"));
+    }
+
+    @ExceptionHandler({HttpMessageNotReadableException.class, MethodArgumentTypeMismatchException.class})
+    public ResponseEntity<ErrorResponse> handleUnreadableRequest(Exception exception) {
+        LOGGER.warn("unreadable request: {}", exception.getMessage());
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                .body(new ErrorResponse("INVALID_INPUT"));
+    }
+
+    @ExceptionHandler(DemoUserRequired.class)
+    public ResponseEntity<ErrorResponse> handleDemoUserRequired(DemoUserRequired exception) {
+        LOGGER.warn("demo user required: {}", exception.getMessage());
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                .body(new ErrorResponse("DEMO_USER_REQUIRED"));
     }
 
     @ExceptionHandler(Exception.class)

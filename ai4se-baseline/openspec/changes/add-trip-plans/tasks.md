@@ -34,8 +34,9 @@
 
 ### T4 [backend] 发布与校验
 
-- [ ] `TripCreateRequest` + `TripPlan.create` 工厂校验：标题 ≤ 40、途经点 ≥ 2、人数 2–12、结束不早于出发、预算下限 ≤ 上限、标签 ≤ 5。
-- [ ] `POST /trips` 返回 201 与详情；`joined_count` 初始为 1；缺失/非法返回 400 `INVALID_INPUT`。
+- [x] `TripCreateRequest` + `TripPlan.create` 工厂校验：标题 ≤ 40、途经点 ≥ 2、人数 2–12、结束不早于出发、预算下限 ≤ 上限、标签 ≤ 5、集合区域/说明长度。
+- [x] `POST /trips` 返回 201 与详情；`joined_count` 初始为 1；缺失/非法返回 400 `INVALID_INPUT`，缺少/未知身份返回 401 `DEMO_USER_REQUIRED`。
+- [x] 注入 `Clock`（`config/ClockConfig`）与会话无关的 `nextId`（`MAX(id)+1`，低并发演示环境）。
 
 **验证：** `cd RouteME/backend; .\mvnw.cmd -Dtest=TripControllerTest test`
 **覆盖：** R4 的 8 个场景

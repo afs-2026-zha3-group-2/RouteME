@@ -23,4 +23,12 @@ final class JsonListCodec {
             throw new IllegalStateException("invalid json list in database: " + json, exception);
         }
     }
-}
+
+        static String write(List<String> values) {
+            try {
+                return MAPPER.writeValueAsString(values);
+            } catch (RuntimeException exception) {
+                throw new IllegalStateException("cannot serialize list to json", exception);
+            }
+        }
+    }
