@@ -81,7 +81,7 @@ test('publishes a trip and finds it from the home search', async ({ page }) => {
   await expect(page.locator('.trip-card-link', { hasText: title })).toBeVisible();
 });
 
-test('publisher marks a trip completed and sees the experience placeholder', async ({ page }) => {
+test('publisher marks a trip completed and sees the experience section', async ({ page }) => {
   const title = `E2E 结束行程 ${Date.now()}`;
   const created = await createTripViaApi(page, title);
   await loginAs(page, 1);
@@ -93,7 +93,7 @@ test('publisher marks a trip completed and sees the experience placeholder', asy
   await page.locator('.ant-popconfirm .ant-btn-primary').click();
 
   await expect(page.getByText('已结束').first()).toBeVisible();
-  await expect(page.getByText('游后分享将在体验能力上线后展示')).toBeVisible();
+  await expect(page.getByText('游后真实体验')).toBeVisible();
   await expect(page.getByRole('button', { name: '标记为已结束' })).toHaveCount(0);
 });
 

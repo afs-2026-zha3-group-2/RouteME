@@ -411,13 +411,11 @@ export function TripDetailPage({ currentUser, tripId }: Props) {
                 <Tag>{isCompleted ? tripMessages.detailCompleted : tripMessages.applyEntryDisabled}</Tag>
               )}
             </Space>
+                      </Space>
+                    </Card>
+                  </Space>
 
-            {isCompleted && <Alert type="info" showIcon title={tripMessages.experiencePlaceholder} />}
-          </Space>
-        </Card>
-      </Space>
-
-      <Modal
+                  <Modal
         open={applyOpen}
         title={tripMessages.applyDialogTitle}
         okText={tripMessages.applySubmit}

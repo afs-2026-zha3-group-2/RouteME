@@ -66,8 +66,6 @@ export const tripMessages = {
   applyEntry: '申请同行',
   applyEntryDisabled: '当前不可申请',
   applyEntryOwn: '这是你发布的行程',
-  applyEntryHint: '申请同行将在下一阶段开放',
-  experiencePlaceholder: '游后分享将在体验能力上线后展示',
   detailMarkCompleted: '标记为已结束',
   detailCompleted: '这条行程已结束',
   detailNotFound: '行程不存在',
