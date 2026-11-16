@@ -89,6 +89,8 @@ export function TripCreatePage({ currentUser, fromTripId }: Props) {
     start_date: values.startDate,
     end_date: values.endDate === '' ? values.startDate : values.endDate,
     stops: values.stops.length > 0 ? values.stops : ['至少写出两个途经点'],
+    meeting_area: values.meetingArea.trim() === '' ? null : values.meetingArea,
+    meeting_time: values.meetingTime.trim() === '' ? null : values.meetingTime,
     tags: values.tags,
     capacity: Number(values.capacity) || 2,
     joined_count: 1,
@@ -325,6 +327,20 @@ export function TripCreatePage({ currentUser, fromTripId }: Props) {
                     emptyHint="选中后会把地点名写进集合区域。"
                   />
                 )}
+              </Field>
+
+              <Field
+                label={tripMessages.fieldMeetingTime}
+                htmlFor="trip-meeting-time"
+                error={errors.meetingTime}
+                optional
+              >
+                <Input
+                  {...fieldProps('trip-meeting-time', errors.meetingTime)}
+                  type="datetime-local"
+                  value={values.meetingTime}
+                  onChange={(event) => update({ meetingTime: event.target.value })}
+                />
               </Field>
 
               <div className="form-row">

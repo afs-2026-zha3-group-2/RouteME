@@ -700,7 +700,7 @@ MVP 不做推送与工单；以下为举报路径的 UI 展示面契约。安全
 
 ---
 
-## REQ-013 增补 — 参考此行程发布（S17）
+## REQ-014 增补 — 参考此行程发布（S17）
 
 来源：用户指令与原型故事 S17（`docs/prototype/stories.html:646-659`，P1 / 迭代 3 / 2 点 / 落点发布行程页）、范围边界 `stories.html:718`（专用接口可削减为前端预填）、`RouteME/frontend/src/trips/TripDetailPage.tsx:409-421`、`RouteME/frontend/src/experiences/ExperienceCard.tsx:53-55`、`RouteME/frontend/src/trips/TripCreatePage.tsx:36-38,50-68`、`RouteME/frontend/src/trips/tripForm.ts:23-35,70-72,88-99`、`RouteME/frontend/src/route.ts:21-25`、`RouteME/frontend/src/types.ts:131-143`、`RouteME/openapi.yaml:1774+`、`RouteME/e2e/tests/experiences.spec.ts:63,88-100`、`RouteME/frontend/src/route.test.ts:25-28`、Living Spec `openspec/specs/trip-experiences/spec.md:133-148` 与 `openspec/specs/trip-plans/spec.md:151`。本增补只登记早已交付的参考发布链路，不重定义体验能力、不新增来源字段。
 
@@ -719,27 +719,27 @@ MVP 不做推送与工单；以下为举报路径的 UI 展示面契约。安全
 
 | rule | branch | in \| out | rationale |
 |---|---|---|---|
-| 入口 | 已结束行程详情「参考此行程发布」 | in (REQ-013，已交付) | S17 AC #1；`TripDetailPage.tsx:416-420` |
-| 入口 | 体验卡「参考此行程发布」 | in (REQ-013，已交付) | S17 AC #1 的「体验详情」按 Living Spec 解释为体验卡；`ExperienceCard.tsx:53-55` |
-| 入口 | 进行中 / 招募中行程出现入口 | out (REQ-013) | 参考的是已完成的路线；入口受 `isCompleted` 约束 |
-| 入口 | 新增独立体验详情页 | out (REQ-013) | 现行产品无该页面；新增页面属新需求 |
-| 预填 | 目的地 / 途经点 / 兴趣标签 | in (REQ-013，已交付) | S17 AC #2；Living Spec 场景 1 |
-| 预填 | 标题 / 日期 / 人数 / 集合区域 / 预算 / 说明 | out (REQ-013) | S17 AC #3；Living Spec 场景 2 要求为空 |
-| 校验 | 人数空值、日期缺失、途经点不足 → 拒绝提交 | in (REQ-013，复用 `trip-plans`) | `tripForm.ts:70-72`；E2E `:99-100` |
-| 校验 | 把集合区域升级为必填 | out (REQ-013) | `trip-plans` 明确集合区域选填（`spec.md:151`）；改校验需另开需求 |
-| 归属 | 新计划独立落库、无来源字段 | in (REQ-013，已交付) | S17 AC #4；`TripCreateRequest` 无来源字段 |
-| 归属 | 复制源行程同行者 / 聊天 / 状态 / 统计 | out (REQ-013) | 参考的是路线，不是同行关系 |
-| 归属 | 参考发布专用后端接口 | out (REQ-013) | 原型削减口径（`stories.html:718`）；现行纯前端预填 |
+| 入口 | 已结束行程详情「参考此行程发布」 | in (REQ-014，已交付) | S17 AC #1；`TripDetailPage.tsx:416-420` |
+| 入口 | 体验卡「参考此行程发布」 | in (REQ-014，已交付) | S17 AC #1 的「体验详情」按 Living Spec 解释为体验卡；`ExperienceCard.tsx:53-55` |
+| 入口 | 进行中 / 招募中行程出现入口 | out (REQ-014) | 参考的是已完成的路线；入口受 `isCompleted` 约束 |
+| 入口 | 新增独立体验详情页 | out (REQ-014) | 现行产品无该页面；新增页面属新需求 |
+| 预填 | 目的地 / 途经点 / 兴趣标签 | in (REQ-014，已交付) | S17 AC #2；Living Spec 场景 1 |
+| 预填 | 标题 / 日期 / 人数 / 集合区域 / 预算 / 说明 | out (REQ-014) | S17 AC #3；Living Spec 场景 2 要求为空 |
+| 校验 | 人数空值、日期缺失、途经点不足 → 拒绝提交 | in (REQ-014，复用 `trip-plans`) | `tripForm.ts:70-72`；E2E `:99-100` |
+| 校验 | 把集合区域升级为必填 | out (REQ-014) | `trip-plans` 明确集合区域选填（`spec.md:151`）；改校验需另开需求 |
+| 归属 | 新计划独立落库、无来源字段 | in (REQ-014，已交付) | S17 AC #4；`TripCreateRequest` 无来源字段 |
+| 归属 | 复制源行程同行者 / 聊天 / 状态 / 统计 | out (REQ-014) | 参考的是路线，不是同行关系 |
+| 归属 | 参考发布专用后端接口 | out (REQ-014) | 原型削减口径（`stories.html:718`）；现行纯前端预填 |
 
 ### ③ 跨 REQ 一致性（Cross-REQ consistency）
 
 | capability | per-REQ grain + fields | aligned? | anchor REQ |
 |---|---|---|---|
-| `trip-experiences` | Living Spec「参考此行程发布以产生新灵感」已定义入口、三字段预填与必填重填；REQ-013 只登记证据 | ✓ aligned（无新增 / 无重定义） | `add-trip-experiences`（REQ-004） |
-| 体验落点 | 体验以卡片形态展示；无独立详情页；REQ-013 按体验卡验收 | ✓ aligned | `refine-inspiration-home` / REQ-005 |
-| `trip-plans` 发布校验 | 标题 / 日期 / 人数 / 途经点必填，集合区域 / 预算 / 标签 / 说明选填；REQ-013 只读复用 | ✓ aligned | `add-trip-publish` / REQ-002 |
-| 行程状态 | 入口只对 `completed` 行程开放；REQ-013 不改变状态推导 | ✓ aligned | `add-trip-completion` / REQ-011 |
-| 接口契约 | `TripCreateRequest` 无来源字段，参考发布不新增端点；REQ-013 预期零契约变更 | ✓ aligned | `openapi.yaml` |
+| `trip-experiences` | Living Spec「参考此行程发布以产生新灵感」已定义入口、三字段预填与必填重填；REQ-014 只登记证据 | ✓ aligned（无新增 / 无重定义） | `add-trip-experiences`（REQ-004） |
+| 体验落点 | 体验以卡片形态展示；无独立详情页；REQ-014 按体验卡验收 | ✓ aligned | `refine-inspiration-home` / REQ-005 |
+| `trip-plans` 发布校验 | 标题 / 日期 / 人数 / 途经点必填，集合区域 / 预算 / 标签 / 说明选填；REQ-014 只读复用 | ✓ aligned | `add-trip-publish` / REQ-002 |
+| 行程状态 | 入口只对 `completed` 行程开放；REQ-014 不改变状态推导 | ✓ aligned | `add-trip-completion` / REQ-011 |
+| 接口契约 | `TripCreateRequest` 无来源字段，参考发布不新增端点；REQ-014 预期零契约变更 | ✓ aligned | `openapi.yaml` |
 
 无未收敛的 ✗；A0 门 ⑪ 通过。
 
@@ -758,7 +758,7 @@ MVP 无推送；以下为参考发布路径的 UI 展示面契约。
 
 无展示面缺 display-fields；A0 门 ⑫ 通过。
 
-### 探针记录（REQ-013 参考此行程发布）
+### 探针记录（REQ-014 参考此行程发布）
 
 - 预填直接复用 `loadTrip(currentUser.id, fromTripId)` 的返回；无专用接口，因此源行程被删除或权限变化时只会回退到空表单（`.catch(() => undefined)`），不会阻断发布。
 - 参考发布基底是 `emptyTripForm` 而不是 `initialTripForm`；后者给「今天」默认日期，只用于普通发布，因此参考路径的日期保持为空。
@@ -768,5 +768,5 @@ MVP 无推送；以下为参考发布路径的 UI 展示面契约。
 - 新计划没有来源字段：`TripCreateRequest` / 后端请求模型 / 行程表都没有 `source` / `parent` / `origin`；「无归属」是**结构事实**，不是展示约定。
 - `referenceHint` 的文案把「集合区域」列为需要重选的字段，但没有把它说成必填；与 `trip-plans` 的选填口径一致。
 - E2E `experiences.spec.ts:88-100` 已覆盖点击 → 发布页 → 人数 / 标题为空 → 途经点与标签带入 → 未补齐提交被拦截；`route.test.ts:25-28` 覆盖 `from` 参数保留。
-- `{TBD}`：无。非阻塞项（独立体验详情页、集合区域必填、来源统计）已在 REQ-013 §8 标 deferred。
+- `{TBD}`：无。非阻塞项（独立体验详情页、集合区域必填、来源统计）已在 REQ-014 §8 标 deferred。
 - A0 门 ⑨–⑫：全部通过。

@@ -134,27 +134,55 @@
 
 ---
 
-# Story list — REQ-013（S17 参考此行程发布）
+# Story list — REQ-010（S12 同行消息与集合确认）
+
+- **来源：** 用户 2026-11-16 会话（SDD P1 输入）+ 原型 `docs/prototype/ui.js` `chat()`
+- **口径：** 一条故事 = 一条可验收的垂直切片（页面 + 契约 + 状态迁移），允许前后端同批交付
+- **更新时间：** 2026-11-16
+
+| Story | Title | 角色 | Priority | Iteration | Points | Page | Parent REQ | Change | Status |
+|---|---|---|---|---|---|---|---|---|---|
+| S12-1 | 聊天页按原型重构（会话列表 + 主区 + 头部动作 + 短轮询） | 已匹配同行者 | P0 | 1 | M | 同行消息 | REQ-010 | `refine-trip-chat` | P1 drafted |
+| S12-2 | 退出同行后保留会话并可继续沟通 | 已匹配同行者 | P0 | 1 | S | 同行消息 / 我的旅行 | REQ-010 | `refine-trip-chat` | P1 drafted |
+| S12-3 | 集合时间字段与三处展示 | 发布者 / 同行者 | P0 | 1 | M | 发布行程 / 行程详情 / 同行消息 / 我的旅行 | REQ-010 | `refine-trip-chat` | P1 drafted |
+| S12-4 | 发布者维护集合区域与集合时间 | 发布者 | P0 | 1 | S | 行程详情 | REQ-010 | `refine-trip-chat` | P1 drafted |
+
+### REQ-013 Traceability
+
+| Story | Requirement scenarios | Change spec | Story file |
+|---|---|---|---|
+| S12-1 | REQ-010 §4 #1–#14、#16 | `specs/trip-companions/spec.md`（MODIFIED「匹配后的一对一文字沟通」） | `stories/refine-trip-chat.story.md` |
+| S12-2 | REQ-010 §4 #15 | `specs/trip-companions/spec.md`（MODIFIED「退出同行」） | 同上 |
+| S12-3 | REQ-010 §4 #17–#22 | `specs/trip-plans/spec.md`（MODIFIED 发布 + 详情展示） | 同上 |
+| S12-4 | REQ-010 §4 #23–#25 | `specs/trip-plans/spec.md`（ADDED「发布者维护集合信息」） | 同上 |
+
+### REQ-013 Notes
+
+- 本 change 修改了活规格 `trip-companions` 的「退出同行」与「匹配后的一对一文字沟通」两条需求；归档时用 MODIFIED 替换对应 Requirement 块。
+- 集合区域不需要新增字段；集合时间为新增字段，沿用「本地日期 + 时间、无时区」语义。
+- 并行约束：需先改原型（集合时间与集合编辑入口）再改实现（`@rule:prototype-ui-alignment`）。
+- 统计口径不变：「已退出」不计入「参与同行」。
+# Story list — REQ-014（S17 参考此行程发布）
 
 - **来源：** 原型故事 `docs/prototype/stories.html` S17「参考此行程发布」及其 4 条 AC（P1 / 迭代 3 / 2 点 / 落点页面：发布行程页）
 - **Change：** 无新建。复用已归档 / verified 的 `add-trip-experiences`（REQ-004）
 - **口径：** 一条故事 = 一个发布页 + 复用一份发布契约 + 一次派生（源行程 → 新计划，无归属）
-- **编号说明：** 接在 REQ-012 之后登记为 **REQ-013**；`add-trip-experiences` 已覆盖「参考此行程发布」，本故事按「已验证交付」收口。
+- **编号说明：** 接在 REQ-012 之后登记为 **REQ-014**；`add-trip-experiences` 已覆盖「参考此行程发布」，本故事按「已验证交付」收口。
 
 | Story | Title | 角色 | Priority | Iteration | Points | Page | Parent REQ | Change | Status |
 |---|---|---|---|---|---|---|---|---|---|
-| S17 | 参考此行程发布 | 被体验打动的浏览者 | P1 | 3 | 2 | 发布行程页 | REQ-013 | 无（复用 `add-trip-experiences` / REQ-004） | Verified（2026-11-16，已验证交付收口） |
+| S17 | 参考此行程发布 | 被体验打动的浏览者 | P1 | 3 | 2 | 发布行程页 | REQ-014 | 无（复用 `add-trip-experiences` / REQ-004） | Verified（2026-11-16，已验证交付收口） |
 
-## Traceability（REQ-013）
+## Traceability（REQ-014）
 
 | Story | Requirement scenarios | Change spec | Story file |
 |---|---|---|---|
-| S17 | REQ-013 §4 #1–#6 | 无 Delta；权威为 Living Spec `openspec/specs/trip-experiences/spec.md:133-148`「参考此行程发布以产生新灵感」（2 场景 1:1 映射 REQ-013 #3 / #4） | 无独立故事文件：原型 S17 已提供 AC，本需求以 P1 意图 + Ready 条目承接 |
+| S17 | REQ-014 §4 #1–#6 | 无 Delta；权威为 Living Spec `openspec/specs/trip-experiences/spec.md:133-148`「参考此行程发布以产生新灵感」（2 场景 1:1 映射 REQ-014 #3 / #4） | 无独立故事文件：原型 S17 已提供 AC，本需求以 P1 意图 + Ready 条目承接 |
 
-## Notes（REQ-013）
+## Notes（REQ-014）
 
 - 本故事覆盖两个入口（已结束行程详情、体验卡）、三字段预填、必填字段不沿用与「新计划无归属」；体验内容的发布 / 修改规则归 REQ-004。
 - **「体验详情」按体验卡验收：** 现行产品没有独立体验详情页，Living Spec 用词为「体验卡」；新增详情页属后续需求。
 - **「集合地点必须重新填写」按「不得沿用原行程取值」验收：** `trip-plans` 明确集合区域选填（`spec.md:151`）；本需求不把集合区域升级为必填。
-- **无代码 / 契约 / 迁移 / 测试改动：** 参考发布为纯前端预填，`TripCreateRequest` 无来源字段；证据见 `intents/REQ-013-reference-publish.md`。
-- 用户裁决 D1（已验证交付收口）/ D2（记录人 Jacky）/ D3（编号 REQ-013）。
+- **无代码 / 契约 / 迁移 / 测试改动：** 参考发布为纯前端预填，`TripCreateRequest` 无来源字段；证据见 `intents/REQ-014-reference-publish.md`。
+- 用户裁决 D1（已验证交付收口）/ D2（记录人 Jacky）/ D3（编号 REQ-014）。

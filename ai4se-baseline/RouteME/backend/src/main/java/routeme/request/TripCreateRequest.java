@@ -15,6 +15,7 @@ public record TripCreateRequest(
         LocalDate endDate,
         List<String> stops,
         String meetingArea,
+        String meetingTime,
         String note,
         Integer budgetMinCents,
         Integer budgetMaxCents,

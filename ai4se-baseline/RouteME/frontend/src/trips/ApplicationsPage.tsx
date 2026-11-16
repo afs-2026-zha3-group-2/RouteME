@@ -3,6 +3,7 @@ import { Alert, Button, Card, Skeleton, Space, Tag, Typography, message } from '
 import { acceptApplication, loadTrip, loadTripApplications, rejectApplication } from '../api';
 import { tripMessages } from '../i18n/tripMessages';
 import type { DemoUser, TripApplication, TripDetail } from '../types';
+import { applicationLabel } from './applicationStatus';
 import { statusColor, statusLabel } from '../trips/tripStatus';
 
 type Props = {
@@ -144,6 +145,18 @@ export function ApplicationsPage({ currentUser, tripId }: Props) {
                           </Button>
                         </Space>
                       )}
+                      {application.status === 'accepted' && (
+                        <Space size="small">
+                          <Button
+                            size="small"
+                            onClick={() => {
+                              window.location.hash = `#/chat/${tripId}/${application.applicant.id}`;
+                            }}
+                          >
+                            {tripMessages.applicationsChat}
+                          </Button>
+                        </Space>
+                      )}
                     </Space>
                   </li>
                 ))}
@@ -154,17 +167,4 @@ export function ApplicationsPage({ currentUser, tripId }: Props) {
       </Space>
     </main>
   );
-}
-
-function applicationLabel(status: TripApplication['status']): string {
-  if (status === 'pending') {
-    return tripMessages.applyStatusPending;
-  }
-  if (status === 'accepted') {
-    return tripMessages.applyStatusAccepted;
-  }
-  if (status === 'rejected') {
-    return tripMessages.applyStatusRejected;
-  }
-  return tripMessages.applyStatusCancelled;
 }

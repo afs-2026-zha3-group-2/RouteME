@@ -9,6 +9,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -60,7 +61,7 @@ class OpenApiTest {
 
         // Then
         assertAll(
-                () -> assertEquals("0.9.0", info.get("version"), "info.version"),
+                () -> assertEquals("0.10.0", info.get("version"), "info.version"),
                 () -> assertTrue(paths(document).containsKey("/users"), "/users declared"),
                 () -> assertTrue(paths(document).containsKey("/trips/{tripId}"), "detail path declared"),
                 () -> assertTrue(
@@ -246,7 +247,7 @@ class OpenApiTest {
                         "match required fields"),
                 () -> assertTrue(
                         enums(properties(application).get("status"))
-                                .containsAll(List.of("pending", "accepted", "rejected", "cancelled")),
+                                .containsAll(List.of("pending", "accepted", "rejected", "cancelled", "left")),
                         "application status enum"),
                 () -> assertTrue(
                         required(myTrips)
@@ -311,6 +312,34 @@ class OpenApiTest {
         );
     }
 
+    @Test
+    void in_openApiFile_out_tripMeetingContractDeclared() throws IOException {
+        // Given
+        Map<String, Object> document = loadYaml(SPEC_PATH);
+
+        // When
+        Map<String, Object> putMeeting = operation(document, "/trips/{tripId}/meeting", "put");
+        Map<String, Object> meetingRequest = schema(document, "TripMeetingRequest");
+        Map<String, Map<String, Object>> tripPlanProperties = properties(schema(document, "TripPlan"));
+        Map<String, Map<String, Object>> tripDetailProperties = allOfProperties(document, "TripDetail");
+        Map<String, Map<String, Object>> createProperties = properties(schema(document, "TripCreateRequest"));
+
+        // Then
+        assertAll(
+                () -> assertTrue(responses(putMeeting).containsKey("200"), "meeting update returns 200"),
+                () -> assertTrue(responses(putMeeting).containsKey("400"), "meeting update returns 400"),
+                () -> assertTrue(responses(putMeeting).containsKey("403"), "meeting update returns 403"),
+                () -> assertTrue(responses(putMeeting).containsKey("409"), "meeting update returns 409"),
+                () -> assertTrue(
+                        properties(meetingRequest).keySet().containsAll(List.of("meeting_area", "meeting_time")),
+                        "meeting request fields"),
+                () -> assertTrue(tripPlanProperties.containsKey("meeting_area"), "trip plan meeting_area"),
+                () -> assertTrue(tripPlanProperties.containsKey("meeting_time"), "trip plan meeting_time"),
+                () -> assertTrue(tripDetailProperties.containsKey("meeting_time"), "trip detail meeting_time"),
+                () -> assertTrue(createProperties.containsKey("meeting_time"), "create request meeting_time")
+        );
+    }
+
     private Map<String, Object> loadYaml(Path specPath) throws IOException {
         return new Yaml().load(Files.readString(specPath));
     }
@@ -372,6 +401,24 @@ class OpenApiTest {
             names.add((String) ((Map<String, Object>) shared.get(key)).get("name"));
         }
         return names;
+    }
+
+    @SuppressWarnings("unchecked")
+    private Map<String, Map<String, Object>> allOfProperties(Map<String, Object> document, String schemaName) {
+        Map<String, Object> composed = schema(document, schemaName);
+        Map<String, Map<String, Object>> merged = new LinkedHashMap<>();
+        for (Object part : (List<Object>) composed.get("allOf")) {
+            Map<String, Object> item = (Map<String, Object>) part;
+            Object reference = item.get("$ref");
+            Map<String, Object> target = reference == null
+                    ? item
+                    : schema(document, ((String) reference).substring(((String) reference).lastIndexOf('/') + 1));
+            Object declared = target.get("properties");
+            if (declared != null) {
+                merged.putAll((Map<String, Map<String, Object>>) declared);
+            }
+        }
+        return merged;
     }
 
     @SuppressWarnings("unchecked")

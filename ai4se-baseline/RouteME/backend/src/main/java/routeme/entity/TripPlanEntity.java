@@ -36,6 +36,8 @@ public class TripPlanEntity {
 
     private String meetingArea;
 
+    private String meetingTime;
+
     private String note;
 
     private Integer budgetMinCents;
@@ -66,6 +68,7 @@ public class TripPlanEntity {
         entity.setEndDate(trip.endDate().toString());
         entity.setStops(JsonListUtils.write(trip.stops()));
         entity.setMeetingArea(trip.meetingArea());
+        entity.setMeetingTime(trip.meetingTime());
         entity.setNote(trip.note());
         entity.setBudgetMinCents(trip.budgetMinCents());
         entity.setBudgetMaxCents(trip.budgetMaxCents());
@@ -89,6 +92,7 @@ public class TripPlanEntity {
                 LocalDate.parse(endDate),
                 JsonListUtils.parse(stops),
                 meetingArea,
+                meetingTime,
                 note,
                 budgetMinCents,
                 budgetMaxCents,
@@ -170,6 +174,14 @@ public class TripPlanEntity {
 
     public void setMeetingArea(String meetingArea) {
         this.meetingArea = meetingArea;
+    }
+
+    public String getMeetingTime() {
+        return meetingTime;
+    }
+
+    public void setMeetingTime(String meetingTime) {
+        this.meetingTime = meetingTime;
     }
 
     public String getNote() {

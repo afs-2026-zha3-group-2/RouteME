@@ -130,7 +130,7 @@ class TripMatchTest {
         };
         return new TripPlan(
                 id, 1, title, code, name, LocalDate.parse(startDate), LocalDate.parse(startDate),
-                List.of("集合", "终点"), null, null, null, null, tags, 4, 1, null,
+                List.of("集合", "终点"), null, null, null, null, null, tags, 4, 1, null,
                 Instant.parse("2026-11-01T10:00:00Z"), Instant.parse("2026-11-01T10:00:00Z"));
     }
 }
