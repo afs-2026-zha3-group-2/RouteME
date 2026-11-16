@@ -714,3 +714,96 @@
 - **依赖 / 阶段排序：** 无上游新依赖；建议实施顺序 ① 状态推导与契约（四态 + 日期边界）→ ② 结束权限与批量取消 → ③ 申请资格/处理分支 → ④ 前端入口、提醒与文案 → ⑤ 列表/统计口径与回归。
 - **归档顺序：** 与 `add-match-reason`（`trip-companions`）共享 capability，若同窗口归档需串行；本 change 不依赖其它未归档 change。
 - **质量自检（split-heuristics）：** 垂直切片 ✓；端到端可观察 ✓（进入旅行中 → 结束 → 申请取消/聊天只读/体验入口）；可独立运行 ✓；capability 名真实 ✓；无依赖环 ✓。
+
+## 15. REQ-012 变更影响 — 同行安全提示与举报（S14）
+
+- **日期：** 2026-11-16 ｜ **触发：** `/sdd:pre-spec-req` 内嵌 impact-analysis（4 项展示口径问题已由用户裁决，blocking OQ 与 DoR BLOCKER 均已清零）
+- **粒度：** 应用架构（页面 / 安全展示 / 举报反馈），非代码设计
+- **基线：** `origin/main@9ee38e1`
+
+### 15.1 Requirement set
+
+- `requirement-workspace/requirements/REQ-012-safety-report.md`（六字段 + 7 场景 + OQ + DoR）
+- `requirement-workspace/intents/REQ-012-safety-report.md`
+- 能力：`trip-companions`（MODIFIED）；`trip-plans` 只读消费。
+
+### 15.2 As-is asset inventory（evidence paths）
+
+| 资产 | 路径 | 现状 |
+|---|---|---|
+| 需求条目 | `requirement-workspace/requirements/REQ-012-safety-report.md` | 本变更新增；7 场景；用户裁决 D1–D4；DoR / A0 全过 |
+| Living Spec | `openspec/specs/trip-companions/spec.md` | 「我的旅行聚合与最低安全能力」已含安全提示常驻、举报回执、不公开电话 / 证件 / 住址；4 场景 |
+| 已归档 change | `openspec/changes/archive/2026-11-15-add-trip-companions/` | 安全提示、举报入口与回执的原始实现与验收 |
+| 安全组件 | `RouteME/frontend/src/safety/SafetyNote.tsx` | `Alert` 单段 `safetyBody` + 可选举报按钮；无三条结构、无集合区域 |
+| 举报弹窗 | `RouteME/frontend/src/safety/ReportModal.tsx` | 对象标注 + 四类原因 + 说明 ≤200 + 回执；缺身份保密与紧急求助说明 |
+| 详情页 | `RouteME/frontend/src/trips/TripDetailPage.tsx` | 无条件渲染 `SafetyNote onReport`；已展示 `meeting_area` |
+| 聊天页 | `RouteME/frontend/src/chat/ChatPage.tsx` | 渲染 `SafetyNote onReport`；已加载行程对象（含 `meeting_area`） |
+| 体验页（范围外） | `RouteME/frontend/src/experiences/ShareExperiencePage.tsx` | 复用 `SafetyNote`（无举报按钮）；本需求保留其简化形态 |
+| 文案 | `RouteME/frontend/src/i18n/tripMessages.ts` | `safetyTitle` / `safetyBody` / `reportSuccess`「举报已收到，我们会记录处理。」 |
+| 后端 | `ReportController` / `ReportServiceImpl` / `ReportControllerTest` | `POST /api/reports` → 201 `{received:true}`；校验目标类型、目标存在与原因 |
+| 契约 | `RouteME/openapi.yaml` 0.8.1 | `ReportRequest`（`target_type` ∈ trip / user，`reason` 四值，`note ≤200`）、`ReportReceipt` |
+| 原型 | `docs/prototype/ui.js` `safetyPanel()` / `chat-safety` / `reportModal()` | 三条安全事实、聊天安全行、举报弹窗与身份保密 / 紧急求助说明 |
+| 前端 / E2E 测试 | `frontend/src/**/*.test.ts(x)`；`e2e/tests/companions.spec.ts`、`profiles.spec.ts` | companions 断言旧回执文案；profiles 断言弹窗标题与隐私词黑名单 |
+| 阶段记录 | `docs/sdd/README.md` | 阶段索引；尚无 `refine-safety-report` 行 |
+
+### 15.3 As-is → proposed delta（逐资产）
+
+| 资产 | As-is | Proposed delta |
+|---|---|---|
+| 详情页安全区 | 单段 `safetyBody` | 原型三条文本列表：公共场所 + 本行程集合区域 / 告知亲友 / 不公开电话证件住址 + 拒绝转账或索要证件 |
+| 聊天页安全区 | 与详情页同一段文字 | 一行同义提示：公共场所 + 集合区域（或待确认）+ 不转账不提供证件 |
+| 举报入口 | 详情页与聊天页均有按钮；详情页对本人行程也显示 | 详情页「举报这条行程」仅他人行程；聊天页「举报这位用户」常驻（含只读） |
+| 举报弹窗 | 对象 + 原因 + 说明 + 回执 | 增加「我们不会向对方透露你的身份」与紧急求助说明；回执文案改为「已收到，我们会处理」 |
+| 举报原因 | 四类共享词表 | **不变**（用户裁决 D2） |
+| 后端 / 契约 / 迁移 | 规则与错误码已存在 | **不变**；保留 `ReportControllerTest` 回归 |
+| 集合区域 | 详情元数据已展示 | 安全区复用同一字段；空值回退「尚未填写 / 待确认」 |
+| 体验发布页 | 复用 `SafetyNote` | **不变**：保留无举报按钮的简化提示 |
+| Living Spec | 4 场景（含安全与回执） | MODIFIED：保留「我的旅行」两个场景，补三条提示 / 聊天提示 / 本人入口 / 失败重试场景 |
+| E2E | 旧回执文案断言 | 改为「已收到，我们会处理」；补三条提示、本人无举报、失败重试断言 |
+
+### 15.4 Blast radius（应用架构）
+
+- **页面（2）：** 行程详情页、聊天页；首页、我的旅行、体验页不改。
+- **能力（1）：** `trip-companions`（MODIFIED「我的旅行聚合与最低安全能力」）；`trip-plans` 只读消费集合区域。
+- **接口契约（0）：** 无新增端点 / 字段 / 错误码 / 版本变更。
+- **数据 / 迁移（0）：** 无新表、无迁移、无列变更。
+- **测试触点：** 前端组件测试（提示三条、集合区域回退、举报入口可见性、回执态、失败保留内容）；E2E `companions.spec.ts`（举报回执）、详情页 / 聊天页提示断言；后端 `ReportControllerTest` 回归（不改实现）。
+- **知识库：** P1 不改 `docs/knowledge/`；归档时回写安全提示与回执口径。
+
+### 15.5 Artifact impact（specs / tests / docs）
+
+| 类型 | 影响 |
+|---|---|
+| Spec（change delta） | `openspec/changes/refine-safety-report/specs/trip-companions/spec.md`（MODIFIED，1 条 Requirement，保留我的旅行 2 场景 + 安全相关 7 场景） |
+| Proposal | `openspec/changes/refine-safety-report/proposal.md` |
+| Story | 不新增故事文件：原型 `stories.html` S14 已存在；本 change 以 proposal + delta 承接（与 REQ-010 同口径） |
+| Registry / handoff | 新增 REQ-012 行与 REQ-012 → `refine-safety-report` 映射 |
+| Tests / 代码 / design / tasks | 不在 P1 范围；交 P3 / P4 起 |
+| Living Spec | 归档时用 MODIFIED 替换 `openspec/specs/trip-companions/spec.md` 的「我的旅行聚合与最低安全能力」块 |
+| 阶段记录 | `docs/sdd/refine-safety-report/p1-intent.md`；`docs/sdd/README.md` 索引 |
+
+### 15.6 Dual-track notes（OpenSpec vs agile）
+
+- **OpenSpec 轨（主）：** 单 change `refine-safety-report`，一份 `trip-companions` delta；不拆内部 change。
+- **Agile 轨：** 原型故事 S14（迭代 3 / 1 点）即本 change 的业务口径；不另建故事文件，避免与原型故事双维护。
+
+### 15.7 Risks & blockers
+
+| 级别 | 项 | 说明 / 缓解 |
+|---|---|---|
+| Risk | 回执文案变更影响既有 E2E | `companions.spec.ts` 断言旧文案，需同步改为「已收到，我们会处理」；`profiles.spec.ts` 只断言标题与隐私词 |
+| Risk | 详情页 / 聊天页提示文案重复维护 | 三条文本与聊天行集中放入 `tripMessages`，组件只组装，避免两处各写一份 |
+| Risk | 集合区域为空时的回退 | 统一回退文案（详情「尚未填写，出发前请在聊天中确认」/ 聊天「待确认」），由组件派生，不写死空串 |
+| Risk | `SafetyNote` 被体验发布页复用 | 保留可选参数形态；体验页不传集合区域时仍渲染简化提示，不移除该调用点 |
+| Risk | 本人行程隐藏举报后被误认为功能缺失 | 安全提示保留，发布者仍有结束行程 / 查看申请等操作；AC 明确「本人行程无举报入口」 |
+| Risk | 举报原因词表与原型不一致 | 用户裁决 D2 明确以现有四类为准；原型分目标词表记为后续候选（non-blocking） |
+| Blocker | 无 | blocking OQ=0、DoR BLOCKER=0、A0 ⑨–⑫ 全过；无外部依赖 |
+
+### 15.8 Suggested split boundaries（供 proposal-split / story-split）
+
+- **一个 change：** `refine-safety-report` ← REQ-012（S14，页面级垂直切片）。
+- **不拆故事：** 原型 S14 已提供 AC；再拆会与原型故事列表双维护。
+- **不并入 `add-trip-companions`：** 该 change 已归档；本需求只是展示与反馈增量，追加归档包会打乱历史边界。
+- **不并入 `refine-trip-application`：** 两者都改 `trip-companions` 的不同 Requirement 块，且该 change 已进入 G2 阶段；并行会互相拖慢归档。
+- **阶段：** 单阶段；依赖已归档的 `trip-companions`，无阻塞上游。
+- **质量自检（split-heuristics）：** 子目标一句话可说明 ✓；端到端可观察（打开详情 / 聊天 → 读三条提示 → 举报 → 拿到回执）✓；可独立运行 ✓；capability 名真实 ✓；无依赖环 ✓。

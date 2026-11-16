@@ -103,3 +103,29 @@
 - 双 capability（`trip-plans` + `trip-companions`）按 REQ-005 / REQ-007 / REQ-008 先例，归档前需 SA 具名追认例外。
 - 与 `add-match-reason` 共享 `trip-companions`，同窗口归档需串行。
 - 原始故事点 1，不再拆分；四态与结束操作必须同批交付，否则验收无法闭环。
+
+---
+
+# Story list — REQ-012（S14 同行安全提示与举报）
+
+- **来源：** 原型故事 `docs/prototype/stories.html` S14「看到安全提示与举报入口」及其 3 条 AC（迭代 3 / P0 / 1 点 / 落点页面：详情页 + 聊天页）
+- **Change：** `refine-safety-report`（`trip-companions` MODIFIED）
+- **口径：** 一条故事 = 两个既有页面 + 复用一份举报契约 + 一次状态迁移（举报表单 → 回执）
+- **编号说明：** 2026-11-16 起草时为 REQ-011；同日 `main` 将 S15 结束行程登记为 REQ-011（`add-trip-completion`），按「后到者顺延」改为 **REQ-012**。
+
+| Story | Title | 角色 | Priority | Iteration | Points | Page | Parent REQ | Change | Status |
+|---|---|---|---|---|---|---|---|---|---|
+| S14 | 看到安全提示与举报入口 | 与陌生人同行的学生 | P0 | 3 | 1 | 详情页 / 聊天页 | REQ-012 | `refine-safety-report` | P1 drafted（2026-11-16） |
+
+## Traceability（REQ-012）
+
+| Story | Requirement scenarios | Change spec | Story file |
+|---|---|---|---|
+| S14 | REQ-012 §4 #1–#7 | `openspec/changes/refine-safety-report/specs/trip-companions/spec.md` | 无独立故事文件：原型 S14 已提供 AC，本 change 以 proposal + delta 承接（与 REQ-010 同口径） |
+
+## Notes（REQ-012）
+
+- 本故事只覆盖详情页与聊天页的安全提示、举报入口与回执；体验发布页复用同一提示组件但不在落点内，证据发布页入口、举报后台处置、求助热线与位置共享不在本故事内。
+- 安全提示与举报的**能力底座**由已归档的 `add-trip-companions` 提供；本故事只收敛展示口径（三条文本、集合区域、回执文案、本人行程入口）与边界说明，不重复定义举报记录与隐私红线。
+- 用户裁决 D1–D4：按原型三条文本列表（详情页带集合区域、聊天页一行）；举报原因沿用现有四类、不升契约；本人行程隐藏举报入口；编号 REQ-012 / `refine-safety-report`。
+- 子目标一句话可说明且端到端可观察（进入详情 / 聊天 → 读三条提示 → 举报 → 拿到「已收到，我们会处理」），故不再拆分。
