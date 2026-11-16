@@ -26,6 +26,7 @@
 | `npm run build`（frontend） | `quality/rules.md` | 0 | tsc --noEmit + vite build 通过 |
 | `npm test`（frontend） | `quality/rules.md` | 0 | 13 files / 110 tests 全通过（含 `profileFormat.test.ts` 9 条） |
 | `npx playwright test`（全量，干净库） | tasks T11 / atdd-design | 0 | 43 passed / 0 failed（`profiles.spec.ts` 8、`profile.spec.ts` 10） |
+| `gh pr checks 21` | `@rule:pipeline`（远端 CI） | 0 | CI/Backend、CI/Frontend 均 success（run [43807162099](https://github.com/afs-2026-zha3-group-2/RouteME/actions/runs/43807162099)，commit `b9fba48`） |
 
 > 说明：E2E 使用全新库 `SPRING_DATASOURCE_URL=jdbc:sqlite:target/e2e-clean.db`，避免多轮运行污染统计断言；`docs/feedback/verification-commands.md` 仍是占位模板（probe `whitelist_empty:yes`），按 C2 采用规则已声明的命令。
 > 首次执行的 `verify` 因 `target/test-classes` 残留旧包 `routeme.model.TripMatchTest` 报 `ClassNotFoundException`；`clean verify` 后消失，属构建缓存问题，非代码缺陷。
@@ -65,7 +66,7 @@
 
 | Slot | Status | Source |
 |------|--------|--------|
-| E1 Machine | Pass | 本报告 Local commands（本地 CI 等价命令；PR #21 的远端 checks 仍为空，尚无 ci-report） |
+| E1 Machine | Pass | 本报告 Local commands + 远端 CI run 43807162099（b9fba48，2/2 success） |
 | E2 AI | Pass | 本报告 Evidence checklist + Local commands |
 | E3 Human | Pending | G2 由 VL 签署；本次未自签 |
 
@@ -90,7 +91,7 @@
 | # | Finding | Mark | Location | Suggestion |
 |---|---------|------|----------|------------|
 | 1 | 命令白名单文件仍是占位模板，probe `whitelist_empty:yes`，只能采用规则声明的命令 | [fact] | `docs/feedback/verification-commands.md` | 由 harness owner 补齐真实命令后，后续 P4 可改用 `run-verify.sh` |
-| 2 | PR #21 远端的 status checks 为空（mergeable 因持续合并 main 反复变化），本地无法取得 CI 结论 | [fact] | GitHub PR #21 | 待 PR 可合并后由 `/sdd:pipeline-report phase=ci` 采集，或人工确认 |
+| 2 | 首次取 checks 时远端 status rollup 为空（推送后尚未触发） | [fact] | GitHub PR #21 | 已解决：推送 `b9fba48` 后 CI/Backend 与 CI/Frontend 均 success（run 43807162099）；后续 G2 直接引用该 run |
 | 3 | E2E 依赖本机 `e2e/node_modules` 与 Playwright Chromium；统计断言要求干净库 | [fact] | `e2e/` | 在 README/流水线固定 `npm ci && npx playwright install chromium`，并显式指定干净 DB URL |
 
 ### SUGGESTION
