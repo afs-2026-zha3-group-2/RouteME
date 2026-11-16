@@ -19,7 +19,7 @@
 | Requirements | `requirement-workspace/requirements/REQ-008-user-profile.md` | §4 十七个场景；§5 必填 / 选填边界（学校选填）；§8 blocking OQ = 0；DoR BLOCKER = 0 |
 | Intent | `requirement-workspace/intents/REQ-008-user-profile.md` | 候选能力 `user-profile` + `user-auth`；Discovery Decision `Go`；D1–D6 已裁决 |
 | Story S18 | `requirement-workspace/stories/add-user-profile.story.md` | P0 / 迭代 1 / 3 点；AC 与场景映射齐全 |
-| Impact brief | `requirement-workspace/impact-brief.md` §11 | as-is 盘点、delta、blast radius、风险与拆分边界；迁移按 8 列计 |
+| Impact brief | `requirement-workspace/impact-brief.md` §12 | as-is 盘点、delta、blast radius、风险与拆分边界；迁移按 8 列计 |
 | Deep-dive | `requirement-workspace/deep-dive.md`「REQ-008 增补」 | ①–④ 四表，A0 ⑨–⑫ 通过 |
 | Dependency | `openspec/changes/archive/2026-11-16-add-user-auth/` | 已归档；提供注册、会话与 `DemoUser` 既有契约 |
 | Implementation evidence | `frontend/src/identity/AuthPanel.tsx`、`authForm.ts`、`frontend/src/trip*`、`backend/.../AuthController.java`、`V3` / `V9` 迁移 | 注册当前收集昵称 / 学校 / 简介 / 兴趣；`app_users` 无资料新列；既有接口只返回 6 个用户字段 |
