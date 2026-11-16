@@ -40,3 +40,11 @@ node 脚本逐 Requirement 核对（Living + add-trip-publish + refine-trip-chat
 | P0 | `c6b0216` |
 | P1 | `5f28d81` |
 | P2 | 本阶段提交 |
+
+## 7. R2 轮（2026-11-16 三级地图架构）
+
+- **Delta：** 9 Requirement / 66 Scenario（MODIFIED 4 + ADDED 5）；取代 R1「全省概览」「暂无离线点位」两场景为三级级联与统一 fallback。
+- **产出：** `dov-ac-review.md` §R2（AC 14/14 + DoV 5/5）；`g1-decision-r2.md`（Pass Conditional C1 延续）；`docs/reviews/20261116-refine-trip-map-spec-review-2.md`（Pass，3 advisory 带入 P3）。
+- **校验：** `openspec validate refine-trip-map --strict` valid（仅 C1 INFO）；基线机器核对 missing=[]。
+- **签署：** Delta WAYNE；spec-review-2 WAYNE + Jay；G1-r2 WAYNE + Karena（2026-11-16 已签）。
+- **阶段结论：Pass（G1-r2 Conditional C1）。** 下一步 P3-r2。

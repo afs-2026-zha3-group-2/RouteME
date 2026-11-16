@@ -31,3 +31,32 @@
 `openspec validate --strict` / Redocly lint / `mvnw -B -ntp verify`（OpenApiTest 0.11.0 + meeting_areas 断言）/ 前端 build+test / E2E 全量 / 1440·768·390 × 浅·深走查。
 
 **结论：AC 8/8 + DoV 5/5，进入一致性检查与 G1。**
+
+---
+
+## R2 增补（2026-11-16，三级地图架构）
+
+- **输入：** proposal §R2 验收信号 9–14；Delta 增至 9 Requirement / 66 Scenario（MODIFIED 4 + ADDED 5）。
+
+### R2 AC → 场景映射（6/6）
+
+| AC | 摘要 | 承接场景 | 结论 |
+|---|---|---|---|
+| AC9 | 三级切换（中国→省→城市） | ADDED 探索「中国地图选省」「省级地图选城市且无连线」「城市旅行地图六 Layer」 | Pass |
+| AC10 | 路线生成＋编号同步＋预计统计 | ADDED 路线「少于两个…」「生成路线后编号与列表同步」「统计卡标预计」「移除景点即时同步」 | Pass |
+| AC11 | 同行者气泡/面板/资料/邀请 | ADDED 同行者「聚合气泡由数据计算」「面板展示共同景点与偏好」「查看资料与发起邀请」「无真实行程…演示提示」 | Pass |
+| AC12 | 面包屑回层＋Zoom 不换层＋搜索直达 | ADDED 探索「面包屑逐级返回」「搜索省或市直达」+ MODIFIED「面包屑回层与 Zoom 不换层」 | Pass |
+| AC13 | fallback＋10 城 MVP | ADDED 探索「无数据城市 fallback」「MVP 十城可进入」+ MODIFIED「目的地无城市数据时统一 fallback」 | Pass |
+| AC14 | 现有功能回归不破 | R1 AC1–AC8 场景保留＋E2E 全量（P4 执行） | Pass |
+
+### R2 DoV（5/5）
+
+| id | 检查 | 结论 |
+|---|---|---|
+| D1 | 每 AC ≥1 可判定场景 | Pass（6/6） |
+| D2 | 可观察 | Pass：路由 hash、Layer DOM、百分比数值、fallback 文案均可断言 |
+| D3 | 边界显式 | Pass：≥2 生成门槛、≤8 途经点、重合度=共同/路线长、预计标注、Mock 邀请不伪造 |
+| D4 | 无平行权威 | Pass：R1「全省概览」场景显式取代为三级级联；地图视觉口径单一来源本 delta |
+| D5 | 基线保留 | Pass：R2 仅取代 R1 新增场景（全省概览/暂无离线点位），Living 基线场景（发布 18/详情 6/维护 5）未删；机器核对 missing=[] |
+
+**R2 结论：AC 14/14 + DoV 5/5，进入 G1-r2。**
