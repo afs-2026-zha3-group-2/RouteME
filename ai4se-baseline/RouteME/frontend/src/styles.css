@@ -1174,6 +1174,35 @@ svg {
   border-top: 0;
 }
 
+/* Date fields reuse the profile birthday picker: full width, and the panel anchors to
+   the field because antd 6.7 parks it off-screen under prefers-reduced-motion. */
+.publish-page .trip-date {
+  width: 100%;
+}
+
+.trip-date-anchor {
+  position: relative;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .trip-date-popup {
+    left: 0 !important;
+    right: auto !important;
+    top: calc(100% + 4px) !important;
+    bottom: auto !important;
+  }
+
+  /* The global reduced-motion rule shortens the appear animation to 0.01ms, which can
+     leave the panel parked on antd's zero-opacity "prepare" frame. Keep it visible. */
+  .trip-date-popup.ant-slide-up-appear-prepare,
+  .trip-date-popup.ant-slide-up-enter-prepare,
+  .trip-date-popup.ant-slide-up-appear,
+  .trip-date-popup.ant-slide-up-enter {
+    opacity: 1 !important;
+    transform: none !important;
+  }
+}
+
 @media (max-width: 900px) {
   .publish-grid {
     grid-template-columns: 1fr;
