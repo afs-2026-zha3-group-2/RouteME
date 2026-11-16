@@ -26,7 +26,7 @@ async function createCompletedTrip(page: Page, title: string) {
     headers: { 'X-User-Id': '1', 'Content-Type': 'application/json' },
     data: {
       title,
-      destination: '珠海',
+      destination_code: '440400',
       start_date: '2026-12-20',
       end_date: '2026-12-20',
       stops: ['香洲港集合', '情侣路骑行'],

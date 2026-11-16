@@ -15,12 +15,19 @@ async function pickPlace(page: Page, field: string, name: string) {
   await expect(page.locator('.place-chip-name', { hasText: name }).first()).toBeVisible();
 }
 
+async function pickDestination(page: Page, province: string, city: string) {
+  await page.getByLabel('目的地').click();
+  await page.locator('.ant-cascader-menu-item', { hasText: province }).first().click();
+  await page.locator('.ant-cascader-menu-item', { hasText: city }).first().click();
+  await page.keyboard.press('Escape');
+}
+
 async function createTripViaApi(page: Page, title: string) {
   const response = await page.request.post(`${API}/trips`, {
     headers: { 'X-User-Id': '1', 'Content-Type': 'application/json' },
     data: {
       title,
-      destination: '珠海',
+      destination_code: '440400',
       start_date: '2026-12-01',
       end_date: '2026-12-01',
       stops: ['香洲港集合', '情侣路骑行'],
@@ -71,7 +78,7 @@ test('publishes a trip and finds it from the home search', async ({ page }) => {
   await page.goto('/#/trips/new');
 
   await page.getByLabel('标题').fill(title);
-  await pickPlace(page, '目的地', '珠海');
+  await pickDestination(page, '广东省', '珠海');
   await page.getByLabel('出发日期').fill('2026-12-05');
   await page.getByLabel('结束日期').fill('2026-12-05');
   await pickPlace(page, '途经点', '香洲港');
@@ -82,6 +89,7 @@ test('publishes a trip and finds it from the home search', async ({ page }) => {
 
   await expect(page).toHaveURL(/#\/trips\/\d+$/);
   await expect(page.getByRole('heading', { name: title })).toBeVisible();
+  await expect(page.getByText('珠海').first()).toBeVisible();
   await expect(page.getByText('招募中').first()).toBeVisible();
   await expect(page.getByText('这是你发布的行程')).toBeVisible();
 
