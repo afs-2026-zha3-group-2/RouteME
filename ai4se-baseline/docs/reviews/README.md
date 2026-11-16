@@ -37,7 +37,21 @@ docs/reviews/20261116-add-user-auth-tasks-review.md
 2. 评审结论：`Pass` / `Partial` / `Fail`。
 3. 结构化发现：`id`、严重度（BLOCKER / WARNING / SUGGESTION）、规则锚点、位置、问题、建议改法、证据。
 4. 残余风险（可为空）。
-5. **批准记录**：批准人姓名 + 批准时间；只在 approve 后追加，不改写评审结论。
+5. **签署记录**：`docs/reviews/` 下的评审报告一律由 **WAYNE + 当前开发者** 两人签署，每人一条「批准人 / 批准时间」。工件本体的签署记录也追加在同一份报告里，用「对象 + 签署位」区分；只在 approve 后追加，不改写评审结论。
+
+## 签署规则
+
+| 对象 | 签署人 | 签署位 |
+|---|---|---|
+| `docs/reviews/<yyyymmdd>-<change-id>-<artifact>-review.md` | WAYNE + 当前开发者 | 2 |
+| `docs/reviews/<yyyymmdd>-<change-id>-all-specs-review.md` | WAYNE + 当前开发者 | 2 |
+| `proposal.md` / Delta Spec（工件本体） | WAYNE | 1 |
+| `design.md` / `tasks.md`（工件本体） | 当前开发者 + 1 名非当前开发者且非 WAYNE 的成员 | 2 |
+
+- 报告与工件分开签：报告固定「WAYNE + 当前开发者」，工件本体按上表；同一人不得在一份对象上占两个签署位。
+- 除 WAYNE 外的第二签署人候选：Jay / Lewis / Jacky / Karena / Neal。
+- 签署位缺一即未批准；执行者 MUST 在报告写完的同一回合停下发问，不得默认沿用名册姓名。
+- 完整口径见 `@rule:artifact-review-gate`（`docs/knowledge/rules/process/rules.md#artifact-review-gate`）。
 
 ## 变更级全量评审（all-specs-review）
 
@@ -55,8 +69,8 @@ docs/reviews/<yyyymmdd>-<change-id>-all-specs-review.md
 ## 流转规则
 
 1. 工件写完，同一回合内调用 `all-specs-review` 技能生成报告。
-2. 报告写完后停下，问当前开发者是否批准进入下一步。
-3. 只有明确 approve 才继续；未回复或回复含糊视为未批准。
-4. 结论为 `Fail` 时先修复并重评，直到至少 `Partial` 再请求 approve。
+2. 报告写完后停下，按「签署规则」一次问齐该工件的全部签署位（工件本体 + 评审报告）；`design` / `tasks` 还要指定 1 名非当前开发者且非 WAYNE 的第二签署人。
+3. 只有全部签署位明确 approve 才继续；任一签署位缺失、未回复或回复含糊视为未批准。
+4. 结论为 `Fail` 时先修复并重评，直到至少 `Partial` 再请求签署。
 
 规则原文：`docs/knowledge/rules/process/rules.md#artifact-review-gate`

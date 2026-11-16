@@ -13,7 +13,7 @@
 | ID | 规则 | 优先级 | 触发 | 适用栈 |
 |---|---|---|---|---|
 | spec-first | 先写规格再写代码 | Critical | always | — |
-| artifact-review-gate | 每份工件生成后先评审并由开发者批准再进入下一步 | Critical | always | — |
+| artifact-review-gate | 每份工件生成后先评审、再按签署人矩阵签齐再进入下一步 | Critical | always | — |
 | tdd-cycle | TDD Red / Green / Refactor 循环 | Critical | always | — |
 | git-commit-conventions | 提交时机、commit message 与提交前检查 | Critical | always | — |
 | git-branching-and-pr | 分支、PR、换行符与回滚 | High | always | — |
@@ -60,7 +60,23 @@
 
 ## artifact-review-gate
 
-**每份工件生成后先评审、再由当前开发者批准，才能进入下一步。** 覆盖四份工件：`proposal.md`、`specs/<capability>/spec.md`（Delta Spec）、`design.md`、`tasks.md`。
+**每份工件生成后先评审、再按签署人矩阵签齐，才能进入下一步。** 覆盖四份工件：`proposal.md`、`specs/<capability>/spec.md`（Delta Spec）、`design.md`、`tasks.md`，以及它们对应的 `docs/reviews/` 评审报告。
+
+### 签署人矩阵
+
+| 对象 | 签署人 | 签署位 |
+|---|---|---|
+| `proposal.md` | WAYNE | 1 |
+| `specs/<capability>/spec.md`（Delta Spec） | WAYNE | 1 |
+| `design.md` | 当前开发者 + 1 名非当前开发者且非 WAYNE 的成员 | 2 |
+| `tasks.md` | 当前开发者 + 1 名非当前开发者且非 WAYNE 的成员 | 2 |
+| `docs/reviews/<yyyymmdd>-<change-id>-<artifact>-review.md`（工件评审报告） | WAYNE + 当前开发者 | 2 |
+| `docs/reviews/<yyyymmdd>-<change-id>-all-specs-review.md`（全量评审报告） | WAYNE + 当前开发者 | 2 |
+
+- 姓名取自 `docs/sdd/README.md#角色名册`；除 WAYNE 外的候选为 Jay / Lewis / Jacky / Karena / Neal。
+- 同一份对象上一个人只占一个签署位：`design.md` / `tasks.md` 的第二签署人 MUST NOT 是当前开发者本人，也 MUST NOT 是 WAYNE。
+- 当前开发者 MUST NOT 代签 WAYNE 的签署位；WAYNE 未签时该工件保持未批准，不得用 `AO` / `SA` / `IO` 等角色词占位。
+- 签署位缺一即视为未批准；每份报告须写全每条「批准人 / 批准时间」，2 个签署位就写两条。
 
 ### 触发与顺序
 
@@ -69,11 +85,11 @@
    - `<artifact>` 取 `proposal` / `spec` / `design` / `tasks` 四值之一。
    - 例：`docs/reviews/20261116-add-user-auth-proposal-review.md`。
    - 一份工件一份报告；修改后重评不得覆盖旧报告，用日期区分（同一天重评加序号，如 `-review-2.md`）。
-3. 报告写完后**必须停下**，问当前开发者：
-   > 本次 `<artifact>` 评审结论为 `<Pass/Partial/Fail>`，是否批准并要求我进入下一步？
-4. 只有拿到**明确的 approve** 才继续下一份工件或下一阶段。未回复、回复含糊（如「先看看」）一律视为未批准，保持停在当前步骤。
-5. 评审结论为 `Fail` 时不得「带病前进」：先按报告的建议修好并重评，直到结论至少为 `Partial`，再请求 approve。
-6. 询问姓名与 approve 主体按 `@rule:documentation/rules.md#记录人与签署人` 执行；approve 只在报告里追加「批准人 / 批准时间」，不改写评审结论。
+3. 报告写完后**必须停下**，按签署人矩阵向当前签署人发起询问，一次问齐该工件的全部签署位（工件本身 + 对应评审报告）：
+   > 本次 `<artifact>` 评审结论为 `<Pass/Partial/Fail>`。按签署规则：工件由 `<签署人>` 签署；评审报告由 WAYNE + 当前开发者签署。请给出批准人姓名与批准时间；若本工件是 `design` / `tasks`，请再指定 1 名非当前开发者且非 WAYNE 的第二签署人（候选：Jay / Lewis / Jacky / Karena / Neal）。未批准请说明要改的地方。
+4. 只有拿到矩阵要求的**全部明确 approve** 才继续下一份工件或下一阶段。任一签署位缺失、未回复、回复含糊（如「先看看」）一律视为未批准，保持停在当前步骤。
+5. 评审结论为 `Fail` 时不得「带病前进」：先按报告的建议修好并重评，直到结论至少为 `Partial`，再请求签署。
+6. 签署记录统一写在对应评审报告的「签署记录」小节，逐条用「对象 + 签署位」区分：`proposal` / `spec` 共 3 条（工件 1 + 报告 2），`design` / `tasks` 共 4 条（工件 2 + 报告 2）。每条写明「对象 / 签署位 / 批准人 / 批准时间 / 批准来源 / 批准范围」，不改写评审结论，也不改写他人已签的记录。当前开发者姓名按 `@rule:documentation/rules.md#记录人与签署人` 先问后填。
 
 ### 边界
 
@@ -87,21 +103,25 @@
 |---|---|
 | `proposal.md` / Delta Spec / `design.md` / `tasks.md` 是否各有对应的 `docs/reviews/<yyyymmdd>-<change-id>-<artifact>-review.md` | pr-merge |
 | 报告文件名是否符合 `日期-change-id-artifact-review.md` 格式 | pr-merge |
-| 是否存在当前开发者对每份报告的 approve（批准人 + 时间） | pr-merge |
+| `proposal.md` / Delta Spec 是否有 WAYNE 的签署记录（批准人 + 时间） | pr-merge |
+| `design.md` / `tasks.md` 是否有 2 个签署位，且第二签署人不是当前开发者、也不是 WAYNE | pr-merge |
+| 每份 `docs/reviews/` 评审报告是否同时有 WAYNE 与当前开发者的签署记录 | pr-merge |
 | 结论为 `Fail` 的工件是否已修复并重评后才继续 | pr-merge |
 
 ### 示例
 
 ```text
 推荐：写完 tasks.md → 调 all-specs-review → 写 docs/reviews/20261116-add-user-auth-tasks-review.md
-     → 问「是否批准进入 P4 实现」→ 等到明确 approve 再写代码
+     → 停下问「tasks 需要当前开发者 + 1 名非 WAYNE 成员签署，报告由 WAYNE + 当前开发者签署，请给签署人」
+     → 拿到 4 条签署记录（工件 2 + 报告 2）再写代码
 不推荐：proposal / spec / design / tasks 一次性全生成，最后才问一句「可以吗」
-不推荐：评审报告写 docs/ai4se-plugins/ 下，或没有开发者 approve 就开工
+不推荐：design / tasks 只让当前开发者自签，或让 WAYNE 顶替第二签署人
+不推荐：评审报告写 docs/ai4se-plugins/ 下，或签署位没签齐就开工
 ```
 
 ### 例外
 
-- 紧急线上故障修复（hotfix）可先实现后补评审，但必须在同一个 PR 内补齐四份报告与 approve。
+- 紧急线上故障修复（hotfix）可先实现后补评审，但必须在同一个 PR 内补齐四份报告与矩阵要求的所有签署记录。
 - 纯 `docs/**` 文档修订不产生工件，不触发本规则。
 
 ## tdd-cycle

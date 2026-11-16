@@ -17,5 +17,8 @@ If an IDE reports `ai4se-baseline` as a separate or invalid VCS root, delete tha
 ## Knowledge
 Please refer to the [knowledge base](docs/knowledge/_INDEX.md) for additional information.
 
+## SDD artifact gate
+After writing any `proposal.md`, Delta Spec, `design.md`, or `tasks.md`, run `all-specs-review` and then stop to collect every signature required by the signer matrix in [artifact-review-gate](docs/knowledge/rules/process/rules.md#artifact-review-gate): `proposal` / Delta Spec are signed by WAYNE; `design` / `tasks` need the current developer plus one member who is neither the current developer nor WAYNE; every `docs/reviews/` report needs WAYNE and the current developer. Do not start the next artifact until all signature slots are approved.
+
 ## Reference
 UI design please refer to [shadcn/ui](https://ui.shadcn.com/docs)

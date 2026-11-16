@@ -10,7 +10,7 @@
   1. **记录阶段产出时** —— P0–P5 记录的「记录人」、`g1/g2/g3-decision.md` 的签署人、`tasks.md` 的 Owner、质量检查报告的 owner 列。
   2. **approve / 签署时** —— G1 / G2 / G3 签署表、任何 approve 动作。
 - 询问话术固定为：
-  > 这次 change 的当前开发者是谁？approve / 签署由谁来做？请给姓名（如 Jay / Lewis / Wanye / Jacky / Karena / Neal）。
+  > 这次 change 的当前开发者是谁？本工件的签署人按签署矩阵确定（`proposal` / Delta Spec = WAYNE；`design` / `tasks` = 当前开发者 + 1 名非当前开发者且非 WAYNE 的成员；评审报告 = WAYNE + 当前开发者），请一并给出批准人姓名与时间。
 - 拿到回答后才落笔；回答与名册不一致时，以发起人回答为准（名册是常任分工，实际执行人可能轮换）。
 - 未拿到回答时 MUST 暂停写记录或加签，不允许用 `AO` / `DEV` / `current developer` 等角色词占位，也不允许默认填 `Jay`。
 - 姓名写法：`Jay（AO）`、`Neal（VL）`；同一 change 内写法保持一致。
@@ -23,9 +23,24 @@
 |---|---|---|
 | SM | Lewis | 阶段准入与排期确认；P1 范围签字 |
 | AO | Jay | 当前 change 的开发负责人；实现、本地验证、阶段记录提交。**每次记录与 approve 前仍须按上节询问本次实际开发者** |
-| IO | Wanye | 需求来源与跨能力影响确认 |
+| IO | WAYNE | 需求来源与跨能力影响确认；`proposal` / Delta Spec 的唯一签署人（历史记录中写作 `Wanye`，为同一人，不做批量替换） |
 | SA | Jacky、Karena | 规格、设计与验收口径签字（P2 起） |
 | VL | Neal | 独立验证签字（P4） |
+
+## 工件签署矩阵（强制，`@rule:artifact-review-gate`）
+
+| 对象 | 签署人 | 签署位 |
+|---|---|---|
+| `proposal.md` | WAYNE | 1 |
+| `specs/<capability>/spec.md`（Delta Spec） | WAYNE | 1 |
+| `design.md` | 当前开发者 + 1 名非当前开发者且非 WAYNE 的成员 | 2 |
+| `tasks.md` | 当前开发者 + 1 名非当前开发者且非 WAYNE 的成员 | 2 |
+| `docs/reviews/<yyyymmdd>-<change-id>-<artifact>-review.md` | WAYNE + 当前开发者 | 2 |
+| `docs/reviews/<yyyymmdd>-<change-id>-all-specs-review.md` | WAYNE + 当前开发者 | 2 |
+
+- 除 WAYNE 外的第二签署人候选：Jay / Lewis / Jacky / Karena / Neal；不得与当前开发者同一人。
+- 每份工件写完、评审报告落盘后，执行者 MUST 停下向上述签署人发问，一次问齐该工件的全部签署位；签署位缺一视为未批准。
+- 权威口径见 `@rule:artifact-review-gate`（`docs/knowledge/rules/process/rules.md#artifact-review-gate`）；本节是阶段执行清单。
 
 ## 阶段与产出
 
@@ -40,21 +55,21 @@
 
 ### 工件评审门禁（强制，`@rule:artifact-review-gate`）
 
-每写完一份工件都必须先评审、再由当前开发者批准，然后才能进入下一步：
+每写完一份工件都必须先评审、再按「工件签署矩阵」签齐，然后才能进入下一步：
 
-| 工件 | 评审报告路径 |
-|---|---|
-| `proposal.md` | `docs/reviews/<yyyymmdd>-<change-id>-proposal-review.md` |
-| `specs/<capability>/spec.md`（Delta） | `docs/reviews/<yyyymmdd>-<change-id>-spec-review.md` |
-| `design.md` | `docs/reviews/<yyyymmdd>-<change-id>-design-review.md` |
-| `tasks.md` | `docs/reviews/<yyyymmdd>-<change-id>-tasks-review.md` |
+| 工件 | 评审报告路径 | 工件签署人 | 报告签署人 |
+|---|---|---|---|
+| `proposal.md` | `docs/reviews/<yyyymmdd>-<change-id>-proposal-review.md` | WAYNE | WAYNE + 当前开发者 |
+| `specs/<capability>/spec.md`（Delta） | `docs/reviews/<yyyymmdd>-<change-id>-spec-review.md` | WAYNE | WAYNE + 当前开发者 |
+| `design.md` | `docs/reviews/<yyyymmdd>-<change-id>-design-review.md` | 当前开发者 + 1 名非当前开发者且非 WAYNE 的成员 | WAYNE + 当前开发者 |
+| `tasks.md` | `docs/reviews/<yyyymmdd>-<change-id>-tasks-review.md` | 当前开发者 + 1 名非当前开发者且非 WAYNE 的成员 | WAYNE + 当前开发者 |
 
 1. 工件写完**同一个回合内**调用 `all-specs-review` 技能，不得跳步写下一份工件。
 2. 报告写进上表路径；修改后重评不得覆盖旧报告（同日加序号 `-review-2.md`）。
-3. 报告写完后**必须停下**询问当前开发者：本次结论为 `<Pass/Partial/Fail>`，是否批准进入下一步。
-4. 只有明确 approve 才继续；未回复或回复含糊视为未批准。
-5. 结论为 `Fail` 时先修复并重评至至少 `Partial`，再请求 approve。
-6. approve 以「批准人 + 批准时间」追加在报告内，不改写评审结论；批准人与记录人姓名规则同上节。
+3. 报告写完后**必须停下**，按上表一次询问该工件的全部签署人：本次结论为 `<Pass/Partial/Fail>`，工件与报告分别由谁签、第二签署人是谁、批准时间是什么。
+4. 只有矩阵要求的签署位**全部明确 approve** 才继续；任一签署位缺失、未回复或回复含糊视为未批准。
+5. 结论为 `Fail` 时先修复并重评至至少 `Partial`，再请求签署。
+6. 签署记录逐条追加在报告的「签署记录」小节，用「对象 + 签署位 / 批准人 / 批准时间」区分：`proposal`、`spec` 各 3 条（工件 1 + 报告 2），`design`、`tasks` 各 4 条（工件 2 + 报告 2）；不改写评审结论；姓名规则同上节。
 
 - `all-specs-review` 的 `Pass` 不是 G1/G2/G3 通过，它只出评审意见。
 - 只改错字/链接/格式且不改语义的修订，可复用上一份 `Pass` 报告并追加「变更摘要」一行。
