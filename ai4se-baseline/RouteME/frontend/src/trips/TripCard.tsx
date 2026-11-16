@@ -2,7 +2,7 @@ import { tripMessages } from '../i18n/tripMessages';
 import { useProfile } from '../profiles/ProfileContext';
 import { Avatar } from '../shell/Avatar';
 import type { Match, TripSummary } from '../types';
-import { statusLabel, statusTone } from './tripStatus';
+import { StatusBadge } from './StatusBadge';
 
 const COVER_TONES = ['lagoon', 'coral', 'jade', 'dusk', 'amber'] as const;
 
@@ -41,7 +41,7 @@ export function TripCard({ trip, match, compact = false }: Props) {
       <a className="tc-overlay" href={`#/trips/${trip.id}`} aria-label={trip.title} />
       <div className={`tc-cover cover-${coverTone(trip.destination)}`}>
         <span className="tc-dest">{trip.destination}</span>
-        <span className={`badge ${statusTone(trip.status)}`}>{statusLabel(trip.status)}</span>
+        <StatusBadge status={trip.status} />
       </div>
 
       <div className="tc-body">

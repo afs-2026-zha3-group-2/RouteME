@@ -4,7 +4,7 @@ info:
   version: 0.7.0
   description: |
     RouteME 后端对外契约。本文件是前后端唯一事实源，字段名、类型、状态码与错误码只在这里定稿。
-        当前包含：脚手架问候语、演示账户与账号认证（注册/登录/会话/退出）、用户公开资料、旅行计划（浏览/筛选/发布/详情/结束），同行匹配、申请、退出、聊天、我的旅行与举报，以及游后体验分享与参考发布所需数据。
+        当前包含：脚手架问候语、演示账户与账号认证（注册/登录/会话/退出）、旅行计划（浏览/筛选/发布/详情/结束），同行匹配、申请、退出、聊天、我的旅行与举报，以及游后体验分享与参考发布所需数据。
         行程与体验列表按页返回：`page` 从 1 起，`size` 默认 20、上限 50。
         目的地为用户在地图地点库中搜索或点选的城市/地点名称，不再限定固定枚举。
 servers:
@@ -97,63 +97,6 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/DemoUser'
-        '500':
-          description: 未预期异常，响应不携带堆栈
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-              examples:
-                unexpected:
-                  value:
-                    code: INTERNAL_ERROR
-  /users/{id}/profile:
-    get:
-      operationId: loadUserProfile
-      summary: 读取用户公开资料
-      description: |
-        只返回公开字段与四项旅行统计，不要求 X-User-Id 或登录会话。
-        响应不包含用户名、密码散列、会话令牌，也不包含电话、证件、精确住址、学校门牌或实时位置。
-        共同兴趣由前端用当前用户兴趣计算，不在本端点返回。
-      parameters:
-        - name: id
-          in: path
-          required: true
-          schema:
-            type: integer
-            format: int64
-      responses:
-        '200':
-          description: 用户公开资料
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/UserProfile'
-              examples:
-                seeded:
-                  value:
-                    id: 1
-                    nickname: 林见夏
-                    avatar_initial: 夏
-                    school: 大三 · 视觉传达
-                    bio: 拍照比走路多。
-                    interests: [摄影, 海边, 美食]
-                    joined_at: '2026-01-12T08:30:00Z'
-                    stats:
-                      published: 2
-                      completed: 1
-                      joined: 3
-                      shared: 2
-        '404':
-          description: 用户不存在
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-              examples:
-                notFound:
-                  value:
-                    code: USER_NOT_FOUND
         '500':
           description: 未预期异常，响应不携带堆栈
           content:
@@ -390,8 +333,9 @@ paths:
       operationId: createTrip
       summary: 发布旅行计划
       description: |
-        必填与约束见 TripCreateRequest。发布成功后状态为 recruiting，joined_count 计入发布者本人。
-        字段级提示由前端表单给出；后端校验失败统一返回 400 INVALID_INPUT。
+        必填与约束见 TripCreateRequest。目的地只接受二级行政区划代码；名称由后端按字典生成（直辖市取省级名）。
+        发布成功后状态为 recruiting，joined_count 计入发布者本人。
+        字段级提示由前端表单给出；后端校验失败（含省级代码、字典中不存在的代码）统一返回 400 INVALID_INPUT。
       parameters:
         - $ref: '#/components/parameters/DemoUserId'
       requestBody:
@@ -404,7 +348,7 @@ paths:
               success:
                 value:
                   title: 广州老城骑楼扫街半日
-                  destination: 广州
+                  destination_code: '440100'
                   start_date: '2026-11-16'
                   end_date: '2026-11-16'
                   stops: [陈家祠地铁站集合, 恩宁路骑楼, 永庆坊]
@@ -417,7 +361,7 @@ paths:
               rejected:
                 value:
                   title: ''
-                  destination: 广州
+                  destination_code: '440000'
                   start_date: '2026-11-16'
                   end_date: '2026-11-15'
                   stops: [只有一处]
@@ -1276,64 +1220,6 @@ components:
           items:
             type: string
           description: 旅行兴趣标签
-    UserProfile:
-      type: object
-      required: [id, nickname, avatar_initial, school, bio, interests, joined_at, stats]
-      properties:
-        id:
-          type: integer
-          format: int64
-          readOnly: true
-        nickname:
-          type: string
-          readOnly: true
-          description: 发布者昵称
-        avatar_initial:
-          type: string
-          readOnly: true
-          description: 头像首字
-        school:
-          type: string
-          readOnly: true
-          description: 身份/年级与专业或行业，MBTI 选填；例如「大三 · 软件工程专业 · ENTJ」或「上班族 · 互联网行业 · INFP」
-          example: 上班族 · 互联网行业 · INFP
-        bio:
-          type: string
-          readOnly: true
-          description: 简介
-        interests:
-          type: array
-          readOnly: true
-          items:
-            type: string
-          description: 旅行兴趣标签
-        joined_at:
-          type: string
-          format: date-time
-          readOnly: true
-          description: 用户加入时间，UTC
-        stats:
-          $ref: '#/components/schemas/ProfileStats'
-    ProfileStats:
-      type: object
-      required: [published, completed, joined, shared]
-      properties:
-        published:
-          type: integer
-          readOnly: true
-          description: 发布的行程数
-        completed:
-          type: integer
-          readOnly: true
-          description: 发布的已结束行程数
-        joined:
-          type: integer
-          readOnly: true
-          description: 被接受的同行申请数
-        shared:
-          type: integer
-          readOnly: true
-          description: 发布的游后体验数
     AuthRegisterRequest:
       type: object
       required: [username, password, nickname, school, interests]
@@ -1489,14 +1375,15 @@ components:
               description: 结束时间；非空表示已结束
     TripCreateRequest:
       type: object
-      required: [title, destination, start_date, end_date, stops, capacity]
+      required: [title, destination_code, start_date, end_date, stops, capacity]
       properties:
         title:
           type: string
           maxLength: 40
-        destination:
+        destination_code:
           type: string
-          maxLength: 40
+          pattern: '^[0-9]{6}$'
+          description: 目的地二级行政区划代码（必须选到市，含港澳台二级区）；名称由后端按字典生成
         start_date:
           type: string
           format: date
@@ -1825,5 +1712,4 @@ components:
           enum:
             [GREETING_NOT_FOUND, INVALID_INPUT, DEMO_USER_REQUIRED, FORBIDDEN, TRIP_NOT_FOUND, TRIP_NOT_OPEN,
              APPLICATION_NOT_FOUND, APPLICATION_NOT_PENDING, DUPLICATE_APPLICATION, CHAT_NOT_ALLOWED, CHAT_READ_ONLY,
-             EXPERIENCE_NOT_ALLOWED, USERNAME_TAKEN, INVALID_CREDENTIALS, SESSION_INVALID, USER_NOT_FOUND,
-             INTERNAL_ERROR]
+             EXPERIENCE_NOT_ALLOWED, USERNAME_TAKEN, INVALID_CREDENTIALS, SESSION_INVALID, INTERNAL_ERROR]

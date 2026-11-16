@@ -1,0 +1,1062 @@
+<!doctype html>
+<html lang="zh-CN" data-theme="light">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>RouteMe · 身份菜单「退出登录」设计预览</title>
+<style>
+  :root {
+    --deep: #06232b;
+    --tide: #0f4c5c;
+    --lagoon: #12707f;
+    --lagoon-soft: #e3f0f1;
+    --coral: #ff6b35;
+    --danger: #d8402f;
+    --t-danger: #b32c1c;
+    --bg: #f2ece1;
+    --surface: #fffdf9;
+    --surface-2: #f8f2e7;
+    --surface-3: #f1e9db;
+    --ink: #0b2a33;
+    --ink-2: #3f5d67;
+    --ink-3: #576b72;
+    --line: #e4dbcb;
+    --on-deep: #f3fbfc;
+    --on-deep-accent: #ffd166;
+    --grad-tide: linear-gradient(122deg, #0f4c5c 0%, #116b7a 42%, #623dff 100%);
+    --sh-1: 0 1px 2px rgba(6, 35, 43, 0.06), 0 2px 8px -4px rgba(6, 35, 43, 0.1);
+    --sh-2: 0 2px 6px rgba(6, 35, 43, 0.06), 0 14px 30px -18px rgba(6, 35, 43, 0.34);
+    --sh-3: 0 8px 24px -8px rgba(6, 35, 43, 0.22), 0 32px 64px -32px rgba(6, 35, 43, 0.5);
+    --r: 14px;
+    --font: "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", system-ui, sans-serif;
+    color-scheme: light;
+  }
+
+  [data-theme="dark"] {
+    --deep: #030e13;
+    --tide: #0d4453;
+    --lagoon: #2b93a4;
+    --lagoon-soft: #10333c;
+    --coral: #ff8354;
+    --danger: #ff6b5c;
+    --t-danger: #ff7f70;
+    --bg: #061116;
+    --surface: #0e1f26;
+    --surface-2: #132a33;
+    --surface-3: #19343e;
+    --ink: #e9f4f6;
+    --ink-2: #a6c1c9;
+    --ink-3: #869da4;
+    --line: #1d3742;
+    --on-deep: #eaf6f8;
+    --on-deep-accent: #ffd166;
+    --grad-tide: linear-gradient(122deg, #0d4453 0%, #146b7a 44%, #6448d4 100%);
+    --sh-1: 0 1px 2px rgba(0, 0, 0, 0.5);
+    --sh-2: 0 2px 6px rgba(0, 0, 0, 0.4), 0 16px 34px -20px rgba(0, 0, 0, 0.9);
+    --sh-3: 0 10px 30px -10px rgba(0, 0, 0, 0.7), 0 40px 70px -34px rgba(0, 0, 0, 1);
+    color-scheme: dark;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    font-family: var(--font);
+    background: var(--bg);
+    color: var(--ink);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  button { font-family: inherit; }
+
+  /* ---------- preview toolbar ---------- */
+  .preview-bar {
+    position: sticky;
+    top: 0;
+    z-index: 300;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 14px;
+    padding: 10px 18px;
+    border-bottom: 1px solid var(--line);
+    background: color-mix(in srgb, var(--surface) 92%, transparent);
+    backdrop-filter: blur(14px);
+  }
+
+  .pb-title {
+    display: grid;
+    line-height: 1.2;
+    margin-right: 8px;
+  }
+
+  .pb-title b { font-size: 13px; }
+  .pb-title span { font-size: 11px; color: var(--ink-3); }
+
+  .pb-group {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .pb-group > label {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--ink-3);
+  }
+
+  .seg {
+    display: inline-flex;
+    gap: 3px;
+    padding: 3px;
+    border-radius: 99px;
+    background: var(--surface-2);
+    border: 1px solid var(--line);
+  }
+
+  .seg button {
+    padding: 5px 11px;
+    border: 0;
+    border-radius: 99px;
+    background: transparent;
+    color: var(--ink-2);
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+
+  .seg button[aria-pressed="true"] {
+    background: var(--surface);
+    color: var(--ink);
+    box-shadow: var(--sh-1);
+  }
+
+  .ghost {
+    padding: 6px 12px;
+    border: 1px solid var(--line);
+    border-radius: 99px;
+    background: transparent;
+    color: var(--ink-2);
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+
+  .ghost:hover { border-color: var(--lagoon); color: var(--lagoon); }
+
+  .check {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    color: var(--ink-2);
+  }
+
+  /* ---------- stage ---------- */
+  .stage {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 320px;
+    gap: 22px;
+    width: min(1240px, 100% - 40px);
+    margin: 22px auto 60px;
+    align-items: start;
+  }
+
+  @media (max-width: 980px) {
+    .stage { grid-template-columns: 1fr; }
+  }
+
+  .browser {
+    border: 1px solid var(--line);
+    border-radius: 18px;
+    overflow: hidden;
+    background: var(--bg);
+    box-shadow: var(--sh-3);
+  }
+
+  .browser-chrome {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 9px 14px;
+    border-bottom: 1px solid var(--line);
+    background: var(--surface-2);
+  }
+
+  .dots { display: inline-flex; gap: 5px; }
+  .dots i {
+    width: 9px; height: 9px;
+    border-radius: 50%;
+    background: var(--line);
+    display: block;
+  }
+  .dots i:first-child { background: #ff6b5c; }
+  .dots i:nth-child(2) { background: #f5a524; }
+  .dots i:nth-child(3) { background: #12a89b; }
+
+  .address {
+    flex: 1;
+    padding: 4px 10px;
+    border-radius: 8px;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    font-size: 11px;
+    color: var(--ink-3);
+    font-family: ui-monospace, "Cascadia Mono", monospace;
+  }
+
+  .app {
+    position: relative;
+    min-height: 520px;
+    background:
+      radial-gradient(900px 380px at 88% -10%, color-mix(in srgb, var(--lagoon) 14%, transparent), transparent 70%),
+      var(--bg);
+  }
+
+  /* ---------- topbar ---------- */
+  .topbar {
+    position: relative;
+    z-index: 60;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    height: 66px;
+    padding: 0 20px;
+    border-bottom: 1px solid var(--line);
+    background: color-mix(in srgb, var(--surface) 86%, transparent);
+    backdrop-filter: blur(18px) saturate(1.4);
+  }
+
+  .brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    text-decoration: none;
+    color: var(--ink);
+  }
+
+  .brand-mark {
+    width: 36px; height: 36px;
+    border-radius: 11px;
+    display: grid;
+    place-items: center;
+    background: var(--grad-tide);
+    color: var(--on-deep);
+    box-shadow: 0 4px 14px -6px var(--tide);
+  }
+
+  .brand-mark svg { width: 24px; height: 24px; }
+  .brand-mark circle { fill: var(--on-deep-accent); }
+
+  .brand-text { display: grid; line-height: 1.05; }
+  .brand-text b { font-size: 16px; font-weight: 800; letter-spacing: -0.02em; }
+  .brand-text i {
+    font-style: normal;
+    font-size: 10px;
+    letter-spacing: 0.22em;
+    color: var(--ink-3);
+  }
+
+  .topbar-spacer { flex: 1; }
+
+  .icon-btn {
+    width: 38px; height: 38px;
+    display: grid;
+    place-items: center;
+    border: 1px solid transparent;
+    border-radius: 11px;
+    background: transparent;
+    color: var(--ink-2);
+    cursor: pointer;
+  }
+
+  .icon-btn:hover { background: var(--surface-2); color: var(--lagoon); border-color: var(--line); }
+  .icon-btn svg { width: 19px; height: 19px; }
+
+  .id-switch { position: relative; }
+
+  .id-switch-btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    height: 38px;
+    padding: 3px 10px 3px 5px;
+    border: 1px solid var(--line);
+    border-radius: 99px;
+    background: var(--surface);
+    color: var(--ink);
+    cursor: pointer;
+  }
+
+  .id-switch-btn:hover,
+  .id-switch-btn[aria-expanded="true"] { border-color: var(--lagoon); }
+
+  .id-switch-text { display: grid; line-height: 1.15; text-align: left; }
+  .id-switch-name { font-size: 13px; font-weight: 700; }
+  .id-switch-label { font-size: 10px; letter-spacing: 0.08em; color: var(--ink-3); }
+  .id-switch-caret { width: 12px; height: 12px; color: var(--ink-3); }
+
+  .avatar {
+    width: 28px; height: 28px;
+    flex: none;
+    display: grid;
+    place-items: center;
+    border-radius: 50%;
+    color: #fff;
+    font-size: 11.2px;
+    font-weight: 700;
+    background: linear-gradient(146deg, hsl(var(--hue, 190) 58% 32%), hsl(calc(var(--hue, 190) + 42) 62% 18%));
+    box-shadow: inset 0 0 0 1.5px rgba(255, 255, 255, 0.3), 0 2px 8px -3px rgba(6, 35, 43, 0.5);
+    user-select: none;
+  }
+
+  /* ---------- identity panel ---------- */
+  .id-panel {
+    position: absolute;
+    right: 0;
+    top: calc(100% + 8px);
+    z-index: 120;
+    display: grid;
+    gap: 3px;
+    width: 258px;
+    padding: 8px;
+    border: 1px solid var(--line);
+    border-radius: var(--r);
+    background: var(--surface);
+    box-shadow: var(--sh-2);
+  }
+
+  .id-panel[hidden] { display: none; }
+
+  .id-current {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px;
+    margin-bottom: 4px;
+    border-radius: 10px;
+    background: var(--lagoon-soft);
+  }
+
+  .id-option {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    padding: 8px;
+    border: 0;
+    border-radius: 10px;
+    background: transparent;
+    color: var(--ink);
+    text-align: left;
+    cursor: pointer;
+  }
+
+  .id-option:hover,
+  .id-option.on { background: var(--lagoon-soft); }
+
+  .id-option-text { display: grid; flex: 1; line-height: 1.25; }
+  .id-option-text b { font-size: 13px; }
+  .id-option-text i { font-style: normal; font-size: 11px; color: var(--ink-3); }
+  .id-option-flag { font-size: 10.5px; font-weight: 700; color: var(--lagoon); }
+
+  .id-panel-label {
+    margin: 4px 8px 2px;
+    font-size: 10.5px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--ink-3);
+  }
+
+  .id-panel-note {
+    margin: 4px 6px 2px;
+    font-size: 11px;
+    line-height: 1.45;
+    color: var(--ink-3);
+  }
+
+  [role="listbox"] { display: grid; gap: 3px; }
+
+  .id-divider {
+    display: none;
+    height: 1px;
+    margin: 3px 6px;
+    background: var(--line);
+  }
+
+  .id-logout {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    width: 100%;
+    padding: 9px 8px;
+    border: 0;
+    border-radius: 10px;
+    background: transparent;
+    color: var(--t-danger);
+    font-size: 12.5px;
+    font-weight: 700;
+    text-align: left;
+    cursor: pointer;
+  }
+
+  .id-logout:hover { background: color-mix(in srgb, var(--danger) 9%, transparent); }
+  .id-logout:focus-visible { outline: none; box-shadow: 0 0 0 3px color-mix(in srgb, var(--lagoon) 22%, transparent); }
+  .id-logout svg { width: 15px; height: 15px; flex: none; }
+
+  /* variant A — 现状：全宽描边按钮 */
+  .id-panel[data-variant="a"] .id-logout {
+    margin-top: 4px;
+    padding: 8px;
+    border: 1px solid var(--line);
+    background: var(--surface);
+    color: var(--danger);
+    justify-content: center;
+  }
+  .id-panel[data-variant="a"] .id-logout:hover { border-color: var(--danger); background: var(--surface); }
+  .id-panel[data-variant="a"] .id-logout svg { display: none; }
+
+  /* variant B — 推荐：分隔线 + 危险色菜单行 */
+  .id-panel[data-variant="b"] .id-divider { display: block; }
+
+  /* variant C — 紧凑：无分隔线、图标行，默认中性色 */
+  .id-panel[data-variant="c"] .id-logout { margin-top: 0; color: var(--ink-2); }
+  .id-panel[data-variant="c"] .id-logout:hover { color: var(--danger); }
+
+  /* ---------- fake page content ---------- */
+  .page {
+    padding: 30px 30px 40px;
+  }
+
+  .page h1 {
+    margin: 0 0 6px;
+    font-size: clamp(22px, 3vw, 30px);
+    letter-spacing: -0.02em;
+  }
+
+  .page > p {
+    margin: 0 0 22px;
+    color: var(--ink-3);
+    font-size: 13px;
+  }
+
+  .cards { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+
+  .card {
+    padding: 16px;
+    border: 1px solid var(--line);
+    border-radius: var(--r);
+    background: var(--surface);
+    box-shadow: var(--sh-1);
+  }
+
+  .card .cover {
+    height: 74px;
+    margin-bottom: 12px;
+    border-radius: 10px;
+    background: var(--grad-tide);
+    opacity: 0.85;
+  }
+
+  .card b { display: block; font-size: 14px; margin-bottom: 3px; }
+  .card span { font-size: 12px; color: var(--ink-3); }
+  .card .badge {
+    display: inline-flex;
+    margin-top: 10px;
+    padding: 3px 9px;
+    border-radius: 99px;
+    background: var(--lagoon-soft);
+    color: var(--lagoon);
+    font-size: 11px;
+    font-weight: 700;
+  }
+
+  /* ---------- gate ---------- */
+  .gate {
+    min-height: 520px;
+    display: grid;
+    place-items: center;
+    padding: 34px 22px;
+    background:
+      radial-gradient(800px 420px at 15% -10%, color-mix(in srgb, var(--coral) 12%, transparent), transparent 65%),
+      radial-gradient(900px 500px at 92% 0%, color-mix(in srgb, var(--lagoon) 16%, transparent), transparent 70%),
+      var(--bg);
+  }
+
+  .gate[hidden] { display: none; }
+
+  .gate-card {
+    width: min(640px, 100%);
+    padding: 26px;
+    border: 1px solid var(--line);
+    border-radius: 20px;
+    background: var(--surface);
+    box-shadow: var(--sh-2);
+  }
+
+  .gate-head { display: flex; align-items: center; gap: 10px; margin-bottom: 18px; }
+  .gate-head h2 { margin: 0; font-size: 20px; }
+  .gate-head p { margin: 2px 0 0; font-size: 12px; color: var(--ink-3); }
+
+  .gate-list { display: grid; gap: 8px; margin-bottom: 18px; }
+
+  .gate-user {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    width: 100%;
+    padding: 10px;
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    background: var(--surface);
+    color: var(--ink);
+    text-align: left;
+    cursor: pointer;
+  }
+
+  .gate-user:hover { border-color: var(--lagoon); background: var(--surface-2); }
+  .gate-user .id-option-text b { font-size: 13.5px; }
+  .gate-user .id-option-flag { margin-left: auto; }
+
+  .gate-auth {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 12px;
+    border: 1px dashed var(--line);
+    border-radius: 12px;
+    background: var(--surface-2);
+    font-size: 12px;
+    color: var(--ink-3);
+  }
+
+  .gate-auth b { color: var(--ink); font-size: 12.5px; }
+
+  .gate-note {
+    margin: 16px 0 0;
+    font-size: 11.5px;
+    line-height: 1.5;
+    color: var(--ink-3);
+  }
+
+  .gate-note strong { color: var(--t-danger); }
+
+  .reset {
+    margin-top: 14px;
+    padding: 7px 13px;
+    border: 1px solid var(--line);
+    border-radius: 99px;
+    background: transparent;
+    color: var(--ink-2);
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+  }
+
+  .reset:hover { border-color: var(--lagoon); color: var(--lagoon); }
+
+  /* ---------- notes ---------- */
+  .notes {
+    display: grid;
+    gap: 14px;
+    font-size: 12px;
+    line-height: 1.55;
+    color: var(--ink-2);
+  }
+
+  .note-card {
+    padding: 16px;
+    border: 1px solid var(--line);
+    border-radius: var(--r);
+    background: var(--surface);
+    box-shadow: var(--sh-1);
+  }
+
+  .note-card h3 {
+    margin: 0 0 8px;
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--ink-3);
+  }
+
+  .note-card ul { margin: 0; padding-left: 18px; display: grid; gap: 6px; }
+  .note-card li::marker { color: var(--lagoon); }
+  .note-card p { margin: 0 0 8px; }
+  .note-card p:last-child { margin-bottom: 0; }
+
+  .choice {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    margin-top: 6px;
+    padding: 3px 9px;
+    border-radius: 99px;
+    background: var(--lagoon-soft);
+    color: var(--lagoon);
+    font-weight: 700;
+    font-size: 11px;
+  }
+
+  .swatches { display: flex; gap: 8px; margin-top: 10px; }
+  .swatches span {
+    flex: 1;
+    height: 34px;
+    border-radius: 8px;
+    border: 1px solid var(--line);
+  }
+
+  /* ---------- toast ---------- */
+  .toast {
+    position: fixed;
+    left: 50%;
+    bottom: 28px;
+    z-index: 400;
+    transform: translate(-50%, 16px);
+    max-width: min(460px, calc(100% - 32px));
+    padding: 10px 16px;
+    border: 1px solid var(--line);
+    border-radius: 99px;
+    background: var(--surface);
+    color: var(--ink);
+    box-shadow: var(--sh-2);
+    font-size: 12.5px;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.2s ease, transform 0.2s ease;
+  }
+
+  .toast.show { opacity: 1; transform: translate(-50%, 0); }
+  .toast.warn { border-color: color-mix(in srgb, var(--danger) 45%, var(--line)); color: var(--t-danger); }
+
+  @media (max-width: 620px) {
+    .cards { grid-template-columns: 1fr; }
+    .preview-bar { gap: 8px; }
+  }
+</style>
+</head>
+<body>
+  <div class="preview-bar">
+    <div class="pb-title">
+      <b>身份菜单 · 退出登录</b>
+      <span>add-user-logout / P3 design preview</span>
+    </div>
+
+    <div class="pb-group">
+      <label>身份</label>
+      <div class="seg" role="group" aria-label="身份状态">
+        <button type="button" data-state="demo" aria-pressed="true">演示身份</button>
+        <button type="button" data-state="auth" aria-pressed="false">注册账号</button>
+      </div>
+    </div>
+
+    <div class="pb-group">
+      <label>退出样式</label>
+      <div class="seg" role="group" aria-label="退出入口样式">
+        <button type="button" data-variant="a" aria-pressed="false">A 描边</button>
+        <button type="button" data-variant="b" aria-pressed="true">B 分隔行</button>
+        <button type="button" data-variant="c" aria-pressed="false">C 紧凑</button>
+      </div>
+    </div>
+
+    <label class="check">
+      <input type="checkbox" id="failToggle" />
+      模拟结束会话失败
+    </label>
+
+    <button type="button" class="ghost" id="themeBtn" aria-pressed="false">深色模式</button>
+  </div>
+
+  <main class="stage">
+    <section class="browser" aria-label="RouteMe 界面预览">
+      <div class="browser-chrome">
+        <span class="dots" aria-hidden="true"><i></i><i></i><i></i></span>
+        <span class="address">localhost:5173/#/</span>
+      </div>
+
+      <div class="app" id="app">
+        <header class="topbar">
+          <a class="brand" href="#" onclick="return false">
+            <span class="brand-mark" aria-hidden="true">
+              <svg viewBox="0 0 32 32">
+                <path d="M5 24c5-13 17-13 22 0" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" />
+                <circle cx="16" cy="10" r="3.4" />
+              </svg>
+            </span>
+            <span class="brand-text"><b>RouteMe</b><i>路觅</i></span>
+          </a>
+
+          <span class="topbar-spacer"></span>
+
+          <button type="button" class="icon-btn" aria-label="切换到深色模式">
+            <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round" aria-hidden="true">
+              <path d="M16 12.4A6.8 6.8 0 0 1 7.6 4a6.9 6.9 0 1 0 8.4 8.4Z" />
+            </svg>
+          </button>
+
+          <div class="id-switch">
+            <button
+              type="button"
+              class="id-switch-btn"
+              id="idBtn"
+              aria-haspopup="dialog"
+              aria-expanded="true"
+              aria-label="切换身份：当前 林见夏"
+            >
+              <span class="avatar" id="pillAvatar" style="--hue: 186" aria-hidden="true">林</span>
+              <span class="id-switch-text">
+                <span class="id-switch-name" id="pillName">林见夏</span>
+                <span class="id-switch-label">切换身份</span>
+              </span>
+              <svg class="id-switch-caret" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true">
+                <path d="m3 4.5 3 3 3-3" />
+              </svg>
+            </button>
+
+            <div class="id-panel" id="panel" role="dialog" aria-label="身份菜单" data-variant="b"></div>
+          </div>
+        </header>
+
+        <div class="page">
+          <h1>今天想走哪条路</h1>
+          <p>从灵感到同行者，找到下一段旅程。</p>
+          <div class="cards">
+            <article class="card">
+              <div class="cover"></div>
+              <b>珠海情侣路摄影一日游</b>
+              <span>12 月 12 日 · 香洲港集合</span>
+              <span class="badge">招募中</span>
+            </article>
+            <article class="card">
+              <div class="cover" style="background: linear-gradient(140deg, #0c7a70 0%, #12707f 55%, #0f4c5c 100%)"></div>
+              <b>佛山祖庙与岭南天地一日</b>
+              <span>12 月 18 日 · 祖庙地铁站</span>
+              <span class="badge">已满员</span>
+            </article>
+          </div>
+        </div>
+      </div>
+
+      <div class="gate" id="gate" hidden>
+        <div class="gate-card">
+          <div class="gate-head">
+            <span class="brand-mark" aria-hidden="true">
+              <svg viewBox="0 0 32 32">
+                <path d="M5 24c5-13 17-13 22 0" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" />
+                <circle cx="16" cy="10" r="3.4" />
+              </svg>
+            </span>
+            <div>
+              <h2>选择今天的身份</h2>
+              <p>演示身份无需密码；也可以用注册账号登录。</p>
+            </div>
+          </div>
+
+          <div class="gate-list">
+            <button type="button" class="gate-user" data-enter="林见夏">
+              <span class="avatar" style="--hue: 186" aria-hidden="true">林</span>
+              <span class="id-option-text"><b>林见夏</b><i>中山大学 · 摄影 / 海边</i></span>
+              <span class="id-option-flag">上次使用</span>
+            </button>
+            <button type="button" class="gate-user" data-enter="陈屿">
+              <span class="avatar" style="--hue: 22" aria-hidden="true">陈</span>
+              <span class="id-option-text"><b>陈屿</b><i>华南理工 · 徒步 / 露营</i></span>
+            </button>
+            <button type="button" class="gate-user" data-enter="苏念">
+              <span class="avatar" style="--hue: 268" aria-hidden="true">苏</span>
+              <span class="id-option-text"><b>苏念</b><i>暨南大学 · 展览 / 咖啡</i></span>
+            </button>
+          </div>
+
+          <div class="gate-auth">
+            <span><b>登录 / 注册</b> · 注册账号可发布行程并保留会话</span>
+            <span>→</span>
+          </div>
+
+          <p class="gate-note">
+            身份门<strong>不展示「退出登录」</strong>：没有可退出的当前身份。
+            退出后刷新页面也停留在这里，不恢复上一身份。
+          </p>
+
+          <button type="button" class="reset" id="resetBtn">重新进入预览</button>
+        </div>
+      </div>
+    </section>
+
+    <aside class="notes">
+      <div class="note-card">
+        <h3>评审点</h3>
+        <ul>
+          <li>入口是否容易被发现：分隔线 + 危险色是否足够，但不至于像“主操作”。</li>
+          <li>演示身份和注册账号两种状态都要出现，不再依赖登录态。</li>
+          <li>注册账号比演示身份多一行当前账号摘要（含「已登录」）。</li>
+          <li>键盘 Tab 可达；Esc / 点击外部关闭菜单。</li>
+          <li>退出后立即回身份门；失败提示只能是附加信息。</li>
+        </ul>
+      </div>
+
+      <div class="note-card">
+        <h3>当前选择</h3>
+        <p id="choiceText">B 分隔行 · 演示身份 · 浅色</p>
+        <span class="choice" id="choiceBadge">推荐：B</span>
+        <div class="swatches" aria-hidden="true">
+          <span style="background: var(--lagoon-soft)"></span>
+          <span style="background: var(--surface-2)"></span>
+          <span style="background: var(--surface)"></span>
+          <span style="background: color-mix(in srgb, var(--danger) 12%, var(--surface))"></span>
+        </div>
+      </div>
+
+      <div class="note-card">
+        <h3>行为说明</h3>
+        <ul>
+          <li>演示身份：只清本地身份，不发认证请求。</li>
+          <li>注册账号：调用 <code>POST /api/auth/logout</code>，无论成败都先清本地。</li>
+          <li>勾选「模拟结束会话失败」可在注册账号状态下看到非阻断提示。</li>
+          <li>身份门没有退出入口；重新进入后可再次打开菜单。</li>
+        </ul>
+      </div>
+
+      <div class="note-card">
+        <h3>实现落点（P4）</h3>
+        <ul>
+          <li><code>shell/AppShell.tsx</code> — 去掉 <code>isAuthenticated</code> 对退出入口的门控，改面板语义。</li>
+          <li><code>App.tsx</code> — 复用 <code>logout()</code>；失败时给非阻断提示。</li>
+          <li><code>styles.css</code> — 分隔线与退出菜单行。</li>
+          <li><code>e2e/tests/auth.spec.ts</code> — 退出入口、刷新、失败降级。</li>
+        </ul>
+      </div>
+    </aside>
+  </main>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <script>
+    const DEMO_USERS = [
+      { id: 1, name: '林见夏', initial: '林', school: '中山大学', tags: '摄影 / 海边', hue: 186 },
+      { id: 2, name: '陈屿', initial: '陈', school: '华南理工', tags: '徒步 / 露营', hue: 22 },
+      { id: 3, name: '苏念', initial: '苏', school: '暨南大学', tags: '展览 / 咖啡', hue: 268 },
+    ];
+
+    const AUTH_USER = { name: '标签同学', initial: '标', school: '中山大学', hue: 206, authenticated: true };
+
+    const state = {
+      identity: 'demo',
+      variant: 'b',
+      open: true,
+      onGate: false,
+      theme: 'light',
+    };
+
+    const panel = document.getElementById('panel');
+    const idBtn = document.getElementById('idBtn');
+    const app = document.getElementById('app');
+    const gate = document.getElementById('gate');
+    const toast = document.getElementById('toast');
+    const failToggle = document.getElementById('failToggle');
+    const choiceText = document.getElementById('choiceText');
+    const choiceBadge = document.getElementById('choiceBadge');
+
+    function currentUser() {
+      return state.identity === 'auth' ? AUTH_USER : DEMO_USERS[0];
+    }
+
+    function avatarHtml(user) {
+      return `<span class="avatar" style="--hue: ${user.hue}" aria-hidden="true">${user.initial}</span>`;
+    }
+
+    function renderPanel() {
+      const auth = state.identity === 'auth';
+      const current = currentUser();
+
+      const currentBlock = auth
+        ? `<div class="id-current">
+             ${avatarHtml(current)}
+             <span class="id-option-text"><b>${current.name}</b><i>${current.school}</i></span>
+             <span class="id-option-flag">已登录</span>
+           </div>`
+        : '';
+
+      const options = DEMO_USERS.map((user) => {
+        const selected = !auth && user.id === 1;
+        return `<button type="button" role="option" aria-selected="${selected}" class="id-option${selected ? ' on' : ''}" data-select="${user.name}">
+          ${avatarHtml(user)}
+          <span class="id-option-text"><b>${user.name}</b><i>${user.school}</i></span>
+          ${selected ? '<span class="id-option-flag">当前</span>' : ''}
+        </button>`;
+      }).join('');
+
+      panel.innerHTML = `
+        ${currentBlock}
+        <p class="id-panel-label" id="switchLabel">${auth ? '切换为演示身份' : '选择身份'}</p>
+        <div role="listbox" aria-labelledby="switchLabel">${options}</div>
+        <div class="id-divider" role="separator"></div>
+        <button type="button" class="id-logout" id="logoutBtn">
+          <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M8 4H5.5A1.5 1.5 0 0 0 4 5.5v9A1.5 1.5 0 0 0 5.5 16H8" />
+            <path d="M12 6.5 15.5 10 12 13.5M8.5 10h7" />
+          </svg>
+          <span>退出登录</span>
+        </button>
+        <p class="id-panel-note">${auth
+          ? '退出登录会结束本机会话并回到身份门；切换到演示身份会结束当前登录。'
+          : '演示身份无需密码；退出登录只清除本机身份并回到身份门。'}</p>
+      `;
+
+      panel.dataset.variant = state.variant;
+      document.getElementById('logoutBtn').addEventListener('click', handleLogout);
+
+      panel.querySelectorAll('[data-select]').forEach((button) => {
+        button.addEventListener('click', () => {
+          const name = button.getAttribute('data-select');
+          showToast(`已切换为演示身份：${name}`);
+          state.identity = 'demo';
+          updateChrome();
+          renderPanel();
+        });
+      });
+    }
+
+    function updateChrome() {
+      const user = currentUser();
+      document.getElementById('pillName').textContent = user.name;
+      document.getElementById('pillAvatar').textContent = user.initial;
+      document.getElementById('pillAvatar').style.setProperty('--hue', String(user.hue));
+      idBtn.setAttribute('aria-label', `切换身份：当前 ${user.name}`);
+
+      const variantLabel = { a: 'A 描边按钮', b: 'B 分隔行', c: 'C 紧凑行' }[state.variant];
+      const identityLabel = state.identity === 'auth' ? '注册账号' : '演示身份';
+      const themeLabel = state.theme === 'dark' ? '深色' : '浅色';
+      choiceText.textContent = `${variantLabel} · ${identityLabel} · ${themeLabel}`;
+      choiceBadge.textContent = state.variant === 'b' ? '推荐：B' : `当前：${state.variant.toUpperCase()}`;
+    }
+
+    function setOpen(open) {
+      state.open = open;
+      panel.hidden = !open;
+      idBtn.setAttribute('aria-expanded', String(open));
+    }
+
+    function showToast(text, warn = false) {
+      toast.textContent = text;
+      toast.className = warn ? 'toast show warn' : 'toast show';
+      window.clearTimeout(showToast.timer);
+      showToast.timer = window.setTimeout(() => {
+        toast.className = 'toast';
+      }, 2600);
+    }
+
+    function handleLogout() {
+      const auth = state.identity === 'auth';
+      setOpen(false);
+      app.hidden = true;
+      gate.hidden = false;
+      state.onGate = true;
+
+      if (auth && failToggle.checked) {
+        showToast('已退出本机，会话可能仍有效', true);
+      } else if (auth) {
+        showToast('已退出登录：会话已结束，已返回身份门');
+      } else {
+        showToast('已退出演示身份：未发起认证请求，已返回身份门');
+      }
+    }
+
+    function resetPreview() {
+      state.onGate = false;
+      app.hidden = false;
+      gate.hidden = true;
+      setOpen(true);
+      showToast('已重新进入演示身份：林见夏');
+    }
+
+    idBtn.addEventListener('click', () => {
+      if (state.onGate) {
+        resetPreview();
+        return;
+      }
+      setOpen(!state.open);
+      if (state.open) {
+        renderPanel();
+      }
+    });
+
+    document.addEventListener('mousedown', (event) => {
+      if (state.onGate || !state.open) {
+        return;
+      }
+      if (!panel.contains(event.target) && !idBtn.contains(event.target)) {
+        setOpen(false);
+      }
+    });
+
+    document.addEventListener('keydown', (event) => {
+      if (event.key === 'Escape' && state.open) {
+        setOpen(false);
+        idBtn.focus();
+      }
+    });
+
+    document.querySelectorAll('[data-state]').forEach((button) => {
+      button.addEventListener('click', () => {
+        state.identity = button.getAttribute('data-state');
+        document.querySelectorAll('[data-state]').forEach((item) => {
+          item.setAttribute('aria-pressed', String(item === button));
+        });
+        updateChrome();
+        if (!state.onGate) {
+          renderPanel();
+          setOpen(true);
+        }
+      });
+    });
+
+    document.querySelectorAll('[data-variant]').forEach((button) => {
+      button.addEventListener('click', () => {
+        state.variant = button.getAttribute('data-variant');
+        document.querySelectorAll('[data-variant]').forEach((item) => {
+          item.setAttribute('aria-pressed', String(item === button));
+        });
+        updateChrome();
+        renderPanel();
+      });
+    });
+
+    document.getElementById('themeBtn').addEventListener('click', (event) => {
+      state.theme = state.theme === 'dark' ? 'light' : 'dark';
+      document.documentElement.dataset.theme = state.theme;
+      event.currentTarget.setAttribute('aria-pressed', String(state.theme === 'dark'));
+      event.currentTarget.textContent = state.theme === 'dark' ? '浅色模式' : '深色模式';
+      updateChrome();
+    });
+
+    document.getElementById('resetBtn').addEventListener('click', resetPreview);
+
+    document.querySelectorAll('[data-enter]').forEach((button) => {
+      button.addEventListener('click', () => {
+        const name = button.getAttribute('data-enter');
+        state.identity = 'demo';
+        document.querySelectorAll('[data-state]').forEach((item) => {
+          item.setAttribute('aria-pressed', String(item.getAttribute('data-state') === 'demo'));
+        });
+        updateChrome();
+        resetPreview();
+        showToast(`已以演示身份进入：${name}`);
+      });
+    });
+
+    failToggle.addEventListener('change', () => {
+      if (failToggle.checked && state.identity !== 'auth') {
+        showToast('该模拟仅在「注册账号」状态生效', true);
+      }
+    });
+
+    renderPanel();
+    updateChrome();
+  </script>
+</body>
+</html>

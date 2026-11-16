@@ -79,8 +79,8 @@ browser (RouteME/frontend, React 19 + Vite 8 + Ant Design)
         v
 RouteME/backend   Spring Boot 4.1.2 (Java 21) :8080
   controller → service (IService 接口) → service/impl (ServiceImpl) → mapper (BaseMapper) → entity → SQLite SqlLite/routeme.db
-  Flyway migrations: backend/src/main/resources/db/migration（V1-V8，只增不改）
-RouteME/openapi.yaml   契约 SoT（info.version 0.5.0）
+  Flyway migrations: backend/src/main/resources/db/migration（V1-V9，只增不改）
+RouteME/openapi.yaml   契约 SoT（info.version 0.6.0）
 ```
 
 - 根包 `routeme`：`@rule:package-structure` 的 `staffing` 根包是上一作业的领域名，RouteME 按产品名建包，层包与依赖方向不变；例外记录在 `openspec/changes/archive/2026-11-15-bootstrap-hello-world/design.md`。
@@ -92,22 +92,22 @@ RouteME/openapi.yaml   契约 SoT（info.version 0.5.0）
 
 | 包 | 现有成员 | 职责 |
 |---|---|---|
-| controller | 10 个 `XxxController` | 路由、参数绑定与校验、DTO↔领域转换、状态码映射 |
+| controller | 11 个 `XxxController` | 路由、参数绑定与校验、DTO↔领域转换、状态码映射 |
 | param | `TripQueryParam`、`PageParam` | 入参解析（标签拆分、排序取值、分页校验、默认值），无业务判断 |
-| service | `ApplicationService`、`ChatService`、`DemoUserService`、`ExperienceService`、`GreetingService`、`MatchService`、`MyTripsService`、`ReportService`、`TripPlanService`（均为接口） | 业务规则与编排；拥有数据表的接口继承 `IService<XxxEntity>`，纯计算 / 聚合服务（`MatchService`、`MyTripsService`）不继承 |
-| service/impl | 8 个 `XxxServiceImpl` + `AbstractServiceImpl` | `extends ServiceImpl<XxxMapper, XxxEntity>` 实现接口，事务边界在这里；`AbstractServiceImpl` 只放 `nextId` / `firstBy` 这类跨表重复取数 |
-| mapper | 7 个 `XxxMapper extends BaseMapper`，全部标 `@Mapper` | MyBatis-Plus 映射；**注解里不写 SQL**：简单条件用 `LambdaQueryWrapper`，复杂 join / 分组写 `resources/mapper/*.xml`（`TripPlanMapper.xml`、`TripExperienceMapper.xml`、`ChatMessageMapper.xml`） |
-| pojo | 领域 record `TripPlan`、`TripPlanDraft`、`TripApplication`、`TripExperience`、`TripMatch`、`ChatThread`、`ChatMessage`、`Greeting`、`Report`、`DemoUser`、`MatchCandidate`、`PageResult` | 业务语义 record，无持久化注解；与 `entity` 分工：领域对象随业务变 |
-| entity | `GreetingEntity`、`TripPlanEntity`、`TripApplicationEntity`、`TripExperienceEntity`、`ChatMessageEntity`、`ChatThreadEntity`、`ReportEntity`、`UserEntity` | 表结构映射实体（`@TableName` / `@TableId(INPUT)` + `toXxx()`），只被 mapper 与 `service/impl` 引用，向上转 pojo 领域对象 |
-| request | `ApplicationCreateRequest`、`ChatMessageRequest`、`ExperienceWriteRequest`、`ReportRequest`、`TripCreateRequest`、`TripQuery` | 入参 record，与 `openapi.yaml` 入参 schema 一一对应 |
-| response | `ChatMessageResponse`、`ChatPartnerResponse`、`DemoUserResponse`、`ErrorResponse`、`ExperienceResponse`、`ExperienceSaveResponse`、`GreetingResponse`、`MatchCandidateResponse`、`MatchResponse`、`MyTripsResponse`、`PageResponse`、`ReportReceiptResponse`、`TripApplicationResponse`、`TripDetailResponse`、`TripSummaryResponse` | 出参 record 与错误体，与 `openapi.yaml` 出参 schema 一一对应 |
+| service | `ApplicationService`、`AuthService`、`ChatService`、`DemoUserService`、`ExperienceService`、`GreetingService`、`MatchService`、`MyTripsService`、`ReportService`、`TripPlanService`（均为接口） | 业务规则与编排；拥有数据表的接口继承 `IService<XxxEntity>`，纯计算 / 聚合服务（`MatchService`、`MyTripsService`）不继承 |
+| service/impl | 10 个 `XxxServiceImpl` + `AbstractServiceImpl` | `extends ServiceImpl<XxxMapper, XxxEntity>` 实现接口，事务边界在这里；`AbstractServiceImpl` 只放 `nextId` / `firstBy` 这类跨表重复取数 |
+| mapper | 8 个 `XxxMapper extends BaseMapper`，全部标 `@Mapper` | MyBatis-Plus 映射；**注解里不写 SQL**：简单条件用 `LambdaQueryWrapper`，复杂 join / 分组写 `resources/mapper/*.xml`（`TripPlanMapper.xml`、`TripExperienceMapper.xml`、`ChatMessageMapper.xml`） |
+| pojo | 领域 record `TripPlan`、`TripPlanDraft`、`TripApplication`、`TripExperience`、`TripMatch`、`ChatThread`、`ChatMessage`、`Greeting`、`Report`、`DemoUser`、`MatchCandidate`、`PageResult`、`UserAccount`、`AuthSession` | 业务语义 record，无持久化注解；与 `entity` 分工：领域对象随业务变 |
+| entity | `GreetingEntity`、`TripPlanEntity`、`TripApplicationEntity`、`TripExperienceEntity`、`ChatMessageEntity`、`ChatThreadEntity`、`ReportEntity`、`UserEntity`、`AuthSessionEntity` | 表结构映射实体（`@TableName` / `@TableId(INPUT)` + `toXxx()`），只被 mapper 与 `service/impl` 引用，向上转 pojo 领域对象 |
+| request | `ApplicationCreateRequest`、`AuthLoginRequest`、`AuthRegisterRequest`、`ChatMessageRequest`、`ExperienceWriteRequest`、`ReportRequest`、`TripCreateRequest`、`TripQuery` | 入参 record，与 `openapi.yaml` 入参 schema 一一对应 |
+| response | `AuthSessionResponse`、`ChatMessageResponse`、`ChatPartnerResponse`、`DemoUserResponse`、`ErrorResponse`、`ExperienceResponse`、`ExperienceSaveResponse`、`GreetingResponse`、`MatchCandidateResponse`、`MatchResponse`、`MyTripsResponse`、`PageResponse`、`ReportReceiptResponse`、`TripApplicationResponse`、`TripDetailResponse`、`TripSummaryResponse` | 出参 record 与错误体，与 `openapi.yaml` 出参 schema 一一对应 |
 | vo | 空占位 | 响应形状与 `pojo` 领域对象显著不同时才启用 |
 | enums | `ApplicationStatusEnum`、`TripStatusEnum`、`ExperienceIntensityEnum` | 业务枚举（wire 值 + 显示文案） |
-| constant | `TripCatalogConstant` | 静态字典与阀值（目的地、长度/容量/标签上限） |
+| constant | `AuthConstant`、`TripCatalogConstant` | 静态字典与阀值（目的地、长度/容量/标签/认证字段上限） |
 | config | `ClockConfig`、`MybatisPlusConfig`、`SqliteDirectory` | Spring 装配，无业务判断；`MybatisPlusConfig` 注册 `@MapperScan` 与分页拦截器（上限 50，不固定 DbType） |
-| exception | `BusinessException`（基类，带 `code` + `HttpStatus`）与 12 个子类（`InvalidInputException`、`TripNotFoundException`、`ForbiddenActionException` 等） | 业务异常，全部以 `Exception` 结尾 |
+| exception | `BusinessException`（基类，带 `code` + `HttpStatus`）与 15 个子类（`InvalidInputException`、`TripNotFoundException`、`ForbiddenActionException`、`UsernameTakenException`、`InvalidCredentialsException`、`SessionInvalidException` 等） | 业务异常，全部以 `Exception` 结尾 |
 | handler | `GlobalExceptionHandler` | 唯一 `@RestControllerAdvice`：`BusinessException` + 框架解析异常 + 兵底 `Exception`，三个方法覆盖全部错误映射；日志用 Lombok `@Slf4j` |
-| utils | `JsonListUtils` | 无状态工具，叶子包 |
+| utils | `JsonListUtils`、`PasswordUtils` | 无状态工具，叶子包 |
 | annotation / aspect / interceptor / mq / sql | 空占位（`.gitkeep`） | 为 AOP、拦截器、消息队列与 SQL 片段预留；持久化映射统一用 `mapper`，没有 `dao` / `repository` |
 
 - 后缀约定：`XxxController`、`XxxParam`、`XxxService`、`XxxServiceImpl`、`XxxMapper`、`XxxEntity`、`XxxEnum`、`XxxConstant`、`XxxRequest`/`XxxQuery`（request）、`XxxResponse`/`XxxResult`（response）、`XxxVo`、`XxxUtils`、`XxxConfig`、`XxxException`；看到后缀即可定位包。
@@ -129,6 +129,7 @@ RouteME/openapi.yaml   契约 SoT（info.version 0.5.0）
 - 行程能力（`trip-plans`，2026-11-15）：`app_users` + `trip_plans`（V3/V4）；状态由 `completed_at` 与 `joined_count`/`capacity` 投影；搜索/目的地/日期区间/标签/排序在 `TripPlanMapper.xml` 完成；前端 `src/home/HomePage.tsx`（列表）、`src/trips/`（发布、详情、表单与筛选纯函数）、`src/identity/IdentityGate.tsx`；接口见 `interfaces/README.md`。
 - 同行能力（`trip-companions`，2026-11-15）：`trip_applications`/`chat_messages`/`reports`（V5–V7）；无独立 companions 表，同行关系 = 发布者 + `ACCEPTED` 申请；`ApplicationService` 在事务内调用 `TripPlanService.addCompanion/removeCompanion` 单一写入 `joined_count`；`MatchService`/`TripMatch` 只读行程；`ChatService` 由「已接受」推导权限；前端 `src/trips/ApplicationsPage.tsx`、`src/mine/MyTripsPage.tsx`、`src/chat/ChatPage.tsx`、`src/safety/`。
 - 体验能力（`trip-experiences`，2026-11-15）：`trip_experiences`（V8，`UNIQUE(trip_id, author_id)`）；`ExperienceService` 复用 `ApplicationService.participants` 判资格并在同一 `(trip, author)` 上 upsert；列表按 `updated_at` 倒序；参考发布由前端 `?from=` 预填、不新增 copy 接口；前端 `src/experiences/`（分享页、体验卡、校验纯函数）、首页视图切换、详情体验区、`TripCreatePage` 预填。
+- 账号认证（`user-auth`，2026-11-16）：Living Spec `openspec/specs/user-auth/spec.md`（归档 `openspec/changes/archive/2026-11-16-add-user-auth/`）。`app_users` 增 `username` / `password_hash`，新增 `auth_sessions`（V9）；`AuthController` 提供 `/api/auth/register|login|me|logout`，`AuthService` 负责注册校验、PBKDF2-HMAC-SHA256 密码与 7 天不透明 Bearer token；演示账户两列为 `NULL`，不能密码登录，`/api/users/demo` 只返回演示记录。前端 `identity/authForm.ts`（校验、预设兴趣、`addInterest`/`removeInterest`）、`identity/AuthPanel.tsx`（登录/注册 + 兴趣卡片选择器：12 个预设 + 自定义，最多 5 个，仅已选标签提交）、`App.tsx` 的 token 恢复与退出；其余业务端点仍以 `X-User-Id` 识别身份。
 - 设计系统（`design-system`，2026-11-15）：变更包 `openspec/changes/apply-prototype-visual-design/`；`RouteME/frontend/src/styles.css` 的 `:root` 与 `[data-theme="dark"]` 是视觉取值的实现权威（颜色、圆角、阴影、字体、间距、断点），`src/theme.ts` 以同值色板映射 Ant Design `ConfigProvider`，两处 MUST 同批修改；新增样式只引用令牌，不散落硬编码色值。
 - 应用外壳（`shell/`，2026-11-15）：`shell/AppShell`（固定顶栏 + 左侧导航 + ≤900px 底部标签栏 + 跳过导航链接）、`shell/useColorMode`（`data-theme` + localStorage `routeme.colorMode`，初值跟随系统偏好）、`shell/Avatar`、`shell/EmptyState`；`trips/TripCard` 由首页与我的旅行共用；视觉原型见 `docs/prototype/styles.css` 与 `ui.js`，取舍（导航项、统计口径、不引入第二套样式方案）见 change 的 `design.md`。
 - CI：仓库根 `.github/workflows/ci.yml`，backend `./mvnw -B verify`，frontend `npm ci && npm run build && npm test`；Playwright 端到端（`RouteME/e2e`）按 bootstrap 决定不进 CI，作为本地门禁。

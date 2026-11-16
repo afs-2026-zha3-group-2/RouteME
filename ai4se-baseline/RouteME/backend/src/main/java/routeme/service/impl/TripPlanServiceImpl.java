@@ -13,6 +13,7 @@ import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 
+import routeme.constant.AreaConstant;
 import routeme.enums.TripStatusEnum;
 import routeme.exception.ForbiddenActionException;
 import routeme.exception.InvalidInputException;
@@ -20,6 +21,7 @@ import routeme.exception.TripNotFoundException;
 import routeme.exception.TripNotOpenException;
 import routeme.mapper.TripPlanMapper;
 import routeme.param.PageParam;
+import routeme.pojo.AreaCity;
 import routeme.pojo.DemoUser;
 import routeme.pojo.PageResult;
 import routeme.pojo.TripPlan;
@@ -50,11 +52,13 @@ public class TripPlanServiceImpl extends AbstractServiceImpl<TripPlanMapper, Tri
     @Transactional
     public TripPlan create(TripCreateRequest request, long publisherId) {
         Instant now = clock.instant();
-        TripPlanDraft draft = new TripPlanDraft(
-                publisherId,
-                request.title(),
-                request.destination(),
-                request.startDate(),
+            AreaCity area = AreaConstant.cityOf(request.destinationCode())
+                    .orElseThrow(() -> new InvalidInputException("destination code is invalid"));
+            TripPlanDraft draft = new TripPlanDraft(
+                    publisherId,
+                    request.title(),
+                    area.displayName(),
+                    request.startDate(),
                 request.endDate(),
                 request.stops(),
                 request.meetingArea(),
