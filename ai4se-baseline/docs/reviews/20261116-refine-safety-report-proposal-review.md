@@ -44,3 +44,11 @@
 - **批准人：** Jacky（AO）
 - **批准时间：** 2026-11-16T15:44+08:00
 - **批准范围：** 批准本 proposal 并进入下一份工件（Delta Spec）与 P1 收口；SUGGESTION 项 P-01 / P-02 / P-03 / P-04 留待 P3 / P4 收口，不阻断。
+
+## 变更摘要（2026-11-16）
+
+- **修订类型：** 格式（不改变语义）——按 `@rule:artifact-review-gate`「只改错字、链接或格式且不改变语义的修订，可复用上一份 Pass 报告」，复用本次 Pass 结论，不另出一份报告。
+- **修订内容：** `openspec show refine-safety-report --json` 报 `Change must have a Why section`（`validate --strict` 不校验该段，`show` / 归档会）。在「编号说明」之后补 `## Why` 与 `## What Changes` 两节，内容为提案「问题 / 变化范围」的浓缩复述，未新增或删减范围、决策与验收信号；节次结构与 `add-trip-completion/proposal.md` 对齐。
+- **复验：** `openspec show refine-safety-report --json --deltas-only` 返回 `deltaCount: 1`（`trip-companions` MODIFIED）；`openspec validate refine-safety-report --strict` → `Change 'refine-safety-report' is valid`。
+- **同批复核修订（P2 一致性检查 L-01 / L-02 / L-04）：** ①「范围」第 7 条与「影响面」Living Spec 行由「保留『我的旅行』两个场景」改为「保留 4 个既有场景名，其中『安全提示常驻』『提交举报并收到回执』内容收敛」；②「残余风险」集合区域行由自相矛盾的「统一回退文案（两套字面量）」改为「按页面语境分别定义，统一放 `tripMessages`」；③「残余风险」最后一行由「用户当次要求『完成 P1 即可提交推送』」改为「P1 只本地提交、不 push」。三处均为措辞与事实记录修正，未改范围、决策表、验收信号与残余风险条目数量。
+- **批准仍有效：** 批准人 Jacky（AO）／批准时间 2026-11-16T15:44+08:00。

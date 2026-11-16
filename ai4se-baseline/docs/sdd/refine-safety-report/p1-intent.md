@@ -19,7 +19,7 @@
 | 故事 | [`stories.md`「REQ-012（S14）」](../../../requirement-workspace/stories.md) | S14 / 迭代 3 / P0 / 1 点 / 详情页 + 聊天页；无独立故事文件 |
 | 登记与交接 | [`registry.md`](../../../requirement-workspace/registry.md)、[`handoff.md`](../../../requirement-workspace/handoff.md) | REQ-012 行、编号说明、REQ → change 映射、共享分析覆盖范围 |
 | 提案 | [`proposal.md`](../../../openspec/changes/refine-safety-report/proposal.md) | 问题 / 范围 / 影响面 / 决策 / 验收信号 / 残余风险 |
-| Delta 草稿 | [`specs/trip-companions/spec.md`](../../../openspec/changes/refine-safety-report/specs/trip-companions/spec.md) | MODIFIED「我的旅行聚合与最低安全能力」，1 Requirement / 9 Scenario（保留 3 个基线名 + 新增 6） |
+| Delta 草稿 | [`specs/trip-companions/spec.md`](../../../openspec/changes/refine-safety-report/specs/trip-companions/spec.md) | MODIFIED「我的旅行聚合与最低安全能力」，1 Requirement / 9 Scenario（保留 4 个基线场景名 + 新增 5） |
 | 工件评审 | [`proposal-review`](../../reviews/20261116-refine-safety-report-proposal-review.md)、[`spec-review`](../../reviews/20261116-refine-safety-report-spec-review.md) | 均 Pass，无 BLOCKER；已由 Jacky 批准 |
 | 质量报告 | [`20261116-154500-quality-checklist-report.md`](../../ai4se-plugins/20261116-154500-quality-checklist-report.md) | P1-1–P1-4 Pass；P1-5/P1-6 optional Skipped；Overall Pass |
 

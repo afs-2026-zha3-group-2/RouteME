@@ -6,6 +6,17 @@
 - **规则：** `@rule:spec-first`、`@rule:sdd-artifacts`、`@rule:web-coding-style`、`@rule:pii-scrubbing`；视觉基准：`docs/prototype/prototype.html` + `docs/prototype/styles.css`（原型 `ui.js` `safetyPanel()` / `chat-safety` / `reportModal()`）
 - **编号说明（2026-11-16）：** 起草时按当时序号定为 REQ-011；同日 `main` 已将 S15 结束行程登记为 REQ-011（`add-trip-completion`），按「后到者顺延」改为 **REQ-012**。意图 / Ready 条目、`stories.md`、`registry.md`、`handoff.md`、`deep-dive.md` / `impact-brief.md` 增补已同步改号。
 
+## Why
+
+`add-trip-companions` 已把安全提示与举报落到详情页与聊天页，但展示口径与 S14 的验收标准脱节：安全提示仍是一整段文字（「把行程告知亲友」缺失、无本行程集合区域、无拒绝转账或索证），回执文案、举报弹窗的身份保密与紧急求助说明缺失，本人发布的行程上也能看到举报按钮。结果是学生在决定是否与陌生人同行时，拿不到可复述的三条边界，也无法确认举报是否被收到。
+
+## What Changes
+
+- `trip-companions`：详情页安全提示改为三条文本列表（含本行程集合区域与空值回退）；聊天页改为一行同义提示（含已结束只读聊天）；举报入口为行程（仅他人）+ 用户（常驻）；弹窗补身份保密与紧急求助说明；回执改为「已收到，我们会处理」；提交失败可读且可重试；安全区与弹窗不展示隐私字段。
+- `trip-plans`：只读消费 `meeting_area` 与行程状态，不改字段与状态推导。
+- 契约 / 后端 / 迁移：不变（复用 `POST /api/reports`、四值 `reason`、`note ≤200`；保留 `ReportControllerTest` 回归）。
+- 前端 / 测试：`SafetyNote`、`ReportModal`、`TripDetailPage`、`ChatPage`、`tripMessages`、`styles.css` 与相关单测 / E2E。
+
 ## 问题
 
 `add-trip-companions` 已归档并进入 Living Spec：`SafetyNote` 已在详情页与聊天页渲染，`ReportModal` 已能提交 `POST /api/reports` 并显示回执，后端只记录不处置，电话 / 证件 / 精确住址从未采集。但 S14 的验收口径与现状有三处错位：
@@ -26,7 +37,7 @@
 - 举报入口：详情页「举报这条行程」仅在非本人行程显示；聊天页「举报这位用户」常驻（含只读聊天）。
 - 举报弹窗补充「我们不会向对方透露你的身份」与「如果你正处于危险中，请先联系当地警方或学校保卫处。平台举报不能替代紧急求助。」。
 - 提交成功进入回执态，文案固定为「已收到，我们会处理」；提交失败给出可读提示并保留已选原因与已填说明以便重试。
-- 为 `trip-companions` 写一份 MODIFIED delta spec，替换「我的旅行聚合与最低安全能力」，保留「我的旅行」既有两个场景。
+- 为 `trip-companions` 写一份 MODIFIED delta spec，替换「我的旅行聚合与最低安全能力」，保留 Living Spec 的 4 个既有场景名：2 个「我的旅行」场景原样保留，「安全提示常驻」与「提交举报并收到回执」保留名称、内容收敛（三条文本列表 / 新回执文案）。
 
 **Out of scope**
 
@@ -50,7 +61,7 @@
 | `RouteME/frontend/src/**/*.test.ts(x)`、`RouteME/e2e/tests/companions.spec.ts`、`profiles.spec.ts` | 三条提示、集合区域回退、本人无举报入口、回执文案、失败重试；同步旧回执断言 |
 | `trip-plans`（上游，只读） | `meeting_area` 与行程状态由 `trip-plans` 单一写入；本 change 只读展示，不改字段与状态推导 |
 | 后端 / `openapi.yaml` / 迁移 | **无改动**：`/reports`、四值 `reason`、`note ≤200` 已存在；保留 `ReportControllerTest` 回归 |
-| Living Spec `openspec/specs/trip-companions/spec.md` | 归档阶段用本 change 的 MODIFIED delta 替换「我的旅行聚合与最低安全能力」块，保留「我的旅行」两个场景 |
+| Living Spec `openspec/specs/trip-companions/spec.md` | 归档阶段用本 change 的 MODIFIED delta 替换「我的旅行聚合与最低安全能力」块；4 个既有场景名全部保留，其中「安全提示常驻」「提交举报并收到回执」内容收敛 |
 
 ## 决策
 
@@ -82,12 +93,12 @@
 |---|---|
 | 回执文案变更影响既有 E2E | `companions.spec.ts` 断言旧文案「举报已收到，我们会记录处理。」，需同步改为「已收到，我们会处理」；`profiles.spec.ts` 只断言弹窗标题与隐私词 |
 | 详情页与聊天页两份文案漂移 | 三条事实与聊天行集中放入 `tripMessages`，组件只组装 |
-| 集合区域为空时的回退不一致 | 统一回退文案（详情「尚未填写，出发前请在聊天中确认」/ 聊天「待确认」），由组件派生 |
+| 集合区域为空时的回退不一致 | 按页面语境分别定义：详情「尚未填写，出发前请在聊天中确认」、聊天「待确认」；两套字面量统一放 `tripMessages`，组件只派生 |
 | `SafetyNote` 被体验发布页复用 | 保留可选参数形态，体验页继续使用无举报按钮的简化提示 |
 | 本人行程隐藏举报后被误认为功能缺失 | 安全提示保留，发布者仍有结束行程 / 查看申请等操作；AC 明确本人无举报入口 |
 | 举报原因词表与原型不一致 | 用户裁决 D2 以现有四类为准；分目标词表记为后续候选（non-blocking） |
 | E2E 未纳入 CI | 与既有 change 相同：本地执行相关 spec，CI 以构建与单测为准；债务归测试 owner |
-| 阶段提交与 `@rule:git-commit-conventions` 冲突 | 用户当次要求「完成 P1 即可提交推送」，以用户指示为准，并在交付说明记录偏离 |
+| 阶段提交与发布时机（已收口） | P1 按用户指示只本地提交、不 push（本地 `main` 仍含并行会话未推送提交，发布时机由该会话决定）；提交时机仍遵循 `@rule:git-commit-conventions`，交付说明记录发布偏离 |
 
 ## 交付边界
 
