@@ -110,6 +110,8 @@ export type TripSummary = {
   start_date: string;
   end_date: string;
   stops: string[];
+  meeting_area: string | null;
+  meeting_time: string | null;
   tags: string[];
   capacity: number;
   joined_count: number;
@@ -119,7 +121,6 @@ export type TripSummary = {
 };
 
 export type TripDetail = TripSummary & {
-  meeting_area: string | null;
   note: string | null;
   budget_min_cents: number | null;
   budget_max_cents: number | null;
@@ -134,11 +135,17 @@ export type TripCreateRequest = {
   end_date: string;
   stops: string[];
   meeting_area?: string | null;
+  meeting_time?: string | null;
   note?: string | null;
   budget_min_cents?: number | null;
   budget_max_cents?: number | null;
   tags: string[];
   capacity: number;
+};
+
+export type TripMeetingRequest = {
+  meeting_area?: string | null;
+  meeting_time?: string | null;
 };
 
 export type TripFilters = {
@@ -161,7 +168,7 @@ export type MatchCandidate = {
   match: Match;
 };
 
-export type ApplicationStatus = 'pending' | 'accepted' | 'rejected' | 'cancelled';
+export type ApplicationStatus = 'pending' | 'accepted' | 'rejected' | 'cancelled' | 'left';
 
 export type TripApplication = {
   id: number;

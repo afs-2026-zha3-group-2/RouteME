@@ -1,5 +1,6 @@
 package routeme.controller;
 
+import static org.hamcrest.Matchers.hasItem;
 import static org.hamcrest.Matchers.nullValue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -196,6 +197,13 @@ class ApplicationControllerTest {
         void in_acceptedCompanion_out_leavesAndCanReapply() throws Exception {
             mockMvc.perform(post("/api/trips/4/leave").header("X-User-Id", "1"))
                     .andExpect(status().isNoContent());
+
+            mockMvc.perform(get("/api/me/applications").header("X-User-Id", "1"))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$[?(@.trip_id == 4)].status", hasItem("left")));
+
+            mockMvc.perform(get("/api/users/1/profile").header("X-User-Id", "2"))
+                    .andExpect(jsonPath("$.stats.joined").value(1));
 
             mockMvc.perform(get("/api/trips/4").header("X-User-Id", "1"))
                     .andExpect(jsonPath("$.joined_count").value(1))

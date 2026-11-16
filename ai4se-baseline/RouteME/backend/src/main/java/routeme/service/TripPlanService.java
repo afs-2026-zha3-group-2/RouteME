@@ -11,6 +11,7 @@ import routeme.pojo.DemoUser;
 import routeme.pojo.PageResult;
 import routeme.pojo.TripPlan;
 import routeme.request.TripCreateRequest;
+import routeme.request.TripMeetingRequest;
 import routeme.request.TripQuery;
 
 /**
@@ -86,6 +87,18 @@ public interface TripPlanService extends IService<TripPlanEntity> {
      * @return 结束后的行程（状态 completed）
      */
     TripPlan complete(long tripId, long userId);
+
+    /**
+     * 发布者维护集合区域与集合时间：只改这两个字段，招募中与已满员可用。
+     *
+     * <p>两个字段整体替换：未传或传 null 视为清空。</p>
+     *
+     * @param tripId      行程 id
+     * @param publisherId 当前身份 id，必须等于发布者
+     * @param request     集合区域与集合时间
+     * @return 更新后的行程
+     */
+    TripPlan updateMeeting(long tripId, long publisherId, TripMeetingRequest request);
 
     /**
      * 接受同行后人数 +1；达上限时状态自动转为 full。

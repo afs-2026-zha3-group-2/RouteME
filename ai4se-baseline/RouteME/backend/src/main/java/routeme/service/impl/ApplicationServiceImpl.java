@@ -20,6 +20,7 @@ import routeme.exception.ForbiddenActionException;
 import routeme.exception.InvalidInputException;
 import routeme.exception.TripNotOpenException;
 import routeme.mapper.TripApplicationMapper;
+import routeme.pojo.ChatCounterpart;
 import routeme.pojo.DemoUser;
 import routeme.pojo.TripApplication;
 import routeme.entity.TripApplicationEntity;
@@ -102,12 +103,38 @@ public class ApplicationServiceImpl
         TripApplication accepted = findAccepted(tripId, userId)
                 .orElseThrow(() -> new ForbiddenActionException("only accepted companions can leave trip " + tripId));
         tripPlanService.removeCompanion(tripId);
-        updateStatus(accepted.id(), ApplicationStatusEnum.CANCELLED, clock.instant());
+        updateStatus(accepted.id(), ApplicationStatusEnum.LEFT, clock.instant());
     }
 
     @Override
     public boolean isAccepted(long tripId, long userId) {
         return findAccepted(tripId, userId).isPresent();
+    }
+
+    @Override
+    public boolean isChatPartner(long tripId, long userId) {
+        return countChatPartners(tripId, userId) > 0;
+    }
+
+    @Override
+    public List<ChatCounterpart> chatCounterparts(long userId) {
+        List<ChatCounterpart> counterparts = new ArrayList<>();
+        for (TripApplication application : mine(userId)) {
+            if (application.isAccepted() || application.isLeft()) {
+                TripPlan trip = tripPlanService.require(application.tripId());
+                counterparts.add(new ChatCounterpart(trip.id(), trip.publisherId()));
+            }
+        }
+        for (TripPlan trip : tripPlanService.findAllTrips()) {
+            if (trip.publisherId() != userId) {
+                continue;
+            }
+            findByTrip(trip.id()).stream()
+                    .filter(application -> application.isAccepted() || application.isLeft())
+                    .forEach(application ->
+                            counterparts.add(new ChatCounterpart(trip.id(), application.applicantId())));
+        }
+        return counterparts;
     }
 
     @Override
@@ -201,6 +228,15 @@ public class ApplicationServiceImpl
                 .eq(TripApplicationEntity::getStatus, ApplicationStatusEnum.ACCEPTED.name())
                 .oneOpt()
                 .map(TripApplicationEntity::toApplication);
+    }
+
+    private long countChatPartners(long tripId, long applicantId) {
+        return count(Wrappers.<TripApplicationEntity>lambdaQuery()
+                .eq(TripApplicationEntity::getTripId, tripId)
+                .eq(TripApplicationEntity::getApplicantId, applicantId)
+                .in(TripApplicationEntity::getStatus,
+                        ApplicationStatusEnum.ACCEPTED.name(),
+                        ApplicationStatusEnum.LEFT.name()));
     }
 
     private boolean existsActive(long tripId, long applicantId) {

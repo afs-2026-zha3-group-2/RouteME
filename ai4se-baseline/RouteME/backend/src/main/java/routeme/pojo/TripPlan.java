@@ -31,6 +31,7 @@ public record TripPlan(
         LocalDate endDate,
         List<String> stops,
         String meetingArea,
+        String meetingTime,
         String note,
         Integer budgetMinCents,
         Integer budgetMaxCents,
@@ -52,8 +53,17 @@ public record TripPlan(
     }
 
     public TripPlan withId(long newId) {
-        return new TripPlan(newId, publisherId, title, destinationCode, destination, startDate, endDate, stops, meetingArea, note,
-                budgetMinCents, budgetMaxCents, tags, capacity, joinedCount, completedAt, createdAt, updatedAt);
+        return new TripPlan(newId, publisherId, title, destinationCode, destination, startDate, endDate, stops, meetingArea,
+                meetingTime, note, budgetMinCents, budgetMaxCents, tags, capacity, joinedCount, completedAt, createdAt, updatedAt);
+    }
+
+    /**
+     * 只替换集合区域与集合时间，并刷新更新时间。
+     */
+    public TripPlan withMeetingInfo(String newMeetingArea, String newMeetingTime, Instant now) {
+        return new TripPlan(id, publisherId, title, destinationCode, destination, startDate, endDate, stops,
+                newMeetingArea, newMeetingTime, note, budgetMinCents, budgetMaxCents, tags, capacity, joinedCount,
+                completedAt, createdAt, now);
     }
 
     public static TripPlan create(TripPlanDraft draft, Instant now) {
@@ -99,12 +109,14 @@ public record TripPlan(
         if (meetingArea != null && meetingArea.length() > MAX_MEETING_AREA_LENGTH) {
             throw new InvalidInputException("meeting area is too long");
         }
+        String meetingTime = TripMeetingRules.normalize(draft.meetingTime());
+        TripMeetingRules.requireWithinEndDate(draft.endDate(), meetingTime);
         String note = trimToNull(draft.note());
         if (note != null && note.length() > MAX_NOTE_LENGTH) {
             throw new InvalidInputException("note is too long");
         }
         return new TripPlan(0, draft.publisherId(), title, destinationCode, destination, draft.startDate(), draft.endDate(),
-                stops, meetingArea, note, budgetMin, budgetMax, tags, capacity, 1, null, now, now);
+                stops, meetingArea, meetingTime, note, budgetMin, budgetMax, tags, capacity, 1, null, now, now);
     }
 
     private static String requireText(String value, String field) {

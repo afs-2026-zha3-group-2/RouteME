@@ -1,14 +1,15 @@
-import { useCallback, useEffect, useState } from 'react';
-import { Alert, Button, Card, Input, Skeleton, Space, Typography } from 'antd';
-import { loadMessages, loadTrip, loadUsers, sendMessage } from '../api';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { Alert, Button, Skeleton } from 'antd';
+import { loadChatPartners, loadMessages, loadTrip, leaveTrip, sendMessage } from '../api';
 import { tripMessages } from '../i18n/tripMessages';
+import { useProfile } from '../profiles/ProfileContext';
 import { ReportModal } from '../safety/ReportModal';
-import { SafetyNote } from '../safety/SafetyNote';
-import { Avatar } from '../shell/Avatar';
-import type { ChatMessage, DemoUser, TripDetail } from '../types';
-
-const POLL_INTERVAL_MS = 5000;
-const MAX_CONTENT_LENGTH = 500;
+import type { ChatMessage, ChatPartner, DemoUser, TripDetail } from '../types';
+import { ChatList } from './ChatList';
+import { ChatMain } from './ChatMain';
+import { canLeaveTrip } from './chatActions';
+import { canSendMessage } from './chatComposer';
+import { shouldPoll, startChatPolling } from './chatPolling';
 
 type Props = {
   currentUser: DemoUser;
@@ -16,83 +17,157 @@ type Props = {
   otherUserId: number;
 };
 
+/**
+ * 聊天页入口：短轮询 + 手动刷新，不做 WebSocket / 已读回执 / 推送 / 图片。
+ * 左栏来自 `GET /api/me/chat-partners`（含已匹配但无消息的会话）。
+ */
 export function ChatPage({ currentUser, tripId, otherUserId }: Props) {
-  const [messages, setMessages] = useState<ChatMessage[] | null>(null);
+  const { openProfile } = useProfile();
+  const [partners, setPartners] = useState<ChatPartner[] | null>(null);
+  const [partnersError, setPartnersError] = useState<string | null>(null);
   const [trip, setTrip] = useState<TripDetail | null>(null);
-  const [otherUser, setOtherUser] = useState<DemoUser | null>(null);
-  const [completed, setCompleted] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [messages, setMessages] = useState<ChatMessage[] | null>(null);
+  const [messagesError, setMessagesError] = useState<string | null>(null);
   const [content, setContent] = useState('');
   const [sending, setSending] = useState(false);
   const [reportOpen, setReportOpen] = useState(false);
+  const [reloadToken, setReloadToken] = useState(0);
 
-    const reload = useCallback(() => {
-      loadMessages(currentUser.id, tripId, otherUserId)
-        .then((loaded) => {
-          setMessages(loaded);
-        })
+  const partner = useMemo(
+    () => partners?.find((item) => item.trip.id === tripId && item.other.id === otherUserId) ?? null,
+    [partners, tripId, otherUserId],
+  );
+
+  const reloadPartners = useCallback(() => {
+    loadChatPartners(currentUser.id)
+      .then((loaded) => {
+        setPartners(loaded);
+        setPartnersError(null);
+      })
       .catch((caught: unknown) => {
-        setError(caught instanceof Error ? caught.message : 'UNKNOWN_ERROR');
+        setPartners([]);
+        setPartnersError(caught instanceof Error ? caught.message : 'UNKNOWN_ERROR');
       });
-  }, [currentUser.id, tripId, otherUserId]);
+  }, [currentUser.id]);
 
   useEffect(() => {
-    let active = true;
-    reload();
-    loadTrip(currentUser.id, tripId)
-      .then((loadedTrip) => {
-        if (active) {
-          setTrip(loadedTrip);
-          setCompleted(loadedTrip.status === 'completed');
-        }
-      })
-      .catch(() => undefined);
-    loadUsers()
-      .then((loadedUsers) => {
-        if (active) {
-          setOtherUser(loadedUsers.find((user) => user.id === otherUserId) ?? null);
-        }
-      })
-      .catch(() => undefined);
-    return () => {
-      active = false;
-    };
-  }, [currentUser.id, tripId, otherUserId, reload]);
+    reloadPartners();
+  }, [reloadPartners, reloadToken]);
 
-  useEffect(() => {
-    if (completed) {
+  const reloadMessages = useCallback(() => {
+    if (partner === null) {
       return;
     }
-    const timer = window.setInterval(reload, POLL_INTERVAL_MS);
-    return () => window.clearInterval(timer);
-  }, [completed, reload]);
+    loadMessages(currentUser.id, tripId, otherUserId)
+      .then((loaded) => {
+        setMessages(loaded);
+        setMessagesError(null);
+      })
+      .catch((caught: unknown) => {
+        setMessages(null);
+        setMessagesError(caught instanceof Error ? caught.message : 'UNKNOWN_ERROR');
+      });
+  }, [partner, currentUser.id, tripId, otherUserId]);
+
+  useEffect(() => {
+    if (partner === null) {
+      setTrip(null);
+      setMessages(null);
+      setMessagesError(null);
+      return;
+    }
+    setMessages(null);
+    setMessagesError(null);
+    reloadMessages();
+    loadTrip(currentUser.id, tripId)
+      .then((loaded) => setTrip(loaded))
+      .catch(() => setTrip(null));
+  }, [partner, currentUser.id, tripId, reloadMessages]);
+
+  useEffect(() => {
+    if (partner === null || trip === null || !shouldPoll(trip.status)) {
+      return;
+    }
+    return startChatPolling(reloadMessages);
+  }, [partner, trip, reloadMessages]);
 
   const send = async () => {
-    const trimmed = content.trim();
-    if (trimmed === '') {
+    if (!canSendMessage(content) || sending) {
       return;
     }
     setSending(true);
-    setError(null);
+    setMessagesError(null);
     try {
-      const saved = await sendMessage(currentUser.id, tripId, otherUserId, trimmed);
+      const saved = await sendMessage(currentUser.id, tripId, otherUserId, content.trim());
       setMessages((previous) => [...(previous ?? []), saved]);
       setContent('');
+      setReloadToken((token) => token + 1);
     } catch (caught: unknown) {
-      setError(caught instanceof Error ? caught.message : 'UNKNOWN_ERROR');
+      setMessagesError(caught instanceof Error ? caught.message : 'UNKNOWN_ERROR');
     } finally {
       setSending(false);
     }
   };
 
-  if (error !== null && messages === null) {
+  const leave = async () => {
+    if (!window.confirm(tripMessages.leaveConfirm)) {
+      return;
+    }
+    try {
+      await leaveTrip(currentUser.id, tripId);
+      setReloadToken((token) => token + 1);
+      loadTrip(currentUser.id, tripId)
+        .then((loaded) => setTrip(loaded))
+        .catch(() => undefined);
+    } catch (caught: unknown) {
+      setMessagesError(caught instanceof Error ? caught.message : 'UNKNOWN_ERROR');
+    }
+  };
+
+  if (partners === null && partnersError === null) {
+    return (
+      <main className="form-page">
+        <Skeleton active paragraph={{ rows: 6 }} />
+      </main>
+    );
+  }
+
+  if (partnersError !== null) {
     return (
       <main className="form-page">
         <Alert
           type="error"
           showIcon
           title={tripMessages.chatFailed}
-          description={error === 'CHAT_NOT_ALLOWED' ? tripMessages.chatNotAllowed : error}
+          description={partnersError}
+          action={<Button onClick={reloadPartners}>{tripMessages.retry}</Button>}
+        />
+      </main>
+    );
+  }
+
+  if (partners !== null && partners.length === 0) {
+    return (
+      <main className="form-page">
+        <Alert
+          type="info"
+          showIcon
+          title={tripMessages.chatListEmpty}
+          description={tripMessages.chatListEmptyHint}
+          action={<Button onClick={() => (window.location.hash = '#/')}>{tripMessages.backHome}</Button>}
+        />
+      </main>
+    );
+  }
+
+  if (partners !== null && partner === null) {
+    return (
+      <main className="form-page">
+        <Alert
+          type="warning"
+          showIcon
+          title={tripMessages.chatNotAllowed}
+          description={tripMessages.chatNotAllowedHint}
           action={
             <Button onClick={() => (window.location.hash = `#/trips/${tripId}`)}>
               {tripMessages.detailTitle}
@@ -103,93 +178,49 @@ export function ChatPage({ currentUser, tripId, otherUserId }: Props) {
     );
   }
 
+  if (partner === null || partners === null) {
+    return (
+      <main className="form-page">
+        <Skeleton active paragraph={{ rows: 6 }} />
+      </main>
+    );
+  }
+
+  const canLeave =
+    trip !== null &&
+    canLeaveTrip({
+      currentUserId: currentUser.id,
+      isPublisher: trip.publisher.id === currentUser.id,
+      tripStatus: trip.status,
+      participants: trip.participants,
+    });
+
   return (
-    <main className="form-page">
-      <Space orientation="vertical" size="middle" className="detail-stack">
-        <a href={`#/trips/${tripId}`} className="detail-back">
-          {tripMessages.detailTitle}
-        </a>
-        <Card className="panel chat-panel">
-          <Space orientation="vertical" size="small" className="home-stack">
-            <div className="chat-head">
-              {otherUser !== null && <Avatar user={otherUser} size="lg" />}
-              <div className="chat-head-text">
-                <Typography.Title level={3} className="trip-title chat-title">
-                  {otherUser?.nickname ?? '同行者'}
-                </Typography.Title>
-                <p className="chat-head-meta">
-                  {trip !== null && <span>{trip.title}</span>}
-                  {otherUser !== null && <span>{otherUser.school}</span>}
-                </p>
-                {otherUser !== null && otherUser.interests.length > 0 && (
-                  <p className="chat-head-tags">
-                    {otherUser.interests.map((interest) => (
-                      <span key={interest} className="tag">
-                        {interest}
-                      </span>
-                    ))}
-                  </p>
-                )}
-              </div>
-            </div>
+    <main className="chat-page">
+      <ChatList partners={partners} activeTripId={tripId} activeOtherId={otherUserId} />
 
-            <SafetyNote onReport={() => setReportOpen(true)} />
-
-            {completed && <Alert type="info" showIcon title={tripMessages.chatReadOnly} />}
-
-            {error !== null && messages !== null && (
-              <Alert type="error" showIcon title={tripMessages.chatSendFailed} description={error} />
-            )}
-
-            {messages === null && <Skeleton active paragraph={{ rows: 4 }} />}
-
-            {messages !== null && messages.length === 0 && (
-              <Typography.Text type="secondary">{tripMessages.chatEmpty}</Typography.Text>
-            )}
-
-            {messages !== null && messages.length > 0 && (
-              <div className="chat-list">
-                {messages.map((message) => (
-                  <div
-                    key={message.id}
-                    className={`chat-bubble ${message.sender_id === currentUser.id ? 'mine' : ''}`}
-                  >
-                    <span className="chat-author">
-                      {message.sender_id === currentUser.id
-                        ? `${currentUser.nickname}（我）`
-                        : (otherUser?.nickname ?? '同行者')}
-                    </span>
-                    <Typography.Text>{message.content}</Typography.Text>
-                    <div className="chat-meta">{new Date(message.sent_at).toLocaleString()}</div>
-                  </div>
-                ))}
-              </div>
-            )}
-
-            <Space size="small" wrap>
-              <Button size="small" onClick={reload}>
-                {tripMessages.chatRefresh}
-              </Button>
-            </Space>
-
-            {!completed && (
-              <Space.Compact style={{ width: '100%' }}>
-                <Input.TextArea
-                  value={content}
-                  rows={2}
-                  maxLength={MAX_CONTENT_LENGTH}
-                  showCount
-                  placeholder={tripMessages.chatPlaceholder}
-                  onChange={(event) => setContent(event.target.value)}
-                />
-                <Button type="primary" loading={sending} onClick={send}>
-                  {tripMessages.chatSend}
-                </Button>
-              </Space.Compact>
-            )}
-          </Space>
-        </Card>
-      </Space>
+      {trip === null ? (
+        <section className="chat-main">
+          <Skeleton active paragraph={{ rows: 6 }} />
+        </section>
+      ) : (
+        <ChatMain
+          currentUser={currentUser}
+          trip={trip}
+          other={partner.other}
+          messages={messages}
+          error={messagesError}
+          content={content}
+          sending={sending}
+          canLeave={canLeave}
+          onContentChange={setContent}
+          onSend={send}
+          onReload={reloadMessages}
+          onProfile={() => openProfile(partner.other.id)}
+          onReport={() => setReportOpen(true)}
+          onLeave={leave}
+        />
+      )}
 
       <ReportModal
         userId={currentUser.id}

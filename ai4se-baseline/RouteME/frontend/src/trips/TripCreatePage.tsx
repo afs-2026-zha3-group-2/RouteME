@@ -234,6 +234,19 @@ export function TripCreatePage({ currentUser, fromTripId }: Props) {
               )}
             </div>
 
+            <Field
+              label={tripMessages.fieldMeetingTime}
+              htmlFor="trip-meeting-time"
+              error={errors.meetingTime}
+            >
+              <Input
+                {...fieldProps('trip-meeting-time', errors.meetingTime)}
+                type="datetime-local"
+                value={values.meetingTime}
+                onChange={(event) => update({ meetingTime: event.target.value })}
+              />
+            </Field>
+
             <div className="form-grid">
               <Field label={tripMessages.fieldBudgetMin} htmlFor="trip-budget-min" error={errors.budget}>
                 <Input

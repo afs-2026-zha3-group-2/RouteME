@@ -9,6 +9,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -16,6 +17,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import routeme.request.TripCreateRequest;
+import routeme.request.TripMeetingRequest;
 import routeme.response.PageResponse;
 import routeme.response.TripDetailResponse;
 import routeme.request.TripQuery;
@@ -93,4 +95,14 @@ public class TripController {
                 TripPlan completed = tripPlanService.complete(tripId, publisher.id());
                 return TripDetailResponse.from(completed, publisher, applicationService.participants(tripId));
             }
+
+    @PutMapping("/{tripId}/meeting")
+    public TripDetailResponse updateMeeting(
+            @RequestHeader(value = "X-User-Id", required = false) Long userId,
+            @PathVariable long tripId,
+            @RequestBody TripMeetingRequest request) {
+        DemoUser publisher = demoUserService.require(userId);
+        TripPlan updated = tripPlanService.updateMeeting(tripId, publisher.id(), request);
+        return TripDetailResponse.from(updated, publisher, applicationService.participants(tripId));
+    }
         }

@@ -1,5 +1,7 @@
 package routeme.service.impl;
 
+import static routeme.constant.TripCatalogConstant.MAX_MEETING_AREA_LENGTH;
+
 import java.time.Clock;
 import java.time.Instant;
 import java.util.List;
@@ -22,10 +24,12 @@ import routeme.mapper.TripPlanMapper;
 import routeme.param.PageParam;
 import routeme.pojo.DemoUser;
 import routeme.pojo.PageResult;
+import routeme.pojo.TripMeetingRules;
 import routeme.pojo.TripPlan;
 import routeme.pojo.TripPlanDraft;
 import routeme.entity.TripPlanEntity;
 import routeme.request.TripCreateRequest;
+import routeme.request.TripMeetingRequest;
 import routeme.request.TripQuery;
 import routeme.service.DemoUserService;
 import routeme.service.TripPlanService;
@@ -58,6 +62,7 @@ public class TripPlanServiceImpl extends AbstractServiceImpl<TripPlanMapper, Tri
                 request.endDate(),
                 request.stops(),
                 request.meetingArea(),
+                request.meetingTime(),
                 request.note(),
                 request.budgetMinCents(),
                 request.budgetMaxCents(),
@@ -175,6 +180,38 @@ public class TripPlanServiceImpl extends AbstractServiceImpl<TripPlanMapper, Tri
         }
         updateJoinedCount(tripId, trip.joinedCount() - 1);
         return require(tripId);
+    }
+
+    @Override
+    @Transactional
+    public TripPlan updateMeeting(long tripId, long publisherId, TripMeetingRequest request) {
+        TripPlan trip = require(tripId);
+        if (trip.publisherId() != publisherId) {
+            throw new ForbiddenActionException("only the publisher can edit meeting info of trip " + tripId);
+        }
+        if (trip.status() == TripStatusEnum.COMPLETED) {
+            throw new TripNotOpenException(tripId);
+        }
+        String meetingArea = normalizeMeetingArea(request == null ? null : request.meetingArea());
+        String meetingTime = TripMeetingRules.normalize(request == null ? null : request.meetingTime());
+        TripMeetingRules.requireWithinEndDate(trip.endDate(), meetingTime);
+        TripPlan updated = trip.withMeetingInfo(meetingArea, meetingTime, clock.instant());
+        updateById(TripPlanEntity.from(updated));
+        return updated;
+    }
+
+    private String normalizeMeetingArea(String meetingArea) {
+        if (meetingArea == null) {
+            return null;
+        }
+        String trimmed = meetingArea.trim();
+        if (trimmed.isEmpty()) {
+            return null;
+        }
+        if (trimmed.length() > MAX_MEETING_AREA_LENGTH) {
+            throw new InvalidInputException("meeting area is too long");
+        }
+        return trimmed;
     }
 
     private void updateJoinedCount(long tripId, int joinedCount) {

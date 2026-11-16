@@ -5,6 +5,7 @@ import java.util.List;
 import com.baomidou.mybatisplus.spring.service.IService;
 
 import routeme.entity.TripApplicationEntity;
+import routeme.pojo.ChatCounterpart;
 import routeme.pojo.DemoUser;
 import routeme.pojo.TripApplication;
 import routeme.request.ApplicationCreateRequest;
@@ -35,7 +36,7 @@ public interface ApplicationService extends IService<TripApplicationEntity> {
     TripApplication cancel(long applicationId, long userId);
 
     /**
-     * 已接受同行者退出该行程：人数 -1 并把申请置为 cancelled。
+     * 已接受同行者退出该行程：人数 -1 并把申请置为「已退出」（left）。
      *
      * @param tripId 行程 id
      * @param userId 当前身份 id，不能是发布者且必须是已接受同行者
@@ -50,6 +51,26 @@ public interface ApplicationService extends IService<TripApplicationEntity> {
      * @return 存在已接受申请时为 true
      */
     boolean isAccepted(long tripId, long userId);
+
+    /**
+     * 判断某个用户在该行程上是否可参与一对一聊天：申请状态为已接受或已退出。
+     *
+     * <p>已退出（left）仍保留会话与读写能力，因此与 {@link #isAccepted} 区分。</p>
+     *
+     * @param tripId 行程 id
+     * @param userId 待判断的用户 id
+     * @return 存在 accepted 或 left 申请时为 true
+     */
+    boolean isChatPartner(long tripId, long userId);
+
+    /**
+     * 当前用户全部可沟通的聊天配对（accepted 或 left）：
+     * 作为申请人时对方是发布者，作为发布者时对方是该行程的 accepted / left 申请人。
+     *
+     * @param userId 当前身份 id
+     * @return 配对列表；不去重、不排序，由调用方合并
+     */
+    List<ChatCounterpart> chatCounterparts(long userId);
 
     /**
      * 我提交过的申请。

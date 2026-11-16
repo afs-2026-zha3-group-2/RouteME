@@ -130,6 +130,50 @@ test('publishes a trip and finds it in the home list', async ({ page }) => {
   await expect(page.locator('.trip-card', { hasText: title })).toBeVisible();
 });
 
+test('publishes with a meeting time and edits it from the detail page', async ({ page }) => {
+  const title = `E2E 集合信息 ${Date.now()}`;
+  await loginAs(page, 1);
+  await page.goto('/#/trips/new');
+  await page.getByLabel('标题').fill(title);
+  await pickDestination(page, '广东省', '珠海市');
+  await page.getByLabel('出发日期').fill('2026-12-05');
+  await page.getByLabel('结束日期').fill('2026-12-05');
+  await pickPlace(page, '途经点', '香洲港');
+  await pickPlace(page, '途经点', '情侣路');
+  await page.getByLabel('集合区域（选填）').fill('香洲港客运站');
+  await page.getByLabel('集合时间（选填）').fill('2026-12-05T08:30');
+  await page.getByRole('button', { name: /^发\s*布$/ }).click();
+
+  await expect(page.getByRole('heading', { name: title })).toBeVisible();
+  await expect(page.locator('.detail-facts')).toContainText('香洲港客运站');
+  await expect(page.locator('.detail-facts')).toContainText('12/5 08:30');
+
+  await page.getByRole('button', { name: '编辑集合信息' }).click();
+  const dialog = page.getByRole('dialog');
+  await dialog.getByLabel('集合区域').fill('香洲港新码头');
+  await dialog.getByLabel('集合时间').fill('2026-12-05T09:00');
+  await dialog.getByRole('button', { name: /保\s*存/ }).click();
+  await expect(page.getByText('集合信息已更新')).toBeVisible();
+  await expect(page.locator('.detail-facts')).toContainText('香洲港新码头');
+  await expect(page.locator('.detail-facts')).toContainText('12/5 09:00');
+});
+
+test('rejects a meeting time after the end date on the publish form', async ({ page }) => {
+  await loginAs(page, 1);
+  await page.goto('/#/trips/new');
+  await page.getByLabel('标题').fill(`E2E 集合校验 ${Date.now()}`);
+  await pickDestination(page, '广东省', '珠海市');
+  await page.getByLabel('出发日期').fill('2026-12-05');
+  await page.getByLabel('结束日期').fill('2026-12-05');
+  await pickPlace(page, '途经点', '香洲港');
+  await pickPlace(page, '途经点', '情侣路');
+  await page.getByLabel('集合时间（选填）').fill('2026-12-06T08:30');
+  await page.getByRole('button', { name: /^发\s*布$/ }).click();
+
+  await expect(page.getByText('集合时间不能晚于结束日期')).toBeVisible();
+  await expect(page).toHaveURL(/#\/trips\/new/);
+});
+
 test('explains a destination without offline map coverage', async ({ page }) => {
   await loginAs(page, 1);
   await page.goto('/#/trips/new');
