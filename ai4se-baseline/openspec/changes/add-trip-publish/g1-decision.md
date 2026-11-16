@@ -74,3 +74,22 @@ P2 §8 修订后按远程 `add-destination-area-filters` 的协作口径重评�
 | SA | Jacky、Karena | 接受 0.7.0 与三条新场景，重评 Pass | 2026-11-16 |
 | VL | Neal | 复核修订后的验证证据 | 2026-11-16 |
 | AO | Jay | 记录字典切片的临时性与归档前复核项 | 2026-11-16 |
+
+## G1 重评 R2（发布页体验，2026-11-16）
+
+新增一条 ADDED Requirement（默认值与地图上下文，5 个 Scenario），范围仍限 S06 发布页：
+
+| 维度 | 结论 | 证据 |
+|---|---|---|
+| Scope | 仅前端表单行为 + e2e；后端与契约不动 | `docs/sdd/add-trip-publish/p1-intent.md` §10 |
+| Contract | 无变化（0.7.0 不变） | `openapi.yaml` 未改 |
+| Ambiguity | 地图「按目的地展示」定义为：未选不渲染、选中后只列该市；「布局自然」量化为分组 + 全宽 + 等距 | P1 §10 裁定 R2-1…R2-5 |
+| Traceability | 4 项用户反馈 → 5 个 Scenario | `specs/trip-plans/spec.md` ADDED 段 |
+
+**重评结论：Pass**。
+
+| 角色 | 姓名 | 确认内容 | 日期 |
+|---|---|---|---|
+| SA | Jacky、Karena | 接受 ADDED Requirement 与量化口径 | 2026-11-16 |
+| AO | Jay | 承担实现与截图核验 | 2026-11-16 |
+| SM | Lewis | 准入 P3 | 2026-11-16 |

@@ -85,3 +85,19 @@ export function codesForCityName(name: string): [string, string] | undefined {
   }
   return undefined;
 }
+
+/**
+ * 目的地代码 → 离线地名库里的城市名。
+ *
+ * 地名库按城市组织点位；港澳台二级区（香港岛 / 九龙 / 新界、澳门半岛 / 离岛）
+ * 共用地名库里的「香港」「澳门」。
+ */
+export function mapCityForCode(code: string): string | undefined {
+  if (code.startsWith('81')) {
+    return '香港';
+  }
+  if (code.startsWith('82')) {
+    return '澳门';
+  }
+  return cityByCode(code)?.name;
+}

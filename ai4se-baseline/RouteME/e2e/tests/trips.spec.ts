@@ -17,9 +17,26 @@ async function pickPlace(page: Page, field: string, name: string) {
 
 async function pickDestination(page: Page, province: string, city: string) {
   await page.getByLabel('目的地').click();
+  const panel = page.locator('.ant-cascader-dropdown').last();
+  await expect(panel).toBeVisible();
+  const box = await panel.boundingBox();
+  const viewport = page.viewportSize();
+  expect(box, 'destination dropdown has a box').not.toBeNull();
+  expect(viewport, 'viewport size').not.toBeNull();
+  expect(box!.x).toBeGreaterThanOrEqual(0);
+  expect(box!.y).toBeGreaterThanOrEqual(0);
+  expect(box!.x + box!.width).toBeLessThanOrEqual(viewport!.width + 1);
+  expect(box!.y + box!.height).toBeLessThanOrEqual(viewport!.height + 1);
   await page.locator('.ant-cascader-menu-item', { hasText: province }).first().click();
   await page.locator('.ant-cascader-menu-item', { hasText: city }).first().click();
   await page.keyboard.press('Escape');
+}
+
+/** Local calendar day, matching the form's default (never UTC). */
+function todayIso(): string {
+  const now = new Date();
+  const pad = (value: number) => String(value).padStart(2, '0');
+  return `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
 }
 
 async function createTripViaApi(page: Page, title: string) {
@@ -77,8 +94,29 @@ test('publishes a trip and finds it from the home search', async ({ page }) => {
   await loginAs(page, 1);
   await page.goto('/#/trips/new');
 
+  await expect(page.getByRole('heading', { name: '基本信息' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: '路线' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: '补充信息' })).toBeVisible();
+  await expect(page.getByLabel('出发日期')).toHaveValue(todayIso());
+  await expect(page.getByLabel('结束日期')).toHaveValue(todayIso());
+  await expect(page.locator('[data-testid="place-map"]')).toHaveCount(0);
+  await expect(page.getByText('先选目的地，再按城市点选途经点。')).toBeVisible();
+
+  const cascader = page.locator('.ant-cascader').first();
+  const cascaderWidth = await cascader.evaluate((node) => node.getBoundingClientRect().width);
+  const fieldWidth = await cascader.evaluate(
+    (node) => node.parentElement?.getBoundingClientRect().width ?? 0,
+  );
+  expect(Math.abs(cascaderWidth - fieldWidth)).toBeLessThanOrEqual(2);
+
   await page.getByLabel('标题').fill(title);
   await pickDestination(page, '广东省', '珠海');
+
+  const map = page.locator('[data-testid="place-map"]');
+  await expect(map).toBeVisible();
+  await expect(map).toHaveAttribute('data-city', '珠海');
+  await expect(map.getByRole('button', { name: /情侣路/ })).toBeVisible();
+
   await page.getByLabel('出发日期').fill('2026-12-05');
   await page.getByLabel('结束日期').fill('2026-12-05');
   await pickPlace(page, '途经点', '香洲港');
@@ -102,6 +140,8 @@ test('blocks publishing and flags every missing required field', async ({ page }
   await loginAs(page, 1);
   await page.goto('/#/trips/new');
 
+  await page.getByLabel('出发日期').fill('');
+  await page.getByLabel('结束日期').fill('');
   await page.getByRole('button', { name: /^发\s*布$/ }).click();
 
   await expect(page).toHaveURL(/#\/trips\/new$/);
