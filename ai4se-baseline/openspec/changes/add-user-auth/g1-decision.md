@@ -49,6 +49,7 @@
 | 找回密码 / 邮箱手机验证 / 验证码 / 第三方登录 / 账号注销保持 out of scope | 待指派（待具名） | 已记录，无需动作 |
 | change 正文（`summary.md`、`HANDOFF.md`、`tasks.md` T6）中「演示身份不显示退出登录」等表述已被 `add-user-logout` 取代；本文件不改写这些正文 | 待指派（待具名） | 由 `add-user-logout` 在 P5 / G3 收口（该 change G1 条件 L-01） |
 | 本 change 无 `dov-ac-review.md` / `consistency-lint.md`，补记以验收信号对照替代；此后新建 change 一律补这两份产物 | 待指派（待具名） | 已在本文件说明，后续按标准流程 |
+| 本 change 的 4 份工件无 `docs/reviews/<yyyymmdd>-add-user-auth-<artifact>-review.md`：`@rule:artifact-review-gate` 于 2026-11-16 当日稍后引入，本 change 的 proposal / 两份 Delta Spec / design / tasks 均已在此之前产出 | 待指派（待具名） | 追溯豁免；此后新建或修改工件按该规则逐份评审 + approve |
 
 ## Approvers
 
