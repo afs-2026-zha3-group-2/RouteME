@@ -80,3 +80,30 @@
 | SM | Lewis | 接受 R2 四项缺陷进入修复排期 | 2026-11-16 |
 | IO | Wanye | 四项均属 S06 发布页体验，不新增需求 | 2026-11-16 |
 | AO | Jay | 复现证据完整，承担 R2 实现 | 2026-11-16 |
+
+## 8. R3 基线：字典全国化后的返工（2026-11-16 13:35）
+
+远端 `a13416c` 把目的地字典换成全国省市（`area/area-codes.json` + `area/AreaCascader`）后，R2 的最小切片成了遗留物，并带来两处可见缺陷。
+
+| 项 | 复现 | 结论 |
+|---|---|---|
+| 提示与状态不符 | 选「北京市 / 市辖区」后，途经点区域显示「先选目的地，再按城市点选途经点。」 | 需要区分「未选目的地」与「目的地无离线点位」 |
+| 无地图 | `mapCityForCode('110100')` 依赖 16 城切片，返回 `undefined` | 映射改为读取共享字典，未覆盖城市显式说明 |
+| 前端重复字典 | `areas/areaCatalog.ts` 的 `AREA_PROVINCES` / `DESTINATION_OPTIONS` / `cityByCode` / `codesForCityName` 已无调用方 | 删除，仅保留代码→地名库城市映射 |
+| 后端死代码 | `constant/AreaConstant`、`pojo/AreaCity` 仅自引用；`TripPlanServiceImpl` 两条 import 未使用 | 删除，名称派生统一走 `area/AreaDictionary` |
+
+### R3 的 P0 复核
+
+| id | 检查 | 结论 |
+|---|---|---|
+| P0-1 | 基线骨架 | Pass（同 §3） |
+| P0-2 | 规则载体 | Pass（`@rule:web-coding-style`、`@rule:java-patterns` 覆盖删除与重命名） |
+| P0-3 | 技能可解析 | Pass |
+| P0-4 | pack 隔离 | Skipped |
+| P0-5 | 管道骨架 | Pass（CI run #98 成功） |
+
+| 角色 | 姓名 | 确认内容 | 日期 |
+|---|---|---|---|
+| SM | Lewis | 接受 R3 排期 | 2026-11-16 |
+| IO | Wanye | 全国点位缺失属既有边界，不扩 scope | 2026-11-16 |
+| AO | Jay | 复现证据完整，承担 R3 实现 | 2026-11-16 |

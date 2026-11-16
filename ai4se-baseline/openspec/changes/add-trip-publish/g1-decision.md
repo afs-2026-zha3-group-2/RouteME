@@ -93,3 +93,20 @@ P2 §8 修订后按远程 `add-destination-area-filters` 的协作口径重评�
 | SA | Jacky、Karena | 接受 ADDED Requirement 与量化口径 | 2026-11-16 |
 | AO | Jay | 承担实现与截图核验 | 2026-11-16 |
 | SM | Lewis | 准入 P3 | 2026-11-16 |
+
+## G1 重评 R3（字典全国化后，2026-11-16）
+
+| 维度 | 结论 | 证据 |
+|---|---|---|
+| Scope | 仅返工清理：前端映射改读共享字典、未覆盖城市提示、删除重复字典 | `docs/sdd/add-trip-publish/p1-intent.md` §12 |
+| Contract | 无变化（0.7.0） | `openapi.yaml` 未改 |
+| Ambiguity | 「地图按目的地展示」补上覆盖边界：未覆盖城市不渲染地图并说明原因 | Delta Spec 第 6 个 Scenario |
+| Traceability | R2 遗留项「最小字典切片待替换」在本轮关闭 | `tasks.md` R3 段 |
+
+**重评结论：Pass**。
+
+| 角色 | 姓名 | 确认内容 | 日期 |
+|---|---|---|---|
+| SA | Jacky、Karena | 接受覆盖边界的写法 | 2026-11-16 |
+| AO | Jay | 承担清理与验证 | 2026-11-16 |
+| SM | Lewis | 准入 P3 | 2026-11-16 |
