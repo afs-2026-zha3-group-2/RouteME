@@ -54,17 +54,17 @@
 
 ### T7 [backend] 匹配计算去掉筛选输入
 
-- [ ] `TripMatch.of` 删除 `filterDestinationCode` / `filterDate` 参数与「筛选覆盖参照物」分支。
-- [ ] `MatchServiceImpl#search` 与 `#matchFor` 改用同一签名。
+- [x] `TripMatch.of` 删除 `filterDestinationCode` / `filterDate` 参数与「筛选覆盖参照物」分支。
+- [x] `MatchServiceImpl#search` 与 `#matchFor` 改用同一签名。
 
 ### T8 [contract] 描述与版本
 
-- [ ] `Match.basis` 描述改为「最近一条未结束的已发布行程，或你的旅行兴趣；筛选与排序不影响匹配分」。
-- [ ] `info.version` 0.8.0 → 0.8.1；`OpenApiTest` 同步。
+- [x] `Match.basis` 描述改为「最近一条未结束的已发布行程，或你的旅行兴趣；筛选与排序不影响匹配分」。
+- [x] `info.version` 0.8.0 → 0.8.1；`OpenApiTest` 同步。
 
 ### T9 [tests] 分值与一致性断言
 
-- [ ] `TripMatchTest`：删除筛选覆盖参照物的用例，新增「参照目的地不同不计分」。
-- [ ] `MatchControllerTest`：同一行程在带筛选列表 / 无筛选列表 / 详情三处得分与理由一致。
+- [x] `TripMatchTest`：删除筛选覆盖参照物的用例，新增「参照目的地不同不计分」。
+- [x] `MatchControllerTest`：同一行程在带筛选列表 / 无筛选列表 / 详情三处得分与理由一致。
 
 **验证：** `cd RouteME/backend; .\mvnw.cmd -B -o "-Dtest=TripMatchTest,MatchControllerTest,OpenApiTest" test`
