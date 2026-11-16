@@ -22,7 +22,7 @@
 | 1 | 字典覆盖范围、直辖市级联选项、港澳台名称 | E2E | 打开 Cascader，断言省/市选项、北京二级 label=北京市、香港→18 区（如中西區/沙田區） |
 | 2 | 二级节点代码唯一、字典/名称派生 | Defer UT | `AreaDictionaryTest`：code 唯一、前缀省 code、直辖市/港澳台展示名（P4） |
 | 3 | 响应返回代码与省名 | API | `TripControllerTest` / `ExperienceControllerTest` 断言 `destination_code`/`province_code`/`province_name` |
-| 4 | 存量行程迁移 | API + Defer UT | 迁移测试在临时 SQLite 跑 V1–V10；再 `GET /api/trips` 断言 6 条 seed 的 code/标准名；体验仍关联 |
+| 4 | 存量行程迁移 | API + Defer UT | 迁移测试在临时 SQLite 跑 V1–V11；再 `GET /api/trips` 断言 6 条 seed 的 code/标准名；体验仍关联 |
 | 5 | 按城市筛选、只选到省不应用 | API + E2E | API：`destination_code=440400` 只返回珠海；E2E：只选"广东省"列表不变、摘要无目的地 |
 | 6 | 级联选项可输入过滤 | E2E | 输入"珠"→选"广东省 / 珠海市"→列表变化 |
 | 7 | 按日期区间筛选、选择某个周六 | API + E2E | API：`date_from=date_to=2026-11-21` 只返回覆盖该日的行程；E2E 同 |
@@ -47,7 +47,7 @@
 | `OpenApiTest` 断言 0.7.0、无 `q`、`destination_code`、响应 code/province、体验日期 | 当前契约 0.6.0 仍有 `q`、无 code 字段 → 失败 |
 | `TripControllerTest` 目的地按 code、无 q、日期交集 | 当前 `destination` 按名称、q 存在 → 失败 |
 | `ExperienceControllerTest` 体验日期/目的地 code、无 q | 当前无日期参数、q 存在 → 失败 |
-| 迁移测试 V1–V10（临时 SQLite） | 当前 V10 不存在 → 失败 |
+| 迁移测试 V1–V11（临时 SQLite） | 当前 V11 不存在 → 失败 |
 | E2E：目的地 Cascader、只选省不生效、摘要、体验日期、无搜索框 | 当前是原生 select + 搜索框；体验视图日期不生效 → 失败 |
 | `tripFilters.test` / `areaOptions.test`（P4 单元） | 当前 `FilterState.destination` 是名称、无级联归一 → 失败 |
 
@@ -64,7 +64,7 @@
 
 ## 5. 数据 / fixtures 策略
 
-- **种子数据**：V4 6 条行程（4 未结束 + 2 已结束，含 1 已满员）、V8 2 条体验；V10 迁移后 seed 的 5 个目的地映射为 code + 标准名。
+- **种子数据**：V4 6 条行程（4 未结束 + 2 已结束，含 1 已满员）、V8 2 条体验；V11 迁移后 seed 的 5 个目的地映射为 code + 标准名。
 - **城市筛选**：用 seed 的珠海 `440400`、广州 `440100` 等断言；需要"零命中"时用字典内但无行程的城市（如台北市 `710100`），不删除 seed。
 - **日期筛选**：用 seed 行程日期（2026-11-16 / 2026-11-20 / 2026-11-23–24）断言交集；"周六"用 2026-11-21 或与 seed 覆盖日一致；空态用 2030 年区间。
 - **体验日期**：seed 体验关联 trip 1（2026-11-06）与 trip 2（2026-11-01–02）；用这两个区间与空区间断言。

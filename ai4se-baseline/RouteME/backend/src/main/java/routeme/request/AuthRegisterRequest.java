@@ -1,16 +1,10 @@
 package routeme.request;
 
-import java.util.List;
-
 /**
- * 注册请求。字段与契约 AuthRegisterRequest 一一对应。
+ * 注册请求：只收窄为用户名、密码与昵称；旧版资料字段（学校 / 简介 / 兴趣 / 头像首字）被忽略。
  */
 public record AuthRegisterRequest(
         String username,
         String password,
-        String nickname,
-        String avatarInitial,
-        String school,
-        String bio,
-        List<String> interests) {
+        String nickname) {
 }

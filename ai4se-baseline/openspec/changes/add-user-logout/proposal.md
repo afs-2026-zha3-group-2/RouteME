@@ -1,7 +1,7 @@
 # 变更提案：add-user-logout
 
 - **需求来源：** 用户指令「用户应该可以退出登录；按钮可放在顶栏身份菜单」+ 顶栏身份菜单截图 ｜ **需求条目：** `requirement-workspace/requirements/REQ-006-user-logout.md`
-- **能力：** `user-auth`（ADDED）
+- **能力：** `user-auth`（MODIFIED）
 - **规模：** S（前端菜单入口与本地清态为主；无后端、契约、数据库或迁移变更）
 - **规则：** `@rule:web-coding-style`、`@rule:sdd-artifacts`、`@rule:security-baseline`（会话清理）
 
@@ -21,7 +21,7 @@ RouteME 进入系统有两条路径：选择演示身份、用注册账号登录
 - 结束会话请求失败时仍完成本地退出；可提示「会话可能仍有效」，但不阻止退出。
 - 退出后刷新不恢复上一身份；身份门展示 3 个演示身份与既有登录 / 注册入口。
 - 身份门与未进入状态不展示退出入口。
-- 为 `user-auth` 写一份 ADDED delta spec（「退出当前身份」）。
+- 为 `user-auth` 写一份 MODIFIED delta spec（扩展现有「会话校验与退出」）。
 
 **Out of scope**
 
@@ -39,9 +39,10 @@ RouteME 进入系统有两条路径：选择演示身份、用注册账号登录
 | `frontend/src/i18n/tripMessages.ts` | 退出入口文案与（可选）失败提示文案 |
 | `frontend/src/styles.css` | 仅补退出入口在演示身份下的布局 / 间距；不重做视觉 |
 | `frontend` 组件测试 / `e2e/` | 覆盖入口对两类身份可见、演示身份退出、注册账号退出、刷新不恢复 |
-| `openspec/changes/add-user-logout/specs/user-auth/spec.md` | ADDED：「退出当前身份」6 个场景 |
-| 后端 / `openapi.yaml` / 迁移 / Living Spec | **无改动**（退出端点已存在；Living Spec 归档阶段合并） |
-| `openspec/changes/archive/2026-11-16-add-user-auth/tasks.md` T6 | 不在此 change 改；实现时按本提案覆盖「演示身份不显示退出」的表述 |
+| `openspec/changes/add-user-logout/specs/user-auth/spec.md` | MODIFIED：把「会话校验与退出」扩为全身份退出（10 个场景） |
+| 后端 / `openapi.yaml` / 迁移 | **无改动**（退出端点已存在） |
+| Living Spec `openspec/specs/user-auth/spec.md` | 归档阶段用本 change 的 MODIFIED delta 替换「会话校验与退出」；保留基线 3 个场景 |
+| `openspec/changes/archive/2026-11-16-add-user-auth/tasks.md` T6 | 不改写归档正文；由本 change 的 `summary.md` / G3 记录「演示身份不显示退出」已被取代 |
 
 ## 决策
 
@@ -52,8 +53,8 @@ RouteME 进入系统有两条路径：选择演示身份、用注册账号登录
 | 注册账号退出 | 复用既有 `POST /api/auth/logout` | 已实现且契约稳定；不为同一动作新增端点 |
 | 服务端失败处理 | 本地退出优先，提示会话可能仍有效 | 用户意图是结束本机身份；不能被不可用的服务端困住 |
 | 退出后落点 | 身份门 | 可立即重新选择演示身份或登录；不跳到登录表单，避免强制一种进入方式 |
-| capability 粒度 | 单一 `user-auth`，ADDED | `user-auth` 尚未进入 Living Spec（`add-user-auth` 未归档），MODIFIED 无参照；退出是身份生命周期能力的一部分，不新建平行能力 |
-| 与 `add-user-auth` 的关系 | 独立 change，依赖其已实现的会话契约 | 该 change 已进入验证收口，追加会打乱其归档边界；本 change 只扩展退出路径 |
+| capability 粒度 | 单一 `user-auth`，MODIFIED | `add-user-auth` 已归档，`user-auth` 进入 Living Spec；退出并入既有「会话校验与退出」，避免新增一条平行的退出权威描述 |
+| 与 `add-user-auth` 的关系 | 独立 change，复用其已归档的会话契约 | 该 change 已于 2026-11-16 归档；本 change 只扩展退出路径，不改写其归档记录 |
 
 ## 验收信号
 
@@ -69,12 +70,12 @@ RouteME 进入系统有两条路径：选择演示身份、用注册账号登录
 
 | 风险 | 处理 |
 |---|---|
-| 与 `add-user-auth` T6「演示身份不显示退出」表述冲突 | 本提案已明确覆盖；实现时同步更新 T6 描述，避免两处规则并存 |
-| 两个进行中 change 同时 ADDED `user-auth` | 需求名不重名；归档顺序为先 `add-user-auth`、后本 change |
+| `add-user-auth` 的归档记录（`tasks.md` T6、`summary.md`）写有「演示身份不显示退出」 | 该记录是历史实现快照；本 change 落地后由 `summary.md` / G3 注明已被「退出入口对全身份可见」取代，不改写归档正文 |
+| MODIFIED 会整体替换 Living Spec 的「会话校验与退出」块 | Delta 已原样保留既有 3 个场景（有效 token / 无效 token / 退出登录）；`openspec validate --strict` 校验通过 |
 | 未登录时误显示退出入口 | 入口只在 `currentUser` 存在时渲染；身份门无菜单 |
 | 服务端已结束会话但本地清理失败（极端） | 先清本地再尝试服务端；测试覆盖刷新后不恢复 |
 | 退出失败提示被误解为「没退出成功」 | 文案固定为「已退出本机，会话可能仍有效」，主状态回到身份门 |
 
 ## 交付边界
 
-本提案为 P1 产物，只回答「为什么改、改哪些能力、验收信号是什么」。`design.md`、`tasks.md`、代码实现与验证属 P2 起的开发阶段；Living Spec 合并在归档阶段完成。
+本提案为 P1 产物，只回答「为什么改、改哪些能力、验收信号是什么」。`design.md`、`tasks.md`、代码实现与验证属 P3 / P4 起的开发阶段；Living Spec 合并在归档阶段完成。

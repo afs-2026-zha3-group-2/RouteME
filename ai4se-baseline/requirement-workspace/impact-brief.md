@@ -1,4 +1,4 @@
-# Impact brief — REQ-002 / 003 / 004 / 005 / 006 / 007（MVP 业务能力集）
+# Impact brief — REQ-002 / 003 / 004 / 005 / 006 / 007 / 008（MVP 业务能力集）
 
 - **Workdir：** `requirement-workspace/`
 - **日期：** 2026-11-15 ｜ **触发：** `/sdd:pre-spec-req` 内嵌 impact-analysis（blocking OQ 与 DoR BLOCKER 均已清零）
@@ -12,7 +12,7 @@
 | REQ-003 | `trip-companions` | `add-trip-companions` | `requirement-workspace/requirements/REQ-003-trip-companions.md` |
 | REQ-004 | `trip-experiences` | `add-trip-experiences` | `requirement-workspace/requirements/REQ-004-trip-experiences.md` |
 | REQ-005 | `trip-plans` / `trip-experiences`（MODIFIED） | `refine-inspiration-home` | `requirement-workspace/requirements/REQ-005-inspiration-home.md` |
-| REQ-006 | `user-auth`（ADDED） | `add-user-logout` | `requirement-workspace/requirements/REQ-006-user-logout.md` |
+| REQ-006 | `user-auth`（MODIFIED） | `add-user-logout` | `requirement-workspace/requirements/REQ-006-user-logout.md` |
 
 意图捕获：`requirement-workspace/intents/REQ-00{2,3,4,5,6}-*.md`；deep-dive：`requirement-workspace/deep-dive.md`。
 
@@ -176,8 +176,8 @@
 | 资产 | 路径 | 现状 |
 |---|---|---|
 | 需求条目 | `requirement-workspace/requirements/REQ-006-user-logout.md` | 本变更新增；六字段 + 9 场景 + DoR / A0 全过 |
-| 已归档的认证 change（2026-11-16） | `openspec/changes/archive/2026-11-16-add-user-auth/` | 已实现注册 / 登录 / 会话恢复与注册账号退出；Living Spec `openspec/specs/user-auth/` 含「会话校验与退出」；T6 明确「演示身份不显示退出」 |
-| Living Spec `user-auth` | `openspec/specs/` | **不存在**（`add-user-auth` 未归档），因此本 change 只能 ADDED，不能 MODIFIED |
+| 已归档的认证 change（2026-11-16） | `openspec/changes/archive/2026-11-16-add-user-auth/` | 已实现注册 / 登录 / 会话恢复与注册账号退出；其归档任务 T6 写有「演示身份不显示退出」（历史记录，归档正文不改写） |
+| Living Spec `user-auth` | `openspec/specs/user-auth/spec.md` | **已存在**（`add-user-auth` 已归档）：含「会话校验与退出」3 个场景与「演示身份保留」；本 change 以 MODIFIED 扩展前者 |
 | Living Spec `trip-plans` | `openspec/specs/trip-plans/spec.md` | 已定义「演示身份进入与切换」；不包含退出路径 |
 | 顶栏身份菜单 | `RouteME/frontend/src/shell/AppShell.tsx` | `isAuthenticated` 为真时才渲染 `id-logout`；演示身份仅能切换，无法回到身份门 |
 | 退出处理 | `RouteME/frontend/src/App.tsx` | `logout()` 已能清除 token / 当前身份并回到身份门；演示身份未被入口调用 |
@@ -197,12 +197,12 @@
 | 身份门 | 无退出入口 | 保持无退出入口（明确为需求边界） |
 | 文案 | 菜单说明区分登录态 | 说明文案覆盖演示身份退出；不出现「演示身份不可退出」类表述 |
 | 业务规则 / 数据 / 接口 | 既有 | **不变**：无迁移、无新端点、无状态机变更 |
-| Living Spec | `user-auth` 不存在 | 归档阶段新增 `user-auth` living capability（与 `add-user-auth` 合并） |
+| Living Spec | `user-auth` 已存在「会话校验与退出」（3 场景） | 归档时用本 change 的 MODIFIED delta 替换该块：保留 3 个既有场景并新增 7 个全身份退出场景（共 10） |
 
 ### 10.3 Blast radius（应用架构）
 
 - **页面（1）：** 顶栏身份菜单（`AppShell`）+ 退出后的身份门（`IdentityGate` 复用）。
-- **能力（1）：** `user-auth`（退出当前身份）；`trip-plans` 的演示身份进入 / 切换仅被消费，不改规则。
+- **能力（1）：** `user-auth`（MODIFIED：「会话校验与退出」扩为全身份退出）；`trip-plans` 的演示身份进入 / 切换仅被消费，不改规则。
 - **接口契约（0 新增）：** 注册账号退出复用 `POST /api/auth/logout`；演示身份退出不发请求。
 - **数据 / 迁移（0）：** 无新表、无字段、无 seed 变更。
 - **测试触点：** 前端组件 / 单元测试（入口可见性、退出清态）、`e2e`（注册账号退出、演示身份退出、刷新不恢复）。
@@ -212,18 +212,18 @@
 
 | 类型 | 影响 |
 |---|---|
-| Spec（change delta） | `openspec/changes/add-user-logout/specs/user-auth/spec.md`（ADDED「退出当前身份」） |
+| Spec（change delta） | `openspec/changes/add-user-logout/specs/user-auth/spec.md`（MODIFIED「会话校验与退出」，10 场景） |
 | Proposal | `openspec/changes/add-user-logout/proposal.md` |
 | Registry / handoff | 新增 REQ-006 行与 REQ-006 → `add-user-logout` 映射 |
-| Tests / 代码 / 契约 / 迁移 / design / tasks | 不在 P1 范围；交 P2 起（delta-craft / design / task-plan / apply） |
-| Living Spec | 归档阶段合并；`user-auth` 由 `add-user-auth` 与本 change 共同形成，需按顺序归档 |
+| Tests / 代码 / 契约 / 迁移 / design / tasks | 不在 P1 范围；交 P3 / P4 起（design / task-plan / apply） |
+| Living Spec | 归档时用 MODIFIED delta 替换 `openspec/specs/user-auth/spec.md` 的「会话校验与退出」；`add-user-auth` 已归档，顺序依赖已解除 |
 
 ### 10.5 Risks & blockers
 
 | 级别 | 项 | 说明 / 缓解 |
 |---|---|---|
-| Risk | 与 `add-user-auth` T6「演示身份不显示退出」直接冲突 | 在 REQ-006 §8 与 proposal 决策中明确以本需求为准；实现时同步更新该任务表述 |
-| Risk | `user-auth` 尚未进入 Living Spec，两个进行中 change 同时 ADDED 同一能力 | 本 change 的 ADDED 需求名与 `add-user-auth` 的「会话校验与退出」不重名；归档顺序为先 `add-user-auth` 后本 change，避免覆盖 |
+| Risk | `add-user-auth` 归档任务 T6 写有「演示身份不显示退出」 | 该记录是归档时的历史实现快照；本 change 落地后由 `summary.md` / G3 注明已被「退出入口对全身份可见」取代，不改写归档正文 |
+| Risk | MODIFIED 会整体替换 Living Spec 的「会话校验与退出」块 | Delta 已原样保留既有 3 个场景（有效 token / 无效 token / 退出登录）；`openspec validate add-user-logout --strict` 通过 |
 | Risk | 演示身份误调用退出端点会产生无意义 401 | spec 明确演示身份退出不发起认证请求；测试覆盖 |
 | Risk | 退出失败提示可能被误解为退出未完成 | 文案限定为「本机已退出，会话可能仍有效」，主状态必须回到身份门 |
 | Blocker | 无 | blocking OQ = 0、DoR BLOCKER = 0、A0 ⑨–⑫ 全过；既有 `refine-inspiration-home` 的 validate 失败与本需求无关 |
@@ -238,7 +238,87 @@
 
 ---
 
-## 11. REQ-007 增量影响（2026-11-16，远程基线 229411a）
+## 12. REQ-008 变更影响 — 完善个人资料并生成个人主页
+
+> 编号说明：本节为 `add-user-profile`（**REQ-008**）的影响分析，编号 **§12**；`add-destination-area-filters`（**REQ-007**）的影响分析为 **§11**（2026-11-16 远程追加，见文末）。REQ-007 的产物已引用 §11，故由其保留该编号，本 change 顺延为 §12。
+
+- **日期：** 2026-11-16 ｜ **触发：** `/sdd:pre-spec-req` 内嵌 impact-analysis（6 项产品问题已由用户裁决，blocking OQ 与 DoR BLOCKER 均已清零）
+- **粒度：** 应用架构（页面 / 资料契约 / 账号流程 / 发布者展示边界），非代码设计
+
+### 12.1 As-is asset inventory（evidence paths）
+
+| 资产 | 路径 | 现状 |
+|---|---|---|
+| 需求条目 | `requirement-workspace/requirements/REQ-008-user-profile.md` | 本变更新增；六字段 + 17 场景 + 6 项用户裁决 + DoR / A0 全过 |
+| 账号表 | `backend/src/main/resources/db/migration/V3__create_demo_users.sql`、`V9__add_user_credentials.sql` | `app_users` 只有昵称、首字、学校、简介、兴趣 + 用户名 / 密码散列；无生日、性别、城市、专业、职业、MBTI、旅行方式、头像地址 |
+| 演示数据 | 同上 V3 | 3 个演示账号的 `school` 存「年级 · 专业」合并文案（如「研一 · 地理科学」） |
+| 注册表单 | `RouteME/frontend/src/identity/AuthPanel.tsx`、`authForm.ts` | 注册收集用户名、密码、昵称、学校、简介、兴趣；注册成功直接进入首页 |
+| 会话契约 | `openspec/specs/user-auth/spec.md` | 「注册账号」校验昵称与兴趣数量；「用户名密码登录」「会话校验与退出」「演示身份保留」 |
+| 发布者展示 | `RouteME/frontend/src/trips/`、`experiences/`、`shell/AppShell.tsx` | 展示昵称、首字头像、学校与简介；无个人主页入口 |
+| 用户接口 / 契约 | `RouteME/openapi.yaml` 0.6.0、`GET /api/users`、`GET /api/users/demo` | `DemoUser` 只有 6 个字段；无资料读写端点 |
+| 前端路由 | `RouteME/frontend/src/route.ts` | 无资料完善页 / 个人主页路由 |
+| 测试 | `frontend/src/identity/authForm.test.ts`、`backend/.../AuthControllerTest.java`、`e2e/` | 覆盖既有注册校验；未覆盖资料字段、头像、个人主页 |
+
+### 12.2 As-is → proposed delta（逐资产）
+
+| 资产 | As-is | Proposed delta |
+|---|---|---|
+| 注册表单 | 用户名 / 密码 / 昵称 / 学校 / 简介 / 兴趣 | 收窄为用户名 / 密码 / 昵称；注册成功进入资料完善页 |
+| 账号表 | 无资料字段 | 新增头像地址、生日、性别、城市、专业、职业、MBTI、旅行方式列；学校 / 简介 / 兴趣保留并改由资料页写入；学校与专业改为选填 |
+| 资料接口 | 无 | 新增 `GET /api/users/{id}/profile`、`PUT /api/users/me/profile`、`POST /api/users/me/avatar` |
+| 契约 | 0.6.0，`DemoUser` 6 字段 | 0.7.0：新增 `UserProfile`；用户摘要增加头像与完善状态；注册请求体收窄并忽略旧字段 |
+| 页面 / 路由 | 首页 / 发布 / 详情 / 申请 / 我的 / 聊天 / 分享 | 新增 `#/profile/setup`、`#/users/{id}`；「我的」增加资料入口 |
+| 发布者展示 | 昵称 + 首字 + 学校，无跳转 | 增加头像与个人主页链接；摘要行按「学校 · 专业 → 职业 → 城市」取第一个可用值；未完善资料降级展示 |
+| 年龄 / 星座 | 无 | 服务端按生日与当前日期派生，资料响应返回只读值；生日原文不公开 |
+| 完善状态 | 无 | 由必填字段派生布尔值，不落库；影响注册后落点与「我的」入口 |
+| 演示身份 | 昵称 / 学校 / 兴趣只读 | 仍只读；不展示编辑入口，保存接口返回 403 |
+| 行程 / 体验业务规则 | 既有 | **不变**：只改发布者展示入口 |
+
+### 12.3 Blast radius（应用架构）
+
+- **页面（3）：** 新增资料完善页、个人主页；改动「我的」与行程 / 体验发布者展示入口。
+- **能力（2）：** `user-profile`（ADDED，7 条需求）；`user-auth`（MODIFIED「注册账号」）；`trip-plans` / `trip-experiences` 仅消费展示，不改规则。
+- **接口契约（3 新增 + 1 收窄）：** 资料读取、资料保存、头像上传；`POST /api/auth/register` 请求体收窄。
+- **数据 / 迁移（1）：** `app_users` 增加 8 列（头像地址、生日、性别、城市、专业、职业、MBTI、旅行方式）；不新增表、不迁移演示数据。
+- **测试触点：** 前端单测（必填汇总、生日派生、兴趣上下限、头像回退）、后端（资料服务 / 控制器 / 迁移 / 权限 401 / 403）、E2E（注册 → 完善 → 主页 → 他人查看）。
+- **知识库：** 实现 / 归档阶段回写资料能力与契约版本；P1 不改 `docs/knowledge/`。
+
+### 12.4 Artifact impact（specs / tests / docs）
+
+| 类型 | 影响 |
+|---|---|
+| Spec（change delta） | `openspec/changes/add-user-profile/specs/user-profile/spec.md`（ADDED，7 条需求）＋ `specs/user-auth/spec.md`（MODIFIED「注册账号」） |
+| Proposal | `openspec/changes/add-user-profile/proposal.md` |
+| Story | `requirement-workspace/stories/add-user-profile.story.md`（S18，P0 / 迭代 1 / 3 点）；`stories.md` 增补 REQ-008 段 |
+| Registry / handoff | 新增 REQ-008 行与 REQ-008 → `add-user-profile` 映射 |
+| Tests / 代码 / 契约 / 迁移 / design / tasks | 不在 P1 范围；交 P3 / P4 起（design / task-plan / apply） |
+| Living Spec | 归档时新建 `openspec/specs/user-profile/spec.md`，并用 MODIFIED 替换 `openspec/specs/user-auth/spec.md` 的「注册账号」；`trip-plans` / `trip-experiences` 是否同步改展示验收由 P3 确认 |
+
+### 12.5 Risks & blockers
+
+| 级别 | 项 | 说明 / 缓解 |
+|---|---|---|
+| Risk | 双 capability（`user-profile` ADDED + `user-auth` MODIFIED） | 与 REQ-005 同口径：注册收窄与资料补齐是同一状态迁移的两端；归档前需 SA 追认例外 |
+| Risk | 兴趣词表与行程标签不一致影响匹配 | 本 change 不改匹配；P3 设计统一词表 / 别名，避免扩成匹配改造 |
+| Risk | 头像文件落盘带来安全与清理边界 | 仅 JPEG / PNG / WebP、≤2 MB、服务端生成文件名；P3 确认目录与访问路径 |
+| Risk | 注册请求体收窄破坏既有前端 / 测试 / 演示脚本 | 契约升 0.7.0，旧字段忽略而非报错；P4 同步更新单测与 E2E |
+| Risk | 生日派生年龄 / 星座口径分叉 | 统一由服务端计算并返回只读值；P3 用表驱动星座边界并加单测 |
+| Risk | 完善状态与字段更新漂移 | 状态由字段派生、不落库；派生函数与资料响应共用同一实现 |
+| Risk | 学校改为选填后，行程卡 / 详情的发布者摘要可能为空 | 摘要行按「学校 · 专业 → 职业 → 城市」回退；全空时只显示昵称与头像，不留空行 |
+| Blocker | 无 | blocking OQ = 0、DoR BLOCKER = 0、A0 ⑨–⑫ 全过；既有 `refine-inspiration-home` 的 validate 失败与本需求无关 |
+
+### 12.6 Suggested split boundaries
+
+- **一个 change：** `add-user-profile` ← REQ-008（S18，页面级垂直切片）。
+- **双 capability 例外：** `user-profile`（ADDED）承载资料与主页；`user-auth`（MODIFIED）只收窄注册。拆成两个 change 会让「注册 → 完善 → 主页」断成两段，且注册端口径无人负责。
+- **不并入 `add-user-auth`：** 该 change 已归档；资料是新业务概念，追加归档包会打乱历史边界。
+- **不并入 `refine-inspiration-home`：** 该 change 聚焦首页双视图，发布者入口只被消费，避免两个页面级切片互相阻塞。
+- **阶段：** 单阶段；依赖已归档的 `user-auth` 会话契约，无阻塞上游。
+- **质量自检（split-heuristics）：** 子目标一句话可说明、端到端可验证（注册 → 填资料 → 保存 → 他人查看发布者 → 主页）、可独立运行、capability 名真实、无依赖环。
+
+---
+
+## 11. REQ-007 增量影响 — 灵感首页目的地/日期筛选（2026-11-16，远程基线 229411a）
 
 - **触发：** `/sdd:pre-spec-req` 内嵌 impact-analysis（REQ-007 blocking OQ 与 DoR BLOCKER 均为 0）
 - **需求来源：** 迭代 1 用户故事（按目的地与日期缩小范围）＋ 用户逐条决策 D1–D15（含远程基线复核后的修订）
@@ -275,7 +355,7 @@
 
 | 资产 | As-is | Proposed delta |
 |---|---|---|
-| `trip_plans` 表 | `destination VARCHAR(20) NOT NULL`；无代码列 | **V10**（V9 已被 auth 占用）加列：`destination_code VARCHAR(6) NOT NULL DEFAULT ''`、索引、存量映射回填、`destination` 回填标准名；不重建表（避开外键）；`trip_experiences` 结构不变 |
+| `trip_plans` 表 | `destination VARCHAR(20) NOT NULL`；无代码列 | **V11**（V10 被 user-profile 占用，V9 被 auth 占用）加列：`destination_code VARCHAR(6) NOT NULL DEFAULT ''`、索引、存量映射回填、`destination` 回填标准名；不重建表（避开外键）；`trip_experiences` 结构不变 |
 | 领域/实体 | `TripPlan.destination`（名称，任意非空） | 目的地以 6 位代码为权威；实体持有 code + 名称 + 省 code/展示名；发布写入由 A 改为 `destination_code`，B 提供数据底座 |
 | 列表查询 | `q` + `destination`（名称）+ 日期 + 标签 | 移除 `q`；`destination` 改为 `destination_code`；日期/标签语义不变；体验列表新增 `date_from/date_to` |
 | 响应 | `destination`（名称） | 新增 `destination_code`、`province_code`、`province_name`（展示名：普通省“广东省”、港澳台“香港”/“澳门”）；`destination` 为城市标准名（直辖市=省名） |
@@ -305,14 +385,14 @@
 | Spec delta | 两份：`specs/trip-plans/spec.md`（MODIFIED 浏览 + ADDED 筛选/区划字典/无搜索 + REMOVED 旧“搜索、筛选与排序”）、`specs/trip-experiences/spec.md`（MODIFIED 体验视图）；**不修改发布 requirement** |
 | A 的 delta | `add-trip-publish/specs/trip-plans/spec.md` 目的地相关场景、`design.md`、`e2e/tests/trips.spec.ts` 目的地/搜索定位；不归档 |
 | 契约 | `openapi.yaml` 升 `0.7.0`：删除 `q`，目的地改 `destination_code`，响应新增 code/province 字段，体验加日期 |
-| 迁移 | **V10** 加列 + 映射回填 + 标准名 + 索引（SQLite/H2 兼容，不重建表） |
+| 迁移 | **V11** 加列 + 映射回填 + 标准名 + 索引（SQLite/H2 兼容，不重建表） |
 | 测试 | 后端 controller/service/openapi；前端纯函数与 api；E2E 目的地级联/日期/体验/展示；A 的发布目的地 E2E |
 | 文档 / KB | `docs/knowledge/**` 回写在 archive 阶段；P1 不改 |
 | Living Spec | 归档时合并；顺序见 §11.8 |
 
 ### 11.6 Dual-track notes（OpenSpec vs agile）
 
-- **OpenSpec 轨（主）：** B 单 change `add-destination-area-filters`，两份 delta；内部阶段：① 数据底座（V10 + 字典 + 响应字段）② 筛选/展示（级联/日期/摘要/空态）③ 体验日期 + 搜索移除。
+- **OpenSpec 轨（主）：** B 单 change `add-destination-area-filters`，两份 delta；内部阶段：① 数据底座（V11 + 字典 + 响应字段）② 筛选/展示（级联/日期/摘要/空态）③ 体验日期 + 搜索移除。
 - **Agile 轨（并行）：** 故事见 `requirement-workspace/stories.md` 的 REQ-007 段与 `stories/REQ-007-destination-area-filters.story.md`，与两份 delta 场景 1:1 归属。
 - **A 的发布目的地字段** 作为 `add-trip-publish` 的目的地相关修订，不并入 B 的 delta。
 
@@ -322,10 +402,10 @@
 |---|---|---|
 | Risk | `refine-inspiration-home` 未归档且同改两 requirement | 归档顺序 `refine-inspiration-home` → B；B 的 delta 以 refine 版本为基线并保留其场景；refine 的搜索相关测试由它的 owner 更新（本 change G1 记为条件） |
 | Risk | `add-trip-publish` 未归档 | B 拥有数据底座，A 的发布字段消费 B；归档顺序 B → A；A 的目的地相关工件已获授权修改但不归档 |
-| Risk | V9 被 auth 占用、契约已 0.6.0 | 迁移改 V10，契约升 0.7.0 |
+| Risk | V9 被 auth 占用、契约已 0.6.0 | 迁移改 V11，契约升 0.7.0 |
 | Risk | 区划数据 v5 较旧（约 2019/2020） | MVP 接受静态字典；后续可升级，不影响代码契约 |
 | Risk | 搜索移除影响 refine/A 的 E2E | A 已授权修改；refine 交 owner；B 自己的用例不用搜索 |
-| Risk | SQLite/H2 加列迁移 | H2 会拒绝 `DROP TABLE trip_plans`（外键），因此 V10 改为 `ADD COLUMN ... NOT NULL DEFAULT ''` + 回填；应用层拒绝空串，迁移测试覆盖 SQLite + H2 |
+| Risk | SQLite/H2 加列迁移 | H2 会拒绝 `DROP TABLE trip_plans`（外键），因此 V11 改为 `ADD COLUMN ... NOT NULL DEFAULT ''` + 回填；应用层拒绝空串，迁移测试覆盖 SQLite + H2 |
 | Risk | 匹配打分比较口径 | 字符串改代码后“目的地相同”理由可能失效；补匹配回归用例 |
 | Risk | 发布页目的地与地图选点交互 | A 的目的地改 Cascader，途经点/集合地点保留地图；需在 A 的 design/E2E 对齐 |
 | Blocker | 无 | blocking OQ=0、DoR BLOCKER=0、A0 ⑨–⑫ 全过；外部依赖均为非阻塞顺序条件 |
@@ -333,7 +413,7 @@
 ### 11.8 Suggested split boundaries（供 proposal-split / story-split）
 
 - **B 单 change，两份 delta：** `add-destination-area-filters` → `trip-plans` + `trip-experiences`。
-- **B 内部阶段（不拆 change）：** ① 数据底座（V10、6 位码、字典、响应字段）；② 筛选/展示（级联、日期、摘要、空态）；③ 体验日期 + 搜索移除。
+- **B 内部阶段（不拆 change）：** ① 数据底座（V11、6 位码、字典、响应字段）；② 筛选/展示（级联、日期、摘要、空态）；③ 体验日期 + 搜索移除。
 - **A 的发布目的地字段：** 归 `add-trip-publish` 的目的地相关修订，不并入 B。
 - **归档顺序：** `refine-inspiration-home` → `add-destination-area-filters` → `add-trip-publish`；三者分属不同 owner，本需求只归档自己。
 - **质量自检（split-heuristics）：** 垂直切片 ✓；端到端可观察 ✓（选城市 + 日期 → 列表变化）；数据底座后可独立运行 ✓；capability 名真实 ✓；无依赖环 ✓。

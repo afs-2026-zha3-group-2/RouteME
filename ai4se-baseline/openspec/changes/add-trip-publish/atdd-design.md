@@ -54,3 +54,38 @@
 
 - 页面级视觉与交互细节不在本 change 断言（属 `design-system` 能力的既有要求）。
 - 未新增 NFR 用例；MVP 无 SLA，沿用 `add-trip-plans` 的 deferred 记录。
+
+## 6. 目的地修订（REQ-007 协作）
+
+P2 阶段记录 §8 的修订把目的地改成二级代码，新增两条场景与两组断言：
+
+| # | 场景 | 测试层 | 用例 |
+|---|---|---|---|
+| 12 | 未选到市不能提交（发布页） | 前端 + 端到端 | `tripForm.test.ts › rejects a destination that is not a city-level code`；`trips.spec.ts › blocks publishing…`（目的地字段 `aria-invalid`） |
+| 13 | 非法或省级代码被后端拒绝 | 接口 | `TripControllerTest#in_provinceCodeOnly_out_invalidInput`、`#in_unknownDestinationCode_out_invalidInput`、`#in_missingDestinationCode_out_invalidInput` |
+| 14 | 选到市后按代码生成标准名 | 接口 + 端到端 | `TripControllerTest#in_validRequest_out_createdRecruitingTrip`（`destination = 广州`）；发布 e2e 断言详情页目的地为「珠海」 |
+
+实现要点：
+
+- 目的地控件改为 antd `Cascader`（`changeOnSelect = false`，必须点到第二级），选项来自 `frontend/src/areas/areaCatalog.ts`。
+- 表单只保存市级 `destinationCode`；`toCreateRequest` 输出 `destination_code`；参考发布预填时用 `codesForCityName` 反查两级路径。
+- 后端 `AreaConstant.cityOf` 负责二级码校验（长度 6、排除 `0000` 结尾的省级码、必须命中字典），名称由 `AreaCity.displayName()` 生成。
+- 字典是**最小切片**（广东 14 城 + 香港 / 澳门二级区），`add-destination-area-filters` 落地时替换为全国字典并持久化代码列。
+
+## 7. R2：表单默认值与地图上下文（2026-11-16）
+
+| # | 场景 | 测试层 | 用例 |
+|---|---|---|---|
+| 15 | 日期默认今天 | 前端纯函数 | `tripForm.test.ts › initial form defaults both dates to today`（本地日期拼接，不走 UTC） |
+| 16 | 目的地可点选 | 端到端 | 发布 e2e：点开目的地后断言面板包围盒在视口内，再选「广东省 / 珠海」 |
+| 17 | 未选目的地不渲染地图 | 端到端 | 发布 e2e：`[data-testid="place-map"]` 计数为 0，引导文案可见 |
+| 18 | 选定后地图聚焦该市 | 端到端 + 前端纯函数 | 发布 e2e：地图存在且 `data-city="珠海"`、点位标签只出现该市地点；`placeCatalog.test.ts › placesInCity` |
+| 19 | 分组与间距 | 端到端 | 发布 e2e：三个段标题可见；同组控件宽度差 ≤ 2px |
+
+实现要点：
+
+- `Cascader` 增加 `getPopupContainer`（挂字段容器）与全宽样式，修复面板被算到视口外。
+- `initialTripForm()` 用本地日期生成默认起止日期；`emptyTripForm` 仍用于校验用例。
+- `PlacePicker` 增加 `showMap` 与 `city`；`PlaceMap` 用 `meet` 保持比例，并按该市点位包围盒缩放，未选目的地时不渲染。
+- `placeCatalog` 增加 `placesInCity(city)`；`areaCatalog` 增加 `mapCityForCode(code)`（港澳二级区映射到地名库城市）。
+- 表单拆三段并统一间距。

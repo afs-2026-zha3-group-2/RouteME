@@ -12,7 +12,7 @@
 | AC-1 每条需求至少一个可测 AC | Pass | `trip-plans` 3 Requirement / 20 Scenario；`trip-experiences` 1 Requirement / 13 Scenario | 字典/筛选/无搜索/体验视图均有 Given/When/Then |
 | AC-2 AC 可观测 | Pass | 列表变化、摘要文案、空态、代码/省名字段、级联选项、体验卡无日期 | 不依赖内部实现细节 |
 | AC-3 高风险负向/边界已列出 | Pass | 只选到省、非法代码、起止倒置、无结果、搜索不存在、未映射迁移、港澳台/直辖市 | 服务端拒绝与前端校验均在规格中 |
-| AC-4 不是伪装的实现细节 | Pass | 字段名 `destination_code`/`province_code`/`province_name` 属契约；迁移场景不写 V10 | 无表名、无 SQL、无类名；V10 只在 proposal/impact 记录 |
+| AC-4 不是伪装的实现细节 | Pass | 字段名 `destination_code`/`province_code`/`province_name` 属契约；迁移场景不写 V11 | 无表名、无 SQL、无类名；V11 只在 proposal/impact 记录 |
 | AC-5 与 REQ-007 §4 对应 | Pass | 见 §需求映射 | 17 条需求场景全部有落点；发布页 #7/#8 归 A |
 
 ## Definition of verified（DoV）
@@ -51,7 +51,7 @@
 
 | # | 点 | 裁决 | 落点 |
 |---|---|---|---|
-| 1 | 发布页目的地字段归属 | 归 `add-trip-publish` 目的地修订；本 change 只提供数据底座（V10/字典/响应字段） | proposal §范围；REQ-007 §交付分工 |
+| 1 | 发布页目的地字段归属 | 归 `add-trip-publish` 目的地修订；本 change 只提供数据底座（V11/字典/响应字段） | proposal §范围；REQ-007 §交付分工 |
 | 2 | 搜索移除的跨 change 影响 | A 的"按标题搜索"场景由本 change 改写；refine 的搜索空态测试交 owner | proposal §问题 3；REQ-007 §5 |
 | 3 | 体验卡日期 | 不显示；日期筛选仍生效 | `trip-experiences` 体验卡不显示日期 |
 | 4 | 省名格式 | 后端返回展示名（普通省"广东省"，港澳台"香港"/"澳门"），前端不截短 | `trip-plans` 响应返回代码与省名 |
@@ -64,7 +64,7 @@
 |---|---|---|
 | `refine-inspiration-home` 未归档（0/19 tasks）且同改两 requirement；其搜索空态 E2E 依赖搜索框 | AO / BA | 由 owner 更新测试并先归档；本 change G1 记为条件 |
 | `add-trip-publish` 目的地修订未实现（5 条待完成任务），其 G1/G2 基于修订前范围 | AO / SA | 待本 change 数据底座合入后执行；A 归档前重评 G1/G2 |
-| V10 重建 `trip_plans` 时与 `trip_experiences` 外键处理 | Dev | 迁移设计验证，保证体验数据不丢 |
+| V11 加列时与 `trip_experiences` 外键兼容 | Dev | 迁移设计验证，保证体验数据不丢 |
 | 匹配打分从名称比较改为 code 比较 | Dev | 补 `add-match-reason` 回归（目的地相同 50 分） |
 | 区划数据包 v5 数据约 2019/2020 | Dev | MVP 接受静态字典；后续升级不改代码契约 |
 | 搜索移除后 A/refine 的 E2E 需同步 | AO / BA | A 由本 change 改写；refine 交 owner |

@@ -2,7 +2,9 @@ import { describe, expect, it } from 'vitest';
 import {
   addTag,
   emptyTripForm,
+  initialTripForm,
   toCreateRequest,
+  todayIso,
   validateTripForm,
   type TripFormValues,
 } from './tripForm';
@@ -47,6 +49,12 @@ describe('validateTripForm', () => {
     ]);
   });
 
+  it('rejects a destination that is not a city-level code', () => {
+    expect(validateTripForm({ ...validForm, destinationCode: '' }).destination).toBeDefined();
+    expect(validateTripForm({ ...validForm, destinationCode: '440000' }).destination).toBeDefined();
+    expect(validateTripForm({ ...validForm, destinationCode: '999999' }).destination).toBeDefined();
+  });
+
   it('rejects a title over the contract limit', () => {
     const errors = validateTripForm({ ...validForm, title: '路'.repeat(41) });
     expect(errors.title).toBeDefined();
@@ -79,6 +87,19 @@ describe('validateTripForm', () => {
   it('rejects more than five tags', () => {
     const errors = validateTripForm({ ...validForm, tags: ['摄影', '美食', '海边', '徒步', '露营', '历史'] });
     expect(errors.tags).toBeDefined();
+  });
+});
+
+describe('initialTripForm', () => {
+  it('defaults both dates to today using the local calendar day', () => {
+    const form = initialTripForm(new Date(2026, 10, 16, 0, 30));
+    expect(form.startDate).toBe('2026-11-16');
+    expect(form.endDate).toBe('2026-11-16');
+  });
+
+  it('formats local dates without shifting across UTC midnight', () => {
+    expect(todayIso(new Date(2026, 0, 1, 0, 5))).toBe('2026-01-01');
+    expect(todayIso(new Date(2026, 11, 31, 23, 55))).toBe('2026-12-31');
   });
 });
 

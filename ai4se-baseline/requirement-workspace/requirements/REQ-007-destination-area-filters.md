@@ -37,7 +37,7 @@
 **In scope（本 change `add-destination-area-filters`）**
 
 - **数据底座**：目的地 6 位国标行政区划码为权威；`destination` 名称列保留并由后端按代码同步；新增 `province_code` + `province_name`（展示名）；`trip_experiences` 不新增目的地列。
-- **数据库迁移 V10**：`ALTER TABLE trip_plans ADD COLUMN destination_code VARCHAR(6) NOT NULL DEFAULT ''`；按地图城市库 16 城（含别名）与现有种子 5 城映射回填；`destination` 回填标准名；建索引。不重建表，兼容 SQLite/H2 与既有外键；应用层拒绝空串/未知代码。
+- **数据库迁移 V11**：`ALTER TABLE trip_plans ADD COLUMN destination_code VARCHAR(6) NOT NULL DEFAULT ''`；按地图城市库 16 城（含别名）与现有种子 5 城映射回填；`destination` 回填标准名；建索引。不重建表，兼容 SQLite/H2 与既有外键；应用层拒绝空串/未知代码。
 - **目的地筛选**：省市级联（自绘两列面板，P4 实现修订），二级联动，**必须选到市**；全国数据**含港澳台**；不允许自由输入。
 - **目的地展示**：卡片显示市名；详情页与筛选摘要显示"省 / 市"；直辖市用省级名（"北京市"），不出现"市辖区"；港澳台显示"香港 · 中西區"式"省级简称 · 二级名"（港澳二级沿用 v5 原文）。
 - **日期筛选**：保留"出发不早于 / 出发不晚于"，按行程日期区间求交集；单边可用；起止同日即"选某一天/某个周六"；起止倒置自动交换。
@@ -65,7 +65,7 @@
 3. **直辖市展示** — Given 用户选择"北京市 / 市辖区"，When 行程出现在卡片与详情页，Then 卡片与详情 SHALL 显示"北京市"，MUST NOT 出现"市辖区"。
 4. **港澳台展示** — Given 用户选择"香港特别行政区 / 中西區"，When 查看卡片与筛选摘要，Then SHALL 显示"香港 · 中西區"；详情页同样以"省级简称 · 二级名"展示。
 5. **省名由后端返回** — Given 任意一条行程详情/列表响应，When 前端渲染省名，Then 响应 SHALL 包含 `province_code` 与 `province_name`（展示名：普通省"广东省"，港澳台"香港"/"澳门"），前端 MUST NOT 自行截短。
-6. **存量迁移** — Given 数据库中存在旧名称（地图城市库 16 城及别名，含种子"珠海/清远/广州/深圳/佛山"），When V10 迁移执行，Then 每条行程 SHALL 获得对应 6 位代码并把名称回填为标准名，MUST NOT 留下未映射记录。
+6. **存量迁移** — Given 数据库中存在旧名称（地图城市库 16 城及别名，含种子"珠海/清远/广州/深圳/佛山"），When V11 迁移执行，Then 每条行程 SHALL 获得对应 6 位代码并把名称回填为标准名，MUST NOT 留下未映射记录。
 7. **发布页必须选到市（A 承担）** — Given 用户处于发布行程页，When 未选目的地或只选到省就提交，Then 系统 SHALL 拒绝发布并提示必须选择到城市；When 选到市并提交，Then 后端 SHALL 按代码生成标准名称并保存。
 8. **非法代码拒绝（A 承担）** — Given 发布请求携带不存在或非二级的 `destination_code`，When 后端校验，Then SHALL 拒绝并提示目的地不合法，且不产生行程。
 
@@ -93,7 +93,7 @@
 - 搜索移除的跨 change 依赖：`add-trip-publish` 的"按标题搜索"场景与发布 E2E 已获授权由本 change 修改；`refine-inspiration-home` 的搜索相关测试由其 owner 更新；本 change 不改 `refine-inspiration-home` 的文件。
 - 存量映射：地图城市库 16 城（珠海/广州/深圳/佛山/清远/中山/江门/肇庆/惠州/东莞/阳江/湛江/韶关/汕头/香港/澳门）+ 常见别名 + 现有种子 5 城；未映射名称使迁移失败，不得静默丢弃。
 - `trip_experiences` 通过 `trip_id` 关联行程，不新增目的地列；体验筛选与展示均消费行程的目的地代码/名称与日期。
-- **版本：** V9 已被 `add-user-auth` 占用，本需求迁移用 **V10**；契约已 `0.6.0`，本需求升 **0.7.0**。
+- **版本：** V9 已被 `add-user-auth` 占用、V10 已被 `add-user-profile` 占用，本需求迁移用 **V11**；契约已 `0.6.0`，本需求升 **0.7.0**。
 - **并发变更约束：** `refine-inspiration-home`（REQ-005）同改 `trip-plans` / `trip-experiences`；`add-trip-publish` 拥有发布 requirement；`add-match-reason` 改 `trip-companions`。归档顺序 `refine-inspiration-home` → 本 change → `add-trip-publish`；三者中只有本 change 属于本需求，其它由各自 owner 归档。
 - 匹配能力（`trip-companions`）为消费方：业务规则不变，但"目的地相同"的打分比较必须改为按代码比较（列入实现触点，不计入本 REQ 的能力变更面）。
 - 区划数据包：`element-china-area-data` v5（6 位码、含港澳台，数据约 2019/2020）；MVP 接受静态字典，后续可升级。
@@ -119,7 +119,7 @@
 | blocking | resolved | 是否允许只选省、是否允许自由输入？ | BA | 确认：必须选到市；全国数据含港澳台；不允许自由输入（D3/D4/D14）。 |
 | blocking | resolved | 体验视图是否要补日期筛选？ | BA | 确认：补齐，按关联行程日期区间交集（D1）。 |
 | blocking | resolved | 搜索框只去前端还是连后端一起删？ | BA/SA | 确认：前后端、契约、测试一并删除；A 的搜索场景由本 change 改写，refine 的搜索测试交 owner（D10/D21）。 |
-| blocking | resolved | 存量中文名怎么迁移？ | BA/SA | 确认：按地图城市库 16 城 + 别名 + 种子 5 城映射到 6 位代码，名称回填标准名；V10 加列 NOT NULL + 回填（兼容 SQLite/H2，不重建表）（D11/D12/D17）。 |
+| blocking | resolved | 存量中文名怎么迁移？ | BA/SA | 确认：按地图城市库 16 城 + 别名 + 种子 5 城映射到 6 位代码，名称回填标准名；V11 加列 NOT NULL + 回填（兼容 SQLite/H2，不重建表）（D11/D12/D17）。 |
 | blocking | resolved | 直辖市与港澳台显示什么名字？ | BA | 确认：直辖市用省级名；港澳台"省级简称 · 二级名"（D8/D9）。 |
 | blocking | resolved | 省名由接口返回还是前端解析？ | BA/SA | 确认：后端返回 `province_code` + `province_name`（展示名），前端不截短（D18）。 |
 | blocking | resolved | 体验卡是否显示日期？ | BA | 确认：不显示（D19）。 |
@@ -136,7 +136,7 @@ blocking 项 = 0 未 resolved，满足进入 impact/split 的硬门。
 
 | 归属 | 范围 |
 |---|---|
-| 本 change `add-destination-area-filters`（REQ-007） | V10 数据底座、6 位码/字典/响应字段、首页筛选（级联/日期/摘要/空态）、卡片/详情/体验展示、体验日期筛选、搜索移除、本 change 的测试。 |
+| 本 change `add-destination-area-filters`（REQ-007） | V11 数据底座、6 位码/字典/响应字段、首页筛选（级联/日期/摘要/空态）、卡片/详情/体验展示、体验日期筛选、搜索移除、本 change 的测试。 |
 | `add-trip-publish`（别人的 change，已授权只改目的地相关，不归档） | 发布页目的地 Cascader、请求 `destination_code`、发布校验、目的地相关 E2E/design/spec。 |
 | `refine-inspiration-home`（别人的 change，不改其文件） | 其搜索相关 E2E/tasks 由它的 owner 更新；本 change 只在 G1 记录依赖。 |
 | `add-match-reason`（别人的 change） | 业务规则不变；本 change 只把匹配比较口径改为代码，需回归其"目的地相同"场景。 |

@@ -27,6 +27,12 @@ describe('parseRoute', () => {
       expect(parseRoute('#/trips/new')).toEqual({ name: 'create' });
     });
 
+    it('maps the profile setup and public profile paths', () => {
+      expect(parseRoute('#/profile/setup')).toEqual({ name: 'profileSetup' });
+      expect(parseRoute('#/users/12')).toEqual({ name: 'userProfile', userId: 12 });
+      expect(parseRoute('#/users/abc')).toEqual({ name: 'notFound' });
+    });
+
     it('falls back to notFound for unknown paths', () => {
       expect(parseRoute('#/trips/abc')).toEqual({ name: 'notFound' });
       expect(parseRoute('#/settings')).toEqual({ name: 'notFound' });
@@ -43,6 +49,8 @@ describe('parseRoute', () => {
         { name: 'mine' as const },
         { name: 'chat' as const, tripId: 7, userId: 2 },
         { name: 'share' as const, tripId: 7 },
+        { name: 'profileSetup' as const },
+        { name: 'userProfile' as const, userId: 7 },
       ];
       expect(routes.map((route) => parseRoute(routeToHash(route)))).toEqual(routes);
     });

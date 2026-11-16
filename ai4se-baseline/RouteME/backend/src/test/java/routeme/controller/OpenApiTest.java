@@ -112,12 +112,85 @@ class OpenApiTest {
                 () -> assertTrue(paths(document).containsKey("/auth/me"), "/auth/me declared"),
                 () -> assertTrue(paths(document).containsKey("/auth/logout"), "/auth/logout declared"),
                 () -> assertTrue(
-                        required(register)
-                                .containsAll(List.of("username", "password", "nickname", "school", "interests")),
+                        required(register).containsAll(List.of("username", "password", "nickname")),
                         "register required fields"),
+                () -> assertTrue(
+                        required(register).stream()
+                                .noneMatch(List.of("school", "bio", "interests", "avatar_initial")::contains),
+                        "register drops legacy profile fields from required"),
+                () -> assertTrue(
+                        properties(register).keySet().stream()
+                                .noneMatch(List.of("school", "bio", "interests", "avatar_initial")::contains),
+                        "register drops legacy profile properties"),
                 () -> assertTrue(
                         required(session).containsAll(List.of("token", "expires_at", "user")),
                         "session required fields")
+        );
+    }
+
+    @Test
+    void in_openApiFile_out_userProfileContractDeclared() throws IOException {
+        // Given
+        Map<String, Object> document = loadYaml(SPEC_PATH);
+
+        // When
+        Map<String, Object> demoUser = schema(document, "DemoUser");
+        Map<String, Object> profile = schema(document, "UserProfile");
+        Map<String, Object> updateRequest = schema(document, "UserProfileUpdateRequest");
+        Map<String, Object> errorSchema = schema(document, "Error");
+
+        // Then
+        assertAll(
+                () -> assertTrue(paths(document).containsKey("/users/{userId}/profile"), "profile read declared"),
+                () -> assertTrue(paths(document).containsKey("/users/me/profile"), "profile save declared"),
+                () -> assertTrue(paths(document).containsKey("/users/me/avatar"), "avatar upload declared"),
+                () -> assertTrue(paths(document).containsKey("/users/{userId}/avatar"), "avatar read declared"),
+                () -> assertTrue(
+                        required(demoUser).containsAll(
+                                List.of("id", "nickname", "avatar_initial", "bio", "interests", "profile_complete")),
+                        "demo user required fields"),
+                () -> assertTrue(
+                        properties(demoUser).keySet().containsAll(List.of("avatar_url", "city", "major", "job")),
+                        "demo user summary fields"),
+                () -> assertTrue(
+                        properties(demoUser).keySet().contains("school")
+                                && required(demoUser).stream().noneMatch("school"::equals),
+                        "demo user keeps school but no longer requires it"),
+                () -> assertTrue(
+                        required(profile).containsAll(
+                                List.of("id", "nickname", "avatar_initial", "interests", "profile_complete")),
+                        "profile required fields"),
+                () -> assertTrue(
+                        properties(profile).keySet().containsAll(List.of(
+                                "avatar_url", "birthday", "age", "zodiac", "gender", "city", "school", "major", "job",
+                                "mbti", "travel_style", "bio")),
+                        "profile derived and optional fields"),
+                () -> assertTrue(
+                        required(updateRequest).containsAll(
+                                List.of("nickname", "birthday", "gender", "city", "interests", "travel_style")),
+                        "update request required fields"),
+                () -> assertTrue(
+                        enums(properties(updateRequest).get("gender")).containsAll(List.of("男", "女", "其他")),
+                        "gender enum"),
+                () -> assertTrue(
+                        enums(properties(updateRequest).get("job"))
+                                .containsAll(List.of("学生", "上班族", "自由职业", "其他")),
+                        "job enum"),
+                () -> assertTrue(
+                        enums(properties(updateRequest).get("travel_style"))
+                                .containsAll(List.of("特种兵", "休闲游", "深度游", "随性游")),
+                        "travel style enum"),
+                () -> assertEquals(16, enums(properties(updateRequest).get("mbti")).size(), "mbti enum size"),
+                () -> assertEquals(3, properties(updateRequest).get("interests").get("minItems"), "min interests"),
+                () -> assertEquals(5, properties(updateRequest).get("interests").get("maxItems"), "max interests"),
+                () -> assertTrue(
+                        enums(properties(errorSchema).get("code")).contains("USER_NOT_FOUND"),
+                        "user not found error code"),
+                () -> assertEquals("object", properties(errorSchema).get("fields").get("type"), "error fields object"),
+                () -> assertTrue(
+                        enums(asMap(properties(errorSchema).get("fields").get("additionalProperties")))
+                                .containsAll(List.of("REQUIRED", "INVALID_DATE", "INVALID_OPTION")),
+                        "field reason codes")
         );
     }
 

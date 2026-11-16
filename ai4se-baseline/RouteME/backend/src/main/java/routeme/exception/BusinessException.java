@@ -1,5 +1,7 @@
 package routeme.exception;
 
+import java.util.Map;
+
 import org.springframework.http.HttpStatus;
 
 /**
@@ -23,5 +25,14 @@ public abstract class BusinessException extends RuntimeException {
 
     public HttpStatus status() {
         return status;
+    }
+
+    /**
+     * 字段级错误明细：只有资料校验使用，其余业务异常返回空 map。
+     *
+     * @return 字段名 → 原因码
+     */
+    public Map<String, String> fields() {
+        return Map.of();
     }
 }

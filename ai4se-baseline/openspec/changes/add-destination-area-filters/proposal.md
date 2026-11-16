@@ -15,7 +15,7 @@
 
 - `trip-plans`：目的地改为 6 位行政区划码 + 省市级联筛选 + 标准名/省名展示；移除关键词搜索。
 - `trip-experiences`：旅行体验视图补目的地代码 + 日期区间筛选；体验卡不显示日期；移除关键词搜索。
-- 数据底座：V10 迁移、区划字典、响应字段；发布页目的地字段由 `add-trip-publish` 目的地修订承载。
+- 数据底座：V11 迁移、区划字典、响应字段；发布页目的地字段由 `add-trip-publish` 目的地修订承载。
 
 ## 问题
 
@@ -31,7 +31,7 @@
 **In scope（本 change）**
 
 - **数据底座：** 6 位国标行政区划码为权威；省市二级；含港澳台；`destination` 名称列保留并由后端按代码同步为标准名；新增 `province_code` + `province_name`（展示名）；`trip_experiences` 不新增目的地列。
-- **数据库迁移 V10：** `ALTER TABLE trip_plans ADD COLUMN destination_code VARCHAR(6) NOT NULL DEFAULT ''`；按地图城市库 16 城（含别名）与现有种子映射回填；`destination` 回填标准名；建立索引。不重建表，兼容 SQLite/H2 与既有外键。
+- **数据库迁移 V11：** `ALTER TABLE trip_plans ADD COLUMN destination_code VARCHAR(6) NOT NULL DEFAULT ''`；按地图城市库 16 城（含别名）与现有种子映射回填；`destination` 回填标准名；建立索引。不重建表，兼容 SQLite/H2 与既有外键。
 - **首页筛选：** 目的地改为省市级联（必须选到市）；保留日期区间交集与兴趣 OR；"已应用筛选"摘要按省/市口径展示；清除全部；无结果空态保留条件。
 - **体验视图筛选：** 目的地改为代码 + 新增日期区间，按关联行程日期区间求交集；体验卡不显示日期。
 - **地名展示：** 卡片显示市名（直辖市显示省级名，如"北京市"）；详情与筛选摘要显示"省 / 市"；港澳台显示"香港 · 中西區"式"省级简称 · 二级名"；省名由后端返回展示名。
@@ -62,13 +62,13 @@
 | D8 | 名称 | 统一字典标准名；直辖市用省级名，不出现"市辖区" |
 | D9 | 展示 | 卡片市名；详情/摘要"省 / 市"；港澳台"省 · 二级"；体验卡不显示日期 |
 | D10 | 搜索 | 前后端、契约、测试全部移除；A 的场景由本 change 改写，refine 的测试交 owner |
-| D11 | 存量 | V10；按地图 16 城 + 别名 + 种子映射回填标准名 |
-| D12 | 约束 | V10 加列 NOT NULL（DEFAULT '' + 回填，跨 SQLite/H2）；应用层拒绝空串 |
+| D11 | 存量 | V11；按地图 16 城 + 别名 + 种子映射回填标准名 |
+| D12 | 约束 | V11 加列 NOT NULL（DEFAULT '' + 回填，跨 SQLite/H2）；应用层拒绝空串 |
 | D13 | 发布入参 | 只传 `destination_code`，后端生成名称（A 实现） |
 | D14 | 省级 | 不做按省搜索/筛选 |
 | D15 | 交付 | 本 change 单 change 两份 delta；不修改发布 requirement |
 | D16 | 编号 | REQ-007（REQ-005/006 已占用） |
-| D17 | 版本 | V10；契约 0.7.0 |
+| D17 | 版本 | V11；契约 0.7.0 |
 | D18 | 省名 | 后端返回 `province_name` 展示名 |
 | D19 | 体验卡 | 不显示日期 |
 | D20 | 归档 | refine → 本 change → A；只归档本 change |
@@ -80,7 +80,7 @@
 
 | 位置 | 改动 |
 |---|---|
-| `backend/src/main/resources/db/migration/V10__*.sql` | 加列 `destination_code` 非空、16 城/别名映射回填、标准名、索引；不重建表 |
+| `backend/src/main/resources/db/migration/V11__*.sql` | 加列 `destination_code` 非空、16 城/别名映射回填、标准名、索引；不重建表 |
 | `backend/src/main/java/routeme/{pojo,entity,request,response,param,service,service/impl,controller,mapper}` | 目的地代码化、名称/省名派生；删除 `q`；体验日期参数；匹配按代码比较 |
 | `backend/src/main/resources/mapper/{TripPlanMapper,TripExperienceMapper}.xml` | 目的地按代码过滤；删除关键词条件；体验日期交集 |
 | `backend/src/main/resources/**`（新增） | 区划字典资源（与前端同源，含港澳台、6 位码） |
@@ -107,7 +107,7 @@
 3. 响应返回 `destination_code`、`destination`（标准名）、`province_code`、`province_name`（展示名）；直辖市显示"北京市"，页面不出现"市辖区"；香港显示"香港 · 中西區"。
 4. 「旅行体验」视图填日期后列表变化，且与关联行程日期区间交集一致；体验卡不显示日期；无结果时显示空态并保留条件。
 5. 首页不存在搜索框；`GET /api/trips`、`GET /api/matches`、`GET /api/experiences` 不再声明 `q`；匹配、我的旅行、聊天、体验发布回归通过。
-6. V10 迁移后种子行程的代码与标准名正确，地图城市库 16 城与别名均可映射，`trip_experiences` 数据与关联不丢；不存在未映射行程。
+6. V11 迁移后种子行程的代码与标准名正确，地图城市库 16 城与别名均可映射，`trip_experiences` 数据与关联不丢；不存在未映射行程。
 7. 匹配列表仍能出现"目的地相同"理由（按代码比较）。
 8. 发布页（A）目的地为省市级联面板；提交后返回 `destination_code` 与标准名；非法代码返回 400 `INVALID_INPUT`；途经点/集合地点仍用地图选点。
 9. `refine-inspiration-home` 的搜索相关测试由 owner 更新后，两个 change 的 E2E 均通过。
@@ -116,7 +116,7 @@
 ## 规模与工作量
 
 - **Size：** L（数据契约 + 迁移 + 前后端 + 契约 + 测试全链路）。
-- **Effort 估算：** 数据底座（V10 + 字典 + 响应字段）2–3 人日；筛选/展示 1–2 人日；体验日期 + 搜索移除 1 人日；A 的发布目的地修订与 E2E 另计 1 人日。
+- **Effort 估算：** 数据底座（V11 + 字典 + 响应字段）2–3 人日；筛选/展示 1–2 人日；体验日期 + 搜索移除 1 人日；A 的发布目的地修订与 E2E 另计 1 人日。
 - **可增量交付：** 数据底座完成后即可独立演示"选省市级联 → 列表变化"；体验日期与搜索移除不阻塞数据底座。
 
 ## Spec ID

@@ -78,3 +78,71 @@
 ## 8. P5 状态
 
 按用户 2026-11-16 指示：**暂不执行 P5**。归档时需补：`summary.md`、living spec 合并（`trip-plans`）、`docs/knowledge/` 登记、`changes/archive/2026-11-16-add-trip-publish/` 目录。
+
+## 9. 修订：REQ-007 目的地代码化（P4 追加）
+
+上文的 P4 证据对应「修订前」的发布链路（`destination` 中文名、契约 0.6.0），结论仍然成立，但已不足以覆盖当前 `add-trip-publish` 的范围。
+
+| 项 | 修订前 | 修订后 |
+|---|---|---|
+| 请求字段 | `destination`（名称） | `destination_code`（6 位码，必须选到市） |
+| 契约版本 | 0.6.0 | 0.7.0 |
+| 发布页目的地 | 地图 `PlacePicker` | 省市级联 Cascader |
+| 后端校验 | 目的地非空 | 代码必须是字典中的二级节点，否则 400 `INVALID_INPUT` |
+| 新增断言 | — | 省级代码 / 不存在代码被拒；Cascader 语义定位 |
+
+处置：
+
+- 实现与验证证据记入 P4 追加提交与新的验证报告（`docs/ai4se-plugins/`），不覆盖本文件 §4 的历史结果。
+- **G2 需重评**：`g2-decision.md` 追加「目的地修订」结论，契约版本与测试计数以修订后的提交为准。
+- 归档仍按用户指示暂缓；归档顺序为 `add-destination-area-filters` → `add-trip-publish`。
+
+### 9.1 修订实施结果（2026-11-16 11:35）
+
+| 项 | 结果 |
+|---|---|
+| 实现提交 | `feat(p4): add-trip-publish publish destination code and contract 0.7.0` |
+| 契约 | `openapi.yaml` 0.7.0，`destination_code` 必填、`^[0-9]{6}$`；redocly 0 error / 7 既有 warning |
+| 后端 | `clean test` 156 通过（`TripControllerTest` 27 项，含省级码 / 未知码 / 缺失码拒绝） |
+| 前端 | `npm test` 75 通过；`npm run build` 成功 |
+| 端到端 | 发布 2 项通过（Cascader 选择 + 详情页目的地「珠海」） |
+| 验证报告 | [`20261116-113500-local-verify-report.md`](../../../docs/ai4se-plugins/20261116-113500-local-verify-report.md) |
+| G1 / G2 | `g1-decision.md` 重评 Pass；`g2-decision.md` 追加修订 Pass |
+| 遗留 | 最小字典切片（广东 14 城 + 港澳二级区）需由 `add-destination-area-filters` 替换为全国字典并持久化代码 |
+
+## 10. 修订后的签署确认
+
+| 角色 | 姓名 | 确认内容 | 日期 |
+|---|---|---|---|
+| VL | Neal | 复核目的地修订的验证证据，G2 重评后再签 | 2026-11-16 |
+| AO | Jay | 承担目的地修订实现与本地验证 | 2026-11-16 |
+| SA | Jacky、Karena | 确认修订后的验收口径（必须选到市、非法代码拒绝） | 2026-11-16 |
+
+### 10.1 修订签署（证据落实后）
+
+| 角色 | 姓名 | 确认内容 | 日期 |
+|---|---|---|---|
+| VL | Neal | 复核 `20261116-113500-local-verify-report.md`，G2 修订 Pass | 2026-11-16 |
+| AO | Jay | 交付实现与回归结果；字典切片替换列为归档前复核项 | 2026-11-16 |
+| SM | Lewis | 认可修订范围与遗留项安排 | 2026-11-16 |
+
+## 11. R2 实施结果（发布页体验，2026-11-16 12:10）
+
+| 项 | 结果 |
+|---|---|
+| 实现提交 | `feat(p4): add-trip-publish R2 defaults destination-scoped map and layout` |
+| 目的地 | 弹出层挂字段容器后落在视口内（headless 430×900 实测 `x=35, y=310`）；控件撑满字段 |
+| 日期 | 默认今天（本地日期），可改；空值仍走原校验 |
+| 地图 | 未选目的地不渲染（引导文案代替）；选定后按该市包围盒缩放，`meet` 保比例，标签贪心避让，点/标签按视口缩放 |
+| 布局 | 三段分组；行距 16 / 段距 24；移动端底部留白 88px |
+| 后端 / 契约 | 无改动（156 通过，契约 0.7.0 不变） |
+| 前端 | `npm test` 81 通过；`npm run build` 成功 |
+| 端到端 | 发布 2 项通过；`trips` + `companions` 9 通过 / 3 条既有失败 |
+| 验证报告 | [`20261116-121000-local-verify-report.md`](../../../docs/ai4se-plugins/20261116-121000-local-verify-report.md) |
+| G2 | `g2-decision.md` 追加 R2 Pass |
+
+| 角色 | 姓名 | 确认内容 | 日期 |
+|---|---|---|---|
+| VL | Neal | 复核 R2 证据（截图 + e2e），G2 追加 Pass | 2026-11-16 |
+| AO | Jay | 交付实现与回归结果 | 2026-11-16 |
+| SM | Lewis | 认可 R2 交付；P5 仍暂缓 | 2026-11-16 |

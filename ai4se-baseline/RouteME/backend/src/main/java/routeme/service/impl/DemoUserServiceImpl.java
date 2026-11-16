@@ -34,7 +34,7 @@ public class DemoUserServiceImpl extends AbstractServiceImpl<UserMapper, UserEnt
     @Override
     public List<DemoUser> findAll() {
         return list(Wrappers.<UserEntity>lambdaQuery().orderByAsc(UserEntity::getId)).stream()
-                .map(UserEntity::toDemoUser)
+                .map(entity -> entity.toDemoUser(clock))
                 .toList();
     }
 
@@ -43,7 +43,7 @@ public class DemoUserServiceImpl extends AbstractServiceImpl<UserMapper, UserEnt
         return list(Wrappers.<UserEntity>lambdaQuery()
                 .isNull(UserEntity::getUsername)
                 .orderByAsc(UserEntity::getId)).stream()
-                .map(UserEntity::toDemoUser)
+                .map(entity -> entity.toDemoUser(clock))
                 .toList();
     }
 
@@ -56,7 +56,7 @@ public class DemoUserServiceImpl extends AbstractServiceImpl<UserMapper, UserEnt
         if (entity == null) {
             throw new DemoUserRequiredException("unknown demo user: " + userId);
         }
-        return entity.toDemoUser();
+        return entity.toDemoUser(clock);
     }
 
     @Override
@@ -80,21 +80,18 @@ public class DemoUserServiceImpl extends AbstractServiceImpl<UserMapper, UserEnt
             String username,
             String passwordHash,
             String nickname,
-            String avatarInitial,
-            String school,
-            String bio,
-            List<String> interests) {
+            String avatarInitial) {
         UserEntity entity = new UserEntity();
         entity.setId(nextId(UserEntity::getId));
         entity.setUsername(username);
         entity.setPasswordHash(passwordHash);
         entity.setNickname(nickname);
         entity.setAvatarInitial(avatarInitial);
-        entity.setSchool(school);
-        entity.setBio(bio == null ? "" : bio);
-        entity.setInterests(JsonListUtils.write(interests));
+        entity.setSchool("");
+        entity.setBio("");
+        entity.setInterests(JsonListUtils.write(List.of()));
         entity.setCreatedAt(clock.instant().toString());
         save(entity);
-        return entity.toDemoUser();
+        return entity.toDemoUser(clock);
     }
 }

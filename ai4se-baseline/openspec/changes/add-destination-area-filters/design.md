@@ -20,7 +20,7 @@
 
 - `destination` 名称列保留，作为标准名缓存；由后端按代码派生写入，不手改。
 - `trip_experiences` 不加目的地列，继续 `JOIN trip_plans`。
-- V10（V9 被 `add-user-auth` 占用）：`ALTER TABLE trip_plans ADD COLUMN destination_code VARCHAR(6) NOT NULL DEFAULT ''`；用 CASE 回填 16 城/别名/种子并更新标准名；建索引。`DEFAULT ''` 只用于满足跨库 NOT NULL 约束，应用发布校验禁止空串；未映射名称在 UPDATE 时返回 NULL 并触发 NOT NULL 失败。
+- V11（V10 被 `add-user-profile` 占用；V9 被 auth 占用）：`ALTER TABLE trip_plans ADD COLUMN destination_code VARCHAR(6) NOT NULL DEFAULT ''`；用 CASE 回填 16 城/别名/种子并更新标准名；建索引。`DEFAULT ''` 只用于满足跨库 NOT NULL 约束，应用发布校验禁止空串；未映射名称在 UPDATE 时返回 NULL 并触发 NOT NULL 失败。
 - `trip_experiences` 不加目的地列，继续 `JOIN trip_plans`。
 
 ### D2 区划字典
@@ -89,10 +89,10 @@
 
 ### D7 迁移与外键
 
-- V10 不重建 `trip_plans`：SQLite/H2 的 `ADD COLUMN ... NOT NULL DEFAULT ''` 都能执行，且不会触碰 `trip_experiences`/`trip_applications`/`chat_messages` 的外键。
+- V11 不重建 `trip_plans`：SQLite/H2 的 `ADD COLUMN ... NOT NULL DEFAULT ''` 都能执行，且不会触碰 `trip_experiences`/`trip_applications`/`chat_messages` 的外键。
 - 回填顺序：先 `destination_code`（未知名称 → NULL → NOT NULL 触发失败），再 `destination` 标准名，最后建索引。
 - `DEFAULT ''` 是跨库兼容手段；应用层 `TripPlan.create` / `AreaNames.isValidCityCode` 拒绝空串/未知 code，避免新脏数据。
-- 迁移测试：临时 SQLite 执行 V1–V10，断言 6 条种子行程 code/标准名正确、2 条体验仍关联、`destination_code` NOT NULL 且索引存在。
+- 迁移测试：临时 SQLite 执行 V1–V11，断言 6 条种子行程 code/标准名正确、2 条体验仍关联、`destination_code` NOT NULL 且索引存在。
 
 ### D8 匹配口径
 

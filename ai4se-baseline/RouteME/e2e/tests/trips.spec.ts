@@ -21,6 +21,13 @@ async function pickDestination(page: Page, province: string, city: string) {
   await page.locator('.area-option', { hasText: city }).first().click();
 }
 
+/** Local calendar day, matching the form's default (never UTC). */
+function todayIso(): string {
+  const now = new Date();
+  const pad = (value: number) => String(value).padStart(2, '0');
+  return `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
+}
+
 async function createTripViaApi(page: Page, title: string) {
   const response = await page.request.post(`${API}/trips`, {
     headers: { 'X-User-Id': '1', 'Content-Type': 'application/json' },
@@ -41,7 +48,7 @@ async function createTripViaApi(page: Page, title: string) {
 test('shows the identity gate with three demo accounts and the unfinished trip list', async ({ page }) => {
   await page.goto('/');
 
-  await expect(page.getByRole('heading', { name: '选择一个演示身份' })).toBeVisible();
+  await expect(page.getByRole('tab', { name: '登录' })).toBeVisible();
   await expect(page.getByRole('button', { name: /林见夏/ })).toBeVisible();
   await expect(page.getByRole('button', { name: /陈屿/ })).toBeVisible();
   await expect(page.getByRole('button', { name: /苏念/ })).toBeVisible();
@@ -49,7 +56,7 @@ test('shows the identity gate with three demo accounts and the unfinished trip l
 
   await page.getByRole('button', { name: /林见夏/ }).click();
 
-  await expect(page.getByRole('heading', { name: '旅行灵感' })).toBeVisible();
+  await expect(page.getByRole('heading', { level: 1 })).toContainText('今天想走哪条路');
   await expect(page.locator('.trip-card', { hasText: '珠海情侣路日落机位二刷' })).toBeVisible();
   await expect(page.locator('.trip-card', { hasText: '佛山祖庙与岭南天地一日' })).toBeVisible();
   await expect(page.getByText('已满员').first()).toBeVisible();
@@ -76,8 +83,28 @@ test('publishes a trip and finds it in the home list', async ({ page }) => {
   await loginAs(page, 1);
   await page.goto('/#/trips/new');
 
+  await expect(page.getByRole('heading', { name: '基本信息' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: '路线' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: '补充信息' })).toBeVisible();
+  await expect(page.getByLabel('出发日期')).toHaveValue(todayIso());
+  await expect(page.getByLabel('结束日期')).toHaveValue(todayIso());
+  await expect(page.locator('[data-testid="place-map"]')).toHaveCount(0);
+  await expect(page.getByText('先选目的地，再按城市点选途经点。')).toBeVisible();
+
+  const cascader = page.locator('.area-trigger').first();
+  const cascaderWidth = await cascader.evaluate((node) => node.getBoundingClientRect().width);
+  const fieldWidth = await cascader.evaluate(
+    (node) => node.parentElement?.getBoundingClientRect().width ?? 0,
+  );
+  expect(Math.abs(cascaderWidth - fieldWidth)).toBeLessThanOrEqual(2);
+
   await page.getByLabel('标题').fill(title);
   await pickDestination(page, '广东省', '珠海市');
+
+  const map = page.locator('[data-testid="place-map"]');
+  await expect(map).toBeVisible();
+  await expect(map).toHaveAttribute('data-city', '珠海');
+  await expect(map.getByRole('button', { name: /情侣路/ })).toBeVisible();
   await page.getByLabel('出发日期').fill('2026-12-05');
   await page.getByLabel('结束日期').fill('2026-12-05');
   await pickPlace(page, '途经点', '香洲港');
@@ -88,6 +115,7 @@ test('publishes a trip and finds it in the home list', async ({ page }) => {
 
   await expect(page).toHaveURL(/#\/trips\/\d+$/);
   await expect(page.getByRole('heading', { name: title })).toBeVisible();
+  await expect(page.getByText('珠海').first()).toBeVisible();
   await expect(page.getByText('招募中').first()).toBeVisible();
   await expect(page.getByText('这是你发布的行程')).toBeVisible();
 
@@ -99,6 +127,8 @@ test('blocks publishing and flags every missing required field', async ({ page }
   await loginAs(page, 1);
   await page.goto('/#/trips/new');
 
+  await page.getByLabel('出发日期').fill('');
+  await page.getByLabel('结束日期').fill('');
   await page.getByRole('button', { name: /^发\s*布$/ }).click();
 
   await expect(page).toHaveURL(/#\/trips\/new$/);
@@ -123,7 +153,7 @@ test('publisher marks a trip completed and sees the experience section', async (
   await expect(page.getByRole('heading', { name: title })).toBeVisible();
   await expect(page.getByText('这是你发布的行程')).toBeVisible();
   await page.getByRole('button', { name: '标记为已结束' }).click();
-  await page.locator('.ant-popconfirm .ant-btn-primary').click();
+  await page.getByRole('dialog').getByRole('button', { name: '标记为已结束' }).click();
 
   await expect(page.getByText('已结束').first()).toBeVisible();
   await expect(page.getByText('游后真实体验')).toBeVisible();
@@ -146,7 +176,7 @@ test('defaults to the recruiting trips view with complete cards', async ({ page 
   await expect(card.locator('.tc-meta')).toContainText('4 个途经点');
   await expect(card.locator('.tc-route')).toContainText('香洲港集合');
   await expect(card.locator('.tc-tags')).toContainText('摄影');
-  await expect(card.locator('.tc-host-name')).toHaveText('陈屿');
+  await expect(card.locator('.tc-host-name')).toContainText('陈屿');
   await expect(card.locator('.tc-cap-num')).toHaveText('1 / 3 人');
   await expect(card.locator('[data-status="recruiting"]')).toContainText('招募中');
 });

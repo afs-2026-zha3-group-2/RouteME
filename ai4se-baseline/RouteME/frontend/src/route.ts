@@ -6,6 +6,8 @@ export type Route =
   | { name: 'mine' }
   | { name: 'chat'; tripId: number; userId: number }
   | { name: 'share'; tripId: number }
+  | { name: 'profileSetup' }
+  | { name: 'userProfile'; userId: number }
   | { name: 'notFound' };
 
 export function parseRoute(hash: string): Route {
@@ -24,6 +26,13 @@ export function parseRoute(hash: string): Route {
   }
   if (path === '/mine') {
     return { name: 'mine' };
+  }
+  if (path === '/profile/setup') {
+    return { name: 'profileSetup' };
+  }
+  const profile = /^\/users\/(\d+)$/.exec(path);
+  if (profile) {
+    return { name: 'userProfile', userId: Number(profile[1]) };
   }
   const share = /^\/share\/(\d+)$/.exec(path);
   if (share) {
@@ -62,6 +71,12 @@ export function routeToHash(route: Route): string {
   }
   if (route.name === 'detail') {
     return `#/trips/${route.tripId}`;
+  }
+  if (route.name === 'profileSetup') {
+    return '#/profile/setup';
+  }
+  if (route.name === 'userProfile') {
+    return `#/users/${route.userId}`;
   }
   return '#/';
 }

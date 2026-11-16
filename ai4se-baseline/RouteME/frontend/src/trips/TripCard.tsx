@@ -1,5 +1,6 @@
 import { cityLabel } from '../area/areaOptions';
 import { tripMessages } from '../i18n/tripMessages';
+import { publisherSummary } from '../profile/profileDisplay';
 import { Avatar } from '../shell/Avatar';
 import type { Match, TripSummary } from '../types';
 import { StatusBadge } from './StatusBadge';
@@ -97,10 +98,23 @@ export function TripCard({ trip, match, compact = false }: Props) {
                 )}
 
         <div className="tc-foot">
-          <span className="tc-host">
+          <button
+            type="button"
+            className="tc-host"
+            aria-label={`查看 ${trip.publisher.nickname} 的个人主页`}
+            onClick={(event) => {
+              event.preventDefault();
+              event.stopPropagation();
+              window.location.hash = `#/users/${trip.publisher.id}`;
+            }}
+          >
             <Avatar user={trip.publisher} size="sm" />
-            <span className="tc-host-name">{trip.publisher.nickname}</span>
-          </span>
+            <span className="tc-host-name">
+              {trip.publisher.nickname}
+              {publisherSummary(trip.publisher) !== '' &&
+                ` · ${publisherSummary(trip.publisher)}`}
+            </span>
+          </button>
           <span className="tc-cap">
             <span className="tc-cap-num">
               {trip.joined_count} / {trip.capacity} {tripMessages.peopleUnit}

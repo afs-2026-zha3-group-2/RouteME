@@ -15,7 +15,7 @@ import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.jdbc.datasource.DriverManagerDataSource;
 
 /**
- * 在临时 SQLite 文件库执行 V1–V10，验证 destination_code 非空回填、
+ * 在临时 SQLite 文件库执行 V1–V11，验证 destination_code 非空回填、
  * 种子目的地标准名、体验关联与索引。
  */
 class AreaCodeMigrationSqliteTest {

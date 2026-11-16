@@ -2,11 +2,14 @@ import { useCallback, useEffect, useState } from 'react';
 import { Alert, Button, Skeleton, Tabs, Typography } from 'antd';
 import { loadMyExperiences, loadMyTrips } from '../api';
 import { tripMessages } from '../i18n/tripMessages';
+import { publisherSummary } from '../profile/profileDisplay';
+import { Avatar } from '../shell/Avatar';
 import { TripCard } from '../trips/TripCard';
 import type { DemoUser, Experience, MyTrips, TripApplication } from '../types';
 
 type Props = {
   currentUser: DemoUser;
+  isAuthenticated: boolean;
 };
 
 function applicationLabel(status: TripApplication['status']): string {
@@ -26,7 +29,7 @@ function EmptyGroup() {
   return <Typography.Text type="secondary">{tripMessages.mineEmpty}</Typography.Text>;
 }
 
-export function MyTripsPage({ currentUser }: Props) {
+export function MyTripsPage({ currentUser, isAuthenticated }: Props) {
   const [data, setData] = useState<MyTrips | null>(null);
   const [experiences, setExperiences] = useState<Experience[]>([]);
   const [error, setError] = useState<string | null>(null);
@@ -67,6 +70,32 @@ export function MyTripsPage({ currentUser }: Props) {
         <Typography.Title level={2} className="trip-heading">
           {tripMessages.mineTitle}
         </Typography.Title>
+
+        <section className="mine-profile-card" aria-label="我的资料">
+          <Avatar user={currentUser} size="lg" />
+          <div className="mine-profile-text">
+            <b>{currentUser.nickname}</b>
+            <span>{publisherSummary(currentUser) || tripMessages.mineProfileIncomplete}</span>
+          </div>
+          {isAuthenticated && (
+            <div className="mine-profile-actions">
+              {currentUser.profile_complete ? (
+                <>
+                  <a className="btn sm ghost" href={`#/users/${currentUser.id}`}>
+                    {tripMessages.profileViewEntry}
+                  </a>
+                  <a className="btn sm ghost" href="#/profile/setup">
+                    {tripMessages.profileEditEntry}
+                  </a>
+                </>
+              ) : (
+                <a className="btn sm primary" href="#/profile/setup">
+                  {tripMessages.profileCompleteEntry}
+                </a>
+              )}
+            </div>
+          )}
+        </section>
 
         {data === null && <Skeleton active paragraph={{ rows: 4 }} />}
 

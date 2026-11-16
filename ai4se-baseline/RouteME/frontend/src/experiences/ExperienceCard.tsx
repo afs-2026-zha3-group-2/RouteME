@@ -20,12 +20,16 @@ export function ExperienceCard({ experience }: Props) {
     <article className="exp-card">
       <div className="exp-head">
         <Avatar user={experience.author} size="sm" />
-        <span className="exp-author">
+        <a
+          className="exp-author"
+          href={`#/users/${experience.author.id}`}
+          aria-label={`查看 ${experience.author.nickname} 的个人主页`}
+        >
           <b>{experience.author.nickname}</b>
           <span>
             {cityLabel(experience.trip.destination_code) || experience.trip.destination}
           </span>
-        </span>
+        </a>
         <span className={`badge ${INTENSITY_TONE[experience.intensity]}`}>
           {tripMessages.experienceIntensityLabel} · {intensityLabel(experience.intensity)}
         </span>

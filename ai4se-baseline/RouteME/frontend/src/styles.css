@@ -882,6 +882,7 @@ svg {
   width: 100%;
   max-width: 1120px;
   margin: 0 auto;
+  padding-bottom: 88px;
 }
 
 .form-card {
@@ -908,6 +909,54 @@ svg {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 12px;
+  width: 100%;
+}
+
+/* Publish form is grouped so the long field list reads in three passes. */
+.form-section {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px 0;
+  border-top: 1px solid var(--line);
+}
+
+.form-section:first-of-type {
+  border-top: 0;
+  padding-top: 4px;
+}
+
+.form-section-title {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+
+.form-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  width: 100%;
+}
+
+.form-hint {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--ink-3);
+}
+
+.form-actions {
+  display: flex;
+  gap: 12px;
+  padding-top: 16px;
+  border-top: 1px solid var(--line);
+}
+
+.field-control {
   width: 100%;
 }
 
@@ -2522,21 +2571,47 @@ svg {
   background: var(--lagoon-soft);
 }
 
+.id-list {
+  display: grid;
+  gap: 3px;
+}
+
+.id-divider {
+  height: 1px;
+  margin: 3px 6px;
+  background: var(--line);
+}
+
 .id-logout {
+  display: flex;
+  align-items: center;
+  gap: 9px;
   width: 100%;
-  margin-top: 4px;
-  padding: 8px;
-  border: 1px solid var(--line);
+  padding: 7px 8px;
+  border: 0;
   border-radius: 10px;
-  background: var(--surface);
-  color: var(--danger);
+  background: transparent;
+  color: var(--t-danger);
   font-size: 12.5px;
   font-weight: 700;
+  text-align: left;
+  white-space: nowrap;
   cursor: pointer;
 }
 
 .id-logout:hover {
-  border-color: var(--danger);
+  background: color-mix(in srgb, var(--danger) 9%, transparent);
+}
+
+.id-logout:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--lagoon) 22%, transparent);
+}
+
+.id-logout svg {
+  width: 15px;
+  height: 15px;
+  flex: none;
 }
 
 /* ---------- 登录 / 注册 ---------- */
@@ -2850,13 +2925,21 @@ svg {
 .map-canvas {
   display: block;
   width: 100%;
-  height: 230px;
+  height: auto;
+  aspect-ratio: 16 / 10;
+  max-height: 260px;
   cursor: crosshair;
 }
 
 .map-land-shape {
   stroke: var(--line-2);
   stroke-width: 0.5;
+}
+
+.map-grid line {
+  stroke: var(--line-2);
+  stroke-width: 0.25;
+  opacity: 0.35;
 }
 
 .map-island {
@@ -2913,6 +2996,13 @@ svg {
 .map-selected-halo {
   fill: var(--tide);
   opacity: 0.18;
+}
+
+.map-focus-ring {
+  fill: none;
+  stroke: var(--lagoon);
+  stroke-width: 0.6;
+  opacity: 0.35;
 }
 
 .map-selected-dot {
@@ -3005,5 +3095,328 @@ svg {
     animation-iteration-count: 1 !important;
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
+  }
+}
+
+/* ---------- profile: avatar image ---------- */
+.avatar-img {
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+/* ---------- profile: publisher and author entry links ---------- */
+.tc-host {
+  padding: 0;
+  border: 0;
+  border-radius: 99px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.tc-host:hover .tc-host-name {
+  color: var(--t-lagoon);
+  text-decoration: underline;
+}
+
+.tc-host:focus-visible {
+  outline: none;
+  box-shadow: var(--ring);
+}
+
+.exp-author {
+  color: inherit;
+  text-decoration: none;
+}
+
+.exp-author:hover b {
+  color: var(--t-lagoon);
+}
+
+.publisher-row {
+  color: inherit;
+  text-decoration: none;
+}
+
+.publisher-row:hover .publisher-name {
+  color: var(--t-lagoon);
+}
+
+/* ---------- profile: setup and public pages ---------- */
+.profile-page {
+  display: grid;
+  gap: 16px;
+  width: 100%;
+  max-width: 880px;
+  margin: 0 auto;
+}
+
+.profile-page-hint {
+  margin: 4px 0 0 !important;
+  font-size: 12.5px;
+}
+
+.profile-card {
+  padding: 20px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+  background: var(--surface);
+  box-shadow: var(--sh-2);
+}
+
+.profile-summary {
+  margin: 0;
+}
+
+.profile-form {
+  display: grid;
+  gap: 18px;
+}
+
+.profile-avatar {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding-bottom: 18px;
+  border-bottom: 1px dashed var(--line);
+}
+
+.profile-avatar-body {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.profile-avatar-hint {
+  margin: 0 !important;
+  font-size: 12px;
+}
+
+.profile-avatar-actions {
+  display: flex;
+  gap: 6px;
+  margin-top: 4px;
+}
+
+.profile-optional {
+  font-size: 11.5px;
+  font-weight: 500;
+  color: var(--ink-3);
+}
+
+.profile-field-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 15px 18px;
+}
+
+.profile-field {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  min-width: 0;
+}
+
+.profile-field.wide {
+  grid-column: 1 / -1;
+}
+
+.profile-field-hint {
+  font-size: 11px;
+  color: var(--ink-3);
+}
+
+.profile-required {
+  color: var(--coral);
+}
+
+.profile-form-foot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  padding-top: 18px;
+  border-top: 1px solid var(--line);
+}
+
+.profile-foot-hint {
+  margin-left: auto;
+  font-size: 11.5px;
+  color: var(--ink-3);
+}
+
+.profile-text-link {
+  font-size: 13px;
+  font-weight: 650;
+  color: var(--t-lagoon);
+  text-decoration: none;
+}
+
+.profile-hero {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+}
+
+.profile-hero-main {
+  display: grid;
+  flex: 1;
+  gap: 6px;
+  min-width: 0;
+}
+
+.profile-name {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin: 0 !important;
+  font-size: clamp(1.3rem, 2.4vw, 1.7rem) !important;
+  color: var(--ink) !important;
+}
+
+.profile-hero-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0;
+  font-size: 12.5px;
+  color: var(--ink-3);
+}
+
+.profile-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.profile-incomplete-notice {
+  margin: 0;
+}
+
+.profile-body {
+  display: grid;
+  gap: 14px;
+}
+
+.profile-section-title {
+  margin: 0 0 10px;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  color: var(--ink-3);
+  text-transform: uppercase;
+}
+
+.profile-facts {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+  margin: 0;
+}
+
+.profile-fact {
+  padding: 11px 13px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface-2);
+}
+
+.profile-fact dt {
+  margin: 0 0 3px;
+  font-size: 10.5px;
+  color: var(--ink-3);
+}
+
+.profile-fact dd {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--ink);
+  overflow-wrap: anywhere;
+}
+
+.profile-tag-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+}
+
+.profile-bio {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.85;
+  color: var(--ink-2);
+  white-space: pre-wrap;
+}
+
+.profile-empty {
+  margin: 0;
+  font-size: 13px;
+  color: var(--ink-3);
+}
+
+/* ---------- profile: mine entry card ---------- */
+.mine-profile-card {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 14px 16px;
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+  background: var(--surface);
+  box-shadow: var(--sh-1);
+}
+
+.mine-profile-text {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.mine-profile-text b {
+  font-size: 14px;
+}
+
+.mine-profile-text span {
+  font-size: 12px;
+  color: var(--ink-3);
+}
+
+.mine-profile-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-left: auto;
+}
+
+@media (max-width: 720px) {
+  .profile-field-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .profile-field.wide {
+    grid-column: auto;
+  }
+
+  .profile-hero {
+    flex-wrap: wrap;
+  }
+
+  .profile-facts {
+    grid-template-columns: 1fr;
+  }
+
+  .mine-profile-card {
+    flex-wrap: wrap;
+  }
+
+  .mine-profile-actions {
+    width: 100%;
+    margin-left: 0;
   }
 }

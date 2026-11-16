@@ -56,12 +56,42 @@
 
 **验证：** 人工核对报告中的命令可在本机复现
 
-## 目的地修订（REQ-007 协作，未完成）
+## 目的地修订（REQ-007 协作，已完成）
 
-- [ ] 发布页目的地从 `PlacePicker` 改省市级联 Cascader；请求改 `destination_code`；途经点/集合地点保留 `PlacePicker`。
-- [ ] `TripPlan.create` / `TripController` 目的地校验改为二级代码；非法代码 400。
-- [ ] `trips.spec.ts` 发布用例目的地改用 Cascader 语义定位；“按标题搜索”断言改为默认列表/目的地筛选。
-- [ ] `openapi.yaml` 目的地字段改 `destination_code`，契约 0.7.0；`OpenApiTest` 同步。
-- [ ] 回归：`.\mvnw.cmd -B test`、`npm test`、`npm run build`、`npx playwright test tests/trips.spec.ts`。
+- [x] 发布页目的地从 `PlacePicker` 改省市级联 Cascader；请求改 `destination_code`；途经点/集合地点保留 `PlacePicker`。
+- [x] `TripPlan.create` / `TripController` 目的地校验改为二级代码；非法代码 400（省级 `440000`、未知 `999999`、缺失三种情况各有断言）。
+- [x] `trips.spec.ts` 发布用例目的地改用 Cascader 语义定位（`.ant-cascader-menu-item`）；详情页断言目的地为「珠海」。
+- [x] `openapi.yaml` 目的地字段改 `destination_code`，契约 0.7.0；`OpenApiTest` 同步（版本与必填字段）。
+- [x] 回归：`.\mvnw.cmd -B -o clean test`（156 通过）、`npm test`（75 通过）、`npm run build`、发布 e2e（2 通过）。
 
-**边界：** 本 change 不归档；归档顺序为 `add-destination-area-filters` → 本 change；G1 需在目的地修订完成后重评。
+**实现边界（需在归档前复核）：** 数据底座（V10、全国省市字典、响应中的 `destination_code` / `province_*`）仍归 `add-destination-area-filters`。本 change 暂时携带一份**最小字典切片**（广东 14 城 + 香港 / 澳门二级区），后端 `AreaConstant` 与前端 `areas/areaCatalog.ts` 同步；该 change 落地时应把两处切片替换为完整字典，并让 `trip_plans` 持久化代码。
+
+**边界：** 本 change 不归档；归档顺序为 `add-destination-area-filters` → 本 change；G1 需在目的地修订完成后重评（已重评，见 `g1-decision.md`）。
+
+## 8. R2 任务（发布页体验，2026-11-16）
+
+### T7 [frontend] 目的地弹出层与全宽
+
+- [x] `Cascader` 增加 `getPopupContainer`（字段容器）与 `width: 100%`；保留 `aria-invalid` / 错误文案绑定。
+
+### T8 [frontend] 日期默认今天
+
+- [x] `tripForm.ts` 增加 `initialTripForm()`（本地日期）；`TripCreatePage` 用它作为初始值。
+- [x] `tripForm.test.ts` 断言默认起止日期为今天且可被用户覆盖。
+
+### T9 [frontend] 地图按目的地展示
+
+- [x] `PlacePicker` 增加 `showMap` / `city`；`PlaceMap` 改用 `xMidYMid meet` 并按该市包围盒缩放，加 `data-testid` 与 `data-city`。
+- [x] `placeCatalog` 增加 `placesInCity`；`areaCatalog` 增加 `mapCityForCode`（香港岛/九龙/新界→香港，澳门半岛/离岛→澳门）。
+- [x] 发布页未选目的地时不渲染地图，显示引导文案。
+
+### T10 [frontend] 布局与间距
+
+- [x] 表单拆「基本信息 / 路线 / 补充信息」三段；同组控件全宽、间距统一；窄屏日期单列。
+
+### T11 [e2e] R2 验收
+
+- [x] 发布用例补齐：面板在视口内、日期默认今天、地图先隐藏后按市展示、同组控件等宽。
+- [x] 回归：后端 `clean test`、前端 `npm test` / `npm run build`、发布 e2e。
+
+**验证：** `cd RouteME/e2e; npx playwright test tests/trips.spec.ts -g "publishes a trip|blocks publishing"`

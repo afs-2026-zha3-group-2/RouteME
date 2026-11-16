@@ -62,6 +62,25 @@
 **验证：** 上述命令全绿；真实输出写入 local-verify 报告
 **覆盖：** 全部场景 + RV-1–RV-5
 
+## 执行记录（P4，2026-11-16）
+
+- 前端：`npm run typecheck`、`npm run build`、`npm test`（9 文件 / 74 项）全绿。
+- 后端：`MAVEN_OPTS=-Djavax.net.ssl.trustStoreType=WINDOWS-ROOT` 后 `.\mvnw.cmd -B -ntp test`（154 项）全绿；S03 无后端改动。
+- 契约：`npx -y @redocly/cli lint openapi.yaml` 0 error / 7 warnings（与基线一致）。
+- E2E：`npx playwright test`（18 项，含本故事新增 6 项）全绿；同轮仅改测试修复 5 个先于本故事存在的选择器漂移（提交 `551666e`）。
+- 走查：1440 / 768 / 390 三档，两个视图均无横向溢出，状态与「已结束」标识可脱离颜色识别。
+- 证据：`docs/ai4se-plugins/20261116-105446-local-verify-report.md`（Overall Pass）。
+
+## G2 执行记录（2026-11-16）
+
+| 项 | 结果 | 证据 |
+|---|---|---|
+| G2 decision | Pass | [`g2-decision.md`](g2-decision.md)（VL=Neal；P4 DoV P4-1–P4-6 全 Pass） |
+| pipeline ci / cd | Partial（`Pass-by-human-confirm`） | [`docs/ai4se-plugins/20261116-112704-pipeline-report.md`](../../../docs/ai4se-plugins/20261116-112704-pipeline-report.md)，release `build-711da3d` |
+| 阶段记录 | Pass | [`docs/sdd/refine-inspiration-home/p4-verify.md`](../../../docs/sdd/refine-inspiration-home/p4-verify.md) |
+
+**下一步：** P5（归档）由用户发起；归档前需 SA 具名追认 `trip-plans` + `trip-experiences` 双 capability 例外（L-01）。
+
 ## 对齐自检（Spec ↔ Design ↔ Tasks ↔ ATDD）
 
 | 检查 | Result | Evidence |

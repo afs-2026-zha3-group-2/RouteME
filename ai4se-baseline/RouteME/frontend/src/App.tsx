@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Alert, Button, ConfigProvider, Space, Spin, Typography } from 'antd';
+import { Alert, Button, ConfigProvider, Space, Spin, Typography, message } from 'antd';
 import { loadDemoUsers, loadSessionUser, loadUsers, logoutAccount } from './api';
 import { ChatPage } from './chat/ChatPage';
 import { ShareExperiencePage } from './experiences/ShareExperiencePage';
@@ -7,6 +7,9 @@ import { HomePage } from './home/HomePage';
 import { tripMessages } from './i18n/tripMessages';
 import { IdentityGate } from './identity/IdentityGate';
 import { MyTripsPage } from './mine/MyTripsPage';
+import { ProfilePage } from './profile/ProfilePage';
+import { profileToUser } from './profile/profileDisplay';
+import { ProfileSetupPage } from './profile/ProfileSetupPage';
 import { parseRoute, routeToHash, type Route } from './route';
 import { AppShell } from './shell/AppShell';
 import { useColorMode } from './shell/useColorMode';
@@ -14,7 +17,7 @@ import { buildTheme } from './theme';
 import { TripCreatePage } from './trips/TripCreatePage';
 import { TripDetailPage } from './trips/TripDetailPage';
 import { ApplicationsPage } from './trips/ApplicationsPage';
-import type { AuthSession, DemoUser } from './types';
+import type { AuthSession, DemoUser, UserProfile } from './types';
 
 const CURRENT_USER_KEY = 'routeme.currentUserId';
 const AUTH_TOKEN_KEY = 'routeme.authToken';
@@ -117,17 +120,28 @@ export function App() {
     setAuthToken(session.token);
     setUsers((previous) => mergeUser(previous, session.user));
     setCurrentUserId(session.user.id);
+    // 只在登录/注册这一跳引导；其余路由不做全局守卫（RV-2 / RV-7）。
+    if (!session.user.profile_complete) {
+      window.location.hash = '#/profile/setup';
+    }
+  };
+
+  const handleProfileSaved = (profile: UserProfile) => {
+    setUsers((previous) => mergeUser(previous, profileToUser(profile)));
   };
 
   const logout = () => {
-    if (authToken !== null) {
-      void logoutAccount(authToken).catch(() => undefined);
-    }
+    const token = authToken;
     window.localStorage.removeItem(AUTH_TOKEN_KEY);
     window.localStorage.removeItem(CURRENT_USER_KEY);
     setAuthToken(null);
     setCurrentUserId(null);
     window.location.hash = '#/';
+    if (token !== null) {
+      void logoutAccount(token).catch(() => {
+        message.warning(tripMessages.authLogoutWarning);
+      });
+    }
   };
 
   const renderContent = () => {
@@ -190,7 +204,23 @@ export function App() {
         {route.name === 'applications' && (
           <ApplicationsPage currentUser={currentUser} tripId={route.tripId} />
         )}
-        {route.name === 'mine' && <MyTripsPage currentUser={currentUser} />}
+        {route.name === 'mine' && (
+          <MyTripsPage currentUser={currentUser} isAuthenticated={authToken !== null} />
+        )}
+        {route.name === 'profileSetup' && (
+          <ProfileSetupPage
+            currentUser={currentUser}
+            token={authToken}
+            onSaved={handleProfileSaved}
+          />
+        )}
+        {route.name === 'userProfile' && (
+          <ProfilePage
+            currentUser={currentUser}
+            userId={route.userId}
+            canEdit={authToken !== null}
+          />
+        )}
         {route.name === 'chat' && (
           <ChatPage
             currentUser={currentUser}

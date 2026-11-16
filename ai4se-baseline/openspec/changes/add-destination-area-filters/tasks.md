@@ -25,10 +25,10 @@
 **验证：** `cd RouteME/backend; .\mvnw.cmd -B test`
 **覆盖：** 二级节点代码唯一、直辖市/港澳台名称、响应返回代码与省名
 
-### T3 [backend] V10 迁移与回填
+### T3 [backend] V11 迁移与回填
 
-- [x] `V10__add_destination_area_code.sql`：`ALTER TABLE trip_plans ADD COLUMN destination_code VARCHAR(6) NOT NULL DEFAULT ''`；CASE 回填 16 城/别名/种子；`destination` 回填标准名；索引。未知名称触发 NOT NULL 失败，不重建表、不触碰外键。
-- [x] 迁移测试：临时 SQLite 执行 V1–V10，断言 seed code/标准名、体验仍关联、`destination_code` NOT NULL、索引存在；H2 上下文启动通过。
+- [x] `V11__add_destination_area_code.sql`：`ALTER TABLE trip_plans ADD COLUMN destination_code VARCHAR(6) NOT NULL DEFAULT ''`；CASE 回填 16 城/别名/种子；`destination` 回填标准名；索引。未知名称触发 NOT NULL 失败，不重建表、不触碰外键。
+- [x] 迁移测试：临时 SQLite 执行 V1–V11，断言 seed code/标准名、体验仍关联、`destination_code` NOT NULL、索引存在；H2 上下文启动通过。
 
 **验证：** `cd RouteME/backend; .\mvnw.cmd -B test`（AreaCodeMigrationSqliteTest + H2 Spring 上下文）
 
@@ -113,7 +113,7 @@
 |---|---|
 | C1 refine 先归档并改搜索测试 | 外部 owner；本 change T9 不依赖 refine 测试 |
 | C2 A 的目的地修订 5 条任务在 B 数据底座后执行；A 后归档/重评 G1/G2 | T1/T2/T3 提供底座；A 的 tasks.md 执行 |
-| C3 V10 外键 | T3 |
+| C3 V11 外键 | T3 |
 | C4 匹配 code 回归 | T4 |
 | C5 Living Spec"关键词"术语收敛 | 归档合并（P5） |
 | C6 契约 0.7.0/删 q/响应字段 | T1 |

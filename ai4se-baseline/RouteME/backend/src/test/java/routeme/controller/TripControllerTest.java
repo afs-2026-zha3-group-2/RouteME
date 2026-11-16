@@ -71,6 +71,27 @@ class TripControllerTest {
     }
 
     @Test
+    void in_provinceCodeOnly_out_invalidInput() throws Exception {
+        String body = VALID_TRIP.replace("\"destination_code\": \"440100\"", "\"destination_code\": \"440000\"");
+        postTrip(body, "1").andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("INVALID_INPUT"));
+    }
+
+    @Test
+    void in_unknownDestinationCode_out_invalidInput() throws Exception {
+        String body = VALID_TRIP.replace("\"destination_code\": \"440100\"", "\"destination_code\": \"999999\"");
+        postTrip(body, "1").andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("INVALID_INPUT"));
+    }
+
+    @Test
+    void in_missingDestinationCode_out_invalidInput() throws Exception {
+        String body = VALID_TRIP.replace("\"destination_code\": \"440100\",", "");
+        postTrip(body, "1").andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("INVALID_INPUT"));
+    }
+
+    @Test
     void in_missingTitle_out_invalidInput() throws Exception {
         String body = VALID_TRIP.replace("\"广州老城骑楼扫街半日\"", "\"  \"");
         postTrip(body, "1").andExpect(status().isBadRequest())

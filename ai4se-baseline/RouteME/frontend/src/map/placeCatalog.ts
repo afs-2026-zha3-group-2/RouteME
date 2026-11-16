@@ -188,6 +188,11 @@ export function projectPlace(place: Place): Point {
   return projectLatLng(place.lat, place.lng);
 }
 
+/** Places that belong to one gazetteer city (POIs plus the city node itself). */
+export function placesInCity(city: string): Place[] {
+  return PLACES.filter((place) => place.city === city || place.name === city);
+}
+
 /** Inverse of {@link projectLatLng}; used by map click handling and tests. */
 export function unprojectPoint(point: Point): { lat: number; lng: number } {
   const { minLng, maxLng, minLat, maxLat } = MAP_BOUNDS;

@@ -18,7 +18,7 @@ async function createTripViaApi(page: Page, publisherId: number, title: string) 
     headers: { 'X-User-Id': String(publisherId), 'Content-Type': 'application/json' },
     data: {
       title,
-      destination: '珠海',
+      destination_code: '440400',
       start_date: '2026-12-12',
       end_date: '2026-12-12',
       stops: ['香洲港集合', '情侣路骑行'],
@@ -35,7 +35,7 @@ test('shows match reasons and keeps match as the default sort', async ({ page })
   await page.goto('/');
 
   await expect(page.getByRole('heading', { level: 1 })).toContainText('今天想走哪条路');
-  await expect(page.locator('.view-seg')).toContainText('旅行计划');
+  await expect(page.locator('.view-seg')).toContainText('招募中的行程');
 
   const firstCard = page.locator('.trip-card').first();
     await expect(firstCard.locator('.match-score')).toHaveText(/匹配度 \d+%/);
@@ -93,7 +93,7 @@ test('applies, gets accepted, chats, reports and leaves', async ({ page }) => {
 
   await page.goto(`/#/trips/${created.id}`);
   await page.getByRole('button', { name: '退出同行' }).click();
-  await page.locator('.ant-popconfirm .ant-btn-primary').click();
+  await page.getByRole('dialog').getByRole('button', { name: '退出同行' }).click();
   await expect(page.getByText('已加入 1/3人')).toBeVisible();
   await expect(page.getByRole('button', { name: '申请同行' })).toBeVisible();
 
