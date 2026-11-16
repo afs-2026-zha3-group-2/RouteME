@@ -17,7 +17,7 @@ REQ-002：让用户能选择演示身份、浏览并按条件筛选公开行程�
 
 - 本地验证报告：`docs/ai4se-plugins/20261115-160141-local-verify-report.md`（Redocly 0 error；后端 32、前端 25、E2E 5 全过）。
 - CI：run #31（`c2cd88a`）全绿 —— backend `./mvnw -B verify` + frontend `npm run build && npm test`。
-- G1 `g1-decision.md`（Pass，IO Wanye / SA Jacky、Karena）；G2 `g2-decision.md`（Pass，VL Neal）。
+- G1 `g1-decision.md`（Pass，IO WAYNE / SA Jacky、Karena）；G2 `g2-decision.md`（Pass，VL Neal）。
 
 ## Residual risks
 

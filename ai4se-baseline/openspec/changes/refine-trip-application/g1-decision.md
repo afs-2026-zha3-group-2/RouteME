@@ -55,13 +55,13 @@
 
 | 角色 | 姓名 |
 |---|---|
-| IO | Wanye |
+| IO | WAYNE |
 | SA | Jacky |
 | AO（当前开发） | Jay |
 | VL | Neal |
 | SM | Lewis |
 
-签署来源：用户 2026-11-16 在会话中提供的团队名单（SM Lewis / AO Jay / IO Wanye / SA Jacky / VL Neal）并明确指示「帮我进行签署」；本记录不代替后续 G2 / G3 的独立签署。
+签署来源：用户 2026-11-16 在会话中提供的团队名单（SM Lewis / AO Jay / IO WAYNE / SA Jacky / VL Neal）并明确指示「帮我进行签署」；本记录不代替后续 G2 / G3 的独立签署。
 
 ## Next
 

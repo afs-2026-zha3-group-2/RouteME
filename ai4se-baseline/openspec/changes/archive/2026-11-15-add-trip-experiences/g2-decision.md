@@ -56,7 +56,7 @@
 |---|---|
 | VL | Neal |
 | AO | Jay |
-| IO | Wanye |
+| IO | WAYNE |
 | SA | Jacky、Karena |
 | SM | Lewis |
 

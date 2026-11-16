@@ -44,7 +44,7 @@
 | SA | Jacky、Karena |
 | AO（附件建议，不替代 SA 决定） | Jay：把 npm registry/lockfile 检查纳入工具链评审；KB lint 脚本补齐 |
 | VL | Neal |
-| IO | Wanye |
+| IO | WAYNE |
 | SM | Lewis |
 
 签署来源：用户于 2026-11-15 提供角色名单并确认继续推进 verify/archive。

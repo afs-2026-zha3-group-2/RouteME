@@ -58,4 +58,4 @@ Delta 结构正确：`## REMOVED Requirements` 只带 Reason / Migration 不描�
 - **批准人：** Jacky（AO）
 - **批准时间：** 2026-11-16T16:35+08:00
 - **批准范围：** 批准本 Delta Spec（rev2）并进入下一步；S2-01 / S2-02 已当场收口，S2-03 留 P3、S2-04 留 P3 / P4，均不阻断。
-- **说明：** 本批准只覆盖工件评审，不等于 G1 通过。G1 rev2 仍需 IO Wanye / SA Karena 就 D5 具名重签（见 `g1-decision.md`「Revision 2」）。
+- **说明：** 本批准只覆盖工件评审，不等于 G1 通过。G1 rev2 仍需 IO WAYNE / SA Karena 就 D5 具名重签（见 `g1-decision.md`「Revision 2」）。

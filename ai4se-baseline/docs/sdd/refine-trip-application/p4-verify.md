@@ -3,7 +3,7 @@
 - **Change：** `refine-trip-application`（REQ-010 / S08 提交同行申请）｜ **阶段：** P4（Apply & verify / G2）
 - **日期：** 2026-11-16 ｜ **记录人：** Jay（AO）
 - **分支：** `feature/refine-trip-application`（独立 worktree，基于 `origin/main@b93f45b`）
-- **前置：** P3 Pass（`p3-design.md`，G1 Pass：IO Wanye / SA Jacky）
+- **前置：** P3 Pass（`p3-design.md`，G1 Pass：IO WAYNE / SA Jacky）
 
 ## 1. 阶段目标
 
@@ -91,7 +91,7 @@
 | AO | Jay | T1–T5 实现与回归；偏差已同步设计文档；三次合并 main 后复验 | 2026-11-16 |
 | VL | Neal | 独立复核本地验证与 CI/CD 证据；确认 8 个场景均有断言；G2 Pass | 2026-11-16 |
 | SA | Jacky | 实现未越出 Delta 8 场景与 Non-goals | 2026-11-16 |
-| IO | Wanye | 收到残余风险（状态过期、E2E 未入 CI、`profiles.spec` 陈旧断言） | 2026-11-16 |
+| IO | WAYNE | 收到残余风险（状态过期、E2E 未入 CI、`profiles.spec` 陈旧断言） | 2026-11-16 |
 | SM | Lewis | G2 Pass，REQ-010 可交付；归档另行发起 | 2026-11-16 |
 
 **阶段结论：Pass（G2）。** 已推送 `main` @ `da6cc8b`，CI/CD 经 release `build-da6cc8b` 确认；归档留在 P5。

@@ -17,7 +17,7 @@ REQ-003：让用户看到可解释的同行匹配、对他人招募中行程提�
 
 - 本地验证报告：`docs/ai4se-plugins/20261115-173200-local-verify-report.md`（Redocly 0 error；后端 103、前端 27、E2E 8 全过）。
 - CI：run #54（`162edb4`，实现）全绿；run #55（`2b16115`，文档）全绿。
-- G1 `g1-decision.md`（Pass，IO Wanye / SA Jacky、Karena）；G2 `g2-decision.md`（Pass，VL Neal）。
+- G1 `g1-decision.md`（Pass，IO WAYNE / SA Jacky、Karena）；G2 `g2-decision.md`（Pass，VL Neal）。
 
 ## Residual risks
 

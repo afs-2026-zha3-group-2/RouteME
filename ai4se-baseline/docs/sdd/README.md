@@ -23,7 +23,7 @@
 |---|---|---|
 | SM | Lewis | 阶段准入与排期确认；P1 范围签字 |
 | AO | Jay | 当前 change 的开发负责人；实现、本地验证、阶段记录提交。**每次记录与 approve 前仍须按上节询问本次实际开发者** |
-| IO | WAYNE | 需求来源与跨能力影响确认；`proposal` / Delta Spec 的唯一签署人（历史记录中写作 `Wanye`，为同一人，不做批量替换） |
+| IO | WAYNE | 需求来源与跨能力影响确认；`proposal` / Delta Spec 的唯一签署人 |
 | SA | Jacky、Karena | 规格、设计与验收口径签字（P2 起） |
 | VL | Neal | 独立验证签字（P4） |
 

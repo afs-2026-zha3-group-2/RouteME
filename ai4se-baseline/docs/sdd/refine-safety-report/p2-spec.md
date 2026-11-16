@@ -15,7 +15,7 @@
 | Delta Spec | [`specs/trip-companions/spec.md`](../../../openspec/changes/refine-safety-report/specs/trip-companions/spec.md) | MODIFIED「我的旅行聚合与最低安全能力」，1 Requirement / 9 Scenario |
 | AC / DoV 复核 | [`dov-ac-review.md`](../../../openspec/changes/refine-safety-report/dov-ac-review.md) | AC 4/4 Pass、DoV 5/5 Pass、REQ-012 §4 映射 7/7、Living Spec 基线保留 4/4 |
 | 一致性检查 | [`consistency-lint.md`](../../../openspec/changes/refine-safety-report/consistency-lint.md) | Pass；BLOCKER 0 / WARNING 0 / SUGGESTION 5（3 条当场收口） / N/A 7 |
-| G1 决策 | [`g1-decision.md`](../../../openspec/changes/refine-safety-report/g1-decision.md) | Pass；IO Wanye / SA Karena；无整改条件；8 项非阻断 follow-up（含 owner 与时机） |
+| G1 决策 | [`g1-decision.md`](../../../openspec/changes/refine-safety-report/g1-decision.md) | Pass；IO WAYNE / SA Karena；无整改条件；8 项非阻断 follow-up（含 owner 与时机） |
 | P2 质量报告 | [`docs/ai4se-plugins/20261116-160000-quality-checklist-report.md`](../../ai4se-plugins/20261116-160000-quality-checklist-report.md) | P2 required 3/3 Pass；P2-4 Pass；Overall Pass |
 | 评审报告补记 | [`proposal-review`](../../reviews/20261116-refine-safety-report-proposal-review.md)、[`spec-review`](../../reviews/20261116-refine-safety-report-spec-review.md) | 各追加「变更摘要」：schema 补齐、措辞修正、场景勘误；Pass 结论与批准仍有效 |
 
@@ -40,13 +40,13 @@
 
 | 角色 | 姓名 | 确认内容 | 日期 |
 |---|---|---|---|
-| IO | Wanye | 需求来源与跨能力影响：`trip-companions`（MODIFIED）替换已归档能力的相应 Requirement，`trip-plans` 仅只读 `meeting_area` | 2026-11-16 |
+| IO | WAYNE | 需求来源与跨能力影响：`trip-companions`（MODIFIED）替换已归档能力的相应 Requirement，`trip-plans` 仅只读 `meeting_area` | 2026-11-16 |
 | SA | Karena | 规格与验收口径：三条安全提示、两处回退字面量、举报入口边界、回执文案、隐私红线与无障碍要求 | 2026-11-16 |
 | AO | Jacky | 承接 P3–P4 与 follow-up 收口 | 2026-11-16 |
 | VL | Neal | P4 独立验证（未到） | — |
 | SM | Lewis | 阶段准入与排期（P1 范围确认） | 2026-11-16 |
 
-**G1 结论：Pass**（`g1-decision.md`，2026-11-16T15:58+0800）。签署来源：用户在 2026-11-16 会话中给出 IO=Wanye、SA=Karena 并选定 Pass。
+**G1 结论：Pass**（`g1-decision.md`，2026-11-16T15:58+0800）。签署来源：用户在 2026-11-16 会话中给出 IO=WAYNE、SA=Karena 并选定 Pass。
 
 ## 6. G1 后续项（非条件，不阻断）
 
