@@ -12,7 +12,7 @@
 | REQ-003 | `trip-companions` | `add-trip-companions` | `requirement-workspace/requirements/REQ-003-trip-companions.md` |
 | REQ-004 | `trip-experiences` | `add-trip-experiences` | `requirement-workspace/requirements/REQ-004-trip-experiences.md` |
 | REQ-005 | `trip-plans` / `trip-experiences`（MODIFIED） | `refine-inspiration-home` | `requirement-workspace/requirements/REQ-005-inspiration-home.md` |
-| REQ-006 | `user-auth`（ADDED） | `add-user-logout` | `requirement-workspace/requirements/REQ-006-user-logout.md` |
+| REQ-006 | `user-auth`（MODIFIED） | `add-user-logout` | `requirement-workspace/requirements/REQ-006-user-logout.md` |
 
 意图捕获：`requirement-workspace/intents/REQ-00{2,3,4,5,6}-*.md`；deep-dive：`requirement-workspace/deep-dive.md`。
 
@@ -176,8 +176,8 @@
 | 资产 | 路径 | 现状 |
 |---|---|---|
 | 需求条目 | `requirement-workspace/requirements/REQ-006-user-logout.md` | 本变更新增；六字段 + 9 场景 + DoR / A0 全过 |
-| 已归档的认证 change（2026-11-16） | `openspec/changes/archive/2026-11-16-add-user-auth/` | 已实现注册 / 登录 / 会话恢复与注册账号退出；Living Spec `openspec/specs/user-auth/` 含「会话校验与退出」；T6 明确「演示身份不显示退出」 |
-| Living Spec `user-auth` | `openspec/specs/` | **不存在**（`add-user-auth` 未归档），因此本 change 只能 ADDED，不能 MODIFIED |
+| 已归档的认证 change（2026-11-16） | `openspec/changes/archive/2026-11-16-add-user-auth/` | 已实现注册 / 登录 / 会话恢复与注册账号退出；其归档任务 T6 写有「演示身份不显示退出」（历史记录，归档正文不改写） |
+| Living Spec `user-auth` | `openspec/specs/user-auth/spec.md` | **已存在**（`add-user-auth` 已归档）：含「会话校验与退出」3 个场景与「演示身份保留」；本 change 以 MODIFIED 扩展前者 |
 | Living Spec `trip-plans` | `openspec/specs/trip-plans/spec.md` | 已定义「演示身份进入与切换」；不包含退出路径 |
 | 顶栏身份菜单 | `RouteME/frontend/src/shell/AppShell.tsx` | `isAuthenticated` 为真时才渲染 `id-logout`；演示身份仅能切换，无法回到身份门 |
 | 退出处理 | `RouteME/frontend/src/App.tsx` | `logout()` 已能清除 token / 当前身份并回到身份门；演示身份未被入口调用 |
@@ -197,12 +197,12 @@
 | 身份门 | 无退出入口 | 保持无退出入口（明确为需求边界） |
 | 文案 | 菜单说明区分登录态 | 说明文案覆盖演示身份退出；不出现「演示身份不可退出」类表述 |
 | 业务规则 / 数据 / 接口 | 既有 | **不变**：无迁移、无新端点、无状态机变更 |
-| Living Spec | `user-auth` 不存在 | 归档阶段新增 `user-auth` living capability（与 `add-user-auth` 合并） |
+| Living Spec | `user-auth` 已存在「会话校验与退出」（3 场景） | 归档时用本 change 的 MODIFIED delta 替换该块：保留 3 个既有场景并新增 7 个全身份退出场景（共 10） |
 
 ### 10.3 Blast radius（应用架构）
 
 - **页面（1）：** 顶栏身份菜单（`AppShell`）+ 退出后的身份门（`IdentityGate` 复用）。
-- **能力（1）：** `user-auth`（退出当前身份）；`trip-plans` 的演示身份进入 / 切换仅被消费，不改规则。
+- **能力（1）：** `user-auth`（MODIFIED：「会话校验与退出」扩为全身份退出）；`trip-plans` 的演示身份进入 / 切换仅被消费，不改规则。
 - **接口契约（0 新增）：** 注册账号退出复用 `POST /api/auth/logout`；演示身份退出不发请求。
 - **数据 / 迁移（0）：** 无新表、无字段、无 seed 变更。
 - **测试触点：** 前端组件 / 单元测试（入口可见性、退出清态）、`e2e`（注册账号退出、演示身份退出、刷新不恢复）。
@@ -212,18 +212,18 @@
 
 | 类型 | 影响 |
 |---|---|
-| Spec（change delta） | `openspec/changes/add-user-logout/specs/user-auth/spec.md`（ADDED「退出当前身份」） |
+| Spec（change delta） | `openspec/changes/add-user-logout/specs/user-auth/spec.md`（MODIFIED「会话校验与退出」，10 场景） |
 | Proposal | `openspec/changes/add-user-logout/proposal.md` |
 | Registry / handoff | 新增 REQ-006 行与 REQ-006 → `add-user-logout` 映射 |
-| Tests / 代码 / 契约 / 迁移 / design / tasks | 不在 P1 范围；交 P2 起（delta-craft / design / task-plan / apply） |
-| Living Spec | 归档阶段合并；`user-auth` 由 `add-user-auth` 与本 change 共同形成，需按顺序归档 |
+| Tests / 代码 / 契约 / 迁移 / design / tasks | 不在 P1 范围；交 P3 / P4 起（design / task-plan / apply） |
+| Living Spec | 归档时用 MODIFIED delta 替换 `openspec/specs/user-auth/spec.md` 的「会话校验与退出」；`add-user-auth` 已归档，顺序依赖已解除 |
 
 ### 10.5 Risks & blockers
 
 | 级别 | 项 | 说明 / 缓解 |
 |---|---|---|
-| Risk | 与 `add-user-auth` T6「演示身份不显示退出」直接冲突 | 在 REQ-006 §8 与 proposal 决策中明确以本需求为准；实现时同步更新该任务表述 |
-| Risk | `user-auth` 尚未进入 Living Spec，两个进行中 change 同时 ADDED 同一能力 | 本 change 的 ADDED 需求名与 `add-user-auth` 的「会话校验与退出」不重名；归档顺序为先 `add-user-auth` 后本 change，避免覆盖 |
+| Risk | `add-user-auth` 归档任务 T6 写有「演示身份不显示退出」 | 该记录是归档时的历史实现快照；本 change 落地后由 `summary.md` / G3 注明已被「退出入口对全身份可见」取代，不改写归档正文 |
+| Risk | MODIFIED 会整体替换 Living Spec 的「会话校验与退出」块 | Delta 已原样保留既有 3 个场景（有效 token / 无效 token / 退出登录）；`openspec validate add-user-logout --strict` 通过 |
 | Risk | 演示身份误调用退出端点会产生无意义 401 | spec 明确演示身份退出不发起认证请求；测试覆盖 |
 | Risk | 退出失败提示可能被误解为退出未完成 | 文案限定为「本机已退出，会话可能仍有效」，主状态必须回到身份门 |
 | Blocker | 无 | blocking OQ = 0、DoR BLOCKER = 0、A0 ⑨–⑫ 全过；既有 `refine-inspiration-home` 的 validate 失败与本需求无关 |
