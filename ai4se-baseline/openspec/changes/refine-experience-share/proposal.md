@@ -101,3 +101,62 @@
 ## 交付边界
 
 本提案为 P1 产物，只回答「为什么改、改哪些能力、验收信号是什么」。`specs/trip-experiences/spec.md`（Delta）、`design.md`、`atdd-design.md`、`tasks.md`、代码与验证属 P2 / P3 / P4；Living Spec 合并在归档阶段完成，本 change 不归档。
+
+---
+
+# R2（2026-11-16）：布局与样式对齐原型
+
+> 本 change 的 P0–P4 与 CI/CD 已通过并合入 `main@e2abd4e`。用户评审分享页后指出「没有按照原型图来做布局和样式」；按 `add-trip-publish` 的 R2/R3 先例，在同一 change 内增补 R2，不新开 change、不归档。
+
+## Why（R2）
+
+分享页的内容已齐，但**信息架构与样式没有按原型 `share()` 实现**：原型是「返回链接 + 页头（标题 / 副标题）+ 行程 hero + 双栏（主列三个表单面板 / 侧栏两个说明面板）」，强度选择是三张可点卡片，操作按钮在「建议」面板底部；实现是单列单卡、radio 竖排、说明内联、日期是 ISO 区间。结果是在 1440 宽下页面与原型明显不同，扫读与选择成本都更高。
+
+## What Changes（R2）
+
+- **布局**：页头（`.page-head`：标题 + 副标题）+ 返回链接；`publish` 双栏（`1.5fr` / `minmax(300px,.9fr)`，≤900px 单列）——复用既有 `.publish-grid/.publish-main/.publish-side` 与 `.panel`，不新造网格。
+- **分组**：主列三个面板「真实感受 / 路线强度 / 给后来者的一条建议」，标题 + 分隔线，与 `TripCreatePage` 同一套。
+- **强度**：三张 `.int-card` 卡片（jade / amber / coral，选中态底色），卡片内保留原生 radio 以保持键盘与读屏可用。
+- **侧栏**：两个面板「你的体验会去哪里 / 分享边界」+ `.safety-list`，列表项带原型图标。
+- **Hero**：封面 76×60 / 圆角 12；元信息改为 `目的地 · M月D日 · 周X · N 人同行`。
+- **操作**：主按钮 + 取消链接放在「建议」面板底部。
+- **图标**：新增 `experiences/shareIcons.tsx`（spark / route / info / compass / copy / shield / check / send / left），路径取自原型 `ui.js`。
+- **日期格式**：抽出 `trips/tripDateFormat.ts`（`formatMonthDay` / `weekdayLabel`），`TripCard` 与 hero 共用。
+- **规格**：Delta 的「我的旅行分享入口与分享边界」补布局约束与一个「分享页布局与原型一致」场景。
+
+## 范围（R2）
+
+**In scope**：上述布局、分组、强度卡片、侧栏、hero、操作位置、图标、日期格式；1440 / 768 / 390 × 浅 / 深色走查。
+
+**Out of scope（R2）**：任何行为变化（资格判定、提交 / 修改、回执、不可用提示文案）；后端、`openapi.yaml`、数据库迁移；图片上传；「参考此行程发布」（S17）；引入第三方图标库；其它页面的排版。
+
+## 决策（R2）
+
+| 决策点 | 选择 | 理由 |
+|---|---|---|
+| 网格类名 | 复用 `.publish-grid` / `.publish-main` / `.publish-side` | 与发布页同一套双栏壳，避免第二套网格；`≤900px` 的折叠规则已存在 |
+| 强度选择控件 | 原生 `<input type="radio">` 包在 `.int-card` 内 | antd 无卡片式单选；`@rule:web-coding-style` 允许 antd 缺失时自绘，记为例外；保留 radio 语义与既有 E2E |
+| 图标 | 本地 `shareIcons.tsx`，路径取自原型 | 不引入图标依赖；原型是本仓库资产 |
+| 日期格式 | 抽 `tripDateFormat.ts` 共享 | hero 与行程卡需要同一套 `M月D日 / 周X`，避免第三份实现 |
+| 面板标题 | 纯文本 + `.panel-title` 分隔线 + 小图标 | 与 `TripCreatePage` 的面板写法一致，同时保留原型的分组图标 |
+
+## 验收信号（R2）
+
+1. 1440 下分享页为双栏：主列三个面板（真实感受 / 路线强度 / 给后来者的一条建议），侧栏两个面板（你的体验会去哪里 / 分享边界）；≤900px 收为单列且无横向滚动。
+2. 页头展示标题与副标题，返回链接位于页头之上。
+3. 强度为三张卡片，选中卡片有对应底色（jade / amber / coral），且仍可被 `role=radio` 命中、可用键盘切换。
+4. 侧栏两个面板的列表项带图标，内容仍为 3 条去向 + 2 条边界。
+5. Hero 元信息为 `目的地 · M月D日 · 周X · N 人同行`，封面 76×60。
+6. 主按钮与取消位于「给后来者的一条建议」面板底部。
+7. 既有行为不变：两种不可用提示、重复提交即修改、体验卡内置封面；`experiences.spec.ts` 全绿。
+8. 1440 / 768 / 390 × 浅 / 深色走查通过；`openspec validate --strict` 通过。
+
+## 残余风险（R2）
+
+| 风险 | 处理 |
+|---|---|
+| 双栏在 901–1100 宽可能拥挤 | 走查 1024 宽；侧栏 `minmax(300px,.9fr)` 保底，必要时在 P3 调整断点 |
+| 卡片式单选改变 DOM，E2E 依赖 `role=radio` | 保留真实 radio，断言不变；新增卡片选中态断言 |
+| 图标与 `StatusBadge` 的 SVG 写法重复 | 各自独立（状态徽标保留），不强行抽象 |
+| 日期格式抽取影响行程卡 | `TripCard` 的 `formatDate` / `dayLabel` 改为调用共享函数，`trips.spec.ts` 回归 |
+| 与并行 change 同改 `styles.css` | 只在文件末尾追加 R2 规则，不改既有选择器 |

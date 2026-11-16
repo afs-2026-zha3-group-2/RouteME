@@ -54,3 +54,10 @@
 - **并行基线：** rebase 时吸收 `main@25b60f7`（`add-trip-completion` P4）。该提交把行程状态扩为四态并把体验资格判定的 `status()` 改为 `status(clock.instant())`；本 change 的「未结束」口径据此覆盖 `recruiting` / `full` / `ongoing`。
 - **范围偏离：** 无。故事 4 条 AC 全部有场景或验收信号承接；图片上传继续按 AC 记为增强项、不进本 change。
 - **P2 修订（2026-11-16）：** 原 Delta 草稿把分享页说明写成 ADDED「游后分享页说明体验去向与分享边界」；P2 一致性检查发现 Living Spec 已有「我的旅行分享入口与分享边界」Requirement（含「分享页面提示隐私边界」场景），ADDED 会形成平行权威。已改为 MODIFIED 第三条 Requirement（保留两个既有场景名 + 新增两个），proposal 同步由 「MODIFIED + ADDED」收敛为「MODIFIED（3 条）」。重评见 `20261116-refine-experience-share-{proposal,spec}-review-2.md`。
+## 7. R2 增补（2026-11-16 20:50）：布局与原型对齐
+
+- **触发：** 用户评审已合入的分享页：「没有按照原型图来做布局和样式」。
+- **范围：** 只改布局与样式（页头、双栏、三面板、强度卡片、侧栏说明、hero 元信息、操作位置、图标、日期格式）；不改行为、文案语义、后端、契约、迁移。
+- **依据：** `docs/prototype/ui.js` `share()`、`docs/prototype/styles.css` `.form-grid` / `.intensity-picker` / `.int-card`；缺口见 `p0-baseline.md` §9（G-R2-01 ~ G-R2-07）。
+- **产出：** `proposal.md` 增补「R2」章节；Delta 在 P2 补布局约束；设计与任务在 P3 增补。
+- **阶段提交：** `docs(p1): refine-experience-share add the R2 prototype layout proposal`。
