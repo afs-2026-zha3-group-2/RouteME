@@ -1,21 +1,21 @@
 # P1 意图记录 — refine-my-trips
 
-- **Change：** `refine-my-trips`（REQ-013 / S11 我的旅行）｜ **阶段：** P1（Intent & proposal）
+- **Change：** `refine-my-trips`（REQ-015 / S11 我的旅行）｜ **阶段：** P1（Intent & proposal）
 - **日期：** 2026-11-16 ｜ **记录人：** Jay（AO）
 - **分支 / 基点：** `feature/refine-my-trips`（独立 worktree，基于 `origin/main@f6da5da`）
 
 ## 1. 阶段目标
 
-把「我的旅行页要按原型重排并补齐状态同步」收敛为可判定的 REQ-013、影响面与 OpenSpec 提案；明确既有四组聚合中「已存在」与「需补齐」的边界，避免重复实现后端分组规则。
+把「我的旅行页要按原型重排并补齐状态同步」收敛为可判定的 REQ-015、影响面与 OpenSpec 提案；明确既有四组聚合中「已存在」与「需补齐」的边界，避免重复实现后端分组规则。
 
 ## 2. 产出
 
 | 工件 | 路径 | 摘要 |
 |---|---|---|
-| 意图捕获 | [`intents/REQ-013-my-trips.md`](../../../requirement-workspace/intents/REQ-013-my-trips.md) | 原始指令 / issue #13、现状核对、排除项、Discovery Decision `Go` |
-| Ready 需求 | [`requirements/REQ-013-my-trips.md`](../../../requirement-workspace/requirements/REQ-013-my-trips.md) | 六字段 + 12 场景 + OQ 5 条（全 resolved）+ DoR（BLOCKER 0） |
-| 故事 | [`stories/refine-my-trips.story.md`](../../../requirement-workspace/stories/refine-my-trips.story.md)、[`stories.md`](../../../requirement-workspace/stories.md) REQ-013 段 | S11 的 11 条 AC 映射 |
-| Deep-dive | [`deep-dive.md`「REQ-013 增补」](../../../requirement-workspace/deep-dive.md) | ① 数据契约 / ② 边界归属 / ③ 跨 REQ 一致 / ④ 展示契约 + 探针 |
+| 意图捕获 | [`intents/REQ-015-my-trips.md`](../../../requirement-workspace/intents/REQ-015-my-trips.md) | 原始指令 / issue #13、现状核对、排除项、Discovery Decision `Go` |
+| Ready 需求 | [`requirements/REQ-015-my-trips.md`](../../../requirement-workspace/requirements/REQ-015-my-trips.md) | 六字段 + 12 场景 + OQ 5 条（全 resolved）+ DoR（BLOCKER 0） |
+| 故事 | [`stories/refine-my-trips.story.md`](../../../requirement-workspace/stories/refine-my-trips.story.md)、[`stories.md`](../../../requirement-workspace/stories.md) REQ-015 段 | S11 的 11 条 AC 映射 |
+| Deep-dive | [`deep-dive.md`「REQ-015 增补」](../../../requirement-workspace/deep-dive.md) | ① 数据契约 / ② 边界归属 / ③ 跨 REQ 一致 / ④ 展示契约 + 探针 |
 | 影响面 | [`impact-brief.md` §16](../../../requirement-workspace/impact-brief.md) | as-is→delta、blast radius、风险、拆分边界 |
 | 提案 | [`proposal.md`](../../../openspec/changes/refine-my-trips/proposal.md) | Why / What Changes / 问题 / 范围 / 影响面 / 决策 / 验收信号 / 残余风险 |
 | Delta 草稿 | [`specs/trip-companions/spec.md`](../../../openspec/changes/refine-my-trips/specs/trip-companions/spec.md) | MODIFIED「我的旅行聚合与最低安全能力」，1 Requirement / 11 Scenario（保留 4 条基线场景名） |
@@ -52,4 +52,4 @@
 
 - **阶段提交：** 用户当次要求「每个阶段提交一次，git push 之前先做 git pull」。P0 提交 `4c47383`（push 前已 `git pull --rebase origin main`）；P1 同批提交提案、Delta 草稿、评审、质量报告与本记录。
 - **偏离：** 阶段提交偏离 Critical 规则 `@rule:git-commit-conventions`（一个 spec 只允许 verify / archive 两次提交）。以用户当次显式指示为准，偏离已在 `proposal.md`「提交与偏离」与本节记录。
-- **范围偏离：** 无。原型中的编辑 / 删除 / 参考发布已显式排除，并写入 REQ-013 §3 与 proposal 的 Out of scope。
+- **范围偏离：** 无。原型中的编辑 / 删除 / 参考发布已显式排除，并写入 REQ-015 §3 与 proposal 的 Out of scope。

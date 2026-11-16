@@ -1,6 +1,6 @@
 # 设计 — refine-my-trips
 
-- **Change：** `refine-my-trips`（REQ-013 / S11 我的旅行）
+- **Change：** `refine-my-trips`（REQ-015 / S11 我的旅行）
 - **输入：** Delta Spec `specs/trip-companions/spec.md`（1 Requirement / 11 Scenario）、`dov-ac-review.md`、`consistency-lint.md`、`g1-decision.md`、原型 `docs/prototype/ui.js` `mine()`、`docs/prototype/styles.css` `.seg` / `.mine-row` / `.mr-*`
 - **日期：** 2026-11-16
 

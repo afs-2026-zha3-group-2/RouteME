@@ -2,10 +2,12 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { Alert, Button, Modal, Segmented, Skeleton, Typography, message } from 'antd';
 import { cityLabel } from '../area/areaOptions';
 import { cancelApplication, completeTrip, leaveTrip, loadMyExperiences, loadMyTrips } from '../api';
+import { mineMeetingNote } from '../chat/chatMeeting';
 import { tripMessages } from '../i18n/tripMessages';
 import { publisherSummary } from '../profile/profileDisplay';
 import { Avatar } from '../shell/Avatar';
 import { EmptyState } from '../shell/EmptyState';
+import { applicationLabel } from '../trips/applicationStatus';
 import { coverTone } from '../trips/coverTone';
 import { StatusBadge } from '../trips/StatusBadge';
 import type { DemoUser, Experience, MyTrips, TripApplication, TripSummary } from '../types';
@@ -26,19 +28,6 @@ type Props = {
 };
 
 type ConfirmAction = { kind: 'complete' | 'leave'; trip: TripSummary };
-
-function applicationLabel(status: TripApplication['status']): string {
-  if (status === 'pending') {
-    return tripMessages.applyStatusPending;
-  }
-  if (status === 'accepted') {
-    return tripMessages.applyStatusAccepted;
-  }
-  if (status === 'rejected') {
-    return tripMessages.applyStatusRejected;
-  }
-  return tripMessages.applyStatusCancelled;
-}
 
 function pendingHint(count: number): string {
   return count > 0
@@ -232,6 +221,9 @@ export function MyTripsPage({ currentUser, isAuthenticated }: Props) {
         <h3 className="mr-title">
           <a href={`#/trips/${trip.id}`}>{trip.title}</a>
           <StatusBadge status={trip.status} />
+          {tab === 'published' && trip.ending_soon && (
+            <span className="badge amber">{tripMessages.detailEndingSoon}</span>
+          )}
         </h3>
         <div className="mr-meta">
           <span>{trip.destination}</span>
@@ -346,9 +338,7 @@ export function MyTripsPage({ currentUser, isAuthenticated }: Props) {
           {data.matched.map((trip) =>
             renderRow(
               trip,
-              tripMessages.mineNoteMeeting
-                .replace('{area}', trip.destination)
-                .replace('{n}', String(trip.joined_count)),
+              mineMeetingNote(trip.meeting_area, trip.meeting_time, trip.joined_count),
             ),
           )}
         </div>

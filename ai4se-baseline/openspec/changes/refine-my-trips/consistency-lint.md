@@ -51,7 +51,7 @@
 | D1–D3 Design rules | N/A | 无 `design.md` |
 | p2-1 proposal scope vs Delta | Pass | 无静默扩张 / 丢弃；原型未交付动作已显式排除 |
 | p2-2 Delta 内部一致 | Pass | 四组定义、行内动作与提醒目标互不矛盾；「无待处理」与「有提醒」互斥 |
-| p2-3 proposal 关键场景有落点 | Pass | REQ-013 §4 十二条场景 12/12 |
+| p2-3 proposal 关键场景有落点 | Pass | REQ-015 §4 十二条场景 12/12 |
 | p2-4 tasks 方向检查 | N/A | 无 `tasks.md` |
 | p2-5 无法追溯的 Requirement | Pass | 无 |
 

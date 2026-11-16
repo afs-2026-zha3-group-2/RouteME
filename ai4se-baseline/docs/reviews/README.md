@@ -66,6 +66,19 @@ docs/reviews/<yyyymmdd>-<change-id>-all-specs-review.md
 - 索引链接写法（相对 change 目录）：`../../../docs/reviews/<yyyymmdd>-<change-id>-all-specs-review.md`。
 - 全部变更的入口见 [INDEX.md](INDEX.md)。
 
+## 变更级全量评审（all-specs-review）
+
+除单工件评审外，每个进行中的 change 同时保留一份全量合规评审报告：
+
+```text
+docs/reviews/<yyyymmdd>-<change-id>-all-specs-review.md
+```
+
+- 报告覆盖规则、工件链、契约与实现，结论为 `Pass` / `Partial` / `Fail`，不是 Gate 结论，也不替代上面四类工件评审。
+- 每个 change 目录下的 `review.md` 是**索引**，只放 change-id、评审类型、日期、结论和报告链接，不复制正文。
+- 索引链接写法（相对 change 目录）：`../../../docs/reviews/<yyyymmdd>-<change-id>-all-specs-review.md`。
+- 全部变更的入口见 [INDEX.md](INDEX.md)。
+
 ## 流转规则
 
 1. 工件写完，同一回合内调用 `all-specs-review` 技能生成报告。

@@ -1,8 +1,8 @@
 # AC / DoV review — refine-my-trips
 
-- **Change:** `refine-my-trips`（`trip-companions` MODIFIED，REQ-013 / S11）
+- **Change:** `refine-my-trips`（`trip-companions` MODIFIED，REQ-015 / S11）
 - **Reviewed artifact:** [`specs/trip-companions/spec.md`](specs/trip-companions/spec.md)（1 Requirement / 11 Scenario；MODIFIED）
-- **Inputs:** [`proposal.md`](proposal.md)、`requirement-workspace/requirements/REQ-013-my-trips.md`、`requirement-workspace/intents/REQ-013-my-trips.md`、`requirement-workspace/impact-brief.md` §16、`requirement-workspace/deep-dive.md`「REQ-013 增补」、`openspec/specs/trip-companions/spec.md`（Living Spec 基线）、`openspec/specs/design-system/spec.md`、`docs/prototype/ui.js` `mine()`
+- **Inputs:** [`proposal.md`](proposal.md)、`requirement-workspace/requirements/REQ-015-my-trips.md`、`requirement-workspace/intents/REQ-015-my-trips.md`、`requirement-workspace/impact-brief.md` §16、`requirement-workspace/deep-dive.md`「REQ-015 增补」、`openspec/specs/trip-companions/spec.md`（Living Spec 基线）、`openspec/specs/design-system/spec.md`、`docs/prototype/ui.js` `mine()`
 - **Timestamp:** 2026-11-16T17:30+0800
 - **Reviewer:** Jay（AO）
 - **Tooling:** `openspec validate refine-my-trips --strict` → `Change 'refine-my-trips' is valid`；`openspec show --deltas-only` → `deltaCount: 1`
@@ -21,16 +21,16 @@
 | Item | Result | Evidence | Notes |
 |---|---|---|---|
 | DoV-1 Scope matches proposal | Pass | `proposal.md` In scope 9 条 ↔ 11 Scenario；Out of scope 无对应需求 | 未加入编辑 / 删除 / 参考发布 / 分页 / 轮询 |
-| DoV-2 Ambiguities listed or resolved | Pass | REQ-013 §5 的 OQ-1 ~ OQ-5 全部 resolved | 无 blocking 歧义；「同步」的触发条件已写成可观察事件 |
+| DoV-2 Ambiguities listed or resolved | Pass | REQ-015 §5 的 OQ-1 ~ OQ-5 全部 resolved | 无 blocking 歧义；「同步」的触发条件已写成可观察事件 |
 | DoV-3 Role concerns noted for residual risk | Pass | 下方「残余风险」 | IO：四组定义不由本 change 重定义；SA：MODIFIED 覆盖与基线保留；AO：E2E 角色断言与提醒目标 |
 | DoV-4 No business implementation claimed done | Pass | 只改 Delta；现有实现仅作 as-is 证据 | `proposal.md` 的「What Changes」明确 P3 / P4 才落地 |
-| DoV-5 Requirements trace to proposal / approved requirements | Pass | 下方「需求映射」12/12 + 「基线保留」4/4 | REQ-013 §4 十二条场景全部有落点；Living Spec 4 个既有场景名保留 |
+| DoV-5 Requirements trace to proposal / approved requirements | Pass | 下方「需求映射」12/12 + 「基线保留」4/4 | REQ-015 §4 十二条场景全部有落点；Living Spec 4 个既有场景名保留 |
 
 **Blocking gaps:** 无。G1-ready from the review's perspective；是否签署由 IO / SA 决定。
 
-## Requirement mapping（REQ-013 §4 → Delta Spec）
+## Requirement mapping（REQ-015 §4 → Delta Spec）
 
-| REQ-013 场景 | Delta Scenario | 覆盖判定 |
+| REQ-015 场景 | Delta Scenario | 覆盖判定 |
 |---|---|---|
 | #1 四段与计数 | 「分区展示我的旅行」 | 完整（四段、计数、默认分组） |
 | #2 分组内容正确 | 「分组内容与计数一致」 | 完整（已匹配 / 已完成 / 申请状态的边界） |

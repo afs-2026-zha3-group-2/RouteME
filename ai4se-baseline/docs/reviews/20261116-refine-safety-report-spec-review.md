@@ -9,7 +9,9 @@
 
 ## 评审结论
 
-**Pass**
+**Pass**（仅覆盖 rev1 的 MODIFIED 版本；rev2 见 [`20261116-refine-safety-report-spec-review-2.md`](20261116-refine-safety-report-spec-review-2.md)）
+
+> **rev2 作废说明（2026-11-16）：** 用户裁决 D5 要求真正删除两条提示场景，`openspec` 禁止 MODIFIED 丢弃既有场景名，Delta 已改为 `REMOVED` + `ADDED`。本报告评审的 MODIFIED 结构不复存在，故另出 `-review-2.md` 并重新批准。本文件保留供追溯。
 
 Delta 以 MODIFIED 替换整个 Requirement 块，保留 Living Spec 的「分区展示我的旅行」「待处理申请提醒」「安全提示常驻」与「提交举报并收到回执」四个既有场景名；新增 5 个场景覆盖聊天提示、举报入口与对象、本人行程入口、失败重试与隐私字段。1 WARNING + 3 SUGGESTION，无 BLOCKER。
 

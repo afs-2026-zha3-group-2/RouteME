@@ -1,6 +1,6 @@
 # P2 规格记录 — refine-my-trips
 
-- **Change：** `refine-my-trips`（REQ-013 / S11 我的旅行）｜ **阶段：** P2（Delta Spec & G1）
+- **Change：** `refine-my-trips`（REQ-015 / S11 我的旅行）｜ **阶段：** P2（Delta Spec & G1）
 - **日期：** 2026-11-16 ｜ **记录人：** Jay（AO）
 - **分支 / 基点：** `feature/refine-my-trips`（P1 提交 `17480b1`，已 rebase 到 `origin/main@588ef9e`）
 
@@ -13,7 +13,7 @@
 | 工件 | 路径 | 摘要 |
 |---|---|---|
 | Delta Spec | [`specs/trip-companions/spec.md`](../../../openspec/changes/refine-my-trips/specs/trip-companions/spec.md) | MODIFIED「我的旅行聚合与最低安全能力」，1 Requirement / 11 Scenario；保留 4 条基线场景名 |
-| AC / DoV 评审 | [`dov-ac-review.md`](../../../openspec/changes/refine-my-trips/dov-ac-review.md) | AC 4/4 Pass、DoV 5/5 Pass、REQ-013 映射 12/12、基线保留 4/4 |
+| AC / DoV 评审 | [`dov-ac-review.md`](../../../openspec/changes/refine-my-trips/dov-ac-review.md) | AC 4/4 Pass、DoV 5/5 Pass、REQ-015 映射 12/12、基线保留 4/4 |
 | 一致性检查 | [`consistency-lint.md`](../../../openspec/changes/refine-my-trips/consistency-lint.md) | Pass；0 BLOCKER / 0 WARNING / 4 SUGGESTION / N/A 5 |
 | G1 决策 | [`g1-decision.md`](../../../openspec/changes/refine-my-trips/g1-decision.md) | **Pass**；IO = WAYNE，SA = Neal |
 | 规格评审 | [`20261116-refine-my-trips-spec-review.md`](../../reviews/20261116-refine-my-trips-spec-review.md) | Pass；0 BLOCKER / 0 WARNING / 2 SUGGESTION |

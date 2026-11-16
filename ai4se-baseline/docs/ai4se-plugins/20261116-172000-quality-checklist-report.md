@@ -2,7 +2,7 @@
 
 **Date:** 2026-11-16 (timezone: Asia/Shanghai, +0800)
 **Root:** `D:\software\training\TATP\RouteMe\RouteME-s11\ai4se-baseline`
-**Change:** `refine-my-trips`（REQ-013 / S11 我的旅行）
+**Change:** `refine-my-trips`（REQ-015 / S11 我的旅行）
 **Stages:** p1
 **Focus:** full-stage
 **Owner:** Jay
@@ -13,11 +13,11 @@
 
 | Check id | Required? | Status | Evidence |
 |----------|-----------|--------|----------|
-| P1-1 | yes | Pass | `requirement-workspace/intents/REQ-013-my-trips.md`（原始意图、issue #13 AC、现状差距 5 条、排除项、Discovery Go）；`requirement-workspace/requirements/REQ-013-my-trips.md`（六字段 + 12 场景 + OQ 5 条全 resolved + DoR BLOCKER 0） |
-| P1-2 | yes | Pass | `requirement-workspace/deep-dive.md`「REQ-013 增补」四段 + 探针记录；`requirement-workspace/impact-brief.md` §16（as-is→delta、blast radius、风险、拆分边界） |
+| P1-1 | yes | Pass | `requirement-workspace/intents/REQ-015-my-trips.md`（原始意图、issue #13 AC、现状差距 5 条、排除项、Discovery Go）；`requirement-workspace/requirements/REQ-015-my-trips.md`（六字段 + 12 场景 + OQ 5 条全 resolved + DoR BLOCKER 0） |
+| P1-2 | yes | Pass | `requirement-workspace/deep-dive.md`「REQ-015 增补」四段 + 探针记录；`requirement-workspace/impact-brief.md` §16（as-is→delta、blast radius、风险、拆分边界） |
 | P1-3 | yes | Pass | `openspec/changes/refine-my-trips/proposal.md`（Why / What Changes / 问题 / 范围 / 影响面 / 决策 / 验收信号 / 残余风险）；`openspec validate refine-my-trips --strict` → valid；`openspec show --deltas-only` → `deltaCount: 1`、`trip-companions`、`MODIFIED` |
 | P1-4 | yes | Pass | `docs/reviews/20261116-refine-my-trips-proposal-review.md`：Pass（0 BLOCKER / 0 WARNING / 3 SUGGESTION）；批准人 WAYNE |
-| P1-5 | no | Pass | `requirement-workspace/stories/refine-my-trips.story.md` + `requirement-workspace/stories.md` 的 REQ-013 段（1 故事 / 11 AC 映射） |
+| P1-5 | no | Pass | `requirement-workspace/stories/refine-my-trips.story.md` + `requirement-workspace/stories.md` 的 REQ-015 段（1 故事 / 11 AC 映射） |
 | P1-6 | no | Skipped | agent-oriented change 不适用 |
 
 | **Stage Overall** | — | **Pass** | required 4/4；optional P1-5 已运行且 Pass |

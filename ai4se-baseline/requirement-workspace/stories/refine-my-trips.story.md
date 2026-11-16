@@ -1,6 +1,6 @@
 # S11 — 我的旅行（四组聚合）
 
-- **Parent REQ：** REQ-013 `requirement-workspace/requirements/REQ-013-my-trips.md`
+- **Parent REQ：** REQ-015 `requirement-workspace/requirements/REQ-015-my-trips.md`
 - **Change：** `refine-my-trips`
 - **Priority：** P0 ｜ **Iteration：** 2（第 4–5 天）｜ **Points：** 2
 - **Page：** 我的旅行页
@@ -15,7 +15,7 @@
 
 | 组 | AC | 覆盖场景 |
 |---|---|---|
-| 分区 | 四组分区展示（我发布的 / 我申请的 / 已匹配同行 / 已完成旅行） | REQ-013 §4 S11-1、S11-2 |
+| 分区 | 四组分区展示（我发布的 / 我申请的 / 已匹配同行 / 已完成旅行） | REQ-015 §4 S11-1、S11-2 |
 | 跳转 | 每个条目可跳转到对应行程 | S11-3 |
 | 提醒 | 有待处理申请时给出可点击提醒，并指向具体行程 | S11-8 |
 | 提醒 | 无待处理时给出明确说明，不渲染空入口 | S11-9 |

@@ -17,17 +17,8 @@
 
   var App = {
     route: { name: 'discover', a: null, b: null },
-    filters: { tab: 'trips', q: '', destination: '', destinationCode: '', from: '', to: '', tags: [], sort: 'match' },
+    filters: { tab: 'trips', q: '', destination: '', from: '', to: '', tags: [], sort: 'match' },
     mineTab: 'published',
-    auth: { mode: 'login', values: { username: '', password: '', nickname: '' }, errors: {}, submitError: '' },
-    idOpen: false,
-    areaState: { discover: { open: false, prov: '440000' }, form: { open: false, prov: '440000' } },
-    placeUi: { stops: { q: '', message: '' }, meeting: { q: '', message: '', mapOpen: false } },
-    formTagDraft: '',
-    formTagError: '',
-    profileDraft: null,
-    profileErrors: {},
-    profileFx: { interestDraft: '', interestError: '', avatarError: '' },
     draft: null,
     draftErrors: {},
     draftSource: null,
@@ -99,7 +90,7 @@
   }
 
   /* ---------------- 焦点保持 ---------------- */
-  var FOCUS_ATTRS = ['data-filter', 'data-form', 'data-share', 'data-chat-input', 'data-apply-msg', 'data-report-note', 'data-view-name', 'data-auth', 'data-place-q', 'data-pf', 'data-form-tag', 'data-pf-interest'];
+  var FOCUS_ATTRS = ['data-filter', 'data-form', 'data-share', 'data-stop-input', 'data-chat-input', 'data-apply-msg', 'data-report-note', 'data-view-name'];
   function captureFocus() {
     var el = document.activeElement;
     if (!el || !view.contains(el)) return null;
@@ -140,12 +131,6 @@
       App.draft = null; App.editingId = null; App.draftSource = null; App.draftErrors = {};
     }
     if (App.route.name !== 'share') { App.shareTripId = null; App.shareDraft = null; App.shareErrors = {}; }
-    if (App.route.name !== 'profile') { App.profileDraft = null; App.profileErrors = {}; App.profileFx = { interestDraft: '', interestError: '', avatarError: '' }; }
-    App.idOpen = false;
-    App.areaState.discover.open = false;
-    App.areaState.form.open = false;
-    App.placeUi = { stops: { q: '', message: '' }, meeting: { q: '', message: '', mapOpen: false } };
-    App.formTagDraft = ''; App.formTagError = '';
     App.overlay = null; App.confirm = null; App.picked = [];
     render();
     global.scrollTo(0, 0);
@@ -156,39 +141,27 @@
   }
 
   /* ---------------- 草稿 ---------------- */
-  /* 旧行程 / 旧筛选只有地名：按省市字典反查区域码，查不到留空。 */
-  function codeFromName(name) {
-    var n = String(name || '').replace(/市$/, '');
-    if (!n) return '';
-    for (var i = 0; i < D.AREAS.length; i++) {
-      var p = D.AREAS[i];
-      if (D.MUNICIPALITIES[p.value] && p.label.replace(/市$/, '') === n) return p.children[0].value;
-      for (var j = 0; j < p.children.length; j++) {
-        if (p.children[j].label.replace(/市$/, '') === n) return p.children[j].value;
-      }
-    }
-    return '';
-  }
   function blankDraft() {
     return {
-      title: '', destinationCode: '',
+      title: '', destination: '', terrain: 'coast',
       startDate: D.offsetDay(1), endDate: D.offsetDay(1),
-      stops: [], meetingArea: '', budgetMin: '', budgetMax: '',
+      stops: ['', ''], meetingArea: '', meetingTime: '', budgetMin: '', budgetMax: '',
       tags: [], capacity: 3, note: ''
     };
   }
   function draftFromTrip(t) {
     return {
-      id: t.id, title: t.title, destinationCode: t.destinationCode || codeFromName(t.destination),
+      id: t.id, title: t.title, destination: t.destination, terrain: t.terrain,
       startDate: t.startDate, endDate: t.endDate, stops: t.stops.slice(),
-      meetingArea: t.meetingArea || '', budgetMin: t.budgetMin || '', budgetMax: t.budgetMax || '',
+      meetingArea: t.meetingArea || '', meetingTime: t.meetingTime || '', budgetMin: t.budgetMin || '', budgetMax: t.budgetMax || '',
       tags: t.tags.slice(), capacity: t.capacity, note: t.note || ''
     };
   }
   function draftFromSource(t) {
     var d = blankDraft();
-    d.destinationCode = t.destinationCode || codeFromName(t.destination);
-    d.stops = t.stops.slice(0, 8);
+    d.destination = t.destination;
+    d.terrain = t.terrain;
+    d.stops = t.stops.slice();
     d.tags = t.tags.slice(0, 5);
     d.title = '';
     d.startDate = '';
@@ -196,11 +169,6 @@
     d.capacity = t.capacity;
     d.sourceTripId = t.id;
     return d;
-  }
-  function syncFormAreaProv() {
-    var code = App.draft && App.draft.destinationCode;
-    var c = code ? D.findCity(code) : null;
-    App.areaState.form.prov = c ? c.provinceCode : '440000';
   }
 
   function ensureDraft() {
@@ -213,7 +181,6 @@
         App.draft = draftFromTrip(t);
         App.draftErrors = {};
         App.draftSource = null;
-        syncFormAreaProv();
       }
     } else if (r.name === 'create') {
       if (App.editingId !== null || !App.draft) {
@@ -221,135 +188,8 @@
         if (!App.draft || App.draft.__consumed) { App.draft = blankDraft(); App.draftSource = null; }
         App.draft.__consumed = false;
         App.draftErrors = {};
-        syncFormAreaProv();
       }
     }
-  }
-
-  /* ---------------- 资料草稿 ---------------- */
-  function ensureProfileDraft() {
-    if (App.profileDraft) return;
-    var u = S.me();
-    if (!u) return;
-    var job = u.job || '';
-    var choice = (job === '' || D.JOBS.indexOf(job) > -1) ? job : D.JOB_OTHER;
-    App.profileDraft = {
-      nickname: u.nickname || '', birthday: u.birthday || '', gender: u.gender || '', city: u.city || '',
-      school: u.school || '', major: u.major || '', jobChoice: choice, jobCustom: choice === D.JOB_OTHER ? job : '',
-      mbti: u.mbti || '', interests: (u.interests || []).slice(), travelStyle: u.travelStyle || '',
-      bio: u.bio || '', avatarUrl: u.avatarUrl || ''
-    };
-  }
-  function formFx() {
-    return { area: App.areaState.form, place: App.placeUi, tagDraft: App.formTagDraft, tagError: App.formTagError };
-  }
-
-  /* ---------------- 头部身份下拉 ---------------- */
-  function syncIdPanel() {
-    var root = document.getElementById('id-panel-root');
-    var chip = document.getElementById('user-chip');
-    if (root) root.innerHTML = App.idOpen ? UI.idPanel() : '';
-    if (chip) chip.setAttribute('aria-expanded', App.idOpen ? 'true' : 'false');
-  }
-  function focusFirstBad(root) {
-    var el = root.querySelector('.field.bad input, .field.bad select, .field.bad textarea');
-    if (el) { try { el.focus(); } catch (e) { } }
-  }
-
-  /* ---------------- 登录 / 注册 ---------------- */
-  function submitAuth() {
-    var a = App.auth;
-    var username = String(a.values.username || '').trim();
-    var password = String(a.values.password || '');
-    var nickname = String(a.values.nickname || '').trim();
-    var errors = {};
-    /* 与前端 authForm 同口径：格式/长度规则只在注册时生效，登录只查非空（演示密码 123456 只有 6 位） */
-    if (!username) errors.username = '请输入用户名';
-    else if (a.mode === 'register' && !/^[A-Za-z0-9_]{3,20}$/.test(username)) errors.username = '用户名需为 3–20 位字母、数字或下划线';
-    if (!password) errors.password = '请输入密码';
-    else if (a.mode === 'register' && (password.length < 8 || password.length > 64)) errors.password = '密码需为 8–64 位';
-    if (a.mode === 'register' && (nickname.length < 1 || nickname.length > 20)) errors.nickname = '昵称需为 1–20 个字';
-    a.errors = errors; a.submitError = '';
-    if (Object.keys(errors).length) { render(); focusFirstBad(gateEl); return; }
-    var res = a.mode === 'register' ? S.register(username, password, nickname) : S.login(username, password);
-    if (!res.ok) {
-      if (res.errors) { a.errors = res.errors; render(); focusFirstBad(gateEl); }
-      else { a.submitError = res.reason || '操作失败'; render(); }
-      return;
-    }
-    a.values = { username: '', password: '', nickname: '' }; a.errors = {}; a.submitError = '';
-    App.draft = null; App.editingId = null; App.shareTripId = null;
-    if (a.mode === 'register') {
-      go('#/profile/setup');
-      toast('注册成功，先完善个人资料，再开始找同行者', 'ok');
-    } else {
-      var deep = global.location.hash;
-      var keep = /^#\/(discover|create|mine|chat|trip|share|edit|profile)(\/|$)/.test(deep) ? deep : '#/discover';
-      go(keep);
-      toast('欢迎回来，' + res.user.nickname, 'ok');
-    }
-  }
-
-  /* ---------------- 地点 / 标签 / 头像 ---------------- */
-  function addPlace(pk, name) {
-    if (!App.draft || !name) return;
-    if (pk === 'meeting') {
-      App.draft.meetingArea = name;
-      App.placeUi.meeting.q = ''; App.placeUi.meeting.message = '';
-      render();
-      toast('集合区域已设为「' + name + '」', 'ok');
-      return;
-    }
-    var fx = App.placeUi.stops;
-    if (App.draft.stops.indexOf(name) > -1) { fx.message = '「' + name + '」已经在列表里了'; fx.q = ''; render(); return; }
-    if (App.draft.stops.length >= 8) { fx.message = '最多选择 8 个地点'; render(); return; }
-    App.draft.stops.push(name);
-    fx.q = ''; fx.message = '';
-    delete App.draftErrors.stops;
-    render();
-  }
-  function addFormTag() {
-    if (!App.draft) return;
-    var text = App.formTagDraft.trim();
-    if (!text) return;
-    if (App.draft.tags.length >= 5) { App.formTagError = '最多选择 5 个兴趣标签'; return; }
-    if (text.length > 12) { App.formTagError = '每个兴趣标签最多 12 个字'; return; }
-    if (App.draft.tags.indexOf(text) > -1) { App.formTagError = '这个标签已经添加过了'; return; }
-    App.draft.tags.push(text);
-    App.formTagDraft = ''; App.formTagError = '';
-    delete App.draftErrors.tags;
-  }
-  function addProfileInterest() {
-    var d = App.profileDraft;
-    if (!d) return;
-    var text = App.profileFx.interestDraft.trim();
-    if (!text) return;
-    if (d.interests.length >= 5) { App.profileFx.interestError = '已选满 5 个'; return; }
-    if (text.length > 12) { App.profileFx.interestError = '每个兴趣标签最多 12 个字'; return; }
-    if (d.interests.indexOf(text) > -1) { App.profileFx.interestError = '这个兴趣已经在列表里了'; return; }
-    d.interests.push(text);
-    App.profileFx.interestDraft = ''; App.profileFx.interestError = '';
-    delete App.profileErrors.interests;
-  }
-  function handleAvatarFile(input) {
-    var file = input.files && input.files[0];
-    input.value = '';
-    if (!file || !App.profileDraft) return;
-    if (['image/jpeg', 'image/png', 'image/webp'].indexOf(file.type) === -1) {
-      App.profileFx.avatarError = '头像上传失败（仅支持 JPEG / PNG / WebP）'; render(); return;
-    }
-    if (file.size > 2 * 1024 * 1024) {
-      App.profileFx.avatarError = '头像上传失败（文件超过 2 MB）'; render(); return;
-    }
-    var reader = new FileReader();
-    reader.onload = function () {
-      if (!App.profileDraft) return;
-      App.profileDraft.avatarUrl = String(reader.result);
-      App.profileFx.avatarError = '';
-      render();
-    };
-    reader.onerror = function () { App.profileFx.avatarError = '头像上传失败（读取文件出错）'; render(); };
-    reader.readAsDataURL(file);
   }
 
   /* ---------------- 常驻撤销入口 ----------------
@@ -384,8 +224,8 @@
     if (!me) {
       shell.hidden = true;
       gateEl.hidden = false;
-      gateEl.innerHTML = UI.gate(App.auth);
-      document.title = 'RouteMe 路觅 · 登录或选择演示身份';
+      gateEl.innerHTML = UI.gate();
+      document.title = 'RouteMe 路觅 · 选择演示身份';
       stopPoll();
       return;
     }
@@ -394,13 +234,11 @@
     shell.hidden = false;
 
     var r = App.route;
-    var navKey = r.name === 'trip' ? 'discover' : r.name === 'edit' ? 'create' : (r.name === 'share' || r.name === 'profile') ? 'mine' : r.name;
+    var navKey = r.name === 'trip' ? 'discover' : r.name === 'edit' ? 'create' : r.name === 'share' ? 'mine' : r.name;
     var n = UI.nav(navKey);
     document.getElementById('rail-nav').innerHTML = n.rail;
     document.getElementById('tabbar').innerHTML = n.tabs;
-    var chip = document.getElementById('user-chip');
-    if (chip) chip.innerHTML = UI.userChip(me);
-    syncIdPanel();
+    document.getElementById('user-chip').innerHTML = UI.userChip(me);
 
     var focus = captureFocus();
     var keepRow = r.name === 'discover' ? view.querySelector('.filter-row') : null;
@@ -418,9 +256,9 @@
         html = UI.empty('找不到要编辑的行程', '它可能已被删除。', '<a class="btn primary" href="#/mine">回到我的旅行</a>', 'search');
       } else if (!App.draft) {
         App.draft = blankDraft();
-        html = UI.tripForm(App.draft, App.draftErrors, App.draftSource, false, formFx());
+        html = UI.tripForm(App.draft, App.draftErrors, App.draftSource, false);
       } else {
-        html = UI.tripForm(App.draft, App.draftErrors, App.draftSource, r.name === 'edit', formFx());
+        html = UI.tripForm(App.draft, App.draftErrors, App.draftSource, r.name === 'edit');
       }
       title = (r.name === 'edit' ? '编辑行程' : '发布行程') + ' · RouteMe';
       stopPoll();
@@ -443,13 +281,8 @@
       html = UI.share(r.a, App.shareDraft, App.shareErrors);
       title = '游后分享 · RouteMe';
       stopPoll();
-    } else if (r.name === 'profile' && r.a === 'setup') {
-      ensureProfileDraft();
-      html = UI.profileSetup(App.profileDraft || {}, App.profileErrors, App.profileFx);
-      title = (S.profileComplete(me) ? '编辑资料' : '完善个人资料') + ' · RouteMe';
-      stopPoll();
     } else {
-      html = UI.discover(App.filters, App.areaState.discover);
+      html = UI.discover(App.filters);
       title = '旅行灵感 · RouteMe';
       stopPoll();
     }
@@ -457,14 +290,7 @@
     view.innerHTML = html;
     if (keepRow) {
       var freshRow = view.querySelector('.filter-row');
-      if (freshRow) {
-        /* 级联面板每次按最新状态重画，其余输入控件保留原节点 */
-        var oldArea = keepRow.querySelector('.area-picker');
-        var newArea = freshRow.querySelector('.area-picker');
-        if (oldArea && newArea) oldArea.parentNode.replaceChild(newArea, oldArea);
-        syncFilterRow(keepRow);
-        freshRow.parentNode.replaceChild(keepRow, freshRow);
-      }
+      if (freshRow) { syncFilterRow(keepRow); freshRow.parentNode.replaceChild(keepRow, freshRow); }
     }
     document.title = title;
     restoreFocus(focus);
@@ -537,6 +363,8 @@
       modalRoot.innerHTML = scrim + '<div class="modal-wrap">' + UI.profileModal(o.id) + '</div>';
     } else if (o.kind === 'switch') {
       modalRoot.innerHTML = scrim + '<div class="modal-wrap">' + UI.switchUserModal() + '</div>';
+    } else if (o.kind === 'meeting') {
+      modalRoot.innerHTML = scrim + '<div class="modal-wrap">' + UI.meetingModal(o.id) + '</div>';
     } else if (o.kind === 'report') {
       modalRoot.innerHTML = scrim + '<div class="modal-wrap">' + UI.reportModal(o.type, o.id, o.label) + '</div>';
     } else if (o.kind === 'saveView') {
@@ -594,37 +422,23 @@
     } else render();
   }
   function clearFilters() {
-    App.filters = { tab: App.filters.tab, q: '', destination: '', destinationCode: '', from: '', to: '', tags: [], sort: 'match' };
+    App.filters = { tab: App.filters.tab, q: '', destination: '', from: '', to: '', tags: [], sort: 'match' };
     render();
     toast('已清除全部筛选条件', 'ok');
   }
 
   /* ---------------- 事件：输入 ---------------- */
-  var placeTimer = null;
   document.addEventListener('input', function (e) {
     var el = e.target;
     if (el.hasAttribute('data-filter')) { setFilter(el.getAttribute('data-filter'), el.value); return; }
-    if (el.hasAttribute('data-auth')) { App.auth.values[el.getAttribute('data-auth')] = el.value; return; }
-    if (el.hasAttribute('data-place-q')) {
-      var pk = el.getAttribute('data-place-q');
-      App.placeUi[pk].q = el.value;
-      App.placeUi[pk].message = '';
-      clearTimeout(placeTimer);
-      placeTimer = setTimeout(render, 160);
-      return;
-    }
-    if (el.hasAttribute('data-form-tag')) { App.formTagDraft = el.value; App.formTagError = ''; return; }
-    if (el.hasAttribute('data-pf-interest')) { App.profileFx.interestDraft = el.value; App.profileFx.interestError = ''; return; }
-    if (el.hasAttribute('data-pf') && App.profileDraft) {
-      var pfKey = el.getAttribute('data-pf');
-      App.profileDraft[pfKey] = el.value;
-      delete App.profileErrors[(pfKey === 'jobChoice' || pfKey === 'jobCustom') ? 'job' : pfKey];
-      render();
-      return;
-    }
     if (el.hasAttribute('data-form') && App.draft) {
       App.draft[el.getAttribute('data-form')] = el.value;
       if (el.getAttribute('data-form') === 'startDate' && App.draft.endDate && S.dayDiff(App.draft.endDate, el.value) < 0) App.draft.endDate = el.value;
+      render();
+      return;
+    }
+    if (el.hasAttribute('data-stop-input') && App.draft) {
+      App.draft.stops[parseInt(el.getAttribute('data-stop-input'), 10)] = el.value;
       render();
       return;
     }
@@ -638,26 +452,11 @@
     var el = e.target;
     if (el.hasAttribute('data-filter')) { setFilter(el.getAttribute('data-filter'), el.value); }
     else if (el.hasAttribute('data-form') && App.draft) { App.draft[el.getAttribute('data-form')] = el.value; render(); }
-    else if (el.hasAttribute('data-pf') && App.profileDraft) {
-      var key = el.getAttribute('data-pf');
-      App.profileDraft[key] = el.value;
-      delete App.profileErrors[(key === 'jobChoice' || key === 'jobCustom') ? 'job' : key];
-      render();
-    }
-    else if (el.hasAttribute('data-avatar-file')) { handleAvatarFile(el); }
   });
 
   /* ---------------- 事件：点击 ---------------- */
   var lastActionEl = null;
   document.addEventListener('click', function (e) {
-    /* 点外部关闭下拉：mousedown 之外的兜底，兼容只派发 click 的环境 */
-    if (App.idOpen && !e.target.closest('.id-switch')) { App.idOpen = false; syncIdPanel(); }
-    ['discover', 'form'].forEach(function (ctx) {
-      if (App.areaState[ctx].open && !e.target.closest('[data-area-wrap="' + ctx + '"]')) {
-        App.areaState[ctx].open = false;
-        render();
-      }
-    });
     var trigger = e.target.closest('[data-action]');
     if (!trigger) return;
     lastActionEl = trigger;
@@ -674,9 +473,8 @@
         /* 从身份门进来时保留地址栏里的深链（原型包的闭环环图会直接跳到某一步）；
            会话中切换身份则回到首页，避免停在新身份看不到的行程或会话上。 */
         var deep = !S.me() ? global.location.hash : '';
-        var keep = /^#\/(discover|create|mine|chat|trip|share|edit|profile)(\/|$)/.test(deep) ? deep : '#/discover';
+        var keep = /^#\/(discover|create|mine|chat|trip|share|edit)(\/|$)/.test(deep) ? deep : '#/discover';
         S.setUser(id);
-        App.idOpen = false;
         closeOverlay();
         App.draft = null; App.editingId = null; App.shareTripId = null;
         go(keep);
@@ -685,22 +483,7 @@
         return;
       }
       case 'switch-user': App.overlay = { kind: 'switch' }; renderOverlay(); return;
-      case 'id-toggle': App.idOpen = !App.idOpen; syncIdPanel(); return;
-      case 'auth-tab':
-        App.auth.mode = trigger.getAttribute('data-mode');
-        App.auth.errors = {}; App.auth.submitError = '';
-        render();
-        var authFirst = gateEl.querySelector('[data-auth="username"]');
-        if (authFirst) authFirst.focus();
-        return;
-      case 'auth-submit': submitAuth(); return;
-      case 'logout':
-        App.idOpen = false;
-        S.setUser(null);
-        closeOverlay();
-        render();
-        toast('已退出，回到身份门', 'ok');
-        return;
+      case 'logout': S.setUser(null); closeOverlay(); render(); return;
       case 'toggle-theme':
         applyTheme(document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark');
         return;
@@ -711,8 +494,7 @@
           body: '所有行程、申请、消息与体验都会回到初始种子状态。这个操作不可撤销，适合在演示前把环境恢复干净。'
         }, function () {
           S.reset(); App.draft = null; App.editingId = null; App.shareTripId = null;
-          App.filters = { tab: 'trips', q: '', destination: '', destinationCode: '', from: '', to: '', tags: [], sort: 'match' };
-          App.auth = { mode: 'login', values: { username: '', password: '', nickname: '' }, errors: {}, submitError: '' };
+          App.filters = { tab: 'trips', q: '', destination: '', from: '', to: '', tags: [], sort: 'match' };
           closeOverlay(); go('#/discover'); render(); toast('演示数据已重置', 'ok');
         });
         return;
@@ -745,8 +527,7 @@
         var name = nameEl ? nameEl.value.trim() : '';
         if (!name) { toast('给这组筛选起个名字', 'warn'); return; }
         S.saveView({
-          name: name, destination: App.filters.destination, destinationCode: App.filters.destinationCode,
-          from: App.filters.from,
+          name: name, destination: App.filters.destination, from: App.filters.from,
           to: App.filters.to, tags: App.filters.tags, sort: App.filters.sort, q: App.filters.q
         });
         closeOverlay(); render(); toast('已保存筛选「' + name + '」', 'ok');
@@ -757,14 +538,29 @@
         S.state.savedViews.forEach(function (x) { if (x.id === id) v = x; });
         if (!v) return;
         App.filters = {
-          tab: App.filters.tab, q: v.q || '', destination: '',
-          destinationCode: v.destinationCode || codeFromName(v.destination),
+          tab: App.filters.tab, q: v.q || '', destination: v.destination || '',
           from: v.from || '', to: v.to || '', tags: (v.tags || []).slice(), sort: v.sort || 'match'
         };
         render(); toast('已应用筛选「' + v.name + '」', 'ok');
         return;
       }
       case 'del-view': S.deleteView(id); render(); toast('已删除这组常用筛选', 'ok'); return;
+
+      /* --- 集合信息编辑 --- */
+      case 'edit-meeting': App.overlay = { kind: 'meeting', id: id }; renderOverlay(); return;
+      case 'submit-meeting': {
+        var areaEl = modalRoot.querySelector('[data-meeting-area]');
+        var timeEl = modalRoot.querySelector('[data-meeting-time]');
+        var mr = S.updateMeetingInfo(id, {
+          meetingArea: areaEl ? areaEl.value : '',
+          meetingTime: timeEl ? timeEl.value : ''
+        });
+        if (!mr.ok) { toast(Object.keys(mr.errors)[0] === '_' ? mr.errors._ : '请检查集合信息', 'warn'); return; }
+        closeOverlay();
+        render();
+        toast('集合信息已更新', 'ok');
+        return;
+      }
 
       /* --- 资料与举报 --- */
       case 'profile': App.overlay = { kind: 'profile', id: id }; renderOverlay(); return;
@@ -871,75 +667,7 @@
         toast('已预填目的地、路线与兴趣，请重新选择日期和人数', 'ok');
         return;
       }
-      /* --- 省市级联 --- */
-      case 'area-toggle': {
-        var actx = trigger.getAttribute('data-area');
-        var ast = App.areaState[actx];
-        ast.open = !ast.open;
-        if (ast.open) {
-          var acode = actx === 'discover' ? App.filters.destinationCode : (App.draft && App.draft.destinationCode);
-          var ac = acode ? D.findCity(acode) : null;
-          if (ac) ast.prov = ac.provinceCode;
-        }
-        render();
-        return;
-      }
-      case 'area-prov':
-        App.areaState[trigger.getAttribute('data-area')].prov = trigger.getAttribute('data-code');
-        render();
-        return;
-      case 'area-city': {
-        var cctx = trigger.getAttribute('data-area');
-        var ccode = trigger.getAttribute('data-code');
-        App.areaState[cctx].open = false;
-        var cc = D.findCity(ccode);
-        if (cc) App.areaState[cctx].prov = cc.provinceCode;
-        if (cctx === 'discover') { App.filters.destinationCode = ccode; App.filters.destination = ''; }
-        else if (App.draft) { App.draft.destinationCode = ccode; delete App.draftErrors.destination; }
-        render();
-        return;
-      }
-      case 'area-clear': {
-        var xctx = trigger.getAttribute('data-area');
-        if (xctx === 'discover') { App.filters.destinationCode = ''; App.filters.destination = ''; }
-        else if (App.draft) App.draft.destinationCode = '';
-        render();
-        return;
-      }
-
-      /* --- 离线地图与地点选择 --- */
-      case 'map-toggle': App.placeUi.meeting.mapOpen = !App.placeUi.meeting.mapOpen; render(); return;
-      case 'map-pin': addPlace(trigger.getAttribute('data-map'), trigger.getAttribute('data-place')); return;
-      case 'map-bg': {
-        /* 点空白处吸附到最近点位：把屏幕坐标换算回地图视图坐标 */
-        var svg = trigger;
-        var rect = svg.getBoundingClientRect();
-        if (!rect.width || !rect.height) return;
-        var vx = parseFloat(svg.getAttribute('data-vx')), vy = parseFloat(svg.getAttribute('data-vy'));
-        var vw = parseFloat(svg.getAttribute('data-vw')), vh = parseFloat(svg.getAttribute('data-vh'));
-        var px = vx + (e.clientX - rect.left) / rect.width * vw;
-        var py = vy + (e.clientY - rect.top) / rect.height * vh;
-        var mcity = svg.getAttribute('data-city');
-        var pool = mcity && mcity !== 'all' ? D.placesInCity(mcity) : D.PLACES;
-        var best = null, bestD = Infinity;
-        pool.forEach(function (p) {
-          var pt = D.projectPlace(p);
-          var dd = (pt.x - px) * (pt.x - px) + (pt.y - py) * (pt.y - py);
-          if (dd < bestD) { bestD = dd; best = p; }
-        });
-        if (best) addPlace(svg.getAttribute('data-map'), best.name);
-        return;
-      }
-      case 'place-pick': addPlace(trigger.getAttribute('data-picker'), trigger.getAttribute('data-place')); return;
-      case 'place-remove': {
-        var rpk = trigger.getAttribute('data-picker');
-        var ri = parseInt(trigger.getAttribute('data-index'), 10);
-        if (!App.draft) return;
-        if (rpk === 'meeting') App.draft.meetingArea = '';
-        else { App.draft.stops.splice(ri, 1); delete App.draftErrors.stops; }
-        render();
-        return;
-      }
+      case 'set-terrain': App.draft.terrain = trigger.getAttribute('data-terrain'); render(); return;
       case 'form-tag': {
         var ft = trigger.getAttribute('data-tag');
         var fi = App.draft.tags.indexOf(ft);
@@ -949,7 +677,6 @@
         render();
         return;
       }
-      case 'form-tag-add': addFormTag(); render(); return;
       case 'cap-step': {
         var delta = parseInt(trigger.getAttribute('data-delta'), 10);
         var next = Math.min(12, Math.max(2, (parseInt(App.draft.capacity, 10) || 2) + delta));
@@ -957,6 +684,20 @@
         render();
         return;
       }
+      case 'add-stop':
+        if (App.draft.stops.length >= 10) { toast('首版最多 10 个途经点，够写清楚一条路线了', 'warn'); return; }
+        App.draft.stops.push('');
+        render();
+        setTimeout(function () {
+          var inputs = view.querySelectorAll('[data-stop-input]');
+          if (inputs.length) inputs[inputs.length - 1].focus();
+        }, 20);
+        return;
+      case 'del-stop':
+        if (App.draft.stops.length <= 2) { toast('至少保留两个途经点', 'warn'); return; }
+        App.draft.stops.splice(parseInt(trigger.getAttribute('data-index'), 10), 1);
+        render();
+        return;
       case 'submit-trip': {
         var isEdit = App.route.name === 'edit';
         var result = isEdit ? S.updateTrip(App.route.a, App.draft) : S.createTrip(App.draft);
@@ -975,71 +716,6 @@
         go('#/trip/' + result.trip.id);
         render();
         toast(isEdit ? '行程已更新，同行者看到的内容同步生效' : '行程已发布，现在它出现在灵感首页了', 'ok');
-        return;
-      }
-
-      /* --- 资料完善 / 编辑 --- */
-      case 'pf-gender':
-        App.profileDraft.gender = trigger.getAttribute('data-value');
-        delete App.profileErrors.gender;
-        render();
-        return;
-      case 'pf-style':
-        App.profileDraft.travelStyle = trigger.getAttribute('data-value');
-        delete App.profileErrors.travelStyle;
-        render();
-        return;
-      case 'pf-interest': {
-        var iv = trigger.getAttribute('data-value');
-        var ii = App.profileDraft.interests.indexOf(iv);
-        if (ii > -1) App.profileDraft.interests.splice(ii, 1);
-        else if (App.profileDraft.interests.length >= 5) { App.profileFx.interestError = '已选满 5 个'; render(); return; }
-        else App.profileDraft.interests.push(iv);
-        delete App.profileErrors.interests;
-        App.profileFx.interestError = '';
-        render();
-        return;
-      }
-      case 'pf-interest-add': addProfileInterest(); render(); return;
-      case 'pf-avatar': {
-        var fileInput = view.querySelector('[data-avatar-file]');
-        if (fileInput) fileInput.click();
-        return;
-      }
-      case 'pf-avatar-remove':
-        App.profileDraft.avatarUrl = '';
-        App.profileFx.avatarError = '';
-        render();
-        return;
-      case 'pf-save': {
-        var pd = App.profileDraft;
-        if (!pd) return;
-        var job = pd.jobChoice !== D.JOB_OTHER ? pd.jobChoice : (pd.jobCustom.trim() || D.JOB_OTHER);
-        var pr = S.saveProfile({
-          nickname: pd.nickname, birthday: pd.birthday, gender: pd.gender, city: pd.city,
-          school: pd.school, major: pd.major, job: job, mbti: pd.mbti,
-          interests: pd.interests, travelStyle: pd.travelStyle, bio: pd.bio, avatarUrl: pd.avatarUrl
-        });
-        if (!pr.ok) {
-          if (pr.errors) {
-            App.profileErrors = pr.errors;
-            render();
-            toast('还有 ' + Object.keys(pr.errors).length + ' 处需要修改', 'bad');
-            focusFirstBad(view);
-          } else {
-            App.profileErrors = { _: pr.reason };
-            render();
-            toast(pr.reason, 'warn');
-          }
-          return;
-        }
-        App.profileDraft = null; App.profileErrors = {};
-        App.profileFx = { interestDraft: '', interestError: '', avatarError: '' };
-        var myId = S.me().id;
-        go('#/mine');
-        App.overlay = { kind: 'profile', id: myId };
-        render();
-        toast('资料已保存，个人主页同步更新', 'ok');
         return;
       }
 
@@ -1085,94 +761,46 @@
 
   /* ---------------- 键盘 ---------------- */
   global.addEventListener('keydown', function (e) {
-    var t = e.target;
-    if (e.key === 'Escape' || e.key === 'Esc') {
-      if (App.overlay) { e.preventDefault(); closeOverlay(); return; }
-      if (App.idOpen) {
-        e.preventDefault();
-        App.idOpen = false; syncIdPanel();
-        var chip = document.getElementById('user-chip');
-        if (chip) chip.focus();
-        return;
-      }
-      if (App.areaState.discover.open || App.areaState.form.open) {
-        e.preventDefault();
-        App.areaState.discover.open = false; App.areaState.form.open = false;
-        render();
-        return;
-      }
-    }
-    if (e.key === 'Enter' && t.hasAttribute && t.hasAttribute('data-place-q')) {
-      e.preventDefault();
-      var pk = t.getAttribute('data-place-q');
-      var q = App.placeUi[pk].q.trim();
-      if (!q) return;
-      var place = D.resolvePlace(q);
-      if (!place) {
-        App.placeUi[pk].message = '地图上搜不到「' + q + '」，换个关键词，或直接在地图上点选';
-        render();
-        return;
-      }
-      addPlace(pk, place.name);
-      return;
-    }
-    if (e.key === 'Enter' && t.hasAttribute && t.hasAttribute('data-form-tag')) { e.preventDefault(); addFormTag(); render(); return; }
-    if (e.key === 'Enter' && t.hasAttribute && t.hasAttribute('data-pf-interest')) { e.preventDefault(); addProfileInterest(); render(); return; }
-    if (e.key === 'Enter' && t.hasAttribute && t.hasAttribute('data-auth')) { e.preventDefault(); submitAuth(); return; }
-    if ((e.key === 'Enter' || e.key === ' ') && t.classList && t.classList.contains('map-pin')) {
-      e.preventDefault();
-      addPlace(t.getAttribute('data-map'), t.getAttribute('data-place'));
-      return;
-    }
-    if (t.hasAttribute && t.hasAttribute('data-chat-input') && e.key === 'Enter' && !e.shiftKey) {
+    if ((e.key === 'Escape' || e.key === 'Esc') && App.overlay) { e.preventDefault(); closeOverlay(); return; }
+    if (e.target.hasAttribute && e.target.hasAttribute('data-chat-input') && e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       var btn = view.querySelector('[data-action="send-msg"]');
       if (btn) sendChat(btn.getAttribute('data-trip'), btn.getAttribute('data-to'));
       return;
     }
-    if ((e.key === 'Enter' || e.key === ' ') && t.classList && t.classList.contains('trip-card')) {
+    if ((e.key === 'Enter' || e.key === ' ') && e.target.classList && e.target.classList.contains('trip-card')) {
       e.preventDefault();
-      go('#/trip/' + t.getAttribute('data-id'));
+      go('#/trip/' + e.target.getAttribute('data-id'));
     }
   }, true);
 
-  /* ---------------- 点外部关闭下拉 ---------------- */
-  document.addEventListener('mousedown', function (e) {
-    if (App.idOpen && !e.target.closest('.id-switch')) { App.idOpen = false; syncIdPanel(); }
-    ['discover', 'form'].forEach(function (ctx) {
-      if (App.areaState[ctx].open && !e.target.closest('[data-area-wrap="' + ctx + '"]')) {
-        App.areaState[ctx].open = false;
-        render();
-      }
-    });
-  });
-
-  /* ---------------- 途经点芯片拖动排序 ---------------- */
+  /* ---------------- 途经点拖动排序 ---------------- */
   var dragIndex = null;
-  function dragChip(e) {
-    var c = e.target.closest && e.target.closest('.place-chip[data-stop]');
-    return c && c.getAttribute('data-picker') === 'stops' ? c : null;
-  }
+  view.addEventListener('mousedown', function (e) {
+    var row = e.target.closest('.stop-row');
+    if (!row) return;
+    row.draggable = !!e.target.closest('.stop-handle');
+  });
   view.addEventListener('dragstart', function (e) {
-    var chip = dragChip(e);
-    if (!chip || !App.draft) return;
-    dragIndex = parseInt(chip.getAttribute('data-stop'), 10);
-    chip.classList.add('dragging');
+    var row = e.target.closest('.stop-row');
+    if (!row || !App.draft) return;
+    dragIndex = parseInt(row.getAttribute('data-stop'), 10);
+    row.classList.add('dragging');
     try { e.dataTransfer.effectAllowed = 'move'; e.dataTransfer.setData('text/plain', String(dragIndex)); } catch (err) { }
   });
   view.addEventListener('dragover', function (e) {
-    var chip = dragChip(e);
-    if (!chip || dragIndex === null) return;
+    var row = e.target.closest('.stop-row');
+    if (!row || dragIndex === null) return;
     e.preventDefault();
     try { e.dataTransfer.dropEffect = 'move'; } catch (err) { }
-    view.querySelectorAll('.place-chip.drag-over').forEach(function (x) { x.classList.remove('drag-over'); });
-    chip.classList.add('drag-over');
+    view.querySelectorAll('.stop-row.drag-over').forEach(function (x) { x.classList.remove('drag-over'); });
+    row.classList.add('drag-over');
   });
   view.addEventListener('drop', function (e) {
-    var chip = dragChip(e);
-    if (!chip || dragIndex === null || !App.draft) return;
+    var row = e.target.closest('.stop-row');
+    if (!row || dragIndex === null || !App.draft) return;
     e.preventDefault();
-    var to = parseInt(chip.getAttribute('data-stop'), 10);
+    var to = parseInt(row.getAttribute('data-stop'), 10);
     if (to !== dragIndex) {
       var moved = App.draft.stops.splice(dragIndex, 1)[0];
       App.draft.stops.splice(to, 0, moved);
@@ -1183,7 +811,7 @@
   });
   view.addEventListener('dragend', function () {
     dragIndex = null;
-    view.querySelectorAll('.place-chip').forEach(function (x) { x.classList.remove('dragging', 'drag-over'); });
+    view.querySelectorAll('.stop-row').forEach(function (x) { x.classList.remove('dragging', 'drag-over'); x.draggable = true; });
   });
 
   /* ---------------- 视口变化 ---------------- */

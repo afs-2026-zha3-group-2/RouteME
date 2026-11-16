@@ -106,33 +106,88 @@
 
 ---
 
-# Story list — REQ-012（S14 同行安全提示与举报）
+# Story list — REQ-012（S14 同行举报入口与回执）
 
-- **来源：** 原型故事 `docs/prototype/stories.html` S14「看到安全提示与举报入口」及其 3 条 AC（迭代 3 / P0 / 1 点 / 落点页面：详情页 + 聊天页）
-- **Change：** `refine-safety-report`（`trip-companions` MODIFIED）
+- **来源：** 原型故事 `docs/prototype/stories.html` S14 rev2「举报入口与回执」及其 3 条 AC（迭代 3 / P0 / 1 点 / 落点页面：详情页 + 聊天页）；用户裁决 D5（移除全部安全提示）
+- **Change：** `refine-safety-report`（`trip-companions` REMOVED + ADDED）
 - **口径：** 一条故事 = 两个既有页面 + 复用一份举报契约 + 一次状态迁移（举报表单 → 回执）
 - **编号说明：** 2026-11-16 起草时为 REQ-011；同日 `main` 将 S15 结束行程登记为 REQ-011（`add-trip-completion`），按「后到者顺延」改为 **REQ-012**。
+- **修订：** rev1 为「安全提示与举报」；rev2 依裁决 D5 移除提示、入口提到页头右上，标题与 AC 同步改写。
 
 | Story | Title | 角色 | Priority | Iteration | Points | Page | Parent REQ | Change | Status |
 |---|---|---|---|---|---|---|---|---|---|
-| S14 | 看到安全提示与举报入口 | 与陌生人同行的学生 | P0 | 3 | 1 | 详情页 / 聊天页 | REQ-012 | `refine-safety-report` | P1 drafted（2026-11-16） |
+| S14 | 举报入口与回执 | 与陌生人同行的学生 | P0 | 3 | 1 | 详情页 / 聊天页 | REQ-012 | `refine-safety-report` | P3 Pass（2026-11-16） |
 
 ## Traceability（REQ-012）
 
 | Story | Requirement scenarios | Change spec | Story file |
 |---|---|---|---|
-| S14 | REQ-012 §4 #1–#7 | `openspec/changes/refine-safety-report/specs/trip-companions/spec.md` | 无独立故事文件：原型 S14 已提供 AC，本 change 以 proposal + delta 承接（与 REQ-010 同口径） |
+| S14 | REQ-012 rev2 §4 #1–#7 | `openspec/changes/refine-safety-report/specs/trip-companions/spec.md`（REMOVED 1 + ADDED 1） | 无独立故事文件：原型 S14 rev2 已提供 AC，本 change 以 proposal + delta 承接（与 REQ-010 同口径） |
 
 ## Notes（REQ-012）
 
-- 本故事只覆盖详情页与聊天页的安全提示、举报入口与回执；体验发布页复用同一提示组件但不在落点内，证据发布页入口、举报后台处置、求助热线与位置共享不在本故事内。
-- 安全提示与举报的**能力底座**由已归档的 `add-trip-companions` 提供；本故事只收敛展示口径（三条文本、集合区域、回执文案、本人行程入口）与边界说明，不重复定义举报记录与隐私红线。
-- 用户裁决 D1–D4：按原型三条文本列表（详情页带集合区域、聊天页一行）；举报原因沿用现有四类、不升契约；本人行程隐藏举报入口；编号 REQ-012 / `refine-safety-report`。
-- 子目标一句话可说明且端到端可观察（进入详情 / 聊天 → 读三条提示 → 举报 → 拿到「已收到，我们会处理」），故不再拆分。
+- 本故事只覆盖详情页与聊天页页头的举报入口与回执；体验发布页（`ShareExperiencePage`）的「发布前提醒」保留现状且不出现举报入口，举报后台处置、求助热线与位置共享不在本故事内。
+- 安全提示按裁决 D5 **全部下线**：详情页三条文本列表、聊天页一行提示与两套集合区域回退文案都不再由详情页 / 聊天页承载；`meeting_area` 仍在既有「行程安排 · 集合」事实行展示。体验发布页的提示形态单独保留。
+- 举报的**能力底座**由已归档的 `add-trip-companions` 提供；本故事只收敛展示口径（页头入口位置、本人行程边界、回执文案）与弹窗的两句边界说明，不重复定义举报记录与隐私红线。
+- 用户裁决 D1–D5：D1（三条提示）已被 D5 取代；D2 举报原因沿用现有四类、不升契约；D3 本人行程隐藏举报入口；D4 编号 REQ-012 / `refine-safety-report`；D5 移除提示、入口置于页头右上（B）。
+- 子目标一句话可说明且端到端可观察（进入他人详情 / 聊天 → 页头找到举报 → 提交 → 拿到「已收到，我们会处理」），故不再拆分。
 
 ---
 
-# Story list — REQ-013（S11 我的旅行）
+# Story list — REQ-010（S12 同行消息与集合确认）
+
+- **来源：** 用户 2026-11-16 会话（SDD P1 输入）+ 原型 `docs/prototype/ui.js` `chat()`
+- **口径：** 一条故事 = 一条可验收的垂直切片（页面 + 契约 + 状态迁移），允许前后端同批交付
+- **更新时间：** 2026-11-16
+
+| Story | Title | 角色 | Priority | Iteration | Points | Page | Parent REQ | Change | Status |
+|---|---|---|---|---|---|---|---|---|---|
+| S12-1 | 聊天页按原型重构（会话列表 + 主区 + 头部动作 + 短轮询） | 已匹配同行者 | P0 | 1 | M | 同行消息 | REQ-010 | `refine-trip-chat` | P1 drafted |
+| S12-2 | 退出同行后保留会话并可继续沟通 | 已匹配同行者 | P0 | 1 | S | 同行消息 / 我的旅行 | REQ-010 | `refine-trip-chat` | P1 drafted |
+| S12-3 | 集合时间字段与三处展示 | 发布者 / 同行者 | P0 | 1 | M | 发布行程 / 行程详情 / 同行消息 / 我的旅行 | REQ-010 | `refine-trip-chat` | P1 drafted |
+| S12-4 | 发布者维护集合区域与集合时间 | 发布者 | P0 | 1 | S | 行程详情 | REQ-010 | `refine-trip-chat` | P1 drafted |
+
+### REQ-013 Traceability
+
+| Story | Requirement scenarios | Change spec | Story file |
+|---|---|---|---|
+| S12-1 | REQ-010 §4 #1–#14、#16 | `specs/trip-companions/spec.md`（MODIFIED「匹配后的一对一文字沟通」） | `stories/refine-trip-chat.story.md` |
+| S12-2 | REQ-010 §4 #15 | `specs/trip-companions/spec.md`（MODIFIED「退出同行」） | 同上 |
+| S12-3 | REQ-010 §4 #17–#22 | `specs/trip-plans/spec.md`（MODIFIED 发布 + 详情展示） | 同上 |
+| S12-4 | REQ-010 §4 #23–#25 | `specs/trip-plans/spec.md`（ADDED「发布者维护集合信息」） | 同上 |
+
+### REQ-013 Notes
+
+- 本 change 修改了活规格 `trip-companions` 的「退出同行」与「匹配后的一对一文字沟通」两条需求；归档时用 MODIFIED 替换对应 Requirement 块。
+- 集合区域不需要新增字段；集合时间为新增字段，沿用「本地日期 + 时间、无时区」语义。
+- 并行约束：需先改原型（集合时间与集合编辑入口）再改实现（`@rule:prototype-ui-alignment`）。
+- 统计口径不变：「已退出」不计入「参与同行」。
+# Story list — REQ-014（S17 参考此行程发布）
+
+- **来源：** 原型故事 `docs/prototype/stories.html` S17「参考此行程发布」及其 4 条 AC（P1 / 迭代 3 / 2 点 / 落点页面：发布行程页）
+- **Change：** 无新建。复用已归档 / verified 的 `add-trip-experiences`（REQ-004）
+- **口径：** 一条故事 = 一个发布页 + 复用一份发布契约 + 一次派生（源行程 → 新计划，无归属）
+- **编号说明：** 接在 REQ-012 之后登记为 **REQ-014**；`add-trip-experiences` 已覆盖「参考此行程发布」，本故事按「已验证交付」收口。
+
+| Story | Title | 角色 | Priority | Iteration | Points | Page | Parent REQ | Change | Status |
+|---|---|---|---|---|---|---|---|---|---|
+| S17 | 参考此行程发布 | 被体验打动的浏览者 | P1 | 3 | 2 | 发布行程页 | REQ-014 | 无（复用 `add-trip-experiences` / REQ-004） | Verified（2026-11-16，已验证交付收口） |
+
+## Traceability（REQ-014）
+
+| Story | Requirement scenarios | Change spec | Story file |
+|---|---|---|---|
+| S17 | REQ-014 §4 #1–#6 | 无 Delta；权威为 Living Spec `openspec/specs/trip-experiences/spec.md:133-148`「参考此行程发布以产生新灵感」（2 场景 1:1 映射 REQ-014 #3 / #4） | 无独立故事文件：原型 S17 已提供 AC，本需求以 P1 意图 + Ready 条目承接 |
+
+## Notes（REQ-014）
+
+- 本故事覆盖两个入口（已结束行程详情、体验卡）、三字段预填、必填字段不沿用与「新计划无归属」；体验内容的发布 / 修改规则归 REQ-004。
+- **「体验详情」按体验卡验收：** 现行产品没有独立体验详情页，Living Spec 用词为「体验卡」；新增详情页属后续需求。
+- **「集合地点必须重新填写」按「不得沿用原行程取值」验收：** `trip-plans` 明确集合区域选填（`spec.md:151`）；本需求不把集合区域升级为必填。
+- **无代码 / 契约 / 迁移 / 测试改动：** 参考发布为纯前端预填，`TripCreateRequest` 无来源字段；证据见 `intents/REQ-014-reference-publish.md`。
+- 用户裁决 D1（已验证交付收口）/ D2（记录人 Jacky）/ D3（编号 REQ-014）。
+
+# Story list — REQ-015（S11 我的旅行）
 
 - **来源：** issue #13 `[P0] S11 我的旅行`；`docs/prototype/stories.html` S11
 - **口径：** 一条故事 = 一个页面 + 一份接口契约 + 一次状态迁移（本故事复用 `GET /api/me/trips`，只新增一个只读聚合字段；页面状态迁移为「进入页面 → 切换分组 → 行内动作」）
@@ -140,13 +195,13 @@
 
 | Story | Title | 角色 | Priority | Iteration | Points | Page | Parent REQ | Change | Status |
 |---|---|---|---|---|---|---|---|---|---|
-| S11 | 一屏看到发布、申请、匹配与已结束 | 全部 | P0 | 2 | 2 | 我的旅行页 | REQ-013 | `refine-my-trips` | P1 drafted（2026-11-16） |
+| S11 | 一屏看到发布、申请、匹配与已结束 | 全部 | P0 | 2 | 2 | 我的旅行页 | REQ-015 | `refine-my-trips` | P1 drafted（2026-11-16） |
 
-## Traceability（REQ-013）
+## Traceability（REQ-015）
 
 | Story | Requirement scenarios | Change spec | Story file |
 |---|---|---|---|
-| S11 | REQ-013 §4 #1–#12 | `openspec/changes/refine-my-trips/specs/trip-companions/spec.md`（MODIFIED「我的旅行聚合与最低安全能力」） | `requirement-workspace/stories/refine-my-trips.story.md` |
+| S11 | REQ-015 §4 #1–#12 | `openspec/changes/refine-my-trips/specs/trip-companions/spec.md`（MODIFIED「我的旅行聚合与最低安全能力」） | `requirement-workspace/stories/refine-my-trips.story.md` |
 
 ## Notes
 

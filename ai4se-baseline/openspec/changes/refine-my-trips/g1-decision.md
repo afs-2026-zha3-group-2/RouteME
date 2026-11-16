@@ -1,13 +1,13 @@
 # G1 decision — refine-my-trips
 
-- **Change id:** `refine-my-trips`（REQ-013 / S11 我的旅行）
+- **Change id:** `refine-my-trips`（REQ-015 / S11 我的旅行）
 - **Gate:** G1（Align）
 - **Inputs:**
   - Delta Spec：`openspec/changes/refine-my-trips/specs/trip-companions/spec.md`（MODIFIED，1 Requirement / 11 Scenario）
-  - AC / DoV 评审：`openspec/changes/refine-my-trips/dov-ac-review.md`（AC 4/4 Pass；DoV 5/5 Pass；REQ-013 映射 12/12；基线保留 4/4）
+  - AC / DoV 评审：`openspec/changes/refine-my-trips/dov-ac-review.md`（AC 4/4 Pass；DoV 5/5 Pass；REQ-015 映射 12/12；基线保留 4/4）
   - 一致性检查：`openspec/changes/refine-my-trips/consistency-lint.md`（Pass；0 BLOCKER / 0 WARNING / 4 SUGGESTION）
   - 提案：`openspec/changes/refine-my-trips/proposal.md`
-  - 需求基线：`requirement-workspace/requirements/REQ-013-my-trips.md`（12 场景，5 条 OQ 全 resolved，DoR BLOCKER 0）
+  - 需求基线：`requirement-workspace/requirements/REQ-015-my-trips.md`（12 场景，5 条 OQ 全 resolved，DoR BLOCKER 0）
   - 校验：`openspec validate refine-my-trips --strict` → valid；`openspec show --deltas-only` → `deltaCount: 1`
 - **Findings:**
   - **Scope：** 与提案一致，无静默扩张；范围为页面结构、行内动作、提醒定位、状态同步与只读聚合字段；编辑 / 删除 / 参考发布 / 分页 / 轮询已显式排除。

@@ -87,12 +87,15 @@
 
 阶段记录按 `<change-id>` 分目录保存；表中链接指向各阶段记录（提交哈希写在记录的「阶段提交链」小节）。
 
+> `REQ-014-reference-publish` 不是 OpenSpec change：它是 S17「参考此行程发布」按「已验证交付」收口的 P1 记录目录（复用已归档的 `add-trip-experiences`），P2–P5 不适用。P2 已按准入判定留档（无 Delta Spec、无 G1、不主张 Pass），见 [p2-spec.md](REQ-014-reference-publish/p2-spec.md) §2 / §5；P3 交付现状设计确认与 [UI 预览](REQ-014-reference-publish/preview/reference-publish.html)，见 [p3-design.md](REQ-014-reference-publish/p3-design.md) §4–§6；P4 只做行为复核（E2E 6/6、前端单测 137/137），无代码 diff、无 G2，见 [p4-verify.md](REQ-014-reference-publish/p4-verify.md)。
+
 | change-id | 能力 | 故事 | P0 | P1 | P2 | P3 | P4 | P5 |
 |---|---|---|---|---|---|---|---|---|
 | `add-trip-publish` | `trip-plans`（MODIFIED） | S06 发布旅行计划（issue #8） | [p0](add-trip-publish/p0-baseline.md) | [p1](add-trip-publish/p1-intent.md) | [p2](add-trip-publish/p2-spec.md) | [p3](add-trip-publish/p3-design.md) | [p4](add-trip-publish/p4-verify.md) | 暂不执行（按要求不归档） |
 | `add-match-reason` | `trip-companions`（MODIFIED） | S07 匹配原因提示（issue #9） | [p0](add-match-reason/p0-baseline.md) | [p1](add-match-reason/p1-intent.md) | [p2](add-match-reason/p2-spec.md) | [p3](add-match-reason/p3-design.md) | [p4](add-match-reason/p4-verify.md) | 暂不执行（按要求不归档） |
 | `add-destination-area-filters` | `trip-plans` + `trip-experiences`（MODIFIED） | REQ-007 灵感首页目的地/日期筛选 | [p0](add-destination-area-filters/p0-baseline.md) | [p1](add-destination-area-filters/p1-intent.md) | [p2](add-destination-area-filters/p2-spec.md) | [p3](add-destination-area-filters/p3-design.md) | 待 P4 | 暂不执行（依赖 `refine-inspiration-home` 先归档） |
 | `refine-trip-application` | `trip-companions`（MODIFIED） | REQ-010 / S08 提交同行申请 | — | [p1](refine-trip-application/p1-intent.md) | [p2](refine-trip-application/p2-spec.md) | [p3](refine-trip-application/p3-design.md) | [p4](refine-trip-application/p4-verify.md) | 待 P5 |
-| `refine-safety-report` | `trip-companions`（MODIFIED） | REQ-012 / S14 同行安全提示与举报 | — | [p1](refine-safety-report/p1-intent.md) | [p2](refine-safety-report/p2-spec.md) | 待 P3 | — | — |
+| `refine-safety-report` | `trip-companions`（REMOVED + ADDED） | REQ-012 / S14 同行举报入口与回执 | — | [p1](refine-safety-report/p1-intent.md) | [p2](refine-safety-report/p2-spec.md) | [p3](refine-safety-report/p3-design.md) | 待 P4 | 暂不执行 |
 | `add-trip-completion` | `trip-plans` + `trip-companions`（MODIFIED / ADDED） | REQ-011 / S15 结束行程 | — | [p1](add-trip-completion/p1-intent.md) | [p2](add-trip-completion/p2-spec.md) | [p3](add-trip-completion/p3-design.md) | [p4](add-trip-completion/p4-verify.md) | 待 P5 |
+| `REQ-014-reference-publish` | `trip-experiences`（已交付，只读引用） | REQ-014 / S17 参考此行程发布 | — | [p1](REQ-014-reference-publish/p1-intent.md) | [不适用](REQ-014-reference-publish/p2-spec.md)（无 Delta / 无 G1） | [不适用](REQ-014-reference-publish/p3-design.md)（现状确认 + [UI 预览](REQ-014-reference-publish/preview/reference-publish.html)） | [p4](REQ-014-reference-publish/p4-verify.md)（行为复核 Pass；无 G2） | 不适用（复用 `add-trip-experiences`） |
 | `refine-my-trips` | `trip-companions`（MODIFIED） | S11 我的旅行（issue #13） | [p0](refine-my-trips/p0-baseline.md) | [p1](refine-my-trips/p1-intent.md) | [p2](refine-my-trips/p2-spec.md) | [p3](refine-my-trips/p3-design.md) | [p4](refine-my-trips/p4-verify.md) | 暂不执行（按要求不归档） |

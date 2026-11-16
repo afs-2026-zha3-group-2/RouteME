@@ -1,7 +1,7 @@
 # Local verify report — refine-my-trips
 
 - **Date:** 2026-11-16 (Asia/Shanghai)
-- **Change:** `refine-my-trips`（REQ-013 / S11 我的旅行）
+- **Change:** `refine-my-trips`（REQ-015 / S11 我的旅行）
 - **Branch / worktree:** `feature/refine-my-trips` @ `D:\software\training\TATP\RouteMe\RouteME-s11`（base `origin/main@588ef9e`）
 - **Environment:** Windows 11；Node `v24.18.0`；npm `11.16.0`；OpenJDK `21.0.11`；OpenSpec CLI `1.16.1`
 - **Isolated services:** backend `PORT=8081` + `SPRING_DATASOURCE_URL=jdbc:sqlite:<worktree>/.tmp-e2e/routeme.db`；frontend `5174`/`5180`（`ROUTEME_API_TARGET=http://localhost:8081`）；E2E `ROUTEME_E2E_BASE_URL` / `ROUTEME_E2E_API_BASE`
@@ -60,4 +60,22 @@
 
 ## 6. 结论
 
-**Overall Pass。** 后端 231、前端 153、E2E 62 全绿；规格 valid；三档视口与双主题走查通过。可进入 G2。
+**Overall Pass（本 change 范围）。** 后端 243、前端 185、E2E 65/67 全绿；2 条失败为 `origin/main` 既有债务（见 §7），与 S11 无关。
+
+## 7. 合并 `origin/main@773e795` 后复验（2026-11-16T18:15+08:00）
+
+| 层 | 命令 | 结果 |
+|---|---|---|
+| 后端 | `.\mvnw.cmd -B -ntp test` | 243 tests / 0 failures |
+| 前端 | `npm run typecheck` / `npm test` | 0 / 185 tests |
+| E2E | `npx playwright test`（fresh SQLite） | **65 passed / 2 failed** |
+| 规格 | `openspec validate refine-my-trips --strict` | valid |
+
+失败明细与归属：
+
+| 用例 | 现象 | 归属证据 |
+|---|---|---|
+| `trips.spec.ts:79` identity gate with four demo accounts | 首页是登录/注册表单，不存在「林见夏 / 陈屿 / 苏念 / 周野」演示账号按钮 | 该断言与 `68d17ae feat(auth): require login` 后的 `IdentityGate`（登录表单）矛盾；`trips.spec.ts` 最后一次修改也是 `68d17ae`，断言未随登录改造更新 |
+| `trips.spec.ts:220` blocks publishing and flags every missing required field | `clearDate` 找不到 `.ant-picker-clear` | `TripCreatePage` 的日期控件在 `80a81bb fix(publish): style trip date pickers…` 后改变；本 change 未触碰 `TripCreatePage` / 日期控件 |
+
+本 change 涉及的 `mine.spec.ts`（8/8）、`companions.spec.ts`（9/9）、`experiences.spec.ts`、`profile.spec.ts`、`profiles.spec.ts`、`auth.spec.ts` 在本次全量运行中全部通过。

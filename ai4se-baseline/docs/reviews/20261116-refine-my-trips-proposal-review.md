@@ -4,7 +4,7 @@
 - **change-id：** `refine-my-trips`
 - **评审日期：** 2026-11-16
 - **评审方式：** `all-specs-review` 技能（规则：`@rule:artifact-review-gate`、`@rule:spec-first`、`@rule:sdd-artifacts`）
-- **评审输入：** `proposal.md`；Delta 草稿 `specs/trip-companions/spec.md`；`requirement-workspace/requirements/REQ-013-my-trips.md`；Living Spec `openspec/specs/trip-companions/spec.md`；`openspec/specs/design-system/spec.md`；原型 `docs/prototype/ui.js` `mine()`；`MyTripsPage.tsx` / `MyTripsServiceImpl.java`
+- **评审输入：** `proposal.md`；Delta 草稿 `specs/trip-companions/spec.md`；`requirement-workspace/requirements/REQ-015-my-trips.md`；Living Spec `openspec/specs/trip-companions/spec.md`；`openspec/specs/design-system/spec.md`；原型 `docs/prototype/ui.js` `mine()`；`MyTripsPage.tsx` / `MyTripsServiceImpl.java`
 
 ## 评审结论
 
@@ -25,7 +25,7 @@
 | 检查 | 结论 |
 |---|---|
 | proposal 六段 + `## Why` / `## What Changes` | 齐全；`openspec show --deltas-only` → `deltaCount: 1`、`spec=trip-companions`、`operation=MODIFIED` |
-| 能力与操作类型 | 单 capability MODIFIED，与 REQ-013 的 Discovery Decision 一致 |
+| 能力与操作类型 | 单 capability MODIFIED，与 REQ-015 的 Discovery Decision 一致 |
 | 是否越界定义后端 / 迁移 | 否：只增只读字段，无表结构、无状态机 |
 | 是否与 Living Spec 冲突 | 否：保留 4 条基线场景名（分区展示我的旅行 / 待处理申请提醒 / 安全提示常驻 / 提交举报并收到回执），内容扩充 |
 | 是否覆盖故事 3 条 AC | 是：AC1→四段与计数 + 分组内容；AC2→提醒定位 + 无待处理；AC3→重新可见 + 页内动作同步 |

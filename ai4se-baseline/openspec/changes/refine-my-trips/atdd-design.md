@@ -1,6 +1,6 @@
 # ATDD 设计 — refine-my-trips
 
-- **Change：** `refine-my-trips`（REQ-013 / S11 我的旅行）
+- **Change：** `refine-my-trips`（REQ-015 / S11 我的旅行）
 - **输入：** Delta Spec 11 条场景、`design.md` D1–D10、现有 `e2e/tests/companions.spec.ts` / `experiences.spec.ts`
 - **日期：** 2026-11-16
 

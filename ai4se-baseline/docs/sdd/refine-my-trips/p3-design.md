@@ -1,6 +1,6 @@
 # P3 设计记录 — refine-my-trips
 
-- **Change：** `refine-my-trips`（REQ-013 / S11 我的旅行）｜ **阶段：** P3（Design & task plan）
+- **Change：** `refine-my-trips`（REQ-015 / S11 我的旅行）｜ **阶段：** P3（Design & task plan）
 - **日期：** 2026-11-16 ｜ **记录人：** Jay（AO）
 - **分支 / 基点：** `feature/refine-my-trips`（P2 提交 `3391f61`）
 

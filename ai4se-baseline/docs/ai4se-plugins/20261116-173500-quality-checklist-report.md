@@ -2,7 +2,7 @@
 
 **Date:** 2026-11-16 (timezone: Asia/Shanghai, +0800)
 **Root:** `D:\software\training\TATP\RouteMe\RouteME-s11\ai4se-baseline`
-**Change:** `refine-my-trips`（REQ-013 / S11 我的旅行）
+**Change:** `refine-my-trips`（REQ-015 / S11 我的旅行）
 **Stages:** p2
 **Focus:** full-stage
 **Owner:** Jay
@@ -14,7 +14,7 @@
 | Check id | Required? | Status | Evidence |
 |----------|-----------|--------|----------|
 | P2-1 | yes | Pass | `openspec/changes/refine-my-trips/specs/trip-companions/spec.md`（MODIFIED，1 Requirement / 11 Scenario）；`openspec show refine-my-trips --json --deltas-only` → `deltaCount: 1`、`spec=trip-companions`、`operation=MODIFIED` |
-| P2-2 | yes | Pass | `dov-ac-review.md`：AC 4/4、DoV 5/5、REQ-013 §4 映射 12/12、Living Spec 基线保留 4/4、无 blocking gap |
+| P2-2 | yes | Pass | `dov-ac-review.md`：AC 4/4、DoV 5/5、REQ-015 §4 映射 12/12、Living Spec 基线保留 4/4、无 blocking gap |
 | P2-3 | yes | Pass | `g1-decision.md`：Decision **Pass**；IO WAYNE / SA Neal / AO Jay；无阻断条件；4 项非阻断 follow-up 均带 owner；timestamp 2026-11-16 |
 | P2-4 | no | Pass | `consistency-lint.md`：phase=p2、artifact level 2；BLOCKER 0 / WARNING 0 / SUGGESTION 4 / N/A 5；`@rule:` 引用的 8 个 ID 均可在权威区解析 |
 

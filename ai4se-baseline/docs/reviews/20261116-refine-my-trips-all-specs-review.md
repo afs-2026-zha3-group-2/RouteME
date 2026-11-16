@@ -1,6 +1,6 @@
 # all-specs-review — refine-my-trips
 
-- **Change:** `refine-my-trips`（`trip-companions` MODIFIED，REQ-013 / S11）
+- **Change:** `refine-my-trips`（`trip-companions` MODIFIED，REQ-015 / S11）
 - **评审日期：** 2026-11-16
 - **评审范围：** `proposal.md`、`specs/trip-companions/spec.md`、`design.md`、`atdd-design.md`、`tasks.md`、`dov-ac-review.md`、`consistency-lint.md`、`g1-decision.md`
 - **评审方式：** 规则驱动的整体一致性评审（`@rule:artifact-review-gate`、`@rule:spec-first`、`@rule:sdd-artifacts`、`@rule:api-contract`、`@rule:web-coding-style`、`@rule:web-testing`、`@rule:pii-scrubbing`）

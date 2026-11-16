@@ -2,7 +2,7 @@
 
 **Date:** 2026-11-16 (timezone: Asia/Shanghai, +0800)
 **Root:** `D:\software\training\TATP\RouteMe\RouteME-s11\ai4se-baseline`
-**Change:** `refine-my-trips`（REQ-013 / S11 我的旅行）
+**Change:** `refine-my-trips`（REQ-015 / S11 我的旅行）
 **Stages:** p4
 **Focus:** full-stage
 **Owner:** Jay
@@ -14,8 +14,8 @@
 | Check id | Required? | Status | Evidence |
 |----------|-----------|--------|----------|
 | P4-1 | yes | Pass | 实现覆盖 T1–T6：`mine/mineTrips.ts`、`mine/MyTripsPage.tsx`、`trips/coverTone.ts`、`MyTripsResponse` / `MyTripsServiceImpl`、`openapi.yaml` 0.10.0、`mine.spec.ts` |
-| P4-2 | yes | Pass | `docs/ai4se-plugins/20261116-180500-local-verify-report.md`：后端 231 / 前端 153 / E2E 62；typecheck、build、`openspec validate --strict` 全通过 |
-| P4-3 | yes | Pass | `openspec/changes/refine-my-trips/g2-decision.md`：Decision **Pass with 1 documented debt**；VL = Neal；跟踪项带 owner |
+| P4-2 | yes | Pass | `docs/ai4se-plugins/20261116-180500-local-verify-report.md`：合并 `origin/main@773e795` 后后端 243 / 前端 185 / E2E 65/67；typecheck、build、`openspec validate --strict` 全通过；2 条失败为 main 既有债务 |
+| P4-3 | yes | Pass | `openspec/changes/refine-my-trips/g2-decision.md`：Decision **Pass with 2 documented debts + 1 test-data debt**；VL = Neal；跟踪项带 owner |
 | P4-4 | no | Pass | 人工走查 1440 / 768 / 390 × 浅 / 深；无溢出、无重叠、动作同列；390 分段横向滚动（符合 `design-system`） |
 | P4-5 | no | Pass | 无新增硬编码色值；文案集中在 `tripMessages`；未新增联系方式字段 |
 
@@ -41,8 +41,8 @@
 |----------|-----|-------|----------------|
 | — | 无阻断缺口 | — | 按用户要求停在 P4，不执行 P5 / 归档 |
 | D-01 | `companions` / `trips` E2E 累积本地数据 | Jay | 后续统一夹具清理策略 |
-| D-02 | 截图不入库 | Jay | 会话工作区保留；如需入库另行提交 |
-| D-03 | `refine-experience-share` 合并后需重跑 `experiences.spec.ts` | Jay + Neal | P5 前 |
+| D-02 | `trips.spec.ts:79` 断言演示账号、`:220` 依赖旧日期控件 | Jay | 既有债务，另行修复；本 change 不越界 |
+| D-03 | `refine-experience-share` 已随 `origin/main` 合入；本次复验 `experiences.spec.ts` 全绿 | Jay + Neal | 归档前再跑一次 |
 
 ## Notes
 

@@ -1,6 +1,6 @@
 # 变更提案：refine-my-trips
 
-- **需求来源：** 用户故事 S11「我的旅行」（issue #13，P0 / 迭代 2 / 2 点 / 落点页面：我的旅行页）｜ **需求条目：** `requirement-workspace/requirements/REQ-013-my-trips.md`
+- **需求来源：** 用户故事 S11「我的旅行」（issue #13，P0 / 迭代 2 / 2 点 / 落点页面：我的旅行页）｜ **需求条目：** `requirement-workspace/requirements/REQ-015-my-trips.md`
 - **能力：** `trip-companions`（MODIFIED）
 - **规模：** S（一个页面的结构重排 + 一个只读聚合字段 + 两处 E2E 角色断言）
 - **规则：** `@rule:spec-first`、`@rule:sdd-artifacts`、`@rule:artifact-review-gate`、`@rule:git-commit-conventions`、`@rule:web-coding-style`（含「组件选型 Ant Design 优先」）、`@rule:api-contract`、`@rule:web-testing`、`@rule:pii-scrubbing`；视觉基准：`docs/prototype/ui.js` `mine()` + `docs/prototype/styles.css` `.seg` / `.mine-row` / `.mr-*`

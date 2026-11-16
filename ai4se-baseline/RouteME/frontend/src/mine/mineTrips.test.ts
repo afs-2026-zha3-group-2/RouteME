@@ -23,6 +23,8 @@ function trip(id: number, overrides: Partial<TripSummary> = {}): TripSummary {
     tags: [],
     capacity: 4,
     joined_count: 2,
+    meeting_area: null,
+    meeting_time: null,
     status: 'recruiting',
     ending_soon: false,
     publisher: {

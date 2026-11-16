@@ -1,6 +1,6 @@
 # P4 验证记录 — refine-my-trips
 
-- **Change：** `refine-my-trips`（REQ-013 / S11 我的旅行）｜ **阶段：** P4（实现 → 本地验证 → G2）
+- **Change：** `refine-my-trips`（REQ-015 / S11 我的旅行）｜ **阶段：** P4（实现 → 本地验证 → G2）
 - **日期：** 2026-11-16 ｜ **记录人：** Jay（AO）
 - **分支 / 基点：** `feature/refine-my-trips`（P3 提交 `9947eac`）
 
@@ -33,9 +33,9 @@
 | 层 | 命令 | 结果 |
 |---|---|---|
 | 规格 | `openspec validate refine-my-trips --strict` | valid |
-| 后端 | `.\mvnw.cmd -B -ntp test` | 231 tests / 0 failures |
-| 前端 | `npm run typecheck` / `npm test` / `npm run build` | 0 / 153 tests / 成功 |
-| E2E | `npx playwright test`（fresh SQLite，独立 5180/8081） | 62 passed |
+| 后端 | `.\mvnw.cmd -B -ntp test` | 243 tests / 0 failures（合并 main 后） |
+| 前端 | `npm run typecheck` / `npm test` / `npm run build` | 0 / 185 tests / 成功（合并 main 后） |
+| E2E | `npx playwright test`（fresh SQLite，独立 5180/8081） | 65 passed / 2 failed（均为 main 既有债务：`trips.spec.ts:79` 演示账号断言、`:220` 日期清除按钮） |
 | 人工 | 1440 / 768 / 390 × 浅 / 深 | 无溢出、无重叠、动作同列；390 分段横向可滚动 |
 
 完整命令与环境见 `docs/ai4se-plugins/20261116-180500-local-verify-report.md`。

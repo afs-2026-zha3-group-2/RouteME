@@ -1,6 +1,8 @@
 import { useEffect, useState, type ReactNode } from 'react';
 import { Alert, Button, Card, DatePicker, Input, InputNumber, Space, Tag, Typography } from 'antd';
+import zhCN from 'antd/es/locale/zh_CN';
 import dayjs from 'dayjs';
+import 'dayjs/locale/zh-cn';
 import { createTrip, loadTrip } from '../api';
 import { AreaCascader } from '../area/AreaCascader';
 import { cityLabel } from '../area/areaOptions';
@@ -26,6 +28,9 @@ import {
   MAX_TITLE_LENGTH,
 } from './tripOptions';
 import { TripCard } from './TripCard';
+
+// The publish form is Chinese-only; keep the picker panel month names Chinese too.
+dayjs.locale('zh-cn');
 
 type Props = {
   currentUser: DemoUser;
@@ -84,6 +89,8 @@ export function TripCreatePage({ currentUser, fromTripId }: Props) {
     start_date: values.startDate,
     end_date: values.endDate === '' ? values.startDate : values.endDate,
     stops: values.stops.length > 0 ? values.stops : ['至少写出两个途经点'],
+    meeting_area: values.meetingArea.trim() === '' ? null : values.meetingArea,
+    meeting_time: values.meetingTime.trim() === '' ? null : values.meetingTime,
     tags: values.tags,
     capacity: Number(values.capacity) || 2,
     joined_count: 1,
@@ -197,16 +204,23 @@ export function TripCreatePage({ currentUser, fromTripId }: Props) {
                 error={errors.startDate}
                 required
               >
-                <DatePicker
-                  {...fieldProps('trip-start-date', errors.startDate)}
-                  format="YYYY-MM-DD"
-                  placeholder="选择日期"
-                  style={{ width: '100%' }}
-                  disabledDate={(current) => current.isBefore(dayjs(), 'day')}
-                  value={isoToDayjs(values.startDate)}
-                  onChange={(value) => update({ startDate: dayjsToIso(value) })}
-                  status={errors.startDate === undefined ? undefined : 'error'}
-                />
+                <div className="trip-date-anchor">
+                  <DatePicker
+                    {...fieldProps('trip-start-date', errors.startDate)}
+                    className="trip-date"
+                    classNames={{ popup: { root: 'trip-date-popup' } }}
+                    getPopupContainer={(trigger) => trigger.parentElement ?? document.body}
+                    format="YYYY-MM-DD"
+                    placeholder="选择日期"
+                    locale={zhCN.DatePicker}
+                    needConfirm
+                    allowClear={false}
+                    minDate={dayjs()}
+                    value={isoToDayjs(values.startDate)}
+                    onChange={(value) => update({ startDate: dayjsToIso(value) })}
+                    status={errors.startDate === undefined ? undefined : 'error'}
+                  />
+                </div>
               </Field>
               <Field
                 label={tripMessages.fieldEndDate}
@@ -214,16 +228,23 @@ export function TripCreatePage({ currentUser, fromTripId }: Props) {
                 error={errors.endDate}
                 required
               >
-                <DatePicker
-                  {...fieldProps('trip-end-date', errors.endDate)}
-                  format="YYYY-MM-DD"
-                  placeholder="选择日期"
-                  style={{ width: '100%' }}
-                  disabledDate={(current) => current.isBefore(dayjs(), 'day')}
-                  value={isoToDayjs(values.endDate)}
-                  onChange={(value) => update({ endDate: dayjsToIso(value) })}
-                  status={errors.endDate === undefined ? undefined : 'error'}
-                />
+                <div className="trip-date-anchor">
+                  <DatePicker
+                    {...fieldProps('trip-end-date', errors.endDate)}
+                    className="trip-date"
+                    classNames={{ popup: { root: 'trip-date-popup' } }}
+                    getPopupContainer={(trigger) => trigger.parentElement ?? document.body}
+                    format="YYYY-MM-DD"
+                    placeholder="选择日期"
+                    locale={zhCN.DatePicker}
+                    needConfirm
+                    allowClear={false}
+                    minDate={dayjs()}
+                    value={isoToDayjs(values.endDate)}
+                    onChange={(value) => update({ endDate: dayjsToIso(value) })}
+                    status={errors.endDate === undefined ? undefined : 'error'}
+                  />
+                </div>
               </Field>
             </div>
             </div>
@@ -306,6 +327,20 @@ export function TripCreatePage({ currentUser, fromTripId }: Props) {
                     emptyHint="选中后会把地点名写进集合区域。"
                   />
                 )}
+              </Field>
+
+              <Field
+                label={tripMessages.fieldMeetingTime}
+                htmlFor="trip-meeting-time"
+                error={errors.meetingTime}
+                optional
+              >
+                <Input
+                  {...fieldProps('trip-meeting-time', errors.meetingTime)}
+                  type="datetime-local"
+                  value={values.meetingTime}
+                  onChange={(event) => update({ meetingTime: event.target.value })}
+                />
               </Field>
 
               <div className="form-row">

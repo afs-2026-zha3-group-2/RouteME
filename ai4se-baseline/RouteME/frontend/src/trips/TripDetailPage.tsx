@@ -8,6 +8,7 @@ import {
   Modal,
   Progress,
   Skeleton,
+  Space,
   Tag,
   Typography,
   message,
@@ -22,15 +23,25 @@ import {
   loadTrip,
   loadTripApplications,
   loadTripExperiences,
+  saveTripMeeting,
 } from '../api';
 import { tripMessages } from '../i18n/tripMessages';
 import { intensityLabel } from '../experiences/experienceForm';
+import { meetingAreaText, meetingTimeText } from '../chat/chatMeeting';
 import { publisherSummary } from '../profile/profileDisplay';
 import { ReportModal } from '../safety/ReportModal';
 import { SafetyNote } from '../safety/SafetyNote';
 import { Avatar } from '../shell/Avatar';
 import type { DemoUser, Experience, MatchCandidate, TripApplication } from '../types';
 import { applicationEntryState, applicationErrorMessage } from './applicationEntry';
+import {
+  MAX_MEETING_AREA_LENGTH,
+  meetingFormFrom,
+  toMeetingRequest,
+  validateMeetingForm,
+  type MeetingFieldErrors,
+  type MeetingFormValues,
+} from './meetingForm';
 import { statusColor, statusLabel } from './tripStatus';
 import { useTrip } from './useTrip';
 import { useProfile } from '../profiles/ProfileContext';
@@ -76,6 +87,10 @@ export function TripDetailPage({ currentUser, tripId }: Props) {
   >(null);
   const [reportOpen, setReportOpen] = useState(false);
   const [experiences, setExperiences] = useState<Experience[] | null>(null);
+  const [meetingOpen, setMeetingOpen] = useState(false);
+  const [meetingForm, setMeetingForm] = useState<MeetingFormValues>({ meetingArea: '', meetingTime: '' });
+  const [meetingErrors, setMeetingErrors] = useState<MeetingFieldErrors>({});
+  const [meetingSaving, setMeetingSaving] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -132,19 +147,14 @@ export function TripDetailPage({ currentUser, tripId }: Props) {
     setFeedback(null);
     try {
       await completeTrip(currentUser.id, tripId);
-      message.success(tripMessages.detailEndedToast);
       reload();
     } catch (error: unknown) {
       const code = error instanceof Error ? error.message : 'UNKNOWN_ERROR';
-      if (code === 'TRIP_NOT_OPEN') {
-        message.info(tripMessages.applyEnded);
-      } else {
-        setFeedback({
-          tone: 'error',
-          title: code === 'FORBIDDEN' ? tripMessages.detailForbidden : tripMessages.detailCompleteFailed,
-          detail: code,
-        });
-      }
+      setFeedback({
+        tone: 'error',
+        title: code === 'FORBIDDEN' ? tripMessages.detailForbidden : tripMessages.detailCompleteFailed,
+        detail: code,
+      });
       reload();
     } finally {
       setCompleting(false);
@@ -172,12 +182,38 @@ export function TripDetailPage({ currentUser, tripId }: Props) {
     setFeedback(null);
     try {
       await leaveTrip(currentUser.id, tripId);
-      setMyApplication(null);
+      setMyApplication((current) => (current === null ? null : { ...current, status: 'left' }));
       reload();
     } catch (error: unknown) {
       showActionError(error);
     } finally {
       setLeaving(false);
+    }
+  };
+
+  const openMeeting = (meetingArea: string | null, meetingTime: string | null) => {
+    setMeetingForm(meetingFormFrom({ meeting_area: meetingArea, meeting_time: meetingTime }));
+    setMeetingErrors({});
+    setMeetingOpen(true);
+  };
+
+  const submitMeeting = async (endDate: string) => {
+    const errors = validateMeetingForm(meetingForm, endDate);
+    setMeetingErrors(errors);
+    if (Object.keys(errors).length > 0) {
+      return;
+    }
+    setMeetingSaving(true);
+    setFeedback(null);
+    try {
+      await saveTripMeeting(currentUser.id, tripId, toMeetingRequest(meetingForm));
+      setMeetingOpen(false);
+      message.success(tripMessages.meetingSaved);
+      reload();
+    } catch (error: unknown) {
+      showActionError(error);
+    } finally {
+      setMeetingSaving(false);
     }
   };
 
@@ -238,7 +274,7 @@ export function TripDetailPage({ currentUser, tripId }: Props) {
       ? tripMessages.detailCompleteHint
       : confirmAction === 'cancelApply'
         ? '撤回后可以再次申请，但需要发布者重新处理。'
-        : '退出后这条行程的聊天会关闭。';
+        : '退出后这条行程的聊天会保留，仍可继续和发布者沟通。';
 
   const submitApplication = async () => {
     if (submitting) {
@@ -266,10 +302,11 @@ export function TripDetailPage({ currentUser, tripId }: Props) {
       const mapped = applicationErrorMessage(code, currentTrip);
       if (mapped === null) {
         showActionError(error);
-      } else if (code === 'DUPLICATE_APPLICATION') {
-        setFeedback({ tone: 'warning', title: mapped });
       } else {
-        message.info(mapped);
+        setFeedback({
+          tone: code === 'DUPLICATE_APPLICATION' ? 'warning' : 'error',
+          title: mapped,
+        });
       }
       await refreshMyApplication().catch(() => undefined);
       reload();
@@ -326,12 +363,14 @@ export function TripDetailPage({ currentUser, tripId }: Props) {
               ))}
             </ol>
             <dl className="detail-facts">
-              {trip.meeting_area !== null && (
-                <div>
-                  <dt>{tripMessages.detailMeetingArea}</dt>
-                  <dd>{trip.meeting_area}</dd>
-                </div>
-              )}
+              <div>
+                <dt>{tripMessages.detailMeetingArea}</dt>
+                <dd>{meetingAreaText(trip.meeting_area)}</dd>
+              </div>
+              <div>
+                <dt>{tripMessages.detailMeetingTime}</dt>
+                <dd>{meetingTimeText(trip.meeting_time)}</dd>
+              </div>
               {budget !== null && (
                 <div>
                   <dt>{tripMessages.detailBudget}</dt>
@@ -345,6 +384,16 @@ export function TripDetailPage({ currentUser, tripId }: Props) {
                 </div>
               )}
             </dl>
+            {(trip.meeting_area === null || trip.meeting_time === null) && (
+              <p className="detail-meta">{tripMessages.meetingEmptyHint}</p>
+            )}
+            {isPublisher && !isCompleted && (
+              <div className="detail-actions">
+                <Button size="small" onClick={() => openMeeting(trip.meeting_area, trip.meeting_time)}>
+                  {tripMessages.meetingEdit}
+                </Button>
+              </div>
+            )}
           </section>
 
           <section className="detail-section">
@@ -380,9 +429,24 @@ export function TripDetailPage({ currentUser, tripId }: Props) {
           <section className="detail-section">
             <h3 className="section-title">{tripMessages.detailParticipants}</h3>
             <ul className="detail-participants">
-              {trip.participants.map((member) => (
-                <li key={member.id}>{member.nickname}</li>
-              ))}
+              {trip.participants.map((member) => {
+                const canChat =
+                  member.id !== currentUser.id &&
+                  (isPublisher || entry.kind === 'accepted');
+                return (
+                  <li key={member.id}>
+                    <span>{member.nickname}</span>
+                    {canChat && (
+                      <a
+                        className="ghost-link detail-participant-chat"
+                        href={`#/chat/${trip.id}/${member.id}`}
+                      >
+                        {tripMessages.mineChatEntry}
+                      </a>
+                    )}
+                  </li>
+                );
+              })}
             </ul>
           </section>
 
@@ -492,6 +556,17 @@ export function TripDetailPage({ currentUser, tripId }: Props) {
                     )}
                   </>
                 )}
+                {myApplication?.status === 'left' && (
+                  <>
+                    <p className="action-note">{tripMessages.leaveRetainedNote}</p>
+                    <Button
+                      block
+                      onClick={() => (window.location.hash = `#/chat/${trip.id}/${trip.publisher.id}`)}
+                    >
+                      {tripMessages.chatEntry}
+                    </Button>
+                  </>
+                )}
 
                 {entry.kind === 'unavailable' && <p className="action-note warn">{entry.reason}</p>}
 
@@ -550,6 +625,49 @@ export function TripDetailPage({ currentUser, tripId }: Props) {
       >
         <Typography.Paragraph>{confirmHint}</Typography.Paragraph>
       </Modal>
+      <Modal
+        open={meetingOpen}
+        title={tripMessages.meetingEditTitle}
+        okText={tripMessages.meetingSave}
+        cancelText={tripMessages.meetingCancel}
+        confirmLoading={meetingSaving}
+        onOk={() => submitMeeting(trip.end_date)}
+        onCancel={() => setMeetingOpen(false)}
+      >
+        <Space orientation="vertical" size="small" className="home-stack">
+          <Typography.Text type="secondary">{tripMessages.meetingEditHint}</Typography.Text>
+          <div className="form-field">
+            <label htmlFor="meeting-area">{tripMessages.meetingAreaLabel}</label>
+            <Input
+              id="meeting-area"
+              value={meetingForm.meetingArea}
+              maxLength={MAX_MEETING_AREA_LENGTH}
+              onChange={(event) =>
+                setMeetingForm((current) => ({ ...current, meetingArea: event.target.value }))
+              }
+            />
+            {meetingErrors.meetingArea !== undefined && (
+              <Typography.Text type="danger">{meetingErrors.meetingArea}</Typography.Text>
+            )}
+          </div>
+          <div className="form-field">
+            <label htmlFor="meeting-time">{tripMessages.meetingTimeLabel}</label>
+            <Input
+              id="meeting-time"
+              type="datetime-local"
+              value={meetingForm.meetingTime}
+              onChange={(event) =>
+                setMeetingForm((current) => ({ ...current, meetingTime: event.target.value }))
+              }
+            />
+            {meetingErrors.meetingTime !== undefined && (
+              <Typography.Text type="danger">{meetingErrors.meetingTime}</Typography.Text>
+            )}
+          </div>
+        </Space>
+      </Modal>
+
+
       <ReportModal
         userId={currentUser.id}
         open={reportOpen}
