@@ -2,9 +2,9 @@
 
 - **Gate:** G1（Align）
 - **Change:** `refine-safety-report`（`trip-companions` REMOVED + ADDED，REQ-012 / S14）
-- **Status:** rev1 **Pass**（2026-11-16T15:58+0800）→ rev2 **Pass**（2026-11-16T16:38+0800，IO Wanye / SA Karena 具名重签；rev1 结论已作废，详见文末「Revision 2」）
+- **Status:** rev1 **Pass**（2026-11-16T15:58+0800）→ rev2 **Pass**（2026-11-16T16:38+0800，IO WAYNE / SA Karena 具名重签；rev1 结论已作废，详见文末「Revision 2」）
 - **Timestamp:** 2026-11-16T15:58+0800（rev1）／ 2026-11-16T16:32+0800（rev2 重开）／ 2026-11-16T16:38+0800（rev2 签署）
-- **Recorded by:** Qoder（AI agent），按用户在 2026-11-16 会话中给出的签署人姓名（IO=Wanye、SA=Karena）与决策结论（Pass）记录
+- **Recorded by:** Qoder（AI agent），按用户在 2026-11-16 会话中给出的签署人姓名（IO=WAYNE、SA=Karena）与决策结论（Pass）记录
 
 ## Inputs
 
@@ -60,11 +60,11 @@
 
 | 角色 | 姓名 | 确认内容 | 日期 |
 |---|---|---|---|
-| IO | Wanye | 需求来源与跨能力影响：`trip-companions`（MODIFIED）替换已归档能力的相应 Requirement，`trip-plans` 仅只读 `meeting_area` | 2026-11-16 |
+| IO | WAYNE | 需求来源与跨能力影响：`trip-companions`（MODIFIED）替换已归档能力的相应 Requirement，`trip-plans` 仅只读 `meeting_area` | 2026-11-16 |
 | SA | Karena | 规格与验收口径：三条安全提示、两处回退字面量、举报入口边界、回执文案、隐私红线与无障碍要求 | 2026-11-16 |
 | AO（当前开发） | Jacky | 承接 P3–P4 实现与本地验证；Follow-ups 按上表收口 | 2026-11-16 |
 
-签署来源：用户在 2026-11-16 会话中就「G1 签署人」明确回答 **IO=Wanye、SA=Karena**，并就决策结论选择 **Pass**。本次 change 的 AO 为 Jacky（P1 记录人），故 SA 由 Karena 签署，避免 AO 自签 SA。VL（Neal）在 G2 / P4 独立验证签署，SM（Lewis）在 P1 范围确认；两者不属 G1 签署人。
+签署来源：用户在 2026-11-16 会话中就「G1 签署人」明确回答 **IO=WAYNE、SA=Karena**，并就决策结论选择 **Pass**。本次 change 的 AO 为 Jacky（P1 记录人），故 SA 由 Karena 签署，避免 AO 自签 SA。VL（Neal）在 G2 / P4 独立验证签署，SM（Lewis）在 P1 范围确认；两者不属 G1 签署人。
 
 ## Next
 
@@ -76,8 +76,8 @@
 # Revision 2 — G1 重开（2026-11-16T16:32+0800）
 
 - **触发：** 用户在 P3 前的 UI 预览中裁定「B · 页头右上，提示全部移除」（裁决 D5）。该口径与 rev1 签署的规格相反：rev1 强制详情页三条提示与聊天页一行提示。
-- **处置：** rev1 的 **Pass 结论作废**，不是因为证据有误，而是签署的产物已被替换。G1 必须按 rev2 产物重新签署；Wanye / Karena 的 rev1 签署不覆盖 D5。
-- **重开后的状态：** rev2 **Pass**（2026-11-16T16:38+0800）。重开时为 Pending；IO=Wanye 与 SA=Karena 已于同日就 rev2 产物具名表态通过，P3 解锁。rev1 的签署不覆盖 D5，故以本节签署为准。
+- **处置：** rev1 的 **Pass 结论作废**，不是因为证据有误，而是签署的产物已被替换。G1 必须按 rev2 产物重新签署；WAYNE / Karena 的 rev1 签署不覆盖 D5。
+- **重开后的状态：** rev2 **Pass**（2026-11-16T16:38+0800）。重开时为 Pending；IO=WAYNE 与 SA=Karena 已于同日就 rev2 产物具名表态通过，P3 解锁。rev1 的签署不覆盖 D5，故以本节签署为准。
 
 ## rev2 输入
 
@@ -102,7 +102,7 @@
 
 | 角色 | 姓名 | 需确认 | 状态 |
 |---|---|---|---|
-| IO | Wanye | 整块 REMOVED 已归档的「我的旅行聚合与最低安全能力」、由新块重建的跨能力影响；`trip-plans` 仍只读 | 已签署 2026-11-16 |
+| IO | WAYNE | 整块 REMOVED 已归档的「我的旅行聚合与最低安全能力」、由新块重建的跨能力影响；`trip-plans` 仍只读 | 已签署 2026-11-16 |
 | SA | Karena | 移除两条安全提示的产品口径（学生不再在页面读到三条边界）、页头入口的可发现性与无障碍要求、隐私红线回归范围 | 已签署 2026-11-16 |
 | AO（当前开发） | Jacky | 承接 rev2 的 P3–P4 实现与本地验证 | 已确认 2026-11-16 |
 
@@ -118,11 +118,11 @@
 
 | 角色 | 姓名 | 确认内容 | 日期 |
 |---|---|---|---|
-| IO | Wanye | 以 REMOVED + ADDED 重建 `trip-companions` 的相应 Requirement：旧块「我的旅行聚合与最低安全能力」整块移除、新块「同行举报入口与回执」承接我的旅行两个场景与举报 / 回执场景；`trip-plans` 仍只读 `meeting_area` | 2026-11-16 |
+| IO | WAYNE | 以 REMOVED + ADDED 重建 `trip-companions` 的相应 Requirement：旧块「我的旅行聚合与最低安全能力」整块移除、新块「同行举报入口与回执」承接我的旅行两个场景与举报 / 回执场景；`trip-plans` 仍只读 `meeting_area` | 2026-11-16 |
 | SA | Karena | 产品与验收口径：详情页与聊天页安全提示全部下线（D5）、举报入口置于页头右上（B）且窄屏换行不隐藏、文本按钮 + 键盘 / 读屏可达、回执「已收到，我们会处理」、隐私红线回归范围 | 2026-11-16 |
 | AO（当前开发） | Jacky | 承接 P3–P4 实现与本地验证；rev2 Follow-ups 按下表收口 | 2026-11-16 |
 
-签署来源：用户在 2026-11-16 会话中确认已取得 **IO=Wanye、SA=Karena** 对 rev2（D5 口径）的批准，并要求据此记录 G1 结论 **Pass**。签署对象为 rev2 产物（`REQ-012` rev2、Delta Spec rev2、`proposal.md` rev2、S14 rev2、`preview/safety-report.html` B），明确不沿用 rev1 签署。SA 仍由 Karena 签署，AO（Jacky）不自签 SA；VL（Neal）在 G2 / P4 独立验证签署。
+签署来源：用户在 2026-11-16 会话中确认已取得 **IO=WAYNE、SA=Karena** 对 rev2（D5 口径）的批准，并要求据此记录 G1 结论 **Pass**。签署对象为 rev2 产物（`REQ-012` rev2、Delta Spec rev2、`proposal.md` rev2、S14 rev2、`preview/safety-report.html` B），明确不沿用 rev1 签署。SA 仍由 Karena 签署，AO（Jacky）不自签 SA；VL（Neal）在 G2 / P4 独立验证签署。
 
 ## rev2 Next
 

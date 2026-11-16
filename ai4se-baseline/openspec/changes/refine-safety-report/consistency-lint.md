@@ -92,7 +92,7 @@ rev2 的检查重点是「需求侧删除」是否在 proposal、Delta、故事�
 
 ## Residual risks
 
-- 本报告不构成 Gate 结论。G1 rev2 已由 IO Wanye / SA Karena 于 2026-11-16 具名签署（Pass），rev1 的签署不覆盖 D5，两者不叠加。
+- 本报告不构成 Gate 结论。G1 rev2 已由 IO WAYNE / SA Karena 于 2026-11-16 具名签署（Pass），rev1 的签署不覆盖 D5，两者不叠加。
 - 「安全提示常驻」在 rev2 被真正移除；归档说明必须写明是有意删除（D5），否则 Living Spec 追溯会像漏迁移。
 - 提案与 Delta 的「本人行程无举报入口」依赖前端判定发布者身份；若 `trip-plans` 后续引入协作者等新角色，该场景需复评。
 - 页头入口在窄屏与长标题下的换行行为需 P4 用 390 / 768 / 1440 三档验证。
@@ -101,5 +101,5 @@ rev2 的检查重点是「需求侧删除」是否在 proposal、Delta、故事�
 ## Reviewer
 
 - **Agent:** Qoder（AI agent）｜ **Date:** 2026-11-16
-- **Human sign-off:** IO Wanye / SA Karena，2026-11-16（G1 rev2 Pass，见 `g1-decision.md`「Revision 2」）
+- **Human sign-off:** IO WAYNE / SA Karena，2026-11-16（G1 rev2 Pass，见 `g1-decision.md`「Revision 2」）
 - **Next（non-Gate）：** P3 `/sdd:atdd-design`；本报告剩余建议按 Findings 表在 P3 / P4 收口。

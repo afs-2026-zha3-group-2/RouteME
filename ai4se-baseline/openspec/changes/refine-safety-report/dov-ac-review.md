@@ -63,4 +63,4 @@
 
 ## Verdict
 
-**Pass** — AC 4/4 Pass，DoV 5/5 Pass，REQ-012 rev2 §4 映射 7/7，基线迁移 3 保留 / 1 移除 / 6 新增，无 BLOCKER。rev1 的 G1 结论已作废；rev2 已由 IO Wanye 与 SA Karena 于 2026-11-16 就 D5 口径具名重签（见 `g1-decision.md`「Revision 2」），P3 已解锁。
+**Pass** — AC 4/4 Pass，DoV 5/5 Pass，REQ-012 rev2 §4 映射 7/7，基线迁移 3 保留 / 1 移除 / 6 新增，无 BLOCKER。rev1 的 G1 结论已作废；rev2 已由 IO WAYNE 与 SA Karena 于 2026-11-16 就 D5 口径具名重签（见 `g1-decision.md`「Revision 2」），P3 已解锁。

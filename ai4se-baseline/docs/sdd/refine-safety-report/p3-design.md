@@ -2,7 +2,7 @@
 
 - **Change：** `refine-safety-report`｜ **阶段：** P3（Design & decompose）
 - **日期：** 2026-11-16｜ **记录人：** Jacky（AO）
-- **依据：** Delta Spec rev2（9 场景）、G1 rev2 Pass（IO Wanye / SA Karena）、裁决 D5（位置 B：只保留页头入口，提示全部移除）
+- **依据：** Delta Spec rev2（9 场景）、G1 rev2 Pass（IO WAYNE / SA Karena）、裁决 D5（位置 B：只保留页头入口，提示全部移除）
 
 ## 1. 阶段目标
 
@@ -93,7 +93,7 @@
 |---|---|---|---|
 | AO（当前开发） | Jacky | 接受 D1–D7 与 T1–T6，承接 P4 | **待批准** —— 先跑 `design.md` / `tasks.md` 的工件评审 |
 | SA | Karena | D5 落点与具名验收口径一致（两个入口、无提示、回执文案） | G1 rev2 已签；仅当评审提出时才需追加 P3 确认 |
-| IO | Wanye | 无需新增输入；REMOVED + ADDED 迁移已在 G1 rev2 签署 | 无需重签 |
+| IO | WAYNE | 无需新增输入；REMOVED + ADDED 迁移已在 G1 rev2 签署 | 无需重签 |
 | VL | Neal | 独立验证 | P4 / G2 |
 
 **阶段结论：待工件评审。** `design.md` 与 `tasks.md` 先经 `/sdd:quality-checklist` 与 `all-specs-review` 出具评审报告并由 AO 具名批准，本记录才可标 Pass，P4 才可开工。

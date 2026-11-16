@@ -3,7 +3,7 @@
 - **Change：** `refine-safety-report`（REQ-012 / S14 同行举报入口与回执）｜ **阶段：** P2（Spec align / G1）
 - **日期：** 2026-11-16 ｜ **记录人：** Jacky（AO）｜ **修订：** rev2（裁决 D5）
 - **分支 / 基点：** 主工作区 `main`（本地 HEAD = P2 rev1 提交 `ad6c48f`，未推送）
-- **阶段结论：** rev1 Pass（已签署）→ rev2 **Pass**（G1 已于 2026-11-16T16:38+0800 由 IO Wanye / SA Karena 具名重签）
+- **阶段结论：** rev1 Pass（已签署）→ rev2 **Pass**（G1 已于 2026-11-16T16:38+0800 由 IO WAYNE / SA Karena 具名重签）
 
 ## 1. 阶段目标
 
@@ -16,7 +16,7 @@
 | Delta Spec | [`specs/trip-companions/spec.md`](../../../openspec/changes/refine-safety-report/specs/trip-companions/spec.md) | rev2：REMOVED 1（我的旅行聚合与最低安全能力，含 Reason / Migration）+ ADDED 1（同行举报入口与回执，9 Scenario） |
 | AC / DoV 复核 | [`dov-ac-review.md`](../../../openspec/changes/refine-safety-report/dov-ac-review.md) | AC 4/4 Pass、DoV 5/5 Pass、REQ-012 rev2 §4 映射 7/7；基线 3 保留 / 1 移除 / 6 新增；Verdict = Conditional Pass（待具名重签） |
 | 一致性检查 | [`consistency-lint.md`](../../../openspec/changes/refine-safety-report/consistency-lint.md) | Pass；BLOCKER 0 / WARNING 0 / SUGGESTION 4（2 条当场收口） / N/A 7 |
-| G1 决策 | [`g1-decision.md`](../../../openspec/changes/refine-safety-report/g1-decision.md) | rev1 Pass（IO Wanye / SA Karena）**已被 rev2 取代**；rev2 Status = **Pass**（2026-11-16T16:38+0800，具名重签） |
+| G1 决策 | [`g1-decision.md`](../../../openspec/changes/refine-safety-report/g1-decision.md) | rev1 Pass（IO WAYNE / SA Karena）**已被 rev2 取代**；rev2 Status = **Pass**（2026-11-16T16:38+0800，具名重签） |
 | 工件评审 rev2 | [`proposal-review-2`](../../reviews/20261116-refine-safety-report-proposal-review-2.md)、[`spec-review-2`](../../reviews/20261116-refine-safety-report-spec-review-2.md) | 均 Pass，Jacky（AO）2026-11-16T16:35 批准；rev1 报告保留并标注作废 |
 | 提案 rev2 | [`proposal.md`](../../../openspec/changes/refine-safety-report/proposal.md) | In scope ①–⑧；影响面与决策表按 D5 更新 |
 | 设计预览 | [`preview/safety-report.html`](../../../openspec/changes/refine-safety-report/preview/safety-report.html) | A / B / C 三种入口位置；用户选定 B · 页头右上；Lighthouse Accessibility 1.0 |
@@ -44,13 +44,13 @@
 
 | 角色 | 姓名 | 确认内容 | 日期 |
 |---|---|---|---|
-| IO | Wanye | rev1：`trip-companions`（MODIFIED）替换已归档能力的相应 Requirement，`trip-plans` 仅只读 `meeting_area`。**rev2 已重签（2026-11-16）：REMOVED + ADDED 重建，`trip-plans` 仍只读** | 2026-11-16（rev1 / rev2） |
+| IO | WAYNE | rev1：`trip-companions`（MODIFIED）替换已归档能力的相应 Requirement，`trip-plans` 仅只读 `meeting_area`。**rev2 已重签（2026-11-16）：REMOVED + ADDED 重建，`trip-plans` 仍只读** | 2026-11-16（rev1 / rev2） |
 | SA | Karena | rev1：三条提示、两处回退字面量、举报入口边界、回执文案。**rev2 已重签（2026-11-16）：D5 移除提示、入口置于页头右上** | 2026-11-16（rev1 / rev2） |
 | AO | Jacky | 承接 rev2 的 P3–P4 与 follow-up 收口 | 2026-11-16 |
 | VL | Neal | P4 独立验证（未到） | — |
 | SM | Lewis | 阶段准入与排期（P1 范围确认） | 2026-11-16 |
 
-**G1 结论：rev1 Pass（`g1-decision.md`，2026-11-16T15:58+0800）→ rev2 Pass（2026-11-16T16:38+0800）。** rev1 的 Wanye / Karena 签署建立在「提示常驻」的规格上，不覆盖 D5；rev2 已就 D5 具名重签，P3 解锁。
+**G1 结论：rev1 Pass（`g1-decision.md`，2026-11-16T15:58+0800）→ rev2 Pass（2026-11-16T16:38+0800）。** rev1 的 WAYNE / Karena 签署建立在「提示常驻」的规格上，不覆盖 D5；rev2 已就 D5 具名重签，P3 解锁。
 
 ## 6. G1 后续项（非条件，不阻断）
 
