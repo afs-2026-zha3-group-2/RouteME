@@ -1,4 +1,4 @@
-# Impact brief — REQ-002 / 003 / 004 / 005 / 006（MVP 业务能力集）
+# Impact brief — REQ-002 / 003 / 004 / 005 / 006 / 007（MVP 业务能力集）
 
 - **Workdir：** `requirement-workspace/`
 - **日期：** 2026-11-15 ｜ **触发：** `/sdd:pre-spec-req` 内嵌 impact-analysis（blocking OQ 与 DoR BLOCKER 均已清零）
@@ -240,6 +240,8 @@
 
 ## 11. REQ-007 变更影响 — 完善个人资料并生成个人主页
 
+> 说明：`add-destination-area-filters` 的 REQ-007 影响分析同样编号为 §11（见下一节）；两个 change 的文档各自引用本文 §11，合并时未重编号以免断链，编号冲突待 SA 裁决。
+
 - **日期：** 2026-11-16 ｜ **触发：** `/sdd:pre-spec-req` 内嵌 impact-analysis（6 项产品问题已由用户裁决，blocking OQ 与 DoR BLOCKER 均已清零）
 - **粒度：** 应用架构（页面 / 资料契约 / 账号流程 / 发布者展示边界），非代码设计
 
@@ -313,3 +315,105 @@
 - **不并入 `refine-inspiration-home`：** 该 change 聚焦首页双视图，发布者入口只被消费，避免两个页面级切片互相阻塞。
 - **阶段：** 单阶段；依赖已归档的 `user-auth` 会话契约，无阻塞上游。
 - **质量自检（split-heuristics）：** 子目标一句话可说明、端到端可验证（注册 → 填资料 → 保存 → 他人查看发布者 → 主页）、可独立运行、capability 名真实、无依赖环。
+
+---
+
+## 11. REQ-007 增量影响 — 灵感首页目的地/日期筛选（2026-11-16，远程基线 229411a）
+
+- **触发：** `/sdd:pre-spec-req` 内嵌 impact-analysis（REQ-007 blocking OQ 与 DoR BLOCKER 均为 0）
+- **需求来源：** 迭代 1 用户故事（按目的地与日期缩小范围）＋ 用户逐条决策 D1–D15（含远程基线复核后的修订）
+- **粒度：** 应用架构（能力 / 页面 / 数据契约 / 集成边界），非代码设计
+- **基线：** 远程 `main@229411a`；`add-paged-lists-mybatis-plus`、`apply-prototype-visual-design`、`add-user-auth` 已归档；`refine-inspiration-home`（REQ-005）、`add-trip-publish`、`add-match-reason`、`add-user-logout` 进行中。
+
+### 11.1 Requirement set
+
+| id | 能力 | change | 条目路径 |
+|---|---|---|---|
+| REQ-007 | `trip-plans`（MODIFIED）、`trip-experiences`（MODIFIED） | `add-destination-area-filters` | `requirement-workspace/requirements/REQ-007-destination-area-filters.md` |
+
+意图捕获：`requirement-workspace/intents/REQ-007-destination-area-filters.md`；deep-dive：`requirement-workspace/deep-dive.md`（REQ-007 段）。
+
+### 11.2 As-is asset inventory（evidence paths）
+
+| 资产 | 路径 | 现状 |
+|---|---|---|
+| Living Spec `trip-plans` | `openspec/specs/trip-plans/spec.md` | 已含分页（`add-paged-lists` 归档）；仍有「搜索、筛选与排序」与「发布…目的地来自固定候选」；`refine-inspiration-home` 的 delta 同改「浏览」要求，尚未归档 |
+| Living Spec `trip-experiences` | `openspec/specs/trip-experiences/spec.md` | 「灵感首页的旅行体验视图」支持关键词/目的地/兴趣，无日期；`refine-inspiration-home` 的 delta 同改该要求，尚未归档 |
+| 进行中 `refine-inspiration-home`（REQ-005） | `openspec/changes/refine-inspiration-home/` | P3 Pass，待 P4；明确保留既有搜索，体验日期筛选 out of scope；其 E2E `guides an empty search...` 用搜索制造空态 |
+| 进行中 `add-trip-publish` | `openspec/changes/add-trip-publish/` | 完成待归档；拥有「发布可被他人理解的旅行计划」；发布页目的地/途经点/集合地点均用离线地图 `PlacePicker` |
+| 进行中 `add-match-reason` | `openspec/changes/add-match-reason/` | 完成待归档；`trip-companions` 匹配原因固定权重，含「目的地相同 50 分」 |
+| 已归档 `add-user-auth` | `openspec/changes/archive/2026-11-16-add-user-auth/` | 占用 V9；契约 `0.6.0`；新增登录/会话/退出；E2E 身份初始化变更 |
+| 数据迁移 | `RouteME/backend/src/main/resources/db/migration/V4__seed_demo_trips.sql`、`V8__create_trip_experiences.sql`、`V9__add_user_credentials.sql` | `trip_plans.destination` 中文名；`trip_experiences` 仅 `trip_id`；V9 已被 auth 占用 |
+| 目的地候选 | `RouteME/frontend/src/map/placeCatalog.ts`、`trips/tripOptions.ts` | 离线地图地名库 16 城（广东 14 + 香港/澳门）；`DESTINATIONS = CITY_NAMES` |
+| 前端筛选/发布 | `RouteME/frontend/src/{home/HomePage.tsx,trips/tripFilters.ts,api.ts,trips/useMatches.ts,experiences/useExperiences.ts,trips/TripCreatePage.tsx,map/PlacePicker.tsx}` | 搜索/目的地/日期/兴趣 + 分页；体验视图不传日期；发布页目的地用 PlacePicker |
+| 后端查询/发布 | `RouteME/backend/src/main/java/routeme/{controller,service,request,param,mapper}/**`、`resources/mapper/*.xml` | `q`、`destination`（名称，任意非空）、`date_from/date_to`、`tags`；体验无日期 |
+| 契约 | `RouteME/openapi.yaml` | `0.6.0`；三个列表接口声明 `q`；`TripCreateRequest.destination` 为名称 |
+| 测试 | `backend/src/test/java/routeme/controller/{TripControllerTest,ExperienceControllerTest,OpenApiTest}.java`、`frontend/src/{trips/tripFilters.test.ts,api.test.ts}`、`e2e/tests/{trips,experiences}.spec.ts` | 覆盖关键词/目的地/标签/分页；`trips.spec.ts` 发布用例按标题搜索；`experiences.spec.ts` 空态用例用搜索 |
+| 区划字典 | 不存在 | 前端地图城市库 16 城；后端无字典，发布只校验非空 |
+
+### 11.3 As-is → proposed delta（逐资产）
+
+| 资产 | As-is | Proposed delta |
+|---|---|---|
+| `trip_plans` 表 | `destination VARCHAR(20) NOT NULL`；无代码列 | **V10**（V9 已被 auth 占用）重建表：`destination_code VARCHAR(6) NOT NULL`、索引、存量映射回填、`destination` 回填标准名；`trip_experiences` 结构不变 |
+| 领域/实体 | `TripPlan.destination`（名称，任意非空） | 目的地以 6 位代码为权威；实体持有 code + 名称 + 省 code/展示名；发布写入由 A 改为 `destination_code`，B 提供数据底座 |
+| 列表查询 | `q` + `destination`（名称）+ 日期 + 标签 | 移除 `q`；`destination` 改为 `destination_code`；日期/标签语义不变；体验列表新增 `date_from/date_to` |
+| 响应 | `destination`（名称） | 新增 `destination_code`、`province_code`、`province_name`（展示名：普通省“广东省”、港澳台“香港”/“澳门”）；`destination` 为城市标准名（直辖市=省名） |
+| 匹配打分 | `TripMatch` 按名称比较目的地 | 改为按 `destination_code` 比较；“目的地相同”理由文案不变 |
+| 前端筛选器 | 搜索框 + 地图城市 Select + 日期 + 兴趣 | 删除搜索框与 `q` 状态；Select → 省市级联 Cascader（全国含港澳台，必须选到市）；摘要按省/市/港澳台口径；日期/兴趣保留 |
+| 前端展示 | 卡片/详情显示短地名 | 卡片市名；详情/摘要“省 / 市”；港澳台“省 · 二级”；体验卡不显示日期 |
+| 前端体验视图 | 目的地/标签/关键词 | 目的地改为代码 + 新增日期区间；关键词移除 |
+| 契约 | 0.6.0；三接口含 `q`；发布传名称 | 升至 **0.7.0**：删除 `q`；查询 `destination_code`；响应新增 code/province 字段；体验加日期参数；发布请求字段由 A 改为 `destination_code` |
+| 测试 | 关键词/名称断言 | 更新为 code/标准名；新增只选省、非法 code、直辖市/港澳台展示、体验日期、搜索不存在用例；匹配打分回归；`refine-inspiration-home` 的搜索空态测试由它的 owner 更新 |
+| 知识库 | interfaces/domain 记录 `q` 与 16 城 | 归档阶段回写（P1 不改 KB） |
+| `add-trip-publish`（A） | 目的地用 `PlacePicker`、发布传名称 | 目的地改 Cascader、请求改 `destination_code`、E2E/design/spec 目的地相关更新；**已获授权只改目的地相关，不归档** |
+| `refine-inspiration-home` | 保留搜索、搜索空态 E2E | **不改它的文件**；其搜索相关测试由它的 owner 更新；本 change 的 G1 记录依赖 |
+
+### 11.4 Blast radius（应用架构）
+
+- **变更能力（2）：** `trip-plans`、`trip-experiences`。
+- **消费方（2）：** `trip-companions`（匹配打分改为按代码比较）；`add-trip-publish`（发布页目的地字段改为 code，消费本 change 的数据底座）。
+- **受影响页面（业务）：** 灵感首页（行程/体验）、行程详情、体验卡、参考此行程发布（A）、发布行程页（A）。
+- **跨能力集成边界：** `trip-experiences` 消费 `trip-plans` 的目的地代码/名称与日期；`trip-companions` 消费目的地代码做匹配；A 的发布写 `destination_code`。
+- **数据所有权：** 目的地代码/名称/省名归 `trip-plans`；行政区划字典为共享只读数据；体验不新增目的地列。
+
+### 11.5 Artifact impact（specs / tests / docs）
+
+| 类型 | 影响 |
+|---|---|
+| Proposal | 新增 `openspec/changes/add-destination-area-filters/proposal.md`（引用 REQ-007 与 D1–D15、含 effort/size） |
+| Spec delta | 两份：`specs/trip-plans/spec.md`（MODIFIED 浏览 + ADDED 筛选/区划字典/无搜索 + REMOVED 旧“搜索、筛选与排序”）、`specs/trip-experiences/spec.md`（MODIFIED 体验视图）；**不修改发布 requirement** |
+| A 的 delta | `add-trip-publish/specs/trip-plans/spec.md` 目的地相关场景、`design.md`、`e2e/tests/trips.spec.ts` 目的地/搜索定位；不归档 |
+| 契约 | `openapi.yaml` 升 `0.7.0`：删除 `q`，目的地改 `destination_code`，响应新增 code/province 字段，体验加日期 |
+| 迁移 | **V10** 重建 `trip_plans`（含外键处理）+ 映射回填 + 索引 |
+| 测试 | 后端 controller/service/openapi；前端纯函数与 api；E2E 目的地级联/日期/体验/展示；A 的发布目的地 E2E |
+| 文档 / KB | `docs/knowledge/**` 回写在 archive 阶段；P1 不改 |
+| Living Spec | 归档时合并；顺序见 §11.8 |
+
+### 11.6 Dual-track notes（OpenSpec vs agile）
+
+- **OpenSpec 轨（主）：** B 单 change `add-destination-area-filters`，两份 delta；内部阶段：① 数据底座（V10 + 字典 + 响应字段）② 筛选/展示（级联/日期/摘要/空态）③ 体验日期 + 搜索移除。
+- **Agile 轨（并行）：** 故事见 `requirement-workspace/stories.md` 的 REQ-007 段与 `stories/REQ-007-destination-area-filters.story.md`，与两份 delta 场景 1:1 归属。
+- **A 的发布目的地字段** 作为 `add-trip-publish` 的目的地相关修订，不并入 B 的 delta。
+
+### 11.7 Risks & blockers
+
+| 级别 | 项 | 说明 / 缓解 |
+|---|---|---|
+| Risk | `refine-inspiration-home` 未归档且同改两 requirement | 归档顺序 `refine-inspiration-home` → B；B 的 delta 以 refine 版本为基线并保留其场景；refine 的搜索相关测试由它的 owner 更新（本 change G1 记为条件） |
+| Risk | `add-trip-publish` 未归档 | B 拥有数据底座，A 的发布字段消费 B；归档顺序 B → A；A 的目的地相关工件已获授权修改但不归档 |
+| Risk | V9 被 auth 占用、契约已 0.6.0 | 迁移改 V10，契约升 0.7.0 |
+| Risk | 区划数据 v5 较旧（约 2019/2020） | MVP 接受静态字典；后续可升级，不影响代码契约 |
+| Risk | 搜索移除影响 refine/A 的 E2E | A 已授权修改；refine 交 owner；B 自己的用例不用搜索 |
+| Risk | SQLite 重建表与外键 | `trip_experiences` 外键引用 `trip_plans`；V10 需关闭外键→新表→拷贝→drop→rename→校验，保证体验数据不丢 |
+| Risk | 匹配打分比较口径 | 字符串改代码后“目的地相同”理由可能失效；补匹配回归用例 |
+| Risk | 发布页目的地与地图选点交互 | A 的目的地改 Cascader，途经点/集合地点保留地图；需在 A 的 design/E2E 对齐 |
+| Blocker | 无 | blocking OQ=0、DoR BLOCKER=0、A0 ⑨–⑫ 全过；外部依赖均为非阻塞顺序条件 |
+
+### 11.8 Suggested split boundaries（供 proposal-split / story-split）
+
+- **B 单 change，两份 delta：** `add-destination-area-filters` → `trip-plans` + `trip-experiences`。
+- **B 内部阶段（不拆 change）：** ① 数据底座（V10、6 位码、字典、响应字段）；② 筛选/展示（级联、日期、摘要、空态）；③ 体验日期 + 搜索移除。
+- **A 的发布目的地字段：** 归 `add-trip-publish` 的目的地相关修订，不并入 B。
+- **归档顺序：** `refine-inspiration-home` → `add-destination-area-filters` → `add-trip-publish`；三者分属不同 owner，本需求只归档自己。
+- **质量自检（split-heuristics）：** 垂直切片 ✓；端到端可观察 ✓（选城市 + 日期 → 列表变化）；数据底座后可独立运行 ✓；capability 名真实 ✓；无依赖环 ✓。

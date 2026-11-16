@@ -110,3 +110,30 @@ RouteME 价值闭环的起点。验证核心假设：用户愿意发布可被他
 ### P1 产物
 
 `requirement-workspace/intents/REQ-004-trip-experiences.md`、`requirements/REQ-004-trip-experiences.md`、`openspec/changes/add-trip-experiences/`。依赖 REQ-002（展示位/发布表单）与 REQ-003（已结束+参加过判定）。
+
+## REQ-007: 灵感首页按目的地（省市级联）与日期筛选（capability `trip-plans` + `trip-experiences`）
+
+### Background
+
+迭代 1 的用户故事：时间地点都不确定的学生希望按目的地和日期缩小范围，减少逐个翻看的成本。远程基线（`main@229411a`）的现状是筛选已基本实现，但目的地候选来自离线地图城市库 16 城、没有省市层级；「旅行体验」视图的日期筛选可见但不生效；搜索不在本迭代投入。V9 已被 `add-user-auth` 占用，契约已 0.6.0；`refine-inspiration-home`（REQ-005）同改两个 capability，`add-trip-publish` 拥有发布 requirement。
+
+### Requirement（业务）
+
+1. 目的地：省市级联（必须选到市，含港澳台），目的地以 6 位国标行政区划码为权威、名称与省名由后端按字典派生；发布页目的地字段归 `add-trip-publish` 目的地修订（只传代码），本 change 提供数据底座。
+2. 日期：保留出发不早于/不晚于，按行程日期区间求交集；要选某个周六就把起止填成同一天。
+3. 兴趣：多选、命中任一即保留（保留现状，不降级）。
+4. 已应用筛选摘要与清除入口；无结果提示“换个条件试试”且不清空条件。
+5. 「旅行体验」视图补齐目的地（代码）与日期区间筛选；体验卡不显示日期。
+6. 移除关键词搜索（前端、后端 `q` 参数、契约与测试全部删除）；A 的搜索场景由本 change 改写，refine 的搜索测试交 owner。
+7. 存量行程按地图城市库 16 城 + 别名 + 种子映射到代码，名称统一为标准名；**V10** 重建 `trip_plans` 表并给代码列加 NOT NULL；契约升 0.7.0。
+
+### Non-Goals
+
+- 关键词搜索恢复、按省筛选全省、自由输入地名、三级区划、地图选点作为目的地、境外地区。
+- 发布 requirement 的 delta 作者化（归 `add-trip-publish`）、行程编辑、个性化推荐、按距离/预算筛选。
+- 体验卡日期展示（已确认不显示）。
+- 不改变匹配业务规则（仅把“目的地相同”的比较口径改为代码）。
+
+### P1 产物
+
+`requirement-workspace/intents/REQ-007-destination-area-filters.md`、`requirements/REQ-007-destination-area-filters.md`、`stories.md` 的 REQ-007 段、`stories/REQ-007-destination-area-filters.story.md`、`openspec/changes/add-destination-area-filters/`（proposal + 两份 delta）。依赖 `refine-inspiration-home`（同改两 requirement，先归档）与 `add-trip-publish`（发布页目的地字段，后归档）；归档顺序 `refine-inspiration-home` → 本 change → `add-trip-publish`，三者中只有本 change 属于本需求。

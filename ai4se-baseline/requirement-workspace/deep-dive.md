@@ -293,7 +293,7 @@ MVP 不做推送；以下为资料路径的 UI 展示面契约。
 
 无展示面缺 display-fields；A0 门 ⑫ 通过。
 
-### 探针记录（REQ-007）
+### 探针记录（REQ-007 个人资料）
 
 - `app_users` 现有 `nickname`、`avatar_initial`、`school`、`bio`、`interests`，没有生日、性别、城市、专业、职业、MBTI、旅行方式与头像地址；资料概念确为新增。原始 AC 把学校列为必填，已被 2026-11-16 裁决 D2 改为选填，并新增选填「职业」以覆盖非学生用户。
 - `V3__create_demo_users.sql` 把「年级 · 专业」合存在 `school`（如「研一 · 地理科学」），注册用户被迫模仿该格式；这是本需求拆成学校 + 专业两框的直接证据。
@@ -301,3 +301,89 @@ MVP 不做推送；以下为资料路径的 UI 展示面契约。
 - `frontend/src/route.ts` 只有首页 / 发布 / 详情 / 申请 / 我的 / 聊天 / 分享；个人主页与完善页是新增路由。
 - `trip-plans` 匹配消费的是兴趣字符串，词表与 AC 列出的标签并不完全一致（自然 / 自然风景、历史 / 文化历史、展览 / 看展）；统一口径留到 P3，避免本需求同时改匹配。
 - `{TBD}`：无。非阻塞项（头像裁剪、星座边界、兴趣词表、资料可见性）已在 REQ-007 §8 标 deferred。
+
+---
+
+# Deep-dive（Phase 2.5）— REQ-007 目的地代码化与筛选补差（远程基线 229411a）
+
+追加日期：2026-11-16。四张固定表沿用同一业务粒度；source 指 `requirement-workspace/intents/REQ-007-destination-area-filters.md` 的决策记录（D1–D15，含远程基线复核后的修订）与现行 Living Spec / schema。
+
+## ① 数据契约（Data contract）
+
+| concept | grain（粒度） | 业务字段 | state transitions（状态流转） | source |
+|---|---|---|---|---|
+| 行政区划字典项 (AreaNode) | 一个二级行政区（省 × 市） | 省级代码（6 位）、省级名称、省级展示名、二级代码（6 位）、二级名称、节点类型（普通省/直辖市/特别行政区/台湾省） | 无状态机（静态字典，随数据包版本更新） | D4 / D6 / D8 |
+| 行程目的地 (TripDestination) | 一条行程 × 1 个二级行政区 | destination_code（6 位，权威）、destination（城市标准名；直辖市=省名）、province_code、province_name（展示名） | 创建行程时写入；MVP 无行程编辑，发布后不变 | D5 / D8 / D13 |
+| 行程筛选条件 (FilterCriteria) | 一次未结束行程列表查询 | destination_code（可空，必须是二级）、date_from / date_to（可空）、tags（可多选）、sort | 无状态（随查询生灭） | D1 / D2 / D3 / D14 |
+| 体验筛选条件 (ExperienceFilter) | 一次体验列表查询 | destination_code（可空）、date_from / date_to（作用于关联行程的日期区间）、tags | 无状态 | D1 |
+| 存量迁移映射 (AreaMigration) | 一条旧行程的 destination 名称 | 旧名称（含地图城市库 16 城与别名）→ 6 位代码 → 标准名称 | 一次性迁移：旧中文名 → 代码 + 标准名 | D11 / D12 |
+
+## ② 边界归属（Boundary attribution）
+
+| rule | branch | in \| out | rationale |
+|---|---|---|---|
+| 目的地筛选 | 未选择目的地 | in (REQ-007) | 正常分支：不过滤 |
+| 目的地筛选 | 只选到省、未选到市 | in (REQ-007) | 边界分支：不应用筛选，摘要不出现目的地 |
+| 目的地筛选 | 选到市 | in (REQ-007) | 正常分支：按 destination_code 等值匹配 |
+| 目的地筛选 | 级联展开/输入过滤选项 | in (REQ-007) | 交互分支：只影响选项可见性，不触发查询 |
+| 目的地筛选 | 自由输入域名 | out (本迭代) | D4：不允许自由输入 |
+| 目的地筛选 | 只按省筛全省 | out (本迭代) | D14：必须选到市 |
+| 目的地筛选 | 港澳台二级节点 | in (REQ-007) | 香港岛/九龙/新界、澳门半岛/离岛、台湾各县市 |
+| 日期筛选 | 同时设置起止 | in (REQ-007) | 正常分支：行程区间与所选区间交集 |
+| 日期筛选 | 只设起点或只设终点 | in (REQ-007) | 单边分支 |
+| 日期筛选 | 起止为同一天（如周六） | in (REQ-007) | 单日分支：覆盖该日的行程命中 |
+| 日期筛选 | 起止倒置 | in (REQ-007) | 输入完整性分支：自动交换后查询 |
+| 日期筛选 | 体验视图设置日期 | in (REQ-007) | 按关联行程的日期区间求交集 |
+| 兴趣筛选 | 选择一个或多个标签 | in (REQ-007) | 命中任一即保留（OR） |
+| 兴趣筛选 | 不选标签 | in (REQ-007) | 不过滤 |
+| 组合筛选 | 目的地 + 日期 + 兴趣同时设置 | in (REQ-007) | 条件之间为 AND |
+| 无结果 | 有已选条件且无命中 | in (REQ-007) | 空态提示 + 保留条件 + 清除入口 |
+| 无结果 | 无已选条件且数据为空 | in (REQ-007) | 空态 + 发布引导 |
+| 关键词搜索 | 任意关键词查询 | out (本迭代) | D10：搜索框、参数、契约、测试全部移除 |
+| 发布目的地 | 非二级/不存在/格式错误的 code | in (add-trip-publish 目的地修订) | 400 INVALID_INPUT，不产生行程 |
+| 发布目的地 | 未选到市 | in (add-trip-publish 目的地修订) | 拒绝并提示必须选到城市 |
+| 发布目的地 | 名称手填/篡改 | out (本迭代) | 名称由后端按 code 生成，不接受外部名称 |
+| 存量迁移 | 地图城市库 16 城与别名 | in (REQ-007) | 精确映射到 6 位代码并回填标准名 |
+| 存量迁移 | 出现未映射的旧名称 | in (REQ-007) | 迁移必须阻断并暴露，不得静默丢弃或填空 |
+| 行政区划层级 | 三级（区/县） | out (本迭代) | 只做省市二级 |
+| 行政区划范围 | 港澳台 | in (REQ-007) | D4/D6：必须覆盖并细分二级 |
+
+## ③ 跨 REQ 一致性（Cross-REQ consistency）
+
+| capability | per-REQ grain + fields | aligned? | anchor REQ |
+|---|---|---|---|
+| 目的地（代码 + 名称） | REQ-002/trip-plans：定义存储（code 权威）、筛选、展示；`add-trip-publish`：发布写入 destination_code；`trip-companions`：匹配打分比较 code；REQ-007：消费并补筛选/展示 | ✓ aligned（同一 code + 派生名称） | trip-plans（REQ-002） |
+| 行程日期区间 | trip-plans：定义起止日期并用于首页筛选；trip-experiences：体验列表按关联行程日期区间筛选；REQ-007 不改语义 | ✓ aligned（同一日期区间语义） | trip-plans（REQ-002） |
+| 兴趣标签 | trip-plans：发布与筛选；trip-companions：匹配共同兴趣；REQ-007 不改语义 | ✓ aligned（OR 筛选不变） | trip-plans（REQ-002） |
+| 行政区划字典 | trip-plans：发布校验 + 筛选候选 + 名称派生；trip-experiences：展示沿用名称；REQ-007 拥有字典 | ✓ aligned（同一字典、同一代码） | trip-plans（REQ-002） |
+| 参考此行程发布 | trip-experiences：编排预填；目的地字段从名称改为 destination_code，名称由 trip-plans 生成 | ✓ aligned（不重复发布逻辑） | trip-experiences（编排）/ trip-plans（数据） |
+| 首页双视图（REQ-005 / refine） | refine-inspiration-home：默认视图/卡片/空态/状态；REQ-007 只改筛选/展示，不重定义双视图 | ✓ aligned（基于 refine 版本覆盖式修改） | refine-inspiration-home（归档顺序先它） |
+
+无未收敛的 ✗；A0 门 ⑪ 通过。
+
+## ④ 通知 / 展示契约（Notification / display contract）
+
+仍不做推送通知；以下为 UI 展示面契约。
+
+| trigger / surface（展示面） | recipient role | content + display fields | channel | cardinality | source |
+|---|---|---|---|---|---|
+| 首页筛选器 — 目的地级联 | 浏览者 | 省/市两级选项；可输入过滤选项；必须选到市；已选路径可见 | 应用内页面 | 单选 | D3 / D4 |
+| 首页筛选器 — 日期 | 浏览者 | 出发不早于 / 出发不晚于；支持起止同日 | 应用内页面 | 两个日期输入 | D2 |
+| 已应用筛选摘要 | 浏览者 | 普通省「广东省 / 珠海市」；直辖市「北京市」；港澳台「香港 · 香港岛」；日期；兴趣 | 应用内页面 | 每个条件一段，`·` 分隔 | D8 / D9 |
+| 行程卡片 | 浏览者 | 目的地市名（标准名）；直辖市「北京市」；港澳台「香港 · 香港岛」 | 应用内页面 | 每卡一个 | D9 |
+| 行程详情页 | 浏览者 | 「省 / 市」；直辖市不重复；港澳台「省级简称 · 二级名」 | 应用内页面 | 单条 | D9 |
+| 体验卡 / 体验详情 | 浏览者 | 与行程一致的地名口径；**不显示日期** | 应用内页面 | 每条 | D9 + 用户确认 |
+| 发布行程表单 — 目的地（A） | 发布者 | 省市级联；未选到市时的校验提示；不提供自由输入 | 应用内页面 | 单表单 | add-trip-publish 目的地修订 |
+| 无结果空态 | 浏览者 | 「换个条件试试」+ 发布引导 + 清除入口；已选条件保留 | 应用内页面 | 每次空结果 | 原始故事 AC4 |
+| 搜索框 | — | 本迭代不展示 | — | — | D10 |
+| 错误提示 | 发布者 | 目的地代码不合法 / 必须选到城市 | 应用内页面 | 每次校验 | add-trip-publish 目的地修订 |
+
+无展示面缺 display-fields；A0 门 ⑫ 通过。
+
+## 探针记录（REQ-007 目的地筛选）
+
+- 数据概念与字段来自 D3–D13 的逐条确认、远程 `main@229411a` 的 `trip_plans` / `trip_experiences` schema、地图城市库与 `openapi.yaml` 0.6.0，未臆造。
+- 边界分支覆盖用户故事 4 条 AC（目的地、日期、兴趣、空态）与远程基线差距（体验日期假筛选、搜索移除、发布页地图选点、V9 占用、refine 同改两 requirement）。
+- 跨 REQ 共享点（目的地 code+name、日期区间、兴趣、区划字典、参考发布预填、首页双视图）均指定 anchor，无未收敛冲突。
+- `{TBD}`：无。非阻塞项（数据包升级、SQLite 重建外键写法、体验卡日期展示已定不显示、搜索恢复时间、refine owner 更新搜索测试）已在 REQ-007 §8 标 deferred 或记录为外部条件。
+- A0 门 ⑨–⑫：全部通过。
