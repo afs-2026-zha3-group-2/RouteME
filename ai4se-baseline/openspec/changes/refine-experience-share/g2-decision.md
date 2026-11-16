@@ -54,7 +54,7 @@
 | 项 | Owner | 时机 |
 |---|---|---|
 | `companions.spec.ts:200` 满员拒绝改用 `.ant-message` 断言（或恢复内联提示） | `add-trip-completion` / `1cd1505` owner | 独立 fix 或该 change 的 P5 |
-| 「分享页面提示隐私边界」归档说明写明「场景名保留、内容扩充」 | Jay（AO）+ Wanye（SA） | P5 / G3 |
+| 「分享页面提示隐私边界」归档说明写明「场景名保留、内容扩充」 | Jay（AO）+ WAYNE（SA） | P5 / G3 |
 | 全量 E2E 每次运行都会累积行程；建议 CI 用临时库 | 测试 owner | 后续 change |
 
 ## Approvers
