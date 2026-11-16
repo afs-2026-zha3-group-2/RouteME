@@ -1,11 +1,12 @@
 openapi: 3.0.3
 info:
   title: RouteME API
-  version: 0.5.0
+  version: 0.6.0
   description: |
     RouteME 后端对外契约。本文件是前后端唯一事实源，字段名、类型、状态码与错误码只在这里定稿。
-        当前包含：脚手架问候语、演示账户、旅行计划（浏览/筛选/发布/详情/结束），同行匹配、申请、退出、聊天、我的旅行与举报，以及游后体验分享与参考发布所需数据。
+        当前包含：脚手架问候语、演示账户与账号认证（注册/登录/会话/退出）、旅行计划（浏览/筛选/发布/详情/结束），同行匹配、申请、退出、聊天、我的旅行与举报，以及游后体验分享与参考发布所需数据。
         行程与体验列表按页返回：`page` 从 1 起，`size` 默认 20、上限 50。
+        目的地为用户在地图地点库中搜索或点选的城市/地点名称，不再限定固定枚举。
 servers:
   - url: http://localhost:8080/api
     description: 本地开发
@@ -82,6 +83,150 @@ paths:
                 unexpected:
                   value:
                     code: INTERNAL_ERROR
+  /users/demo:
+    get:
+      operationId: loadDemoOnlyUsers
+      summary: 读取演示账户
+      description: 身份门使用。只返回没有用户名凭据的 3 个预设账户，注册账号不会出现在这里。
+      responses:
+        '200':
+          description: 演示账户列表
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/DemoUser'
+        '500':
+          description: 未预期异常，响应不携带堆栈
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                unexpected:
+                  value:
+                    code: INTERNAL_ERROR
+  /auth/register:
+    post:
+      operationId: registerAccount
+      summary: 注册账号并自动登录
+      description: |
+        用户名不区分大小写、唯一；密码以 PBKDF2-HMAC-SHA256 加盐散列保存。
+        注册成功即签发会话，前端可直接进入首页。
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AuthRegisterRequest'
+      responses:
+        '201':
+          description: 账号已创建并登录
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthSession'
+        '400':
+          description: 用户名/密码/昵称等字段不合法
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                invalid:
+                  value:
+                    code: INVALID_INPUT
+        '409':
+          description: 用户名已被占用
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                taken:
+                  value:
+                    code: USERNAME_TAKEN
+  /auth/login:
+    post:
+      operationId: loginAccount
+      summary: 用户名密码登录
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AuthLoginRequest'
+      responses:
+        '200':
+          description: 登录成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthSession'
+        '400':
+          description: 请求体缺少用户名或密码
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                invalid:
+                  value:
+                    code: INVALID_INPUT
+        '401':
+          description: 用户名不存在、密码错误，或演示账户没有密码凭据
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                invalidCredentials:
+                  value:
+                    code: INVALID_CREDENTIALS
+  /auth/me:
+    get:
+      operationId: loadSessionUser
+      summary: 读取当前登录用户
+      parameters:
+        - $ref: '#/components/parameters/BearerToken'
+      responses:
+        '200':
+          description: 当前用户资料
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DemoUser'
+        '401':
+          description: token 缺失、不存在或已过期
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                invalidSession:
+                  value:
+                    code: SESSION_INVALID
+  /auth/logout:
+    post:
+      operationId: logoutAccount
+      summary: 退出登录
+      description: 删除当前 token；重复退出仍返回 204。
+      parameters:
+        - $ref: '#/components/parameters/BearerToken'
+      responses:
+        '204':
+          description: 会话已删除
+        '401':
+          description: token 缺失或无效
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                invalidSession:
+                  value:
+                    code: SESSION_INVALID
   /trips:
     get:
       operationId: loadTrips
@@ -100,10 +245,10 @@ paths:
             type: string
         - name: destination
           in: query
-          description: 目的地，固定候选之一，精确匹配
+          description: 目的地，精确匹配地图地点库中的城市或地点名称
           schema:
             type: string
-            enum: [珠海, 广州, 深圳, 佛山, 清远, 中山, 江门, 肇庆]
+            maxLength: 40
         - name: date_from
           in: query
           description: 出发不早于（与行程日期区间取交集）
@@ -396,7 +541,7 @@ paths:
           in: query
           schema:
             type: string
-            enum: [珠海, 广州, 深圳, 佛山, 清远, 中山, 江门, 肇庆]
+            maxLength: 40
         - name: date_from
           in: query
           schema:
@@ -962,6 +1107,13 @@ components:
         minimum: 1
         maximum: 50
         default: 20
+    BearerToken:
+      name: Authorization
+      in: header
+      required: true
+      description: 登录会话，格式 `Bearer <token>`。
+      schema:
+        type: string
   responses:
     DemoUserRequired:
       description: 缺少或未知的演示身份
@@ -1067,6 +1219,66 @@ components:
           items:
             type: string
           description: 旅行兴趣标签
+    AuthRegisterRequest:
+      type: object
+      required: [username, password, nickname, school, interests]
+      properties:
+        username:
+          type: string
+          minLength: 3
+          maxLength: 20
+          pattern: '^[A-Za-z0-9_]+$'
+          description: 登录用户名；不区分大小写，唯一
+        password:
+          type: string
+          format: password
+          minLength: 8
+          maxLength: 64
+          description: 明文密码只用于注册请求，服务端只保存加盐散列
+        nickname:
+          type: string
+          minLength: 1
+          maxLength: 20
+        avatar_initial:
+          type: string
+          maxLength: 4
+          description: 选填；缺省时取昵称首字
+        school:
+          type: string
+          maxLength: 80
+        bio:
+          type: string
+          maxLength: 500
+        interests:
+          type: array
+          maxItems: 5
+          items:
+            type: string
+            maxLength: 12
+    AuthLoginRequest:
+      type: object
+      required: [username, password]
+      properties:
+        username:
+          type: string
+        password:
+          type: string
+          format: password
+    AuthSession:
+      type: object
+      required: [token, expires_at, user]
+      properties:
+        token:
+          type: string
+          readOnly: true
+          description: 不透明会话 token，作为 Authorization 头的 Bearer 凭据使用
+        expires_at:
+          type: string
+          format: date-time
+          readOnly: true
+          description: 过期时间，UTC；默认签发后 7 天
+        user:
+          $ref: '#/components/schemas/DemoUser'
     TripPlan:
       type: object
       required:
@@ -1081,7 +1293,8 @@ components:
           maxLength: 40
         destination:
           type: string
-          enum: [珠海, 广州, 深圳, 佛山, 清远, 中山, 江门, 肇庆]
+          maxLength: 40
+          description: 目的地名称，来自离线地图地点库（城市或可搜索的地点）
         start_date:
           type: string
           format: date
@@ -1168,7 +1381,7 @@ components:
           maxLength: 40
         destination:
           type: string
-          enum: [珠海, 广州, 深圳, 佛山, 清远, 中山, 江门, 肇庆]
+          maxLength: 40
         start_date:
           type: string
           format: date
@@ -1497,4 +1710,4 @@ components:
           enum:
             [GREETING_NOT_FOUND, INVALID_INPUT, DEMO_USER_REQUIRED, FORBIDDEN, TRIP_NOT_FOUND, TRIP_NOT_OPEN,
              APPLICATION_NOT_FOUND, APPLICATION_NOT_PENDING, DUPLICATE_APPLICATION, CHAT_NOT_ALLOWED, CHAT_READ_ONLY,
-             EXPERIENCE_NOT_ALLOWED, INTERNAL_ERROR]
+             EXPERIENCE_NOT_ALLOWED, USERNAME_TAKEN, INVALID_CREDENTIALS, SESSION_INVALID, INTERNAL_ERROR]

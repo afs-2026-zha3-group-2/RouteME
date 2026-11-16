@@ -59,7 +59,7 @@ class OpenApiTest {
 
         // Then
         assertAll(
-                () -> assertEquals("0.5.0", info.get("version"), "info.version"),
+                () -> assertEquals("0.6.0", info.get("version"), "info.version"),
                 () -> assertTrue(paths(document).containsKey("/users"), "/users declared"),
                 () -> assertTrue(paths(document).containsKey("/trips/{tripId}"), "detail path declared"),
                 () -> assertTrue(
@@ -90,6 +90,31 @@ class OpenApiTest {
                                         "TRIP_NOT_OPEN")),
                         "error codes"),
                 () -> assertEquals(Boolean.TRUE, properties(tripPlan).get("status").get("readOnly"), "status readOnly")
+        );
+    }
+
+    @Test
+    void in_openApiFile_out_authContractDeclared() throws IOException {
+        // Given
+        Map<String, Object> document = loadYaml(SPEC_PATH);
+
+        // When
+        Map<String, Object> register = schema(document, "AuthRegisterRequest");
+        Map<String, Object> session = schema(document, "AuthSession");
+
+        // Then
+        assertAll(
+                () -> assertTrue(paths(document).containsKey("/auth/register"), "/auth/register declared"),
+                () -> assertTrue(paths(document).containsKey("/auth/login"), "/auth/login declared"),
+                () -> assertTrue(paths(document).containsKey("/auth/me"), "/auth/me declared"),
+                () -> assertTrue(paths(document).containsKey("/auth/logout"), "/auth/logout declared"),
+                () -> assertTrue(
+                        required(register)
+                                .containsAll(List.of("username", "password", "nickname", "school", "interests")),
+                        "register required fields"),
+                () -> assertTrue(
+                        required(session).containsAll(List.of("token", "expires_at", "user")),
+                        "session required fields")
         );
     }
 

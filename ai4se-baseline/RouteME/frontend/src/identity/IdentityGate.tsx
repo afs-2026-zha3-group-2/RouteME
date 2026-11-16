@@ -1,15 +1,17 @@
 import { tripMessages } from '../i18n/tripMessages';
 import { Avatar } from '../shell/Avatar';
-import type { DemoUser } from '../types';
+import type { AuthSession, DemoUser } from '../types';
+import { AuthPanel } from './AuthPanel';
 
 const LOOP_STEPS = ['旅行灵感', '发布行程', '发现同行者', '建立连接', '一起旅行', '分享体验'];
 
 type Props = {
   users: DemoUser[];
   onSelect: (user: DemoUser) => void;
+  onAuthenticated: (session: AuthSession) => void;
 };
 
-export function IdentityGate({ users, onSelect }: Props) {
+export function IdentityGate({ users, onSelect, onAuthenticated }: Props) {
   return (
     <main className="gate">
       <div className="gate-inner">
@@ -50,9 +52,11 @@ export function IdentityGate({ users, onSelect }: Props) {
           ))}
         </div>
 
-        <p className="gate-hint">
-          {tripMessages.identityTitle}：{tripMessages.identityHint}
-        </p>
+        <div className="gate-auth">
+          <AuthPanel onAuthenticated={onAuthenticated} />
+        </div>
+
+        <p className="gate-divider">{tripMessages.authDivider}</p>
 
         <div className="gate-cards">
           {users.map((user) => (
@@ -93,7 +97,7 @@ export function IdentityGate({ users, onSelect }: Props) {
             <path d="M10 2.5 4 5v4.2c0 3.4 2.4 6.4 6 8.3 3.6-1.9 6-4.9 6-8.3V5z" />
             <path d="m7.6 9.8 1.7 1.7 3.3-3.4" />
           </svg>
-          <span>演示环境：三个预设账号，无注册与验证码；选择结果与业务数据都保存在本机浏览器。</span>
+          <span>演示环境：3 个预设账号无需密码即可进入；也可以注册自己的账号，数据同样保存在本机。</span>
         </div>
       </div>
     </main>

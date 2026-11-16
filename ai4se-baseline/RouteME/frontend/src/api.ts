@@ -1,4 +1,6 @@
 import type {
+  AuthRegisterRequest,
+  AuthSession,
   ChatMessage,
   ChatPartner,
   DemoUser,
@@ -40,6 +42,43 @@ export async function loadGreeting(): Promise<Greeting> {
 export async function loadUsers(): Promise<DemoUser[]> {
   const response = await request('/users');
   return (await response.json()) as DemoUser[];
+}
+
+export async function loadDemoUsers(): Promise<DemoUser[]> {
+  const response = await request('/users/demo');
+  return (await response.json()) as DemoUser[];
+}
+
+export async function registerAccount(body: AuthRegisterRequest): Promise<AuthSession> {
+  const response = await request('/auth/register', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+  return (await response.json()) as AuthSession;
+}
+
+export async function loginAccount(username: string, password: string): Promise<AuthSession> {
+  const response = await request('/auth/login', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ username, password }),
+  });
+  return (await response.json()) as AuthSession;
+}
+
+export async function loadSessionUser(token: string): Promise<DemoUser> {
+  const response = await request('/auth/me', {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  return (await response.json()) as DemoUser;
+}
+
+export async function logoutAccount(token: string): Promise<void> {
+  await request('/auth/logout', {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}` },
+  });
 }
 
 function tripQuery(filters: TripFilters, paging?: Paging): string {

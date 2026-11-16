@@ -23,4 +23,9 @@ public class DemoUserController {
     public List<DemoUserResponse> list() {
         return demoUserService.findAll().stream().map(DemoUserResponse::from).toList();
     }
+
+    @GetMapping("/demo")
+    public List<DemoUserResponse> listDemo() {
+        return demoUserService.findAllDemo().stream().map(DemoUserResponse::from).toList();
+    }
 }

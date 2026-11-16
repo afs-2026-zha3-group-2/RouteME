@@ -87,7 +87,9 @@ function NavIcon({ name }: { name: NavKey }) {
 
 type Props = {
   currentUser: DemoUser;
-  users: DemoUser[];
+  demoUsers: DemoUser[];
+  isAuthenticated: boolean;
+  onLogout: () => void;
   route: Route;
   mode: ColorMode;
   onToggleMode: () => void;
@@ -97,7 +99,9 @@ type Props = {
 
 export function AppShell({
   currentUser,
-  users,
+  demoUsers,
+  isAuthenticated,
+  onLogout,
   route,
   mode,
   onToggleMode,
@@ -206,8 +210,21 @@ export function AppShell({
 
           {identityOpen && (
             <div className="id-panel" role="listbox" aria-label={tripMessages.identitySwitch}>
-              {users.map((user) => {
-                const selected = user.id === currentUser.id;
+              {isAuthenticated && (
+                <div className="id-current">
+                  <Avatar user={currentUser} size="sm" />
+                  <span className="id-option-text">
+                    <b>{currentUser.nickname}</b>
+                    <i>{currentUser.school}</i>
+                  </span>
+                  <span className="id-option-flag">{tripMessages.authLoggedIn}</span>
+                </div>
+              )}
+              <p className="id-panel-label">
+                {isAuthenticated ? '切换为演示身份' : tripMessages.identityTitle}
+              </p>
+              {demoUsers.map((user) => {
+                const selected = !isAuthenticated && user.id === currentUser.id;
                 return (
                   <button
                     key={user.id}
@@ -229,7 +246,23 @@ export function AppShell({
                   </button>
                 );
               })}
-              <p className="id-panel-note">演示身份，切换后所有浏览与操作都以新身份计算。</p>
+              {isAuthenticated && (
+                <button
+                  type="button"
+                  className="id-logout"
+                  onClick={() => {
+                    setIdentityOpen(false);
+                    onLogout();
+                  }}
+                >
+                  {tripMessages.authLogout}
+                </button>
+              )}
+              <p className="id-panel-note">
+                {isAuthenticated
+                  ? '退出登录后会回到身份门；切换到演示身份会结束当前登录会话。'
+                  : '演示身份无需密码，切换后所有浏览与操作都以新身份计算。'}
+              </p>
             </div>
           )}
         </div>

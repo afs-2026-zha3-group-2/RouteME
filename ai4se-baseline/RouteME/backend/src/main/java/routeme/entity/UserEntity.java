@@ -5,6 +5,7 @@ import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 
 import routeme.pojo.DemoUser;
+import routeme.pojo.UserAccount;
 import routeme.utils.JsonListUtils;
 
 /**
@@ -15,6 +16,12 @@ public class UserEntity {
 
     @TableId(type = IdType.INPUT)
     private Long id;
+
+    /** 登录用户名；演示账户为 null。 */
+    private String username;
+
+    /** PBKDF2 散列；演示账户为 null，因此不能密码登录。 */
+    private String passwordHash;
 
     private String nickname;
 
@@ -27,12 +34,30 @@ public class UserEntity {
     /** JSON 数组文本。 */
     private String interests;
 
+    private String createdAt;
+
     public Long getId() {
         return id;
     }
 
     public void setId(Long id) {
         this.id = id;
+    }
+
+    public String getUsername() {
+        return username;
+    }
+
+    public void setUsername(String username) {
+        this.username = username;
+    }
+
+    public String getPasswordHash() {
+        return passwordHash;
+    }
+
+    public void setPasswordHash(String passwordHash) {
+        this.passwordHash = passwordHash;
     }
 
     public String getNickname() {
@@ -75,7 +100,20 @@ public class UserEntity {
         this.interests = interests;
     }
 
+    public String getCreatedAt() {
+        return createdAt;
+    }
+
+    public void setCreatedAt(String createdAt) {
+        this.createdAt = createdAt;
+    }
+
     public DemoUser toDemoUser() {
         return new DemoUser(id, nickname, avatarInitial, school, bio, JsonListUtils.parse(interests));
+    }
+
+    public UserAccount toUserAccount() {
+        return new UserAccount(
+                id, username, passwordHash, nickname, avatarInitial, school, bio, JsonListUtils.parse(interests));
     }
 }

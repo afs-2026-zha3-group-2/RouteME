@@ -28,6 +28,22 @@ export type DemoUser = {
   interests: string[];
 };
 
+export type AuthSession = {
+  token: string;
+  expires_at: string;
+  user: DemoUser;
+};
+
+export type AuthRegisterRequest = {
+  username: string;
+  password: string;
+  nickname: string;
+  avatar_initial?: string;
+  school: string;
+  bio?: string;
+  interests: string[];
+};
+
 export type TripStatus = 'recruiting' | 'full' | 'completed';
 
 export type TripSummary = {
