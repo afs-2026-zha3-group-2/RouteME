@@ -95,3 +95,28 @@
 - [x] 回归：后端 `clean test`、前端 `npm test` / `npm run build`、发布 e2e。
 
 **验证：** `cd RouteME/e2e; npx playwright test tests/trips.spec.ts -g "publishes a trip|blocks publishing"`
+
+## 9. R3 任务（字典全国化后的返工，2026-11-16）
+
+### T12 [frontend] 收敛目的地 → 地名库城市映射
+
+- [ ] 新增 `areas/gazetteerCity.ts`（读共享 `area/areaOptions`，港澳二级区归并到「香港」「澳门」）。
+- [ ] 删除 `areas/areaCatalog.ts` 与 `areaCatalog.test.ts`（16 城重复字典与无调用方导出）。
+- [ ] `TripCreatePage` 改用 `gazetteerCityForCode`。
+
+### T13 [frontend] 未覆盖城市的提示
+
+- [ ] `tripMessages.waypointCityUncovered`：说明该城市暂无离线点位、途经点只支持已有地图的城市。
+- [ ] 未选目的地 → 「先选目的地…」；已选但未覆盖 → 覆盖说明；两种情况都不渲染地图。
+
+### T14 [backend] 删除重复字典
+
+- [ ] 删除 `constant/AreaConstant.java`、`pojo/AreaCity.java`。
+- [ ] 移除 `TripPlanServiceImpl` 中 `AreaConstant` / `AreaCity` 两条未使用 import。
+
+### T15 [e2e] R3 断言与回归
+
+- [ ] 发布用例新增：选「北京市 / 市辖区」后无地图、提示正确；珠海仍显示地图。
+- [ ] 回归：后端 `clean test`、前端 `npm test` / `npm run build`、发布 e2e。
+
+**验证：** `cd RouteME/backend; .\mvnw.cmd -B -o clean test`、`cd RouteME/frontend; npm test`、`cd RouteME/e2e; npx playwright test tests/trips.spec.ts -g "publishes a trip|blocks publishing"`

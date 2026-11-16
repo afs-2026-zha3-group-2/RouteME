@@ -89,3 +89,21 @@ P2 阶段记录 §8 的修订把目的地改成二级代码，新增两条场景
 - `PlacePicker` 增加 `showMap` 与 `city`；`PlaceMap` 用 `meet` 保持比例，并按该市点位包围盒缩放，未选目的地时不渲染。
 - `placeCatalog` 增加 `placesInCity(city)`；`areaCatalog` 增加 `mapCityForCode(code)`（港澳二级区映射到地名库城市）。
 - 表单拆三段并统一间距。
+
+## 8. R3：字典全国化后的返工（2026-11-16）
+
+远端 `a13416c` 把目的地字典换成全国省市后，R2 的 16 城切片与 `Cascader` 被 `AreaCascader` + `area/areaOptions` 取代。
+
+| # | 场景 | 测试层 | 用例 |
+|---|---|---|---|
+| 20 | 未覆盖城市不渲染地图且提示正确 | 端到端 | 选「北京市 / 市辖区」→ `[data-testid="place-map"]` 计数 0；提示含「暂无离线点位」且不含「先选目的地」 |
+| 21 | 代码 → 地名库城市映射 | 前端纯函数 | `areas/gazetteerCity.test.ts`：`440400→珠海`、`810200→香港`、`820100→澳门`、`110100→undefined`、未知码 → `undefined` |
+| 22 | 覆盖城市仍显示地图 | 端到端 | 既有发布用例（珠海）保持 `data-city="珠海"` |
+| 23 | 重复字典与死代码清理 | 类型检查 + 编译 | `tsc --noEmit`、`mvnw -o test-compile` 通过；`AreaConstant` / `pojo/AreaCity` 无引用 |
+
+实现要点：
+
+- 新增 `areas/gazetteerCity.ts`：`gazetteerCityForCode` 读共享 `area/areaOptions`，只在地名库包含该城市时返回城市名。
+- `TripCreatePage` 用 `hasDestination` 区分「未选」与「未覆盖」两种提示；未覆盖时不渲染地图。
+- `tripMessages` 新增 `waypointCityUncovered`。
+- 删除 `areas/areaCatalog.ts`（含重复省市数据）与 `areaCatalog.test.ts`；删除后端 `constant/AreaConstant`、`pojo/AreaCity` 及 `TripPlanServiceImpl` 两条未使用 import。
