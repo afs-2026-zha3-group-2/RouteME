@@ -97,6 +97,19 @@
 - **G2 需重评**：`g2-decision.md` 追加「目的地修订」结论，契约版本与测试计数以修订后的提交为准。
 - 归档仍按用户指示暂缓；归档顺序为 `add-destination-area-filters` → `add-trip-publish`。
 
+### 9.1 修订实施结果（2026-11-16 11:35）
+
+| 项 | 结果 |
+|---|---|
+| 实现提交 | `feat(p4): add-trip-publish publish destination code and contract 0.7.0` |
+| 契约 | `openapi.yaml` 0.7.0，`destination_code` 必填、`^[0-9]{6}$`；redocly 0 error / 7 既有 warning |
+| 后端 | `clean test` 156 通过（`TripControllerTest` 27 项，含省级码 / 未知码 / 缺失码拒绝） |
+| 前端 | `npm test` 75 通过；`npm run build` 成功 |
+| 端到端 | 发布 2 项通过（Cascader 选择 + 详情页目的地「珠海」） |
+| 验证报告 | [`20261116-113500-local-verify-report.md`](../../../docs/ai4se-plugins/20261116-113500-local-verify-report.md) |
+| G1 / G2 | `g1-decision.md` 重评 Pass；`g2-decision.md` 追加修订 Pass |
+| 遗留 | 最小字典切片（广东 14 城 + 港澳二级区）需由 `add-destination-area-filters` 替换为全国字典并持久化代码 |
+
 ## 10. 修订后的签署确认
 
 | 角色 | 姓名 | 确认内容 | 日期 |
@@ -104,3 +117,11 @@
 | VL | Neal | 复核目的地修订的验证证据，G2 重评后再签 | 2026-11-16 |
 | AO | Jay | 承担目的地修订实现与本地验证 | 2026-11-16 |
 | SA | Jacky、Karena | 确认修订后的验收口径（必须选到市、非法代码拒绝） | 2026-11-16 |
+
+### 10.1 修订签署（证据落实后）
+
+| 角色 | 姓名 | 确认内容 | 日期 |
+|---|---|---|---|
+| VL | Neal | 复核 `20261116-113500-local-verify-report.md`，G2 修订 Pass | 2026-11-16 |
+| AO | Jay | 交付实现与回归结果；字典切片替换列为归档前复核项 | 2026-11-16 |
+| SM | Lewis | 认可修订范围与遗留项安排 | 2026-11-16 |
