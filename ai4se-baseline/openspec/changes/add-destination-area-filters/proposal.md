@@ -7,12 +7,24 @@
 - **基线：** 远程 `main@229411a`。`add-paged-lists-mybatis-plus`、`apply-prototype-visual-design`、`add-user-auth` 已归档；`refine-inspiration-home`（REQ-005，P3 Pass）、`add-trip-publish`、`add-match-reason`、`add-user-logout`（REQ-006）进行中。
 - **归档顺序：** `refine-inspiration-home` → 本 change → `add-trip-publish`。三者中只有本 change 属于 REQ-007；其它由各自 owner 归档，本 change 不主动归档它们。
 
+## Why
+
+灵感首页的目的地候选与离线地图城市库绑定（16 城、无省市层级），「旅行体验」视图的日期筛选不生效，搜索不在本迭代投入；把目的地与日期筛选做扎实，才能减少学生逐个翻看的成本。
+
+## What Changes
+
+- `trip-plans`：目的地改为 6 位行政区划码 + 省市级联筛选 + 标准名/省名展示；移除关键词搜索。
+- `trip-experiences`：旅行体验视图补目的地代码 + 日期区间筛选；体验卡不显示日期；移除关键词搜索。
+- 数据底座：V10 迁移、区划字典、响应字段；发布页目的地字段由 `add-trip-publish` 目的地修订承载。
+
 ## 问题
 
 1. **目的地没有省市层级。** 前端候选来自离线地图地名库 `map/placeCatalog` 的 16 城（广东 14 + 香港/澳门），`DESTINATIONS = CITY_NAMES`；后端 `trip_plans.destination VARCHAR(20)` 存中文名，只校验非空。用户无法按"省 → 市"定位，也无法覆盖港澳台细分。
 2. **体验视图的日期筛选是"假筛选"。** 筛选条在「旅行体验」视图照常渲染，但 `useExperiences` 不传日期，`GET /api/experiences` 也不接收日期参数；用户填了日期列表不变。
 3. **搜索框不在本迭代投入。** 搜索已贯通前端、后端 `q` 参数、SQL LIKE 与契约；本迭代决定整体移除。`add-trip-publish` 的"按标题搜索"场景与 `refine-inspiration-home` 的搜索空态 E2E 会受影响：前者已授权由本 change 改写，后者交其 owner。
 4. **名称与代码未分离。** 目的地名称是唯一标识，无法支撑行政区划字典、直辖市（"市辖区"）与港澳台（"香港岛/九龙/新界"）的规范展示；V9 已被 auth 占用，契约已 0.6.0。
+
+## What Changes（详细范围）
 
 ## 范围
 
@@ -79,6 +91,14 @@
 | `RouteME/openapi.yaml` | 契约升 0.7.0、参数与字段调整 |
 | `backend/src/test/**`、`frontend/src/**/*.test.ts(x)`、`e2e/tests/**` | 断言与用例同步更新，新增边界用例 |
 | `docs/knowledge/**` | 归档阶段回写（P1 不改） |
+
+### Self / Upstream / Downstream
+
+| 维度 | 影响 |
+|---|---|
+| Self | `trip-plans` 的目的地数据契约、首页筛选、卡片/详情展示；`trip-experiences` 的体验视图日期/目的地筛选与展示 |
+| Upstream | `refine-inspiration-home`（REQ-005，同改两 requirement，先归档）；`add-paged-lists-mybatis-plus`、`apply-prototype-visual-design`、`add-user-auth` 已归档，作为基线 |
+| Downstream | `trip-companions` 匹配改为按 code 比较；`add-trip-publish` 发布页目的地字段改 `destination_code`（后归档） |
 
 ## 验收信号
 

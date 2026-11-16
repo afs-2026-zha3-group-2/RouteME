@@ -189,6 +189,7 @@ export const tripMessages = {
   authDivider: '或者用演示身份直接进入',
   authLoggedIn: '已登录',
   authLogout: '退出登录',
+  authLogoutWarning: '已退出本机，会话可能仍有效',
   authFailed: '操作失败',
   authErrorUsernameRequired: '请输入用户名',
   authErrorUsernameFormat: '用户名需为 3–20 位字母、数字或下划线',

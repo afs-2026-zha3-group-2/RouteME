@@ -54,7 +54,7 @@ test('shows seeded experiences in the travel experience view', async ({ page }) 
     await expect(page.getByText(/强度 · 较累/).first()).toBeVisible();
     expect(await page.locator('.exp-card').count()).toBeGreaterThanOrEqual(2);
     await expect(page.getByText(/带一件防风外套|鞋一定要抓地/).first()).toBeVisible();
-  await expect(page.getByRole('button', { name: '参考此行程发布' }).first()).toBeVisible();
+  await expect(page.getByRole('link', { name: '参考此行程发布' }).first()).toBeVisible();
 });
 
 test('shares an experience and reuses it to publish a new plan', async ({ page }) => {
@@ -84,10 +84,13 @@ test('shares an experience and reuses it to publish a new plan', async ({ page }
   await expect(page.getByText(/已预填目的地、途经点与兴趣/)).toBeVisible();
   await expect(page.getByLabel('计划人数（含自己，2–12）')).toHaveValue('');
   await expect(page.getByLabel('标题')).toHaveValue('');
-  await expect(page.getByLabel('途经点（每行一个，至少两个）')).toHaveValue(/香洲港集合/);
-  await expect(page.getByRole('checkbox', { name: '摄影' })).toBeChecked();
+  await expect(page.locator('.place-chip-name', { hasText: '香洲港集合' }).first()).toBeVisible();
+  await expect(page.getByRole('button', { name: '摄影', exact: true })).toHaveAttribute(
+    'aria-pressed',
+    'true',
+  );
 
-  await page.locator('.form-card button.ant-btn-primary').click();
+  await page.getByRole('button', { name: /^发\s*布$/ }).click();
   await expect(page.getByText(/给这条路线起个名字|请选择出发日期|含你在内至少 2 人/).first()).toBeVisible();
 });
 
@@ -130,7 +133,7 @@ test('guides an empty search to publish from both views', async ({ page }) => {
 
   await page.getByPlaceholder('搜索路线、地点或发布者').fill(keyword);
   await expect(page.getByText('还没有符合条件的行程')).toBeVisible();
-  await expect(page.getByRole('button', { name: '清除全部条件' })).toBeVisible();
+  await expect(page.locator('.empty').getByRole('button', { name: '清除全部条件' })).toBeVisible();
   await page.getByRole('button', { name: '去发布行程' }).click();
   await expect(page).toHaveURL(/#\/trips\/new$/);
 

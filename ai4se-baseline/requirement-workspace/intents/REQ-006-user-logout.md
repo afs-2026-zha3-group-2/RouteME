@@ -1,6 +1,6 @@
 # 意图捕获 — REQ-006 退出当前身份（含演示身份）
 
-- **候选能力：** `user-auth`（ADDED）
+- **候选能力：** `user-auth`（MODIFIED — `add-user-auth` 归档后 Living Spec 已存在）
 - **来源：** 用户指令「用户应该可以退出登录；按钮可放在顶栏身份菜单（截图：`林见夏 / 切换身份` 下拉面板）」；截图展示的组件为 `RouteME/frontend/src/shell/AppShell.tsx` 的 `id-switch` 面板；既有认证变更 `openspec/changes/archive/2026-11-16-add-user-auth/`（Living Spec `openspec/specs/user-auth/`）
 - **捕获日期：** 2026-11-16
 
@@ -30,10 +30,10 @@
 
 ## 与现有 Living Spec / 能力的关系
 
-- `add-user-auth`（进行中）已定义 `user-auth` 的会话校验与注册账号退出：`POST /api/auth/logout` 删除会话，同一 token 再访问 `/auth/me` 返回 401；其前端任务 T6 明确「演示身份不显示退出」。
-- 本需求把退出扩展到演示身份，并把入口统一到顶栏身份菜单；因此**以本需求为准覆盖 T6 的「演示身份不显示退出」表述**，其余会话与密码契约不变。
+- `add-user-auth` 已归档（`openspec/changes/archive/2026-11-16-add-user-auth/`），`user-auth` 的 Living Spec 已存在：`openspec/specs/user-auth/spec.md`「会话校验与退出」定义了会话签发 / 校验与注册账号退出（`POST /api/auth/logout` 删除会话，同一 token 再访问 `/auth/me` 返回 401）；其归档任务 T6 写有「演示身份不显示退出」。
+- 本需求把退出扩展到演示身份，并把入口统一到顶栏身份菜单；因此**以本需求为准覆盖 T6 的「演示身份不显示退出」表述**（归档正文不改写，由本 change 的 `summary.md` / G3 注明被取代），其余会话与密码契约不变。
 - `trip-plans` 已定义「演示身份进入与切换」；本需求只新增退出路径，不改进入、切换或身份门展示。
-- `user-auth` 尚未进入 `openspec/specs/`（`add-user-auth` 未归档），因此本 change 的 delta 以 ADDED 需求表达，避免 MODIFIED 一个尚未存在的 living requirement。
+- `user-auth` 已进入 `openspec/specs/`，因此本 change 的 delta 以 MODIFIED 表达：整体替换「会话校验与退出」块，并原样保留其 3 个既有场景，避免新增平行的退出权威描述。
 
 ## Discovery Decision
 

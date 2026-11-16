@@ -5,7 +5,7 @@
 - **Priority：** P0 ｜ **Iteration：** 1（第 2–3 天）｜ **Points：** 3
 - **Page：** 灵感首页
 - **Source：** `docs/prototype/stories.html` S03
-- **Status：** P3 Pass（2026-11-16），待 P4 实现
+- **Status：** P4 Pass（2026-11-16），待 PR / G2
 
 ## Story statement
 
