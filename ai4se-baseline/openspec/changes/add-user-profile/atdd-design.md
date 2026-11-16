@@ -4,7 +4,7 @@
 - **依据：** [`proposal.md`](proposal.md)、[`specs/user-profile/spec.md`](specs/user-profile/spec.md)、[`specs/user-auth/spec.md`](specs/user-auth/spec.md)、[`dov-ac-review.md`](dov-ac-review.md)、[`g1-decision.md`](g1-decision.md)
 - **规则：** `@rule:web-testing`、`@rule:web-coding-style`、`@rule:api-contract`、`@rule:sdd-artifacts`
 - **范围提醒：** 本 change 同时改后端、契约（0.7.0）、迁移（1 个）与前端页面；ATDD 覆盖 **API 验收 + 前端 UT + E2E 垂直切片**。不产出实现代码。
-- **设计预览：** 本 change 未做独立预览页；交互契约以本文件 §2 与 `design.md` §8 的结构契约 + 既有设计令牌为准（G1 未要求预览）。
+- **设计预览：** [`preview/profile-pages.html`](preview/profile-pages.html)（自包含评审页，不进入构建）：完善 / 编辑、个人主页、发布者入口 × 本人 / 他人 × 未完善 / 已完善 × 浅 / 深色 × 390 / 768 / 1440；交互契约仍以本文件 §2 与 `design.md` §7–§8 为准。
 
 ## 1. ATDD 分层范围
 

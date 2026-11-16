@@ -1,0 +1,1373 @@
+<!doctype html>
+<html lang="zh-CN" data-theme="light">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>RouteMe · 个人资料与个人主页设计预览</title>
+<style>
+  :root {
+    --deep: #06232b;
+    --tide: #0f4c5c;
+    --lagoon: #12707f;
+    --lagoon-soft: #e3f0f1;
+    --coral: #ff6b35;
+    --amber: #f5a524;
+    --jade: #10925f;
+    --info: #2b7fd4;
+    --danger: #d8402f;
+    --t-danger: #b32c1c;
+    --bg: #f2ece1;
+    --surface: #fffdf9;
+    --surface-2: #f8f2e7;
+    --surface-3: #f1e9db;
+    --ink: #0b2a33;
+    --ink-2: #3f5d67;
+    --ink-3: #576b72;
+    --line: #e4dbcb;
+    --on-deep: #f3fbfc;
+    --on-deep-accent: #ffd166;
+    --grad-tide: linear-gradient(122deg, #0f4c5c 0%, #116b7a 42%, #623dff 100%);
+    --sh-1: 0 1px 2px rgba(6, 35, 43, 0.06), 0 2px 8px -4px rgba(6, 35, 43, 0.1);
+    --sh-2: 0 2px 6px rgba(6, 35, 43, 0.06), 0 14px 30px -18px rgba(6, 35, 43, 0.34);
+    --sh-3: 0 8px 24px -8px rgba(6, 35, 43, 0.22), 0 32px 64px -32px rgba(6, 35, 43, 0.5);
+    --r: 14px;
+    --r-lg: 20px;
+    --font: "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", system-ui, sans-serif;
+    --font-num: "SF Mono", "Cascadia Mono", "Segoe UI", ui-monospace, monospace;
+    color-scheme: light;
+  }
+
+  [data-theme="dark"] {
+    --deep: #030e13;
+    --tide: #0d4453;
+    --lagoon: #2b93a4;
+    --lagoon-soft: #10333c;
+    --coral: #ff8354;
+    --amber: #ffbb3d;
+    --jade: #2fc07f;
+    --info: #56a3ee;
+    --danger: #ff6b5c;
+    --t-danger: #ff7f70;
+    --bg: #061116;
+    --surface: #0e1f26;
+    --surface-2: #132a33;
+    --surface-3: #19343e;
+    --ink: #e9f4f6;
+    --ink-2: #a6c1c9;
+    --ink-3: #869da4;
+    --line: #1d3742;
+    --on-deep: #eaf6f8;
+    --on-deep-accent: #ffd166;
+    --grad-tide: linear-gradient(122deg, #0d4453 0%, #146b7a 44%, #6448d4 100%);
+    --sh-1: 0 1px 2px rgba(0, 0, 0, 0.5);
+    --sh-2: 0 2px 6px rgba(0, 0, 0, 0.4), 0 16px 34px -20px rgba(0, 0, 0, 0.9);
+    --sh-3: 0 10px 30px -10px rgba(0, 0, 0, 0.7), 0 40px 70px -34px rgba(0, 0, 0, 1);
+    color-scheme: dark;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    font-family: var(--font);
+    background: var(--bg);
+    color: var(--ink);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  button, input, select, textarea { font-family: inherit; }
+  button { cursor: pointer; }
+
+  /* ---------- toolbar ---------- */
+  .preview-bar {
+    position: sticky;
+    top: 0;
+    z-index: 300;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 14px;
+    padding: 10px 18px;
+    border-bottom: 1px solid var(--line);
+    background: color-mix(in srgb, var(--surface) 92%, transparent);
+    backdrop-filter: blur(14px);
+  }
+
+  .pb-title { display: grid; line-height: 1.2; margin-right: 8px; }
+  .pb-title b { font-size: 13px; }
+  .pb-title span { font-size: 11px; color: var(--ink-3); }
+
+  .pb-group { display: flex; align-items: center; gap: 6px; }
+  .pb-group > label {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--ink-3);
+  }
+
+  .seg {
+    display: inline-flex;
+    gap: 3px;
+    padding: 3px;
+    border-radius: 99px;
+    background: var(--surface-2);
+    border: 1px solid var(--line);
+  }
+
+  .seg button {
+    padding: 5px 11px;
+    border: 0;
+    border-radius: 99px;
+    background: transparent;
+    color: var(--ink-2);
+    font-size: 12px;
+    font-weight: 600;
+  }
+
+  .seg button[aria-pressed="true"] {
+    background: var(--surface);
+    color: var(--ink);
+    box-shadow: var(--sh-1);
+  }
+
+  .check {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    color: var(--ink-2);
+  }
+
+  .check input { accent-color: var(--lagoon); }
+
+  [data-view="setup"] .identity-seg { opacity: 0.4; pointer-events: none; }
+  [data-view="profile"] .errors-check,
+  [data-view="publisher"] .errors-check { opacity: 0.4; pointer-events: none; }
+
+  /* ---------- stage ---------- */
+  .stage {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 330px;
+    gap: 22px;
+    width: min(1260px, 100% - 40px);
+    margin: 22px auto 60px;
+    align-items: start;
+  }
+
+  @media (max-width: 1040px) {
+    .stage { grid-template-columns: 1fr; }
+  }
+
+  .browser {
+    border: 1px solid var(--line);
+    border-radius: 18px;
+    overflow: hidden;
+    background: var(--bg);
+    box-shadow: var(--sh-3);
+  }
+
+  .browser-chrome {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 9px 14px;
+    border-bottom: 1px solid var(--line);
+    background: var(--surface-2);
+  }
+
+  .dots { display: inline-flex; gap: 5px; }
+  .dots i {
+    display: block;
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    background: var(--line);
+  }
+  .dots i:first-child { background: #ff6b5c; }
+  .dots i:nth-child(2) { background: #f5a524; }
+  .dots i:nth-child(3) { background: #12a89b; }
+
+  .address {
+    flex: 1;
+    padding: 4px 10px;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: var(--surface);
+    color: var(--ink-3);
+    font-family: var(--font-num);
+    font-size: 11px;
+  }
+
+  .app {
+    min-height: 720px;
+    background:
+      radial-gradient(900px 380px at 88% -10%, color-mix(in srgb, var(--lagoon) 14%, transparent), transparent 70%),
+      var(--bg);
+  }
+
+  /* ---------- topbar / rail ---------- */
+  .topbar {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    height: 62px;
+    padding: 0 20px;
+    border-bottom: 1px solid var(--line);
+    background: color-mix(in srgb, var(--surface) 86%, transparent);
+    backdrop-filter: blur(18px) saturate(1.4);
+  }
+
+  .brand { display: flex; align-items: center; gap: 10px; color: var(--ink); text-decoration: none; }
+  .brand-mark {
+    display: grid;
+    place-items: center;
+    width: 34px;
+    height: 34px;
+    border-radius: 10px;
+    background: var(--grad-tide);
+    color: var(--on-deep);
+    box-shadow: 0 4px 14px -6px var(--tide);
+  }
+  .brand-mark svg { width: 23px; height: 23px; }
+  .brand-mark circle { fill: var(--on-deep-accent); }
+  .brand-text { display: grid; line-height: 1.05; }
+  .brand-text b { font-size: 15px; font-weight: 800; letter-spacing: -0.02em; }
+  .brand-text i { font-style: normal; font-size: 10px; letter-spacing: 0.22em; color: var(--ink-3); }
+
+  .topbar-spacer { flex: 1; }
+
+  .id-chip {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    height: 36px;
+    padding: 3px 11px 3px 5px;
+    border: 1px solid var(--line);
+    border-radius: 99px;
+    background: var(--surface);
+  }
+  .id-chip-name { display: grid; line-height: 1.15; text-align: left; }
+  .id-chip-name b { font-size: 12.5px; }
+  .id-chip-name span { font-size: 9.5px; letter-spacing: 0.08em; color: var(--ink-3); }
+
+  .shell { display: grid; grid-template-columns: 196px minmax(0, 1fr); }
+
+  .rail {
+    padding: 18px 12px;
+    border-right: 1px solid var(--line);
+    background: color-mix(in srgb, var(--surface) 55%, transparent);
+  }
+
+  .rail-nav { display: grid; gap: 4px; }
+  .rail-link {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    padding: 9px 11px;
+    border-radius: 10px;
+    color: var(--ink-2);
+    font-size: 12.5px;
+    font-weight: 600;
+    text-decoration: none;
+  }
+  .rail-link svg { width: 17px; height: 17px; }
+  .rail-link.on { background: var(--lagoon-soft); color: var(--lagoon); }
+  .rail-note { margin: 22px 6px 0; font-size: 10.5px; line-height: 1.6; color: var(--ink-3); }
+
+  .view { padding: 24px 26px 30px; min-width: 0; }
+
+  @media (max-width: 760px) {
+    .shell { grid-template-columns: 1fr; }
+    .rail { display: none; }
+    .view { padding: 18px 16px 24px; }
+  }
+
+  /* ---------- shared widgets ---------- */
+  .page-head { margin-bottom: 14px; }
+  .page-head h2 { margin: 0 0 4px; font-size: 22px; letter-spacing: -0.02em; }
+  .page-head p { margin: 0; font-size: 12.5px; color: var(--ink-3); }
+
+  .card {
+    border: 1px solid var(--line);
+    border-radius: var(--r-lg);
+    background: var(--surface);
+    box-shadow: var(--sh-2);
+    padding: 20px;
+  }
+
+  .avatar {
+    display: grid;
+    place-items: center;
+    flex: none;
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    background: linear-gradient(146deg, hsl(190 58% 32%), hsl(232 62% 18%));
+    color: #fff;
+    font-size: 11.5px;
+    font-weight: 700;
+    box-shadow: inset 0 0 0 1.5px rgba(255, 255, 255, 0.3), 0 2px 8px -3px rgba(6, 35, 43, 0.5);
+    user-select: none;
+  }
+  .avatar.xl { width: 78px; height: 78px; font-size: 27px; }
+  .avatar.photo {
+    background: linear-gradient(150deg, #d7a06a 0%, #8b5e3c 42%, #2f6f7a 100%);
+    font-size: 0;
+  }
+
+  .alert {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 6px;
+    margin: 0 0 16px;
+    padding: 11px 14px;
+    border: 1px solid color-mix(in srgb, var(--amber) 42%, var(--line));
+    border-radius: var(--r);
+    background: color-mix(in srgb, var(--amber) 10%, var(--surface));
+    font-size: 12.5px;
+    color: var(--ink-2);
+  }
+  .alert b { color: var(--ink); }
+  .alert.info {
+    border-color: color-mix(in srgb, var(--info) 34%, var(--line));
+    background: color-mix(in srgb, var(--info) 8%, var(--surface));
+  }
+
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    height: 38px;
+    padding: 0 18px;
+    border: 1px solid transparent;
+    border-radius: 99px;
+    font-size: 12.5px;
+    font-weight: 700;
+    text-decoration: none;
+    color: var(--ink);
+  }
+  .btn.sm { height: 31px; padding: 0 13px; font-size: 11.5px; }
+  .btn.primary {
+    background: var(--grad-sunset, linear-gradient(104deg, #ff6b35 0%, #f5a524 100%));
+    color: #241005;
+    box-shadow: 0 8px 18px -10px var(--coral);
+  }
+  .btn.ghost { border-color: var(--line); background: var(--surface); color: var(--ink-2); }
+  .btn.ghost:hover { border-color: var(--lagoon); color: var(--lagoon); }
+  .btn.text { border: 0; background: transparent; color: var(--ink-3); padding: 0 8px; }
+
+  .muted { color: var(--ink-3); font-size: 11.5px; }
+  .tag {
+    display: inline-flex;
+    align-items: center;
+    height: 22px;
+    padding: 0 9px;
+    border-radius: 99px;
+    background: var(--lagoon-soft);
+    color: var(--lagoon);
+    font-size: 10.5px;
+    font-weight: 700;
+  }
+  .tag.jade { background: color-mix(in srgb, var(--jade) 14%, var(--surface)); color: var(--jade); }
+
+  .chip {
+    display: inline-flex;
+    align-items: center;
+    height: 26px;
+    padding: 0 11px;
+    border: 1px solid var(--line);
+    border-radius: 99px;
+    background: var(--surface-2);
+    color: var(--ink-2);
+    font-size: 11.5px;
+    font-weight: 600;
+  }
+
+  /* ---------- setup ---------- */
+  .avatar-row {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding-bottom: 18px;
+    margin-bottom: 18px;
+    border-bottom: 1px dashed var(--line);
+  }
+  .avatar-row b { font-size: 13px; }
+  .avatar-row p { margin: 3px 0 9px; }
+  .avatar-actions { display: flex; align-items: center; gap: 6px; }
+
+  .field-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 15px 18px;
+  }
+  .field.wide { grid-column: 1 / -1; }
+
+  @media (max-width: 720px) {
+    .field-grid { grid-template-columns: 1fr; }
+    .field.wide { grid-column: auto; }
+  }
+
+  .field-label {
+    display: flex;
+    align-items: baseline;
+    gap: 5px;
+    margin-bottom: 6px;
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--ink-2);
+  }
+  .field-label .req { color: var(--coral); }
+  .field-label .opt { margin-left: auto; font-size: 10.5px; font-weight: 500; color: var(--ink-3); }
+
+  .control {
+    width: 100%;
+    height: 38px;
+    padding: 0 12px;
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    background: var(--surface-2);
+    color: var(--ink);
+    font-size: 12.5px;
+    outline: none;
+  }
+  .control:focus { border-color: var(--lagoon); box-shadow: 0 0 0 3px rgba(18, 112, 127, 0.18); }
+  textarea.control { height: 76px; padding: 9px 12px; resize: vertical; line-height: 1.6; }
+  select.control { appearance: none; background-image: linear-gradient(45deg, transparent 50%, var(--ink-3) 50%), linear-gradient(135deg, var(--ink-3) 50%, transparent 50%); background-position: calc(100% - 17px) 16px, calc(100% - 12px) 16px; background-size: 5px 5px; background-repeat: no-repeat; }
+
+  .err {
+    display: none;
+    margin-top: 5px;
+    color: var(--t-danger);
+    font-size: 11px;
+    font-weight: 600;
+  }
+
+  .field.invalid .control { border-color: var(--danger); background: color-mix(in srgb, var(--danger) 5%, var(--surface)); }
+  .field.invalid .err { display: block; }
+
+  .choice-row { display: flex; flex-wrap: wrap; gap: 7px; }
+  .choice {
+    height: 32px;
+    padding: 0 13px;
+    border: 1px solid var(--line);
+    border-radius: 99px;
+    background: var(--surface-2);
+    color: var(--ink-2);
+    font-size: 11.5px;
+    font-weight: 600;
+  }
+  .choice.on {
+    border-color: color-mix(in srgb, var(--lagoon) 55%, var(--line));
+    background: var(--lagoon-soft);
+    color: var(--lagoon);
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--lagoon) 22%, transparent);
+  }
+  .field.invalid .choice-row .choice { border-color: color-mix(in srgb, var(--danger) 45%, var(--line)); }
+
+  .interest-head {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+    margin-bottom: 7px;
+  }
+  .interest-count { margin-left: auto; font-family: var(--font-num); font-size: 11px; color: var(--ink-3); }
+  .interest-count.full { color: var(--amber); }
+  .interest-grid { display: flex; flex-wrap: wrap; gap: 7px; }
+  .interest {
+    position: relative;
+    height: 30px;
+    padding: 0 12px;
+    border: 1px solid var(--line);
+    border-radius: 9px;
+    background: var(--surface-2);
+    color: var(--ink-2);
+    font-size: 11.5px;
+    font-weight: 600;
+  }
+  .interest.on {
+    border-color: var(--lagoon);
+    background: var(--lagoon-soft);
+    color: var(--lagoon);
+  }
+  .interest .tick { margin-right: 4px; font-size: 10px; }
+  .interest-add { display: flex; gap: 7px; margin-top: 8px; }
+  .interest-add .control { height: 34px; }
+
+  .form-foot {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px;
+    padding-top: 18px;
+    margin-top: 20px;
+    border-top: 1px solid var(--line);
+  }
+  .form-foot .muted { margin-left: auto; }
+
+  /* ---------- profile ---------- */
+  .profile-hero {
+    display: flex;
+    align-items: center;
+    gap: 18px;
+    padding: 22px;
+  }
+  .hero-main { min-width: 0; }
+  .hero-main h2 { display: flex; align-items: center; gap: 8px; margin: 0 0 5px; font-size: 24px; letter-spacing: -0.02em; }
+  .hero-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 7px; margin: 0; color: var(--ink-3); font-size: 12px; }
+  .hero-meta .sep { color: var(--line); }
+  .hero-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+  .hero-main .btn { margin-left: auto; }
+  .profile-hero > .btn { margin-left: auto; }
+
+  .profile-body { display: grid; gap: 14px; margin-top: 16px; }
+  .section-title { margin: 0 0 9px; font-size: 12px; font-weight: 800; letter-spacing: 0.06em; color: var(--ink-3); text-transform: uppercase; }
+  .fact-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+  .fact { padding: 11px 13px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface-2); }
+  .fact dt { margin: 0 0 3px; font-size: 10.5px; color: var(--ink-3); }
+  .fact dd { margin: 0; font-size: 13px; font-weight: 700; }
+  .tag-row { display: flex; flex-wrap: wrap; gap: 7px; }
+  .bio { margin: 0; font-size: 13px; line-height: 1.85; color: var(--ink-2); }
+  .profile-empty { margin: 0; font-size: 12.5px; color: var(--ink-3); }
+
+  /* ---------- publisher ---------- */
+  .pub-list { display: grid; gap: 12px; }
+  .pub-card {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 14px 16px;
+    border: 1px solid var(--line);
+    border-radius: var(--r);
+    background: var(--surface);
+    box-shadow: var(--sh-1);
+  }
+  .pub-card .title { display: grid; gap: 2px; min-width: 0; }
+  .pub-card .title b { font-size: 13px; }
+  .pub-card .title span { font-size: 11px; color: var(--ink-3); }
+  .pub-host {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    margin-left: auto;
+    padding: 4px 9px 4px 4px;
+    border: 0;
+    border-radius: 99px;
+    background: var(--surface-2);
+    color: var(--ink-2);
+    font-size: 11.5px;
+    font-weight: 700;
+    white-space: nowrap;
+  }
+  .pub-host.arrow::after { content: "›"; margin-left: 2px; color: var(--ink-3); font-weight: 700; }
+  .pub-note { margin: 4px 0 0; font-size: 11px; color: var(--ink-3); }
+  .pub-result { display: grid; gap: 6px; }
+
+  /* ---------- state visibility ---------- */
+  [hidden] { display: none !important; }
+
+  [data-page] { display: none; }
+  [data-view="setup"] [data-page="setup"],
+  [data-view="profile"] [data-page="profile"],
+  [data-view="publisher"] [data-page="publisher"] { display: block; }
+
+  /* ---------- notes ---------- */
+  .notes {
+    display: grid;
+    gap: 12px;
+    padding: 18px;
+    border: 1px solid var(--line);
+    border-radius: 16px;
+    background: var(--surface);
+    box-shadow: var(--sh-1);
+  }
+  .notes h3 { margin: 0 0 4px; font-size: 13px; }
+  .notes p { margin: 0; font-size: 11.5px; line-height: 1.75; color: var(--ink-3); }
+  .notes ul { margin: 6px 0 0; padding-left: 16px; font-size: 11.5px; line-height: 1.8; color: var(--ink-3); }
+  .notes b { color: var(--ink-2); }
+  .note-block { display: none; padding-top: 12px; border-top: 1px solid var(--line); }
+  [data-view="setup"] .note-block[data-note="setup"],
+  [data-view="profile"] .note-block[data-note="profile"],
+  [data-view="publisher"] .note-block[data-note="publisher"] { display: block; }
+  .note-kv { display: grid; grid-template-columns: 74px 1fr; gap: 4px 8px; font-size: 11.5px; }
+  .note-kv dt { color: var(--ink-3); }
+  .note-kv dd { margin: 0; color: var(--ink-2); }
+  .preview-flag {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 9px;
+    border-radius: 99px;
+    background: color-mix(in srgb, var(--amber) 16%, var(--surface));
+    color: var(--ink-2);
+    font-size: 10.5px;
+    font-weight: 700;
+  }
+</style>
+</head>
+<body data-view="setup" data-self="true" data-complete="false" data-errors="false" data-theme="light">
+
+<div class="preview-bar">
+  <div class="pb-title">
+    <b>个人资料与个人主页</b>
+    <span>add-user-profile · 设计预览（非生产代码）</span>
+  </div>
+
+  <div class="pb-group">
+    <label>页面</label>
+    <div class="seg" data-seg="view">
+      <button type="button" data-view-btn="setup" aria-pressed="true">完善页</button>
+      <button type="button" data-view-btn="profile" aria-pressed="false">个人主页</button>
+      <button type="button" data-view-btn="publisher" aria-pressed="false">发布者入口</button>
+    </div>
+  </div>
+
+  <div class="pb-group identity-seg">
+    <label>身份</label>
+    <div class="seg" data-seg="identity">
+      <button type="button" data-self-btn="true" aria-pressed="true">本人</button>
+      <button type="button" data-self-btn="false" aria-pressed="false">他人</button>
+    </div>
+  </div>
+
+  <div class="pb-group">
+    <label>资料</label>
+    <div class="seg" data-seg="complete">
+      <button type="button" data-complete-btn="false" aria-pressed="true">未完善</button>
+      <button type="button" data-complete-btn="true" aria-pressed="false">已完善</button>
+    </div>
+  </div>
+
+  <div class="pb-group">
+    <label>主题</label>
+    <div class="seg" data-seg="theme">
+      <button type="button" data-theme-btn="light" aria-pressed="true">浅色</button>
+      <button type="button" data-theme-btn="dark" aria-pressed="false">深色</button>
+    </div>
+  </div>
+
+  <label class="check errors-check">
+    <input type="checkbox" id="errors-toggle" />
+    模拟缺项提交
+  </label>
+</div>
+
+<main class="stage">
+  <section class="browser">
+    <div class="browser-chrome">
+      <span class="dots"><i></i><i></i><i></i></span>
+      <span class="address" id="address">routeme.app/#/profile/setup</span>
+    </div>
+
+    <div class="app">
+      <header class="topbar">
+        <a class="brand" href="#">
+          <span class="brand-mark" aria-hidden="true">
+            <svg viewBox="0 0 32 32">
+              <path d="M5 24c5-13 17-13 22 0" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" />
+              <circle cx="16" cy="10" r="3.4" fill="currentColor" />
+            </svg>
+          </span>
+          <span class="brand-text"><b>RouteMe</b><i>路觅</i></span>
+        </a>
+
+        <span class="topbar-spacer"></span>
+
+        <span class="id-chip">
+          <span class="avatar" data-bind="avatar">林</span>
+          <span class="id-chip-name">
+            <b data-bind="nickname">林见夏</b>
+            <span>切换身份</span>
+          </span>
+        </span>
+      </header>
+
+      <div class="shell">
+        <aside class="rail">
+          <nav class="rail-nav">
+            <a class="rail-link" href="#">
+              <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true">
+                <circle cx="10" cy="10" r="7" /><path d="m12.8 7.2-1.5 4.1-4.1 1.5 1.5-4.1z" stroke-linejoin="round" />
+              </svg>
+              旅行灵感
+            </a>
+            <a class="rail-link" href="#">
+              <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" aria-hidden="true">
+                <path d="M10 4.5v11M4.5 10h11" />
+              </svg>
+              发布行程
+            </a>
+            <a class="rail-link on" href="#">
+              <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M5 15.5c3.6 0 5.6-2.2 6.4-6.6l3.4-1.4-1.4 3.4C9 13.2 6.8 15.2 5 15.5Z" /><circle cx="6" cy="6" r="1.6" /><circle cx="14" cy="14" r="1.6" />
+              </svg>
+              我的旅行
+            </a>
+          </nav>
+          <p class="rail-note">演示环境 · 数据保存在本机</p>
+        </aside>
+
+        <div class="view">
+          <!-- ================= setup ================= -->
+          <div data-page="setup">
+            <div class="page-head">
+              <h2 class="only-incomplete">完善个人资料</h2>
+              <h2 class="only-complete">编辑资料</h2>
+              <p class="only-incomplete">补完带 <span style="color:var(--coral)">*</span> 的 6 项，就能生成可被同行者查看的个人主页。</p>
+              <p class="only-complete">修改会立即同步到你的个人主页与发布者入口。</p>
+            </div>
+
+            <div class="alert error-only" role="alert">
+              <b>还有 <span id="missing-count">5</span> 项未完成</b>
+              <span id="missing-list">生日、性别、所在城市、旅行兴趣、旅行方式</span>
+            </div>
+
+            <form class="card" onsubmit="return false">
+              <div class="avatar-row">
+                <span class="avatar xl" id="setup-avatar" data-bind="avatar">林</span>
+                <div>
+                  <b>头像</b> <span class="muted">选填</span>
+                  <p class="muted">JPEG / PNG / WebP，单文件 ≤ 2 MB；不上传时使用昵称首字。</p>
+                  <div class="avatar-actions">
+                    <button type="button" class="btn ghost sm">上传头像</button>
+                    <button type="button" class="btn text sm">移除</button>
+                  </div>
+                </div>
+              </div>
+
+              <div class="field-grid">
+                <div class="field" data-req="nickname">
+                  <label class="field-label" for="f-nickname">昵称 <span class="req">*</span><span class="opt">1–20 字</span></label>
+                  <input id="f-nickname" class="control" data-field="nickname" maxlength="20" />
+                  <div class="err">请填写昵称（20 字以内）</div>
+                </div>
+
+                <div class="field" data-req="birthday">
+                  <label class="field-label" for="f-birthday">生日 <span class="req">*</span><span class="opt">不公开</span></label>
+                  <input id="f-birthday" class="control" data-field="birthday" type="date" min="1900-01-01" max="2026-11-16" />
+                  <div class="err">请选择合法生日（1900-01-01 至今天）</div>
+                </div>
+
+                <div class="field" data-req="gender">
+                  <span class="field-label">性别 <span class="req">*</span></span>
+                  <div class="choice-row" data-choice="gender">
+                    <button type="button" class="choice">男</button>
+                    <button type="button" class="choice">女</button>
+                    <button type="button" class="choice">其他</button>
+                  </div>
+                  <div class="err">请选择性别</div>
+                </div>
+
+                <div class="field" data-req="city">
+                  <label class="field-label" for="f-city">所在城市 <span class="req">*</span></label>
+                  <input id="f-city" class="control" data-field="city" maxlength="40" list="city-list" />
+                  <datalist id="city-list">
+                    <option value="广州"></option><option value="深圳"></option><option value="杭州"></option>
+                    <option value="成都"></option><option value="上海"></option><option value="北京"></option>
+                  </datalist>
+                  <div class="err">请填写所在城市（40 字以内）</div>
+                </div>
+
+                <div class="field">
+                  <label class="field-label" for="f-school">学校 <span class="opt">选填</span></label>
+                  <input id="f-school" class="control" data-field="school" maxlength="80" placeholder="例如：中山大学" />
+                </div>
+
+                <div class="field">
+                  <label class="field-label" for="f-major">专业 <span class="opt">选填</span></label>
+                  <input id="f-major" class="control" data-field="major" maxlength="80" placeholder="例如：地理科学" />
+                </div>
+
+                <div class="field">
+                  <label class="field-label" for="f-job">职业 <span class="opt">选填</span></label>
+                  <select id="f-job" class="control" data-field="job">
+                    <option value="">不填写</option>
+                    <option>学生</option><option>上班族</option><option>自由职业</option><option>其他</option>
+                  </select>
+                </div>
+
+                <div class="field">
+                  <label class="field-label" for="f-mbti">MBTI <span class="opt">选填</span></label>
+                  <select id="f-mbti" class="control" data-field="mbti">
+                    <option value="">不填写</option>
+                    <option>INTJ</option><option>INTP</option><option>ENTJ</option><option>ENTP</option>
+                    <option>INFJ</option><option>INFP</option><option>ENFJ</option><option>ENFP</option>
+                    <option>ISTJ</option><option>ISFJ</option><option>ESTJ</option><option>ESFJ</option>
+                    <option>ISTP</option><option>ISFP</option><option>ESTP</option><option>ESFP</option>
+                  </select>
+                </div>
+
+                <div class="field wide" data-req="interests">
+                  <div class="interest-head">
+                    <span class="field-label" style="margin:0">旅行兴趣 <span class="req">*</span></span>
+                    <span class="interest-count" id="interest-count">0 / 5</span>
+                  </div>
+                  <div class="interest-grid" id="interest-grid"></div>
+                  <div class="interest-add">
+                    <input id="interest-input" class="control" maxlength="12" placeholder="自定义标签，例如：温泉" />
+                    <button type="button" class="btn ghost sm" id="interest-add">添加</button>
+                  </div>
+                  <div class="err">至少选择 3 个、最多 5 个兴趣标签</div>
+                </div>
+
+                <div class="field wide" data-req="travelStyle">
+                  <span class="field-label">旅行方式 <span class="req">*</span><span class="opt">单选</span></span>
+                  <div class="choice-row" data-choice="travel_style">
+                    <button type="button" class="choice">特种兵</button>
+                    <button type="button" class="choice">休闲游</button>
+                    <button type="button" class="choice">深度游</button>
+                    <button type="button" class="choice">随性游</button>
+                  </div>
+                  <div class="err">请选择一种旅行方式</div>
+                </div>
+
+                <div class="field wide">
+                  <label class="field-label" for="f-bio">个人简介 <span class="opt">选填 · 500 字以内</span></label>
+                  <textarea id="f-bio" class="control" data-field="bio" maxlength="500"></textarea>
+                </div>
+              </div>
+
+              <div class="form-foot">
+                <button type="button" class="btn primary">保存资料</button>
+                <button type="button" class="btn ghost only-incomplete">跳过，先去逛逛</button>
+                <a href="#" class="btn text self-only only-complete">取消</a>
+                <span class="muted">保存后可随时在「我的」里修改</span>
+              </div>
+            </form>
+          </div>
+
+          <!-- ================= profile ================= -->
+          <div data-page="profile">
+            <div class="page-head">
+              <h2>个人主页</h2>
+              <p>其他用户从行程卡、行程详情与游后体验的发布者 / 作者入口进入这里。</p>
+            </div>
+
+            <section class="card profile-hero">
+              <span class="avatar xl" data-bind="avatar">林</span>
+              <div class="hero-main">
+                <h2>
+                  <span data-bind="nickname">林见夏</span>
+                  <span class="tag jade only-complete">资料已完善</span>
+                  <span class="tag only-incomplete">资料未完善</span>
+                </h2>
+                <p class="hero-meta">
+                  <span class="only-complete" data-bind="agezodiac">25 岁 · 双子座</span>
+                  <span class="sep" data-sep="age">·</span>
+                  <span data-bind="city">广州</span>
+                  <span class="sep" data-sep="city">·</span>
+                  <span data-bind="gender">女</span>
+                </p>
+                <div class="hero-chips only-complete">
+                  <span class="chip" data-bind="schoolMajor">中山大学 · 地理科学</span>
+                  <span class="chip" data-bind="job">学生</span>
+                  <span class="chip" data-bind="mbti">INFP</span>
+                  <span class="chip" data-bind="travelStyle">深度游</span>
+                </div>
+              </div>
+              <a href="#" class="btn primary sm self-only">编辑资料</a>
+            </section>
+
+            <div class="alert info only-incomplete" role="status">
+              <b>该用户尚未完善资料</b>
+              <span>先看看 TA 已经填写的部分，未填字段不会显示空行。</span>
+            </div>
+
+            <div class="profile-body">
+              <section class="card only-complete">
+                <h3 class="section-title">关于 TA</h3>
+                <div class="fact-grid">
+                  <div class="fact"><dt>学校与专业</dt><dd data-bind="schoolMajor">中山大学 · 地理科学</dd></div>
+                  <div class="fact"><dt>职业</dt><dd data-bind="job">学生</dd></div>
+                  <div class="fact"><dt>MBTI</dt><dd data-bind="mbti">INFP</dd></div>
+                  <div class="fact"><dt>旅行方式</dt><dd data-bind="travelStyle">深度游</dd></div>
+                </div>
+              </section>
+
+              <section class="card only-incomplete">
+                <h3 class="section-title">已填写</h3>
+                <div class="fact-grid">
+                  <div class="fact"><dt>发布者摘要</dt><dd data-bind="summary">上班族</dd></div>
+                  <div class="fact"><dt>所在城市</dt><dd data-bind="city">杭州</dd></div>
+                </div>
+              </section>
+
+              <section class="card" id="profile-interests-card">
+                <h3 class="section-title">旅行兴趣</h3>
+                <div class="tag-row" id="profile-interests"></div>
+              </section>
+
+              <section class="card only-complete" id="profile-bio-card">
+                <h3 class="section-title">个人简介</h3>
+                <p class="bio" data-bind="bio"></p>
+              </section>
+            </div>
+          </div>
+
+          <!-- ================= publisher ================= -->
+          <div data-page="publisher">
+            <div class="page-head">
+              <h2>发布者入口与摘要</h2>
+              <p>摘要按「学校 · 专业 → 职业 → 城市」取第一个可用值；全空时只显示头像与昵称。</p>
+            </div>
+
+            <div class="pub-list">
+              <div class="pub-card">
+                <div class="title">
+                  <b>周末去海珠湖看日落</b>
+                  <span>广州 · 11-21 → 11-22 · 摄影 / 自然</span>
+                </div>
+                <span class="pub-result">
+                  <button class="pub-host arrow" type="button">
+                    <span class="avatar">林</span>
+                    <span>林见夏 <span class="muted">· 中山大学 · 地理科学</span></span>
+                  </button>
+                  <span class="pub-note">有学校时优先「学校 · 专业」</span>
+                </span>
+              </div>
+
+              <div class="pub-card">
+                <div class="title">
+                  <b>城市漫步：老城骑楼与夜市</b>
+                  <span>广州 · 11-28 → 11-29 · 城市漫步 / 美食</span>
+                </div>
+                <span class="pub-result">
+                  <button class="pub-host arrow" type="button">
+                    <span class="avatar">陈</span>
+                    <span>陈屿 <span class="muted">· 上班族</span></span>
+                  </button>
+                  <span class="pub-note">学校与专业为空时回退到职业</span>
+                </span>
+              </div>
+
+              <div class="pub-card">
+                <div class="title">
+                  <b>沿江骑行到灯塔</b>
+                  <span>杭州 · 12-05 → 12-06 · 骑行 / 夜景</span>
+                </div>
+                <span class="pub-result">
+                  <button class="pub-host arrow" type="button">
+                    <span class="avatar">苏</span>
+                    <span>苏念 <span class="muted">· 杭州</span></span>
+                  </button>
+                  <span class="pub-note">学校与职业都为空时回退到城市</span>
+                </span>
+              </div>
+
+              <div class="pub-card">
+                <div class="title">
+                  <b>还没想好标题的周末计划</b>
+                  <span>深圳 · 12-12 → 12-13 · 露营</span>
+                </div>
+                <span class="pub-result">
+                  <button class="pub-host arrow" type="button">
+                    <span class="avatar">新</span>
+                    <span>新同学</span>
+                  </button>
+                  <span class="pub-note">全空时只显示昵称与头像，不留空行或占位符</span>
+                </span>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <aside class="notes">
+    <span class="preview-flag">评审辅助页 · 不进入构建</span>
+
+    <div class="note-block" data-note="setup">
+      <h3>完善 / 编辑页</h3>
+      <p>同一个页面承担「首次完善」与「再次编辑」：未完善时显示「跳过」，已完善时显示「取消」。</p>
+      <ul>
+        <li>必填 6 项：昵称、生日、性别、所在城市、兴趣（3–5）、旅行方式；其余全部选填。</li>
+        <li>生日用原生 <b>date</b> 控件；年龄与星座由服务端派生，表单不展示计算结果。</li>
+        <li>学校与专业是两个输入框，展示时才拼「学校 · 专业」，用户不输入 <code>·</code>。</li>
+        <li>兴趣计数常驻；选满 5 个后新增按钮禁用；取消自定义标签仍保留为未选卡片。</li>
+        <li>勾选顶部「模拟缺项提交」查看字段级错误 + 汇总提示（E2 / E11）。</li>
+      </ul>
+      <dl class="note-kv" style="margin-top:10px">
+        <dt>路由</dt><dd><code>#/profile/setup</code></dd>
+        <dt>场景</dt><dd>E1–E5、E7–E13、E15–E17</dd>
+        <dt>决策</dt><dd>D1 / D2 / D8 / D9 / D12</dd>
+      </dl>
+    </div>
+
+    <div class="note-block" data-note="profile">
+      <h3>个人主页</h3>
+      <p>本人可编辑，他人只读；资料未完善时展示已有字段与提示，不报错、不伪造空字段。</p>
+      <ul>
+        <li>有生日时显示「周岁 · 星座」，但不显示完整生日。</li>
+        <li>「学校 · 专业」「职业」「MBTI」「旅行方式」缺失时整行省略。</li>
+        <li>头像缺省使用昵称首字，任何展示位不出现空框。</li>
+        <li>切换到「他人」查看只读态；切换到「未完善」查看降级展示（E19）。</li>
+      </ul>
+      <dl class="note-kv" style="margin-top:10px">
+        <dt>路由</dt><dd><code>#/users/{id}</code></dd>
+        <dt>场景</dt><dd>E6、E17–E22、E24</dd>
+        <dt>决策</dt><dd>D3 / D4 / D9 / D10 / D11</dd>
+      </dl>
+    </div>
+
+    <div class="note-block" data-note="publisher">
+      <h3>发布者入口与摘要</h3>
+      <p>行程卡整卡仍进详情；发布者胶囊是独立按钮，点击进个人主页，不触发整卡跳转。</p>
+      <ul>
+        <li>回退顺序：学校 · 专业 → 职业 → 城市 → 不显示。</li>
+        <li>全空时只保留头像与昵称，不留空行或占位符（E21）。</li>
+        <li>体验卡作者、行程详情发布者使用同样的入口与摘要规则。</li>
+        <li>摘要只读，随资料更新立即生效；不新增行程业务规则。</li>
+      </ul>
+      <dl class="note-kv" style="margin-top:10px">
+        <dt>改动</dt><dd>卡片 / 详情 / 体验作者</dd>
+        <dt>场景</dt><dd>E18、E21</dd>
+        <dt>决策</dt><dd>D10 / D11 / L-01</dd>
+      </dl>
+    </div>
+
+    <div class="note-block" data-note="all">
+      <h3>状态说明</h3>
+      <p>顶部工具栏可切换页面、身份、资料完整度与主题；预览数据仅用于评审，不代表真实账号。</p>
+    </div>
+
+    <div>
+      <h3>评审关注点</h3>
+      <ul>
+        <li>必填 6 项是否足够，选填是否过多。</li>
+        <li>「学校 · 专业」拼接是否需要分隔符以外的格式。</li>
+        <li>未完善资料的降级展示是否足够友好。</li>
+        <li>发布者摘要回退顺序是否可接受。</li>
+      </ul>
+    </div>
+  </aside>
+</main>
+
+<script>
+  const PEOPLE = {
+    self: {
+      nickname: '林见夏',
+      birthday: '2003-05-18',
+      gender: '女',
+      city: '广州',
+      school: '中山大学',
+      major: '地理科学',
+      job: '学生',
+      mbti: 'INFP',
+      interests: ['摄影', '自然风景', '看展'],
+      travelStyle: '深度游',
+      bio: '拍照比走路多。喜欢日落前一小时的光，能为了一个机位等很久。预算不高，但愿意为好吃的多走两公里。',
+      ageZodiac: '23 岁 · 金牛座'
+    },
+    selfPartial: {
+      nickname: '林见夏',
+      birthday: '',
+      gender: '',
+      city: '',
+      school: '',
+      major: '',
+      job: '学生',
+      mbti: '',
+      interests: ['摄影'],
+      travelStyle: '',
+      bio: '',
+      ageZodiac: ''
+    },
+    other: {
+      nickname: '陈屿',
+      birthday: '1998-09-02',
+      gender: '男',
+      city: '杭州',
+      school: '浙江大学',
+      major: '计算机科学',
+      job: '上班族',
+      mbti: 'ENFJ',
+      interests: ['徒步', '户外', '美食', '夜景', '城市漫步'],
+      travelStyle: '随性游',
+      bio: '工作日在写代码，周末在找山。喜欢把路线走成一圈，也喜欢在陌生城市随便下车。',
+      ageZodiac: '28 岁 · 处女座'
+    },
+    otherPartial: {
+      nickname: '陈屿',
+      birthday: '',
+      gender: '',
+      city: '杭州',
+      school: '',
+      major: '',
+      job: '上班族',
+      mbti: '',
+      interests: ['徒步', '户外'],
+      travelStyle: '',
+      bio: '',
+      ageZodiac: ''
+    }
+  };
+
+  const TAGS = [
+    '美食', '摄影', '徒步', '城市漫步', '自然风景', '文化历史',
+    '看展', '音乐', '户外', '探店', '露营', '夜景'
+  ];
+
+  const REQUIRED = [
+    { key: 'nickname', label: '昵称' },
+    { key: 'birthday', label: '生日' },
+    { key: 'gender', label: '性别' },
+    { key: 'city', label: '所在城市' },
+    { key: 'interests', label: '旅行兴趣' },
+    { key: 'travelStyle', label: '旅行方式' }
+  ];
+
+  const body = document.body;
+  const interestGrid = document.getElementById('interest-grid');
+
+  function currentPerson() {
+    const complete = body.dataset.complete === 'true';
+    if (body.dataset.self === 'true') {
+      return complete ? PEOPLE.self : PEOPLE.selfPartial;
+    }
+    return complete ? PEOPLE.other : PEOPLE.otherPartial;
+  }
+
+  function missingLabels(person) {
+    return REQUIRED.filter((item) => {
+      const value = person[item.key];
+      if (item.key === 'interests') return value.length < 3;
+      return value === '';
+    }).map((item) => item.label);
+  }
+
+  function schoolMajor(person) {
+    if (!person.school) return '';
+    return person.major ? `${person.school} · ${person.major}` : person.school;
+  }
+
+  function summary(person) {
+    return schoolMajor(person) || person.job || person.city || '';
+  }
+
+  function renderTags(person) {
+    const editable = body.dataset.complete !== 'true' && body.dataset.self === 'true';
+    const tags = TAGS.concat(person.interests.filter((tag) => !TAGS.includes(tag)));
+
+    interestGrid.innerHTML = '';
+    tags.forEach((tag) => {
+      const selected = person.interests.includes(tag);
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.disabled = !editable;
+      button.className = selected ? 'interest on' : 'interest';
+      button.innerHTML = selected ? `<span class="tick">✓</span>${tag}` : tag;
+      button.addEventListener('click', () => {
+        if (!editable) return;
+        const index = person.interests.indexOf(tag);
+        if (index >= 0) {
+          person.interests.splice(index, 1);
+        } else if (person.interests.length < 5) {
+          person.interests.push(tag);
+        }
+        sync();
+      });
+      interestGrid.appendChild(button);
+    });
+
+    const counter = document.getElementById('interest-count');
+    counter.textContent = `${person.interests.length} / 5`;
+    counter.classList.toggle('full', person.interests.length >= 5);
+
+    const addButton = document.getElementById('interest-add');
+    const addInput = document.getElementById('interest-input');
+    const full = person.interests.length >= 5;
+    addButton.disabled = !editable || full;
+    addInput.disabled = !editable || full;
+  }
+
+  function renderProfileTags(person) {
+    const row = document.getElementById('profile-interests');
+    const card = document.getElementById('profile-interests-card');
+    row.innerHTML = '';
+    person.interests.forEach((tag) => {
+      const chip = document.createElement('span');
+      chip.className = 'chip';
+      chip.textContent = tag;
+      row.appendChild(chip);
+    });
+    card.hidden = person.interests.length === 0;
+  }
+
+  function setText(name, value) {
+    document.querySelectorAll(`[data-bind="${name}"]`).forEach((element) => {
+      element.textContent = value;
+    });
+  }
+
+  function setBind(name, value) {
+    const empty = !value;
+    document.querySelectorAll(`[data-bind="${name}"]`).forEach((element) => {
+      element.textContent = value;
+      element.hidden = empty;
+      const fact = element.closest('.fact');
+      if (fact) fact.hidden = empty;
+    });
+  }
+
+  function setSeparator(name, visible) {
+    document.querySelectorAll(`[data-sep="${name}"]`).forEach((element) => {
+      element.hidden = !visible;
+    });
+  }
+
+  function hideEmptySections() {
+    document.querySelectorAll('.fact-grid').forEach((grid) => {
+      const hasVisibleFact = Array.from(grid.querySelectorAll('.fact')).some((fact) => !fact.hidden);
+      if (!hasVisibleFact) {
+        const section = grid.closest('section');
+        if (section) section.hidden = true;
+      }
+    });
+  }
+
+  function setChoice(group, value) {
+    document.querySelectorAll(`[data-choice="${group}"] .choice`).forEach((button) => {
+      button.classList.toggle('on', button.textContent.trim() === value);
+    });
+  }
+
+  function sync() {
+    const person = currentPerson();
+    const complete = body.dataset.complete === 'true';
+    const showErrors = body.dataset.errors === 'true';
+
+    document.querySelectorAll('[data-field]').forEach((input) => {
+      input.value = complete || body.dataset.self === 'false'
+        ? (person[input.dataset.field] || '')
+        : (input.dataset.field === 'nickname' ? person.nickname : '');
+    });
+
+    document.getElementById('setup-avatar').textContent = person.nickname.slice(0, 1);
+    setText('avatar', person.nickname.slice(0, 1));
+    setText('nickname', person.nickname);
+    setBind('city', person.city);
+    setBind('gender', person.gender);
+    setBind('agezodiac', person.ageZodiac);
+    setBind('schoolMajor', schoolMajor(person));
+    setBind('job', person.job);
+    setBind('mbti', person.mbti);
+    setBind('travelStyle', person.travelStyle);
+    setBind('bio', person.bio);
+    setBind('summary', summary(person));
+    setSeparator('age', Boolean(person.ageZodiac && person.city));
+    setSeparator('city', Boolean(person.city && person.gender));
+    document.querySelectorAll('.hero-meta').forEach((meta) => {
+      meta.hidden = Array.from(meta.children).every((child) => child.hidden);
+    });
+    hideEmptySections();
+
+    setChoice('gender', complete || body.dataset.self === 'false' ? person.gender : '');
+    setChoice('travel_style', complete || body.dataset.self === 'false' ? person.travelStyle : '');
+
+    renderTags(person);
+    renderProfileTags(person);
+
+    const missing = missingLabels(person);
+    document.getElementById('missing-count').textContent = String(missing.length);
+    document.getElementById('missing-list').textContent = missing.join('、');
+
+    document.querySelectorAll('[data-req]').forEach((field) => {
+      const key = field.dataset.req;
+      const isMissing = missing.includes(REQUIRED.find((item) => item.key === key).label);
+      field.classList.toggle('invalid', showErrors && isMissing && body.dataset.complete !== 'true');
+    });
+
+    const isSelf = body.dataset.self === 'true';
+    document.querySelectorAll('.only-complete, .only-incomplete, .self-only, .other-only, .error-only').forEach((element) => {
+      let hidden = false;
+      if (element.classList.contains('only-complete') && !complete) hidden = true;
+      if (element.classList.contains('only-incomplete') && complete) hidden = true;
+      if (element.classList.contains('self-only') && !isSelf) hidden = true;
+      if (element.classList.contains('other-only') && isSelf) hidden = true;
+      if (element.classList.contains('error-only')) {
+        hidden = !(showErrors && body.dataset.view === 'setup' && !complete);
+      }
+      element.hidden = hidden;
+    });
+
+    document.getElementById('profile-bio-card').hidden = !(complete && person.bio);
+
+    document.getElementById('address').textContent =
+      body.dataset.view === 'setup'
+        ? 'routeme.app/#/profile/setup'
+        : body.dataset.view === 'profile'
+          ? 'routeme.app/#/users/8'
+          : 'routeme.app/#/';
+  }
+
+  function setSeg(selector, activeButton) {
+    document.querySelectorAll(selector).forEach((button) => {
+      button.setAttribute('aria-pressed', button === activeButton ? 'true' : 'false');
+    });
+  }
+
+  document.querySelectorAll('[data-view-btn]').forEach((button) => {
+    button.addEventListener('click', () => {
+      body.dataset.view = button.dataset.viewBtn;
+      setSeg('[data-view-btn]', button);
+      sync();
+    });
+  });
+
+  document.querySelectorAll('[data-self-btn]').forEach((button) => {
+    button.addEventListener('click', () => {
+      body.dataset.self = button.dataset.selfBtn;
+      setSeg('[data-self-btn]', button);
+      sync();
+    });
+  });
+
+  document.querySelectorAll('[data-complete-btn]').forEach((button) => {
+    button.addEventListener('click', () => {
+      body.dataset.complete = button.dataset.completeBtn;
+      setSeg('[data-complete-btn]', button);
+      sync();
+    });
+  });
+
+  document.querySelectorAll('[data-theme-btn]').forEach((button) => {
+    button.addEventListener('click', () => {
+      const theme = button.dataset.themeBtn;
+      document.documentElement.dataset.theme = theme;
+      body.dataset.theme = theme;
+      setSeg('[data-theme-btn]', button);
+    });
+  });
+
+  document.getElementById('errors-toggle').addEventListener('change', (event) => {
+    body.dataset.errors = event.target.checked ? 'true' : 'false';
+    sync();
+  });
+
+  function addCustomInterest() {
+    const input = document.getElementById('interest-input');
+    const person = currentPerson();
+    const tag = input.value.trim();
+    if (!tag || person.interests.length >= 5) return;
+    if (!person.interests.includes(tag)) person.interests.push(tag);
+    input.value = '';
+    sync();
+  }
+
+  document.getElementById('interest-add').addEventListener('click', addCustomInterest);
+  document.getElementById('interest-input').addEventListener('keydown', (event) => {
+    if (event.key === 'Enter') {
+      event.preventDefault();
+      addCustomInterest();
+    }
+  });
+
+  sync();
+</script>
+</body>
+</html>

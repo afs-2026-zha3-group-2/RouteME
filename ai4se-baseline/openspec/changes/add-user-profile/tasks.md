@@ -103,6 +103,7 @@
 - [ ] `trips/TripDetailPage.tsx`：发布者行改链接 + 头像 + `publisherSummary`；`experiences/ExperienceCard.tsx` 作者改链接。
 - [ ] `shell/Avatar.tsx`：有 `avatar_url` 渲染 `<img>`，否则首字；`shell/AppShell.tsx` 身份面板摘要用 `publisherSummary`，为空显示「资料未完善」。
 - [ ] `styles.css`：完善页 / 主页 / 头像图片 / 字段错误 / 汇总提示；390 / 768 / 1440 与深色模式。
+- [ ] 视觉对照 [`preview/profile-pages.html`](preview/profile-pages.html)：三页 × 本人 / 他人 × 未完善 / 已完善 × 浅 / 深色 × 390 / 768 / 1440。
 
 **验证：** `cd RouteME/frontend; npm run build`；`cd RouteME/e2e; npx playwright test tests/profile.spec.ts`
 **覆盖：** E8、E9、E13、E15–E18、E20–E22、E24、RV-1、RV-2、RV-4、RV-5、RV-7
@@ -113,7 +114,7 @@
 - [ ] `cd RouteME/frontend; npm run build; npm test`（既有 9 文件 + 新增 2 文件全绿）。
 - [ ] `cd RouteME/e2e; npx playwright test tests/profile.spec.ts`（10 项全绿）；再跑 `npx playwright test`（`trips` / `companions` / `experiences` 不回归；若并行 `auth.spec.ts` 已在工作区一并跑）。
 - [ ] 迁移双路径：全新库启动 + 旧库启动（演示账号只读、未回填、`school` 旧文案保留）。
-- [ ] 手工：注册 → 完善 → 保存 → 本人主页；他人从卡片 / 详情 / 体验进入；未完善发布者降级；跳过 → 「我的」补全；演示身份无入口；390 / 768 / 1440；浅 / 深色；键盘与读屏。
+- [ ] 手工：注册 → 完善 → 保存 → 本人主页；他人从卡片 / 详情 / 体验进入；未完善发布者降级；跳过 → 「我的」补全；演示身份无入口；390 / 768 / 1440；浅 / 深色；键盘与读屏；与 [`preview/profile-pages.html`](preview/profile-pages.html) 逐页对照。
 - [ ] 反向核对：`TripController` / `ApplicationController` / `ChatController` / `ExperienceController` 无逻辑 diff；匹配分数与理由不变；他人响应无 `birthday`；注册带旧字段仍 201。
 - [ ] 真实输出写入 `docs/ai4se-plugins/<timestamp>-local-verify-report.md`。
 - [ ] 归档前提醒：SA 具名追认双 capability 例外；归档时新建 `user-profile` Living Spec 并用 MODIFIED 替换 `user-auth`「注册账号」（保留 4 个基线场景）。
