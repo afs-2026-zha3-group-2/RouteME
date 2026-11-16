@@ -61,3 +61,21 @@
 ## Verdict
 
 **Pass** — AC 4/4、DoV 5/5、REQ-004 §4 8/8、Living Spec 基线 10/10。无 BLOCKER；P2 一致性检查发现并修复了「ADDED 与既有 Requirement 重复」的问题（见 `consistency-lint.md` L-01）。
+## R2（2026-11-16 20:55）：布局与原型对齐
+
+- **Reviewer:** Jay（AO）｜ **依据:** proposal.md「R2」、p0-baseline.md §9、原型 share() / styles.css
+- **Delta 变更:** MODIFIED「我的旅行分享入口与分享边界」补布局与控件形态约束，新增场景「分享页布局与原型一致」（Delta 场景 12 → 13）。
+
+| 项 | 结论 | 证据 |
+|---|---|---|
+| AC-1 每条 Requirement 有可测 AC | Pass | 新场景断言双栏 / 单列、三卡片、读屏单选语义 |
+| AC-2 可观察 | Pass | 1440 双栏、≤900 单列、选中卡片底色、ole=radio |
+| AC-3 负向 / 边界 | Pass | 窄屏不横向滚动；卡片仍可键盘切换 |
+| AC-4 不夹带实现细节 | Pass | 页面只用「分组 / 卡片 / 单列」等可观察结构，不写类名或组件名 |
+| DoV-1 与提案范围一致 | Pass | 与 proposal「R2 In scope」逐条对应；Out of scope（行为、契约、迁移）无场景 |
+| DoV-2 歧义已消解 | Pass | 网格复用、卡片单选、图标来源、日期格式均在提案「决策」定稿 |
+| DoV-3 角色关注点 | Pass | IO：无新增能力面；SA：布局约束与既有行为不冲突 |
+| DoV-4 未宣称业务已实现 | Pass | Delta 全 SHALL/MUST；实现属 P4 |
+| DoV-5 可追溯到提案 / 需求 | Pass | 布局要求源自原型 share() 与用户评审意见；行为要求沿用 P1 的 REQ-004 |
+
+**R2 结论：Pass**（新增 1 场景；既有 12 场景未删改）。

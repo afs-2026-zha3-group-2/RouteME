@@ -64,3 +64,11 @@
 - **阶段结论：Pass**，进入 P3。
 - **阶段提交：** `docs(p2): refine-experience-share align delta spec and record G1`；push 前 `git pull --rebase origin main`。
 - **偏离：** 无。P1 初稿的「ADDED」已在 P2 收敛为「MODIFIED」，不属于范围偏离（交付面未增删）。
+## 8. R2 追加（2026-11-16 20:58）：布局与原型对齐
+
+- **Delta：** MODIFIED「我的旅行分享入口与分享边界」补布局与控件形态约束（页头 / 双栏三输入分组 + 两说明分组 / 强度三卡片保留单选语义 / 操作位置 / ≤900px 单列），新增场景「分享页布局与原型一致」；既有 10 个场景名未改，场景 12 → 13。
+- **复核：** `dov-ac-review.md`「R2」（AC 4/4、DoV 5/5）；`consistency-lint.md`「R2」（BLOCKER 0 / WARNING 0 / SUGGESTION 2）。
+- **评审：** `docs/reviews/20261116-refine-experience-share-{proposal,spec}-review-3.md` 均 Pass，WAYNE 批准（20:55 / 20:58）。
+- **G1（R2）：** Pass，IO=WAYNE / SA=WAYNE / AO=Jay，见 `g1-decision-r2.md`。
+- **校验：** `openspec validate refine-experience-share --strict` valid；`--deltas-only` → `deltaCount: 3`。
+- **阶段提交：** `docs(p2): refine-experience-share add the R2 layout delta and G1`。

@@ -77,3 +77,15 @@
 
 - L-03 / L-04 进 P3：`design.md` 固定同行人数口径、`atdd-design.md` 固定条数与封面的断言载体。
 - 无阻塞项；G1 可在 IO / SA 具名签署后通过。
+## R2 追加检查（2026-11-16 20:55）
+
+**Verdict: Pass** — BLOCKER 0 / WARNING 0 / SUGGESTION 2（均留 P3 / P4）。
+
+| id | 级别 | 位置 | 问题 | 处理 |
+|---|---|---|---|---|
+| R2-L-01 | SUGGESTION | Delta「我的旅行分享入口与分享边界」 | 布局句与行为句写在同一 Requirement，句子偏长 | 保留（同一页面同属一个分组）；P3 design.md 拆成「布局」与「说明」两个设计条目 |
+| R2-L-02 | SUGGESTION | 提案「决策」网格类名 | 复用 `.publish-grid` 的命名语义偏差 | P3 记录复用理由；第三个页面复用再抽别名 |
+
+- Delta 场景数 12 → 13（新增「分享页布局与原型一致」），既有场景名全部保留。
+- `openspec validate refine-experience-share --strict` → valid；`--deltas-only` → `deltaCount: 3`（均 MODIFIED）。
+- 与 Living Spec 无并行权威：仍在同一条 Requirement 内扩充。
