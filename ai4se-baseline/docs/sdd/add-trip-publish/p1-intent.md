@@ -124,3 +124,42 @@
 | IO | Wanye | 四项反馈均属 S06 验收内的体验问题，不新增需求 | 2026-11-16 |
 | SA | Jacky、Karena | 接受 R2-1…R2-5 的裁定，同意进入 P2 | 2026-11-16 |
 | AO | Jay | 承担实现与验证 | 2026-11-16 |
+
+## 12. R3：字典全国化后的返工（2026-11-16 13:35）
+
+### 复现
+
+`add-destination-area-filters` 落地后（远端 `a13416c` / `abf7ac5`），发布页改用全国省市字典（`area/AreaCascader` + `area-codes.json`），但我 R2 的实现仍引用最小切片：
+
+| 观察 | 证据 |
+|---|---|
+| 选「北京市 / 市辖区」后，途经点区域仍提示「先选目的地，再按城市点选途经点。」 | 目的地已选，提示与状态不符 |
+| 该城市没有地图 | `mapCityForCode('110100')` 依赖 16 城切片，返回 `undefined` |
+| 后端保留一份已失效的 16 城切片 | `constant/AreaConstant`、`pojo/AreaCity` 仅被自身与两条未使用的 import 引用 |
+| 前端保留重复字典与废弃导出 | `areas/areaCatalog.ts` 仅剩 `mapCityForCode` 在用；`AREA_PROVINCES` / `DESTINATION_OPTIONS` / `cityByCode` / `codesForCityName` 已无调用方 |
+
+### R3 范围
+
+- 前端：把 `areas/areaCatalog.ts` 收敛为「目的地代码 → 离线地名库城市」的映射，字典来源改为共享的 `area/areaOptions`；未覆盖城市给出明确说明，而不是「先选目的地」。
+- 后端：删除 `constant/AreaConstant`、`pojo/AreaCity` 与未使用的 import（名称派生已由 `area/AreaDictionary` + `AreaNames` 承担）。
+- 记录：关闭 R2 留下的「最小字典切片待替换」遗留项。
+- 测试：新增映射单测与「未覆盖城市不显示地图、提示文案正确」的端到端断言。
+
+**Out of scope：** 全国离线点位（地名库仍只有广东 14 城 + 港澳）；替换地图引擎；归档。
+
+### 裁定
+
+| 编号 | 裁定 |
+|---|---|
+| R3-1 | 离线地名库覆盖不到的城市**不渲染地图**，提示改为「该城市暂无离线点位；途经点目前只支持广东 14 城与港澳」。 |
+| R3-2 | 目的地代码 → 地名库城市的映射只保留一份实现（前端），字典读取共享 `area/areaOptions`，不再复制省市数据。 |
+| R3-3 | 后端名称派生统一交给 `AreaDictionary` / `AreaNames`，删除重复常量。 |
+
+## 13. R3 签署
+
+| 角色 | 姓名 | 确认内容 | 日期 |
+|---|---|---|---|
+| SM | Lewis | 接受 R3 为返工清理，不改契约、不归档 | 2026-11-16 |
+| IO | Wanye | 全国点位缺失属 REQ-007 既有边界，不在 S06 内扩scope | 2026-11-16 |
+| SA | Jacky、Karena | 接受 R3-1…R3-3 | 2026-11-16 |
+| AO | Jay | 承担实现与验证 | 2026-11-16 |
