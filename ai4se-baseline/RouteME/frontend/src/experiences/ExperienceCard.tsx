@@ -1,5 +1,6 @@
 import { tripMessages } from '../i18n/tripMessages';
 import { Avatar } from '../shell/Avatar';
+import { StatusBadge } from '../trips/StatusBadge';
 import { intensityLabel } from './experienceForm';
 import type { Experience } from '../types';
 
@@ -39,6 +40,7 @@ export function ExperienceCard({ experience }: Props) {
       <div className="exp-foot">
         <span className="exp-origin">
           来自 <b>{experience.trip.title}</b>
+          <StatusBadge status="completed" className="exp-origin-badge" />
         </span>
         <a className="btn sm ghost" href={`#/trips/${experience.trip.id}`}>
           {tripMessages.detailTitle}

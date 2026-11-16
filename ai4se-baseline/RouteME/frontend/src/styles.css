@@ -324,6 +324,17 @@ svg {
   color: var(--ink-3);
 }
 
+/* 状态徽标带形状图标时，隐藏默认圆点，避免「圆点 + 图标」重复前置符号 */
+.badge.has-icon::before {
+  display: none;
+}
+
+.status-icon {
+  width: 12px;
+  height: 12px;
+  flex: none;
+}
+
 .tag {
   display: inline-flex;
   align-items: center;
@@ -1471,6 +1482,13 @@ svg {
   font-weight: 650;
 }
 
+.exp-origin-badge {
+  margin-left: 6px;
+  padding: 1px 7px;
+  font-size: 10px;
+  vertical-align: 1px;
+}
+
 /* ---------- 空状态 / 提示 ---------- */
 .empty {
   display: grid;
@@ -2418,6 +2436,117 @@ svg {
 
 .auth-hint {
   font-size: 11.5px;
+}
+
+.form-label-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.interest-picker {
+  display: grid;
+  gap: 8px;
+}
+
+.interest-count {
+  font-size: 11.5px;
+  font-weight: 700;
+  color: var(--ink-3);
+  font-variant-numeric: tabular-nums;
+}
+
+.interest-count.full {
+  color: var(--warn);
+}
+
+.interest-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(92px, 1fr));
+  gap: 7px;
+}
+
+.interest-card {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  min-height: 36px;
+  padding: 7px 9px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface);
+  color: var(--ink-2);
+  font: inherit;
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform 0.16s, box-shadow 0.18s, border-color 0.16s, background 0.16s,
+    color 0.16s;
+}
+
+.interest-card:hover {
+  border-color: var(--lagoon);
+  color: var(--t-lagoon);
+  transform: translateY(-1px);
+  box-shadow: var(--sh-1);
+}
+
+.interest-card:active {
+  transform: translateY(0) scale(0.985);
+}
+
+.interest-card:focus-visible {
+  outline: none;
+  border-color: var(--lagoon);
+  box-shadow: var(--ring);
+}
+
+.interest-card.on {
+  background: var(--lagoon-soft);
+  border-color: var(--lagoon);
+  color: var(--t-lagoon);
+  font-weight: 700;
+}
+
+.interest-card.at-max {
+  opacity: 0.45;
+}
+
+.interest-card.at-max:hover {
+  transform: none;
+  box-shadow: none;
+  border-color: var(--line);
+  color: var(--ink-2);
+}
+
+.interest-tick {
+  display: inline-grid;
+  place-items: center;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--lagoon);
+  color: #fff;
+  font-size: 8px;
+  line-height: 1;
+  flex: none;
+}
+
+.interest-custom {
+  display: flex;
+  gap: 7px;
+}
+
+.interest-custom .ant-input {
+  flex: 1;
+  min-width: 0;
+}
+
+.interest-add {
+  flex: none;
 }
 
 .gate-divider {

@@ -97,6 +97,53 @@ test('publisher marks a trip completed and sees the experience section', async (
   await expect(page.getByRole('button', { name: '标记为已结束' })).toHaveCount(0);
 });
 
+test('defaults to the recruiting trips view with complete cards', async ({ page }) => {
+  await loginAs(page, 1);
+  await page.goto('/');
+
+  await expect(page.getByRole('radiogroup', { name: '浏览视图' })).toBeVisible();
+  await expect(page.getByRole('radio', { name: '招募中的行程' })).toBeChecked();
+  await expect(page.getByRole('radio', { name: '旅行体验' })).not.toBeChecked();
+
+  const card = page.locator('.trip-card', { hasText: '珠海情侣路日落机位二刷' });
+  await expect(card).toBeVisible();
+  await expect(card.locator('.tc-title')).toHaveText('珠海情侣路日落机位二刷');
+  await expect(card.locator('.tc-dest')).toHaveText('珠海');
+  await expect(card.locator('.tc-meta')).toContainText('11月16日 → 11月16日');
+  await expect(card.locator('.tc-meta')).toContainText('4 个途经点');
+  await expect(card.locator('.tc-route')).toContainText('香洲港集合');
+  await expect(card.locator('.tc-tags')).toContainText('摄影');
+  await expect(card.locator('.tc-host-name')).toHaveText('陈屿');
+  await expect(card.locator('.tc-cap-num')).toHaveText('1 / 3 人');
+  await expect(card.locator('[data-status="recruiting"]')).toContainText('招募中');
+});
+
+test('distinguishes full trips from recruiting trips without color alone', async ({ page }) => {
+  await loginAs(page, 1);
+  await page.goto('/');
+
+  const full = page.locator('.trip-card', { hasText: '佛山祖庙与岭南天地一日' });
+  await expect(full.locator('[data-status="full"]')).toContainText('已满员');
+  await expect(full.locator('[data-status-icon="full"]')).toBeVisible();
+  await expect(full.locator('.meter.full')).toBeVisible();
+  await expect(full.locator('.tc-cap-num')).toHaveText('2 / 2 人');
+
+  const recruiting = page.locator('.trip-card', { hasText: '珠海情侣路日落机位二刷' });
+  await expect(recruiting.locator('[data-status="recruiting"]')).toContainText('招募中');
+  await expect(recruiting.locator('[data-status-icon="recruiting"]')).toBeVisible();
+  await expect(recruiting.locator('.meter.full')).toHaveCount(0);
+});
+
+test('keeps ended trips out of the default view', async ({ page }) => {
+  await loginAs(page, 1);
+  await page.goto('/');
+
+  await expect(page.locator('.trip-card', { hasText: '珠海情侣路日落机位二刷' })).toBeVisible();
+  await expect(page.locator('.trip-card', { hasText: '珠海情侣路摄影一日游' })).toHaveCount(0);
+  await expect(page.locator('.trip-card', { hasText: '清远英西峰林两日露营' })).toHaveCount(0);
+  await expect(page.locator('.trip-card [data-status="completed"]')).toHaveCount(0);
+});
+
 test('keeps out-of-scope actions off the screens', async ({ page }) => {
   await loginAs(page, 1);
   await page.goto('/#/trips/5');
