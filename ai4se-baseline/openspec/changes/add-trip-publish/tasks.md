@@ -161,3 +161,19 @@
 - [x] 回归：`npm test` 137 通过；`build` 通过；`trips.spec.ts` 11/11 通过；全量 53/54（唯一失败为既有 `profiles.spec.ts:23`）。
 
 **验证：** `cd RouteME/frontend; npm test; npm run build`、`cd RouteME/e2e; npx playwright test`
+
+## 12. R6 任务（日期弹层在减少动态效果下可用，2026-11-16）
+
+### T22 [frontend] 统一日期弹层挂载
+
+- [x] 新增 `utils/datePickerProps.ts`：`getPopupContainer` 挂字段容器 + `app-date-popup`。
+- [x] 发布页起止日期、首页「出发不早于 / 不晚于」统一使用；字段容器设 `position: relative`。
+- [x] `@media (prefers-reduced-motion: reduce)` 下把 `.app-date-popup` 固定到字段下方。
+
+### T23 [e2e] reduced-motion 回归
+
+- [x] `trips.spec.ts` 新增用例：开启 reduced motion 后点开日期面板、断言面板在视口内、点「今天」关闭并回填。
+- [x] 发布页 `allowClear=false` 后无法清空日期，删除「缺失日期」断言，保留标题 / 目的地 / 途经点校验。
+- [x] 回归：`npm test` 185 通过（main 基线）；`build` 通过；`trips.spec.ts` 13/14（既有身份门用例未更新）；`companions.spec.ts` 10/10。
+
+**验证：** `cd RouteME/e2e; npx playwright test tests/trips.spec.ts -g "date pickers under reduced motion"`

@@ -209,3 +209,22 @@
 | AO | Jay | 交付原型布局重排与回归结果 | 2026-11-16 |
 | VL | Neal | 待复核 R5 证据（G2 追加） | 待签 |
 | SM | Lewis | 待确认 R5 范围；P5 仍暂缓 | 待签 |
+
+## 15. R6 实施结果（日期弹层在减少动态效果下可用，2026-11-16）
+
+| 项 | 结果 |
+|---|---|
+| 实现提交 | `fix(p4): add-trip-publish make date pickers usable with reduced motion` |
+| 根因 | antd 6.7 在 `prefers-reduced-motion: reduce` 下把 `DatePicker` 弹层留在视口外，表现为点击日期没有反应 |
+| 修复 | 新增 `utils/datePickerProps.ts`；发布页两处与首页两处 `DatePicker` 统一使用；`.form-field` / `.field` 设 `position: relative`，`.app-date-popup` 在 reduced motion 下固定到字段下方 |
+| 上游协作 | `main` 已给发布页加 `trip-date-anchor` / `needConfirm` / `minDate`；R6 统一到共享 helper，保留这些行为并移除重复的 `trip-date-popup` CSS |
+| 回归用例 | `trips.spec.ts` 新增 reduced-motion 用例：点开面板、面板在视口内、点「今天」后关闭并回填；发布页 `allowClear=false` 后删除「清空日期」断言，保留标题 / 目的地 / 途经点必填校验 |
+| 前端验证 | `npm test` 185 通过（main 基线）；`npm run typecheck` / `build` 通过 |
+| 端到端 | 干净种子库：`trips.spec.ts` 13/14（唯一失败为既有身份门用例：`main` 已改为账号登录，测试未更新）；`companions.spec.ts` 10/10 |
+| 看板 | S06 保持 P4，不归档 |
+
+| 角色 | 姓名 | 确认内容 | 日期 |
+|---|---|---|---|
+| AO | Jay | 交付日期弹层修复与回归结果 | 2026-11-16 |
+| VL | Neal | 待复核 R6 证据（G2 追加） | 待签 |
+| SM | Lewis | 待确认 R6 范围；P5 仍暂缓 | 待签 |

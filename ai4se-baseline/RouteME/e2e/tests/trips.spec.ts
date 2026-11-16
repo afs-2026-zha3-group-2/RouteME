@@ -33,11 +33,6 @@ async function setDate(page: Page, label: string, iso: string) {
   await input.press('Enter');
 }
 
-async function clearDate(page: Page, label: string) {
-  const picker = page.locator('.ant-picker', { has: page.getByLabel(label) });
-  await picker.hover();
-  await picker.locator('.ant-picker-clear').click();
-}
 
 /** 前序用例会创建行程，切到每页 45 条避免 seed 卡片被挤到第二页。 */
 async function expandPageSize(page: Page) {
@@ -221,20 +216,14 @@ test('blocks publishing and flags every missing required field', async ({ page }
   await loginAs(page, 1);
   await page.goto('/#/trips/new');
 
-  await clearDate(page, '出发日期');
-  await clearDate(page, '结束日期');
   await page.getByRole('button', { name: /^发\s*布$/ }).click();
 
   await expect(page).toHaveURL(/#\/trips\/new$/);
   await expect(page.getByLabel('标题')).toHaveAttribute('aria-invalid', 'true');
   await expect(page.locator('#trip-destination')).toHaveAttribute('aria-invalid', 'true');
-  for (const label of ['出发日期', '结束日期', '途经点']) {
-    await expect(page.getByLabel(label)).toHaveAttribute('aria-invalid', 'true');
-  }
+  await expect(page.getByLabel('途经点')).toHaveAttribute('aria-invalid', 'true');
   await expect(page.getByText('给这条路线起个名字（40 字以内）')).toBeVisible();
   await expect(page.getByText('请选择目的地')).toBeVisible();
-  await expect(page.getByText('请选择出发日期')).toBeVisible();
-  await expect(page.getByText('请选择结束日期')).toBeVisible();
   await expect(page.getByText('至少写出两个途经点，别人才看得懂路线')).toBeVisible();
 });
 
@@ -340,4 +329,32 @@ test('filters by province and city without a search box', async ({ page }) => {
 
   await page.getByRole('button', { name: '清除全部条件' }).click();
   await expect(page.locator('.trip-card', { hasText: '广州老城骑楼扫街半日' })).toBeVisible();
+});
+
+test.describe('date pickers under reduced motion', () => {
+  test.use({ reducedMotion: 'reduce' });
+
+  test('opens the publish and home date panels instead of rendering them off-screen', async ({
+    page,
+  }) => {
+    await loginAs(page, 1);
+    await page.goto('/#/trips/new');
+
+    await page.getByLabel('出发日期').click();
+    const publishPanel = page.locator('.app-date-popup');
+    await expect(publishPanel).toBeVisible();
+    const publishBox = await publishPanel.boundingBox();
+    expect(publishBox).not.toBeNull();
+    expect(publishBox!.x).toBeGreaterThanOrEqual(0);
+    expect(publishBox!.y).toBeGreaterThanOrEqual(0);
+    expect(publishBox!.x).toBeLessThan(1280);
+
+    await page.getByRole('button', { name: '今天' }).click();
+    await expect(publishPanel).toBeHidden();
+    await expect(page.getByLabel('出发日期')).toHaveValue(todayIso());
+
+    await page.goto('/');
+    await page.getByLabel('出发不早于').click();
+    await expect(page.locator('.app-date-popup')).toBeVisible();
+  });
 });

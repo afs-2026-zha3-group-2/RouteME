@@ -411,6 +411,7 @@ type LoadState =
 | 分页 | `Pagination` | 自绘页码 |
 
 - 日期值在表单状态里仍保存 `YYYY-MM-DD` 字符串，只在组件边界用 `dayjs` 转换；不把 `Dayjs` 对象塞进契约类型或纯函数。
+- 日期弹层 MUST 走 `utils/datePickerProps.ts`（挂到字段容器 + `app-date-popup`），并在 `@media (prefers-reduced-motion: reduce)` 下固定到字段下方。antd 6.7 默认会把弹层留在视口外，用户看到的是「点击日期没有反应」。
 - 通过 `ConfigProvider` + `theme.ts` 统一主题；不为单个页面覆盖 antd 组件内部样式。布局间距可以写页面 CSS，控件外观交给 antd。
 - 已记录的例外（2026-11-16）：
   - `ProfileSetupPage` 的「职业」「MBTI」保留原生 `<select>`：antd 6.7 在系统开启「减少动态效果」（`prefers-reduced-motion: reduce`）时把弹层渲染到视口外，选项无法点选。修复该缺陷或升级到已修复版本后 MUST 改回 `Select`。
