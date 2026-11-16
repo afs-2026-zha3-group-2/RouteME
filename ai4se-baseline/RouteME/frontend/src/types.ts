@@ -1,8 +1,3 @@
-export type Greeting = {
-  id: number;
-  message: string;
-};
-
 /**
  * 列表接口的分页对象：total 是筛选后的命中数，total_pages 为向上取整的页数。
  */

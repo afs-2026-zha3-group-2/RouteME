@@ -7,7 +7,6 @@ import type {
   Experience,
   ExperienceFilters,
   ExperienceWriteRequest,
-  Greeting,
   MatchCandidate,
   MyTrips,
   Page,
@@ -54,18 +53,8 @@ export async function request(path: string, init?: RequestInit, userId?: number)
   return response;
 }
 
-export async function loadGreeting(): Promise<Greeting> {
-  const response = await request('/greeting');
-  return (await response.json()) as Greeting;
-}
-
 export async function loadUsers(): Promise<DemoUser[]> {
   const response = await request('/users');
-  return (await response.json()) as DemoUser[];
-}
-
-export async function loadDemoUsers(): Promise<DemoUser[]> {
-  const response = await request('/users/demo');
   return (await response.json()) as DemoUser[];
 }
 

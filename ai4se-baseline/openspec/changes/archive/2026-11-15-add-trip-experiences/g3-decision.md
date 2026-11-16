@@ -47,7 +47,7 @@
 | SA | Jacky、Karena |
 | AO（附件建议，不替代 SA 决定） | Jay：把「提交前检查未跟踪产物」纳入 `git-commit-conventions`；体验审核边界写入后续安全评审 |
 | VL | Neal |
-| IO | Wanye |
+| IO | WAYNE |
 | SM | Lewis |
 
 签署来源：用户于 2026-11-15 提供角色名单并确认继续推进 verify/archive。

@@ -14,7 +14,7 @@
 |----------|-----------|--------|----------|
 | P2-1 | yes | Pass | `openspec/changes/add-user-profile/specs/user-profile/spec.md`（7 Requirement / 24 Scenario；ADDED）+ `specs/user-auth/spec.md`（1 Requirement / 6 Scenario；MODIFIED「注册账号」，保留全部 4 个基线场景）；`openspec validate add-user-profile --strict` = valid |
 | P2-2 | yes | Pass | `openspec/changes/add-user-profile/dov-ac-review.md`（AC 4/4 Pass；DoV 5/5 Pass；REQ-008 17/17 场景映射；Living Spec 基线场景保留 4/4；无阻塞） |
-| P2-3 | yes* | Pass | `openspec/changes/add-user-profile/g1-decision.md`（Pass；IO=Wanye，SA=Jacky/Karena；Conditions 9 项含 owner；双 capability 例外待 SA 具名追认） |
+| P2-3 | yes* | Pass | `openspec/changes/add-user-profile/g1-decision.md`（Pass；IO=WAYNE，SA=Jacky/Karena；Conditions 9 项含 owner；双 capability 例外待 SA 具名追认） |
 | P2-4 | no | Pass | `openspec/changes/add-user-profile/consistency-lint.md`（phase=p2；Pass；BLOCKER 0 / WARNING 0 / SUGGESTION 6；CLI 校验通过） |
 
 **Stage Overall:** Pass（4/4 项 Pass，含可选项 P2-4）

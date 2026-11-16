@@ -206,6 +206,7 @@ openspec/
 - 强制询问的两个时点：
   1. **记录阶段产出时**：P0–P5 记录的记录人、`g1/g2/g3-decision.md` 签署人、`tasks.md` 的 Owner、质量检查报告的 owner 列。
   2. **approve / 签署时**：G1 / G2 / G3 签署表与任何 approve 动作。
+- 工件与评审报告的签署位按对象区分，矩阵见 `@rule:artifact-review-gate`（`proposal` / Delta Spec = WAYNE；`design` / `tasks` = 当前开发者 + 1 名非当前开发者且非 WAYNE 的成员；`docs/reviews/` 评审报告 = WAYNE + 当前开发者）。本规则只管「姓名必须问来」，不重复定义签署位。
 - 未拿到回答时 MUST 暂停写记录或加签；不允许用 `AO`、`DEV`、`current developer` 等角色词占位，也不允许默认沿用名册里的姓名。
 - 回答与名册不一致时以回答为准；同一 change 内写法保持一致（`Jay（AO）`）。
 - 历史记录保持可追溯，不做批量替换；确需更正时由对应责任人自行修改并说明。
@@ -228,6 +229,7 @@ openspec/
 | 验证报告是否位于 `docs/ai4se-plugins/<时间戳>-<技能名>-report.md` 且含真实输出 | pr-merge |
 | 归档后 `changes/archive/<change-id>/` 是否保持不可变 | 归档前 |
 | 记录前与 approve 前是否已询问并确认本次实际开发者姓名（未用名册默认值或角色词占位） | pr-merge |
+| 工件与评审报告是否按 `@rule:artifact-review-gate` 的签署人矩阵签齐（含 2 人签署位的独立性） | pr-merge |
 
 ### 示例
 

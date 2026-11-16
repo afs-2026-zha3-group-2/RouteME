@@ -61,7 +61,7 @@ npm install                          # 不要用 npm ci，见「常见问题」
 npm run dev                          # http://localhost:5173，/api 代理到 8080
 ```
 
-打开 <http://localhost:5173>，选择一个演示身份（林见夏 / 陈屿 / 苏念，对应 `X-User-Id` 1–3）。
+打开 <http://localhost:5173>，用种子账号登录（`linjianxia` / `chenyu` / `sunian` / `zhouye`，密码均为 `123456`）。
 
 冒烟接口：`GET /api/greeting`、`GET /api/users`、`GET /api/trips`、`GET /api/experiences`。
 
@@ -75,7 +75,7 @@ npm run dev                          # http://localhost:5173，/api 代理到 80
 
 `SqliteDirectory` 在启动前按数据源 URL 创建父目录，因此首次运行不会出现 `SQLITE_CANTOPEN`。用 `SPRING_DATASOURCE_URL` 可指向任意位置。
 
-重置演示数据：停止后端 → 删除 `SqlLite/routeme.db` → 重启，Flyway 会重新迁移并写入种子数据（3 个账户、6 条行程、7 条申请、4 条聊天、2 条体验）。
+重置种子数据：停止后端 → 删除 `SqlLite/routeme.db` → 重启，Flyway 会重新迁移并写入种子数据（4 个种子账户及其行程、申请、聊天与体验）。
 
 ## 测试与校验
 

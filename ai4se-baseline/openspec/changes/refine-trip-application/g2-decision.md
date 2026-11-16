@@ -17,7 +17,7 @@
 | CI report（E1 slot） | [`ci-report.md`](ci-report.md) | Pass（`Pass-by-tag`） |
 | Delta Spec | [`specs/trip-companions/spec.md`](specs/trip-companions/spec.md) | 1 Requirement（MODIFIED「提交与取消同行申请」）/ 8 Scenario，保留基线 5 场景 |
 | ATDD / Design / Tasks | [`atdd-design.md`](atdd-design.md)、[`design.md`](design.md)、[`tasks.md`](tasks.md) | T1–T5 完成并勾选；T6（Living Spec 收口）留 P5 / G3 |
-| G1 decision | [`g1-decision.md`](g1-decision.md) | Pass（IO Wanye / SA Jacky，条件 8 项已在 P4 落地） |
+| G1 decision | [`g1-decision.md`](g1-decision.md) | Pass（IO WAYNE / SA Jacky，条件 8 项已在 P4 落地） |
 
 ## Dimension results
 
@@ -61,7 +61,7 @@
 |---|---|
 | VL | Neal |
 | AO | Jay |
-| IO | Wanye |
+| IO | WAYNE |
 | SA | Jacky |
 | SM | Lewis |
 

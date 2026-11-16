@@ -95,25 +95,21 @@ function NavIcon({ name }: { name: NavKey }) {
 
 type Props = {
   currentUser: DemoUser;
-  demoUsers: DemoUser[];
   isAuthenticated: boolean;
   onLogout: () => void;
   route: Route;
   mode: ColorMode;
   onToggleMode: () => void;
-  onSelectUser: (user: DemoUser) => void;
   children: ReactNode;
 };
 
 export function AppShell({
   currentUser,
-  demoUsers,
   isAuthenticated,
   onLogout,
   route,
   mode,
   onToggleMode,
-  onSelectUser,
   children,
 }: Props) {
   const active = activeKey(route);
@@ -261,13 +257,15 @@ export function AppShell({
             className="id-switch-btn"
             aria-haspopup="dialog"
             aria-expanded={identityOpen}
-            aria-label={`${tripMessages.identitySwitch}：当前 ${currentUser.nickname}`}
+            aria-label={`${tripMessages.accountMenu}：${currentUser.nickname}`}
             onClick={() => setIdentityOpen((previous) => !previous)}
           >
             <Avatar user={currentUser} size="sm" />
             <span className="id-switch-text">
               <span className="id-switch-name">{currentUser.nickname}</span>
-              <span className="id-switch-label">{tripMessages.identitySwitch}</span>
+              {isAuthenticated && (
+                <span className="id-switch-label">{tripMessages.authLoggedIn}</span>
+              )}
             </span>
             <svg
               className="id-switch-caret"
@@ -283,7 +281,7 @@ export function AppShell({
           </button>
 
           {identityOpen && (
-            <div className="id-panel" role="dialog" aria-label="身份菜单">
+            <div className="id-panel" role="dialog" aria-label={tripMessages.accountMenu}>
               {isAuthenticated && (
                 <div className="id-current">
                   <Avatar user={currentUser} size="sm" />
@@ -294,34 +292,6 @@ export function AppShell({
                   <span className="id-option-flag">{tripMessages.authLoggedIn}</span>
                 </div>
               )}
-              <p className="id-panel-label" id="identity-options-label">
-                {isAuthenticated ? '切换为演示身份' : tripMessages.identityTitle}
-              </p>
-              <div className="id-list" role="listbox" aria-labelledby="identity-options-label">
-                {demoUsers.map((user) => {
-                  const selected = !isAuthenticated && user.id === currentUser.id;
-                  return (
-                    <button
-                      key={user.id}
-                      type="button"
-                      role="option"
-                      aria-selected={selected}
-                      className={selected ? 'id-option on' : 'id-option'}
-                      onClick={() => {
-                        onSelectUser(user);
-                        setIdentityOpen(false);
-                      }}
-                    >
-                      <Avatar user={user} size="sm" />
-                      <span className="id-option-text">
-                        <b>{user.nickname}</b>
-                        <i>{publisherSummary(user) || tripMessages.profileIncompleteShort}</i>
-                      </span>
-                      {selected && <span className="id-option-flag">当前</span>}
-                    </button>
-                  );
-                })}
-              </div>
               <div className="id-divider" role="separator" />
               <button
                 type="button"
@@ -347,8 +317,8 @@ export function AppShell({
               </button>
               <p className="id-panel-note">
                 {isAuthenticated
-                  ? '退出登录会结束本机会话并回到身份门；切换到演示身份会结束当前登录。'
-                  : '演示身份无需密码；退出登录只清除本机身份并回到身份门。'}
+                  ? '退出登录会结束本机会话并回到登录页。'
+                  : '退出登录会清除本机身份并回到登录页。'}
               </p>
             </div>
           )}

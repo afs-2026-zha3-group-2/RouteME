@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>RouteMe 路觅 · 找到同路的人</title>
 <meta name="description" content="RouteMe 路觅 MVP 原型：从旅行灵感到发布行程、发现同行者、建立连接、一起旅行、分享体验的完整闭环。">
-<link rel="stylesheet" href="styles.css?v=20261115b">
+<link rel="stylesheet" href="styles.css?v=20261116a">
 <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%230f4c5c'/%3E%3Cpath d='M8 22c4-10 12-10 16 0' stroke='%23ff6b35' stroke-width='3' fill='none' stroke-linecap='round'/%3E%3Ccircle cx='16' cy='11' r='3' fill='%23ffb703'/%3E%3C/svg%3E">
 </head>
 <body>
@@ -19,15 +19,13 @@
 </div>
 
 <!-- ============ S01 演示身份选择 ============ -->
-<section id="gate" class="gate" aria-label="选择演示身份"></section>
+<section id="gate" class="gate" aria-label="登录或选择演示身份"></section>
 
 <!-- ============ 应用外壳 ============ -->
 <div id="shell" class="shell" hidden>
   <header class="topbar">
     <a class="brand" href="#/discover" aria-label="RouteMe 路觅 首页">
-      <span class="brand-mark" aria-hidden="true">
-        <svg viewBox="0 0 32 32"><path d="M5 24c5-13 17-13 22 0" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"/><circle cx="16" cy="10" r="3.4"/></svg>
-      </span>
+      <svg class="brand-bare" viewBox="0 0 32 32" aria-hidden="true"><path d="M5 24c5-13 17-13 22 0" fill="none" stroke="var(--coral)" stroke-width="3" stroke-linecap="round"/><circle cx="16" cy="10" r="3.4" fill="var(--amber)"/></svg>
       <span class="brand-text"><b>RouteMe</b><i>路觅</i></span>
     </a>
 
@@ -52,7 +50,10 @@
       <svg class="i-moon" viewBox="0 0 20 20" aria-hidden="true"><path d="M16 12.4A6.8 6.8 0 0 1 7.6 4a6.9 6.9 0 1 0 8.4 8.4Z" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></svg>
     </button>
 
-    <button class="user-chip" data-action="switch-user" type="button" id="user-chip"></button>
+    <div class="id-switch">
+      <button class="id-switch-btn" data-action="id-toggle" type="button" id="user-chip" aria-haspopup="dialog" aria-expanded="false" aria-label="身份菜单"></button>
+      <div id="id-panel-root"></div>
+    </div>
   </header>
 
   <aside class="rail" aria-label="主导航">
@@ -78,9 +79,9 @@
 <div id="modal-root"></div>
 <div id="toast-root" class="toast-root" role="status" aria-live="polite"></div>
 
-<script src="data.js?v=20261115b"></script>
-<script src="store.js?v=20261115b"></script>
-<script src="ui.js?v=20261115b"></script>
-<script src="main.js?v=20261115b"></script>
+<script src="data.js?v=20261116a"></script>
+<script src="store.js?v=20261116a"></script>
+<script src="ui.js?v=20261116a"></script>
+<script src="main.js?v=20261116a"></script>
 </body>
 </html>

@@ -17,7 +17,7 @@ REQ-004：收口「灵感 → 发布 → 同行 → 旅行 → 分享 → 新灵
 
 - 本地验证报告：`docs/ai4se-plugins/20261115-180200-local-verify-report.md`（Redocly 0 error；后端 132、前端 34、E2E 11 全过）。
 - CI：run #60/#61（实现）Success；#62 因误提交空 `logback-spring.xml` 失败；#63 删除后复验 Success。
-- G1 `g1-decision.md`（Pass，IO Wanye / SA Jacky、Karena）；G2 `g2-decision.md`（Pass，VL Neal）。
+- G1 `g1-decision.md`（Pass，IO WAYNE / SA Jacky、Karena）；G2 `g2-decision.md`（Pass，VL Neal）。
 
 ## Residual risks
 

@@ -20,7 +20,7 @@
   - P4 补 `trip-experiences` 体验入口与 `user-profiles` 已完成统计的自动完成回归（owner：AO Jay）。
   - P4 同步契约 `ongoing` 与 `OpenApiTest` / 前端类型（owner：AO Jay）。
   - P5 归档前确认与 `add-match-reason` 的 `trip-companions` 归档顺序（owner：SA / SM）。
-- **Approvers:** IO = Wanye；SA = Jacky、Karena（双 capability 例外已追认）
+- **Approvers:** IO = WAYNE；SA = Jacky、Karena（双 capability 例外已追认）
 - **Timestamp:** 2026-11-16
 
 ## 结论

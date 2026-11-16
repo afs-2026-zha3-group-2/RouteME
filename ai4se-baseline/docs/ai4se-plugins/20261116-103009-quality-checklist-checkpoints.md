@@ -24,7 +24,7 @@
 - p2 Overall: Pass（P2-1…P2-4 全 Pass）
 - p2-1 evidence: `specs/user-auth/spec.md` 1 Requirement / 10 Scenario（MODIFIED）；`openspec validate add-user-logout --strict` = valid
 - p2-2 evidence: `dov-ac-review.md` AC 4/4 + DoV 5/5 + Living Spec 基线保留 3/3
-- p2-3 evidence: `g1-decision.md` Decision = Pass（IO=Wanye，SA=Jacky/Karena）
+- p2-3 evidence: `g1-decision.md` Decision = Pass（IO=WAYNE，SA=Jacky/Karena）
 - p2-4 evidence: `consistency-lint.md` Pass（BLOCKER 0 / WARNING 0 / SUGGESTION 3）
 - roll-up: Pass
 

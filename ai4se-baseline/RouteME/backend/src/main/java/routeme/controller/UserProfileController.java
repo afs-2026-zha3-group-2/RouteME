@@ -15,7 +15,6 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
 import routeme.entity.UserEntity;
-import routeme.exception.ForbiddenActionException;
 import routeme.exception.SessionInvalidException;
 import routeme.pojo.DemoUser;
 import routeme.request.UserProfileUpdateRequest;
@@ -26,8 +25,7 @@ import routeme.service.UserProfileService;
 import routeme.service.UserProfileStatsService;
 
 /**
- * 个人资料端点：读取用 {@code X-User-Id}，保存与上传用 Bearer；
- * 演示身份只读，尝试写入返回 403。
+ * 个人资料端点：读取用 {@code X-User-Id}，保存与上传必须携带有效 Bearer 会话。
  */
 @RestController
 @RequestMapping("/api/users")
@@ -68,18 +66,16 @@ public class UserProfileController {
     @PutMapping("/me/profile")
     public UserProfileResponse save(
             @RequestHeader(value = "Authorization", required = false) String authorization,
-            @RequestHeader(value = "X-User-Id", required = false) Long headerUserId,
             @RequestBody UserProfileUpdateRequest request) {
-        DemoUser user = requireSessionUser(authorization, headerUserId);
+        DemoUser user = requireSessionUser(authorization);
         return UserProfileResponse.from(userProfileService.save(user.id(), request), true);
     }
 
     @PostMapping("/me/avatar")
     public UserProfileResponse uploadAvatar(
             @RequestHeader(value = "Authorization", required = false) String authorization,
-            @RequestHeader(value = "X-User-Id", required = false) Long headerUserId,
             @RequestParam("file") MultipartFile file) {
-        DemoUser user = requireSessionUser(authorization, headerUserId);
+        DemoUser user = requireSessionUser(authorization);
         return UserProfileResponse.from(userProfileService.uploadAvatar(user.id(), file), true);
     }
 
@@ -94,26 +90,10 @@ public class UserProfileController {
     }
 
     /**
-     * 会话优先：有效 token 决定写入身份；token 缺失或无效时，
-     * 若 {@code X-User-Id} 指向演示账户（没有用户名凭据）则 403，否则 401。
+     * 写入必须以有效 Bearer 会话为身份；缺失或无效时由 {@link SessionInvalidException} 返回 401。
      */
-    private DemoUser requireSessionUser(String authorization, Long headerUserId) {
-        try {
-            return authService.requireUser(bearerToken(authorization));
-        } catch (SessionInvalidException exception) {
-            if (isDemoIdentity(headerUserId)) {
-                throw new ForbiddenActionException("demo identity is read-only");
-            }
-            throw exception;
-        }
-    }
-
-    private boolean isDemoIdentity(Long headerUserId) {
-        if (headerUserId == null) {
-            return false;
-        }
-        UserEntity entity = demoUserService.getById(headerUserId);
-        return entity != null && entity.getUsername() == null;
+    private DemoUser requireSessionUser(String authorization) {
+        return authService.requireUser(bearerToken(authorization));
     }
 
     private static String bearerToken(String authorization) {

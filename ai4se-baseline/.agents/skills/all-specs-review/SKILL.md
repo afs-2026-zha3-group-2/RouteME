@@ -1,4 +1,4 @@
----
+﻿---
 name: all-specs-review
 description: >-
   Holistic compliance review of one OpenSpec change against every governing
@@ -42,7 +42,7 @@ AC/DoV review or `/sdd:consistency-lint` spec-drift lint.
    from `package-structure` (a new Spring Boot web project, >15 classes in a
       package, or >2 business domains ⇒ layered `<root-package>/<layer>`).
 4. **Run the checklist.** Apply
-   [review-checklist.md](../../../skills/all-specs-review/references/review-checklist.md) dimension by dimension.
+   [review-checklist.md](references/review-checklist.md) dimension by dimension.
    For each rule, open its `检查项` table and judge against real code. Emit
    structured findings: `id`, `severity` (BLOCKER | WARNING | SUGGESTION),
    `rule` (`rules/<category>/rules.md#<id>`), `location` (file path + symbol, no
@@ -65,12 +65,21 @@ AC/DoV review or `/sdd:consistency-lint` spec-drift lint.
    `docs/reviews/<yyyymmdd>-<change-id>-<artifact>-review.md` instead
    (`<artifact>` = `proposal` | `spec` | `design` | `tasks`), never overwriting an
    earlier report (same-day re-review → `-review-2.md`). After writing that report,
-   **stop and ask the current developer whether to approve and proceed**; do not
-   continue to the next artifact or stage until an explicit approve, recorded as
-   `批准人 / 批准时间` appended to the report. If the path is unclear or the user
-   declines a file write → put the full report in the reply. Include a
-   **Residual risks** section (explicit empty OK). Never overwrite proposal / spec
-   / decision bodies.
+      **stop and ask the signers required by the artifact signer matrix**; do not
+      continue to the next artifact or stage until every signature is collected and
+      each is recorded as `批准人 / 批准时间` in the report's signing section:
+      - `proposal.md` and Delta Spec → **WAYNE** signs the artifact.
+      - `design.md` and `tasks.md` → **2 signers**: the current developer plus one
+        member who is neither the current developer nor WAYNE (candidates: Jay,
+        Lewis, Jacky, Karena, Neal).
+      - Every `docs/reviews/` report (artifact review and `all-specs-review`) →
+        **WAYNE + current developer**, two records.
+      One interception per artifact: ask for the artifact signatures and the report
+      signatures together, list the candidates, and treat any missing or ambiguous
+      reply as not approved. If the path is unclear or the user declines a file
+      write → put the full report in the reply. Include a **Residual risks**
+      section (explicit empty OK). Never overwrite proposal / spec / decision
+      bodies.
 8. **Summarize.** Verdict + finding counts + open gaps with owners if known.
    Suggest next remediations (non-Gate): `/sdd:delta-craft`, `/sdd:task-plan`,
    `/sdd:atdd-apply`, `/sdd:rules-govern`, `/sdd:consistency-lint`. This skill
@@ -112,6 +121,6 @@ Agent: Asks which change to review; does not batch-review or guess.
 
 ## Additional resources
 
-- [Review checklist](../../../skills/all-specs-review/references/review-checklist.md)
+- [Review checklist](references/review-checklist.md)
 - [Rules index](../../../docs/knowledge/rules/_INDEX.md)
 - [SDD artifacts rule](../../../docs/knowledge/rules/documentation/rules.md#sdd-artifacts)

@@ -44,7 +44,7 @@
 
 | 角色 | 姓名 |
 |---|---|
-| IO | Wanye |
+| IO | WAYNE |
 | SA | Jacky、Karena |
 | AO（当前开发） | Jay |
 | VL | Neal |
