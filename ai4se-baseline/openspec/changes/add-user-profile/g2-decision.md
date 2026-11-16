@@ -17,7 +17,7 @@
 | Pipeline CD | release `build-e54f273`、`build-3c8355b`、`build-9fd5764`（中间 `build-022659c`） | Success（`cd.yml` 仅在 CI success 时发布） |
 | Delta Spec | [`specs/user-profile/spec.md`](specs/user-profile/spec.md)、[`specs/user-auth/spec.md`](specs/user-auth/spec.md)、[`specs/design-system/spec.md`](specs/design-system/spec.md) | 7 Requirement / 26 Scenario + 1 Requirement / 6 Scenario + MODIFIED「应用外壳与导航」（7 Scenario，保留原 4 个） |
 | ATDD / Design / Tasks | [`atdd-design.md`](atdd-design.md)、[`design.md`](design.md)、[`tasks.md`](tasks.md) | E1–E26 / A1–A6 有落点；D1–D12；T1–T9 |
-| Shell delta（VL 追加） | `294f487`（侧栏分组，已推送）→ `5c16ea2`（底部账号菜单 + 删除价值闭环 / 演示环境块，已推送） | T9 完成；typecheck / 137 前端测试 / 构建通过；浅色、深色、390px 与短视口截图核对，Esc / 外部点击 / 方向键 / 焦点归还已实测 |
+| Shell delta（VL 追加） | `294f487`（侧栏分组，已推送）→ `5c16ea2`（底部账号菜单 + 删除价值闭环 / 演示环境块，已推送）→ `dc097b7`（浅色侧栏底色 `#eeebe3`，深色不变，已推送） | T9 完成；typecheck / 139 前端测试 / 构建通过；浅色、深色、390px 与短视口截图核对，Esc / 外部点击 / 方向键 / 焦点归还已实测 |
 
 ## Dimension results
 

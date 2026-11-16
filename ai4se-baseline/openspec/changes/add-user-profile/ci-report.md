@@ -35,7 +35,9 @@
 
 **Post-CI update（侧栏 delta）:** 侧栏分组 + 资料入口随 `294f487` 推送，G2 输入表随 `a2d17fb` 更新；`refs/tags/build-a2d17fb` 已出现（`cd.yml` 仅在 CI success 后发布），证明含 `294f487` 的 tip 通过 CI。本地同 tip 复核：`npm run typecheck` 通过、`npm test` 16 文件 / 137 项、`npm run build` 通过。
 
-**Post-CI update（账号菜单 delta）:** 底部账号入口改为右侧浮层菜单，并删除「价值闭环」卡片与「演示环境 · 数据保存在本机」说明，随 `5c16ea2` 推送（无后端 / 契约变更）。本地复核：`npm run typecheck` 通过、`npm test` 16 文件 / 137 项、`npm run build` 通过；远端 CI 证据待 `build-5c16ea2` tag。
+**Post-CI update（账号菜单 delta）:** 底部账号入口改为右侧浮层菜单，并删除「价值闭环」卡片与「演示环境 · 数据保存在本机」说明，随 `5c16ea2` 推送（无后端 / 契约变更）。本地复核：`npm run typecheck` 通过、`npm test` 16 文件 / 137 项、`npm run build` 通过；远端 CI 证据 `refs/tags/build-c221819` 已出现。
+
+**Post-CI update（侧栏底色 delta）:** 浅色侧栏由 `--surface` 改为专属 token `--rail-bg: #eeebe3`（与页面同色系、降饱和），悬停 / 展开与选中态改为在 `--rail-bg` 上混合，深色模式不变，随 `dc097b7` 推送。本地复核：`npm run typecheck` 通过、`npm test` 16 文件 / 139 项、`npm run build` 通过；远端 CI 证据待 `build-dc097b7` tag。
 
 ## Jobs / checks
 
