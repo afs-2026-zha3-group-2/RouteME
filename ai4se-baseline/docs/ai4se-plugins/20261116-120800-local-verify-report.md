@@ -39,6 +39,8 @@ T1 的原始 red 日志未单独留存；上表是 T4 之后联调阶段留存�
 | `cd RouteME/e2e; npx playwright test tests/profile.spec.ts` | **10 passed** |
 | `cd RouteME/e2e; npx playwright test`（全量） | **35 passed** |
 
+远端 CI 补记（2026-11-16 12:25）：`a95254c` 推送后由另一会话将 `add-trip-publish` R2 合入为 `022659c`；`git ls-remote` 显示 release `build-022659c`，按 `cd.yml` 的 CI-success gating 判定远端 CI 通过，运行树包含本 change（`git merge-base --is-ancestor a95254c origin/main` 成立）。详见 [`ci-report.md`](../../openspec/changes/add-user-profile/ci-report.md)。
+
 新增用例分布：
 
 | 套件 | 数量 | 覆盖 |
@@ -99,7 +101,7 @@ T1 的原始 red 日志未单独留存；上表是 T4 之后联调阶段留存�
 
 | # | 风险 | 状态 / Owner |
 |---|---|---|
-| 1 | 远端 CI 运行未观测（本机无 `gh`，本次提交尚未推送） | open；推送后以 `build-<sha>` tag 复核（AO） |
+| 1 | 远端 CI 仅能由 `build-022659c` tag 推断，缺 job 级明细 | closed for gate；明细不可得（AO） |
 | 2 | Playwright E2E 不在 CI 工作流内 | open；本地 35/35 作为门禁（AO） |
 | 3 | 双 capability 例外（`user-profile` ADDED + `user-auth` MODIFIED）尚无 SA 具名追认 | 归档前必须完成（SA：Jacky、Karena） |
 | 4 | 兴趣词表仅在前端预设做别名映射，服务端存规范值 | accepted；词表统一留独立 change（AO + BA） |

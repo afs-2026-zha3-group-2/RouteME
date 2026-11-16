@@ -5,35 +5,38 @@
 - **Phase:** ci
 - **Data source:** local execution（本机按 `.github/workflows/ci.yml` 同命令执行；本机无 `gh` / API 凭据）
 - **Change id:** `add-user-profile`
-- **Target:** `main` @ `2423c01`（实现提交；本报告的 docs 提交紧随其后）
-- **Pipeline URL:** n/a（尚未推送；私有仓库且本机无 `gh`）
-- **Commit:** `2423c01`
+- **Target:** `main` @ `2423c01`（实现）→ `a95254c`（验证记录）→ 合并 tip `022659c`
+- **Pipeline URL:** n/a（私有仓库且本机无 `gh`；以 release tag 作证据）
+- **Commit:** `2423c01` / `a95254c`；合并 tip `022659c`
 
 ## Summary
 
 | Phase | Status | Conclusion | Upstream URL | Notes |
 |-------|--------|------------|--------------|-------|
 | ci（local equivalent） | Pass | success | n/a | `.\mvnw.cmd -B -ntp verify` → 198 tests / BUILD SUCCESS；`npm run build && npm test` → 95 tests |
-| ci（remote run） | Pending | — | n/a | 推送后由 GitHub Actions 运行；以 `build-<sha>` tag 复核 |
-| **Overall** | Partial | `Pass-by-local-equivalent` | — | 远端运行待补；E2E 不在 CI 范围 |
+| ci（remote run） | Pass | success（tag 证据） | n/a | `022659c`（含 `a95254c` 的合并 tip）CI 通过；证据 `refs/tags/build-022659c` |
+| cd（remote） | Pass | success | n/a | `cd.yml` 仅在 CI `conclusion == 'success'` 时发布 `build-${sha:0:7}` |
+| **Overall** | Partial | `Pass-by-tag-evidence` | — | job 级明细不可得（私有仓库 + 本机无 `gh`）；E2E 不在 CI 范围 |
+
+> 证据链：`a95254c` 于 12:07 推送后，另一会话将 `add-trip-publish` R2 合入并推送 `022659c`（`git merge-base --is-ancestor a95254c origin/main` 成立）。`cd.yml` 的 release job 带 `if: github.event.workflow_run.conclusion == 'success'`，`concurrency.cancel-in-progress: true` 会取消中间运行，因此只留下 tip 的 `build-022659c`；该 tag 同时证明 `022659c` 的 CI 结论为 success，且运行树包含本 change 的 `a95254c`。
 
 ## E1 判定 (Machine Evidence)
 
 | Condition | E1 status |
 |-----------|-----------|
-| All in-scope jobs success | ✅ 本地等价命令全绿（backend / frontend） |
+| All in-scope jobs success | ✅ E1 全绿（结论由 CD 发布 tag 推断） |
 | Any failed job | 未发现 |
 | Skipped / manual not run | ⚠️ Playwright E2E 不在 CI 工作流内（本地 35/35） |
-| No remote data | ❓ 尚未推送，无 run URL / job 明细 |
+| No remote data | ❓ job 明细不可得；已用 `build-022659c` 记 Partial |
 
-**E1:** ⚠️ 不完整（缺远端 job 级证据），本地等价结论 success。
+**E1:** ⚠️ 不完整（缺 job 级明细 + E2E 未入 CI），整体结论 success。
 
 ## Jobs / checks
 
 | Phase | Job/Stage | Status | Duration | URL | Failure reason |
 |-------|-----------|--------|----------|-----|----------------|
-| ci | Backend (Java 21) — `./mvnw -B -ntp verify` | success（本地等价） | 28.8 s | n/a | — |
-| ci | Frontend (Node 22) — `npm install --no-audit --no-fund && npm run build && npm test` | success（本地等价） | build 1.1 s / tests 0.7 s | n/a | — |
+| ci | Backend (Java 21) — `./mvnw -B -ntp verify` | success（远端由 tag 推断；本地同命令复现 198/0） | 28.8 s（本地） | n/a | — |
+| ci | Frontend (Node 22) — `npm install --no-audit --no-fund && npm run build && npm test` | success（远端由 tag 推断；本地复现 95/95） | build 1.1 s / tests 0.7 s | n/a | — |
 | — | Playwright E2E — 本地 35/35（`profile.spec.ts` 10/10） | n/a（不在 CI 范围） | — | — | — |
 
 ## 本 change 的 CI 覆盖
@@ -66,12 +69,13 @@
 
 | # | Risk | Source | Status |
 |---|------|--------|--------|
-| 1 | 远端 CI run / job 明细尚未观测 | 尚未推送；无 `gh` / 凭据 | open（推送后以 `build-<sha>` tag 复核） |
+| 1 | CI job 级明细与 run URL 不可得 | 无 `gh` / 凭据；私有仓库 | accepted（tag 证据已补：`build-022659c`） |
 | 2 | 10 条资料 E2E 不进 CI，回归依赖本地 | `ci.yml` 仅含 backend / frontend | open（AO 跟踪） |
 | 3 | 前端 bundle 923 kB（>500 kB 警告） | 既有体积问题，本 change 增加页面代码 | accepted（独立优化） |
 
 ## Artifacts
 
+- release `build-022659c`（`RouteME build-022659c`；产物 `routeme-standalone-022659c.jar` + `routeme-frontend-dist.zip`），指向 `022659c`。
 - 本地完整输出：`target/surefire-reports/`（backend）、`frontend` vitest 输出、`e2e` Playwright 输出（均未入库）。
 - 本地验证报告：[`docs/ai4se-plugins/20261116-120800-local-verify-report.md`](../../../docs/ai4se-plugins/20261116-120800-local-verify-report.md)。
 
@@ -79,14 +83,14 @@
 
 | Field | Value |
 |-------|-------|
-| Confirmer (named role/person) | 待补（推送后由 AO 确认远端运行） |
+| Confirmer (named role/person) | opencode（agent，`git ls-remote` / `git merge-base` 核验）；人工复核并入 G2（VL） |
 | Phase covered | ci |
-| Explicit statement | — |
-| Timestamp | — |
+| Explicit statement | `build-022659c` 存在且 `a95254c` 为其祖先；按 `cd.yml` 的 CI-success gating，判定 `022659c` 的 CI 结论为 success，运行树包含本 change |
+| Timestamp | 2026-11-16T12:25+0800 |
 
-**Overall when remote run is missing:** Partial（`Pass-by-local-equivalent`）。Agent 未自签。
+**Overall when job-level detail is missing:** Partial（`Pass-by-tag-evidence`）。Agent 未自签 G2。
 
 ## Next
 
-- 推送后复核 GitHub Actions 结论与 `build-<sha>` release tag，更新本文件与 [`g2-decision.md`](g2-decision.md)。
-- 作为 `add-user-profile` G2 的 `phase=ci` 输入；G2 仍由 VL 签署。
+- 作为 `add-user-profile` G2 的 `phase=ci` 输入（[`g2-decision.md`](g2-decision.md)）；G2 仍由 VL 签署。
+- E2E 纳入 CI 另立 change 跟踪。

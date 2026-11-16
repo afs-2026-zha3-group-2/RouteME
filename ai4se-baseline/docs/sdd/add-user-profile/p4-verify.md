@@ -47,7 +47,7 @@ T1 的原始 red 日志未单独留存；上表为联调阶段留存并修复的
 | 迁移（旧库） | 启动日志 `9 → 10 - add user profile` 成功；演示用户 1–3 新列为 NULL，旧 `school` 文案保留 |
 | 手工 1440 / 768 / 390 × 浅 / 深色 | setup 与公开主页均 `scrollWidth === innerWidth`；390 下标题 top=84 / 顶栏 bottom=66 |
 | 反向核对 | 行程 / 申请 / 聊天 / 体验控制器无逻辑 diff；匹配分数与理由未变；他人响应无 `birthday` |
-| CI（本地等价） | backend + frontend 全绿，见 [`ci-report.md`](../../../openspec/changes/add-user-profile/ci-report.md)；远端 run 与 release tag 待推送后复核 |
+| CI（本地等价 + 远端） | backend + frontend 全绿；远端 release `build-022659c`（含 `a95254c`），见 [`ci-report.md`](../../../openspec/changes/add-user-profile/ci-report.md) |
 
 ## 5. P4 DoV 检查（`checklists/p4.md`）
 
@@ -55,8 +55,8 @@ T1 的原始 red 日志未单独留存；上表为联调阶段留存并修复的
 |---|---|---|
 | P4-1 | 本地验证报告存在 | Pass（`docs/ai4se-plugins/20261116-120800-local-verify-report.md`） |
 | P4-2 | 本地 Overall = Pass | Pass |
-| P4-3 | `phase=ci` | Partial（`ci-report.md` 本地等价全绿；远端 run 待推送后观测） |
-| P4-4 | `phase=cd` | Pending（尚无本提交的 release tag） |
+| P4-3 | `phase=ci` | Pass（`ci-report.md` 本地等价全绿；远端 `022659c` 由 `build-022659c` tag 推断 success） |
+| P4-4 | `phase=cd` | Pass（release `build-022659c`） |
 | P4-5 | `g2-decision.md` | Prepared（文件已建，Decision 留空待 VL 签署） |
 | P4-6 | Apply 与 Verify 分离 | Pass（实现方未自签 G2；VL / SA 签署列留空） |
 
@@ -86,7 +86,7 @@ T1 的原始 red 日志未单独留存；上表为联调阶段留存并修复的
 
 | # | 项 | Owner | 处理时机 |
 |---|---|---|---|
-| 1 | 远端 CI run / release tag 未观测（本机无 `gh`，提交尚未推送） | AO | 推送后以 `build-<sha>` 复核并更新 `ci-report.md` |
+| 1 | 远端 CI job 级明细与 run URL 不可得（tag 证据已有） | AO | 可接受；不阻塞 G2 |
 | 2 | 10 条资料 E2E 与全量 35 条 E2E 不在 CI 内 | AO | 评估把 Playwright 纳入 CI |
 | 3 | 双 capability 例外尚无 SA 具名追认 | SA | 归档前必须完成 |
 | 4 | `origin/feature/add-user-profiles` 有一份未合并的旧实现（`d3d6178`，含同名 `V10__seed_viewer_profile_user.sql`、`UserProfileController`、`ProfileModal`） | AO + SA | 归档前确认作废 / 删除该分支，避免迁移版本冲突 |
