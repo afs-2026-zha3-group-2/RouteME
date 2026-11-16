@@ -1,4 +1,4 @@
-# Impact brief — REQ-002 / 003 / 004 / 005（MVP 业务能力集）
+# Impact brief — REQ-002 / 003 / 004 / 005 / 006（MVP 业务能力集）
 
 - **Workdir：** `requirement-workspace/`
 - **日期：** 2026-11-15 ｜ **触发：** `/sdd:pre-spec-req` 内嵌 impact-analysis（blocking OQ 与 DoR BLOCKER 均已清零）
@@ -12,8 +12,9 @@
 | REQ-003 | `trip-companions` | `add-trip-companions` | `requirement-workspace/requirements/REQ-003-trip-companions.md` |
 | REQ-004 | `trip-experiences` | `add-trip-experiences` | `requirement-workspace/requirements/REQ-004-trip-experiences.md` |
 | REQ-005 | `trip-plans` / `trip-experiences`（MODIFIED） | `refine-inspiration-home` | `requirement-workspace/requirements/REQ-005-inspiration-home.md` |
+| REQ-006 | `user-auth`（ADDED） | `add-user-logout` | `requirement-workspace/requirements/REQ-006-user-logout.md` |
 
-意图捕获：`requirement-workspace/intents/REQ-00{2,3,4}-*.md`；deep-dive：`requirement-workspace/deep-dive.md`。
+意图捕获：`requirement-workspace/intents/REQ-00{2,3,4,5,6}-*.md`；deep-dive：`requirement-workspace/deep-dive.md`。
 
 ## 2. As-is asset inventory（evidence paths）
 
@@ -162,3 +163,75 @@
 - **两个 MODIFIED capability：** 同一页面同时消费 `trip-plans` 与 `trip-experiences`；不拆成「行程改造」与「体验改造」两个水平切片，因为单独交付任一半都无法完成 S03 的「切换视图后内容随之变化」验收。
 - **阶段：** 单阶段；无依赖上游（两能力均已上线）。
 - **质量自检（split-heuristics）：** 子目标一句话可说明、端到端可验证（6 条数据 → 打开首页 → 切换视图）、可独立运行、capability 名真实、无依赖环。
+
+---
+
+## 10. REQ-006 变更影响 — 退出当前身份（含演示身份）
+
+- **日期：** 2026-11-16 ｜ **触发：** `/sdd:pre-spec-req` 内嵌 impact-analysis（blocking OQ 与 DoR BLOCKER 均已清零）
+- **粒度：** 应用架构（身份 / 页面 / 接口消费边界），非代码设计
+
+### 10.1 As-is asset inventory（evidence paths）
+
+| 资产 | 路径 | 现状 |
+|---|---|---|
+| 需求条目 | `requirement-workspace/requirements/REQ-006-user-logout.md` | 本变更新增；六字段 + 9 场景 + DoR / A0 全过 |
+| 进行中的认证 change | `openspec/changes/add-user-auth/` | 已实现注册 / 登录 / 会话恢复与注册账号退出；`user-auth` 增量规格含「会话校验与退出」；T6 明确「演示身份不显示退出」 |
+| Living Spec `user-auth` | `openspec/specs/` | **不存在**（`add-user-auth` 未归档），因此本 change 只能 ADDED，不能 MODIFIED |
+| Living Spec `trip-plans` | `openspec/specs/trip-plans/spec.md` | 已定义「演示身份进入与切换」；不包含退出路径 |
+| 顶栏身份菜单 | `RouteME/frontend/src/shell/AppShell.tsx` | `isAuthenticated` 为真时才渲染 `id-logout`；演示身份仅能切换，无法回到身份门 |
+| 退出处理 | `RouteME/frontend/src/App.tsx` | `logout()` 已能清除 token / 当前身份并回到身份门；演示身份未被入口调用 |
+| 身份门 | `RouteME/frontend/src/identity/IdentityGate.tsx` | 3 个演示身份 + 登录 / 注册入口；无退出入口 |
+| 接口契约 | `RouteME/openapi.yaml` v0.6.0 | `POST /api/auth/logout` 已存在（204）；本变更不新增端点 |
+| 会话实现 | `backend/.../controller/AuthController.java`、`service/AuthServiceImpl` | 退出删除会话行；演示身份无会话记录 |
+| 测试 | `RouteME/frontend/src/api.test.ts`、`e2e/` 认证走查记录 | 已覆盖注册账号退出；未覆盖演示身份退出与入口可见性 |
+
+### 10.2 As-is → proposed delta（逐资产）
+
+| 资产 | As-is | Proposed delta |
+|---|---|---|
+| 顶栏身份菜单 | 退出项仅登录态渲染 | 退出项对注册账号与演示身份都渲染；点击后关闭菜单并执行退出 |
+| 演示身份退出 | 无入口 | 清除本地当前身份并回到身份门；不调用 `POST /api/auth/logout` |
+| 注册账号退出 | 已实现（结束会话 + 清除本地 + 回身份门） | 保持行为；补齐「结束会话失败仍本地退出」的降级语义 |
+| 退出后状态 | 已回到身份门（注册账号） | 演示身份同样回到身份门；刷新不恢复上一身份 |
+| 身份门 | 无退出入口 | 保持无退出入口（明确为需求边界） |
+| 文案 | 菜单说明区分登录态 | 说明文案覆盖演示身份退出；不出现「演示身份不可退出」类表述 |
+| 业务规则 / 数据 / 接口 | 既有 | **不变**：无迁移、无新端点、无状态机变更 |
+| Living Spec | `user-auth` 不存在 | 归档阶段新增 `user-auth` living capability（与 `add-user-auth` 合并） |
+
+### 10.3 Blast radius（应用架构）
+
+- **页面（1）：** 顶栏身份菜单（`AppShell`）+ 退出后的身份门（`IdentityGate` 复用）。
+- **能力（1）：** `user-auth`（退出当前身份）；`trip-plans` 的演示身份进入 / 切换仅被消费，不改规则。
+- **接口契约（0 新增）：** 注册账号退出复用 `POST /api/auth/logout`；演示身份退出不发请求。
+- **数据 / 迁移（0）：** 无新表、无字段、无 seed 变更。
+- **测试触点：** 前端组件 / 单元测试（入口可见性、退出清态）、`e2e`（注册账号退出、演示身份退出、刷新不恢复）。
+- **知识库：** 实现 / 归档阶段回写「退出路径对全身份可用」；P1 不改 `docs/knowledge/`。
+
+### 10.4 Artifact impact（specs / tests / docs）
+
+| 类型 | 影响 |
+|---|---|
+| Spec（change delta） | `openspec/changes/add-user-logout/specs/user-auth/spec.md`（ADDED「退出当前身份」） |
+| Proposal | `openspec/changes/add-user-logout/proposal.md` |
+| Registry / handoff | 新增 REQ-006 行与 REQ-006 → `add-user-logout` 映射 |
+| Tests / 代码 / 契约 / 迁移 / design / tasks | 不在 P1 范围；交 P2 起（delta-craft / design / task-plan / apply） |
+| Living Spec | 归档阶段合并；`user-auth` 由 `add-user-auth` 与本 change 共同形成，需按顺序归档 |
+
+### 10.5 Risks & blockers
+
+| 级别 | 项 | 说明 / 缓解 |
+|---|---|---|
+| Risk | 与 `add-user-auth` T6「演示身份不显示退出」直接冲突 | 在 REQ-006 §8 与 proposal 决策中明确以本需求为准；实现时同步更新该任务表述 |
+| Risk | `user-auth` 尚未进入 Living Spec，两个进行中 change 同时 ADDED 同一能力 | 本 change 的 ADDED 需求名与 `add-user-auth` 的「会话校验与退出」不重名；归档顺序为先 `add-user-auth` 后本 change，避免覆盖 |
+| Risk | 演示身份误调用退出端点会产生无意义 401 | spec 明确演示身份退出不发起认证请求；测试覆盖 |
+| Risk | 退出失败提示可能被误解为退出未完成 | 文案限定为「本机已退出，会话可能仍有效」，主状态必须回到身份门 |
+| Blocker | 无 | blocking OQ = 0、DoR BLOCKER = 0、A0 ⑨–⑫ 全过；既有 `refine-inspiration-home` 的 validate 失败与本需求无关 |
+
+### 10.6 Suggested split boundaries
+
+- **一个 change：** `add-user-logout` ← REQ-006（单一 `user-auth` capability，页面级 + 身份生命周期增量）。
+- **不拆「注册账号退出」与「演示身份退出」：** 两者共用同一菜单入口与同一个「回到身份门」验收；拆开会让入口可见性验收无法归属。
+- **不并入 `add-user-auth`：** 该 change 已实现并处于验证收口，追加会打乱其归档边界；本 change 只覆盖退出路径的扩展。
+- **阶段：** 单阶段；依赖 `add-user-auth` 的既有会话契约（已实现），无阻塞上游。
+- **质量自检（split-heuristics）：** 子目标一句话可说明、端到端可验证（进入 → 展开菜单 → 退出 → 刷新 → 再进入）、可独立运行、capability 名真实、无依赖环。
