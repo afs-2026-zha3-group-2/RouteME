@@ -12,6 +12,9 @@
 .metadata/
 nbproject/private/
 
+# Qoder IDE local cache (generated rule/asset files)
+.qoder/
+
 # Java and Gradle compilation outputs and local caches
 target/
 build/
