@@ -77,3 +77,34 @@
 - **归档顺序：** `refine-inspiration-home` → `add-destination-area-filters` → `add-trip-publish`；三者中只有本 change 属于 REQ-007。
 - **搜索测试：** A 的搜索/目的地场景由本 change 改写；`refine-inspiration-home` 的搜索空态测试交其 owner。
 - **原始故事点：** 2；本拆分为 S/M 相对规模，供排期参考，不改变原始故事点记录。
+
+---
+
+# Story list — REQ-010（S12 同行消息与集合确认）
+
+- **来源：** 用户 2026-11-16 会话（SDD P1 输入）+ 原型 `docs/prototype/ui.js` `chat()`
+- **口径：** 一条故事 = 一条可验收的垂直切片（页面 + 契约 + 状态迁移），允许前后端同批交付
+- **更新时间：** 2026-11-16
+
+| Story | Title | 角色 | Priority | Iteration | Points | Page | Parent REQ | Change | Status |
+|---|---|---|---|---|---|---|---|---|---|
+| S12-1 | 聊天页按原型重构（会话列表 + 主区 + 头部动作 + 短轮询） | 已匹配同行者 | P0 | 1 | M | 同行消息 | REQ-010 | `refine-trip-chat` | P1 drafted |
+| S12-2 | 退出同行后保留会话并可继续沟通 | 已匹配同行者 | P0 | 1 | S | 同行消息 / 我的旅行 | REQ-010 | `refine-trip-chat` | P1 drafted |
+| S12-3 | 集合时间字段与三处展示 | 发布者 / 同行者 | P0 | 1 | M | 发布行程 / 行程详情 / 同行消息 / 我的旅行 | REQ-010 | `refine-trip-chat` | P1 drafted |
+| S12-4 | 发布者维护集合区域与集合时间 | 发布者 | P0 | 1 | S | 行程详情 | REQ-010 | `refine-trip-chat` | P1 drafted |
+
+### REQ-010 Traceability
+
+| Story | Requirement scenarios | Change spec | Story file |
+|---|---|---|---|
+| S12-1 | REQ-010 §4 #1–#14、#16 | `specs/trip-companions/spec.md`（MODIFIED「匹配后的一对一文字沟通」） | `stories/refine-trip-chat.story.md` |
+| S12-2 | REQ-010 §4 #15 | `specs/trip-companions/spec.md`（MODIFIED「退出同行」） | 同上 |
+| S12-3 | REQ-010 §4 #17–#22 | `specs/trip-plans/spec.md`（MODIFIED 发布 + 详情展示） | 同上 |
+| S12-4 | REQ-010 §4 #23–#25 | `specs/trip-plans/spec.md`（ADDED「发布者维护集合信息」） | 同上 |
+
+### REQ-010 Notes
+
+- 本 change 修改了活规格 `trip-companions` 的「退出同行」与「匹配后的一对一文字沟通」两条需求；归档时用 MODIFIED 替换对应 Requirement 块。
+- 集合区域不需要新增字段；集合时间为新增字段，沿用「本地日期 + 时间、无时区」语义。
+- 并行约束：需先改原型（集合时间与集合编辑入口）再改实现（`@rule:prototype-ui-alignment`）。
+- 统计口径不变：「已退出」不计入「参与同行」。

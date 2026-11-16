@@ -515,3 +515,83 @@
 - **契约优先：** 先冻结「在 main 的 `UserProfile` 上新增 `joined_at` + 四项统计」（不改变必填字段），再并行后端聚合与前端弹窗。
 - **P4 收敛修订（2026-11-16）：** main 已落地同名资料端点，按用户裁决改为「复用 main 接口 + 扩展统计/加入时间」；迁移版号顺延至 V12（V10 = 资料列、V11 = 目的地代码）。
 - **质量自检（split-heuristics）：** 垂直切片、端到端可验证（卡片入口 → 弹窗 → 关闭）、可独立运行、capability 名真实、无依赖环。
+
+## 13. REQ-010 增量影响 — 同行消息与集合确认（2026-11-16）
+
+### 13.1 Requirement set
+
+REQ-010：聊天页按原型重构、聊天准入与退出语义调整、集合时间字段与三处展示、发布者维护集合信息。能力：`trip-companions`（MODIFIED）+ `trip-plans`（MODIFIED）。
+
+### 13.2 As-is asset inventory（evidence paths）
+
+| 资产 | 路径 | 现状 |
+|---|---|---|
+| 活规格聊天 | `openspec/specs/trip-companions/spec.md`「匹配后的一对一文字沟通」「退出同行」 | 仅已匹配可进入；退出即关闭聊天 |
+| 活规格行程 | `openspec/specs/trip-plans/spec.md`「发布可被他人理解的旅行计划」「查看行程详情与清晰的状态」 | 集合区域选填已有；无集合时间；无集合维护 |
+| 聊天后端 | `ChatController`、`ChatServiceImpl`、`ChatMessageMapper.xml` | 升序、500 字、已结束只读；`partners()` 按消息历史聚合并保留退出后的会话 |
+| 退出实现 | `ApplicationServiceImpl#leave` | 申请置 `CANCELLED` 并减少人数 |
+| 行程写入 | `TripController#create`、`TripPlanServiceImpl`、`TripPlan`、`TripPlanMapper.xml` | 仅创建与结束，无更新 |
+| 集合区域 | `V4__seed_demo_trips.sql`、`TripCreatePage`、`TripDetailPage`、`openapi.yaml` | 已存在并在发布页与详情展示 |
+| 聊天前端 | `frontend/src/chat/ChatPage.tsx`、`route.ts` | 单栏 antd；5 秒轮询；无会话列表与头部动作 |
+| 我的旅行 | `MyTripsPage.tsx` | 已匹配只给聊天按钮；无集合备注 |
+| 原型 | `docs/prototype/ui.js` `chat()`、`mine()`、`tripDetail()`、`tripForm()`；`styles.css` `.chat-*` | 两栏、头部动作、集合安全条、3 秒轮询；无集合时间与集合编辑入口 |
+| 契约 | `openapi.yaml` `0.8.0` | `meeting_area` 已有；无 `meeting_time` 与集合更新端点；申请状态四值 |
+| 测试 | `ChatControllerTest`、`e2e/tests/companions.spec.ts` | 聊天单测与 E2E 基础用例；无退出后聊天断言 |
+
+### 13.3 As-is → proposed delta（逐资产）
+
+| 资产 | 变更 |
+|---|---|
+| `trip-companions` 聊天需求 | 补会话列表、头部动作、拒绝说明、输入交互、短轮询、只读；准入改为「发布者或曾接受（含已退出）」 |
+| `trip-companions` 退出需求 | 退出记录可追溯状态；不再关闭聊天；列表与统计口径不变 |
+| `trip-plans` 发布需求 | 新增集合时间（选填、日期部分 ≤ 结束日期） |
+| `trip-plans` 详情需求 | 补集合区域与集合时间展示，空值「待确认」 |
+| `trip-plans` 新增需求 | 发布者维护集合信息（仅两字段、仅招募中/已满员） |
+| 契约 | `meeting_time`、集合更新端点、申请状态 `left`；版本 `0.9.0` |
+| 迁移 | `V13` 新增 `meeting_time`（可空） |
+| 后端 | 准入口径、会话列表补齐（含无消息的已匹配配对）、退出状态、集合字段与更新端点、响应字段透传 |
+| 前端 | 聊天两栏、我的旅行备注、详情展示与编辑入口、发布页集合时间、类型与文案 |
+| 测试 | 新增/改写聊天、退出、集合字段与编辑用例 |
+
+### 13.4 Blast radius（应用架构）
+
+- 影响 `trip-companions` 与 `trip-plans` 两个能力，边界为「聊天只读行程、集合由行程单一写入」。
+- 退出状态变化会影响：申请列表展示、`MyTripsResponse` 分组、参与同行统计、重新申请资格。确认口径：matched 与 joined 仍只认 `ACCEPTED`（`LEFT` 不计入）；`existsActive` 只拦 `PENDING`/`ACCEPTED`，`LEFT` 仍可重新申请；详情页同行者列表不含 `LEFT`；「我申请的」新增「已退出」标签。
+- 聊天左栏不能只靠 `selectThreads`（只聚合消息历史）：新接受但无消息的配对不会出现，需在 `ChatServiceImpl#partners` 层合并「可沟通配对」与「历史消息会话」后去重排序。
+- 聊天前端重构会复用 `ProfileModal` / `ReportModal` / `leaveTrip`，不新增权限模型。
+- 集合时间进入发布链路，会触及 `TripCreateRequest` / `TripDetailResponse` / `TripPlan` / 实体与前端表单校验。
+
+### 13.5 Artifact impact（specs / tests / docs）
+
+- Delta Spec：`specs/trip-companions/spec.md`（MODIFIED ×2）、`specs/trip-plans/spec.md`（MODIFIED ×2 + ADDED ×1）。
+- 原型：`docs/prototype/` 需先补集合时间与集合编辑入口。
+- 测试：`ChatControllerTest`、新增集合字段与编辑端点 API 测试、`e2e/tests/companions.spec.ts` 扩用例；`leave` 相关断言改写。
+- 文档：`docs/sdd/refine-trip-chat/` P0–P4 记录、评审报告、质量报告。
+
+### 13.6 Dual-track notes（OpenSpec vs agile）
+
+- OpenSpec 轨（主）：一个 change `refine-trip-chat` 改两个 capability，归档前需 SA 具名追认双 capability 例外。
+- Agile 轨（可选）：按 4 条故事（S12-1～S12-4）排期，但共用同一改动集与同一验收链路，不建议拆成两个 PR。
+
+### 13.7 Risks & blockers
+
+| 级别 | 项 | 说明 / 缓解 |
+|---|---|---|
+| Risk | 退出语义与活规格冲突 | 已由用户裁决并记录（`@rule:rule-precedence`）；P2 以 MODIFIED 覆盖两条需求，归档时需 SA 追认 |
+| Risk | 申请状态新增 `left` 影响既有消费方 | 契约同步、前端文案与分组同步；统计口径显式不变 |
+| Risk | 集合时间引入时区歧义 | 明确为本地日期时间、无时区，服务端只校验日期部分 |
+| Risk | 原型缺集合时间与编辑入口 | 先改原型再改实现（`@rule:prototype-ui-alignment`）；P3 先出预览 |
+| Risk | 聊天页重构回归面大 | 保留现有后端契约不变（除准入与状态），E2E 覆盖发送→重进→可见主链路 |
+| Blocker | 无 | blocking OQ = 0、DoR BLOCKER = 0 |
+
+### 13.8 Suggested split boundaries（供 story-split）
+
+| 故事 | 切片 | 依赖 |
+|---|---|---|
+| S12-1 | 聊天页重构 + 准入拒绝说明 | 无（复用既有端点） |
+| S12-2 | 退出语义与状态 | 与 S12-1 共用权限判定，建议同批 |
+| S12-3 | 集合时间字段与三处展示 | 契约与迁移先行 |
+| S12-4 | 发布者维护集合信息 | 依赖 S12-3 的字段 |
+
+- **契约优先：** 先冻结 `meeting_time`、集合更新端点与申请状态 `left`，再并行后端与前端。
+- **共享文件冲突：** `TripDetailPage.tsx`、`styles.css`、`tripMessages.ts` 同时被 S12-1/S12-3/S12-4 触及，排期时避免多分支并行改同一文件。
