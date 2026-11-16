@@ -17,7 +17,8 @@
 | REQ-002 | `trip-plans` | `add-trip-plans` | `intents/REQ-002-trip-plans.md` | `requirements/REQ-002-trip-plans.md` | `openspec/changes/add-trip-plans/` |
 | REQ-003 | `trip-companions` | `add-trip-companions` | `intents/REQ-003-trip-companions.md` | `requirements/REQ-003-trip-companions.md` | `openspec/changes/add-trip-companions/` |
 | REQ-004 | `trip-experiences` | `add-trip-experiences` | `intents/REQ-004-trip-experiences.md` | `requirements/REQ-004-trip-experiences.md` | `openspec/changes/add-trip-experiences/` |
+| REQ-005 | `user-profiles` | `add-user-profiles` | `intents/REQ-005-publisher-profile.md` | `requirements/REQ-005-publisher-profile.md` | `openspec/changes/add-user-profiles/` |
 
-- 共享分析：`deep-dive.md`（①–④ 四表）、`impact-brief.md`（覆盖 002/003/004 需求集）。
-- 依赖排序（轻 DAG）：REQ-002 → REQ-003 → REQ-004。
+- 共享分析：`deep-dive.md`（①–④ 四表 + REQ-005 增补）、`impact-brief.md`（REQ-002/003/004 + REQ-005 增补）。
+- 依赖排序（轻 DAG）：REQ-002 → REQ-003 → REQ-004；REQ-005 独立，只读消费前三者的行程/申请/体验数据。
 - **BA 交付边界：** 以上为 P0/P1 业务产物。P2 起（delta-craft / design / task-plan / apply / verify / archive，含代码、契约、迁移、技术设计、任务分解）交 dev。

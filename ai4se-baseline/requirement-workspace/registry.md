@@ -6,3 +6,4 @@
 | REQ-002 | 旅行灵感浏览与行程发布 | verified | add-trip-plans | 已归档（`openspec/changes/archive/2026-11-15-add-trip-plans/`），Living Spec `openspec/specs/trip-plans/`；契约 0.2.0；后端 32 / 前端 25 / E2E 5 测试通过；G1–G3 Pass |
 | REQ-003 | 同行匹配、申请与旅行前沟通 | verified | add-trip-companions | 已归档（`openspec/changes/archive/2026-11-15-add-trip-companions/`），Living Spec `openspec/specs/trip-companions/`；契约 0.3.0；后端 103 / 前端 27 / E2E 8 测试通过；G1–G3 Pass；CI #54/#55 全绿 |
 | REQ-004 | 游后体验分享与参考此行程发布 | verified | add-trip-experiences | 已归档（`openspec/changes/archive/2026-11-15-add-trip-experiences/`），Living Spec `openspec/specs/trip-experiences/`；契约 0.4.0；后端 132 / 前端 34 / E2E 11 测试通过；G1–G3 Pass；CI #60/#61/#63 全绿 |
+| REQ-005 | 浏览者查看发布者公开资料 | drafted | add-user-profiles | P1 完成：intent + Ready 条目 + deep-dive 增补 + impact 增补 + change 包（proposal + `specs/user-profiles/spec.md`）；待 P2 delta-craft / G1 |
