@@ -88,7 +88,7 @@
 
 | Story | Title | 角色 | Priority | Iteration | Points | Page | Parent REQ | Change | Status |
 |---|---|---|---|---|---|---|---|---|---|
-| S16 | 发布游后体验 | 完成旅行的用户 | P1 | 3 | 3 | 游后分享页 | REQ-004 | `refine-experience-share` | P4 Pass / G2 Pass（2026-11-16，待 P5） |
+| S16 | 发布游后体验 | 完成旅行的用户 | P1 | 3 | 3 | 游后分享页 | REQ-004 | `refine-experience-share` | P4 Pass / G2 Pass / CI-CD Pass（2026-11-16，release `build-e2abd4e`，待 P5） |
 
 ## Traceability（REQ-004 / S16）
 

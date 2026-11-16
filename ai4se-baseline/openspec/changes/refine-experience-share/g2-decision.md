@@ -10,6 +10,7 @@
 | Artifact | Path | Result |
 |---|---|---|
 | Local verify report | `docs/ai4se-plugins/20261116-165905-local-verify-report.md` | 前端 141 / 后端 230 / 相关 E2E 8 全绿；全量 E2E 55 passed / 1 failed（既有债务）；人工走查 6 张 Pass；Overall Pass |
+| Pipeline report（ci / cd） | `docs/ai4se-plugins/20261116-204334-pipeline-report.md`、`openspec/changes/refine-experience-share/ci-report.md` | CI run [#156](https://github.com/afs-2026-zha3-group-2/RouteME/actions/runs/43868630052)（`43868630052`，sha `e2abd4e`）Pass；CD run [#88](https://github.com/afs-2026-zha3-group-2/RouteME/actions/runs/43868762854)（`43868762854`）Pass；release `build-e2abd4e` 已发布 |
 | P4 record | `docs/sdd/refine-experience-share/p4-verify.md` | 实现落点、与设计差异、验证命令、移交项 |
 | Delta Spec | `openspec/changes/refine-experience-share/specs/trip-experiences/spec.md` | 3 Requirement / 12 Scenario；`openspec validate --strict` valid |
 | Tasks | `openspec/changes/refine-experience-share/tasks.md` | T1–T7 全部完成 |
@@ -28,6 +29,9 @@
 | E2E（本 change） | `tests/experiences.spec.ts` 8 passed |
 | E2E（全量，干净库） | 55 passed / 1 failed |
 | 人工走查 | 1440 / 768 / 390 × 浅 / 深色，无横向溢出；封面与深色对比可辨 |
+| 远端 CI | `main@e2abd4e` 的 CI run `43868630052`：Backend / Frontend 两个 job success |
+| 远端 CD | CD run `43868762854`：jar + dist + release `build-e2abd4e` success |
+| 合并后复跑 | `main` 上 `npm run typecheck` 通过、`npm test` 26 files / 189 tests passed |
 | 契约影响 | 无 |
 | 数据迁移 | 无 |
 
@@ -61,8 +65,14 @@
 
 | 角色 | 姓名 | 确认内容 | 日期 |
 |---|---|---|---|
-| VL | Neal | 本地验证证据可复现；实现符合 Delta 与设计；既有 E2E 债务归属清楚 | 2026-11-16 |
-| AO | Jay | 实现、测试与走查完成 | 2026-11-16 |
+| VL | Neal | 本地验证证据可复现；实现符合 Delta 与设计；CI #156 / CD #88 通过、release `build-e2abd4e` 已发布；既有 E2E 债务归属清楚 | 2026-11-16 |
+| AO | Jay | 实现、测试与走查完成；CI/CD 证据归档 | 2026-11-16 |
+
+## 追加记录（2026-11-16 20:43，CI/CD）
+
+- 本 change 已通过 merge commit `e2abd4e` 进入 `main`：CI run `43868630052`（job 级 success）→ CD run `43868762854`（release `build-e2abd4e`）。
+- P4 质量检查中原本 `Skipped` 的 **P4-3（CI pipeline report）与 P4-4（CD）现均为 Pass**，证据见 `docs/ai4se-plugins/20261116-204334-pipeline-report.md` 与 `ci-report.md`。
+- G2 结论不变：**Pass（with 1 documented pre-existing E2E debt）**；签署人仍为 VL = Neal。
 
 ## Next
 

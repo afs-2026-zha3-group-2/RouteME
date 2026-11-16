@@ -3,6 +3,7 @@
 - **Change：** `refine-experience-share`（REQ-004 / S16 发布游后体验）｜ **阶段：** P4（Implement → verify → G2）
 - **日期：** 2026-11-16 ｜ **记录人：** Jay（AO）
 - **分支 / 基点：** `feature/refine-experience-share`（P3 提交 `69acc17`；rebase 前哈希 `81120a1`；rebase 后覆盖 `main@f6da5da`）
+- **合入：** `main@e2abd4e`（merge `feature/refine-experience-share`，2026-11-16 20:39+08）｜ CI run `43868630052` / CD run `43868762854`
 
 ## 1. 阶段目标
 
@@ -32,6 +33,7 @@
 | DG-03 保留卡片 3px 顶边 | 保留 `.exp-card` 的 `border-top`，封面条位于其下、内边距内 | 视觉走查确认无重复装饰 |
 | 设计 §5 列表样式 | 复用 `.safety-list`，未新增 `.share-note-list` | 评审 DG-02 收口 |
 | `tasks.md` 表格结构 | 改为 `### T<n> [layer]` + `- [x]` 复选框 | `openspec validate --strict` 需要复选框才能统计任务；内容不变，见 tasks 评审「变更摘要」 |
+| `coverTone.ts` 文件内容 | 合入 `main` 时采用 `main` 的导出式实现（`export const COVER_TONES` + JSDoc，参数名 `destination`） | 与并行 change 的同名文件撞车；函数行为与调用方一致，`TripCard` / `ExperienceCard` 的 import 不变 |
 
 ## 3. 本地验证
 
@@ -45,6 +47,17 @@
 | E2E（全量，干净库） | `cd e2e; npx playwright test` | 55 passed / 1 failed（既有债务，见 §4） |
 
 详细输出与走查结论见 `docs/ai4se-plugins/20261116-165905-local-verify-report.md`。
+
+### 3.1 远端 CI / CD（合入 `main` 后）
+
+| Phase | Run | 结论 | 证据 |
+|---|---|---|---|
+| CI | [#156](https://github.com/afs-2026-zha3-group-2/RouteME/actions/runs/43868630052)（id `43868630052`，sha `e2abd4e`） | **Pass** | `Backend (Java 21)` 与 `Frontend (Node 22)` 两个 job 全 success（step 级：`Verify backend`、`Build and test`） |
+| CD | [#88](https://github.com/afs-2026-zha3-group-2/RouteME/actions/runs/43868762854)（id `43868762854`） | **Pass** | `Build standalone jar` / `Upload artifacts` / `Publish GitHub release` 全 success；release tag `build-e2abd4e` → `e2abd4e` |
+
+合入后在 `main` 复跑前端：`npm run typecheck` 通过、`npm test` **26 files / 189 tests passed**。报告：`docs/ai4se-plugins/20261116-204334-pipeline-report.md` 与 `openspec/changes/refine-experience-share/ci-report.md`。
+
+E2E 不在 CI 流水线内，仍以本地隔离运行为准（`experiences.spec.ts` 8/8）。
 
 ## 4. 未通过项与移交
 
@@ -60,7 +73,7 @@
 
 | 角色 | 姓名 | 确认内容 | 日期 |
 |---|---|---|---|
-| VL（独立验证） | Neal | 本地验证证据可复现；实现符合 Delta 与设计；1 条既有 E2E 债务已定位且不属本 change | 2026-11-16 |
+| VL（独立验证） | Neal | 本地验证证据可复现；实现符合 Delta 与设计；CI #156 / CD #88 通过、release `build-e2abd4e` 已发布；1 条既有 E2E 债务已定位且不属本 change | 2026-11-16 |
 | AO | Jay | 实现、测试与走查完成；承接 P5 前的收口 | 2026-11-16 |
 
 **G2 结论：** Pass（with 1 documented pre-existing E2E debt）。VL = Neal，2026-11-16；记录见 `openspec/changes/refine-experience-share/g2-decision.md`。
@@ -80,6 +93,7 @@
 | P2 | `8638d99` | Delta 收敛 + G1（rebase 前 `0d2b3c6`） |
 | P3 | `69acc17` | 设计 + ATDD + 任务（rebase 前 `81120a1`） |
 | P4 | 本记录所在提交 | 实现 + 验证 + G2 |
+| verify | 本阶段提交 | CI/CD 证据与 `ci-report.md`（`docs(verify): …`） |
 | P5 | — | 按要求不执行、不归档 |
 
 每次 push 前都执行 `git pull --rebase origin main`；分支为先推送的私有分支，rebase 后用 `--force-with-lease` 同步，不改写 `main`。
