@@ -71,6 +71,16 @@
 - 走查：1440 / 768 / 390 三档，两个视图均无横向溢出，状态与「已结束」标识可脱离颜色识别。
 - 证据：`docs/ai4se-plugins/20261116-105446-local-verify-report.md`（Overall Pass）。
 
+## G2 执行记录（2026-11-16）
+
+| 项 | 结果 | 证据 |
+|---|---|---|
+| G2 decision | Pass | [`g2-decision.md`](g2-decision.md)（VL=Neal；P4 DoV P4-1–P4-6 全 Pass） |
+| pipeline ci / cd | Partial（`Pass-by-human-confirm`） | [`docs/ai4se-plugins/20261116-112704-pipeline-report.md`](../../../docs/ai4se-plugins/20261116-112704-pipeline-report.md)，release `build-711da3d` |
+| 阶段记录 | Pass | [`docs/sdd/refine-inspiration-home/p4-verify.md`](../../../docs/sdd/refine-inspiration-home/p4-verify.md) |
+
+**下一步：** P5（归档）由用户发起；归档前需 SA 具名追认 `trip-plans` + `trip-experiences` 双 capability 例外（L-01）。
+
 ## 对齐自检（Spec ↔ Design ↔ Tasks ↔ ATDD）
 
 | 检查 | Result | Evidence |

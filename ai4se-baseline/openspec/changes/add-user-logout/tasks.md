@@ -96,3 +96,13 @@
 
 **实现偏差（已在 ATDD 设计同步）：** E2E fixture 不用 `addInitScript`，改为首次加载后写 `localStorage` 再 `reload()`；否则每次导航都会重新种入身份，E7「刷新不恢复身份」会假通过。
 **环境处置：** 开发库累积 34 条 `E2E %` 行程，把种子行程挤出第一页（25 > 20），导致 3 个既有 `trips.spec` 用例失败；已备份并清理这些测试数据后全套 E2E 25/25。备份见本地验证报告。
+
+## G2 执行记录（2026-11-16）
+
+| 项 | 结果 | 证据 |
+|---|---|---|
+| G2 decision | Pass | [`g2-decision.md`](g2-decision.md)（VL=Neal；P4 DoV P4-1–P4-6 全 Pass） |
+| pipeline ci / cd | Partial（`Pass-by-human-confirm`） | [`docs/ai4se-plugins/20261116-112704-pipeline-report.md`](../../../docs/ai4se-plugins/20261116-112704-pipeline-report.md)，release `build-711da3d` |
+| 阶段记录 | Pass | [`docs/sdd/add-user-logout/p4-verify.md`](../../../docs/sdd/add-user-logout/p4-verify.md) |
+
+**下一步：** P5（归档）由用户发起；归档时把 MODIFIED「会话校验与退出」合并进 Living Spec，并在 G3 记录归档 `add-user-auth` 的 T6 旧表述已被取代。
