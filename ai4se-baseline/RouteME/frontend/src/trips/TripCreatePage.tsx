@@ -47,7 +47,6 @@ export function TripCreatePage({ currentUser, fromTripId }: Props) {
   const [submitting, setSubmitting] = useState(false);
   const [tagDraft, setTagDraft] = useState('');
   const [tagError, setTagError] = useState<string | null>(null);
-  const [meetingMapOpen, setMeetingMapOpen] = useState(false);
 
   useEffect(() => {
     if (fromTripId === undefined) {
@@ -261,7 +260,7 @@ export function TripCreatePage({ currentUser, fromTripId }: Props) {
                 value={values.stops}
                 onChange={(stops) => update({ stops })}
                 max={MAX_STOPS}
-                showMap={mapCity !== undefined}
+                showMap={mapCity !== undefined || !hasDestination}
                 city={mapCity}
                 placeholder="搜索地点名称，必须能在地图上搜到"
                 emptyHint="至少两个途经点。输错的名字不会被接受，请从候选里选或直接点地图。"
@@ -305,27 +304,22 @@ export function TripCreatePage({ currentUser, fromTripId }: Props) {
                 optional
                 hint={tripMessages.hintMeeting}
               >
-                <Space.Compact style={{ width: '100%' }}>
-                  <Input
-                    id="trip-meeting-area"
-                    value={values.meetingArea}
-                    placeholder="可以直接输入集合地点，或在地图上选"
-                    onChange={(event) => update({ meetingArea: event.target.value })}
-                  />
-                  <Button onClick={() => setMeetingMapOpen((previous) => !previous)}>
-                    {meetingMapOpen ? '收起地图' : '地图选点'}
-                  </Button>
-                </Space.Compact>
-                {meetingMapOpen && (
-                  <PlacePicker
-                    mode="single"
-                    ariaLabel="集合地点"
-                    value={values.meetingArea === '' ? [] : [values.meetingArea]}
-                    onChange={(next) => update({ meetingArea: next[0] ?? '' })}
-                    placeholder="搜索集合地点"
-                    emptyHint="选中后会把地点名写进集合区域。"
-                  />
-                )}
+                <Input
+                  id="trip-meeting-area"
+                  value={values.meetingArea}
+                  placeholder="可以直接输入集合地点，或在地图上选"
+                  onChange={(event) => update({ meetingArea: event.target.value })}
+                />
+                <PlacePicker
+                  mode="single"
+                  ariaLabel="集合地点"
+                  value={values.meetingArea === '' ? [] : [values.meetingArea]}
+                  onChange={(next) => update({ meetingArea: next[0] ?? '' })}
+                  placeholder="搜索集合地点"
+                  emptyHint="选中后会把地点名写进集合区域。"
+                  showMap={mapCity !== undefined || !hasDestination}
+                  city={mapCity}
+                />
               </Field>
 
               <Field

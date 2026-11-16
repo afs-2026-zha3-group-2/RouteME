@@ -135,5 +135,6 @@ RouteME/openapi.yaml   契约 SoT（info.version 0.6.0）
 - 组件选型（2026-11-16）：界面控件 MUST 先查 Ant Design（`@rule:web-coding-style` 的「组件选型」）：日期用 `DatePicker`、排序/枚举用 `Select` 或 `Segmented`、数字用 `InputNumber`、标签用 `Tag.CheckableTag`、进度用 `Progress`。只有 antd 没有对应组件或存在阻断性缺陷时才用原生/自绘，并把例外写进规则清单与当次 P3 设计；现有两条例外是 `ProfileSetupPage` 的职业/MBTI 下拉与地图选点。
 - 原型对齐（2026-11-16）：发布页采用 `docs/prototype` 的 `form-grid`（主栏四块 panel + 右侧「实时预览 / 发布前提醒」）；行程卡与详情匹配块采用原型的 `matchBlock`（圆环内显示分值 + 理由文本，详情标题「为什么推荐给你」）。布局参考原型，控件仍按上一条只用 antd。
 - 日期弹层（2026-11-16）：所有 `DatePicker` 走 `utils/datePickerProps.ts`（`getPopupContainer` 挂字段容器 + `app-date-popup`）；系统开启「减少动态效果」时由 CSS 固定到字段下方，避免 antd 6.7 把弹层留在视口外。
+- 地图（2026-11-16）：`map/PlaceMap` 是离线导航风 SVG 地图，视口逻辑在 `map/mapView.ts`（拖拽/缩放/全屏/坐标反算）；省级只显示城市与高速连线，城市级显示道路、河流、公园、分区与编号路线；点击空白弹出 antd 候选浮层。
 - 应用外壳（`shell/`，2026-11-15）：`shell/AppShell`（固定顶栏 + 左侧导航 + ≤900px 底部标签栏 + 跳过导航链接）、`shell/useColorMode`（`data-theme` + localStorage `routeme.colorMode`，初值跟随系统偏好）、`shell/Avatar`、`shell/EmptyState`；`trips/TripCard` 由首页与我的旅行共用；视觉原型见 `docs/prototype/styles.css` 与 `ui.js`，取舍（导航项、统计口径、不引入第二套样式方案）见 change 的 `design.md`。
 - CI：仓库根 `.github/workflows/ci.yml`，backend `./mvnw -B verify`，frontend `npm ci && npm run build && npm test`；Playwright 端到端（`RouteME/e2e`）按 bootstrap 决定不进 CI，作为本地门禁。

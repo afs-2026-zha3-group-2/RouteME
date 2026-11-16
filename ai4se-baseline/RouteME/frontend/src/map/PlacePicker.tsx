@@ -52,6 +52,7 @@ export function PlacePicker({
   const [query, setQuery] = useState('');
   const [message, setMessage] = useState<string | null>(null);
   const [focusIndex, setFocusIndex] = useState(-1);
+  const [focusPlaceId, setFocusPlaceId] = useState<string | null>(null);
 
   const kindKey = kinds === undefined ? 'all' : kinds.join(',');
   const suggestions = useMemo(
@@ -77,6 +78,7 @@ export function PlacePicker({
     setQuery('');
     setFocusIndex(-1);
     setMessage(null);
+    setFocusPlaceId(place.id);
   };
 
   const remove = (name: string) => {
@@ -198,6 +200,7 @@ export function PlacePicker({
           kinds={kinds}
           activePlaceId={activePlaceId}
           city={city}
+          focusPlaceId={focusPlaceId}
         />
       )}
 

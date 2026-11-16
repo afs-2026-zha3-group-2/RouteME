@@ -3369,11 +3369,69 @@ svg {
   font-size: 12px;
 }
 
+/* ---------- 离线导航地图 ---------- */
 .map-shell {
+  display: flex;
+  flex-direction: column;
   overflow: hidden;
   border: 1px solid var(--line);
   border-radius: var(--r);
-  background: var(--surface-2);
+  background: var(--surface);
+  box-shadow: var(--sh-1);
+}
+
+.map-shell.is-fullscreen {
+  position: fixed;
+  inset: 0;
+  z-index: 1200;
+  border: 0;
+  border-radius: 0;
+}
+
+.map-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--line);
+  background: var(--surface);
+}
+
+.map-scope {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+
+.map-scope b {
+  font-size: 12.5px;
+  font-weight: 750;
+}
+
+.map-scope span {
+  font-size: 10.5px;
+  color: var(--ink-3);
+}
+
+.map-toolbar .ant-btn {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+}
+
+.map-glyph {
+  width: 15px;
+  height: 15px;
+}
+
+.map-viewport {
+  position: relative;
+  overflow: hidden;
+  background: var(--map-land-to);
 }
 
 .map-canvas {
@@ -3381,32 +3439,113 @@ svg {
   width: 100%;
   height: auto;
   aspect-ratio: 16 / 10;
-  max-height: 260px;
-  cursor: crosshair;
+  max-height: 360px;
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+}
+
+.map-canvas:active {
+  cursor: grabbing;
+}
+
+.map-shell.is-fullscreen .map-viewport {
+  flex: 1;
+  min-height: 0;
+}
+
+.map-shell.is-fullscreen .map-canvas {
+  height: 100%;
+  max-height: none;
+  aspect-ratio: auto;
+}
+
+.map-water-band {
+  fill: none;
+  stroke: var(--map-water-from);
+  stroke-width: 9;
+  stroke-linecap: round;
+  opacity: 0.9;
+}
+
+.map-water-band.river {
+  stroke-width: 4;
+  stroke: var(--map-water-to);
+  opacity: 0.55;
 }
 
 .map-land-shape {
-  stroke: var(--line-2);
+  stroke: color-mix(in srgb, var(--line-2) 80%, transparent);
   stroke-width: 0.5;
 }
 
-.map-grid line {
-  stroke: var(--line-2);
-  stroke-width: 0.25;
-  opacity: 0.35;
-}
-
 .map-island {
-  fill: var(--map-land-to);
-  stroke: var(--line-2);
+  fill: var(--map-land-from);
+  stroke: color-mix(in srgb, var(--line-2) 70%, transparent);
   stroke-width: 0.35;
 }
 
 .map-sea-label {
   fill: var(--ink-3);
   font-size: 2.6px;
-  letter-spacing: 0.6px;
-  opacity: 0.5;
+  letter-spacing: 0.7px;
+  opacity: 0.45;
+}
+
+.map-parks rect {
+  fill: color-mix(in srgb, var(--jade) 22%, var(--map-land-from));
+  stroke: color-mix(in srgb, var(--jade) 32%, transparent);
+  stroke-width: 0.3;
+}
+
+
+.map-highways line {
+  stroke: color-mix(in srgb, var(--amber) 55%, var(--line-2));
+  stroke-width: 0.9;
+  opacity: 0.6;
+  stroke-dasharray: 2 1.4;
+}
+
+.map-streets line {
+  stroke: var(--surface);
+  stroke-width: 0.9;
+  opacity: 0.92;
+}
+
+.map-streets line.major {
+  stroke-width: 1.8;
+  stroke: color-mix(in srgb, var(--surface) 75%, var(--amber) 25%);
+}
+
+.map-streets line.arterial {
+  stroke-width: 1.5;
+  stroke: color-mix(in srgb, var(--surface) 62%, var(--amber) 38%);
+  opacity: 0.65;
+}
+
+.map-district {
+  fill: var(--ink-3);
+  font-size: 2.2px;
+  font-weight: 700;
+  letter-spacing: 1.2px;
+  opacity: 0.35;
+}
+
+.map-route-casing,
+.map-route-line {
+  fill: none;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.map-route-casing {
+  stroke: var(--surface);
+  stroke-width: 2.6;
+}
+
+.map-route-line {
+  stroke: var(--lagoon);
+  stroke-width: 1.4;
 }
 
 .map-pin {
@@ -3433,42 +3572,157 @@ svg {
 
 .map-pin:hover .map-pin-dot,
 .map-pin.active .map-pin-dot {
-  transform: scale(1.5);
+  transform: scale(1.45);
 }
 
 .map-pin:focus-visible .map-pin-hit {
-  fill: var(--lagoon-soft);
+  fill: color-mix(in srgb, var(--lagoon) 18%, transparent);
 }
 
 .map-pin-label {
   fill: var(--ink-2);
   font-size: 2.5px;
   font-weight: 650;
+  paint-order: stroke;
+  stroke: var(--map-land-from);
+  stroke-width: 0.9;
+  stroke-linejoin: round;
   pointer-events: none;
-}
-
-.map-selected-halo {
-  fill: var(--tide);
-  opacity: 0.18;
 }
 
 .map-focus-ring {
   fill: none;
   stroke: var(--lagoon);
-  stroke-width: 0.6;
-  opacity: 0.35;
+  stroke-width: 0.5;
+  stroke-dasharray: 1.6 1.4;
+  opacity: 0.4;
+}
+
+.map-selected-halo {
+  fill: var(--lagoon);
+  opacity: 0.16;
 }
 
 .map-selected-dot {
-  fill: var(--tide);
+  fill: var(--lagoon);
   stroke: var(--surface);
-  stroke-width: 0.5;
+  stroke-width: 0.6;
 }
 
 .map-selected-index {
   fill: #fff;
   font-size: 2.2px;
   font-weight: 800;
+}
+
+.map-callout {
+  position: absolute;
+  z-index: 5;
+  display: grid;
+  gap: 4px;
+  width: 216px;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface);
+  box-shadow: var(--sh-2);
+}
+
+.map-callout-close {
+  position: absolute;
+  top: 4px;
+  right: 6px;
+  border: 0;
+  background: transparent;
+  color: var(--ink-3);
+  font-size: 15px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.map-callout-kind {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--t-warn);
+}
+
+.map-callout-name {
+  font-size: 14px;
+  font-weight: 750;
+}
+
+.map-callout .ant-btn {
+  justify-self: start;
+  margin-top: 2px;
+}
+
+.map-empty {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  text-align: center;
+  background: color-mix(in srgb, var(--surface) 78%, transparent);
+}
+
+.map-legend,
+.map-scale {
+  position: absolute;
+  z-index: 4;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--surface) 92%, transparent);
+  box-shadow: var(--sh-1);
+}
+
+.map-legend {
+  bottom: 10px;
+  left: 10px;
+  display: grid;
+  gap: 5px;
+  padding: 8px 10px;
+  font-size: 10.5px;
+  color: var(--ink-2);
+}
+
+.map-legend span {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.map-legend i {
+  display: inline-block;
+  width: 14px;
+  height: 3px;
+  border-radius: 99px;
+}
+
+.legend-line { background: var(--lagoon); }
+.legend-stop { width: 7px; height: 7px; border-radius: 50%; background: var(--lagoon); }
+.legend-park { background: color-mix(in srgb, var(--jade) 45%, transparent); }
+.legend-water { background: var(--map-water-from); }
+
+.map-scale {
+  right: 10px;
+  bottom: 10px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 8px;
+  font-size: 10px;
+  color: var(--ink-3);
+}
+
+.map-scale i {
+  display: block;
+  width: 34px;
+  height: 5px;
+  border: 1px solid var(--ink-3);
+  border-top: 0;
 }
 
 .map-hint {
@@ -3479,6 +3733,16 @@ svg {
   font-size: 11.5px;
   line-height: 1.5;
   color: var(--ink-3);
+}
+
+@media (max-width: 700px) {
+  .map-legend {
+    display: none;
+  }
+
+  .map-canvas {
+    aspect-ratio: 4 / 3;
+  }
 }
 
 /* ---------- 聊天参与者信息 ---------- */
@@ -3529,15 +3793,21 @@ svg {
 :root {
   --map-sea-from: #d9eef3;
   --map-sea-to: #bcdde6;
-  --map-land-from: #f3efe2;
-  --map-land-to: #e5ddc8;
+  --map-water-from: #c7e4ee;
+  --map-water-to: #a9d3e2;
+  --map-land-from: #f4f1e7;
+  --map-land-to: #e9e4d4;
+  --map-park-dot: #9fcfae;
 }
 
 [data-theme="dark"] {
   --map-sea-from: #0b2530;
   --map-sea-to: #08202a;
+  --map-water-from: #143846;
+  --map-water-to: #0f2c38;
   --map-land-from: #1b333a;
   --map-land-to: #15292f;
+  --map-park-dot: #2f6b4b;
 }
 
 /* ---------- 减少动效 ---------- */

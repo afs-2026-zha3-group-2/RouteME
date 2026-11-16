@@ -415,7 +415,7 @@ type LoadState =
 - 通过 `ConfigProvider` + `theme.ts` 统一主题；不为单个页面覆盖 antd 组件内部样式。布局间距可以写页面 CSS，控件外观交给 antd。
 - 已记录的例外（2026-11-16）：
   - `ProfileSetupPage` 的「职业」「MBTI」保留原生 `<select>`：antd 6.7 在系统开启「减少动态效果」（`prefers-reduced-motion: reduce`）时把弹层渲染到视口外，选项无法点选。修复该缺陷或升级到已修复版本后 MUST 改回 `Select`。
-  - 地图选点 `PlacePicker` / `PlaceMap`：antd 没有地图选点组件，沿用现有 SVG 地图实现。
+  - 地图选点 `PlacePicker` / `PlaceMap`：antd 没有地图组件，沿用离线 SVG 导航地图；缩放 / 拖拽 / 全屏 / 点位与候选用 antd `Button` / `Tooltip` / `Space` / `Typography` 组合，不引入在线瓦片。
 - 新增例外 MUST 追加到本清单，并在对应 change 的 P3 设计里引用；不得只在代码注释里说明。
 
 ### 可访问性

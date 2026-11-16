@@ -116,8 +116,12 @@ test('publishes a trip and finds it in the home list', async ({ page }) => {
   await expect(page.getByRole('heading', { name: '兴趣标签' })).toBeVisible();
   await expect(page.getByLabel('出发日期')).toHaveValue(todayIso());
   await expect(page.getByLabel('结束日期')).toHaveValue(todayIso());
-  await expect(page.locator('[data-testid="place-map"]')).toHaveCount(0);
-  await expect(page.getByText('先选目的地，再按城市点选途经点。')).toBeVisible();
+  await expect(page.locator('[data-testid="place-map"]').first()).toBeVisible();
+  await expect(page.locator('[data-testid="place-map"]').first()).toHaveAttribute(
+    'data-city',
+    'all',
+  );
+  await expect(page.getByText('未选目的地时显示全省地图；选定城市后地图会自动聚焦。')).toBeVisible();
 
   const cascader = page.locator('.area-trigger').first();
   const cascaderWidth = await cascader.evaluate((node) => node.getBoundingClientRect().width);
@@ -129,7 +133,7 @@ test('publishes a trip and finds it in the home list', async ({ page }) => {
   await page.getByLabel('标题').fill(title);
   await pickDestination(page, '广东省', '珠海市');
 
-  const map = page.locator('[data-testid="place-map"]');
+  const map = page.locator('[data-testid="place-map"]').first();
   await expect(map).toBeVisible();
   await expect(map).toHaveAttribute('data-city', '珠海');
   await expect(map.getByRole('button', { name: /情侣路/ })).toBeVisible();
@@ -209,7 +213,7 @@ test('explains a destination without offline map coverage', async ({ page }) => 
 
   await expect(page.locator('[data-testid="place-map"]')).toHaveCount(0);
   await expect(page.getByText('这个城市暂时没有离线点位')).toBeVisible();
-  await expect(page.getByText('先选目的地，再按城市点选途经点。')).toHaveCount(0);
+  await expect(page.getByText('未选目的地时显示全省地图；选定城市后地图会自动聚焦。')).toHaveCount(0);
 });
 
 test('blocks publishing and flags every missing required field', async ({ page }) => {
@@ -329,6 +333,37 @@ test('filters by province and city without a search box', async ({ page }) => {
 
   await page.getByRole('button', { name: '清除全部条件' }).click();
   await expect(page.locator('.trip-card', { hasText: '广州老城骑楼扫街半日' })).toBeVisible();
+});
+
+test('map supports zoom, fullscreen and click-to-add', async ({ page }) => {
+  await loginAs(page, 1);
+  await page.goto('/#/trips/new');
+
+  const shell = page.locator('.map-shell').first();
+  const map = shell.locator('[data-testid="place-map"]');
+  await expect(map).toBeVisible();
+  await expect(map).toHaveAttribute('data-city', 'all');
+  const before = await map.getAttribute('viewBox');
+
+  await shell.getByRole('button', { name: '放大地图' }).click();
+  await expect.poll(async () => map.getAttribute('viewBox')).not.toBe(before);
+
+  await shell.getByRole('button', { name: '全屏查看地图' }).click();
+  await expect(shell).toHaveClass(/is-fullscreen/);
+  await page.keyboard.press('Escape');
+  await expect(shell).not.toHaveClass(/is-fullscreen/);
+
+  await pickDestination(page, '广东省', '珠海市');
+  await expect(map).toHaveAttribute('data-city', '珠海');
+
+  await shell.scrollIntoViewIfNeeded();
+  const box = await map.boundingBox();
+  expect(box).not.toBeNull();
+  await page.mouse.click(box!.x + box!.width * 0.62, box!.y + box!.height * 0.55);
+  const callout = page.locator('.map-callout').first();
+  await expect(callout).toBeVisible();
+  await callout.getByRole('button', { name: '加入路线' }).click();
+  await expect(page.locator('.place-chip-name').first()).toBeVisible();
 });
 
 test.describe('date pickers under reduced motion', () => {

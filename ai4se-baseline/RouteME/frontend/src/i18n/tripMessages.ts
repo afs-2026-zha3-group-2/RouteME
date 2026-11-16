@@ -46,7 +46,7 @@ export const tripMessages = {
   sectionRoute: '简单路线',
   sectionExtras: '同行与预算',
   sectionTags: '兴趣标签',
-  waypointNeedsDestination: '先选目的地，再按城市点选途经点。',
+  waypointNeedsDestination: '未选目的地时显示全省地图；选定城市后地图会自动聚焦。',
   waypointCityUncovered: '这个城市暂时没有离线点位；途经点目前只支持广东 14 城与港澳的地图地点。',
   createSubmit: '发布',
   createCancel: '取消',
