@@ -96,6 +96,8 @@
 
 **阶段结论：Pass（G2）。** 已推送 `main` @ `da6cc8b`，CI/CD 经 release `build-da6cc8b` 确认；归档留在 P5。
 
+> 推送后团队又前推 `main`（`93313dd` → `52ae84a`）；本 change 的 verify 提交 `93313dd` 被 CD 并发组取消独立 release，但它是 `origin/main@52ae84a` 的祖先且 `build-52ae84a` 已发布，交付证据完整。
+
 ## 9. 合并 main 后复验（2026-11-16 14:1x–14:2x）
 
 - **合并：** 分三次合并 `origin/main`（`5261cef` behind 49 → 冲突 5 个文件；`8ac9859` behind 9 → 无冲突；`2ce7ec8` / `5561d0f` → 仅前端外壳与后端 V13 种子，无冲突）。冲突逐个解决：`TripDetailPage.tsx` 保留 main 的 `useProfile` / `openProfile` 与我们基于 `feedback` 的申请区；`registry.md` / `handoff.md` / `deep-dive.md` / `impact-brief.md` 取 main 版本后追加本 change 的 REQ-010 内容（本 change 章节在 `impact-brief.md` 为 §14）。

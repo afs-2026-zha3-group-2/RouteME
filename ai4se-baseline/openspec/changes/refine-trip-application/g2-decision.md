@@ -21,6 +21,8 @@
 
 ## Dimension results
 
+> 追加说明（2026-11-16 15:05）：verify 文档提交 `93313dd` 后 team 又推了 `52ae84a` / `9f11bde`，CD 并发组取消了 `93313dd` 的独立 release；`93313dd` 为 `origin/main@52ae84a` 的祖先且 `build-52ae84a` 已发布，本 change 全部提交均被覆盖，G2 结论不变。
+
 | 维度 | 结果 | 说明 |
 |---|---|---|
 | build | Pass | `npm run build` 成功；后端 `mvnw test` 213 项通过 |

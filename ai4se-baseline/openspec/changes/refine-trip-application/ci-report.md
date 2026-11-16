@@ -14,4 +14,6 @@
 
 **Overall：Pass（Pass-by-tag）。** 本机无 `gh` CLI 与 API token，未取得 job 级日志；如需明细由有权限成员补录。
 
+**追加证据：** 代码提交 `da6cc8b` 的 release 为 `build-da6cc8b`；verify 文档提交 `93313dd` 因 CD 并发组 `cancel-in-progress` 被后续 `52ae84a` 取代，`93313dd` 是 `origin/main@52ae84a` 的祖先且 `build-52ae84a` 已发布，本 change 全部提交均被已发布 release 覆盖。
+
 **Residual risk：** E2E 未纳入 CI；`profiles.spec.ts` 陈旧断言待对应 change owner 修复。
