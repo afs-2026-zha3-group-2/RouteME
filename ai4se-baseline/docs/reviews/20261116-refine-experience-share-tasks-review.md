@@ -43,3 +43,10 @@
 - **批准时间：** 2026-11-16T16:40+08:00
 - **批准来源：** 用户在 2026-11-16 会话中确认「批准 design.md 与 tasks.md」
 - **批准范围：** 批准 `tasks.md` 进入 P4 实现；T-01 ~ T-03 留待 P4 收口。
+
+## 变更摘要（2026-11-16）
+
+- **修订类型：** 格式（不改变语义）——`tasks.md` 由表格改为仓库既有的 `### T<n> [layer]` + `- [x]` 复选框结构，使 `openspec validate --strict` 能统计任务（此前报 `This change counts as 0 tasks`）。
+- **内容不变：** T1–T7 的范围、落点、依赖、验证命令与自检结论完全一致；每条任务的 `**验证：**` / `**覆盖：**` 行补自原表「验证」「ATDD」两列。
+- **复验：** `openspec validate refine-experience-share --strict` → `Change 'refine-experience-share' is valid`；`openspec list` → `refine-experience-share ✓ Complete`。
+- **批准仍有效：** Neal + Jay，2026-11-16T16:40+08:00。

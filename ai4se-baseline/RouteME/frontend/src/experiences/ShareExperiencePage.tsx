@@ -3,6 +3,9 @@ import { Alert, Button, Card, Input, Radio, Skeleton, Space, Typography, message
 import { loadTrip, loadTripExperiences, shareExperience } from '../api';
 import { tripMessages } from '../i18n/tripMessages';
 import { SafetyNote } from '../safety/SafetyNote';
+import { coverTone } from '../trips/coverTone';
+import { StatusBadge } from '../trips/StatusBadge';
+import { statusLabel } from '../trips/tripStatus';
 import type { DemoUser, ExperienceIntensity, TripDetail } from '../types';
 import {
   emptyExperienceDraft,
@@ -15,6 +18,7 @@ import {
   type ExperienceDraft,
   type ExperienceErrors,
 } from '../experiences/experienceForm';
+import { shareEligibility } from '../experiences/shareEligibility';
 
 type Props = {
   currentUser: DemoUser;
@@ -103,26 +107,35 @@ export function ShareExperiencePage({ currentUser, tripId }: Props) {
     );
   }
 
-  const participant = trip.participants.some((member) => member.id === currentUser.id);
-  const canShare = trip.status === 'completed' && participant;
+  const eligibility = shareEligibility(trip, currentUser.id);
 
-  if (!canShare) {
-    return (
-      <main className="form-page">
-        <Alert
-          type="warning"
-          showIcon
-          title={tripMessages.experienceNotAllowed}
-          description={tripMessages.experienceSectionEmpty}
-          action={
-            <Button onClick={() => (window.location.hash = `#/trips/${tripId}`)}>
-              {tripMessages.detailTitle}
-            </Button>
-          }
-        />
-      </main>
-    );
-  }
+    if (eligibility.kind !== 'ready') {
+      const blocked =
+        eligibility.kind === 'notCompleted'
+          ? {
+              title: tripMessages.experienceNotCompleted,
+              description: `${tripMessages.experienceNotCompletedHint}${statusLabel(eligibility.status)}`,
+            }
+          : {
+              title: tripMessages.experienceNotParticipant,
+              description: tripMessages.experienceNotParticipantHint,
+            };
+      return (
+        <main className="form-page">
+          <Alert
+            type="warning"
+            showIcon
+            title={blocked.title}
+            description={blocked.description}
+            action={
+              <Button onClick={() => (window.location.hash = `#/trips/${tripId}`)}>
+                {tripMessages.detailTitle}
+              </Button>
+            }
+          />
+        </main>
+      );
+    }
 
   return (
     <main className="form-page">
@@ -132,15 +145,35 @@ export function ShareExperiencePage({ currentUser, tripId }: Props) {
         </a>
         <Card className="panel">
           <Space orientation="vertical" size="small" className="home-stack">
-            <Typography.Title level={2} className="trip-title">
-              {editing ? tripMessages.experienceEditEntry : tripMessages.experienceShareEntry}
-            </Typography.Title>
-            <Typography.Text type="secondary">
-              {trip.title} · {trip.destination} · {trip.start_date} → {trip.end_date}
-            </Typography.Text>
+            <div className="share-hero">
+                          <span
+                            className={`share-hero-cover cover-${coverTone(trip.destination_code)}`}
+                            aria-hidden="true"
+                          />
+                          <span className="share-hero-body">
+                            <b>{trip.title}</b>
+                            <span>
+                              {trip.destination} · {trip.start_date} → {trip.end_date} ·{' '}
+                              {trip.participants.length} {tripMessages.experienceCompanionsSuffix}
+                            </span>
+                          </span>
+                          <StatusBadge status={trip.status} />
+                        </div>
 
-            <SafetyNote />
-            <Alert type="info" showIcon title={tripMessages.experienceGoesTo} />
+                        <Typography.Title level={2} className="trip-title">
+                          {editing ? tripMessages.experienceShareHeadingEdit : tripMessages.experienceShareHeading}
+                        </Typography.Title>
+                        <Typography.Text type="secondary">{tripMessages.experienceShareSub}</Typography.Text>
+
+                        <SafetyNote />
+                        <section className="share-note">
+                          <h3 className="share-note-title">{tripMessages.experienceGoesToTitle}</h3>
+                          <ul className="safety-list">
+                            {tripMessages.experienceGoesToItems.map((item) => (
+                              <li key={item}>{item}</li>
+                            ))}
+                          </ul>
+                        </section>
 
             <div className="experience-field">
               <Typography.Text strong>
@@ -193,7 +226,14 @@ export function ShareExperiencePage({ currentUser, tripId }: Props) {
               )}
             </div>
 
-            <Alert type="warning" showIcon title={tripMessages.shareBoundaryTitle} description={tripMessages.experiencePrivacy} />
+            <section className="share-note">
+              <h3 className="share-note-title">{tripMessages.experienceBoundaryTitle}</h3>
+              <ul className="safety-list">
+                {tripMessages.experienceBoundaryItems.map((item) => (
+                  <li key={item}>{item}</li>
+                ))}
+              </ul>
+            </section>
 
             {actionError !== null && (
               <Alert type="error" showIcon title={tripMessages.experienceFailed} description={actionError} />

@@ -5,17 +5,8 @@ import { useProfile } from '../profiles/ProfileContext';
 import { publisherSummary } from '../profile/profileDisplay';
 import { Avatar } from '../shell/Avatar';
 import type { Match, TripSummary } from '../types';
+import { coverTone } from './coverTone';
 import { StatusBadge } from './StatusBadge';
-
-const COVER_TONES = ['lagoon', 'coral', 'jade', 'dusk', 'amber'] as const;
-
-function coverTone(destination: string): string {
-  let hash = 0;
-  for (const char of destination) {
-    hash = (hash + (char.codePointAt(0) ?? 0)) % 9973;
-  }
-  return COVER_TONES[hash % COVER_TONES.length];
-}
 
 function formatDate(iso: string): string {
   const [, month, day] = iso.split('-');

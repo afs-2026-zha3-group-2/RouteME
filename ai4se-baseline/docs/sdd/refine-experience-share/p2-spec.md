@@ -2,7 +2,7 @@
 
 - **Change：** `refine-experience-share`（REQ-004 / S16 发布游后体验）｜ **阶段：** P2（Spec align / G1）
 - **日期：** 2026-11-16 ｜ **记录人：** Jay（AO）
-- **分支 / 基点：** `feature/refine-experience-share`（P1 提交 `38f7cf2`，已推送）
+- **分支 / 基点：** `feature/refine-experience-share`（P1 提交 `76cae72`，已推送；rebase 前哈希 `38f7cf2`）
 
 ## 1. 阶段目标
 
