@@ -32,11 +32,32 @@
 | 阶段 | 目标 | 关键产出 | 记录位置 |
 |---|---|---|---|
 | P0 | 项目基线可用 | 规格树、规则、知识库、CI 管道现状核对（`p0.md` 清单） | `docs/sdd/<change-id>/p0-baseline.md` |
-| P1 | 模糊意图 → 可判定提案 | 需求/故事映射、影响面、`proposal.md` | `docs/sdd/<change-id>/p1-intent.md` |
-| P2 | 提案 → 增量规格（G1） | Delta Spec、AC/DoV 复核、`g1-decision.md` | `docs/sdd/<change-id>/p2-spec.md` |
-| P3 | 规格 → 设计与可执行任务 | `design.md`、`atdd-design.md`、`tasks.md`、一致性检查 | `docs/sdd/<change-id>/p3-design.md` |
+| P1 | 模糊意图 → 可判定提案 | 需求/故事映射、影响面、`proposal.md` + 提案评审报告 | `docs/sdd/<change-id>/p1-intent.md` |
+| P2 | 提案 → 增量规格（G1） | Delta Spec、AC/DoV 复核、`g1-decision.md` + 规格评审报告 | `docs/sdd/<change-id>/p2-spec.md` |
+| P3 | 规格 → 设计与可执行任务 | `design.md`、`atdd-design.md`、`tasks.md`、一致性检查 + 设计与任务评审报告 | `docs/sdd/<change-id>/p3-design.md` |
 | P4 | 实现 → 本地验证 → CI（G2） | 代码与测试、本地验证报告、`g2-decision.md` | `docs/sdd/<change-id>/p4-verify.md` |
 | P5 | 合并与归档（G3） | `summary.md`、living spec 合并、知识库登记 | 归档后写入 `changes/archive/` |
+
+### 工件评审门禁（强制，`@rule:artifact-review-gate`）
+
+每写完一份工件都必须先评审、再由当前开发者批准，然后才能进入下一步：
+
+| 工件 | 评审报告路径 |
+|---|---|
+| `proposal.md` | `docs/reviews/<yyyymmdd>-<change-id>-proposal-review.md` |
+| `specs/<capability>/spec.md`（Delta） | `docs/reviews/<yyyymmdd>-<change-id>-spec-review.md` |
+| `design.md` | `docs/reviews/<yyyymmdd>-<change-id>-design-review.md` |
+| `tasks.md` | `docs/reviews/<yyyymmdd>-<change-id>-tasks-review.md` |
+
+1. 工件写完**同一个回合内**调用 `all-specs-review` 技能，不得跳步写下一份工件。
+2. 报告写进上表路径；修改后重评不得覆盖旧报告（同日加序号 `-review-2.md`）。
+3. 报告写完后**必须停下**询问当前开发者：本次结论为 `<Pass/Partial/Fail>`，是否批准进入下一步。
+4. 只有明确 approve 才继续；未回复或回复含糊视为未批准。
+5. 结论为 `Fail` 时先修复并重评至至少 `Partial`，再请求 approve。
+6. approve 以「批准人 + 批准时间」追加在报告内，不改写评审结论；批准人与记录人姓名规则同上节。
+
+- `all-specs-review` 的 `Pass` 不是 G1/G2/G3 通过，它只出评审意见。
+- 只改错字/链接/格式且不改语义的修订，可复用上一份 `Pass` 报告并追加「变更摘要」一行。
 
 ## 提交约定（本目录的约定）
 
