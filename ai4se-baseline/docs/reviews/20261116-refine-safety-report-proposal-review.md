@@ -9,7 +9,9 @@
 
 ## 评审结论
 
-**Pass**
+**Pass**（仅覆盖 rev1；rev2 见 [`20261116-refine-safety-report-proposal-review-2.md`](20261116-refine-safety-report-proposal-review-2.md)）
+
+> **rev2 作废说明（2026-11-16）：** 用户裁决 D5 移除全部安全提示并把举报入口移到页头右上，本报告评审的「三条提示」范围前提已不存在。按 `@rule:artifact-review-gate`，实质性变更不得复用旧 Pass，故另出 `-review-2.md` 并重新批准。本文件保留供追溯。
 
 提案把 S14 的展示缺口（单段提示 → 三条文本、回执文案、本人行程举报入口、身份保密与紧急求助说明）与「不改后端 / 契约 / 迁移」的边界写清楚了，范围与需求条目 §3 一致，验收信号可观察，风险项与现存测试债务对应。无 BLOCKER，4 条 SUGGESTION 建议在 P2 / P3 收口。
 
