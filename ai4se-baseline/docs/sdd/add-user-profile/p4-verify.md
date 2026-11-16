@@ -104,7 +104,7 @@ T1 的原始 red 日志未单独留存；上表为联调阶段留存并修复的
 | 职业「其他」无法自填 | 用户需要预设列表以外的职业；原 `job` 只允许 4 个枚举值，前后端都会拒绝自填文本 | 选「其他」时追加自填框（`#profile-job-custom`，≤20 字），仍只落一个 `job` 字段；后端改为长度校验（`MAX_JOB_LENGTH = 20`），契约 `job` 由 `enum` 改为 `maxLength: 20`；E2E 新增 `saves a custom job typed under 其他` |
 | 生日弹层在减少动效下不可见 | 与职业下拉同源：antd 6.7 的 popup 在 `prefers-reduced-motion: reduce` 下停在 `inset: -9000px auto auto -12800px`（对齐依赖 appear 动效），日历能看到但整层在视口外 | 生日改用 antd `DatePicker`（`needConfirm`，中文 locale）；弹层挂到字段锚点（`getPopupContainer`），reduce 媒体查询下固定到字段下方；E2E 新增 `opens the birthday calendar on screen and picks a day`（`reducedMotion: 'reduce'`） |
 
-验证：`npm run typecheck` 通过；`npm test` 14 files / **120** tests；后端 `.\mvnw.cmd -B -ntp verify` **211** tests 全绿（`repackage` 受运行中的 jar 锁定，停进程后重打包）；`npx playwright test tests/profile.spec.ts` **13/13 通过**（含 reduce 下的生日日历用例）；Playwright 以 `reducedMotion: 'reduce'` 实测：生日日历弹层位于字段下方、可点选并「确定」，5 个职业选项、17 个 MBTI 选项全部可选中、页面上无 antd 弹层，选「其他」后自填框位于视口内，保存后主页 chip 显示「独立摄影师」，库中 `job = '独立摄影师'`。
+验证：`npm run typecheck` 通过；`npm test` 15 files / **133** tests（含并行 change 的用例）；后端 `.\mvnw.cmd -B -ntp verify` **211** tests 全绿（`repackage` 受运行中的 jar 锁定，停进程后重打包）；`npx playwright test tests/profile.spec.ts` **13/13 通过**（含 reduce 下的生日日历用例）；Playwright 以 `reducedMotion: 'reduce'` 实测：生日日历弹层位于字段下方、可点选并「确定」，5 个职业选项、17 个 MBTI 选项全部可选中、页面上无 antd 弹层，选「其他」后自填框位于视口内，保存后主页 chip 显示「独立摄影师」，库中 `job = '独立摄影师'`。
 
 同一弹层缺陷仍影响 `ProfileSetupPage` 的城市 `AutoComplete`、`ReportModal` 与 `Pager` 的 `Select`（未见用户报告）；按「一次 change 一件事」留作独立 change。
 
