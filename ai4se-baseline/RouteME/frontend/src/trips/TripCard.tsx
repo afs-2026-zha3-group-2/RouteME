@@ -1,4 +1,7 @@
+import { cityLabel } from '../area/areaOptions';
 import { tripMessages } from '../i18n/tripMessages';
+import { useProfile } from '../profiles/ProfileContext';
+import { publisherSummary } from '../profile/profileDisplay';
 import { Avatar } from '../shell/Avatar';
 import type { Match, TripSummary } from '../types';
 import { StatusBadge } from './StatusBadge';
@@ -31,13 +34,15 @@ type Props = {
 };
 
 export function TripCard({ trip, match, compact = false }: Props) {
+  const { openProfile } = useProfile();
   const joinedRate = trip.capacity === 0 ? 0 : Math.round((trip.joined_count / trip.capacity) * 100);
   const width = Math.min(100, Math.max(0, joinedRate));
 
   return (
-    <a className={compact ? 'trip-card compact' : 'trip-card'} href={`#/trips/${trip.id}`}>
-      <div className={`tc-cover cover-${coverTone(trip.destination)}`}>
-        <span className="tc-dest">{trip.destination}</span>
+    <article className={compact ? 'trip-card compact' : 'trip-card'}>
+      <a className="tc-overlay" href={`#/trips/${trip.id}`} aria-label={trip.title} />
+      <div className={`tc-cover cover-${coverTone(trip.destination_code)}`}>
+        <span className="tc-dest">{cityLabel(trip.destination_code) || trip.destination}</span>
         <StatusBadge status={trip.status} />
       </div>
 
@@ -67,8 +72,8 @@ export function TripCard({ trip, match, compact = false }: Props) {
 
         {match !== undefined && (
           <div className="tc-match">
-                    <span className="match-ring" aria-hidden="true">
-                      <svg viewBox="0 0 34 34">
+            <span className="match-ring" aria-hidden="true">
+              <svg viewBox="0 0 34 34">
                 <circle className="ring-bg" cx="17" cy="17" r="15" fill="none" strokeWidth="3" />
                 <circle
                   className="ring-fg"
@@ -81,25 +86,34 @@ export function TripCard({ trip, match, compact = false }: Props) {
                   strokeDashoffset={RING_LENGTH * (1 - match.percentage / 100)}
                 />
               </svg>
-                    </span>
-                    <span className="match-copy">
-                      <span className="match-score">
-                        {tripMessages.matchPercentage}{' '}
-                        <b className="match-percentage">{match.percentage}%</b>
-                      </span>
-                      <span className="match-reason">
-                        <span className="match-reason-label">{tripMessages.matchReasons}</span>
-                        {match.reasons.join('，')}
-                      </span>
-                    </span>
-                  </div>
-                )}
+            </span>
+            <span className="match-copy">
+              <span className="match-score">
+                {tripMessages.matchPercentage}{' '}
+                <b className="match-percentage">{match.percentage}%</b>
+              </span>
+              <span className="match-reason">
+                <span className="match-reason-label">{tripMessages.matchReasons}</span>
+                {match.reasons.join('，')}
+              </span>
+            </span>
+          </div>
+        )}
 
         <div className="tc-foot">
-          <span className="tc-host">
+          <button
+            type="button"
+            className="tc-host"
+            aria-label={`查看 ${trip.publisher.nickname} 的资料`}
+            onClick={() => openProfile(trip.publisher.id)}
+          >
             <Avatar user={trip.publisher} size="sm" />
-            <span className="tc-host-name">{trip.publisher.nickname}</span>
-          </span>
+            <span className="tc-host-name">
+              {trip.publisher.nickname}
+              {publisherSummary(trip.publisher) !== '' &&
+                ` · ${publisherSummary(trip.publisher)}`}
+            </span>
+          </button>
           <span className="tc-cap">
             <span className="tc-cap-num">
               {trip.joined_count} / {trip.capacity} {tripMessages.peopleUnit}
@@ -110,6 +124,6 @@ export function TripCard({ trip, match, compact = false }: Props) {
           </span>
         </div>
       </div>
-    </a>
+    </article>
   );
 }

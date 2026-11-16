@@ -18,7 +18,7 @@
 | Intent | `requirement-workspace/intents/REQ-006-user-logout.md` | 候选能力 MODIFIED；Discovery Decision `Go` |
 | Impact brief | `requirement-workspace/impact-brief.md` §10 | as-is 盘点、delta、blast radius、风险与拆分边界；已按 Living Spec 现状更新 |
 | Deep-dive | `requirement-workspace/deep-dive.md`「REQ-006 增补」 | ①–④ 四表，A0 ⑨–⑫ 通过 |
-| In-flight dependency | `openspec/changes/archive/2026-11-16-add-user-auth/` | 已归档，提供 `POST /api/auth/logout` 与会话契约；其 T6 / design / summary 的历史表述由本 change 收口 |
+| In-flight dependency | `openspec/changes/add-user-auth/` | 提供 `POST /api/auth/logout` 与会话契约；该 change 于 2026-11-16 解档补记 G1 / G2（Pending），其 T6 / design / summary 的历史表述由本 change 收口 |
 | Implementation evidence | `frontend/src/shell/AppShell.tsx`、`frontend/src/App.tsx`、`frontend/src/identity/IdentityGate.tsx`、`frontend/src/api.ts` | 注册账号退出已实现；演示身份无出口；`logout()` 已能清本地状态 |
 | Contract evidence | `RouteME/openapi.yaml` v0.6.0、`backend/.../controller/AuthController.java` | `POST /api/auth/logout` 返回 204；演示身份无会话 |
 

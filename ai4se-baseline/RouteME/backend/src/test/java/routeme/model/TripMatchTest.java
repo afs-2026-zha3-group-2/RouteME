@@ -104,7 +104,7 @@ class TripMatchTest {
             TripPlan otherReference = trip(8, "珠海参考", "珠海", "2026-11-20", List.of());
 
             // When
-            TripMatch match = TripMatch.of(candidate, otherReference, "广州", null, List.of());
+            TripMatch match = TripMatch.of(candidate, otherReference, "440100", null, List.of());
 
             // Then
             assertAll(
@@ -114,8 +114,18 @@ class TripMatchTest {
         }
 
     private TripPlan trip(long id, String title, String destination, String startDate, List<String> tags) {
+        String code = switch (destination) {
+            case "珠海" -> "440400";
+            case "广州" -> "440100";
+            default -> destination;
+        };
+        String name = switch (destination) {
+            case "珠海" -> "珠海市";
+            case "广州" -> "广州市";
+            default -> destination;
+        };
         return new TripPlan(
-                id, 1, title, destination, LocalDate.parse(startDate), LocalDate.parse(startDate),
+                id, 1, title, code, name, LocalDate.parse(startDate), LocalDate.parse(startDate),
                 List.of("集合", "终点"), null, null, null, null, tags, 4, 1, null,
                 Instant.parse("2026-11-01T10:00:00Z"), Instant.parse("2026-11-01T10:00:00Z"));
     }

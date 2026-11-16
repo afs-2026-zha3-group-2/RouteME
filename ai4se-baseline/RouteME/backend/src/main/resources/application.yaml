@@ -12,6 +12,15 @@ spring:
       maximum-pool-size: 4
   flyway:
     locations: classpath:db/migration
+  servlet:
+    multipart:
+      # 业务上限 2 MB；Spring 默认 1 MB 会先于业务校验拒绝请求。
+      max-file-size: 2MB
+      max-request-size: 3MB
+routeme:
+  profile:
+    # 头像落盘目录；从 backend 目录启动时指向 RouteME/SqlLite/uploads/avatars。
+    avatar-dir: ${ROUTEME_AVATAR_DIR:../SqlLite/uploads/avatars}
 mybatis-plus:
   # 自定义分页查询的 XML 位置；其余查询由 BaseMapper 与 LambdaQueryWrapper 生成。
   mapper-locations: classpath*:mapper/**/*.xml

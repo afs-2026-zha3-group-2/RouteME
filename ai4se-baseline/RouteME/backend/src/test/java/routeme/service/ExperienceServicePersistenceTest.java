@@ -29,7 +29,7 @@ class ExperienceServicePersistenceTest {
         // When
         List<ExperienceResponse> trip1 = experienceService.listByTrip(1L);
         List<ExperienceResponse> mine = experienceService.mine(2L);
-        List<ExperienceResponse> all = experienceService.listAll(null, null, java.util.Set.of());
+        List<ExperienceResponse> all = experienceService.listAll(null, java.util.Set.of());
 
         // Then
         assertAll(

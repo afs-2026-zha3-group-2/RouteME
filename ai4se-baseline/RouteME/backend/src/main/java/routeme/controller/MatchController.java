@@ -37,8 +37,7 @@ public class MatchController {
     @GetMapping
     public PageResponse<MatchCandidateResponse> list(
             @RequestHeader(value = "X-User-Id", required = false) Long userId,
-            @RequestParam(required = false) String q,
-            @RequestParam(required = false) String destination,
+            @RequestParam(name = "destination_code", required = false) String destinationCode,
             @RequestParam(name = "date_from", required = false)
             @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate dateFrom,
             @RequestParam(name = "date_to", required = false)
@@ -49,7 +48,7 @@ public class MatchController {
             @RequestParam(required = false) Integer size) {
         DemoUser me = demoUserService.require(userId);
         TripQuery query = new TripQuery(
-                q, destination, dateFrom, dateTo,
+                destinationCode, dateFrom, dateTo,
                 TripQueryParam.parseTags(tags), TripQueryParam.parseSortWithMatch(sort));
         PageResult<MatchCandidate> result = matchService.searchPage(query, me.id(), PageParam.parse(page, size));
         return PageResponse.from(result, MatchCandidateResponse::from);

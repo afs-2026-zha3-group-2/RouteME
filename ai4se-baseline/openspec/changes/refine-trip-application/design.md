@@ -1,6 +1,6 @@
 # 设计：refine-trip-application
 
-- **Change:** `refine-trip-application`（REQ-009 / S08；`trip-companions` MODIFIED）
+- **Change:** `refine-trip-application`（REQ-010 / S08；`trip-companions` MODIFIED）
 - **依据：** [`proposal.md`](proposal.md)、[`specs/trip-companions/spec.md`](specs/trip-companions/spec.md)、[`atdd-design.md`](atdd-design.md)、[`dov-ac-review.md`](dov-ac-review.md)、[`g1-decision.md`](g1-decision.md)
 - **规则：** `@rule:web-coding-style`、`@rule:web-testing`、`@rule:sdd-artifacts`
 - **视觉基准：** `docs/prototype/ui.js` `actionBox`、`docs/prototype/styles.css`；实现侧令牌取 `RouteME/frontend/src/styles.css` 的 `:root` 与 `[data-theme="dark"]`

@@ -175,12 +175,14 @@ openspec/
 | 变更摘要 | 固定文件名 | `summary.md` |
 | 验证报告 | `docs/ai4se-plugins/<时间戳>-<技能名>-report.md` | `20261110-104848-local-verify-report.md` |
 | 检查点记录 | `docs/ai4se-plugins/<时间戳>-<技能名>-checkpoints.md` | `20261110-104848-rules-govern-checkpoints.md` |
+| 工件评审报告 | `docs/reviews/<yyyymmdd>-<change-id>-<artifact>-review.md` | `20261116-add-user-auth-proposal-review.md` |
 | 需求交接 | `requirement-workspace/handoff.md` | 预规格阶段的入口 |
 
 - `<change-id>` 与分支名、PR 标题中的 change-id 完全相同，从提交能一路追到规格。
 - 一个 change 只改一个 capability；跨能力就拆成两个 change。
 - 决策记录不写 `G1决策-最终.md`、`g1-decision-final-v2.md` 这类变体，固定名 + 版本管理即历史。
 - 工件语言：正文中文；`SHALL` / `MUST` 等结构关键词保留英文；标题层级与 OpenSpec 模板一致。
+- 工件评审报告统一放 `docs/reviews/`，文件名固定为 `日期-change-id-工件-review.md`，不用时间戳、不混入 `docs/ai4se-plugins/`；四份工件（proposal / spec / design / tasks）各一份。
 
 ### 工件职责边界
 
@@ -196,6 +198,17 @@ openspec/
 - `tasks.md` 一条任务只落一层；跨层任务拆开，否则无法判断验证该由谁跑。
 - 验证报告贴真实命令与输出摘要，不写「已验证」「测试通过」四个字。
 - 决策记录只记录已经发生的裁定，不预填结论。
+
+### 记录人与签署人
+
+- 「记录人 / Owner / 签署人 / 确认人」MUST 是**当次实际开发者**的姓名。
+- 名册里的常任分工（如 AO = Jay）只是默认归属，**不能当作缺省填写值**：每次记录、每次 approve 之前都必须先问发起人「这次 change 的当前开发者是谁？approve 由谁签？」。
+- 强制询问的两个时点：
+  1. **记录阶段产出时**：P0–P5 记录的记录人、`g1/g2/g3-decision.md` 签署人、`tasks.md` 的 Owner、质量检查报告的 owner 列。
+  2. **approve / 签署时**：G1 / G2 / G3 签署表与任何 approve 动作。
+- 未拿到回答时 MUST 暂停写记录或加签；不允许用 `AO`、`DEV`、`current developer` 等角色词占位，也不允许默认沿用名册里的姓名。
+- 回答与名册不一致时以回答为准；同一 change 内写法保持一致（`Jay（AO）`）。
+- 历史记录保持可追溯，不做批量替换；确需更正时由对应责任人自行修改并说明。
 
 ### 与版本的关系
 
@@ -214,6 +227,7 @@ openspec/
 | 一个 change 是否只改一个 capability | 归档前 |
 | 验证报告是否位于 `docs/ai4se-plugins/<时间戳>-<技能名>-report.md` 且含真实输出 | pr-merge |
 | 归档后 `changes/archive/<change-id>/` 是否保持不可变 | 归档前 |
+| 记录前与 approve 前是否已询问并确认本次实际开发者姓名（未用名册默认值或角色词占位） | pr-merge |
 
 ### 示例
 

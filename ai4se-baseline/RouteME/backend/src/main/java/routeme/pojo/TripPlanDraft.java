@@ -9,7 +9,7 @@ import java.util.List;
 public record TripPlanDraft(
         long publisherId,
         String title,
-        String destination,
+        String destinationCode,
         LocalDate startDate,
         LocalDate endDate,
         List<String> stops,

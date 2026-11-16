@@ -1,7 +1,7 @@
 # ATDD 设计：refine-trip-application
 
-- **Change:** `refine-trip-application`（REQ-009 / S08；`trip-companions` MODIFIED）
-- **依据：** [`proposal.md`](proposal.md)、[`specs/trip-companions/spec.md`](specs/trip-companions/spec.md)、[`dov-ac-review.md`](dov-ac-review.md)、[`g1-decision.md`](g1-decision.md)、`requirement-workspace/requirements/REQ-009-trip-application-entry.md`
+- **Change:** `refine-trip-application`（REQ-010 / S08；`trip-companions` MODIFIED）
+- **依据：** [`proposal.md`](proposal.md)、[`specs/trip-companions/spec.md`](specs/trip-companions/spec.md)、[`dov-ac-review.md`](dov-ac-review.md)、[`g1-decision.md`](g1-decision.md)、`requirement-workspace/requirements/REQ-010-trip-application-entry.md`
 - **规则：** `@rule:web-testing`、`@rule:web-coding-style`、`@rule:sdd-artifacts`、`@rule:spec-first`
 - **视觉基准：** `docs/prototype/ui.js` `actionBox`、`docs/prototype/styles.css`、`docs/prototype/store.js` `canApply`
 - **范围提醒：** 无后端、契约、迁移或状态机改动；ATDD 只规划 **E2E 验收** 与 **既有 API 回归**，纯逻辑单元测试留给 `/sdd:atdd-apply`。

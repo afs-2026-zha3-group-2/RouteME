@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { destinationLabel } from '../area/areaOptions';
 import {
   Alert,
   Button,
@@ -22,12 +23,15 @@ import {
 } from '../api';
 import { tripMessages } from '../i18n/tripMessages';
 import { intensityLabel } from '../experiences/experienceForm';
+import { publisherSummary } from '../profile/profileDisplay';
 import { ReportModal } from '../safety/ReportModal';
 import { SafetyNote } from '../safety/SafetyNote';
+import { Avatar } from '../shell/Avatar';
 import type { DemoUser, Experience, MatchCandidate, TripApplication } from '../types';
 import { applicationEntryState, applicationErrorMessage } from './applicationEntry';
 import { statusColor, statusLabel } from './tripStatus';
 import { useTrip } from './useTrip';
+import { useProfile } from '../profiles/ProfileContext';
 
 const MAX_MESSAGE_LENGTH = 120;
 
@@ -55,6 +59,7 @@ function pickLatestApplication(
 
 export function TripDetailPage({ currentUser, tripId }: Props) {
   const { state, reload } = useTrip(currentUser.id, tripId);
+  const { openProfile } = useProfile();
   const [feedback, setFeedback] = useState<Feedback | null>(null);
   const [completing, setCompleting] = useState(false);
   const [myApplication, setMyApplication] = useState<TripApplication | null>(null);
@@ -284,7 +289,7 @@ export function TripDetailPage({ currentUser, tripId }: Props) {
           <header className="detail-head">
             <div className="detail-badges">
               <Tag color={statusColor(trip.status)}>{statusLabel(trip.status)}</Tag>
-              <Tag>{trip.destination}</Tag>
+              <Tag>{destinationLabel(trip.destination_code) || trip.destination}</Tag>
             </div>
             <Typography.Title level={2} className="trip-title detail-title">
               {trip.title}
@@ -329,22 +334,32 @@ export function TripDetailPage({ currentUser, tripId }: Props) {
 
           <section className="detail-section">
             <h3 className="section-title">{tripMessages.detailPublisher}</h3>
-            <div className="publisher-row">
-              <Tag className="publisher-initial">{trip.publisher.avatar_initial}</Tag>
-              <div className="publisher-body">
-                <p className="publisher-name">
-                  {trip.publisher.nickname} · {trip.publisher.school}
-                </p>
-                <p className="publisher-bio">{trip.publisher.bio}</p>
-                <div className="publisher-tags">
-                  {trip.publisher.interests.map((interest) => (
-                    <span key={interest} className="tag">
-                      {interest}
-                    </span>
-                  ))}
-                </div>
-              </div>
-            </div>
+            <button
+              type="button"
+              className="publisher-row publisher-button"
+              aria-label={`查看 ${trip.publisher.nickname} 的资料`}
+              onClick={() => openProfile(trip.publisher.id)}
+            >
+              <Avatar user={trip.publisher} size="lg" />
+              <span className="publisher-body">
+                <span className="publisher-name">
+                  {trip.publisher.nickname}
+                  {publisherSummary(trip.publisher) !== '' && ` · ${publisherSummary(trip.publisher)}`}
+                </span>
+                {trip.publisher.bio !== '' && (
+                  <span className="publisher-bio">{trip.publisher.bio}</span>
+                )}
+                {trip.publisher.interests.length > 0 && (
+                  <span className="publisher-tags">
+                    {trip.publisher.interests.map((interest) => (
+                      <span key={interest} className="tag">
+                        {interest}
+                      </span>
+                    ))}
+                  </span>
+                )}
+              </span>
+            </button>
           </section>
 
           <section className="detail-section">

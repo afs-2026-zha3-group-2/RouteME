@@ -18,7 +18,24 @@ import type {
   TripDetail,
   TripFilters,
   TripSummary,
+  UserProfile,
+  UserProfileUpdateRequest,
 } from './types';
+
+/**
+ * 契约错误：保留稳定错误码与可选的字段级原因码，供表单回填。
+ */
+export class ApiError extends Error {
+  readonly code: string;
+  readonly fields?: Record<string, string>;
+
+  constructor(code: string, fields?: Record<string, string>) {
+    super(code);
+    this.name = 'ApiError';
+    this.code = code;
+    this.fields = fields;
+  }
+}
 
 export async function request(path: string, init?: RequestInit, userId?: number): Promise<Response> {
   const headers = new Headers(init?.headers);
@@ -28,8 +45,10 @@ export async function request(path: string, init?: RequestInit, userId?: number)
   const requestInit = init === undefined && userId === undefined ? undefined : { ...init, headers };
   const response = await fetch(`/api${path}`, requestInit);
   if (!response.ok) {
-    const body: { code?: string } | null = await response.json().catch(() => null);
-    throw new Error(body?.code || `HTTP ${response.status}`);
+    const body: { code?: string; fields?: Record<string, string> } | null = await response
+      .json()
+      .catch(() => null);
+    throw new ApiError(body?.code || `HTTP ${response.status}`, body?.fields);
   }
   return response;
 }
@@ -81,13 +100,44 @@ export async function logoutAccount(token: string): Promise<void> {
   });
 }
 
+/** 读取个人资料；本人读取时响应包含生日，他人读取时省略。 */
+export async function loadUserProfile(userId: number, callerId: number): Promise<UserProfile> {
+  const response = await request(`/users/${userId}/profile`, undefined, callerId);
+  return (await response.json()) as UserProfile;
+}
+
+/** 保存当前会话用户的资料，返回保存后的完整资料。 */
+export async function saveMyProfile(
+  token: string,
+  body: UserProfileUpdateRequest,
+): Promise<UserProfile> {
+  const response = await request('/users/me/profile', {
+    method: 'PUT',
+    headers: {
+      Authorization: `Bearer ${token}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(body),
+  });
+  return (await response.json()) as UserProfile;
+}
+
+/** 上传头像（multipart `file`），返回包含新 `avatar_url` 的资料。 */
+export async function uploadAvatar(token: string, file: File): Promise<UserProfile> {
+  const form = new FormData();
+  form.append('file', file);
+  const response = await request('/users/me/avatar', {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${token}` },
+    body: form,
+  });
+  return (await response.json()) as UserProfile;
+}
+
 function tripQuery(filters: TripFilters, paging?: Paging): string {
   const params = new URLSearchParams();
-  if (filters.q) {
-    params.set('q', filters.q);
-  }
-  if (filters.destination) {
-    params.set('destination', filters.destination);
+  if (filters.destination_code) {
+    params.set('destination_code', filters.destination_code);
   }
   if (filters.date_from) {
     params.set('date_from', filters.date_from);
@@ -261,11 +311,14 @@ export async function loadExperiences(
   paging?: Paging,
 ): Promise<Page<Experience>> {
   const params = new URLSearchParams();
-  if (filters.q) {
-    params.set('q', filters.q);
+  if (filters.destination_code) {
+    params.set('destination_code', filters.destination_code);
   }
-  if (filters.destination) {
-    params.set('destination', filters.destination);
+  if (filters.date_from) {
+    params.set('date_from', filters.date_from);
+  }
+  if (filters.date_to) {
+    params.set('date_to', filters.date_to);
   }
   if (filters.tags && filters.tags.length > 0) {
     params.set('tags', filters.tags.join(','));

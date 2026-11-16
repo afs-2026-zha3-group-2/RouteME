@@ -15,12 +15,13 @@
 | 方案 | 行为 | 结论 |
 |---|---|---|
 | 新增可空 `destination_code`，应用层校验 | 迁移简单，但库层无法保证非空，脏数据风险 | 否决 |
-| 重建 `trip_plans`，`destination_code VARCHAR(6) NOT NULL` + 索引 | 符合 code 权威；SQLite 需新表→拷贝→drop→rename | 采用 |
+| `ALTER TABLE ... ADD COLUMN destination_code VARCHAR(6) NOT NULL DEFAULT ''` + 回填 + 索引 | SQLite/H2 都支持；不重建表，避开 `trip_experiences` 等外键；应用层保证新写入非空 | 采用 |
 | 同时存 `province_code`/`province_name` 列 | 冗余，需双写一致性 | 否决（从字典派生） |
 
 - `destination` 名称列保留，作为标准名缓存；由后端按代码派生写入，不手改。
 - `trip_experiences` 不加目的地列，继续 `JOIN trip_plans`。
-- V10（V9 被 `add-user-auth` 占用）：16 城/别名/种子映射；未映射名称使迁移失败；外键处理见 D7。
+- V11（V10 被 `add-user-profile` 占用；V9 被 auth 占用）：`ALTER TABLE trip_plans ADD COLUMN destination_code VARCHAR(6) NOT NULL DEFAULT ''`；用 CASE 回填 16 城/别名/种子并更新标准名；建索引。`DEFAULT ''` 只用于满足跨库 NOT NULL 约束，应用发布校验禁止空串；未映射名称在 UPDATE 时返回 NULL 并触发 NOT NULL 失败。
+- `trip_experiences` 不加目的地列，继续 `JOIN trip_plans`。
 
 ### D2 区划字典
 
@@ -31,7 +32,7 @@
 | DB 表存字典 | 可查询，但增加迁移/同步成本 | 否决（静态只读资源足够） |
 
 - 后端：`backend/src/main/resources/area/area-codes.json`（由 v5 数据生成）+ `AreaDictionary` 服务；提供 `findCity(code)`、`provinceOf(code)`、`displayNameOf`、`isValidCityCode`。
-- 前端：`element-china-area-data@5` 的 `provinceAndCityData`，用 `areaOptions.ts` 归一化为 antd Cascader；直辖市二级 label 覆盖为省级名（如"北京市"），港澳台使用 v5 二级节点。
+- 前端：`element-china-area-data@5` 的 `provinceAndCityData`，用 `areaOptions.ts` 归一化为省市级联选项；直辖市二级 label 覆盖为省级名（如"北京市"），港澳台使用 v5 二级节点（香港 18 区、澳门 8 堂区、台湾 7 市；港澳原文为繁体，沿用 v5 label）。
 - 名称规则：普通城市=二级标准名；直辖市=省级名；港澳台="省级简称 · 二级名"；`province_name` 为展示名（普通省全名，港澳台简称）。
 
 ### D3 接口契约 0.7.0
@@ -65,14 +66,16 @@
 | 方案 | 行为 | 结论 |
 |---|---|---|
 | 保留原生 `<select>` + 地图 16 城 | 与全国/港澳台细分不一致 | 否决 |
-| antd Cascader，值 `[provinceCode, cityCode]`，仅长度 2 生效 | 与"必须选到市"一致；选项可输入过滤 | 采用 |
+| antd Cascader，值 `[provinceCode, cityCode]` | 与"必须选到市"一致 | 采用（P4 改为自绘面板，见下方修订） |
 | 只选省也触发筛选 | 与 D14 冲突 | 否决 |
 
-- `FilterState.destination` → `destinationCode`（可空）；Cascader 值用 `string[]`，`length === 2` 才写入 `destinationCode`。
-- `toTripFilters` 发送 `destination_code`；`describeFilters` 用字典渲染"广东省 / 珠海市"、港澳台"香港 · 香港岛"。
+- `FilterState.destination` → `destinationCode`（可空）；AreaCascader 选中城市后直接写入 `destinationCode`（只列市，不会只选到省）。
+- `toTripFilters` 发送 `destination_code`；`describeFilters` 用字典渲染"广东省 / 珠海市"、港澳台"香港 · 中西區"。
 - `HomePage` 删除搜索框与 `q` 状态；`useExperiences` 增加 `destination_code` + `date_from/date_to`。
 - `TripCard` 显示市名；`TripDetailPage` 显示"省 / 市"；`ExperienceCard` 沿用标准名且不显示日期。
-- 发布页 `TripCreatePage` 目的地改 Cascader（A）；途经点/集合地点继续 `PlacePicker`。
+- 发布页 `TripCreatePage` 目的地改省市级联面板（A）；途经点/集合地点继续 `PlacePicker`。
+
+> **P4 实现修订（2026-11-16）：** antd Cascader 在 Edge 下浮层无法定位且页面滚动条持续抖动（Chrome 正常，headless Edge 不复现），P4 改为自绘 [`AreaCascader.tsx`](../../../RouteME/frontend/src/area/AreaCascader.tsx)：面板固定在字段下方、两列内联展开，不使用 Portal/动态定位，不参与文档高度计算；同时去掉 `showSearch` 输入态（避免"只能输入、不弹列表"）。行为不变：必须选到市、摘要/清除/展示口径不变；发布页同步使用同一组件。
 
 ### D6 搜索移除
 
@@ -86,9 +89,10 @@
 
 ### D7 迁移与外键
 
-- SQLite 重建步骤：`PRAGMA foreign_keys=OFF` → 建 `trip_plans_new` → 拷贝/映射 → drop 旧表 → rename → 建索引 → 校验 → `PRAGMA foreign_keys=ON`。
-- 迁移脚本用 CASE 映射：16 城短名/标准名 + 别名；种子 5 城是子集；未知名称用失败查询/触发器阻断（SQLite 无独立 RAISE；Flyway 脚本先校验无未知）。
-- 迁移测试：临时 SQLite 文件库执行 V1–V10，断言 6 条种子行程 code/标准名正确、2 条体验仍关联、索引存在。
+- V11 不重建 `trip_plans`：SQLite/H2 的 `ADD COLUMN ... NOT NULL DEFAULT ''` 都能执行，且不会触碰 `trip_experiences`/`trip_applications`/`chat_messages` 的外键。
+- 回填顺序：先 `destination_code`（未知名称 → NULL → NOT NULL 触发失败），再 `destination` 标准名，最后建索引。
+- `DEFAULT ''` 是跨库兼容手段；应用层 `TripPlan.create` / `AreaNames.isValidCityCode` 拒绝空串/未知 code，避免新脏数据。
+- 迁移测试：临时 SQLite 执行 V1–V11，断言 6 条种子行程 code/标准名正确、2 条体验仍关联、`destination_code` NOT NULL 且索引存在。
 
 ### D8 匹配口径
 

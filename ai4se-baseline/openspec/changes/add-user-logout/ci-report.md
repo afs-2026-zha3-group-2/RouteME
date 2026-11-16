@@ -13,10 +13,10 @@
 
 | Phase | Status | Conclusion | Upstream URL | Notes |
 |-------|--------|------------|--------------|-------|
-| ci | Pass | success（推断） | n/a | 证据：`refs/tags/build-d5d70fa`；`cd.yml` 仅在 CI `conclusion == 'success'` 时发布 |
+| ci | Pass | success（推断） | n/a | 证据：`refs/tags/build-d5d70fa`（复核代码态）+ `refs/tags/build-b93f45b`（本报告提交后的最新运行）；`cd.yml` 仅在 CI `conclusion == 'success'` 时发布 |
 | **Overall** | Partial | `Pass-by-human-confirm` | — | job 级明细不可得；见 `## Human confirmation` |
 
-> 证据链：`ci.yml` 在 `push: main` 触发；`cd.yml` 的 release job 带 `if: workflow_run.conclusion == 'success'`，并以 `build-${head_sha:0:7}` 命名 release。`git ls-remote` 显示 `build-711da3d`（退出实现首次推送）与 `build-d5d70fa`（当前 tip）均存在，因此这两次 push 的 CI 结论均为 success。`d5d70fa` 为 `711da3d` 的后代，退出代码未被回退。
+> 证据链：`ci.yml` 在 `push: main` 触发；`cd.yml` 的 release job 带 `if: workflow_run.conclusion == 'success'`，并以 `build-${head_sha:0:7}` 命名 release。`git ls-remote` 显示 `build-711da3d`（退出实现首次推送）、`build-d5d70fa`（复核的代码态）与 `build-b93f45b`（本报告提交后的最新一次运行，运行树仍含退出实现）均存在，因此这三次 push 的 CI 结论均为 success。`d5d70fa` 与 `b93f45b` 均为 `711da3d` 的后代，退出代码未被回退。
 
 ## E1 判定 (Machine Evidence)
 

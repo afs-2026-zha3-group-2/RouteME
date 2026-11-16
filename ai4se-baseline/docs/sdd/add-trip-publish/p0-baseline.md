@@ -51,3 +51,59 @@
 
 - `proposal.md` 写清 in-scope / out-of-scope（已在 P1 提交）。
 - 需求与故事可追溯到 REQ-002 与 issue #8。
+
+## 7. R2 基线：发布页可用性复核（2026-11-16）
+
+用户评审 S06 发布页后提出四项缺陷，本轮（R2）先复现再修。
+
+| 缺陷 | 复现证据 | 结论 |
+|---|---|---|
+| 目的地无法点击选取 | 打开 `#/trips/new` 点击目的地控件：DOM 中 `.ant-cascader-dropdown` 为 `display:block; visibility:visible`，但 `getBoundingClientRect()` 为 `x=-5670, y=-9070`（视口外），截图中看不到下拉面板 | 弹出层定位失效，必须显式指定 `getPopupContainer` |
+| 出发 / 结束日期为空 | 表单初始值 `startDate: ''`、`endDate: ''`，占位显示 `mm/dd/yyyy` | 默认今天，仍可修改 |
+| 途经点地图丑且与目的地无关 | `PlaceMap` 以 `viewBox="0 0 100 100"` + `preserveAspectRatio="none"` 铺满宽容器，land 被横向拉伸；16 个城市标签在珠海 / 中山 / 澳门 / 香港处重叠；未选目的地时仍然展示整张地图 | 地图按容器比例绘制，未选目的地不展示，选中后聚焦该市 |
+| 布局与间距不自然 | 目的地控件宽度仅 142px（未撑满字段），日期两个控件与其它字段行高不一致，表单缺少分组，字段间距靠 antd `Space` 默认值 | 统一全宽控件、字段分组与间距 |
+
+环境：antd `^6.7.0`、React 19、视口 571×885（移动端窄屏复现），后端 `main@d5d70fa` 运行时。
+
+### R2 的 P0 复核
+
+| id | 检查 | 结论 |
+|---|---|---|
+| P0-1 | 基线骨架 | Pass（同 §3） |
+| P0-2 | 规则载体 | Pass（`@rule:web-coding-style`、`@rule:web-testing` 覆盖本轮改动） |
+| P0-3 | 技能可解析 | Pass |
+| P0-4 | pack 隔离 | Skipped（不改 pack） |
+| P0-5 | 管道骨架 | Pass（CI run #89 成功） |
+
+| 角色 | 姓名 | 确认内容 | 日期 |
+|---|---|---|---|
+| SM | Lewis | 接受 R2 四项缺陷进入修复排期 | 2026-11-16 |
+| IO | Wanye | 四项均属 S06 发布页体验，不新增需求 | 2026-11-16 |
+| AO | Jay | 复现证据完整，承担 R2 实现 | 2026-11-16 |
+
+## 8. R3 基线：字典全国化后的返工（2026-11-16 13:35）
+
+远端 `a13416c` 把目的地字典换成全国省市（`area/area-codes.json` + `area/AreaCascader`）后，R2 的最小切片成了遗留物，并带来两处可见缺陷。
+
+| 项 | 复现 | 结论 |
+|---|---|---|
+| 提示与状态不符 | 选「北京市 / 市辖区」后，途经点区域显示「先选目的地，再按城市点选途经点。」 | 需要区分「未选目的地」与「目的地无离线点位」 |
+| 无地图 | `mapCityForCode('110100')` 依赖 16 城切片，返回 `undefined` | 映射改为读取共享字典，未覆盖城市显式说明 |
+| 前端重复字典 | `areas/areaCatalog.ts` 的 `AREA_PROVINCES` / `DESTINATION_OPTIONS` / `cityByCode` / `codesForCityName` 已无调用方 | 删除，仅保留代码→地名库城市映射 |
+| 后端死代码 | `constant/AreaConstant`、`pojo/AreaCity` 仅自引用；`TripPlanServiceImpl` 两条 import 未使用 | 删除，名称派生统一走 `area/AreaDictionary` |
+
+### R3 的 P0 复核
+
+| id | 检查 | 结论 |
+|---|---|---|
+| P0-1 | 基线骨架 | Pass（同 §3） |
+| P0-2 | 规则载体 | Pass（`@rule:web-coding-style`、`@rule:java-patterns` 覆盖删除与重命名） |
+| P0-3 | 技能可解析 | Pass |
+| P0-4 | pack 隔离 | Skipped |
+| P0-5 | 管道骨架 | Pass（CI run #98 成功） |
+
+| 角色 | 姓名 | 确认内容 | 日期 |
+|---|---|---|---|
+| SM | Lewis | 接受 R3 排期 | 2026-11-16 |
+| IO | Wanye | 全国点位缺失属既有边界，不扩 scope | 2026-11-16 |
+| AO | Jay | 复现证据完整，承担 R3 实现 | 2026-11-16 |

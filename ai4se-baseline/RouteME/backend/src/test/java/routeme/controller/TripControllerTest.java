@@ -27,7 +27,7 @@ class TripControllerTest {
     private static final String VALID_TRIP = """
             {
               "title": "广州老城骑楼扫街半日",
-                  "destination_code": "440100",
+              "destination_code": "440100",
               "start_date": "2026-11-20",
               "end_date": "2026-11-20",
               "stops": ["陈家祠地铁站集合", "永庆坊"],
@@ -51,33 +51,45 @@ class TripControllerTest {
                 .andExpect(jsonPath("$.status").value("recruiting"))
                 .andExpect(jsonPath("$.joined_count").value(1))
                 .andExpect(jsonPath("$.capacity").value(4))
-                    .andExpect(jsonPath("$.destination").value("广州"))
-                    .andExpect(jsonPath("$.publisher.id").value(1))
-                    .andExpect(jsonPath("$.participants[0].id").value(1))
-                    .andExpect(jsonPath("$.start_date").value("2026-11-20"))
-                    .andExpect(jsonPath("$.budget_max_cents").value(15000));
-        }
+                .andExpect(jsonPath("$.publisher.id").value(1))
+                .andExpect(jsonPath("$.participants[0].id").value(1))
+                .andExpect(jsonPath("$.start_date").value("2026-11-20"))
+                .andExpect(jsonPath("$.destination").value("广州市"))
+                .andExpect(jsonPath("$.destination_code").value("440100"))
+                .andExpect(jsonPath("$.province_code").value("440000"))
+                .andExpect(jsonPath("$.province_name").value("广东省"))
+                .andExpect(jsonPath("$.budget_max_cents").value(15000));
+    }
 
-        @Test
-        void in_provinceCodeOnly_out_invalidInput() throws Exception {
-            String body = VALID_TRIP.replace("\"destination_code\": \"440100\"", "\"destination_code\": \"440000\"");
-            postTrip(body, "1").andExpect(status().isBadRequest())
-                    .andExpect(jsonPath("$.code").value("INVALID_INPUT"));
-        }
+    @Test
+    void in_destinationCodeOutsideLegacyCatalog_out_created() throws Exception {
+        String body = VALID_TRIP.replace("\"destination_code\": \"440100\"", "\"destination_code\": \"350200\"");
+        postTrip(body, "1").andExpect(status().isCreated())
+                .andExpect(jsonPath("$.destination").value("厦门市"))
+                .andExpect(jsonPath("$.destination_code").value("350200"))
+                .andExpect(jsonPath("$.province_name").value("福建省"));
+    }
 
-        @Test
-        void in_unknownDestinationCode_out_invalidInput() throws Exception {
-            String body = VALID_TRIP.replace("\"destination_code\": \"440100\"", "\"destination_code\": \"999999\"");
-            postTrip(body, "1").andExpect(status().isBadRequest())
-                    .andExpect(jsonPath("$.code").value("INVALID_INPUT"));
-        }
+    @Test
+    void in_provinceCodeOnly_out_invalidInput() throws Exception {
+        String body = VALID_TRIP.replace("\"destination_code\": \"440100\"", "\"destination_code\": \"440000\"");
+        postTrip(body, "1").andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("INVALID_INPUT"));
+    }
 
-        @Test
-        void in_missingDestinationCode_out_invalidInput() throws Exception {
-            String body = VALID_TRIP.replace("\"destination_code\": \"440100\",", "");
-            postTrip(body, "1").andExpect(status().isBadRequest())
-                    .andExpect(jsonPath("$.code").value("INVALID_INPUT"));
-        }
+    @Test
+    void in_unknownDestinationCode_out_invalidInput() throws Exception {
+        String body = VALID_TRIP.replace("\"destination_code\": \"440100\"", "\"destination_code\": \"999999\"");
+        postTrip(body, "1").andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("INVALID_INPUT"));
+    }
+
+    @Test
+    void in_missingDestinationCode_out_invalidInput() throws Exception {
+        String body = VALID_TRIP.replace("\"destination_code\": \"440100\",", "");
+        postTrip(body, "1").andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("INVALID_INPUT"));
+    }
 
     @Test
     void in_missingTitle_out_invalidInput() throws Exception {
@@ -127,10 +139,10 @@ class TripControllerTest {
     }
 
     @Test
-    void in_demoUsersEndpoint_out_threeAccounts() throws Exception {
+    void in_demoUsersEndpoint_out_fourAccounts() throws Exception {
         mockMvc.perform(get("/api/users"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$", hasSize(3)))
+                .andExpect(jsonPath("$", hasSize(4)))
                 .andExpect(jsonPath("$[0].nickname").value("林见夏"))
                 .andExpect(jsonPath("$[0].avatar_initial").value("夏"));
     }
@@ -151,10 +163,12 @@ class TripControllerTest {
 
     @Test
     void in_filters_out_matchingTrips() throws Exception {
-        mockMvc.perform(get("/api/trips").header("X-User-Id", "1").param("destination", "珠海"))
+        mockMvc.perform(get("/api/trips").header("X-User-Id", "1").param("destination_code", "440400"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.total").value(1))
-                .andExpect(jsonPath("$.items[0].destination").value("珠海"));
+                .andExpect(jsonPath("$.items[0].destination").value("珠海市"))
+                .andExpect(jsonPath("$.items[0].destination_code").value("440400"))
+                .andExpect(jsonPath("$.items[0].province_name").value("广东省"));
 
         mockMvc.perform(get("/api/trips").header("X-User-Id", "1").param("tags", "历史"))
                 .andExpect(status().isOk())
@@ -172,8 +186,8 @@ class TripControllerTest {
                 .andExpect(jsonPath("$.items.length()").value(2))
                 .andExpect(jsonPath("$.page").value(1))
                 .andExpect(jsonPath("$.size").value(2))
-                .andExpect(jsonPath("$.total").value(4))
-                .andExpect(jsonPath("$.total_pages").value(2));
+                .andExpect(jsonPath("$.total").value(5))
+                .andExpect(jsonPath("$.total_pages").value(3));
 
         mockMvc.perform(get("/api/trips").header("X-User-Id", "1").param("page", "2").param("size", "2"))
                 .andExpect(status().isOk())
@@ -183,8 +197,8 @@ class TripControllerTest {
         mockMvc.perform(get("/api/trips").header("X-User-Id", "1").param("page", "9").param("size", "2"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.items.length()").value(0))
-                .andExpect(jsonPath("$.total").value(4))
-                .andExpect(jsonPath("$.total_pages").value(2));
+                .andExpect(jsonPath("$.total").value(5))
+                .andExpect(jsonPath("$.total_pages").value(3));
     }
 
     @Test

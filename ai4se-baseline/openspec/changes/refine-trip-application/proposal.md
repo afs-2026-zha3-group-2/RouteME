@@ -1,9 +1,10 @@
 # 变更提案：refine-trip-application
 
-- **需求来源：** 用户指令「作为想加入的人，我看到一个行程，我想要加入，所以希望点击申请后加入该行程团队，并且我希望留一句话说明」+ 原型故事 S08 ｜ **需求条目：** `requirement-workspace/requirements/REQ-009-trip-application-entry.md`
+- **需求来源：** 用户指令「作为想加入的人，我看到一个行程，我想要加入，所以希望点击申请后加入该行程团队，并且我希望留一句话说明」+ 原型故事 S08 ｜ **需求条目：** `requirement-workspace/requirements/REQ-010-trip-application-entry.md`
 - **能力：** `trip-companions`（MODIFIED）
 - **规模：** S（单页面展示增量；无后端、契约、迁移变更）
 - **规则：** `@rule:spec-first`、`@rule:sdd-artifacts`、`@rule:web-coding-style`；视觉基准：`docs/prototype/prototype.html` + `docs/prototype/styles.css`（Qoder 项目规则投影 `prototype-ui-alignment`）
+- **编号说明（2026-11-16）：** P1 时按 `origin/main@b93f45b` 定为 REQ-009；合入 main 时与 `add-user-profiles` 撞号，经用户裁决按「后到者顺延」改为 **REQ-010**。本文与 delta / design / tasks / G1 记录已同步改号；`docs/ai4se-plugins/` 下的历史质量报告与本地验证报告保留当时编号。
 
 ## 问题
 

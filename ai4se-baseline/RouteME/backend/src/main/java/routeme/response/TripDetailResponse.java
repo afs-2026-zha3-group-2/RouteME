@@ -4,6 +4,7 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.util.List;
 
+import routeme.area.AreaNames;
 import routeme.pojo.DemoUser;
 import routeme.pojo.TripPlan;
 
@@ -11,6 +12,9 @@ public record TripDetailResponse(
         long id,
         String title,
         String destination,
+        String destinationCode,
+        String provinceCode,
+        String provinceName,
         LocalDate startDate,
         LocalDate endDate,
         List<String> stops,
@@ -32,6 +36,9 @@ public record TripDetailResponse(
                 trip.id(),
                 trip.title(),
                 trip.destination(),
+                trip.destinationCode(),
+                AreaNames.provinceCodeOf(trip.destinationCode()),
+                AreaNames.provinceDisplayNameOf(trip.destinationCode()),
                 trip.startDate(),
                 trip.endDate(),
                 trip.stops(),

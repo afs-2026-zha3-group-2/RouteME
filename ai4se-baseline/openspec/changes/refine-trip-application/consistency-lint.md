@@ -24,10 +24,10 @@
 
 | id | Severity | Phase | Location | Issue | Suggested fix | Evidence | Authority | Type |
 |---|---|---|---|---|---|---|---|---|
-| L-01 | SUGGESTION | p2 | `proposal.md` 头部规则行；`REQ-009` §5；本分支 `docs/knowledge/rules/quality/rules.md` | Qoder 宿主规则投影引用 `prototype-ui-alignment` 与 `rule-precedence`，但本分支权威区没有这两个二级标题锚点（预存差异，非本 change 引入）；若保留 `@rule:` 写法会成为断链 | 本 change 已改为「原型路径 + 宿主投影名」与「以用户当次指示为准」，不写 `@rule:prototype-ui-alignment` / `@rule:rule-precedence`；是否把两条规则补进权威区由 rules-govern 另行处理 | `.qoder/rules/project-rules.md`（未跟踪宿主投影）vs `docs/knowledge/rules/quality/rules.md` / `process/rules.md` 的二级标题清单 | AI-inference | [fact] |
+| L-01 | SUGGESTION | p2 | `proposal.md` 头部规则行；`REQ-010` §5；本分支 `docs/knowledge/rules/quality/rules.md` | Qoder 宿主规则投影引用 `prototype-ui-alignment` 与 `rule-precedence`，但本分支权威区没有这两个二级标题锚点（预存差异，非本 change 引入）；若保留 `@rule:` 写法会成为断链 | 本 change 已改为「原型路径 + 宿主投影名」与「以用户当次指示为准」，不写 `@rule:prototype-ui-alignment` / `@rule:rule-precedence`；是否把两条规则补进权威区由 rules-govern 另行处理 | `.qoder/rules/project-rules.md`（未跟踪宿主投影）vs `docs/knowledge/rules/quality/rules.md` / `process/rules.md` 的二级标题清单 | AI-inference | [fact] |
 | L-02 | SUGGESTION | p2 | `specs/trip-companions/spec.md`（MODIFIED） | MODIFIED 会整体替换 Living Spec 的「提交与取消同行申请」块；当前已保留 5 个基线场景，但归档合并仍需人工核对 | 在 P3 `tasks.md` 增加一条收口任务：合并后 Living Spec 仍有 8 个场景、原 5 个场景语义完整；G3 前复核 | Delta 5 个基线场景 vs `openspec/specs/trip-companions/spec.md` 第 37–67 行 | spec | [fact] |
 | L-03 | SUGGESTION | p2 | `dov-ac-review.md` §规格解释裁决 4；`specs/trip-companions/spec.md` 场景 6 | 后端检查顺序为「本人 → 重复 → 非 recruiting」，满员时若已有有效申请会先返回 `DUPLICATE_APPLICATION`；若 E2E 只断言 `TRIP_NOT_OPEN` 会漏测错误码优先级 | P3 / P4 的测试矩阵同时覆盖：满员无申请 → `TRIP_NOT_OPEN`；满员且已有 pending → `DUPLICATE_APPLICATION`；两者都不新增申请 | `ApplicationServiceImpl.apply` 第 59–67 行 | code | [fact] |
-| L-04 | SUGGESTION | p2 | `requirement-workspace/requirements/REQ-009-trip-application-entry.md` §9 D2；S08 原型故事 | S08 字面 AC 写「提交后按钮变为已申请，待处理」，用户裁决 D2 改为原型的等待提示 + 撤回；读者对照原型故事时可能误判为漏实现 | G1 时由 IO 确认 D2 覆盖仍有效；P5 `summary.md` 记录该 AC 的最终口径 | 用户 2026-11-16 裁决；`docs/prototype/stories.html` S08；`docs/prototype/ui.js` `actionBox` | proposal | [fact] |
+| L-04 | SUGGESTION | p2 | `requirement-workspace/requirements/REQ-010-trip-application-entry.md` §9 D2；S08 原型故事 | S08 字面 AC 写「提交后按钮变为已申请，待处理」，用户裁决 D2 改为原型的等待提示 + 撤回；读者对照原型故事时可能误判为漏实现 | G1 时由 IO 确认 D2 覆盖仍有效；P5 `summary.md` 记录该 AC 的最终口径 | 用户 2026-11-16 裁决；`docs/prototype/stories.html` S08；`docs/prototype/ui.js` `actionBox` | proposal | [fact] |
 
 ## Checklist coverage
 
@@ -51,7 +51,7 @@
 | D1–D3 Design rules | N/A | 无 `design.md` |
 | p2-1 proposal scope vs Delta | Pass | 无静默扩张 / 丢弃 |
 | p2-2 Delta 内部一致 | Pass | 「可申请 → 提交 → 待处理 → 撤回 → 可申请」与「本人 / 重复 / 满员 / 结束 / 页面停留期间」分支互不矛盾 |
-| p2-3 proposal 关键场景有落点 | Pass | REQ-009 §4 八条场景 8/8（见 `dov-ac-review.md` §Requirement mapping） |
+| p2-3 proposal 关键场景有落点 | Pass | REQ-010 §4 八条场景 8/8（见 `dov-ac-review.md` §Requirement mapping） |
 | p2-4 tasks 方向检查 | N/A | 无 `tasks.md` |
 | p2-5 无法追溯的 Requirement | Pass | 无 |
 

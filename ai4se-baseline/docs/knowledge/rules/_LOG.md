@@ -1,4 +1,4 @@
-# Rules change log
+﻿# Rules change log
 
 | date | id | change | author |
 |---|---|---|---|
@@ -41,3 +41,5 @@
 | 2026-11-15 | sdd-artifacts | 补归档目录例外：手工归档允许 `changes/archive/<yyyymmdd>-<change-id>/`（现有 `2026-11-15-bootstrap-hello-world/`），`openspec archive` 自动归档仍用 `<change-id>`；两种写法都要求索引、`impact-brief` 与知识库指针指向实际路径 | agent |
 | 2026-11-15 | package-structure | 修订包分类：新增 `repository`/`entity`/`enums`/`param`/`vo`/`sql`/`aspect`/`annotation`/`interceptor`/`mq` 条目，删除「禁止 entity/enums/param/repository/vo」的旧条款，改为后缀强制（`XxxEntity`/`XxxEnum`/`XxxConstant`/`XxxParam`/`XxxDao`/`XxxRepository`）；依赖方向补 `repository → dao → entity`、`controller → param`；检查项改为校验后缀与包是否一致、`XxxEntity` 是否只在 dao 内使用；示例改为 Router→Param→Service→Repository→Dao→Entity→Model | agent |
 | 2026-11-15 | package-structure | 按用户裁决修订：`dto` 拆为 `request`/`response`（新增两行分层模型与包分类）；新增 `handler` 包（全局异常处理器）与 `exception` 两段式（`BusinessException` + `XxxException`）；删除 `XxxErrorHandler` 后缀，改为 `GlobalExceptionHandler`；依赖方向补 `controller → request/response`、`handler → exception/response`；检查项补异常继承与 request/response 分包检查 | agent |
+| 2026-11-16 | documentation | 修订「记录人与签署人」条款：名册常任分工（AO = Jay）只是默认归属，不得当缺省填写值；**记录阶段产出时**与 **approve / 签署时**这两个时点 MUST 先问「这次 change 的当前开发者是谁？approve 由谁签」，未获回答暂停落笔；禁止用 AO/DEV 占位；检查项补一条 pr-merge 门禁 | agent |
+| 2026-11-16 | process | 新增 `artifact-review-gate`（Critical）：`proposal.md`、Delta Spec、`design.md`、`tasks.md` 每份工件写完后 MUST 在同一回合调用 `all-specs-review` 生成评审报告，落到 `docs/reviews/<yyyymmdd>-<change-id>-<artifact>-review.md`（一份工件一份报告，重评不覆盖旧报告），写完后必须停下询问当前开发者是否批准进入下一步，只有明确 approve（报告内追加批准人+时间）才继续；`Fail` 须修复重评至至少 `Partial`。同步 `_INDEX.md`（第 24 条）、`documentation/rules.md#命名`（报告文件名）、`docs/sdd/README.md`（阶段表 + 工件评审门禁一节）、`docs/reviews/README.md`、`all-specs-review` 技能的报告落点 | agent |

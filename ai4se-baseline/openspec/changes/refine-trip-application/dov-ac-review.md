@@ -1,8 +1,8 @@
 # AC / DoV review — refine-trip-application
 
-- **Change:** `refine-trip-application`（`trip-companions` MODIFIED，REQ-009 / S08）
+- **Change:** `refine-trip-application`（`trip-companions` MODIFIED，REQ-010 / S08）
 - **Reviewed artifact:** [`specs/trip-companions/spec.md`](specs/trip-companions/spec.md)（1 Requirement / 8 Scenario；MODIFIED）
-- **Inputs:** [`proposal.md`](proposal.md)、`requirement-workspace/requirements/REQ-009-trip-application-entry.md`、`requirement-workspace/intents/REQ-009-trip-application-entry.md`、`requirement-workspace/impact-brief.md` §13、`requirement-workspace/deep-dive.md`「REQ-009 增补」、`openspec/specs/trip-companions/spec.md`（Living Spec 基线）、`docs/prototype/ui.js` `actionBox` / `store.js` `canApply`
+- **Inputs:** [`proposal.md`](proposal.md)、`requirement-workspace/requirements/REQ-010-trip-application-entry.md`、`requirement-workspace/intents/REQ-010-trip-application-entry.md`、`requirement-workspace/impact-brief.md` §13、`requirement-workspace/deep-dive.md`「REQ-010 增补」、`openspec/specs/trip-companions/spec.md`（Living Spec 基线）、`docs/prototype/ui.js` `actionBox` / `store.js` `canApply`
 - **Timestamp:** 2026-11-16T12:00+0800
 - **Reviewer:** Qoder（AI agent）
 - **Tooling:** `openspec validate refine-trip-application --strict` → `Change 'refine-trip-application' is valid`
@@ -24,13 +24,13 @@
 | DoV-2 Ambiguities listed or resolved | Pass | 下方「规格解释裁决 1–6」 | 无未决 blocking 歧义；「已申请，请等待回应」与原型 mock 文案的差异已按用户 AC 收敛 |
 | DoV-3 Role concerns noted for residual risk | Pass | 下方「残余风险」 | IO：S08 字面「按钮变为已申请，待处理」被用户 D2 覆盖；SA：MODIFIED 覆盖范围与基线保留；AO：E2E 选择器与错误码分支 |
 | DoV-4 No business implementation claimed done | Pass | 本阶段只改 Delta Spec；现有 `TripDetailPage` / `ApplicationServiceImpl` 仅作为 as-is 证据 | `proposal.md` §交付边界明确 P3/P4 才实现 |
-| DoV-5 Requirements trace to proposal / approved requirements | Pass | 下方「需求映射」8/8 + 「基线保留」5/5 | REQ-009 §4 八条场景全部有 Delta 落点；Living Spec 5 个既有场景保留 |
+| DoV-5 Requirements trace to proposal / approved requirements | Pass | 下方「需求映射」8/8 + 「基线保留」5/5 | REQ-010 §4 八条场景全部有 Delta 落点；Living Spec 5 个既有场景保留 |
 
 **Blocking gaps:** 无。G1-ready from the review's perspective；是否签署由 IO / SA 决定。
 
-## Requirement mapping（REQ-009 §4 → Delta Spec）
+## Requirement mapping（REQ-010 §4 → Delta Spec）
 
-| REQ-009 场景 | Delta Scenario | 覆盖判定 |
+| REQ-010 场景 | Delta Scenario | 覆盖判定 |
 |---|---|---|
 | #1 可申请行程展示内联申请区 | 「可申请行程展示内联申请区」 | 完整（含说明选填、120 字、提交按钮、聊天说明、非弹窗） |
 | #2 提交申请并进入待处理 | 「提交申请并进入待处理」 | 完整（PENDING、等待提示 + 撤回、刷新保持、发布者可见） |

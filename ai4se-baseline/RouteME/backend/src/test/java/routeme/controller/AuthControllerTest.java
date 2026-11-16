@@ -1,6 +1,5 @@
 package routeme.controller;
 
-import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -27,10 +26,7 @@ class AuthControllerTest {
             {
               "username": "NewUser",
               "password": "routeme-demo",
-              "nickname": "新同学",
-              "school": "大二 · 建筑学",
-              "bio": "想看海。",
-              "interests": ["摄影", "海边"]
+              "nickname": "新同学"
             }
             """;
 
@@ -45,8 +41,43 @@ class AuthControllerTest {
                 .andExpect(jsonPath("$.expires_at").exists())
                 .andExpect(jsonPath("$.user.nickname").value("新同学"))
                 .andExpect(jsonPath("$.user.avatar_initial").value("新"))
-                .andExpect(jsonPath("$.user.school").value("大二 · 建筑学"))
+                .andExpect(jsonPath("$.user.school").value(""))
+                .andExpect(jsonPath("$.user.interests.length()").value(0))
+                .andExpect(jsonPath("$.user.profile_complete").value(false))
                 .andExpect(jsonPath("$.user.password_hash").doesNotExist());
+    }
+
+    @Test
+    void in_register_out_profileIncomplete() throws Exception {
+        register(REGISTER_BODY)
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.user.profile_complete").value(false))
+                .andExpect(jsonPath("$.user.bio").value(""))
+                .andExpect(jsonPath("$.user.avatar_url").doesNotExist());
+    }
+
+    @Test
+    void in_registerLegacyFields_out_ignored() throws Exception {
+        String legacyBody = """
+                {
+                  "username": "LegacyUser",
+                  "password": "routeme-demo",
+                  "nickname": "旧字段",
+                  "avatar_initial": "赵",
+                  "school": "大二 · 建筑学",
+                  "bio": "想看海。",
+                  "interests": ["摄影", "海边", "美食"]
+                }
+                """;
+
+        register(legacyBody)
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.user.nickname").value("旧字段"))
+                .andExpect(jsonPath("$.user.avatar_initial").value("旧"))
+                .andExpect(jsonPath("$.user.school").value(""))
+                .andExpect(jsonPath("$.user.bio").value(""))
+                .andExpect(jsonPath("$.user.interests.length()").value(0))
+                .andExpect(jsonPath("$.user.profile_complete").value(false));
     }
 
     @Test
@@ -78,8 +109,12 @@ class AuthControllerTest {
     }
 
     @Test
-    void in_tooManyInterests_out_invalidInput() throws Exception {
-        register(REGISTER_BODY.replace("[\"摄影\", \"海边\"]", "[\"一\", \"二\", \"三\", \"四\", \"五\", \"六\"]"))
+    void in_missingOrTooLongNickname_out_invalidInput() throws Exception {
+        register(REGISTER_BODY.replace("\"nickname\": \"新同学\"", "\"nickname\": \"  \""))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("INVALID_INPUT"));
+
+        register(REGISTER_BODY.replace("新同学", "字".repeat(21)))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value("INVALID_INPUT"));
     }
@@ -122,7 +157,8 @@ class AuthControllerTest {
         mockMvc.perform(get("/api/auth/me").header("Authorization", bearer))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.nickname").value("新同学"))
-                .andExpect(jsonPath("$.interests.length()").value(2));
+                .andExpect(jsonPath("$.interests.length()").value(0))
+                .andExpect(jsonPath("$.profile_complete").value(false));
     }
 
     @Test
@@ -151,12 +187,12 @@ class AuthControllerTest {
     }
 
     @Test
-    void in_registeredAccount_out_demoListStaysThree() throws Exception {
+    void in_registeredAccount_out_demoListStaysFour() throws Exception {
         register(REGISTER_BODY).andExpect(status().isCreated());
 
         mockMvc.perform(get("/api/users/demo"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.length()").value(3))
+                .andExpect(jsonPath("$.length()").value(4))
                 .andExpect(jsonPath("$[0].nickname").value("林见夏"));
     }
 

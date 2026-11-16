@@ -1,6 +1,6 @@
 # P3 设计记录 — refine-trip-application
 
-- **Change：** `refine-trip-application`（REQ-009 / S08 提交同行申请）｜ **阶段：** P3（Design & decompose DoV）
+- **Change：** `refine-trip-application`（REQ-010 / S08 提交同行申请）｜ **阶段：** P3（Design & decompose DoV）
 - **日期：** 2026-11-16 ｜ **记录人：** Jay（AO）
 - **分支：** `feature/refine-trip-application`（独立 worktree，基于 `origin/main@b93f45b`）
 - **前置：** G1 Pass（`g1-decision.md`，IO Wanye / SA Jacky，2026-11-16T12:10+0800）

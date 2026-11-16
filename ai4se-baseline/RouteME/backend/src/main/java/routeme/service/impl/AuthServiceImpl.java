@@ -3,9 +3,6 @@ package routeme.service.impl;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
-import java.util.ArrayList;
-import java.util.LinkedHashSet;
-import java.util.List;
 import java.util.Locale;
 import java.util.regex.Pattern;
 
@@ -57,10 +54,6 @@ public class AuthServiceImpl extends AbstractServiceImpl<AuthSessionMapper, Auth
         String username = normalizeUsername(request.username());
         String password = requirePassword(request.password());
         String nickname = requireNickname(request.nickname());
-        String school = requireSchool(request.school());
-        String bio = optionalText(request.bio(), "bio", AuthConstant.MAX_BIO_LENGTH);
-        List<String> interests = cleanInterests(request.interests());
-        String avatarInitial = avatarInitial(request.avatarInitial(), nickname);
         if (demoUserService.findByUsername(username).isPresent()) {
             throw new UsernameTakenException("username already registered: " + username);
         }
@@ -68,10 +61,7 @@ public class AuthServiceImpl extends AbstractServiceImpl<AuthSessionMapper, Auth
                 username,
                 PasswordUtils.hash(password),
                 nickname,
-                avatarInitial,
-                school,
-                bio,
-                interests);
+                nickname.substring(0, 1));
         return issue(user.id());
     }
 
@@ -100,7 +90,7 @@ public class AuthServiceImpl extends AbstractServiceImpl<AuthSessionMapper, Auth
         if (entity == null) {
             throw new SessionInvalidException("account no longer exists");
         }
-        return entity.toDemoUser();
+        return entity.toDemoUser(clock);
     }
 
     @Override
@@ -168,58 +158,5 @@ public class AuthServiceImpl extends AbstractServiceImpl<AuthSessionMapper, Auth
                     "nickname must be 1-" + AuthConstant.MAX_NICKNAME_LENGTH + " characters");
         }
         return nickname;
-    }
-
-    private static String requireSchool(String raw) {
-        String school = raw == null ? "" : raw.trim();
-        if (school.isEmpty()) {
-            throw new InvalidInputException("school is required");
-        }
-        if (school.length() > AuthConstant.MAX_SCHOOL_LENGTH) {
-            throw new InvalidInputException(
-                    "school must be at most " + AuthConstant.MAX_SCHOOL_LENGTH + " characters");
-        }
-        return school;
-    }
-
-    private static String optionalText(String raw, String field, int maxLength) {
-        if (raw == null || raw.isBlank()) {
-            return "";
-        }
-        String trimmed = raw.trim();
-        if (trimmed.length() > maxLength) {
-            throw new InvalidInputException(field + " must be at most " + maxLength + " characters");
-        }
-        return trimmed;
-    }
-
-    private static List<String> cleanInterests(List<String> values) {
-        if (values == null) {
-            return List.of();
-        }
-        LinkedHashSet<String> cleaned = new LinkedHashSet<>();
-        for (String value : values) {
-            if (value == null || value.isBlank()) {
-                continue;
-            }
-            String trimmed = value.trim();
-            if (trimmed.length() > AuthConstant.MAX_INTEREST_LENGTH) {
-                throw new InvalidInputException(
-                        "interest must be at most " + AuthConstant.MAX_INTEREST_LENGTH + " characters");
-            }
-            cleaned.add(trimmed);
-        }
-        if (cleaned.size() > AuthConstant.MAX_INTERESTS) {
-            throw new InvalidInputException("at most " + AuthConstant.MAX_INTERESTS + " interests are allowed");
-        }
-        return List.copyOf(new ArrayList<>(cleaned));
-    }
-
-    private static String avatarInitial(String raw, String nickname) {
-        if (raw != null && !raw.isBlank()) {
-            String trimmed = raw.trim();
-            return trimmed.length() > 4 ? trimmed.substring(0, 4) : trimmed;
-        }
-        return nickname.substring(0, 1);
     }
 }

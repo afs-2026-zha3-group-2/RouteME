@@ -25,7 +25,7 @@
 |---|---|---|
 | C1 | refine-inspiration-home 的搜索空态 E2E 改写并先归档 | AO / BA |
 | C2 | add-trip-publish 目的地修订 5 条任务在 B 数据底座后执行；A 后归档并重评 G1/G2 | AO / SA |
-| C3 | V10 迁移与外键在 P3 design 验证 | Dev |
+| C3 | V11 迁移与外键在 P3 design 验证 | Dev |
 | C4 | 匹配打分改 code 比较，补 add-match-reason 回归 | Dev |
 | C5 | Living Spec"关键词"术语在归档合并收敛 | AO / BA |
 | C6 | 契约 0.7.0、删 `q`、响应新增 code/province 在 P3 tasks 先行 | Dev |

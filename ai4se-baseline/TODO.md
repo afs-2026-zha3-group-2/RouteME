@@ -1,4 +1,4 @@
-# TODO
+﻿# TODO
 
 ## REQ-001: Hello World Home Page
 
@@ -111,6 +111,30 @@ RouteME 价值闭环的起点。验证核心假设：用户愿意发布可被他
 
 `requirement-workspace/intents/REQ-004-trip-experiences.md`、`requirements/REQ-004-trip-experiences.md`、`openspec/changes/add-trip-experiences/`。依赖 REQ-002（展示位/发布表单）与 REQ-003（已结束+参加过判定）。
 
+## REQ-008: 浏览者查看发布者公开资料（capability `user-profiles`）
+
+### Background
+
+申请同行是高承诺动作。浏览者需要在申请前了解「对方是谁、喜欢怎么玩、是否适合同行」。现有行程卡片只展示发布者昵称，详情页虽有简介与兴趣，但没有统一资料视图、共同兴趣与旅行统计。
+
+### Requirement（业务）
+
+1. 双入口：行程卡片发布者区域与行程详情页发布者卡片；点击后在当前页打开公开资料弹窗，卡片入口不触发进入详情。
+2. 资料弹窗：头像、昵称、身份/年级与专业或行业（MBTI 选填）、加入时间、简介、兴趣标签、共同兴趣提示（仅当有交集）、四项统计（发布行程/已完成/参与同行/游后分享）、隐私说明。
+3. 统计口径：发布行程 = 我发布且未取消；已完成 = 我发布的已结束；参与同行 = 我被接受的申请数；游后分享 = 我发布的体验数。
+4. 自我查看：发布者是当前用户时展示「这是你」。
+5. 隐私边界：不展示电话、证件、精确住址、学校门牌与实时位置；资料弹窗不提供举报入口。
+
+### Non-Goals
+
+- 举报用户功能（未来迭代再评估）；聊天页资料入口；申请人列表/体验作者等其他用户资料入口。
+- 资料编辑/维护与必填校验、头像上传、实名认证、信用体系。
+- 修改 `trip-plans` / `trip-companions` / `trip-experiences` 既有业务规则。
+
+### P1 产物
+
+`requirement-workspace/intents/REQ-008-publisher-profile.md`、`requirements/REQ-008-publisher-profile.md`、`openspec/changes/add-user-profiles/`。只读消费前三者数据；演示数据新增 1 个非学生用户与其行程。
+
 ## REQ-007: 灵感首页按目的地（省市级联）与日期筛选（capability `trip-plans` + `trip-experiences`）
 
 ### Background
@@ -125,7 +149,7 @@ RouteME 价值闭环的起点。验证核心假设：用户愿意发布可被他
 4. 已应用筛选摘要与清除入口；无结果提示“换个条件试试”且不清空条件。
 5. 「旅行体验」视图补齐目的地（代码）与日期区间筛选；体验卡不显示日期。
 6. 移除关键词搜索（前端、后端 `q` 参数、契约与测试全部删除）；A 的搜索场景由本 change 改写，refine 的搜索测试交 owner。
-7. 存量行程按地图城市库 16 城 + 别名 + 种子映射到代码，名称统一为标准名；**V10** 重建 `trip_plans` 表并给代码列加 NOT NULL；契约升 0.7.0。
+7. 存量行程按地图城市库 16 城 + 别名 + 种子映射到代码，名称统一为标准名；**V11** 加列 `NOT NULL DEFAULT ''` + 回填 + 索引（不重建表，兼容 SQLite/H2 外键；V10 已被 user-profile 占用）；契约升 0.7.0。
 
 ### Non-Goals
 

@@ -23,6 +23,10 @@ type Props = {
     inputId?: string;
     /** Marks the input invalid and points at the field's error text. */
     invalid?: boolean;
+    /** Hides the schematic map when the field has no meaningful geography yet. */
+    showMap?: boolean;
+    /** Gazetteer city used to scope the map and its candidates. */
+    city?: string;
   };
 
 const KIND_LABEL: Record<PlaceKind, string> = { city: '城市', poi: '地点' };
@@ -42,6 +46,8 @@ export function PlacePicker({
     ariaLabel = '搜索地图地点',
     inputId,
     invalid = false,
+    showMap = true,
+    city,
   }: Props) {
   const [query, setQuery] = useState('');
   const [message, setMessage] = useState<string | null>(null);
@@ -185,7 +191,15 @@ export function PlacePicker({
         </div>
       )}
 
-      <PlaceMap selected={value} onPick={add} kinds={kinds} activePlaceId={activePlaceId} />
+      {showMap && (
+        <PlaceMap
+          selected={value}
+          onPick={add}
+          kinds={kinds}
+          activePlaceId={activePlaceId}
+          city={city}
+        />
+      )}
 
       {message !== null ? (
         <Typography.Text type="warning" className="place-message">

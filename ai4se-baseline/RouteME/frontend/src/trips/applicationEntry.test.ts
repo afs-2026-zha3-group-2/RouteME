@@ -10,6 +10,7 @@ const publisher: DemoUser = {
   school: '研一 · 地理科学',
   bio: '周末基本在山里。',
   interests: [],
+  profile_complete: true,
 };
 
 function tripWith(status: TripStatus): Pick<TripDetail, 'status' | 'publisher'> {

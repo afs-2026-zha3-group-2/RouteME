@@ -1,6 +1,6 @@
 # P4 实现与验证记录 — refine-trip-application
 
-- **Change：** `refine-trip-application`（REQ-009 / S08 提交同行申请）｜ **阶段：** P4（Apply & verify / G2）
+- **Change：** `refine-trip-application`（REQ-010 / S08 提交同行申请）｜ **阶段：** P4（Apply & verify / G2）
 - **日期：** 2026-11-16 ｜ **记录人：** Jay（AO）
 - **分支：** `feature/refine-trip-application`（独立 worktree，基于 `origin/main@b93f45b`）
 - **前置：** P3 Pass（`p3-design.md`，G1 Pass：IO Wanye / SA Jacky）
@@ -96,6 +96,14 @@
 
 **阶段结论：P4 本地验证与质量检查 Pass；G2 未签署。** 下一步：按用户约定先 `git pull origin main` 再 push，开 PR 后生成 `phase=ci` 证据，并由 VL Neal 按 `/sdd:g2-decision-record` 记录 G2。
 
-## 9. P5 状态
+## 9. 合并 main 后复验（2026-11-16 14:1x–14:2x）
+
+- **合并：** `origin/main@5261cef`（behind 49）；冲突 5 个文件，已逐个解决：`TripDetailPage.tsx` 保留 main 的 `useProfile` / `openProfile` 与我们基于 `feedback` 的申请区；`registry.md` / `handoff.md` / `deep-dive.md` / `impact-brief.md` 取 main 版本后追加本 change 的 REQ-010 内容（本 change 章节在 `impact-brief.md` 为 §14）。
+- **编号裁决：** main 的 `add-user-profiles` 已占用 REQ-009，经用户裁决本 change 按「后到者顺延」改为 **REQ-010**；意图 / Ready 条目文件、openspec 工件与 `docs/sdd/` 记录已同步改号，`docs/ai4se-plugins/` 历史报告保留当时编号。
+- **依赖安装：** main 新增 `element-china-area-data`，合并后执行 `npm install`（新增 3 包）。
+- **复验结果：** 前端构建 Pass（1010.82 kB / CSS 47.64 kB）；`npm test` **15 文件 / 127 项**；后端 `mvnw -B -ntp test` **208 项**；隔离环境（后端 8090 + 独立 SQLite + Vite 5174）下 `npx playwright test` **40 passed**（`auth` / `companions` / `experiences` / `profiles` / `trips`，其中 `companions` 8/8，包含「opens the publisher profile from the trip detail page」以验证合并后的详情页）；`profile.spec.ts` 未在隔离环境运行（其 API 基址硬编码 `http://localhost:8080`，8080 被其他会话占用，运行会写入团队共享库），由 `add-user-profiles` owner 在其干净库验证覆盖。
+- **零 diff：** `openapi.yaml`、`backend/**`、`db/migration/**`、`docs/prototype/**` 相对 `origin/main` 无改动；本 change 相对 main 只改 `frontend/src/trips/**`、`i18n/tripMessages.ts`、`styles.css` 与 4 个 E2E spec。
+
+## 10. P5 状态
 
 未执行。归档时需：将 MODIFIED「提交与取消同行申请」合并进 `openspec/specs/trip-companions/spec.md`（保留基线 5 场景，8 场景齐全）、补 `summary.md` 记录 D2 对 S08 字面「按钮变为已申请，待处理」的口径、在 G3 复核合并结果并移入 `changes/archive/`。

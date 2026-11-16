@@ -67,3 +67,56 @@
 **实现边界（需在归档前复核）：** 数据底座（V10、全国省市字典、响应中的 `destination_code` / `province_*`）仍归 `add-destination-area-filters`。本 change 暂时携带一份**最小字典切片**（广东 14 城 + 香港 / 澳门二级区），后端 `AreaConstant` 与前端 `areas/areaCatalog.ts` 同步；该 change 落地时应把两处切片替换为完整字典，并让 `trip_plans` 持久化代码。
 
 **边界：** 本 change 不归档；归档顺序为 `add-destination-area-filters` → 本 change；G1 需在目的地修订完成后重评（已重评，见 `g1-decision.md`）。
+
+## 8. R2 任务（发布页体验，2026-11-16）
+
+### T7 [frontend] 目的地弹出层与全宽
+
+- [x] `Cascader` 增加 `getPopupContainer`（字段容器）与 `width: 100%`；保留 `aria-invalid` / 错误文案绑定。
+
+### T8 [frontend] 日期默认今天
+
+- [x] `tripForm.ts` 增加 `initialTripForm()`（本地日期）；`TripCreatePage` 用它作为初始值。
+- [x] `tripForm.test.ts` 断言默认起止日期为今天且可被用户覆盖。
+
+### T9 [frontend] 地图按目的地展示
+
+- [x] `PlacePicker` 增加 `showMap` / `city`；`PlaceMap` 改用 `xMidYMid meet` 并按该市包围盒缩放，加 `data-testid` 与 `data-city`。
+- [x] `placeCatalog` 增加 `placesInCity`；`areaCatalog` 增加 `mapCityForCode`（香港岛/九龙/新界→香港，澳门半岛/离岛→澳门）。
+- [x] 发布页未选目的地时不渲染地图，显示引导文案。
+
+### T10 [frontend] 布局与间距
+
+- [x] 表单拆「基本信息 / 路线 / 补充信息」三段；同组控件全宽、间距统一；窄屏日期单列。
+
+### T11 [e2e] R2 验收
+
+- [x] 发布用例补齐：面板在视口内、日期默认今天、地图先隐藏后按市展示、同组控件等宽。
+- [x] 回归：后端 `clean test`、前端 `npm test` / `npm run build`、发布 e2e。
+
+**验证：** `cd RouteME/e2e; npx playwright test tests/trips.spec.ts -g "publishes a trip|blocks publishing"`
+
+## 9. R3 任务（字典全国化后的返工，2026-11-16）
+
+### T12 [frontend] 收敛目的地 → 地名库城市映射
+
+- [x] 新增 `areas/gazetteerCity.ts`（读共享 `area/areaOptions`，港澳二级区归并到「香港」「澳门」）。
+- [x] 删除 `areas/areaCatalog.ts` 与 `areaCatalog.test.ts`（16 城重复字典与无调用方导出）。
+- [x] `TripCreatePage` 改用 `gazetteerCityForCode`。
+
+### T13 [frontend] 未覆盖城市的提示
+
+- [x] `tripMessages.waypointCityUncovered`：说明该城市暂无离线点位、途经点只支持已有地图的城市。
+- [x] 未选目的地 → 「先选目的地…」；已选但未覆盖 → 覆盖说明；两种情况都不渲染地图。
+
+### T14 [backend] 删除重复字典
+
+- [x] 删除 `constant/AreaConstant.java`、`pojo/AreaCity.java`。
+- [x] 移除 `TripPlanServiceImpl` 中 `AreaConstant` / `AreaCity` 两条未使用 import。
+
+### T15 [e2e] R3 断言与回归
+
+- [x] 发布用例新增：选「北京市 / 市辖区」后无地图、提示正确；珠海仍显示地图。
+- [x] 回归：后端 `clean test`、前端 `npm test` / `npm run build`、发布 e2e。
+
+**验证：** `cd RouteME/backend; .\mvnw.cmd -B -o clean test`、`cd RouteME/frontend; npm test`、`cd RouteME/e2e; npx playwright test tests/trips.spec.ts -g "publishes a trip|blocks publishing"`

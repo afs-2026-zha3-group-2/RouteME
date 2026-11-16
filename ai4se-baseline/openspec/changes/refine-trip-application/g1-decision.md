@@ -1,7 +1,7 @@
 # G1 decision — refine-trip-application
 
 - **Gate:** G1（Align）
-- **Change:** `refine-trip-application`（`trip-companions` MODIFIED，REQ-009 / S08）
+- **Change:** `refine-trip-application`（`trip-companions` MODIFIED，REQ-010 / S08）
 - **Timestamp:** 2026-11-16T12:10+0800
 - **Recorded by:** Qoder（AI agent），按用户 2026-11-16 提供的团队名单与「帮我进行签署」指令记录
 
@@ -15,10 +15,10 @@
 | AC / DoV review | [`dov-ac-review.md`](dov-ac-review.md) | AC 4/4 Pass；DoV 5/5 Pass；基线保留 5/5；无阻塞 |
 | Consistency lint | [`consistency-lint.md`](consistency-lint.md) | Pass；BLOCKER 0 / WARNING 0 / SUGGESTION 4 / N/A 5 |
 | P2 quality report | `docs/ai4se-plugins/20261116-115630-quality-checklist-report.md` | P2 Overall Pass（P2-3 因 G1 未签署 Skipped；P2-4 Pass） |
-| Requirements | `requirement-workspace/requirements/REQ-009-trip-application-entry.md` | §4 8 场景；§8 blocking OQ = 0；DoR BLOCKER = 0 |
-| Intent | `requirement-workspace/intents/REQ-009-trip-application-entry.md` | 候选能力 MODIFIED；Discovery Decision `Go` |
+| Requirements | `requirement-workspace/requirements/REQ-010-trip-application-entry.md` | §4 8 场景；§8 blocking OQ = 0；DoR BLOCKER = 0 |
+| Intent | `requirement-workspace/intents/REQ-010-trip-application-entry.md` | 候选能力 MODIFIED；Discovery Decision `Go` |
 | Impact brief | `requirement-workspace/impact-brief.md` §13 | as-is 盘点、delta、blast radius、风险与拆分边界 |
-| Deep-dive | `requirement-workspace/deep-dive.md`「REQ-009 增补」 | ①–④ 四表，A0 ⑨–⑫ 通过 |
+| Deep-dive | `requirement-workspace/deep-dive.md`「REQ-010 增补」 | ①–④ 四表，A0 ⑨–⑫ 通过 |
 | Baseline change | `openspec/changes/archive/2026-11-15-add-trip-companions/` | 已归档；申请、状态机、后端拒绝与测试已存在，本 change 只补入口与展示 |
 | Implementation evidence | `RouteME/frontend/src/trips/TripDetailPage.tsx`、`tripMessages.ts`、`api.ts`；`ApplicationServiceImpl.apply`；`ApplicationServiceTest` | 申请弹窗与错误码直出为现状；后端本人 / 重复 / 满员 / 结束拒绝已实现并测试 |
 | Contract evidence | `RouteME/openapi.yaml` 0.7.0 | `message` nullable ≤120；`DUPLICATE_APPLICATION` / `TRIP_NOT_OPEN` 已定义；无需改契约 |
@@ -28,10 +28,10 @@
 
 | 维度 | 结论 | 证据 |
 |---|---|---|
-| Scope | 与 REQ-009 一致：详情页内联申请区、提交进入待处理、本人无入口、重复提示、满员 / 结束拒绝、撤回恢复、页面停留期间状态变化；无自动加入、无必填说明、无卡片入口、无通知、无后端 / 契约 / 迁移变更 | `proposal.md` §范围；`dov-ac-review.md` DoV-1；`consistency-lint.md` p2-1 |
+| Scope | 与 REQ-010 一致：详情页内联申请区、提交进入待处理、本人无入口、重复提示、满员 / 结束拒绝、撤回恢复、页面停留期间状态变化；无自动加入、无必填说明、无卡片入口、无通知、无后端 / 契约 / 迁移变更 | `proposal.md` §范围；`dov-ac-review.md` DoV-1；`consistency-lint.md` p2-1 |
 | Ambiguity | 无未决歧义：MODIFIED 替换既有「提交与取消同行申请」并保留 5 个基线场景；说明选填；待处理态按原型；重复文案「已申请，请等待回应」；入口只在详情页；满员时两种 409 错误码都可能出现 | `dov-ac-review.md` §规格解释裁决 1–6 |
-| Conflict | 无阻塞冲突。S08 字面「提交后按钮变为已申请，待处理」被用户 2026-11-16 裁决 D2 覆盖为原型的等待提示 + 撤回；原型 mock 文案「已申请，等待回应」与用户 AC「已申请，请等待回应」相差一个「请」字，已按用户 AC 收敛 | `requirement-workspace/requirements/REQ-009-trip-application-entry.md` §9；`dov-ac-review.md` §规格解释裁决 2–3 |
-| Traceability | REQ-009 §4 八条场景 8/8 有 Delta 落点；Living Spec 5 个既有场景 5/5 保留；proposal In scope 8 项均有 Scenario 覆盖 | `dov-ac-review.md` §Requirement mapping / §Living Spec 基线保留 / §Proposal → Delta 覆盖 |
+| Conflict | 无阻塞冲突。S08 字面「提交后按钮变为已申请，待处理」被用户 2026-11-16 裁决 D2 覆盖为原型的等待提示 + 撤回；原型 mock 文案「已申请，等待回应」与用户 AC「已申请，请等待回应」相差一个「请」字，已按用户 AC 收敛 | `requirement-workspace/requirements/REQ-010-trip-application-entry.md` §9；`dov-ac-review.md` §规格解释裁决 2–3 |
+| Traceability | REQ-010 §4 八条场景 8/8 有 Delta 落点；Living Spec 5 个既有场景 5/5 保留；proposal In scope 8 项均有 Scenario 覆盖 | `dov-ac-review.md` §Requirement mapping / §Living Spec 基线保留 / §Proposal → Delta 覆盖 |
 | Residual risk | 页面停留期间前端 `canApply` 为旧快照；E2E 选择器从弹窗改为内联；重复与满员错误码优先级；MODIFIED 合并需人工核对；宿主规则投影与权威区存在预存漂移（`prototype-ui-alignment` / `rule-precedence` 无锚点，本 change 已避免 `@rule:` 断链） | `dov-ac-review.md` §残余风险；`consistency-lint.md` L-01–L-04 |
 
 ## Decision

@@ -16,6 +16,7 @@ This file owns the vocabulary; `shared/` only links back here, so terms stay uni
 | Capacity | 计划人数 | 含发布者，2–12 |
 | Joined count | 已加入人数 | 含发布者；唯一写入方是 `trip-plans`，REQ-003 通过服务方法维护 |
 | Interest tags | 兴趣标签 | 最多 5 个，来自固定集合（摄影、美食、海边…） |
+| Destination | 目的地 | 6 位国标行政区划码为权威（如珠海 `440400`）；名称由后端按字典派生标准名；直辖市用省级名，港澳台“省级简称 · 二级名”；必须选到市，不接受自由输入 |
 | Demo user | 演示身份 | 3 个预设账户；`X-User-Id` 指定，无注册与鉴权 |
 
 不变量：行程归 `trip-plans`；结束行程后不再出现在默认列表；状态不是独立写入的列；同行申请与「参加过」判定属 REQ-003（`trip-companions`），游后体验属 REQ-004。
@@ -27,7 +28,7 @@ This file owns the vocabulary; `shared/` only links back here, so terms stay uni
 | Companion application | 同行申请 | 用户对他人招募中行程的申请，状态见下 |
 | Application status | 申请状态 | `pending` 待处理 → `accepted` 已接受 / `rejected` 已拒绝 / `cancelled` 已取消；`rejected`/`cancelled` 为终态 |
 | Companion | 同行者 | 发布者 + 该行程 `ACCEPTED` 申请者；没有独立 companions 表 |
-| Match | 匹配度 | 目的地 50、出发日期相同 30/相差一天 20、共同兴趣每项 10 上限 20，总分 ≤100，带可读理由与百分比 |
+| Match | 匹配度 | 目的地代码相同 50、出发日期相同 30/相差一天 20、共同兴趣每项 10 上限 20，总分 ≤100，带可读理由与百分比 |
 | Chat message | 聊天消息 | 行程内一对一文字消息，仅已匹配双方可见，≤500 字 |
 | Chat partners | 聊天对象 | 我参与过的行程中与我互发消息的人，按最后消息时间倒序 |
 | My trips | 我的旅行 | 我发布的 / 我申请的 / 已匹配 / 已完成四组，附待处理申请数 |
