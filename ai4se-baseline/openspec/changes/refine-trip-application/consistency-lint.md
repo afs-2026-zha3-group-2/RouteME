@@ -85,5 +85,5 @@
 
 ## Next
 
-- `phase=p2` → `/sdd:g1-decision-record`（需 IO Wanye + SA Jacky / Karena 具名签署）。
+- `phase=p2` → `/sdd:g1-decision-record`（需 IO WAYNE + SA Jacky / Karena 具名签署）。
 - 4 条 SUGGESTION 不阻塞 G1，分别落入 P3 `tasks.md` / P4 测试矩阵 / G1 / rules-govern。

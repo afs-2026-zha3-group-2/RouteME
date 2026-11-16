@@ -15,7 +15,7 @@
 | Delta Spec | [`specs/trip-companions/spec.md`](../../../openspec/changes/refine-trip-application/specs/trip-companions/spec.md) | MODIFIED「提交与取消同行申请」，1 Requirement / 8 Scenario |
 | AC / DoV 复核 | [`dov-ac-review.md`](../../../openspec/changes/refine-trip-application/dov-ac-review.md) | AC 4/4 Pass、DoV 5/5 Pass、REQ-010 映射 8/8、Living Spec 基线保留 5/5 |
 | 一致性检查 | [`consistency-lint.md`](../../../openspec/changes/refine-trip-application/consistency-lint.md) | Pass；BLOCKER 0 / WARNING 0 / SUGGESTION 4 / N/A 5 |
-| G1 决策 | [`g1-decision.md`](../../../openspec/changes/refine-trip-application/g1-decision.md) | Pass；IO Wanye / SA Jacky；条件 8 项（含 owner 与时机） |
+| G1 决策 | [`g1-decision.md`](../../../openspec/changes/refine-trip-application/g1-decision.md) | Pass；IO WAYNE / SA Jacky；条件 8 项（含 owner 与时机） |
 | P2 质量报告 | [`docs/ai4se-plugins/20261116-115630-quality-checklist-report.md`](../../ai4se-plugins/20261116-115630-quality-checklist-report.md) | P2-1/P2-2/P2-3/P2-4 Pass；Overall Pass |
 
 ## 3. 关键裁决
@@ -38,7 +38,7 @@
 
 | 角色 | 姓名 | 确认内容 | 日期 |
 |---|---|---|---|
-| IO | Wanye | 需求来源与范围覆盖（S08 / REQ-010） | 2026-11-16 |
+| IO | WAYNE | 需求来源与范围覆盖（S08 / REQ-010） | 2026-11-16 |
 | SA | Jacky | Delta 与 Living Spec 基线保留、场景可验证 | 2026-11-16 |
 | AO | Jay | 承接 P3–P4 | 2026-11-16 |
 | VL | Neal | P4 独立验证（未到） | — |

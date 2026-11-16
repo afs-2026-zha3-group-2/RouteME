@@ -3,7 +3,7 @@
 - **Gate:** G1（Align）
 - **Change:** `refine-safety-report`（`trip-companions` MODIFIED，REQ-012 / S14）
 - **Timestamp:** 2026-11-16T15:58+0800
-- **Recorded by:** Qoder（AI agent），按用户在 2026-11-16 会话中给出的签署人姓名（IO=Wanye、SA=Karena）与决策结论（Pass）记录
+- **Recorded by:** Qoder（AI agent），按用户在 2026-11-16 会话中给出的签署人姓名（IO=WAYNE、SA=Karena）与决策结论（Pass）记录
 
 ## Inputs
 
@@ -59,11 +59,11 @@
 
 | 角色 | 姓名 | 确认内容 | 日期 |
 |---|---|---|---|
-| IO | Wanye | 需求来源与跨能力影响：`trip-companions`（MODIFIED）替换已归档能力的相应 Requirement，`trip-plans` 仅只读 `meeting_area` | 2026-11-16 |
+| IO | WAYNE | 需求来源与跨能力影响：`trip-companions`（MODIFIED）替换已归档能力的相应 Requirement，`trip-plans` 仅只读 `meeting_area` | 2026-11-16 |
 | SA | Karena | 规格与验收口径：三条安全提示、两处回退字面量、举报入口边界、回执文案、隐私红线与无障碍要求 | 2026-11-16 |
 | AO（当前开发） | Jacky | 承接 P3–P4 实现与本地验证；Follow-ups 按上表收口 | 2026-11-16 |
 
-签署来源：用户在 2026-11-16 会话中就「G1 签署人」明确回答 **IO=Wanye、SA=Karena**，并就决策结论选择 **Pass**。本次 change 的 AO 为 Jacky（P1 记录人），故 SA 由 Karena 签署，避免 AO 自签 SA。VL（Neal）在 G2 / P4 独立验证签署，SM（Lewis）在 P1 范围确认；两者不属 G1 签署人。
+签署来源：用户在 2026-11-16 会话中就「G1 签署人」明确回答 **IO=WAYNE、SA=Karena**，并就决策结论选择 **Pass**。本次 change 的 AO 为 Jacky（P1 记录人），故 SA 由 Karena 签署，避免 AO 自签 SA。VL（Neal）在 G2 / P4 独立验证签署，SM（Lewis）在 P1 范围确认；两者不属 G1 签署人。
 
 ## Next
 

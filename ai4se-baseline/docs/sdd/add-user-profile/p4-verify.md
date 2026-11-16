@@ -77,7 +77,7 @@ T1 的原始 red 日志未单独留存；上表为联调阶段留存并修复的
 | AO | Jay | 实现与 P3 任务一致；验证命令可复现；承担遗留项 | 2026-11-16 |
 | VL | Neal | **待签**：独立复核本地验证与 CI，确认 24 + 6 场景有对应断言 | — |
 | SA | Jacky、Karena | **待签**：实现未越出 Delta Spec；具名追认双 capability 例外（`user-profile` ADDED + `user-auth` MODIFIED） | — |
-| IO | Wanye | **待签**：收到残余风险（远端 CI 未观测、E2E 不入 CI、旧分支冲突） | — |
+| IO | WAYNE | **待签**：收到残余风险（远端 CI 未观测、E2E 不入 CI、旧分支冲突） | — |
 | SM | Lewis | **待签**：G2 结论与交付范围 | — |
 
 **阶段结论：Pending（G2 待 VL 签署）**

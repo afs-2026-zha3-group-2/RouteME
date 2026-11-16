@@ -13,7 +13,7 @@
 |----------|-----------|--------|----------|
 | P2-1 | yes | Pass | `openspec/changes/add-user-logout/specs/user-auth/spec.md`（1 Requirement / 10 Scenario；MODIFIED；`openspec validate add-user-logout --strict` = valid） |
 | P2-2 | yes | Pass | `openspec/changes/add-user-logout/dov-ac-review.md`（AC 4/4 Pass；DoV 5/5 Pass；Living Spec 基线场景保留 3/3；REQ-006 九场景 9/9 映射；无阻塞） |
-| P2-3 | yes* | Pass | `openspec/changes/add-user-logout/g1-decision.md`（Pass；IO=Wanye，SA=Jacky/Karena；Conditions 7 项含 owner） |
+| P2-3 | yes* | Pass | `openspec/changes/add-user-logout/g1-decision.md`（Pass；IO=WAYNE，SA=Jacky/Karena；Conditions 7 项含 owner） |
 | P2-4 | no | Pass | `openspec/changes/add-user-logout/consistency-lint.md`（phase=p2；Pass；BLOCKER 0 / WARNING 0 / SUGGESTION 3；CLI 校验通过） |
 
 **Stage Overall:** Pass（4/4 项 Pass，含可选项 P2-4）

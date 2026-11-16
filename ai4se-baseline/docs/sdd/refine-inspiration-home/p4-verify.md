@@ -70,7 +70,7 @@
 | AO | Jay | 实现与 P3 任务一致；验证命令可复现；承担遗留项 | 2026-11-16 |
 | VL | Neal | 独立复核本地验证与 CI/CD 证据；确认 15 个场景有对应断言；G2 Pass | 2026-11-16 |
 | SA | Jacky、Karena | 实现未越出两份 Delta；双 capability 例外按 G1 记录继续跟踪 | 2026-11-16 |
-| IO | Wanye | 收到残余风险（L-01 双 capability、L-02 已取消状态、E2E 卫生） | 2026-11-16 |
+| IO | WAYNE | 收到残余风险（L-01 双 capability、L-02 已取消状态、E2E 卫生） | 2026-11-16 |
 | SM | Lewis | G2 Pass，S03 可交付；归档另行发起 | 2026-11-16 |
 
 **阶段结论：Pass（G2）**

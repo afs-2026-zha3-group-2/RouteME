@@ -72,7 +72,7 @@
 |---|---|---|---|
 | VL | Neal | **待签**：独立复核验证与 CI，填写 Decision | — |
 | AO | Jay | 实现与 P3 任务一致；验证可复现；承担遗留项 | 2026-11-16 |
-| IO | Wanye | **待签**：收到残余风险 | — |
+| IO | WAYNE | **待签**：收到残余风险 | — |
 | SA | Jacky、Karena | **待签**：未越出 Delta Spec；追认双 capability 例外 | — |
 | SM | Lewis | **待签**：G2 结论与交付范围 | — |
 

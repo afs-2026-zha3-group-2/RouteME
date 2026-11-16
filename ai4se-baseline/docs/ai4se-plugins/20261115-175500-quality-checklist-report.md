@@ -13,7 +13,7 @@
 |----------|-----------|--------|----------|
 | P2-1 Delta Spec artifacts exist | yes | Pass | `openspec/changes/add-trip-experiences/specs/trip-experiences/spec.md`（6 Requirement / 14 Scenario；`openspec validate --strict` valid） |
 | P2-2 AC/DoV review table exists | yes | Pass | `openspec/changes/add-trip-experiences/dov-ac-review.md`（AC 5/5 Pass；DoV 4 Pass + 1 Partial） |
-| P2-3 G1 decision record | yes* | Pass | `openspec/changes/add-trip-experiences/g1-decision.md`（Pass；IO=Wanye，SA=Jacky/Karena） |
+| P2-3 G1 decision record | yes* | Pass | `openspec/changes/add-trip-experiences/g1-decision.md`（Pass；IO=WAYNE，SA=Jacky/Karena） |
 | P2-4 Consistency lint | no | Skipped | 未运行 `/sdd:consistency-lint`；非必需 |
 
 **Stage Overall:** Pass（P2-1…P2-3 全 Pass；P2-4 可选未运行）
