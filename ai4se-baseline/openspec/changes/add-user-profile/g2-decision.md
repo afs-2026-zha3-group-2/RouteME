@@ -15,8 +15,9 @@
 | Implementation commit | `2423c01`（实现）→ `a95254c`（验证记录，已推送）→ `3c8355b`（G2 前修复：其他职业自填，已推送）→ `8de3351`（生日 DatePicker，已推送）→ `db8211b`（合并 main 后的测试计数） | 已合入 `main`；`3c8355b` 由 `build-3c8355b` tag 复核，`8de3351` / `db8211b` 由 `build-9fd5764` 复核 |
 | Pipeline CI（required） | [`ci-report.md`](ci-report.md) | 本地等价 Pass；远端 `e54f273` / `3c8355b` 由 `build-e54f273` / `build-3c8355b` tag 推断 success；当前绿色 tip `9fd5764` 由 `build-9fd5764` 佐证（含 `8de3351` / `db8211b`，`9f11bde` 修正 dayjs 的 lockfile 解析源） |
 | Pipeline CD | release `build-e54f273`、`build-3c8355b`、`build-9fd5764`（中间 `build-022659c`） | Success（`cd.yml` 仅在 CI success 时发布） |
-| Delta Spec | [`specs/user-profile/spec.md`](specs/user-profile/spec.md)、[`specs/user-auth/spec.md`](specs/user-auth/spec.md) | 7 Requirement / 26 Scenario + 1 Requirement / 6 Scenario |
-| ATDD / Design / Tasks | [`atdd-design.md`](atdd-design.md)、[`design.md`](design.md)、[`tasks.md`](tasks.md) | E1–E26 / A1–A6 有落点；D1–D12；T1–T8 |
+| Delta Spec | [`specs/user-profile/spec.md`](specs/user-profile/spec.md)、[`specs/user-auth/spec.md`](specs/user-auth/spec.md)、[`specs/design-system/spec.md`](specs/design-system/spec.md) | 7 Requirement / 26 Scenario + 1 Requirement / 6 Scenario + MODIFIED「应用外壳与导航」（5 Scenario，保留原 4 个） |
+| ATDD / Design / Tasks | [`atdd-design.md`](atdd-design.md)、[`design.md`](design.md)、[`tasks.md`](tasks.md) | E1–E26 / A1–A6 有落点；D1–D12；T1–T9 |
+| Shell delta（VL 追加） | `294f487`（侧栏分组 + 资料入口，已推送） | T9 完成；typecheck / 137 前端 / 构建 / 截图核对通过 |
 
 ## Dimension results
 
@@ -81,4 +82,5 @@
 
 - VL 签署 Decision 后，P4 方可关闭；P5 归档按用户指示另行发起。
 - CI 证据：本地等价全绿 + 远端 `build-e54f273`（含 `a95254c`；中间 `build-022659c`）。
+- 侧栏 delta 的 tip `294f487` 尚无对应 `build-*` tag；签署前需按 tag 复核（或由 VL 接受 local-equivalent）。
 - **不要**在 VL 签署前把本文件当作 Pass 证据引用。
