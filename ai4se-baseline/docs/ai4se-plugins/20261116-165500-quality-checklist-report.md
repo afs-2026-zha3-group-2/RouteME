@@ -15,7 +15,7 @@
 |----------|-----------|--------|----------|
 | P2-1 | yes | Pass | `openspec/changes/refine-experience-share/specs/trip-experiences/spec.md`（MODIFIED 3 Requirement / 12 Scenario）；`openspec validate refine-experience-share --strict` → valid；`--deltas-only` → `deltaCount: 3` |
 | P2-2 | yes | Pass | `openspec/changes/refine-experience-share/dov-ac-review.md`：AC 4/4、DoV 5/5、REQ-004 §4 8/8、Living Spec 基线 10/10 |
-| P2-3 | yes | Pass | `openspec/changes/refine-experience-share/g1-decision.md`：Decision Pass，IO Wanye / SA Wanye / AO Jay，2026-11-16T16:35+0800 |
+| P2-3 | yes | Pass | `openspec/changes/refine-experience-share/g1-decision.md`：Decision Pass，IO WAYNE / SA WAYNE / AO Jay，2026-11-16T16:35+0800 |
 | P2-4 | no | Pass | `openspec/changes/refine-experience-share/consistency-lint.md`：BLOCKER 0 / WARNING 0 / SUGGESTION 4（L-01、L-02 已收口）；L-03 / L-04 留 P3 |
 
 | **Stage Overall** | — | **Pass** | required-only aggregation |
@@ -30,10 +30,10 @@
 
 | 工件 | 报告 | 结论 | 批准 |
 |---|---|---|---|
-| `proposal.md`（第 1 次） | `docs/reviews/20261116-refine-experience-share-proposal-review.md` | Pass（4 SUGGESTION） | Wanye · 2026-11-16T16:29 |
-| `specs/trip-experiences/spec.md`（第 1 次） | `docs/reviews/20261116-refine-experience-share-spec-review.md` | Pass（2 WARNING / 2 SUGGESTION） | Wanye · 2026-11-16T16:29 |
-| `proposal.md`（重评） | `docs/reviews/20261116-refine-experience-share-proposal-review-2.md` | Pass（2 SUGGESTION） | Wanye · 2026-11-16T16:35 |
-| `specs/trip-experiences/spec.md`（重评） | `docs/reviews/20261116-refine-experience-share-spec-review-2.md` | Pass（3 SUGGESTION） | Wanye · 2026-11-16T16:35 |
+| `proposal.md`（第 1 次） | `docs/reviews/20261116-refine-experience-share-proposal-review.md` | Pass（4 SUGGESTION） | WAYNE · 2026-11-16T16:29 |
+| `specs/trip-experiences/spec.md`（第 1 次） | `docs/reviews/20261116-refine-experience-share-spec-review.md` | Pass（2 WARNING / 2 SUGGESTION） | WAYNE · 2026-11-16T16:29 |
+| `proposal.md`（重评） | `docs/reviews/20261116-refine-experience-share-proposal-review-2.md` | Pass（2 SUGGESTION） | WAYNE · 2026-11-16T16:35 |
+| `specs/trip-experiences/spec.md`（重评） | `docs/reviews/20261116-refine-experience-share-spec-review-2.md` | Pass（3 SUGGESTION） | WAYNE · 2026-11-16T16:35 |
 
 ## Gaps
 

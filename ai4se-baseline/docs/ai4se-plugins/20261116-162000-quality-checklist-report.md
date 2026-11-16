@@ -32,8 +32,8 @@
 
 | 工件 | 报告 | 结论 | 批准 |
 |---|---|---|---|
-| `proposal.md` | `docs/reviews/20261116-refine-experience-share-proposal-review.md` | Pass（4 SUGGESTION / 0 WARNING / 0 BLOCKER） | Wanye · 2026-11-16 |
-| `specs/trip-experiences/spec.md` | `docs/reviews/20261116-refine-experience-share-spec-review.md` | Pass（2 WARNING / 2 SUGGESTION / 0 BLOCKER） | Wanye · 2026-11-16 |
+| `proposal.md` | `docs/reviews/20261116-refine-experience-share-proposal-review.md` | Pass（4 SUGGESTION / 0 WARNING / 0 BLOCKER） | WAYNE · 2026-11-16 |
+| `specs/trip-experiences/spec.md` | `docs/reviews/20261116-refine-experience-share-spec-review.md` | Pass（2 WARNING / 2 SUGGESTION / 0 BLOCKER） | WAYNE · 2026-11-16 |
 
 ## Gaps
 

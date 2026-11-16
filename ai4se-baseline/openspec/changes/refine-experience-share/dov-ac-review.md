@@ -22,7 +22,7 @@
 |---|---|---|---|
 | DoV-1 Scope matches the change proposal | Pass | proposal「In scope」6 条 ↔ Delta 12 场景；「Out of scope」的图片上传、双栏布局、S17 预填、后端 / 契约 / 迁移在 Delta 中无对应场景 | 无静默扩张：`trip-plans` 仍只读 |
 | DoV-2 Ambiguities listed or resolved | Pass | 「同行人数」口径、`experienceGoesTo` / `experiencePrivacy` 是否数组化、拒绝职责边界均已在 proposal「决策」与评审建议中给出方向，P3 收敛为设计条目 | 无阻塞歧义 |
-| DoV-3 Role concerns noted (IO / SA) for residual risk | Pass | 见「Residual risk」；G1 需 IO + SA 具名签署（本次均为 Wanye） | IO：`trip-experiences` MODIFIED 与已归档 `add-trip-experiences` 的替换边界；SA：展示口径与验收措辞 |
+| DoV-3 Role concerns noted (IO / SA) for residual risk | Pass | 见「Residual risk」；G1 需 IO + SA 具名签署（本次均为 WAYNE） | IO：`trip-experiences` MODIFIED 与已归档 `add-trip-experiences` 的替换边界；SA：展示口径与验收措辞 |
 | DoV-4 No business implementation claimed as done | Pass | Delta 全为 SHALL / MUST 句式；本 change 未改生产代码（`git status` 只有文档与 openspec 工件） | 实现在 P4 |
 | DoV-5 Requirements trace to proposal / approved requirements | Pass | 见下两表：REQ-004 §4 8/8 有落点；Living Spec 3 条被修改的 Requirement 既有场景名 10/10 保留 | 无孤儿场景 |
 

@@ -42,8 +42,8 @@
 |---|---|---|---|
 | AO | Jay | 承担 P2–P4 实现与阶段记录 | 2026-11-16 |
 | SM | 待签署 | P1 范围与排期（单 change、3 点、迭代 3） | 待签署 |
-| IO | Wanye | 需求来源与跨能力影响（`trip-experiences` MODIFIED + ADDED，`trip-plans` 只读） | 待签署 |
-| SA | Wanye | 规格与验收口径（hero、去向三条、边界两条、两种不可用提示、内置封面） | 待签署 |
+| IO | WAYNE | 需求来源与跨能力影响（`trip-experiences` MODIFIED + ADDED，`trip-plans` 只读） | 待签署 |
+| SA | WAYNE | 规格与验收口径（hero、去向三条、边界两条、两种不可用提示、内置封面） | 待签署 |
 
 **阶段结论：Pass（required 4/4；非 Gate 决策）。** 下一步 P2：AC/DoV 复核 → 一致性检查 → G1。
 

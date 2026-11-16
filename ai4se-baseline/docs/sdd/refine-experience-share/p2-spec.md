@@ -15,8 +15,8 @@
 | Delta Spec | [`specs/trip-experiences/spec.md`](../../../openspec/changes/refine-experience-share/specs/trip-experiences/spec.md) | MODIFIED 3 Requirement / 12 Scenario |
 | AC / DoV 复核 | [`dov-ac-review.md`](../../../openspec/changes/refine-experience-share/dov-ac-review.md) | AC 4/4 Pass、DoV 5/5 Pass、REQ-004 §4 8/8、Living Spec 基线 10/10 |
 | 一致性检查 | [`consistency-lint.md`](../../../openspec/changes/refine-experience-share/consistency-lint.md) | Pass；BLOCKER 0 / WARNING 0 / SUGGESTION 4（2 条当场收口） / N/A 6 |
-| G1 决策 | [`g1-decision.md`](../../../openspec/changes/refine-experience-share/g1-decision.md) | Pass；IO Wanye / SA Wanye / AO Jay；无整改条件；7 项非阻断 follow-up |
-| 重评报告 | [`proposal-review-2`](../../reviews/20261116-refine-experience-share-proposal-review-2.md)、[`spec-review-2`](../../reviews/20261116-refine-experience-share-spec-review-2.md) | 均 Pass；Wanye 批准 2026-11-16T16:35+08:00 |
+| G1 决策 | [`g1-decision.md`](../../../openspec/changes/refine-experience-share/g1-decision.md) | Pass；IO WAYNE / SA WAYNE / AO Jay；无整改条件；7 项非阻断 follow-up |
+| 重评报告 | [`proposal-review-2`](../../reviews/20261116-refine-experience-share-proposal-review-2.md)、[`spec-review-2`](../../reviews/20261116-refine-experience-share-spec-review-2.md) | 均 Pass；WAYNE 批准 2026-11-16T16:35+08:00 |
 | P2 质量报告 | [`20261116-165500-quality-checklist-report.md`](../../ai4se-plugins/20261116-165500-quality-checklist-report.md) | P2 required 3/3 Pass；P2-4 Pass；Overall Pass |
 
 ## 3. 关键裁决与修订
@@ -39,13 +39,13 @@
 
 | 角色 | 姓名 | 确认内容 | 日期 |
 |---|---|---|---|
-| IO | Wanye | 需求来源与跨能力影响：`trip-experiences`（MODIFIED）替换已归档能力的 3 条 Requirement；`trip-plans` 只读 | 2026-11-16 |
-| SA | Wanye | 规格与验收口径：hero、去向三条、边界两条、两种不可用提示、内置封面、隐私红线 | 2026-11-16 |
+| IO | WAYNE | 需求来源与跨能力影响：`trip-experiences`（MODIFIED）替换已归档能力的 3 条 Requirement；`trip-plans` 只读 | 2026-11-16 |
+| SA | WAYNE | 规格与验收口径：hero、去向三条、边界两条、两种不可用提示、内置封面、隐私红线 | 2026-11-16 |
 | AO | Jay | 承接 P3–P4 实现与 follow-up 收口 | 2026-11-16 |
 | VL | Neal | P4 独立验证（未到） | — |
 | SM | 待签署 | P1 范围与排期确认 | 待签署 |
 
-**G1 结论：Pass**（`g1-decision.md`，2026-11-16T16:35+0800）。签署来源：用户在 2026-11-16 会话中给出 IO=Wanye、SA=Wanye 并选定 Pass。
+**G1 结论：Pass**（`g1-decision.md`，2026-11-16T16:35+0800）。签署来源：用户在 2026-11-16 会话中给出 IO=WAYNE、SA=WAYNE 并选定 Pass。
 
 ## 6. G1 后续项（非条件，不阻断）
 
@@ -54,7 +54,7 @@
 | hero「同行人数」固定为 `trip.participants.length` | Jay（AO） | P3 `design.md` |
 | 「体验条数不变」的断言载体 | Jay（AO） | P3 `atdd-design.md` / P4 |
 | 未结束提示状态文案取 `statusLabel()` | Jay（AO） | P3 / P4 |
-| 「分享页面提示隐私边界」名称保留、内容扩充，写入归档说明 | Jay（AO）+ Wanye（SA） | P5 / G3 |
+| 「分享页面提示隐私边界」名称保留、内容扩充，写入归档说明 | Jay（AO）+ WAYNE（SA） | P5 / G3 |
 | 同步 E2E `keeps experience entry points honest` 用例 | Jay（AO） | P4 同批提交 |
 | 后端 `ExperienceControllerTest` / `ExperienceServiceTest` 回归保留 | Jay（AO） | P4 验证 |
 | 分享页 1440 / 768 / 390 × 浅 / 深色 视觉走查与截图 | Jay（AO） | P4 |

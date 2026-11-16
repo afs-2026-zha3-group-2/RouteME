@@ -2,7 +2,7 @@
 
 - **Change：** `refine-experience-share`（`trip-experiences` MODIFIED，REQ-004 / S16 / issue #18）
 - **阶段：** P3（Design）｜ **日期：** 2026-11-16 ｜ **作者：** Jay（AO）
-- **G1：** Pass（`g1-decision.md`，IO / SA = Wanye）
+- **G1：** Pass（`g1-decision.md`，IO / SA = WAYNE）
 - **规则：** `@rule:web-coding-style`（组件写法 / 样式 / 可访问性 / 文案与国际化）、`@rule:web-testing`、`@rule:pii-scrubbing`、`@rule:spec-first`
 - **视觉基准：** `docs/prototype/ui.js` `share()` / `expCard()`；`docs/prototype/styles.css`（`.share-hero` / `.safety-list` / `.exp-card`）
 
