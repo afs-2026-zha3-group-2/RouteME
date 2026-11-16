@@ -2,10 +2,13 @@
 
 - **Gate：** G2（Verify）
 - **Change：** `add-user-auth`（`user-auth` ADDED + `trip-plans` MODIFIED；支撑 change，无独立 REQ 行）
-- **Timestamp：** 2026-11-16T14:01+0800（**补记**）
-- **Recorded by：** opencode（AI agent），按 Jay（AO / current developer）2026-11-16「把归档前漏掉的 G1/G2 补回来」指令记录
+- **Timestamp：** 2026-11-16T14:01+0800（补记）
+- **Status：** **Pending** — 补记已就位，尚无具名签署人；结论留空待签
+- **Recorded by：** opencode（AI agent），按用户 2026-11-16「把归档前漏掉的 G1/G2 补回来」指令整理，未代填开发者姓名
 
-> **补记说明：** 本 change 于 2026-11-16 归档（提交 `229411a`）时未产出 G1 / G2 决策记录，`git log --all` 确认这两个文件从未存在。本文件与 [`g1-decision.md`](g1-decision.md) 为依据归档产物、当日本地验证报告与 GitHub Actions 运行记录**追溯补记**，不是当时会议的原始纪要。**CI / CD 证据为本次补记时实际查询 GitHub Actions 得到**（见 §Inputs 的运行 ID），未使用推断。如需否定或修订，请以具名修订覆盖本文件。
+> **补记说明：** 本 change 于 2026-11-16 归档（提交 `229411a`）时未产出 G1 / G2 决策记录，`git log --all` 确认这两个文件从未存在。本文件与 [`g1-decision.md`](g1-decision.md) 依据 change 自身产物、当日本地验证报告与 GitHub Actions 运行记录**追溯补记**，不是当时会议的原始纪要。**CI / CD 证据为补记时实际查询 GitHub Actions 得到**（见 §Inputs 的运行 ID），未使用推断。
+>
+> **解档说明：** 用户 2026-11-16 选择先**把本 change 从 `openspec/changes/archive/2026-11-16-add-user-auth/` 解档**回 `openspec/changes/add-user-auth/`，再补写门禁记录（归档目录视为不可改写）。**Living Spec 的合并结果不变**：`229411a` 已把两份 Delta 合并进 `openspec/specs/user-auth/spec.md` 与 `openspec/specs/trip-plans/spec.md`，因此本 change 再次归档时是 **spec no-op**。
 
 ## Inputs
 
@@ -43,36 +46,37 @@
 
 ## Decision
 
-**Pass**（补记）
+**Pending（待具名签署）**
 
-判定依据：Delta 两份规格的场景全部落地并有对应测试；本地验证报告 6 项命令全绿；实现提交与归档提交的 CI / CD 均 Success 且有 release 产物；无 CRITICAL 缺陷、无未决 blocking 歧义。
+可复核的事实依据：Delta 两份规格的场景均有对应测试；本地验证报告 6 项命令全绿；实现提交与归档提交的 CI / CD 均 Success 且有 release 产物；无 CRITICAL 缺陷、无未决 blocking 歧义。裁定语待签署人具名后写入。
 
 ## Waivers / conditions + owners
 
 | 项 | Owner | 处理时机 |
 |---|---|---|
-| 业务端点 token 化（替换 `X-User-Id`） | AO（Jay） | 另立 change |
-| 注册 / 登录 / 退出链路的 E2E 自动化 | AO（Jay） | 已由后续 `add-user-logout` 的 `e2e/tests/auth.spec.ts` 覆盖会话生命周期；注册链路仍缺自动化 |
-| 真实后端下的注册 / 登录链路自动化（替换 mock 走查） | AO（Jay） | 后续 change |
-| `auth_sessions` 过期行清理任务 | AO（Jay） | 量级变大后 |
-| 契约 `/users`、`/users/demo` 补 4XX 响应 | AO | 契约下一次升版 |
-| 归档正文「演示身份不显示退出登录」等表述由 `add-user-logout` 取代 | BA | 该 change P5 / G3 收口 |
-| 本 change 缺 `dov-ac-review.md` / `consistency-lint.md` / `atdd-design.md` 三份标准产物 | BA | 已在 `g1-decision.md` 说明；后续 change 按标准流程补齐 |
+| 业务端点 token 化（替换 `X-User-Id`） | 待指派（待具名） | 另立 change |
+| 注册 / 登录 / 退出链路的 E2E 自动化 | 待指派（待具名） | 已由后续 `add-user-logout` 的 `e2e/tests/auth.spec.ts` 覆盖会话生命周期；注册链路仍缺自动化 |
+| 真实后端下的注册 / 登录链路自动化（替换 mock 走查） | 待指派（待具名） | 后续 change |
+| `auth_sessions` 过期行清理任务 | 待指派（待具名） | 量级变大后 |
+| 契约 `/users`、`/users/demo` 补 4XX 响应 | 待指派（待具名） | 契约下一次升版 |
+| change 正文「演示身份不显示退出登录」等表述由 `add-user-logout` 取代 | 待指派（待具名） | 该 change P5 / G3 收口 |
+| 本 change 缺 `dov-ac-review.md` / `consistency-lint.md` / `atdd-design.md` 三份标准产物 | 待指派（待具名） | 已在 `g1-decision.md` 说明；后续 change 按标准流程补齐 |
 
 ## Approvers
 
-| 角色 | 姓名 |
-|---|---|
-| IO | Wanye |
-| SA | Jacky、Karena |
-| AO（当前开发） | Jay |
-| VL | Neal |
-| SM | Lewis |
+| 角色 | 姓名 | 签署时间 |
+|---|---|---|
+| IO | — | — |
+| SA | — | — |
+| AO（当前开发） | — | — |
+| VL | — | — |
+| SM | — | — |
 
-签署来源：沿用 2026-11-15 / 2026-11-16 其它 change 的 G2 记录中同一角色名单；补记得用户 2026-11-16 明确指示。**本记录为追溯补记，VL 未在实际验证当日独立签署**；若需正式签署，请由 VL 具名确认后在本文件追加签署时间。
+按 `docs/knowledge/rules/documentation/rules.md`「记录人与签署人」：签署人 MUST 是当次实际开发者与对应角色的具名负责人，不得用名册默认值或角色词占位。本 change 的开发者姓名未从发起人处取得，因此本节留空，`Status` 保持 **Pending**。原始验证当日亦无 VL 独立签署，本文件不代签。
 
-## Next
+## 归档状态
 
-- Decision = Pass（补记）→ 归档已于 `229411a` 完成，Delta 已合并进 `openspec/specs/user-auth/spec.md` 与 `openspec/specs/trip-plans/spec.md`。
+- 2026-11-16 曾归档于 `openspec/changes/archive/2026-11-16-add-user-auth/`（提交 `229411a`），同日**解档**回 `openspec/changes/add-user-auth/`，以便在可编辑目录中补写本文件与 [`g1-decision.md`](g1-decision.md)。
+- Delta 已随 `229411a` 合并进 `openspec/specs/user-auth/spec.md` 与 `openspec/specs/trip-plans/spec.md`，**再次归档不再产生规格差异**。
 - 归档后的依赖方：`add-user-logout`（REQ-006，MODIFIED「会话校验与退出」）、`add-user-profile`（REQ-008，MODIFIED「注册账号」）。
 - 遗留自动化缺口（注册链路 E2E、真实后端走查）已登记为条件，不回溯修改本 change 的实现。

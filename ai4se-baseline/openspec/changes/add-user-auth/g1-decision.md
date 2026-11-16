@@ -2,10 +2,13 @@
 
 - **Gate：** G1（Align）
 - **Change：** `add-user-auth`（`user-auth` ADDED + `trip-plans` MODIFIED；支撑 change，无独立 REQ 行，被 REQ-006 / REQ-008 依赖）
-- **Timestamp：** 2026-11-16T14:01+0800（**补记**）
-- **Recorded by：** opencode（AI agent），按 Jay（AO / current developer）2026-11-16「把归档前漏掉的 G1/G2 补回来」指令记录
+- **Timestamp：** 2026-11-16T14:01+0800（补记）
+- **Status：** **Pending** — 补记已就位，尚无具名签署人；结论留空待签
+- **Recorded by：** opencode（AI agent），按用户 2026-11-16「把归档前漏掉的 G1/G2 补回来」指令整理，未代填开发者姓名
 
-> **补记说明：** 本 change 于 2026-11-16 归档（提交 `229411a`）时未产出 G1 / G2 决策记录，`git log --all` 确认这两个文件从未存在。本文件与 [`g2-decision.md`](g2-decision.md) 为依据归档产物、当日本地验证报告与 GitHub Actions 运行记录**追溯补记**，不是当时会议的原始纪要。结论沿用同一套角色名单；如需否定或修订，请以具名修订覆盖本文件。
+> **补记说明：** 本 change 于 2026-11-16 归档（提交 `229411a`）时未产出 G1 / G2 决策记录，`git log --all` 确认这两个文件从未存在。本文件与 [`g2-decision.md`](g2-decision.md) 依据 change 自身产物、当日本地验证报告与 GitHub Actions 运行记录**追溯补记**，不是当时会议的原始纪要。
+>
+> **解档说明：** 用户 2026-11-16 选择先**把本 change 从 `openspec/changes/archive/2026-11-16-add-user-auth/` 解档**回 `openspec/changes/add-user-auth/`，再补写门禁记录（归档目录视为不可改写）。**Living Spec 的合并结果不变**：`229411a` 已把两份 Delta 合并进 `openspec/specs/user-auth/spec.md` 与 `openspec/specs/trip-plans/spec.md`，因此本 change 再次归档时是 **spec no-op**（不产生新的规格差异）。
 
 ## Inputs
 
@@ -33,32 +36,34 @@
 
 ## Decision
 
-**Pass**（补记）
+**Pending（待具名签署）**
+
+补记只陈述上述事实与证据，不预填裁定语。待开发者与签署人具名确认后，在本节写入 `Pass` / `Conditional` / `Fail` 并追加签署时间。
 
 ## Conditions + owners
 
 | 项 | Owner | 处理时机 |
 |---|---|---|
-| 业务端点从 `X-User-Id` 切换到 token 鉴权（拦截器解析 Bearer） | AO（Jay） | 另立 change（proposal §残余风险） |
-| 并发注册的用户名冲突映射为 `USERNAME_TAKEN`（当前靠唯一索引兜底） | AO | 后续迭代 |
-| 找回密码 / 邮箱手机验证 / 验证码 / 第三方登录 / 账号注销保持 out of scope | BA | 已记录，无需动作 |
-| 归档正文（`summary.md`、`HANDOFF.md`、`tasks.md` T6）中「演示身份不显示退出登录」等表述已被 `add-user-logout` 取代；本文件不改写归档正文 | BA | 由 `add-user-logout` 在 P5 / G3 收口（该 change G1 条件 L-01） |
-| 本 change 无 `dov-ac-review.md` / `consistency-lint.md`，补记以验收信号对照替代；此后新建 change 一律补这两份产物 | BA | 已在本文件说明，后续按标准流程 |
+| 业务端点从 `X-User-Id` 切换到 token 鉴权（拦截器解析 Bearer） | 待指派（待具名） | 另立 change（proposal §残余风险） |
+| 并发注册的用户名冲突映射为 `USERNAME_TAKEN`（当前靠唯一索引兜底） | 待指派（待具名） | 后续迭代 |
+| 找回密码 / 邮箱手机验证 / 验证码 / 第三方登录 / 账号注销保持 out of scope | 待指派（待具名） | 已记录，无需动作 |
+| change 正文（`summary.md`、`HANDOFF.md`、`tasks.md` T6）中「演示身份不显示退出登录」等表述已被 `add-user-logout` 取代；本文件不改写这些正文 | 待指派（待具名） | 由 `add-user-logout` 在 P5 / G3 收口（该 change G1 条件 L-01） |
+| 本 change 无 `dov-ac-review.md` / `consistency-lint.md`，补记以验收信号对照替代；此后新建 change 一律补这两份产物 | 待指派（待具名） | 已在本文件说明，后续按标准流程 |
 
 ## Approvers
 
-| 角色 | 姓名 |
-|---|---|
-| IO | Wanye |
-| SA | Jacky、Karena |
-| AO（当前开发） | Jay |
-| VL | Neal |
-| SM | Lewis |
+| 角色 | 姓名 | 签署时间 |
+|---|---|---|
+| IO | — | — |
+| SA | — | — |
+| AO（当前开发） | — | — |
+| VL | — | — |
+| SM | — | — |
 
-签署来源：沿用 2026-11-15 / 2026-11-16 其它 change 的 G1 记录中同一角色名单；本文件的补记得到用户 2026-11-16 明确指示（「make the G1 G2 back」）。若角色名单变更，以变更后的具名签署为准并在本文件更新。
+按 `docs/knowledge/rules/documentation/rules.md`「记录人与签署人」：签署人 MUST 是当次实际开发者与对应角色的具名负责人，不得用名册默认值或角色词占位。本 change 的开发者姓名未从发起人处取得，因此本节留空，`Status` 保持 **Pending**。
 
-## Next
+## 归档状态
 
-- Decision = Pass → P3 / P4 已执行完毕（`design.md`、`tasks.md`、提交 `f5e984c`），验证结论见 [`g2-decision.md`](g2-decision.md)。
-- 归档已执行：`229411a`（`openspec/specs/user-auth/spec.md` 与 `openspec/specs/trip-plans/spec.md` 已合并 Delta）。
-- 本文件为归档后的追溯记录；后续 change 若引用本 change 的 G1 结论，请注明是补记。
+- 2026-11-16 曾归档于 `openspec/changes/archive/2026-11-16-add-user-auth/`（提交 `229411a`），同日**解档**回 `openspec/changes/add-user-auth/`，以便在可编辑目录中补写本文件与 [`g2-decision.md`](g2-decision.md)。
+- Delta 已随 `229411a` 合并进 Living Spec，**再次归档不再产生规格差异**；归档动作仅为目录搬运与索引更新。
+- P3 / P4 已执行完毕（`design.md`、`tasks.md`、实现提交 `f5e984c`），验证结论见 [`g2-decision.md`](g2-decision.md)。

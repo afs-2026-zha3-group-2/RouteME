@@ -3,7 +3,7 @@
 - **能力：** `user-auth`（MODIFIED）
 - **对应 OpenSpec change：** `add-user-logout`
 - **Ready 日期：** 2026-11-16 ｜ **状态：** in-progress（P2 G1 Pass）
-- **证据：** 用户指令与顶栏身份菜单截图（`林见夏 / 切换身份` 下拉面板）；`RouteME/frontend/src/shell/AppShell.tsx`、`RouteME/frontend/src/App.tsx`；`openspec/changes/archive/2026-11-16-add-user-auth/specs/user-auth/spec.md`（Living Spec `openspec/specs/user-auth/spec.md`）；`openspec/specs/trip-plans/spec.md`；`requirement-workspace/intents/REQ-006-user-logout.md`
+- **证据：** 用户指令与顶栏身份菜单截图（`林见夏 / 切换身份` 下拉面板）；`RouteME/frontend/src/shell/AppShell.tsx`、`RouteME/frontend/src/App.tsx`；`openspec/changes/add-user-auth/specs/user-auth/spec.md`（Living Spec `openspec/specs/user-auth/spec.md`）；`openspec/specs/trip-plans/spec.md`；`requirement-workspace/intents/REQ-006-user-logout.md`
 
 ## 六字段摘要
 
@@ -90,7 +90,7 @@ RouteME 路觅当前支持 3 个演示身份与注册账号两种进入方式。
 |---|---|---|---|---|
 | blocking | resolved | 演示身份退出是否需要服务端调用？ | SA | 确认：不需要。演示身份没有服务端会话；退出只清除本地身份记录，避免伪造会话或调用无用端点。 |
 | blocking | resolved | 结束会话请求失败时是否允许退出？ | BA/SA | 确认：允许。本地退出必须成功，服务端失败只作为提示；否则用户会被一个不可用的会话困住。 |
-| blocking | resolved | 与 `add-user-auth` T6「演示身份不显示退出」冲突时以谁为准？ | BA/SA | 确认：以本需求为准——退出入口对所有身份可见；`add-user-auth` 已归档，归档正文不改写，由本 change 的 `summary.md` / G3 注明该表述已被取代。 |
+| blocking | resolved | 与 `add-user-auth` T6「演示身份不显示退出」冲突时以谁为准？ | BA/SA | 确认：以本需求为准——退出入口对所有身份可见；`add-user-auth` 的正文是历史快照、不改写，由本 change 的 `summary.md` / G3 注明该表述已被取代。 |
 | blocking | resolved | 退出后应回到哪里？ | BA | 确认：回到身份门，而不是首页或登录表单；用户可重新选择演示身份或登录。 |
 | non-blocking | deferred | 退出是否需要二次确认？ | Dev/Design | 后续解决：AC 只要求可完成退出；如加确认，不得阻断主路径。 |
 | non-blocking | deferred | 退出后是否保留主题 / 语言偏好？ | Dev | 后续解决：属本地偏好，不是身份数据；不影响本需求验收。 |

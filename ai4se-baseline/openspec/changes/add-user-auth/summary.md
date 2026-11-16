@@ -40,8 +40,15 @@ REQ-004：把「输入一个昵称就能用」的演示身份，升级为可注�
 
 ## Links
 
-- Spec：`openspec/changes/archive/2026-11-16-add-user-auth/specs/user-auth/spec.md`（Living Spec：`openspec/specs/user-auth/spec.md`）
+- Spec：`openspec/changes/add-user-auth/specs/user-auth/spec.md`（Living Spec：`openspec/specs/user-auth/spec.md`）
 - Design / Tasks：同目录 `design.md`、`tasks.md`
+- 门禁记录：[`g1-decision.md`](g1-decision.md)、[`g2-decision.md`](g2-decision.md)（2026-11-16 补记，**Pending 待具名签署**）
 - 实现提交：`f5e984c`（feat(routeme): add account register and login with session handoff for add-user-auth）
 - 验证报告：`docs/ai4se-plugins/20261116-101702-local-verify-report.md`
 - 后续补充：`AuthPanel` 兴趣卡片选择器、`authForm.ts` 预设/自定义标签模型与文案，已随提交 `9a2bdf0` 合入
+
+## 归档状态
+
+- 2026-11-16 归档于 `openspec/changes/archive/2026-11-16-add-user-auth/`（提交 `229411a`），当时**漏记 G1 / G2**。
+- 同日按用户指示**解档**回 `openspec/changes/add-user-auth/`，以便补写门禁记录（归档目录不可改写）。
+- Delta 已在 `229411a` 合并进 `openspec/specs/user-auth/spec.md` 与 `openspec/specs/trip-plans/spec.md`；再次归档是 **spec no-op**，只做目录搬运与索引更新。

@@ -18,9 +18,9 @@
 | REQ-003 | `trip-companions` | `add-trip-companions` | `intents/REQ-003-trip-companions.md` | `requirements/REQ-003-trip-companions.md` | `openspec/changes/add-trip-companions/` |
 | REQ-004 | `trip-experiences` | `add-trip-experiences` | `intents/REQ-004-trip-experiences.md` | `requirements/REQ-004-trip-experiences.md` | `openspec/changes/add-trip-experiences/` |
 | REQ-005 | `trip-plans`（MODIFIED）/ `trip-experiences`（MODIFIED） | `refine-inspiration-home` | `intents/REQ-005-inspiration-home.md` | `requirements/REQ-005-inspiration-home.md` | `openspec/changes/refine-inspiration-home/` |
-| REQ-006 | `user-auth`（MODIFIED） | `add-user-logout` | `intents/REQ-006-user-logout.md` | `requirements/REQ-006-user-logout.md` | `openspec/changes/add-user-logout/`（依赖的 `add-user-auth` 已归档） |
+| REQ-006 | `user-auth`（MODIFIED） | `add-user-logout` | `intents/REQ-006-user-logout.md` | `requirements/REQ-006-user-logout.md` | `openspec/changes/add-user-logout/`（依赖的 `add-user-auth` 已解档，Delta 已并入 Living Spec） |
 | REQ-007 | `trip-plans`（MODIFIED）+ `trip-experiences`（MODIFIED） | `add-destination-area-filters` | `intents/REQ-007-destination-area-filters.md` | `requirements/REQ-007-destination-area-filters.md` | `openspec/changes/add-destination-area-filters/` |
-| REQ-008 | `user-profile`（ADDED）/ `user-auth`（MODIFIED） | `add-user-profile` | `intents/REQ-008-user-profile.md` | `requirements/REQ-008-user-profile.md` | `openspec/changes/add-user-profile/`（依赖的 `add-user-auth` 已归档） |
+| REQ-008 | `user-profile`（ADDED）/ `user-auth`（MODIFIED） | `add-user-profile` | `intents/REQ-008-user-profile.md` | `requirements/REQ-008-user-profile.md` | `openspec/changes/add-user-profile/`（依赖的 `add-user-auth` 已解档，Delta 已并入 Living Spec） |
 | REQ-009 | `user-profiles`（ADDED） | `add-user-profiles` | `intents/REQ-009-publisher-profile.md` | `requirements/REQ-009-publisher-profile.md` | `openspec/changes/add-user-profiles/`（复用 `add-user-profile` 的资料端点） |
 
 - 共享分析：`deep-dive.md`（①–④ 四表，含 REQ-005 / REQ-006 / REQ-007 / REQ-008 增补）、`impact-brief.md`（覆盖 002/003/004/005/006/007/008 需求集）。
@@ -28,7 +28,7 @@
 - 依赖排序（轻 DAG）：REQ-002 → REQ-003 → REQ-004；REQ-005 为 REQ-002 / REQ-004 已上线能力的首页浏览增量，不改主 DAG；REQ-006 依赖 `add-user-auth` 已实现的会话契约；REQ-007（目的地筛选）依赖 `refine-inspiration-home`（同改 `trip-plans` / `trip-experiences`）与 `add-trip-publish`（发布页目的地字段）。
 - **REQ-007（目的地筛选）归档顺序约束：** `refine-inspiration-home` → `add-destination-area-filters` → `add-trip-publish`；三个 change 中只有 `add-destination-area-filters` 属于本需求，其它两个由各自 owner 归档，本需求不主动归档它们。
 - **REQ-007（目的地筛选）范围边界：** 本 change 拥有数据底座（V11 + 6 位区划码 + 响应字段）+ 筛选/展示 + 体验日期 + 搜索移除；发布页目的地字段已由 `add-trip-publish` 实现（契约 0.7.0 同源）；`refine-inspiration-home` 的搜索相关测试由它的 owner 更新。
-- **`add-user-auth` 已于 2026-11-16 归档**（`openspec/changes/archive/2026-11-16-add-user-auth/`，Living Spec `openspec/specs/user-auth/`），`add-user-logout` 可在其后归档。REQ-008（`add-user-profile`）同样依赖 `add-user-auth` 的已归档会话契约，与 `add-user-logout` 改的是 `user-auth` 的不同 Requirement 块（注册账号 vs 会话校验与退出），归档顺序互不阻塞。**注意：** 该 change 归档时漏记 G1 / G2，两份决策文件已于 2026-11-16 补记于 `openspec/changes/archive/2026-11-16-add-user-auth/`（内容带「补记」标注）。
+- **`add-user-auth` 已于 2026-11-16 解档**（`openspec/changes/add-user-auth/`，Living Spec `openspec/specs/user-auth/`；Delta 已在归档提交 `229411a` 并入 Living Spec，再次归档为 spec no-op），`add-user-logout` 可在其后归档。REQ-008（`add-user-profile`）同样依赖 `add-user-auth` 的会话契约，与 `add-user-logout` 改的是 `user-auth` 的不同 Requirement 块（注册账号 vs 会话校验与退出），归档顺序互不阻塞。**注意：** 该 change 归档时漏记 G1 / G2，两份决策文件已于 2026-11-16 补记于 `openspec/changes/add-user-auth/`，状态为 **Pending（待具名签署）**。
 - **BA 交付边界：** 以上为 P0/P1 业务产物。P2 起（delta-craft / design / task-plan / apply / verify / archive，含代码、契约、迁移、技术设计、任务分解）交 dev。
 - **P2 状态（REQ-005）：** G1 Pass（2026-11-16）；Delta 评审见 `openspec/changes/refine-inspiration-home/dov-ac-review.md`，一致性检查见同目录 `consistency-lint.md`，决策见 `g1-decision.md`。
 - **P3 状态（REQ-005）：** Pass（2026-11-16）；ATDD 设计 `atdd-design.md`、技术设计 `design.md`（D1–D8，含默认视图仍消费 `GET /api/matches` 的事实记录）、任务清单 `tasks.md`（T1–T6 + 对齐自检 Pass）；质量报告 `docs/ai4se-plugins/20261116-100821-quality-checklist-report.md`。
