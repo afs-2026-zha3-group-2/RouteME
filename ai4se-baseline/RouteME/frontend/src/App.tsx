@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Alert, Button, ConfigProvider, Space, Spin, Typography, message } from 'antd';
+import zhCN from 'antd/locale/zh_CN';
 import { loadDemoUsers, loadSessionUser, loadUsers, logoutAccount } from './api';
 import { ChatPage } from './chat/ChatPage';
 import { ShareExperiencePage } from './experiences/ShareExperiencePage';
@@ -236,7 +237,11 @@ export function App() {
     );
   };
 
-  return <ConfigProvider theme={buildTheme(mode)}>{renderContent()}</ConfigProvider>;
+  return (
+    <ConfigProvider theme={buildTheme(mode)} locale={zhCN}>
+      {renderContent()}
+    </ConfigProvider>
+  );
 }
 
 function PlaceholderPage({ text }: { text: string }) {

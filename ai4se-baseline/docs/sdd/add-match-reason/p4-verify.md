@@ -99,3 +99,22 @@
 | VL | Neal | 复核 R2 证据，G2 追加 Pass | 2026-11-16 |
 | AO | Jay | 交付实现与回归结果 | 2026-11-16 |
 | SM | Lewis | 认可 R2；P5 仍暂缓 | 2026-11-16 |
+
+## 10. R3 实施结果（Ant Design 组件收敛，2026-11-16 15:05）
+
+| 项 | 结果 |
+|---|---|
+| 实现提交 | `refactor(p4): add-trip-publish add-match-reason use ant design controls` |
+| 规则 | `@rule:web-coding-style` 新增「组件选型（Ant Design 优先）」：匹配度与进度 MUST 用 `Progress`，标签用 `Tag`；自绘 SVG 圆环、`div` 进度条不再接受 |
+| 卡片 | 自绘 `svg` 匹配环 → `Progress type="circle"`（`strokeColor` 取 `--warn`）；满员进度条 → `Progress size="small"`（`is-full` 保留渐变）；兴趣标签 → `Tag` |
+| 详情 | 原因 `<ul>` → `Tag` 列表 + `Progress type="circle"`（`format` 显示「匹配度 N%」）；`basis` 单独一行 |
+| 样式 | 只保留布局类（`.tc-match`、`.match-summary`），颜色走 token；移除 `.match-reason-list`、`.meter`、`.ring-*` |
+| 前端验证 | `npm test` 137 通过（含上游 `main` 合并后的用例）；`typecheck` / `build` 通过 |
+| 端到端 | `companions.spec.ts` 8/8 通过（匹配理由 + 默认按匹配度排序 + 详情原因）；全量 53/54，唯一失败为既有 `profiles.spec.ts:23` 数据断言 |
+| 看板 | S07 仍显示 P3（token 无 `project` 写权限，需人工拖到 P4）；P5 暂缓、不归档 |
+
+| 角色 | 姓名 | 确认内容 | 日期 |
+|---|---|---|---|
+| AO | Jay | 交付组件替换、规则文档与回归结果 | 2026-11-16 |
+| VL | Neal | 待复核 R3 证据（G2 追加） | 待签 |
+| SM | Lewis | 待确认 R3 范围；P5 仍暂缓 | 待签 |

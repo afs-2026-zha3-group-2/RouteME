@@ -86,7 +86,7 @@ export const emptyProfileForm: ProfileFormValues = {
 
 const DATE_PATTERN = /^(\d{4})-(\d{2})-(\d{2})$/;
 
-/** 本地时区的今天，`YYYY-MM-DD`；生日上限与 `<input type="date">` 的 max 共用。 */
+/** 本地时区的今天，`YYYY-MM-DD`；生日上限与日期控件的 `maxDate` 共用。 */
 export function todayIso(now: Date = new Date()): string {
   const year = String(now.getFullYear()).padStart(4, '0');
   const month = String(now.getMonth() + 1).padStart(2, '0');

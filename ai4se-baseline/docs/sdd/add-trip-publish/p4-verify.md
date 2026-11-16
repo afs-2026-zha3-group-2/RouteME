@@ -166,3 +166,24 @@
 | VL | Neal | 复核 R3 证据，G2 追加 Pass | 2026-11-16 |
 | AO | Jay | 交付清理与回归结果 | 2026-11-16 |
 | SM | Lewis | 认可 R3；P5 仍暂缓 | 2026-11-16 |
+
+## 13. R4 实施结果（Ant Design 组件收敛，2026-11-16 15:05）
+
+| 项 | 结果 |
+|---|---|
+| 实现提交 | `refactor(p4): add-trip-publish add-match-reason use ant design controls` |
+| 规则 | `@rule:web-coding-style` 新增「组件选型（Ant Design 优先）」：日期 / 排序与枚举 / 数字 / 标签 / 进度 MUST 先用 antd，只有无组件或阻断性缺陷才允许原生或自绘，例外写进规则清单并在 P3 引用 |
+| 日期 | `Input type="date"` → `DatePicker`（`YYYY-MM-DD`，默认今天与空值校验不变）；新增 `utils/dates.ts` 只在组件边界做 `Dayjs` ↔ 字符串转换 |
+| 人数 / 预算 | `Input type="number"` → `InputNumber`（`precision=0`，表单状态仍是字符串，校验不变） |
+| 标签 | 自绘 `button.chip` → `Tag.CheckableTag`；自定义标签用 `Tag closable` |
+| 全局 | `ConfigProvider` 增加 `zhCN`，日期面板与 Modal 关闭按钮文案跟随中文 |
+| 前端验证 | `npm test` 137 通过（含新增 `utils/dates.test.ts` 2 项与上游 `main` 的用例）；`npm run typecheck` / `build` 通过 |
+| 端到端 | 重建种子库后全量 `npx playwright test`：53/54；`trips.spec.ts` 11/11 通过；唯一失败是既有断言 `profiles.spec.ts:23`（V13 已把周野职业改为「产品经理」，与本次改动无关） |
+| 数据基线 | e2e 前把本地库备份到 `SqlLite/routeme.db.bak-20261116-1505`，删除后由 Flyway 重建种子库 |
+| 看板 | S06 保持 P4，不归档 |
+
+| 角色 | 姓名 | 确认内容 | 日期 |
+|---|---|---|---|
+| AO | Jay | 交付组件替换、规则文档与回归结果 | 2026-11-16 |
+| VL | Neal | 待复核 R4 证据（G2 追加） | 待签 |
+| SM | Lewis | 待确认 R4 范围；P5 仍暂缓 | 待签 |

@@ -27,6 +27,18 @@ async function pickDestinationByCode(page: Page, provinceCode: string, cityCode:
   await page.locator(`[data-area-city="${cityCode}"]`).click();
 }
 
+async function setDate(page: Page, label: string, iso: string) {
+  const input = page.getByLabel(label);
+  await input.fill(iso);
+  await input.press('Enter');
+}
+
+async function clearDate(page: Page, label: string) {
+  const picker = page.locator('.ant-picker', { has: page.getByLabel(label) });
+  await picker.hover();
+  await picker.locator('.ant-picker-clear').click();
+}
+
 /** Local calendar day, matching the form's default (never UTC). */
 function todayIso(): string {
   const now = new Date();
@@ -74,7 +86,7 @@ test('filters the list by interest tag and keeps the filters visible', async ({ 
   await loginAs(page, 1);
   await page.goto('/');
 
-  await page.getByRole('button', { name: '摄影', exact: true }).click();
+  await page.getByRole('checkbox', { name: '摄影', exact: true }).click();
 
   await expect(page.getByText('已应用筛选')).toBeVisible();
   await expect(page.locator('.trip-card', { hasText: '珠海情侣路日落机位二刷' })).toBeVisible();
@@ -112,11 +124,11 @@ test('publishes a trip and finds it in the home list', async ({ page }) => {
   await expect(map).toBeVisible();
   await expect(map).toHaveAttribute('data-city', '珠海');
   await expect(map.getByRole('button', { name: /情侣路/ })).toBeVisible();
-  await page.getByLabel('出发日期').fill('2026-12-05');
-  await page.getByLabel('结束日期').fill('2026-12-05');
+  await setDate(page, '出发日期', '2026-12-05');
+  await setDate(page, '结束日期', '2026-12-05');
   await pickPlace(page, '途经点', '香洲港');
   await pickPlace(page, '途经点', '情侣路');
-  await page.getByRole('button', { name: '摄影', exact: true }).click();
+  await page.getByRole('checkbox', { name: '摄影', exact: true }).click();
 
   await page.getByRole('button', { name: /^发\s*布$/ }).click();
 
@@ -145,8 +157,8 @@ test('blocks publishing and flags every missing required field', async ({ page }
   await loginAs(page, 1);
   await page.goto('/#/trips/new');
 
-  await page.getByLabel('出发日期').fill('');
-  await page.getByLabel('结束日期').fill('');
+  await clearDate(page, '出发日期');
+  await clearDate(page, '结束日期');
   await page.getByRole('button', { name: /^发\s*布$/ }).click();
 
   await expect(page).toHaveURL(/#\/trips\/new$/);
@@ -206,13 +218,13 @@ test('distinguishes full trips from recruiting trips without color alone', async
   const full = page.locator('.trip-card', { hasText: '佛山祖庙与岭南天地一日' });
   await expect(full.locator('[data-status="full"]')).toContainText('已满员');
   await expect(full.locator('[data-status-icon="full"]')).toBeVisible();
-  await expect(full.locator('.meter.full')).toBeVisible();
+  await expect(full.locator('.tc-meter.is-full')).toBeVisible();
   await expect(full.locator('.tc-cap-num')).toHaveText('2 / 2 人');
 
   const recruiting = page.locator('.trip-card', { hasText: '珠海情侣路日落机位二刷' });
   await expect(recruiting.locator('[data-status="recruiting"]')).toContainText('招募中');
   await expect(recruiting.locator('[data-status-icon="recruiting"]')).toBeVisible();
-  await expect(recruiting.locator('.meter.full')).toHaveCount(0);
+  await expect(recruiting.locator('.tc-meter.is-full')).toHaveCount(0);
 });
 
 test('keeps ended trips out of the default view', async ({ page }) => {

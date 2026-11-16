@@ -1,3 +1,4 @@
+import { Progress, Tag } from 'antd';
 import { cityLabel } from '../area/areaOptions';
 import { tripMessages } from '../i18n/tripMessages';
 import { useProfile } from '../profiles/ProfileContext';
@@ -23,8 +24,6 @@ function formatDate(iso: string): string {
   }
   return `${Number(month)}月${Number(day)}日`;
 }
-
-const RING_LENGTH = 94.25;
 
 type Props = {
   trip: TripSummary;
@@ -63,29 +62,24 @@ export function TripCard({ trip, match, compact = false }: Props) {
         {trip.tags.length > 0 && (
           <div className="tc-tags">
             {trip.tags.map((tag) => (
-              <span key={tag} className="tag">
+              <Tag key={tag}>
                 {tag}
-              </span>
+              </Tag>
             ))}
           </div>
         )}
 
         {match !== undefined && (
           <div className="tc-match">
-            <span className="match-ring" aria-hidden="true">
-              <svg viewBox="0 0 34 34">
-                <circle className="ring-bg" cx="17" cy="17" r="15" fill="none" strokeWidth="3" />
-                <circle
-                  className="ring-fg"
-                  cx="17"
-                  cy="17"
-                  r="15"
-                  fill="none"
-                  strokeWidth="3"
-                  strokeDasharray={RING_LENGTH}
-                  strokeDashoffset={RING_LENGTH * (1 - match.percentage / 100)}
-                />
-              </svg>
+            <span className="match-ring">
+              <Progress
+                type="circle"
+                percent={match.percentage}
+                size={34}
+                strokeWidth={10}
+                strokeColor="var(--warn)"
+                showInfo={false}
+              />
             </span>
             <span className="match-copy">
               <span className="match-score">
@@ -118,8 +112,8 @@ export function TripCard({ trip, match, compact = false }: Props) {
             <span className="tc-cap-num">
               {trip.joined_count} / {trip.capacity} {tripMessages.peopleUnit}
             </span>
-            <span className={width >= 100 ? 'meter full' : 'meter'}>
-              <i style={{ width: `${width}%` }} />
+            <span className={width >= 100 ? 'tc-meter is-full' : 'tc-meter'}>
+              <Progress percent={width} size="small" showInfo={false} />
             </span>
           </span>
         </div>

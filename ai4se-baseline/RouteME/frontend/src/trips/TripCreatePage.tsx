@@ -1,11 +1,12 @@
 import { useEffect, useState, type ReactNode } from 'react';
-import { Alert, Button, Card, Input, Space, Typography } from 'antd';
+import { Alert, Button, Card, DatePicker, Input, InputNumber, Space, Tag, Typography } from 'antd';
 import { createTrip, loadTrip } from '../api';
 import { AreaCascader } from '../area/AreaCascader';
 import { gazetteerCityForCode } from '../areas/gazetteerCity';
 import { tripMessages } from '../i18n/tripMessages';
 import { PlacePicker } from '../map/PlacePicker';
 import type { DemoUser } from '../types';
+import { dayjsToIso, isoToDayjs } from '../utils/dates';
 import {
   addTag,
   emptyTripForm,
@@ -146,31 +147,39 @@ export function TripCreatePage({ currentUser, fromTripId }: Props) {
 
             <div className="form-grid">
               <Field label={tripMessages.fieldStartDate} htmlFor="trip-start-date" error={errors.startDate}>
-                <Input
+                <DatePicker
                   {...fieldProps('trip-start-date', errors.startDate)}
-                  type="date"
-                  value={values.startDate}
-                  onChange={(event) => update({ startDate: event.target.value })}
+                  format="YYYY-MM-DD"
+                  placeholder="选择日期"
+                  style={{ width: '100%' }}
+                  value={isoToDayjs(values.startDate)}
+                  onChange={(value) => update({ startDate: dayjsToIso(value) })}
+                  status={errors.startDate === undefined ? undefined : 'error'}
                 />
               </Field>
               <Field label={tripMessages.fieldEndDate} htmlFor="trip-end-date" error={errors.endDate}>
-                <Input
+                <DatePicker
                   {...fieldProps('trip-end-date', errors.endDate)}
-                  type="date"
-                  value={values.endDate}
-                  onChange={(event) => update({ endDate: event.target.value })}
+                  format="YYYY-MM-DD"
+                  placeholder="选择日期"
+                  style={{ width: '100%' }}
+                  value={isoToDayjs(values.endDate)}
+                  onChange={(value) => update({ endDate: dayjsToIso(value) })}
+                  status={errors.endDate === undefined ? undefined : 'error'}
                 />
               </Field>
             </div>
 
             <Field label={tripMessages.fieldCapacity} htmlFor="trip-capacity" error={errors.capacity}>
-              <Input
+              <InputNumber
                 {...fieldProps('trip-capacity', errors.capacity)}
-                type="number"
                 min={2}
                 max={12}
-                value={values.capacity}
-                onChange={(event) => update({ capacity: event.target.value })}
+                precision={0}
+                style={{ width: '100%' }}
+                value={values.capacity === '' ? null : Number(values.capacity)}
+                onChange={(value) => update({ capacity: value === null ? '' : String(value) })}
+                status={errors.capacity === undefined ? undefined : 'error'}
               />
             </Field>
           </div>
@@ -236,21 +245,24 @@ export function TripCreatePage({ currentUser, fromTripId }: Props) {
 
             <div className="form-grid">
               <Field label={tripMessages.fieldBudgetMin} htmlFor="trip-budget-min" error={errors.budget}>
-                <Input
+                <InputNumber
                   {...fieldProps('trip-budget-min', errors.budget)}
-                  type="number"
                   min={0}
-                  value={values.budgetMin}
-                  onChange={(event) => update({ budgetMin: event.target.value })}
+                  precision={0}
+                  style={{ width: '100%' }}
+                  value={values.budgetMin === '' ? null : Number(values.budgetMin)}
+                  onChange={(value) => update({ budgetMin: value === null ? '' : String(value) })}
+                  status={errors.budget === undefined ? undefined : 'error'}
                 />
               </Field>
               <Field label={tripMessages.fieldBudgetMax} htmlFor="trip-budget-max">
-                <Input
+                <InputNumber
                   id="trip-budget-max"
-                  type="number"
                   min={0}
-                  value={values.budgetMax}
-                  onChange={(event) => update({ budgetMax: event.target.value })}
+                  precision={0}
+                  style={{ width: '100%' }}
+                  value={values.budgetMax === '' ? null : Number(values.budgetMax)}
+                  onChange={(value) => update({ budgetMax: value === null ? '' : String(value) })}
                 />
               </Field>
             </div>
@@ -261,12 +273,10 @@ export function TripCreatePage({ currentUser, fromTripId }: Props) {
                 {INTEREST_TAGS.map((tag) => {
                   const checked = values.tags.includes(tag);
                   return (
-                    <button
+                    <Tag.CheckableTag
                       key={tag}
-                      type="button"
-                      className={checked ? 'chip on' : 'chip'}
-                      aria-pressed={checked}
-                      onClick={() =>
+                      checked={checked}
+                      onChange={() =>
                         update({
                           tags: checked
                             ? values.tags.filter((item) => item !== tag)
@@ -277,21 +287,19 @@ export function TripCreatePage({ currentUser, fromTripId }: Props) {
                       }
                     >
                       {tag}
-                    </button>
+                    </Tag.CheckableTag>
                   );
                 })}
                 {values.tags
                   .filter((tag) => !(INTEREST_TAGS as readonly string[]).includes(tag))
                   .map((tag) => (
-                    <button
+                    <Tag
                       key={tag}
-                      type="button"
-                      className="chip on"
-                      aria-pressed
-                      onClick={() => update({ tags: values.tags.filter((item) => item !== tag) })}
+                      closable
+                      onClose={() => update({ tags: values.tags.filter((item) => item !== tag) })}
                     >
-                      {tag} ×
-                    </button>
+                      {tag}
+                    </Tag>
                   ))}
               </span>
               <Space.Compact style={{ width: '100%', marginTop: 8 }}>

@@ -283,7 +283,7 @@ export function ProfileSetupPage({ currentUser, token, onSaved }: Props) {
             error={errors.birthday}
             htmlFor="profile-birthday"
           >
-            <div className="profile-birthday-anchor">
+<div className="profile-birthday-anchor">
               <DatePicker
                 id="profile-birthday"
                 className="profile-birthday"

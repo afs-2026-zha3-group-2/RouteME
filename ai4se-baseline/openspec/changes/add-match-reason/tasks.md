@@ -68,3 +68,18 @@
 - [x] `MatchControllerTest`：同一行程在带筛选列表 / 无筛选列表 / 详情三处得分与理由一致。
 
 **验证：** `cd RouteME/backend; .\mvnw.cmd -B -o "-Dtest=TripMatchTest,MatchControllerTest,OpenApiTest" test`
+
+## R3 任务（Ant Design 组件收敛，2026-11-16）
+
+### T10 [frontend] 匹配原因改用 antd 组件
+
+- [x] 卡片：自绘 `svg` 匹配环 → `Progress type="circle"`（`strokeColor` 取 `--warn`，无信息文本）；满员进度条 → `Progress size="small"`；兴趣标签 → `Tag`。
+- [x] 详情：原因 `<ul>` → `Tag` 列表；百分比 → `Progress type="circle"` 的 `format`；`basis` 单独一行。
+- [x] 样式只保留布局类，颜色走 token；删除 `.match-reason-list`、`.meter`、`.ring-*`。
+
+### T11 [e2e] 选择器与回归
+
+- [x] 详情断言改 `.match-reasons .ant-tag` 与 `.match-progress-text`；满员进度改 `.tc-meter.is-full`。
+- [x] 回归：`npm test` 137 通过；`build` 通过；`companions.spec.ts` 8/8 通过。
+
+**验证：** `cd RouteME/frontend; npm test; npm run build`、`cd RouteME/e2e; npx playwright test tests/companions.spec.ts`

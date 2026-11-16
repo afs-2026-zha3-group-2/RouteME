@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react';
-import { Alert, Button, Input, Segmented, Skeleton, Typography } from 'antd';
+import { Alert, Button, DatePicker, Segmented, Select, Skeleton, Tag, Typography } from 'antd';
 import { ExperienceCard } from '../experiences/ExperienceCard';
 import { useExperiences } from '../experiences/useExperiences';
 import { tripMessages } from '../i18n/tripMessages';
@@ -16,6 +16,7 @@ import {
 import { AreaCascader } from '../area/AreaCascader';
 import { INTEREST_TAGS } from '../trips/tripOptions';
 import { useMatches } from '../trips/useMatches';
+import { dayjsToIso, isoToDayjs } from '../utils/dates';
 import { greetingForHour } from './greeting';
 import { useGreeting } from './useGreeting';
 import type { DemoUser } from '../types';
@@ -109,56 +110,64 @@ export function HomePage({ currentUser }: Props) {
             />
           </div>
           <div className="field">
-            <span className="label">{tripMessages.dateFromLabel}</span>
-            <Input
-              type="date"
-              aria-label={tripMessages.dateFromLabel}
-              value={filters.dateFrom}
-              onChange={(event) => update({ dateFrom: event.target.value })}
+            <label className="label" htmlFor="filter-date-from">
+              {tripMessages.dateFromLabel}
+            </label>
+            <DatePicker
+              id="filter-date-from"
+              format="YYYY-MM-DD"
+              placeholder="不限"
+              allowClear
+              style={{ width: '100%' }}
+              value={isoToDayjs(filters.dateFrom)}
+              onChange={(value) => update({ dateFrom: dayjsToIso(value) })}
             />
           </div>
           <div className="field">
-            <span className="label">{tripMessages.dateToLabel}</span>
-            <Input
-              type="date"
-              aria-label={tripMessages.dateToLabel}
-              value={filters.dateTo}
-              onChange={(event) => update({ dateTo: event.target.value })}
+            <label className="label" htmlFor="filter-date-to">
+              {tripMessages.dateToLabel}
+            </label>
+            <DatePicker
+              id="filter-date-to"
+              format="YYYY-MM-DD"
+              placeholder="不限"
+              allowClear
+              style={{ width: '100%' }}
+              value={isoToDayjs(filters.dateTo)}
+              onChange={(value) => update({ dateTo: dayjsToIso(value) })}
             />
           </div>
           {view === 'plans' && (
             <div className="field">
-              <span className="label">{tripMessages.sortLabel}</span>
-              <select
-                className="native-select"
-                aria-label={tripMessages.sortLabel}
+              <label className="label" htmlFor="filter-sort">
+                {tripMessages.sortLabel}
+              </label>
+              <Select
+                id="filter-sort"
+                style={{ width: '100%' }}
                 value={filters.sort}
-                onChange={(event) => update({ sort: event.target.value as FilterState['sort'] })}
-              >
-                <option value="match">{tripMessages.sortMatch}</option>
-                <option value="date">{tripMessages.sortDate}</option>
-                <option value="new">{tripMessages.sortNew}</option>
-              </select>
+                options={[
+                  { value: 'match', label: tripMessages.sortMatch },
+                  { value: 'date', label: tripMessages.sortDate },
+                  { value: 'new', label: tripMessages.sortNew },
+                ]}
+                onChange={(value: FilterState['sort']) => update({ sort: value })}
+              />
             </div>
           )}
         </div>
 
         <div className="filter-tags">
           <span className="filter-tags-label">{tripMessages.tagsLabel}</span>
-          {INTEREST_TAGS.map((tag) => {
-            const checked = filters.tags.includes(tag);
-            return (
-              <button
-                key={tag}
-                type="button"
-                className={checked ? 'chip on' : 'chip'}
-                aria-pressed={checked}
-                onClick={() => update({ tags: toggleTag(filters.tags, tag) })}
-              >
-                {tag}
-              </button>
-            );
-          })}
+          {INTEREST_TAGS.map((tag) => (
+            <Tag.CheckableTag
+              key={tag}
+              checked={filters.tags.includes(tag)}
+              onChange={() => update({ tags: toggleTag(filters.tags, tag) })}
+            >
+              {tag}
+            </Tag.CheckableTag>
+          ))}
         </div>
 
         <div className="filter-actions">

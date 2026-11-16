@@ -6,6 +6,7 @@ import {
   Card,
   Input,
   Modal,
+  Progress,
   Skeleton,
   Tag,
   Typography,
@@ -415,14 +416,27 @@ export function TripDetailPage({ currentUser, tripId }: Props) {
           {match !== null && (
             <section className="detail-section">
               <h3 className="section-title">{tripMessages.matchPanelTitle}</h3>
-              <ul className="match-reason-list">
-                {match.match.reasons.map((reason) => (
-                  <li key={reason}>{reason}</li>
-                ))}
-              </ul>
-              <p className="detail-meta">
-                {tripMessages.matchPercentage} {match.match.percentage}% · {match.match.basis}
-              </p>
+              <div className="match-summary">
+                <Progress
+                  type="circle"
+                  percent={match.match.percentage}
+                  size={72}
+                  strokeWidth={8}
+                  strokeColor="var(--warn)"
+                  format={(percent) => (
+                    <span className="match-progress-text">
+                      {tripMessages.matchPercentage}
+                      <b>{percent}%</b>
+                    </span>
+                  )}
+                />
+                <div className="match-reasons">
+                  {match.match.reasons.map((reason) => (
+                    <Tag key={reason}>{reason}</Tag>
+                  ))}
+                </div>
+              </div>
+              <p className="detail-meta">{match.match.basis}</p>
             </section>
           )}
 

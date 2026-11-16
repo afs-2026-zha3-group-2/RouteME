@@ -136,7 +136,7 @@ async function fillCompleteProfile(page: Page): Promise<void> {
   // The birthday uses a DatePicker with needConfirm: typing the date needs Enter to commit.
   await page.locator('#profile-birthday').fill('2003-05-18');
   await page.locator('#profile-birthday').press('Enter');
-  await expect(page.locator('#profile-birthday')).toHaveValue('2003-05-18');
+await expect(page.locator('#profile-birthday')).toHaveValue('2003-05-18');
   await pickGender(page, '女');
   await page.locator('#profile-city').fill('广州');
   await page.locator('#profile-school').fill('中山大学');
@@ -369,7 +369,8 @@ test('opens a publisher profile from a trip card', async ({ page }) => {
   const viewer = await registerViaApi(page, { prefix: 'view' });
   await useAccount(page, viewer);
   // 首页用目的地/日期筛选，已无搜索框；切到「最新发布」使新行程排在最前。
-  await page.getByLabel('排序').selectOption('new');
+  await page.locator('.ant-select', { has: page.locator('#filter-sort') }).click();
+  await page.locator('.ant-select-item-option', { hasText: '按最新发布' }).click();
 
   const card = page.locator('.trip-card', { hasText: title });
   await expect(card).toBeVisible();
@@ -384,7 +385,7 @@ test('opens a publisher profile from a trip card', async ({ page }) => {
   const modal = page.locator('.ant-modal', { hasText: '旅行者资料' });
   await expect(modal).toBeVisible();
   await expect(modal.getByText(publisher.nickname, { exact: true })).toBeVisible();
-  await modal.getByRole('button', { name: /^关\s*闭$/ }).click();
+  await modal.locator('.ant-modal-footer button').click();
   await expect(modal).toBeHidden();
 
   // 公开主页路由仍可用：直接访问能看到同一份资料。

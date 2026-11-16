@@ -85,8 +85,8 @@ test('shares an experience and reuses it to publish a new plan', async ({ page }
   await expect(page.getByLabel('计划人数（含自己，2–12）')).toHaveValue('');
   await expect(page.getByLabel('标题')).toHaveValue('');
   await expect(page.locator('.place-chip-name', { hasText: '香洲港集合' }).first()).toBeVisible();
-  await expect(page.getByRole('button', { name: '摄影', exact: true })).toHaveAttribute(
-    'aria-pressed',
+  await expect(page.getByRole('checkbox', { name: '摄影', exact: true })).toHaveAttribute(
+    'aria-checked',
     'true',
   );
 
@@ -132,6 +132,7 @@ test('guides an empty filter state to publish from both views', async ({ page })
 
   // 搜索已移除；用未来日期筛选制造空态。
   await page.getByLabel('出发不早于').fill('2099-01-01');
+  await page.getByLabel('出发不早于').press('Enter');
   await expect(page.getByText('还没有符合条件的行程')).toBeVisible();
   await expect(page.getByRole('button', { name: '清除全部条件' }).first()).toBeVisible();
   await page.getByRole('button', { name: '去发布行程' }).click();
@@ -139,6 +140,7 @@ test('guides an empty filter state to publish from both views', async ({ page })
 
   await page.goto('/');
   await page.getByLabel('出发不早于').fill('2099-01-01');
+  await page.getByLabel('出发不早于').press('Enter');
   await page.locator('.ant-segmented-item', { hasText: '旅行体验' }).click();
   await expect(page.getByText('还没有符合的旅行体验')).toBeVisible();
   await page.getByRole('button', { name: '去发布行程' }).click();

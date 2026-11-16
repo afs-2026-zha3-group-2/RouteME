@@ -95,8 +95,8 @@ test('shows match reasons and keeps match as the default sort', async ({ page })
   expect(reasonsForUser2).not.toEqual(reasonsForUser1);
 
   await firstCard.click();
-  await expect(page.locator('.match-reason-list li').first()).toBeVisible();
-  await expect(page.locator('.detail-meta').filter({ hasText: '匹配度' })).toBeVisible();
+  await expect(page.locator('.match-reasons .ant-tag').first()).toBeVisible();
+  await expect(page.locator('.match-progress-text')).toContainText('匹配度');
 });
 
 test('applies, gets accepted, chats, reports and leaves', async ({ page }) => {

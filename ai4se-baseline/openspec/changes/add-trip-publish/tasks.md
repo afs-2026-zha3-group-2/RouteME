@@ -120,3 +120,24 @@
 - [x] 回归：后端 `clean test`、前端 `npm test` / `npm run build`、发布 e2e。
 
 **验证：** `cd RouteME/backend; .\mvnw.cmd -B -o clean test`、`cd RouteME/frontend; npm test`、`cd RouteME/e2e; npx playwright test tests/trips.spec.ts -g "publishes a trip|blocks publishing"`
+
+## 10. R4 任务（Ant Design 组件收敛，2026-11-16）
+
+### T16 [frontend] 发布表单改用 antd 控件
+
+- [x] 起止日期 `Input type="date"` → `DatePicker`（`YYYY-MM-DD`，默认今天与空值校验不变）。
+- [x] 计划人数 / 预算 `Input type="number"` → `InputNumber`（`precision=0`，表单状态仍是字符串）。
+- [x] 预设兴趣 `button.chip` → `Tag.CheckableTag`；自定义标签 → `Tag closable`。
+- [x] 新增 `utils/dates.ts` 做 `Dayjs` ↔ `YYYY-MM-DD` 边界转换，附单测。
+
+### T17 [frontend] 全局中文与规则
+
+- [x] `ConfigProvider` 增加 `zhCN`，日期面板与弹层文案跟随中文。
+- [x] `@rule:web-coding-style` 新增「组件选型（Ant Design 优先）」与检查项；架构知识库同步。
+
+### T18 [e2e] 选择器与回归
+
+- [x] 日期用 `fill + Enter`，清空走 `.ant-picker-clear`；标签断言改 `role=checkbox`。
+- [x] 回归：`npm test` 137 通过；`typecheck` / `build` 通过；`trips.spec.ts` 11/11 通过。
+
+**验证：** `cd RouteME/frontend; npm test; npm run build`、`cd RouteME/e2e; npx playwright test tests/trips.spec.ts`

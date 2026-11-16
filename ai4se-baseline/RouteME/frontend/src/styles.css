@@ -388,6 +388,32 @@ svg {
   gap: 6px;
 }
 
+.chip-row .ant-tag-checkable,
+.filter-tags .ant-tag-checkable {
+  margin-inline-end: 0;
+  padding: 5px 12px;
+  border-radius: 99px;
+  font-size: 12.5px;
+  font-weight: 600;
+  border: 1px solid var(--line);
+  background: var(--surface-2);
+  color: var(--ink-2);
+}
+
+.chip-row .ant-tag-checkable:hover,
+.filter-tags .ant-tag-checkable:hover {
+  border-color: var(--lagoon);
+  color: var(--t-lagoon);
+}
+
+.chip-row .ant-tag-checkable-checked,
+.filter-tags .ant-tag-checkable-checked {
+  background: var(--grad-shore);
+  color: #f2fffd;
+  border-color: transparent;
+  box-shadow: 0 4px 12px -6px var(--tide);
+}
+
 /* ---------- 按钮（自定义 + antd 覆盖） ---------- */
 .btn {
   display: inline-flex;
@@ -1517,6 +1543,15 @@ svg {
   gap: 5px;
 }
 
+.tc-tags .ant-tag {
+  margin-inline-end: 0;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--t-lagoon);
+  background: var(--lagoon-soft);
+  border-color: color-mix(in srgb, var(--lagoon) 20%, transparent);
+}
+
 .tc-match {
   display: flex;
   align-items: center;
@@ -1534,21 +1569,15 @@ svg {
   position: relative;
 }
 
-.match-ring svg {
-  width: 100%;
-  height: 100%;
-  transform: rotate(-90deg);
+.match-ring .ant-progress,
+.match-ring .ant-progress-inner {
+  display: block;
 }
 
-.match-ring .ring-bg {
+.match-ring .ant-progress-circle-rail {
   stroke: color-mix(in srgb, var(--warn) 22%, transparent);
 }
 
-.match-ring .ring-fg {
-  stroke: var(--warn);
-  stroke-linecap: round;
-  transition: stroke-dashoffset 0.7s var(--ease-out);
-}
 
 .match-copy {
   display: flex;
@@ -1622,28 +1651,23 @@ svg {
   color: var(--ink-2);
 }
 
-.tc-cap .meter {
+.tc-cap .tc-meter {
+  display: block;
   width: 62px;
   margin-top: 4px;
+  margin-left: auto;
 }
 
-.meter {
-  display: block;
-  height: 6px;
-  border-radius: 99px;
-  background: var(--surface-3);
-  overflow: hidden;
+.tc-cap .tc-meter .ant-progress {
+  margin: 0;
+  line-height: 1;
 }
 
-.meter i {
-  display: block;
-  height: 100%;
-  border-radius: 99px;
+.tc-cap .tc-meter .ant-progress-bg {
   background: var(--grad-shore);
-  transition: width 0.5s var(--ease-out);
 }
 
-.meter.full i {
+.tc-cap .tc-meter.is-full .ant-progress-bg {
   background: var(--grad-sunset);
 }
 
@@ -2261,16 +2285,41 @@ svg {
   color: var(--ink-2);
 }
 
-.match-reasons {
+.match-summary {
   display: flex;
-  flex-direction: column;
-  gap: 4px;
+  align-items: center;
+  gap: 18px;
+  flex-wrap: wrap;
 }
 
-.match-reason-list {
-  margin: 0;
-  padding-left: 20px;
-  color: var(--ink-2);
+.match-summary .ant-progress-circle-rail {
+  stroke: color-mix(in srgb, var(--warn) 22%, transparent);
+}
+
+
+.match-progress-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--ink-3);
+}
+
+.match-progress-text b {
+  font-family: var(--font-num);
+  font-size: 15px;
+  color: var(--t-warn);
+}
+
+.match-reasons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.match-reasons .ant-tag {
+  margin-inline-end: 0;
 }
 
 .safety-note {
