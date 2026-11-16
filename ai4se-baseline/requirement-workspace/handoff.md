@@ -19,8 +19,8 @@
 | REQ-004 | `trip-experiences` | `add-trip-experiences` | `intents/REQ-004-trip-experiences.md` | `requirements/REQ-004-trip-experiences.md` | `openspec/changes/add-trip-experiences/` |
 | REQ-005 | `trip-plans`（MODIFIED）/ `trip-experiences`（MODIFIED） | `refine-inspiration-home` | `intents/REQ-005-inspiration-home.md` | `requirements/REQ-005-inspiration-home.md` | `openspec/changes/refine-inspiration-home/` |
 | REQ-006 | `user-auth`（MODIFIED） | `add-user-logout` | `intents/REQ-006-user-logout.md` | `requirements/REQ-006-user-logout.md` | `openspec/changes/add-user-logout/`（依赖的 `add-user-auth` 已归档） |
-| REQ-008 | `user-profile`（ADDED）/ `user-auth`（MODIFIED） | `add-user-profile` | `intents/REQ-008-user-profile.md` | `requirements/REQ-008-user-profile.md` | `openspec/changes/add-user-profile/`（依赖的 `add-user-auth` 已归档） |
 | REQ-007 | `trip-plans`（MODIFIED）+ `trip-experiences`（MODIFIED） | `add-destination-area-filters` | `intents/REQ-007-destination-area-filters.md` | `requirements/REQ-007-destination-area-filters.md` | `openspec/changes/add-destination-area-filters/` |
+| REQ-008 | `user-profile`（ADDED）/ `user-auth`（MODIFIED） | `add-user-profile` | `intents/REQ-008-user-profile.md` | `requirements/REQ-008-user-profile.md` | `openspec/changes/add-user-profile/`（依赖的 `add-user-auth` 已归档） |
 
 - 共享分析：`deep-dive.md`（①–④ 四表，含 REQ-005 / REQ-006 / REQ-007 / REQ-008 增补）、`impact-brief.md`（覆盖 002/003/004/005/006/007/008 需求集）。
 - 故事清单：`stories.md`（S03 → `stories/refine-inspiration-home.story.md`；S18 → `stories/add-user-profile.story.md`；REQ-007 目的地筛选 → `stories/REQ-007-destination-area-filters.story.md`）；REQ-006 为单 change 小增量，P1 未拆故事，由 proposal + delta spec 承接（P1-4 允许 proposal 与 / 或 story list）。
