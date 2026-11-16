@@ -985,6 +985,7 @@ svg {
 }
 
 .form-field {
+  position: relative;
   display: flex;
   flex-direction: column;
   gap: 5px;
@@ -1174,6 +1175,14 @@ svg {
   border-top: 0;
 }
 
+/* Date fields reuse the shared picker helper: full width, anchored to the field. */
+.publish-page .trip-date {
+  width: 100%;
+}
+
+.trip-date-anchor {
+  position: relative;
+}
 @media (max-width: 900px) {
   .publish-grid {
     grid-template-columns: 1fr;
@@ -1328,9 +1337,31 @@ svg {
 }
 
 .field {
+  position: relative;
   display: grid;
   gap: 6px;
   min-width: 0;
+}
+
+/*
+ * antd 6.7 keeps the picker popup at inset -1000vw when the OS asks for reduced motion
+ * (the alignment effect depends on the appear motion). Anchor the popup to the field instead.
+ */
+@media (prefers-reduced-motion: reduce) {
+  .app-date-popup {
+    left: 0 !important;
+    right: auto !important;
+    top: calc(100% + 4px) !important;
+    bottom: auto !important;
+  }
+
+  .app-date-popup.ant-slide-up-appear-prepare,
+  .app-date-popup.ant-slide-up-enter-prepare,
+  .app-date-popup.ant-slide-up-appear,
+  .app-date-popup.ant-slide-up-enter {
+    opacity: 1 !important;
+    transform: none !important;
+  }
 }
 
 .label {

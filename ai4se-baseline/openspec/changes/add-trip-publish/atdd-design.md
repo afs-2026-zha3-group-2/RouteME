@@ -107,3 +107,17 @@ P2 阶段记录 §8 的修订把目的地改成二级代码，新增两条场景
 - `TripCreatePage` 用 `hasDestination` 区分「未选」与「未覆盖」两种提示；未覆盖时不渲染地图。
 - `tripMessages` 新增 `waypointCityUncovered`。
 - 删除 `areas/areaCatalog.ts`（含重复省市数据）与 `areaCatalog.test.ts`；删除后端 `constant/AreaConstant`、`pojo/AreaCity` 及 `TripPlanServiceImpl` 两条未使用 import。
+
+## 9. R4/R5：按原型重排 S06/S07（2026-11-16）
+
+| # | 场景 | 测试层 | 用例 |
+|---|---|---|---|
+| 24 | 发布页双栏、实时预览与发布前提醒同时存在 | 端到端 | `.publish-grid` / `.publish-side` 可见；预览卡显示未填标题占位；「发布前提醒」三条提示可见 |
+| 25 | 卡片匹配块圆环内显示分值、理由为纯文本 | 端到端 | `companions.spec`：`.match-ring .ant-progress-indicator` 为数字；`.match-reason` 非空 |
+| 26 | 详情匹配面板按原型呈现 | 端到端 | 标题「为什么推荐给你」；`.match-rule` 含「目的地相同 50 分」 |
+
+## 10. R6：日期弹层在减少动态效果下可用（2026-11-16）
+
+| # | 场景 | 测试层 | 用例 |
+|---|---|---|---|
+| 27 | 开启 `prefers-reduced-motion: reduce` 后点击日期能看到面板并选中 | 端到端 | `trips.spec` 的 `date pickers under reduced motion`：点开发布页「出发日期」→ `.app-date-popup` 可见且在视口内 → 点「今天」关闭并回填；首页「出发不早于」同样可打开 |

@@ -128,3 +128,21 @@ ATDD：`atdd-design.md` §9 场景 24–26。任务：`tasks.md` §10 T19–T21�
 | AO | Jay | 承担布局重排与验证 | 2026-11-16 |
 | SA | Jacky、Karena | 待确认 D11–D15 | 待签 |
 | SM | Lewis | 待确认是否准入 P5（P5 仍暂缓） | 待签 |
+
+## 13. R6 设计（日期弹层在减少动态效果下可用，2026-11-16）
+
+根因：antd 6.7 在系统开启「减少动态效果」（`prefers-reduced-motion: reduce`）时，日期弹层停留在视口外；用户看到的是「点击日期没有反应」。`ProfileSetupPage` 已有同源修复，R6 把它抽成共享约定。
+
+| 编号 | 取舍 | 结论 |
+|---|---|---|
+| D16 | 弹层挂载 | 新增 `utils/datePickerProps.ts`：`getPopupContainer` 挂到字段容器，popup 根类 `app-date-popup`；字段容器 `position: relative` |
+| D17 | reduced motion 定位 | `@media (prefers-reduced-motion: reduce)` 下把 `.app-date-popup` 固定到字段下方（`left: 0` / `top: calc(100% + 4px)`） |
+| D18 | 覆盖范围 | 发布页起止日期、首页「出发不早于 / 不晚于」统一使用；生日字段保留自身同类修复，后续可并入 |
+
+ATDD：`atdd-design.md` §10 场景 27。任务：`tasks.md` §12 T22–T23。
+
+| 角色 | 姓名 | 确认内容 | 日期 |
+|---|---|---|---|
+| AO | Jay | 承担修复与验证 | 2026-11-16 |
+| SA | Jacky、Karena | 待确认 D16–D18 | 待签 |
+| SM | Lewis | 待确认是否准入 P5（P5 仍暂缓） | 待签 |

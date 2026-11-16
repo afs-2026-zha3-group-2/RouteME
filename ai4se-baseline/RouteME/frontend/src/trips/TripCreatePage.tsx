@@ -10,6 +10,7 @@ import { gazetteerCityForCode } from '../areas/gazetteerCity';
 import { tripMessages } from '../i18n/tripMessages';
 import { PlacePicker } from '../map/PlacePicker';
 import type { DemoUser, TripSummary } from '../types';
+import { appDatePickerProps } from '../utils/datePickerProps';
 import { dayjsToIso, isoToDayjs } from '../utils/dates';
 import {
   addTag,
@@ -204,12 +205,11 @@ export function TripCreatePage({ currentUser, fromTripId }: Props) {
                 error={errors.startDate}
                 required
               >
-                <div className="trip-date-anchor">
+<div className="trip-date-anchor">
                   <DatePicker
+                    {...appDatePickerProps}
                     {...fieldProps('trip-start-date', errors.startDate)}
                     className="trip-date"
-                    classNames={{ popup: { root: 'trip-date-popup' } }}
-                    getPopupContainer={(trigger) => trigger.parentElement ?? document.body}
                     format="YYYY-MM-DD"
                     placeholder="选择日期"
                     locale={zhCN.DatePicker}
@@ -228,12 +228,11 @@ export function TripCreatePage({ currentUser, fromTripId }: Props) {
                 error={errors.endDate}
                 required
               >
-                <div className="trip-date-anchor">
+<div className="trip-date-anchor">
                   <DatePicker
+                    {...appDatePickerProps}
                     {...fieldProps('trip-end-date', errors.endDate)}
                     className="trip-date"
-                    classNames={{ popup: { root: 'trip-date-popup' } }}
-                    getPopupContainer={(trigger) => trigger.parentElement ?? document.body}
                     format="YYYY-MM-DD"
                     placeholder="选择日期"
                     locale={zhCN.DatePicker}
