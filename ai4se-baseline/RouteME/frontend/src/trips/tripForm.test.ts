@@ -35,6 +35,18 @@ describe('validateTripForm', () => {
     expect(errors.endDate).toBeDefined();
   });
 
+  it('reports every missing required field at once', () => {
+    const errors = validateTripForm({ ...emptyTripForm, capacity: '' });
+    expect(Object.keys(errors).sort()).toEqual([
+      'capacity',
+      'destination',
+      'endDate',
+      'startDate',
+      'stops',
+      'title',
+    ]);
+  });
+
   it('rejects a title over the contract limit', () => {
     const errors = validateTripForm({ ...validForm, title: '路'.repeat(41) });
     expect(errors.title).toBeDefined();
@@ -54,9 +66,10 @@ describe('validateTripForm', () => {
   it('bounds the capacity to the contract range', () => {
     expect(validateTripForm({ ...validForm, capacity: '1' }).capacity).toBeDefined();
     expect(validateTripForm({ ...validForm, capacity: '13' }).capacity).toBeDefined();
-    expect(validateTripForm({ ...validForm, capacity: '2' }).capacity).toBeUndefined();
-    expect(validateTripForm({ ...validForm, capacity: '12' }).capacity).toBeUndefined();
-  });
+      expect(validateTripForm({ ...validForm, capacity: '2.5' }).capacity).toBeDefined();
+      expect(validateTripForm({ ...validForm, capacity: '2' }).capacity).toBeUndefined();
+      expect(validateTripForm({ ...validForm, capacity: '12' }).capacity).toBeUndefined();
+    });
 
   it('rejects an inverted budget range', () => {
     const errors = validateTripForm({ ...validForm, budgetMin: '200', budgetMax: '100' });

@@ -8,6 +8,13 @@ async function loginAs(page: Page, userId: number) {
   }, userId);
 }
 
+async function pickPlace(page: Page, field: string, name: string) {
+  const input = page.getByLabel(field);
+  await input.fill(name);
+  await input.press('Enter');
+  await expect(page.locator('.place-chip-name', { hasText: name }).first()).toBeVisible();
+}
+
 async function createTripViaApi(page: Page, title: string) {
   const response = await page.request.post(`${API}/trips`, {
     headers: { 'X-User-Id': '1', 'Content-Type': 'application/json' },
@@ -64,21 +71,40 @@ test('publishes a trip and finds it from the home search', async ({ page }) => {
   await page.goto('/#/trips/new');
 
   await page.getByLabel('标题').fill(title);
-  await page.getByLabel('目的地').click();
-    await page.locator('.ant-select-item-option', { hasText: '珠海' }).first().click();
+  await pickPlace(page, '目的地', '珠海');
   await page.getByLabel('出发日期').fill('2026-12-05');
   await page.getByLabel('结束日期').fill('2026-12-05');
-  await page.getByLabel('途经点（每行一个，至少两个）').fill('香洲港集合\n情侣路骑行');
-  await page.getByRole('checkbox', { name: '摄影' }).click();
-  await page.locator('.form-card button.ant-btn-primary').click();
+  await pickPlace(page, '途经点', '香洲港');
+  await pickPlace(page, '途经点', '情侣路');
+  await page.getByRole('button', { name: '摄影', exact: true }).click();
+
+  await page.getByRole('button', { name: /^发\s*布$/ }).click();
 
   await expect(page).toHaveURL(/#\/trips\/\d+$/);
   await expect(page.getByRole('heading', { name: title })).toBeVisible();
   await expect(page.getByText('招募中').first()).toBeVisible();
+  await expect(page.getByText('这是你发布的行程')).toBeVisible();
 
   await page.goto('/');
   await page.getByPlaceholder('搜索路线、地点或发布者').fill(title);
   await expect(page.locator('.trip-card', { hasText: title })).toBeVisible();
+});
+
+test('blocks publishing and flags every missing required field', async ({ page }) => {
+  await loginAs(page, 1);
+  await page.goto('/#/trips/new');
+
+  await page.getByRole('button', { name: /^发\s*布$/ }).click();
+
+  await expect(page).toHaveURL(/#\/trips\/new$/);
+  for (const label of ['标题', '目的地', '出发日期', '结束日期', '途经点']) {
+    await expect(page.getByLabel(label)).toHaveAttribute('aria-invalid', 'true');
+  }
+  await expect(page.getByText('给这条路线起个名字（40 字以内）')).toBeVisible();
+  await expect(page.getByText('请选择目的地')).toBeVisible();
+  await expect(page.getByText('请选择出发日期')).toBeVisible();
+  await expect(page.getByText('请选择结束日期')).toBeVisible();
+  await expect(page.getByText('至少写出两个途经点，别人才看得懂路线')).toBeVisible();
 });
 
 test('publisher marks a trip completed and sees the experience section', async ({ page }) => {
