@@ -80,9 +80,9 @@ test('shares an experience and reuses it to publish a new plan', async ({ page }
 
   await page.goto(`/#/trips/${trip.id}`);
   await page.getByRole('button', { name: '参考此行程发布' }).click();
-  await expect(page.getByRole('heading', { name: '发布旅行计划' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: '发布一条想走的路' })).toBeVisible();
   await expect(page.getByText(/已预填目的地、途经点与兴趣/)).toBeVisible();
-  await expect(page.getByLabel('计划人数（含自己，2–12）')).toHaveValue('');
+  await expect(page.getByLabel('计划人数')).toHaveValue('');
   await expect(page.getByLabel('标题')).toHaveValue('');
   await expect(page.locator('.place-chip-name', { hasText: '香洲港集合' }).first()).toBeVisible();
   await expect(page.getByRole('checkbox', { name: '摄影', exact: true })).toHaveAttribute(

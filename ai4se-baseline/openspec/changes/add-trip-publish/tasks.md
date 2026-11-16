@@ -141,3 +141,23 @@
 - [x] 回归：`npm test` 137 通过；`typecheck` / `build` 通过；`trips.spec.ts` 11/11 通过。
 
 **验证：** `cd RouteME/frontend; npm test; npm run build`、`cd RouteME/e2e; npx playwright test tests/trips.spec.ts`
+
+## 11. R5 任务（按原型重排发布页，2026-11-16）
+
+### T19 [frontend] 发布页双栏与面板
+
+- [x] 页面头改为原型 `page-head`（标题 + 说明 + 返回入口）。
+- [x] 主栏拆四块 `panel`：基本信息 / 简单路线 / 同行与预算 / 兴趣标签。
+- [x] 右侧 `publish-side`：`preview-label` + 实时预览卡片 + 发布前提醒面板；≤900px 回落单列。
+
+### T20 [frontend] 字段提示与预览
+
+- [x] 必填 `*`、选填「选填」、标题字数计数；人数与集合区域加入原型提示句。
+- [x] 人数移入「同行与预算」；`TripCard` 增加 `preview` 模式（不跳转、不开资料弹窗）。
+
+### T21 [e2e] 断言与回归
+
+- [x] 发布用例断言四个面板标题、`.tc-meta` 的「周X出发」。
+- [x] 回归：`npm test` 137 通过；`build` 通过；`trips.spec.ts` 11/11 通过；全量 53/54（唯一失败为既有 `profiles.spec.ts:23`）。
+
+**验证：** `cd RouteME/frontend; npm test; npm run build`、`cd RouteME/e2e; npx playwright test`

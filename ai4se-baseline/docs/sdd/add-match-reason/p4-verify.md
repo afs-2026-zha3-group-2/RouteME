@@ -119,3 +119,22 @@
 | AO | Jay | 交付组件替换、规则文档与回归结果 | 2026-11-16 |
 | VL | Neal | 待复核 R3 证据（G2 追加） | 待签 |
 | SM | Lewis | 待确认 R3 范围；P5 仍暂缓 | 待签 |
+
+## 11. R4 实施结果（匹配块按原型重排，2026-11-16）
+
+| 项 | 结果 |
+|---|---|
+| 实现提交 | `refactor(p4): add-trip-publish add-match-reason align S06/S07 with the prototype` |
+| 卡片 | `Progress type="circle"` 圆环内直接显示分值；理由改为一段纯文本；移除「匹配度 / 匹配理由」两层标签 |
+| 元信息 | 日期区间后显示「周X出发」，移除途经点数量（原型为 calendar / clock 两段） |
+| 详情 | 标题「为什么推荐给你」；圆环 + 理由文本 + `basis` + 可解释规则说明；保持单列，不改双栏 |
+| 样式 | 圆环文字改 `.ant-progress-indicator`（antd 6.7 类名）；卡片理由 11.5px、详情理由 13px；颜色走 `--warn` |
+| 前端验证 | `npm test` 137 通过；`typecheck` / `build` 通过 |
+| 端到端 | `companions.spec.ts` 8/8；全量 53/54（唯一失败为既有 `profiles.spec.ts:23` 数据断言） |
+| 看板 | S07 仍显示 P3（token 无 `project` 写权限，需人工拖到 P4）；P5 暂缓、不归档 |
+
+| 角色 | 姓名 | 确认内容 | 日期 |
+|---|---|---|---|
+| AO | Jay | 交付原型匹配块与回归结果 | 2026-11-16 |
+| VL | Neal | 待复核 R4 证据（G2 追加） | 待签 |
+| SM | Lewis | 待确认 R4 范围；P5 仍暂缓 | 待签 |

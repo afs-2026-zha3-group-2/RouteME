@@ -71,3 +71,22 @@ ATDD：`atdd-design.md` §6 场景 10–13。任务：`tasks.md` R2 段 T7–T9�
 | SA | Jacky、Karena | 接受 D11 与契约描述修订 | 2026-11-16 |
 | AO | Jay | 承担实现与验证 | 2026-11-16 |
 | SM | Lewis | 准入 P4 | 2026-11-16 |
+
+## 9. R3 设计（匹配块按原型重排，2026-11-16）
+
+依据 `docs/prototype/ui.js` 的 `tripCard` / `matchBlock` 与 `docs/prototype/styles.css` 的 `.tc-match / .match-ring`。
+
+| 编号 | 取舍 | 结论 |
+|---|---|---|
+| D12 | 卡片匹配块 | `Progress type="circle"` 圆环内直接显示分值；理由改为一段纯文本（`、`/`，` 连接），不再加「匹配度 / 匹配理由」两层标签 |
+| D13 | 卡片元信息 | 日期区间后增加「周X出发」，对应原型的 calendar / clock 两段信息；移除途经点数量 |
+| D14 | 详情匹配面板 | 标题改为「为什么推荐给你」；圆环 + 理由文本 + `basis` + 可解释规则说明，保持单列布局（不改详情为双栏） |
+| D15 | 组件边界 | 圆环仍用 antd `Progress`，颜色取 `--warn`；不恢复手写 SVG |
+
+ATDD：`atdd-design.md` §7 场景 14–16。任务：`tasks.md` R3 段 T12–T13。
+
+| 角色 | 姓名 | 确认内容 | 日期 |
+|---|---|---|---|
+| AO | Jay | 承担匹配块重排与验证 | 2026-11-16 |
+| SA | Jacky、Karena | 待确认 D12–D15 | 待签 |
+| SM | Lewis | 待确认是否准入 P5（P5 仍暂缓） | 待签 |

@@ -2,10 +2,11 @@ import { useEffect, useState, type ReactNode } from 'react';
 import { Alert, Button, Card, DatePicker, Input, InputNumber, Space, Tag, Typography } from 'antd';
 import { createTrip, loadTrip } from '../api';
 import { AreaCascader } from '../area/AreaCascader';
+import { cityLabel } from '../area/areaOptions';
 import { gazetteerCityForCode } from '../areas/gazetteerCity';
 import { tripMessages } from '../i18n/tripMessages';
 import { PlacePicker } from '../map/PlacePicker';
-import type { DemoUser } from '../types';
+import type { DemoUser, TripSummary } from '../types';
 import { dayjsToIso, isoToDayjs } from '../utils/dates';
 import {
   addTag,
@@ -21,7 +22,9 @@ import {
   MAX_STOPS,
   MAX_TAGS,
   MAX_TAG_LENGTH,
+  MAX_TITLE_LENGTH,
 } from './tripOptions';
+import { TripCard } from './TripCard';
 
 type Props = {
   currentUser: DemoUser;
@@ -70,6 +73,24 @@ export function TripCreatePage({ currentUser, fromTripId }: Props) {
   const mapCity = gazetteerCityForCode(values.destinationCode);
   const hasDestination = values.destinationCode !== '';
 
+  const previewTrip: TripSummary = {
+    id: 0,
+    title: values.title.trim() === '' ? '你的行程标题' : values.title,
+    destination: cityLabel(values.destinationCode) || '目的地',
+    destination_code: values.destinationCode,
+    province_code: '',
+    province_name: '',
+    start_date: values.startDate,
+    end_date: values.endDate === '' ? values.startDate : values.endDate,
+    stops: values.stops.length > 0 ? values.stops : ['至少写出两个途经点'],
+    tags: values.tags,
+    capacity: Number(values.capacity) || 2,
+    joined_count: 1,
+    status: 'recruiting',
+    publisher: currentUser,
+    created_at: new Date().toISOString(),
+  };
+
   const addCustomTag = () => {
     const next = addTag(values.tags, tagDraft);
     if (next === values.tags) {
@@ -106,22 +127,43 @@ export function TripCreatePage({ currentUser, fromTripId }: Props) {
   };
 
   return (
-    <main className="form-page">
-      <Card className="form-card">
-        <Typography.Title level={2} className="trip-heading">
-          {tripMessages.createTitle}
-        </Typography.Title>
+    <main className="form-page publish-page">
+      <div className="page-head">
+        <div>
+          <Typography.Title level={2} className="page-title">
+            {tripMessages.createTitle}
+          </Typography.Title>
+          <p className="page-sub">{tripMessages.createSubtitle}</p>
+        </div>
+        <Button className="page-back" onClick={() => (window.location.hash = '#/')}>
+          {tripMessages.backHome}
+        </Button>
+      </div>
 
-        {fromTripId !== undefined && (
-          <Alert type="info" showIcon title={tripMessages.referenceHint} />
-        )}
+      {fromTripId !== undefined && (
+        <Alert
+          className="prefill-banner"
+          type="info"
+          showIcon
+          title={tripMessages.referenceHint}
+        />
+      )}
 
-        <section className="form-section">
-          <h3 className="form-section-title">{tripMessages.sectionBasics}</h3>
-          <div className="form-stack">
-            <Field label={tripMessages.fieldTitle} htmlFor="trip-title" error={errors.title}>
+      <div className="publish-grid">
+        <div className="publish-main">
+          <Card className="panel publish-panel">
+            <h3 className="panel-title">{tripMessages.sectionBasics}</h3>
+            <div className="form-stack">
+            <Field
+              label={tripMessages.fieldTitle}
+              htmlFor="trip-title"
+              error={errors.title}
+              required
+              counter={`${values.title.length}/${MAX_TITLE_LENGTH}`}
+            >
               <Input
                 {...fieldProps('trip-title', errors.title)}
+                maxLength={MAX_TITLE_LENGTH}
                 value={values.title}
                 onChange={(event) => update({ title: event.target.value })}
               />
@@ -131,6 +173,7 @@ export function TripCreatePage({ currentUser, fromTripId }: Props) {
               label={tripMessages.fieldDestination}
               htmlFor="trip-destination"
               error={errors.destination}
+              required
             >
               <AreaCascader
                 id="trip-destination"
@@ -145,8 +188,13 @@ export function TripCreatePage({ currentUser, fromTripId }: Props) {
               />
             </Field>
 
-            <div className="form-grid">
-              <Field label={tripMessages.fieldStartDate} htmlFor="trip-start-date" error={errors.startDate}>
+            <div className="form-row">
+              <Field
+                label={tripMessages.fieldStartDate}
+                htmlFor="trip-start-date"
+                error={errors.startDate}
+                required
+              >
                 <DatePicker
                   {...fieldProps('trip-start-date', errors.startDate)}
                   format="YYYY-MM-DD"
@@ -157,7 +205,12 @@ export function TripCreatePage({ currentUser, fromTripId }: Props) {
                   status={errors.startDate === undefined ? undefined : 'error'}
                 />
               </Field>
-              <Field label={tripMessages.fieldEndDate} htmlFor="trip-end-date" error={errors.endDate}>
+              <Field
+                label={tripMessages.fieldEndDate}
+                htmlFor="trip-end-date"
+                error={errors.endDate}
+                required
+              >
                 <DatePicker
                   {...fieldProps('trip-end-date', errors.endDate)}
                   format="YYYY-MM-DD"
@@ -169,25 +222,12 @@ export function TripCreatePage({ currentUser, fromTripId }: Props) {
                 />
               </Field>
             </div>
+            </div>
+          </Card>
 
-            <Field label={tripMessages.fieldCapacity} htmlFor="trip-capacity" error={errors.capacity}>
-              <InputNumber
-                {...fieldProps('trip-capacity', errors.capacity)}
-                min={2}
-                max={12}
-                precision={0}
-                style={{ width: '100%' }}
-                value={values.capacity === '' ? null : Number(values.capacity)}
-                onChange={(value) => update({ capacity: value === null ? '' : String(value) })}
-                status={errors.capacity === undefined ? undefined : 'error'}
-              />
-            </Field>
-          </div>
-        </section>
-
-        <section className="form-section">
-          <h3 className="form-section-title">{tripMessages.sectionRoute}</h3>
-          <div className="form-stack">
+          <Card className="panel publish-panel">
+            <h3 className="panel-title">{tripMessages.sectionRoute}</h3>
+            <div className="form-stack">
             <Field label={tripMessages.fieldStops} htmlFor="trip-stops" error={errors.stops}>
               <PlacePicker
                 mode="multi"
@@ -211,62 +251,93 @@ export function TripCreatePage({ currentUser, fromTripId }: Props) {
               </p>
             )}
           </div>
-        </section>
+          </Card>
 
-        <section className="form-section">
-          <h3 className="form-section-title">{tripMessages.sectionExtras}</h3>
-          <div className="form-stack">
-            <div className="form-field">
-              <label className="form-label" htmlFor="trip-meeting-area">
-                {tripMessages.fieldMeetingArea}
-              </label>
-              <Space.Compact style={{ width: '100%' }}>
-                <Input
-                  id="trip-meeting-area"
-                  value={values.meetingArea}
-                  placeholder="可以直接输入集合地点，或在地图上选"
-                  onChange={(event) => update({ meetingArea: event.target.value })}
-                />
-                <Button onClick={() => setMeetingMapOpen((previous) => !previous)}>
-                  {meetingMapOpen ? '收起地图' : '地图选点'}
-                </Button>
-              </Space.Compact>
-              {meetingMapOpen && (
-                <PlacePicker
-                  mode="single"
-                  ariaLabel="集合地点"
-                  value={values.meetingArea === '' ? [] : [values.meetingArea]}
-                  onChange={(next) => update({ meetingArea: next[0] ?? '' })}
-                  placeholder="搜索集合地点"
-                  emptyHint="选中后会把地点名写进集合区域。"
-                />
-              )}
-            </div>
-
-            <div className="form-grid">
-              <Field label={tripMessages.fieldBudgetMin} htmlFor="trip-budget-min" error={errors.budget}>
+          <Card className="panel publish-panel">
+            <h3 className="panel-title">{tripMessages.sectionExtras}</h3>
+            <div className="form-stack">
+              <Field
+                label={tripMessages.fieldCapacity}
+                htmlFor="trip-capacity"
+                error={errors.capacity}
+                required
+                hint={tripMessages.hintCapacity}
+              >
                 <InputNumber
-                  {...fieldProps('trip-budget-min', errors.budget)}
-                  min={0}
+                  {...fieldProps('trip-capacity', errors.capacity)}
+                  min={2}
+                  max={12}
                   precision={0}
                   style={{ width: '100%' }}
-                  value={values.budgetMin === '' ? null : Number(values.budgetMin)}
-                  onChange={(value) => update({ budgetMin: value === null ? '' : String(value) })}
-                  status={errors.budget === undefined ? undefined : 'error'}
+                  value={values.capacity === '' ? null : Number(values.capacity)}
+                  onChange={(value) => update({ capacity: value === null ? '' : String(value) })}
+                  status={errors.capacity === undefined ? undefined : 'error'}
                 />
               </Field>
-              <Field label={tripMessages.fieldBudgetMax} htmlFor="trip-budget-max">
-                <InputNumber
-                  id="trip-budget-max"
-                  min={0}
-                  precision={0}
-                  style={{ width: '100%' }}
-                  value={values.budgetMax === '' ? null : Number(values.budgetMax)}
-                  onChange={(value) => update({ budgetMax: value === null ? '' : String(value) })}
-                />
-              </Field>
-            </div>
 
+              <Field
+                label={tripMessages.fieldMeetingArea}
+                htmlFor="trip-meeting-area"
+                optional
+                hint={tripMessages.hintMeeting}
+              >
+                <Space.Compact style={{ width: '100%' }}>
+                  <Input
+                    id="trip-meeting-area"
+                    value={values.meetingArea}
+                    placeholder="可以直接输入集合地点，或在地图上选"
+                    onChange={(event) => update({ meetingArea: event.target.value })}
+                  />
+                  <Button onClick={() => setMeetingMapOpen((previous) => !previous)}>
+                    {meetingMapOpen ? '收起地图' : '地图选点'}
+                  </Button>
+                </Space.Compact>
+                {meetingMapOpen && (
+                  <PlacePicker
+                    mode="single"
+                    ariaLabel="集合地点"
+                    value={values.meetingArea === '' ? [] : [values.meetingArea]}
+                    onChange={(next) => update({ meetingArea: next[0] ?? '' })}
+                    placeholder="搜索集合地点"
+                    emptyHint="选中后会把地点名写进集合区域。"
+                  />
+                )}
+              </Field>
+
+              <div className="form-row">
+                <Field
+                  label={tripMessages.fieldBudgetMin}
+                  htmlFor="trip-budget-min"
+                  error={errors.budget}
+                  optional
+                >
+                  <InputNumber
+                    {...fieldProps('trip-budget-min', errors.budget)}
+                    min={0}
+                    precision={0}
+                    style={{ width: '100%' }}
+                    value={values.budgetMin === '' ? null : Number(values.budgetMin)}
+                    onChange={(value) => update({ budgetMin: value === null ? '' : String(value) })}
+                    status={errors.budget === undefined ? undefined : 'error'}
+                  />
+                </Field>
+                <Field label={tripMessages.fieldBudgetMax} htmlFor="trip-budget-max" optional>
+                  <InputNumber
+                    id="trip-budget-max"
+                    min={0}
+                    precision={0}
+                    style={{ width: '100%' }}
+                    value={values.budgetMax === '' ? null : Number(values.budgetMax)}
+                    onChange={(value) => update({ budgetMax: value === null ? '' : String(value) })}
+                  />
+                </Field>
+              </div>
+            </div>
+          </Card>
+
+          <Card className="panel publish-panel">
+            <h3 className="panel-title">{tripMessages.sectionTags}</h3>
+            <div className="form-stack">
             <div className="form-field" role="group" aria-label={tripMessages.fieldTags}>
               <span className="form-label">{tripMessages.fieldTags}</span>
               <span className="chip-row">
@@ -323,7 +394,7 @@ export function TripCreatePage({ currentUser, fromTripId }: Props) {
               )}
             </div>
 
-            <Field label={tripMessages.fieldNote} htmlFor="trip-note">
+            <Field label={tripMessages.fieldNote} htmlFor="trip-note" optional>
               <Input.TextArea
                 id="trip-note"
                 rows={3}
@@ -331,20 +402,43 @@ export function TripCreatePage({ currentUser, fromTripId }: Props) {
                 onChange={(event) => update({ note: event.target.value })}
               />
             </Field>
-          </div>
-        </section>
 
-        {submitError !== null && (
-          <Alert type="error" showIcon title={tripMessages.failedTitle} description={submitError} />
-        )}
+            {submitError !== null && (
+              <Alert
+                type="error"
+                showIcon
+                title={tripMessages.failedTitle}
+                description={submitError}
+              />
+            )}
 
-        <div className="form-actions">
-          <Button type="primary" loading={submitting} onClick={submit}>
-            {tripMessages.createSubmit}
-          </Button>
-          <Button onClick={() => (window.location.hash = '#/')}>{tripMessages.createCancel}</Button>
+            <div className="form-actions">
+              <Button type="primary" loading={submitting} onClick={submit}>
+                {tripMessages.createSubmit}
+              </Button>
+              <Button onClick={() => (window.location.hash = '#/')}>
+                {tripMessages.createCancel}
+              </Button>
+            </div>
+            </div>
+          </Card>
         </div>
-      </Card>
+
+        <aside className="publish-side">
+          <div>
+            <span className="preview-label">{tripMessages.previewLabel}</span>
+            <TripCard trip={previewTrip} preview />
+          </div>
+          <Card className="panel safety-panel">
+            <h3 className="panel-title">{tripMessages.publishSafetyTitle}</h3>
+            <ul className="safety-list">
+              <li>{tripMessages.publishSafetyTipPublic}</li>
+              <li>{tripMessages.publishSafetyTipClear}</li>
+              <li>{tripMessages.publishSafetyTipReview}</li>
+            </ul>
+          </Card>
+        </aside>
+      </div>
     </main>
   );
 }
@@ -358,17 +452,32 @@ function Field({
   label,
   htmlFor,
   error,
+  required = false,
+  optional = false,
+  counter,
+  hint,
   children,
 }: {
   label: string;
   htmlFor: string;
   error?: string;
+  required?: boolean;
+  optional?: boolean;
+  counter?: string;
+  hint?: string;
   children: ReactNode;
 }) {
   return (
     <div className="form-field">
       <label className="form-label" htmlFor={htmlFor}>
-        {label}
+        <span>{label}</span>
+        {required && (
+          <span className="req" aria-hidden="true">
+            *
+          </span>
+        )}
+        {optional && <span className="opt">选填</span>}
+        {counter !== undefined && <span className="counter">{counter}</span>}
       </label>
       {children}
       {error !== undefined && (
@@ -376,6 +485,7 @@ function Field({
           {error}
         </Typography.Text>
       )}
+      {hint !== undefined && <span className="form-hint">{hint}</span>}
     </div>
   );
 }

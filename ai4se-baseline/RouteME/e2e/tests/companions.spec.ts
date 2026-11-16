@@ -78,15 +78,14 @@ test('shows match reasons and keeps match as the default sort', async ({ page })
   await expect(page.locator('.view-seg')).toContainText('招募中的行程');
 
   const firstCard = page.locator('.trip-card').first();
-  await expect(firstCard.locator('.match-score')).toHaveText(/匹配度 \d+%/);
-  await expect(firstCard.locator('.match-reason-label')).toHaveText('匹配理由');
+  await expect(firstCard.locator('.match-ring .ant-progress-indicator')).toHaveText(/^\d+$/);
   await expect(firstCard.locator('.match-reason')).not.toBeEmpty();
 
-  const percentages = await page
-    .locator('.trip-card .match-percentage')
+  const scores = await page
+    .locator('.trip-card .match-ring .ant-progress-indicator')
     .evaluateAll((nodes) => nodes.map((node) => Number(node.textContent ?? '0')));
-  expect(percentages.length).toBeGreaterThan(1);
-  expect(percentages).toEqual([...percentages].sort((left, right) => right - left));
+  expect(scores.length).toBeGreaterThan(1);
+  expect(scores).toEqual([...scores].sort((left, right) => right - left));
 
   const reasonsForUser1 = await page.locator('.trip-card .match-reason').allTextContents();
   await switchUser(page, 2);
@@ -95,8 +94,9 @@ test('shows match reasons and keeps match as the default sort', async ({ page })
   expect(reasonsForUser2).not.toEqual(reasonsForUser1);
 
   await firstCard.click();
-  await expect(page.locator('.match-reasons .ant-tag').first()).toBeVisible();
-  await expect(page.locator('.match-progress-text')).toContainText('匹配度');
+  await expect(page.locator('.match-summary .match-reason')).toBeVisible();
+  await expect(page.locator('.match-summary .ant-progress')).toBeVisible();
+  await expect(page.locator('.match-rule')).toContainText('目的地相同 50 分');
 });
 
 test('applies, gets accepted, chats, reports and leaves', async ({ page }) => {

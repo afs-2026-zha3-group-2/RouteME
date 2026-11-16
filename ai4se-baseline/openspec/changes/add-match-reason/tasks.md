@@ -83,3 +83,18 @@
 - [x] 回归：`npm test` 137 通过；`build` 通过；`companions.spec.ts` 8/8 通过。
 
 **验证：** `cd RouteME/frontend; npm test; npm run build`、`cd RouteME/e2e; npx playwright test tests/companions.spec.ts`
+
+## R4 任务（匹配块按原型重排，2026-11-16）
+
+### T12 [frontend] 卡片与详情匹配块
+
+- [x] 卡片 `Progress` 圆环内显示分值，理由改纯文本；移除「匹配度 / 匹配理由」两层标签。
+- [x] 卡片元信息用「周X出发」替换途经点数量。
+- [x] 详情标题改「为什么推荐给你」，圆环 + 理由 + `basis` + 可解释规则说明；保持单列。
+
+### T13 [e2e] 断言与回归
+
+- [x] `companions.spec` 改 `.match-ring .ant-progress-indicator`、`.match-summary .match-reason`、`.match-rule`。
+- [x] 回归：`npm test` 137 通过；`build` 通过；`companions.spec.ts` 8/8 通过；全量 53/54。
+
+**验证：** `cd RouteME/frontend; npm test; npm run build`、`cd RouteME/e2e; npx playwright test tests/companions.spec.ts`

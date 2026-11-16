@@ -415,28 +415,20 @@ export function TripDetailPage({ currentUser, tripId }: Props) {
 
           {match !== null && (
             <section className="detail-section">
-              <h3 className="section-title">{tripMessages.matchPanelTitle}</h3>
+              <h3 className="section-title">{tripMessages.matchPanelWhy}</h3>
               <div className="match-summary">
                 <Progress
                   type="circle"
                   percent={match.match.percentage}
-                  size={72}
+                  size={56}
                   strokeWidth={8}
                   strokeColor="var(--warn)"
-                  format={(percent) => (
-                    <span className="match-progress-text">
-                      {tripMessages.matchPercentage}
-                      <b>{percent}%</b>
-                    </span>
-                  )}
+                  format={(percent) => percent}
                 />
-                <div className="match-reasons">
-                  {match.match.reasons.map((reason) => (
-                    <Tag key={reason}>{reason}</Tag>
-                  ))}
-                </div>
+                <span className="match-reason">{match.match.reasons.join('，')}</span>
               </div>
               <p className="detail-meta">{match.match.basis}</p>
+              <p className="form-hint match-rule">{tripMessages.matchRuleHint}</p>
             </section>
           )}
 

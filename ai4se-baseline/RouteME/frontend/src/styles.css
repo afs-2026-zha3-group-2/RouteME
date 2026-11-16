@@ -1078,36 +1078,6 @@ svg {
   letter-spacing: 0.02em;
 }
 
-.form-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 12px;
-  width: 100%;
-}
-
-/* Publish form is grouped so the long field list reads in three passes. */
-.form-section {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  padding: 16px 0;
-  border-top: 1px solid var(--line);
-}
-
-.form-section:first-of-type {
-  border-top: 0;
-  padding-top: 4px;
-}
-
-.form-section-title {
-  margin: 0;
-  font-size: 12px;
-  font-weight: 800;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--ink-3);
-}
-
 .form-stack {
   display: flex;
   flex-direction: column;
@@ -1127,6 +1097,171 @@ svg {
   gap: 12px;
   padding-top: 16px;
   border-top: 1px solid var(--line);
+}
+
+/* ---------- 发布页：原型双栏（主表单 + 实时预览 / 发布前提醒） ---------- */
+.page-head {
+  display: flex;
+  align-items: flex-end;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-bottom: 18px;
+}
+
+.page-sub {
+  margin: 5px 0 0;
+  font-size: 13.5px;
+  color: var(--ink-3);
+}
+
+.page-head .page-back {
+  margin-left: auto;
+}
+
+.publish-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.5fr) minmax(300px, 0.9fr);
+  gap: 18px;
+  align-items: start;
+}
+
+.publish-main {
+  display: grid;
+  gap: 16px;
+}
+
+.publish-side {
+  position: sticky;
+  top: 84px;
+  display: grid;
+  gap: 14px;
+}
+
+.publish-panel.ant-card {
+  border-radius: var(--r);
+}
+
+.publish-panel .ant-card-body {
+  padding: 18px;
+}
+
+.panel-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 12px;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.13em;
+  text-transform: uppercase;
+  color: var(--t-lagoon);
+}
+
+.panel-title::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(90deg, var(--line), transparent);
+}
+
+.publish-page .form-label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.publish-page .form-label .req {
+  color: var(--t-danger);
+}
+
+.publish-page .form-label .opt {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--ink-3);
+}
+
+.publish-page .form-label .counter {
+  margin-left: auto;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--ink-3);
+  font-variant-numeric: tabular-nums;
+}
+
+.publish-page .form-row {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.preview-label {
+  display: block;
+  margin-bottom: 9px;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+
+.publish-side .trip-card {
+  animation: none;
+}
+
+.safety-panel.ant-card {
+  background: linear-gradient(
+    150deg,
+    color-mix(in srgb, var(--amber) 12%, var(--surface)),
+    var(--surface)
+  );
+  border-color: color-mix(in srgb, var(--amber) 30%, transparent);
+}
+
+.safety-panel .panel-title {
+  color: var(--t-warn);
+}
+
+.safety-list {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.safety-list li {
+  display: grid;
+  grid-template-columns: 17px minmax(0, 1fr);
+  gap: 9px;
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--ink-2);
+}
+
+.safety-list li::before {
+  content: "✓";
+  font-weight: 800;
+  color: var(--t-warn);
+}
+
+.prefill-banner.ant-alert {
+  margin-bottom: 16px;
+  border-radius: var(--r);
+}
+
+.publish-panel .form-actions {
+  padding-top: 4px;
+  border-top: 0;
+}
+
+@media (max-width: 900px) {
+  .publish-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .publish-side {
+    position: static;
+  }
 }
 
 .field-control {
@@ -1663,42 +1798,22 @@ svg {
   display: block;
 }
 
+.match-ring .ant-progress-indicator {
+  font-family: var(--font-num);
+  font-size: 10px;
+  font-weight: 800;
+  color: var(--t-warn);
+}
+
 .match-ring .ant-progress-circle-rail {
   stroke: color-mix(in srgb, var(--warn) 22%, transparent);
 }
 
 
-.match-copy {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  min-width: 0;
-}
-
-.match-score {
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.02em;
-  color: var(--t-warn);
-}
-
-.match-score b {
-  font-family: var(--font-num);
-  font-size: 13px;
-}
-
 .match-reason {
   font-size: 11.5px;
   line-height: 1.45;
   color: var(--ink-2);
-}
-
-.match-reason-label {
-  margin-right: 4px;
-  font-size: 10.5px;
-  font-weight: 700;
-  letter-spacing: 0.04em;
-  color: var(--ink-3);
 }
 
 .tc-foot {
@@ -2386,29 +2501,21 @@ svg {
 }
 
 
-.match-progress-text {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  font-size: 10px;
-  font-weight: 700;
-  color: var(--ink-3);
+.match-summary .match-reason {
+  font-size: 13px;
+  line-height: 1.55;
+  color: var(--ink-2);
 }
 
-.match-progress-text b {
+.match-summary .ant-progress-indicator {
   font-family: var(--font-num);
-  font-size: 15px;
+  font-size: 14px;
+  font-weight: 800;
   color: var(--t-warn);
 }
 
-.match-reasons {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-}
-
-.match-reasons .ant-tag {
-  margin-inline-end: 0;
+.match-rule {
+  margin-top: 6px;
 }
 
 .safety-note {
@@ -2698,8 +2805,7 @@ svg {
     gap: 18px;
   }
 
-  .filter-row,
-  .form-grid {
+  .filter-row {
     grid-template-columns: 1fr;
   }
 

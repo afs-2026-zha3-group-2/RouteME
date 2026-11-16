@@ -103,8 +103,9 @@ test('publishes a trip and finds it in the home list', async ({ page }) => {
   await page.goto('/#/trips/new');
 
   await expect(page.getByRole('heading', { name: '基本信息' })).toBeVisible();
-  await expect(page.getByRole('heading', { name: '路线' })).toBeVisible();
-  await expect(page.getByRole('heading', { name: '补充信息' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: '简单路线' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: '同行与预算' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: '兴趣标签' })).toBeVisible();
   await expect(page.getByLabel('出发日期')).toHaveValue(todayIso());
   await expect(page.getByLabel('结束日期')).toHaveValue(todayIso());
   await expect(page.locator('[data-testid="place-map"]')).toHaveCount(0);
@@ -203,7 +204,7 @@ test('defaults to the recruiting trips view with complete cards', async ({ page 
   await expect(card.locator('.tc-title')).toHaveText('珠海情侣路日落机位二刷');
   await expect(card.locator('.tc-dest')).toHaveText('珠海市');
   await expect(card.locator('.tc-meta')).toContainText('11月16日 → 11月16日');
-  await expect(card.locator('.tc-meta')).toContainText('4 个途经点');
+  await expect(card.locator('.tc-meta')).toContainText(/周[一二三四五六日]出发/);
   await expect(card.locator('.tc-route')).toContainText('香洲港集合');
   await expect(card.locator('.tc-tags')).toContainText('摄影');
   await expect(card.locator('.tc-host-name')).toContainText('陈屿');

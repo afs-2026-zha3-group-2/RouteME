@@ -108,3 +108,23 @@ ATDD：`atdd-design.md` §8 场景 20–23。任务：`tasks.md` §9 T12–T15�
 | SA | Jacky、Karena | 接受 D10-1…D10-3 | 2026-11-16 |
 | AO | Jay | 承担清理与验证 | 2026-11-16 |
 | SM | Lewis | 准入 P4 | 2026-11-16 |
+
+## 12. R4 设计（按原型重排发布页，2026-11-16）
+
+依据 `docs/prototype/ui.js` 的 `tripForm` 与 `docs/prototype/styles.css` 的 `.form-grid / .panel / .preview-label / .safety-list`。
+
+| 编号 | 取舍 | 结论 |
+|---|---|---|
+| D11 | 页面结构 | 主栏放表单面板，右侧放「实时预览」与「发布前提醒」；窄屏（≤900px）回落单列，侧栏取消 sticky |
+| D12 | 字段分组 | 基本信息（标题 / 目的地 / 日期）→ 简单路线（途经点）→ 同行与预算（人数 / 集合区域 / 预算）→ 兴趣标签（标签 / 自定义 / 说明 / 提交） |
+| D13 | 标签与提示 | 必填项显示 `*`，选填项显示「选填」；标题显示字数计数；人数与集合区域给出原型中的提示句 |
+| D14 | 组件边界 | 仍用 antd：`DatePicker` / `InputNumber` / `Tag.CheckableTag` / `Input`；不引入图标依赖，面板标题用文字加分隔线 |
+| D15 | 实时预览 | 复用 `TripCard` 的 `preview` 模式：不跳详情、不打开资料弹窗，未填字段显示占位文案 |
+
+ATDD：`atdd-design.md` §9 场景 24–26。任务：`tasks.md` §10 T19–T21。
+
+| 角色 | 姓名 | 确认内容 | 日期 |
+|---|---|---|---|
+| AO | Jay | 承担布局重排与验证 | 2026-11-16 |
+| SA | Jacky、Karena | 待确认 D11–D15 | 待签 |
+| SM | Lewis | 待确认是否准入 P5（P5 仍暂缓） | 待签 |
