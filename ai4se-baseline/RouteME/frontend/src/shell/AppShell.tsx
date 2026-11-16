@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { useEffect, useRef, useState, type KeyboardEvent as ReactKeyboardEvent, type ReactNode } from 'react';
 import { tripMessages } from '../i18n/tripMessages';
 import { publisherSummary } from '../profile/profileDisplay';
 import type { Route } from '../route';
@@ -21,8 +21,6 @@ const NAV_GROUPS: Array<{ title: string; items: NavItem[] }> = [
   { title: '浏览', items: NAV_ITEMS.filter((item) => item.key === 'discover') },
   { title: '我的', items: NAV_ITEMS.filter((item) => item.key !== 'discover') },
 ];
-
-const LOOP_STEPS = ['旅行灵感', '发布行程', '发现同行者', '建立连接', '一起旅行', '分享体验'];
 
 function activeKey(route: Route): NavKey | null {
   if (route.name === 'home') {
@@ -104,6 +102,69 @@ export function AppShell({
   const [identityOpen, setIdentityOpen] = useState(false);
   const identityRef = useRef<HTMLDivElement>(null);
   const identityTriggerRef = useRef<HTMLButtonElement>(null);
+
+  const [accountOpen, setAccountOpen] = useState(false);
+  const [accountMenuAnchor, setAccountMenuAnchor] = useState<{ top: number; left: number } | null>(
+    null,
+  );
+  const accountTriggerRef = useRef<HTMLButtonElement>(null);
+  const accountMenuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!accountOpen) {
+      setAccountMenuAnchor(null);
+      return;
+    }
+    const placeMenu = () => {
+      const trigger = accountTriggerRef.current;
+      if (trigger === null) {
+        return;
+      }
+      const rect = trigger.getBoundingClientRect();
+      setAccountMenuAnchor({ top: rect.bottom, left: rect.right + 10 });
+    };
+    accountMenuRef.current?.querySelector<HTMLElement>('[role="menuitem"]')?.focus();
+
+    const closeOnOutside = (event: MouseEvent) => {
+      const target = event.target as Node;
+      if (accountTriggerRef.current?.contains(target) || accountMenuRef.current?.contains(target)) {
+        return;
+      }
+      setAccountOpen(false);
+    };
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setAccountOpen(false);
+        accountTriggerRef.current?.focus();
+      }
+    };
+    document.addEventListener('mousedown', closeOnOutside);
+    document.addEventListener('keydown', closeOnEscape);
+    window.addEventListener('resize', placeMenu);
+    document.addEventListener('scroll', placeMenu, true);
+    return () => {
+      document.removeEventListener('mousedown', closeOnOutside);
+      document.removeEventListener('keydown', closeOnEscape);
+      window.removeEventListener('resize', placeMenu);
+      document.removeEventListener('scroll', placeMenu, true);
+    };
+  }, [accountOpen]);
+
+  const moveAccountMenuFocus = (event: ReactKeyboardEvent<HTMLDivElement>) => {
+    if (event.key !== 'ArrowDown' && event.key !== 'ArrowUp') {
+      return;
+    }
+    const items = Array.from(
+      event.currentTarget.querySelectorAll<HTMLElement>('[role="menuitem"]'),
+    );
+    if (items.length === 0) {
+      return;
+    }
+    event.preventDefault();
+    const current = items.indexOf(document.activeElement as HTMLElement);
+    const offset = event.key === 'ArrowDown' ? 1 : -1;
+    items[(current + offset + items.length) % items.length].focus();
+  };
 
   useEffect(() => {
     if (!identityOpen) {
@@ -297,12 +358,25 @@ export function AppShell({
         </nav>
 
         <div className="rail-foot">
-          <a
-            className={route.name === 'profileSetup' ? 'rail-user on' : 'rail-user'}
-            href="#/profile/setup"
-            aria-current={route.name === 'profileSetup' ? 'page' : undefined}
-            aria-label={`编辑资料：${currentUser.nickname}`}
-            title="编辑资料"
+          <button
+            ref={accountTriggerRef}
+            type="button"
+            className="rail-user"
+            aria-haspopup="menu"
+            aria-expanded={accountOpen}
+            aria-label={`账号：${currentUser.nickname}`}
+            title="账号"
+            onClick={() => {
+              if (accountOpen) {
+                setAccountOpen(false);
+                return;
+              }
+              const rect = accountTriggerRef.current?.getBoundingClientRect();
+              if (rect !== undefined) {
+                setAccountMenuAnchor({ top: rect.bottom, left: rect.right + 10 });
+              }
+              setAccountOpen(true);
+            }}
           >
             <Avatar user={currentUser} size="sm" />
             <span className="rail-user-text">
@@ -312,17 +386,47 @@ export function AppShell({
             <svg className="rail-user-caret" viewBox="0 0 12 12" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round">
               <path d="m4.5 3 3 3-3 3" />
             </svg>
-          </a>
+          </button>
 
-          <div className="rail-loop">
-            <span className="rail-loop-title">价值闭环</span>
-            <ol>
-              {LOOP_STEPS.map((step) => (
-                <li key={step}>{step}</li>
-              ))}
-            </ol>
-          </div>
-          <p className="rail-note">演示环境 · 数据保存在本机</p>
+          {accountOpen && accountMenuAnchor !== null && (
+            <div
+              ref={accountMenuRef}
+              className="rail-menu"
+              role="menu"
+              aria-label="账号菜单"
+              style={{ top: accountMenuAnchor.top, left: accountMenuAnchor.left }}
+              onKeyDown={moveAccountMenuFocus}
+            >
+              <a
+                className="rail-menu-item"
+                role="menuitem"
+                href="#/profile/setup"
+                onClick={() => setAccountOpen(false)}
+              >
+                <svg viewBox="0 0 20 20" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M13.4 3.6a1.6 1.6 0 0 1 2.3 0l.7.7a1.6 1.6 0 0 1 0 2.3l-8 8-3.4.7.7-3.4z" />
+                  <path d="M11.6 5.4 14 7.8" />
+                </svg>
+                <span>编辑我的资料</span>
+              </a>
+              <div className="rail-menu-sep" role="separator" />
+              <button
+                type="button"
+                className="rail-menu-item danger"
+                role="menuitem"
+                onClick={() => {
+                  setAccountOpen(false);
+                  onLogout();
+                }}
+              >
+                <svg viewBox="0 0 20 20" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M13.5 3.5H15a1.5 1.5 0 0 1 1.5 1.5v10a1.5 1.5 0 0 1-1.5 1.5h-1.5" />
+                  <path d="M9 6.5 12.5 10 9 13.5M12 10H3.5" />
+                </svg>
+                <span>{tripMessages.authLogout}</span>
+              </button>
+            </div>
+          )}
         </div>
       </aside>
 

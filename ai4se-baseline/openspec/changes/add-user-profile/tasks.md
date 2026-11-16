@@ -123,15 +123,16 @@
 **验证：** 上述命令全绿；迁移与手工结果写入 local-verify 报告
 **覆盖：** 全部 26 + 6 场景、RV-1–RV-7、G1 条件 2–8
 
-### T9 [frontend] 侧栏分组与资料入口（VL 追加）
+### T9 [frontend] 侧栏分组与账号菜单（VL 追加）
 
-- [x] `shell/AppShell.tsx`：主导航按「浏览 / 我的」分组渲染；底部新增资料入口（头像 + 昵称 + `publisherSummary`，为空显示「资料未完善」）指向 `#/profile/setup`，停留该页时以选中态标识。
-- [x] `styles.css`：侧栏改为实色面，分组标题 / 分组分隔线与选中态改用 `--lagoon` 混合色（浅色与深色各取可读文字色）；资料入口沿用导航的悬停与选中样式；≤900px 仍整条收起、底部标签栏保留三个入口。
-- [x] `specs/design-system/spec.md`：MODIFIED「应用外壳与导航」，加入分组与资料入口场景，保留原四个场景。
+- [x] `shell/AppShell.tsx`：主导航按「浏览 / 我的」分组渲染；底部为账号入口（头像 + 昵称 + `publisherSummary`，为空显示「资料未完善」），点击展开菜单（「编辑我的资料」→ `#/profile/setup`、分隔线、「退出登录」→ `onLogout`）；删除底部「价值闭环」卡片与「演示环境 · 数据保存在本机」说明。
+- [x] 菜单用 `position: fixed` 按账号行 `getBoundingClientRect()` 定位（侧栏 `overflow-y: auto` 会裁剪绝对定位子树），与行底边对齐、距侧栏 10px、宽 188px，浮于内容之上；滚动 / 缩放时重算位置；Esc、外部点击、选中动作关闭，Esc 归还焦点，上下方向键在菜单项间移动。
+- [x] `styles.css`：侧栏改为实色面，分组标题 / 分组分隔线与选中态改用 `--lagoon` 混合色（浅色与深色各取可读文字色）；账号入口沿用导航悬停样式，以 `[aria-expanded=\"true\"]` 表示展开并旋转箭头；菜单 `--surface` + `--line-2` 描边（深色 `--surface-2`）+ `--sh-3`，与 `.id-panel` 同一层级语言；≤900px 仍整条收起、底部标签栏保留三个入口。
+- [x] `specs/design-system/spec.md`：MODIFIED「应用外壳与导航」，新增账号入口 / 账号菜单 / 关闭账号菜单场景，保留原四个场景（共 7 个）。
 - [x] 视觉：浅 / 深色 × 1440 / 390 截图核对；`auth.spec.ts`「我的旅行」链接与 `profile.spec.ts` 全量不回归。
 
 **验证：** `cd RouteME/frontend; npm run typecheck; npm test; npm run build`；`cd RouteME/e2e; npx playwright test`
-**覆盖：** design-system「应用外壳与导航」5 个场景
+**覆盖：** design-system「应用外壳与导航」7 个场景
 
 ## 对齐自检（Spec ↔ Design ↔ Tasks ↔ ATDD）
 
@@ -139,7 +140,7 @@
 |---|---|---|
 | `user-profile` 26 个 Scenario 均有 ATDD 行与任务 | Pass | E1–E26 见 `atdd-design.md` §1.2；D1–D12；T1–T8 |
 | `user-auth` 6 个 Scenario 有落点 | Pass | A1–A6；T1（测试）、T2（契约）、T5（实现） |
-| `design-system`「应用外壳与导航」5 个 Scenario 有落点 | Pass | T9；`specs/design-system/spec.md`（MODIFIED，保留原 4 个场景） |
+| `design-system`「应用外壳与导航」7 个 Scenario 有落点 | Pass | T9；`specs/design-system/spec.md`（MODIFIED，保留原 4 个场景） |
 | 基线场景不丢 | Pass | MODIFIED 保留 4 个既有场景；T5 只收窄字段与校验，不删登录 / 重复 / 格式 / 密码用例 |
 | Non-goals 有反向验证 | Pass | RV-1–RV-7；T1（断言）、T8（复核） |
 | 无静默范围扩张 | Pass | 未加入裁剪、相册、可见性、演示编辑、兴趣词表统一、私信、改密码 |
