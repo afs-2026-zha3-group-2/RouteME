@@ -192,6 +192,14 @@ export type MyTrips = {
   matched: TripSummary[];
   completed: TripSummary[];
   pending_application_count: number;
+  /** 按行程聚合的待处理申请数；旧后端可能缺省，前端按空数组处理。 */
+  pending_applications?: PendingApplicationCount[];
+};
+
+/** 「我的旅行」中每条已发布行程的待处理申请数。 */
+export type PendingApplicationCount = {
+  trip_id: number;
+  count: number;
 };
 
 export type ReportReason = 'harassment' | 'fake' | 'safety' | 'other';

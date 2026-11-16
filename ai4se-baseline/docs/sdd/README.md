@@ -1,4 +1,4 @@
-﻿# SDD 阶段记录（P0–P5）
+# SDD 阶段记录（P0–P5）
 
 本目录记录每个 change 在 P0–P5 各阶段的准入证据、产出与**具名签署**。阶段模型与门禁语义来自 `ai4se-baseline/vendor/ai4se-plugins/recipes/p0..p5.md` 与 `docs/knowledge/rules/process/rules.md#spec-first`。
 
@@ -95,4 +95,4 @@
 | `refine-trip-application` | `trip-companions`（MODIFIED） | REQ-010 / S08 提交同行申请 | — | [p1](refine-trip-application/p1-intent.md) | [p2](refine-trip-application/p2-spec.md) | [p3](refine-trip-application/p3-design.md) | [p4](refine-trip-application/p4-verify.md) | 待 P5 |
 | `refine-safety-report` | `trip-companions`（MODIFIED） | REQ-012 / S14 同行安全提示与举报 | — | [p1](refine-safety-report/p1-intent.md) | [p2](refine-safety-report/p2-spec.md) | 待 P3 | — | — |
 | `add-trip-completion` | `trip-plans` + `trip-companions`（MODIFIED / ADDED） | REQ-011 / S15 结束行程 | — | [p1](add-trip-completion/p1-intent.md) | [p2](add-trip-completion/p2-spec.md) | [p3](add-trip-completion/p3-design.md) | [p4](add-trip-completion/p4-verify.md) | 待 P5 |
-| `refine-my-trips` | `trip-companions`（MODIFIED） | S11 我的旅行（issue #13） | [p0](refine-my-trips/p0-baseline.md) | [p1](refine-my-trips/p1-intent.md) | [p2](refine-my-trips/p2-spec.md) | [p3](refine-my-trips/p3-design.md) | — | 暂不执行（按要求不归档） |
+| `refine-my-trips` | `trip-companions`（MODIFIED） | S11 我的旅行（issue #13） | [p0](refine-my-trips/p0-baseline.md) | [p1](refine-my-trips/p1-intent.md) | [p2](refine-my-trips/p2-spec.md) | [p3](refine-my-trips/p3-design.md) | [p4](refine-my-trips/p4-verify.md) | 暂不执行（按要求不归档） |

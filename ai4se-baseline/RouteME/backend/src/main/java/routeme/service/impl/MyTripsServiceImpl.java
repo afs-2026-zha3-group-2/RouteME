@@ -13,6 +13,7 @@ import routeme.pojo.DemoUser;
 import routeme.pojo.TripApplication;
 import routeme.pojo.TripPlan;
 import routeme.response.MyTripsResponse;
+import routeme.response.PendingApplicationCount;
 import routeme.response.TripSummaryResponse;
 import routeme.service.ApplicationService;
 import routeme.service.MyTripsService;
@@ -58,17 +59,31 @@ public class MyTripsServiceImpl implements MyTripsService {
                 .filter(trip -> trip.status(now) == TripStatusEnum.COMPLETED
                         && (trip.publisherId() == userId || acceptedTripIds.contains(trip.id())))
                 .toList();
-        int pendingCount = (int) published.stream()
-                .flatMap(trip -> applicationService.listForPublisher(trip.id(), userId).stream())
-                .filter(TripApplication::isPending)
-                .count();
+        List<PendingApplicationCount> pendingApplications = pendingApplications(published, userId);
+        int pendingCount = pendingApplications.stream()
+                .mapToInt(PendingApplicationCount::count)
+                .sum();
 
         return new MyTripsResponse(
                 published.stream().map(trip -> summary(trip, now)).toList(),
                 applications.stream().map(applicationService::describe).toList(),
                 matched.stream().map(trip -> summary(trip, now)).toList(),
                 completed.stream().map(trip -> summary(trip, now)).toList(),
-                pendingCount);
+                pendingCount,
+                pendingApplications);
+    }
+
+    private List<PendingApplicationCount> pendingApplications(List<TripPlan> published, long userId) {
+        return published.stream()
+                .map(trip -> new PendingApplicationCount(trip.id(), pendingCountOf(trip, userId)))
+                .filter(item -> item.count() > 0)
+                .toList();
+    }
+
+    private int pendingCountOf(TripPlan trip, long userId) {
+        return (int) applicationService.listForPublisher(trip.id(), userId).stream()
+                .filter(TripApplication::isPending)
+                .count();
     }
 
     private TripSummaryResponse summary(TripPlan trip, Instant now) {

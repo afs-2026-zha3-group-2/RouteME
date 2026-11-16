@@ -144,8 +144,8 @@ test('applies, gets accepted, chats, reports and leaves', async ({ page }) => {
 
   await page.goto('/#/mine');
   await expect(page.getByRole('heading', { name: '我的旅行' })).toBeVisible();
-  await expect(page.getByRole('tab', { name: /我申请的/ })).toBeVisible();
-  await expect(page.getByRole('tab', { name: /已匹配/ })).toBeVisible();
+  await expect(page.locator('.ant-segmented-item', { hasText: '我申请的' })).toBeVisible();
+  await expect(page.locator('.ant-segmented-item', { hasText: '已匹配同行' })).toBeVisible();
 
   await completeTripViaApi(page, 2, created.id);
 });

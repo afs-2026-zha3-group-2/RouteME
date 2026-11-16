@@ -2046,91 +2046,129 @@ svg {
   margin-top: 4px;
 }
 
+/* 我的旅行：原型行式列表（84px 封面 / 主列 / 动作列） */
 .mine-row {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  gap: 14px;
+  grid-template-columns: 84px minmax(0, 1fr) auto;
+  gap: 16px;
   align-items: center;
-}
-
-.mine-row > .trip-card {
-  min-width: 0;
-}
-
-.mine-row-link {
-  padding: 14px 16px;
+  padding: 14px;
   border-radius: var(--r-lg);
   background: var(--surface);
   border: 1px solid var(--line);
   box-shadow: var(--sh-1);
-  transition: transform 0.2s var(--ease-out), box-shadow 0.2s, border-color 0.2s;
+  transition:
+    transform 0.2s var(--ease-out),
+    box-shadow 0.2s,
+    border-color 0.2s;
 }
 
-.mine-row-link:hover {
+.mine-row:hover {
   transform: translateY(-2px);
   box-shadow: var(--sh-2);
   border-color: var(--lagoon);
 }
 
-.mine-row-main {
+.mr-cover {
+  display: flex;
+  align-items: flex-end;
+  height: 66px;
+  padding: 8px;
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.mr-cover-dest {
+  position: relative;
+  z-index: 1;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1.2;
+  color: #fff;
+  text-shadow: 0 1px 6px rgba(6, 35, 43, 0.4);
+}
+
+.mr-main {
   display: grid;
-  gap: 3px;
+  gap: 6px;
   min-width: 0;
 }
 
-.mine-row-title {
-  font-size: 14.5px;
+.mr-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin: 0;
+  font-size: 15.5px;
   font-weight: 700;
-  color: var(--ink);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
-.mine-row-meta {
+.mr-title a {
+  color: var(--ink);
+  text-decoration: none;
+}
+
+.mr-title a:hover {
+  color: var(--lagoon);
+}
+
+.mr-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
   font-size: 12px;
   color: var(--ink-3);
 }
 
-.mine-row-actions {
+.mr-note {
+  margin: 0;
+  padding: 7px 11px;
+  border-radius: 9px;
+  border-left: 2px solid var(--line-2);
+  background: var(--surface-2);
+  font-size: 12.5px;
+  color: var(--ink-2);
+}
+
+.mr-actions {
   display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 8px;
-  flex: none;
+  gap: 7px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  max-width: 280px;
 }
 
-/* 紧凑行程卡：封面缩成窄条，用于我的旅行等行式列表 */
-.trip-card.compact {
-  display: grid;
-  grid-template-columns: 104px minmax(0, 1fr);
-  align-items: stretch;
+.mine-seg {
+  align-self: flex-start;
 }
 
-.trip-card.compact .tc-cover {
-  height: auto;
-  min-height: 112px;
-  flex-direction: column;
-  align-items: flex-start;
-  justify-content: flex-start;
-  gap: 6px;
-  border-bottom: 0;
-  border-right: 1px solid var(--line);
-}
-
-.trip-card.compact .tc-body {
-  padding: 13px 16px;
+.mine-tab-label {
+  display: inline-flex;
+  align-items: center;
   gap: 7px;
 }
 
-.trip-card.compact .tc-title {
-  font-size: 15px;
+.seg-count {
+  padding: 1px 7px;
+  border-radius: 99px;
+  background: var(--surface-3);
+  color: var(--ink-3);
+  font-family: var(--font-num);
+  font-size: 11px;
+  font-weight: 700;
 }
 
-.trip-card.compact .tc-foot {
-  padding-top: 9px;
+.ant-segmented-item-selected .seg-count {
+  background: var(--tide);
+  color: #fff;
 }
 
+.page-head-cta {
+  margin-left: auto;
+}
+
+/* 紧凑行程卡：封面缩成窄条，用于我的旅行等行式列表 */
 /* ---------- 详情页分区 ---------- */
 .detail-head {
   display: grid;
@@ -2725,43 +2763,35 @@ svg {
     max-width: 100%;
   }
 
-  /* 行式列表在窄屏改为上下排布，操作区不遮挡卡片 */
+  /* 行式列表在窄屏改为上下排布，封面与动作区不遮挡内容 */
   .mine-row {
-    grid-template-columns: minmax(0, 1fr);
-    gap: 10px;
-  }
-
-  .mine-row-actions {
-    flex-direction: row;
-    align-items: center;
-    justify-content: flex-start;
-    flex-wrap: wrap;
-  }
-
-  .trip-card.compact {
     grid-template-columns: 84px minmax(0, 1fr);
+    gap: 12px;
   }
 
-  .trip-card.compact .tc-cover {
-    min-height: 96px;
+  .mr-actions {
+    grid-column: 1 / -1;
+    justify-content: flex-start;
+    max-width: none;
+  }
+
+  /* 四段标题在 390 宽不会全部排下：保留可横向滚动的单行，标题不被裁成不可读 */
+  .mine-seg {
+    max-width: 100%;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+
+  .mine-seg::-webkit-scrollbar {
+    display: none;
+  }
+
+  .mine-seg .ant-segmented-group {
+    flex-wrap: nowrap;
   }
 
   .profile-stats {
     grid-template-columns: repeat(2, 1fr);
-  }
-
-  /* 窄屏选项卡换行展示，避免第四项被裁切或藏进不可点开的「更多」 */
-  .mine-tabs .ant-tabs-nav-wrap {
-    overflow: visible;
-  }
-
-  .mine-tabs .ant-tabs-nav-list {
-    flex-wrap: wrap;
-    row-gap: 2px;
-  }
-
-  .mine-tabs .ant-tabs-nav-operations {
-    display: none;
   }
 
   .pager {
