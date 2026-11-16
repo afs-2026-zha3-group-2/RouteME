@@ -68,3 +68,30 @@
 3. `npm run build` 通过。
 4. 后端 `.\mvnw.cmd -B -ntp test` 全绿（回归，不改后端）。
 5. 人工走查 6 张截图结论写入 P4 验证报告。
+## 7. R2 场景与用例（2026-11-16 21:00）
+
+| # | Delta 场景 / 约束 | 层 | 断言 | 新增? |
+|---|---|---|---|---|
+| E13 | 分享页布局与原型一致（1440 双栏 / ≤900 单列） | E2E | 1440：getComputedStyle(.publish-grid).gridTemplateColumns 为两段轨道；.publish-main .panel 数量 = 3；.publish-side .panel 数量 = 2。切到 880 宽：轨道为 1 段，documentElement.scrollWidth === clientWidth | 新增 |
+| E14 | 强度三卡片 + 单选语义 | E2E | .int-card 数量 = 3；点「较累」后该卡片有 .on 且 getByRole('radio', { name: /较累/ }) 为 checked；其它卡片无 .on | 新增 |
+| E15 | Hero 元信息 目的地 · M月D日 · 周X · N 人同行 | E2E | .share-hero-body span 文本匹配 /\d+月\d+日/、/周[一二三四五六日]/、/人同行/；.share-hero-cover 的 width 为 76px | 新增 |
+| E16 | 页头标题 / 副标题 / 返回 | E2E | .page-head .page-title 含「把这次旅行留给下一个人」；.page-sub 非空；.detail-back 指向 #/trips/{id} | 新增 |
+| E17 | 侧栏列表带图标 | E2E | .publish-side .share-list 数量 = 2；第一个列表 3 个 svg，第二个 2 个 | 新增 |
+| U5–U7 | 日期格式 | 单测 | ormatMonthDay('2026-11-06') = 11月6日；weekdayLabel = 周五；非法输入原样返回 | 新增 |
+
+### 7.1 既有用例的影响
+
+| 用例 | 影响 |
+|---|---|
+| shares an experience… | 断言从 .share-note 改为 .publish-side .panel；hero 断言保留 |
+| keeps experience entry points honest | 不变（不可用分支不渲染布局） |
+| updates the existing experience… | 按钮名不变；「保存修改」仍在「建议」面板内 |
+| 	rips.spec.ts 日期断言 | 共享 	ripDateFormat 后文本不变，回归即可 |
+
+### 7.2 R2 验收判据
+
+1. 
+pm test 通过（含 	ripDateFormat.test.ts）。
+2. 
+px playwright test tests/experiences.spec.ts 通过（含 E13–E17）。
+3. 1440 / 768 / 390 × 浅 / 深色走查：双栏→单列、卡片底色、无横向滚动、图标与面板对齐。

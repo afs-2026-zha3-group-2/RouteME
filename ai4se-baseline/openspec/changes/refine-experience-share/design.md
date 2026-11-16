@@ -168,3 +168,96 @@ article.exp-card
 | 深色模式下 `cover-*` 对比度 | 复用既有令牌，走查时截图确认 |
 
 回退：单文件 revert（`git revert`）即可恢复原分享页与卡片，无数据迁移依赖。
+
+## 10. R2：布局与样式对齐原型（2026-11-16 21:00）
+
+- **依据：** proposal.md「R2」、p0-baseline.md §9、原型 share() 与 styles.css。
+- **原则：** 复用发布页的双栏壳与面板写法，只补分享页特有的卡片选择器、列表与图标；不改行为与文案语义。
+
+### 10.1 结构
+
+`	ext
+main.form-page.share-page
+  ├ a.detail-back「行程详情」
+  ├ div.page-head
+  │   ├ div → h2.page-title（把这次旅行留给下一个人 / 修改我的游后体验）
+  │   │        p.page-sub（experienceShareSub）
+  ├ div.share-hero
+  │   ├ span.share-hero-cover.cover-<tone>（76×60，aria-hidden）
+  │   ├ span.share-hero-body → b{title} + span{destination · M月D日 · 周X · N 人同行}
+  │   └ StatusBadge
+  └ div.publish-grid
+      ├ div.publish-main
+      │   ├ Card.panel「真实感受」      → label + counter + TextArea + 错误文本
+      │   ├ Card.panel「路线强度」      → ul.intensity-picker（3 × label.int-card > input[type=radio]）
+      │   └ Card.panel「给后来者的一条建议」→ label + Input + 错误文本 + 操作（发布 / 取消）
+      └ aside.publish-side
+          ├ Card.panel.share-panel「你的体验会去哪里」→ ul.share-list（3 条，带图标）
+          └ Card.panel.share-panel.safety「分享边界」 → ul.share-list（2 条，带图标）
+`
+
+- **网格复用：** .publish-grid / .publish-main / .publish-side 与发布页同一套（1.5fr / minmax(300px,.9fr)，≤900px 单列，侧栏 sticky）。理由：已有折叠与粘顶规则，避免第二套网格与断点漂移；第三个页面复用再抽 .form-grid 别名（R2-L-02）。
+- **面板：** Card.panel + h3.panel-title（与 TripCreatePage 一致），标题前放 15px 图标。
+
+### 10.2 强度卡片（组件选型例外）
+
+按 @rule:web-coding-style 先比对 antd：Segmented 语义是「切换视图」、Radio.Group 只能渲染单选点，均无法表达原型的卡片（标题 + 说明 + 选中底色）。因此**自绘** label.int-card，内部放原生 <input type="radio" class="int-radio">：
+
+- 可键盘操作（Tab / 方向键）、可被读屏识别为单选，getByRole('radio') 仍可命中，既有 E2E 不变。
+- 选中态：input:checked + span 不适用（结构为 input + b + span），改用 label:has(input:checked) 加 .on 类，或由 React 状态加 on 类——采用后者（draft.intensity === option.value），样式类与 	one 组合。
+- INTENSITY_OPTIONS 增加 	one: 'jade' | 'amber' | 'coral'（原型 D.INTENSITY 的 tone）。
+
+### 10.3 图标
+
+新增 experiences/shareIcons.tsx：
+
+| name | 用途 | 来源 |
+|---|---|---|
+| spark | 真实感受面板标题 | 原型 P.spark |
+| oute | 路线强度标题 / 去向「原行程详情页」 | P.route |
+| info | 建议面板标题 | P.info |
+| compass | 去向面板标题 / 去向「首页旅行体验」 | P.compass |
+| copy | 去向「参考此行程发布」 | P.copy |
+| shield | 分享边界标题 | P.shield |
+| check | 边界两条 | P.check |
+| send | 主按钮 | P.send |
+| left | 返回链接 | P.left |
+
+统一 iewBox="0 0 20 20"、stroke="currentColor"、stroke-width 1.7、ria-hidden；尺寸由 CSS（.share-icon 15px）。
+
+### 10.4 日期格式
+
+新增 	rips/tripDateFormat.ts：
+
+`	s
+export function formatMonthDay(iso: string): string;   // 2026-11-06 → 11月6日
+export function weekdayLabel(iso: string): string;     // 2026-11-06 → 周五
+`
+
+TripCard 的本地 ormatDate / dayLabel 改为调用它们（dayLabel = ${weekdayLabel(iso)}出发），hero 用 ormatMonthDay + weekdayLabel。单测 	ripDateFormat.test.ts 覆盖合法 / 非法 / 跨月。
+
+### 10.5 样式
+
+| 选择器 | 规则 |
+|---|---|
+| .share-hero | 调整封面为 76×60 / order-radius: 12px；margin-bottom: 0（由 grid 间距控制） |
+| .share-hero-body span | 12.5px，ar(--ink-3) |
+| .intensity-picker | grid-template-columns: repeat(3, minmax(0,1fr))；gap: 10px；≤680px 改单列 |
+| .int-card | padding: 14px；order: 1.5px solid var(--line)；ackground: var(--surface-2)；order-radius: var(--r)；cursor: pointer；	ransition: transform .18s, border-color .18s, background .18s |
+| .int-card:hover | 	ranslateY(-2px)；order-color: var(--lagoon) |
+| .int-card.on.jade/.amber/.coral | 复用原型 color-mix 底色与文字色 |
+| .int-card:focus-within | ox-shadow: var(--ring) |
+| .int-radio | position: absolute; opacity: 0; width: 1px; height: 1px;（保持可聚焦） |
+| .share-list | 与 .safety-list 同排版，但前缀换成 15px 图标（grid-template-columns: 17px minmax(0,1fr)） |
+| .share-panel .ant-card-body | 复用 .publish-panel 的 18px 内边距（加 share-panel 与 publish-panel 同类名） |
+
+### 10.6 可访问性
+
+- 卡片选择器：原生 radio + <label> 文本；:focus-within 可见焦点环；ria-describedby 指向说明（experienceIntensityHint）。
+- 图标 ria-hidden；面板标题文本本身可读。
+- 双栏在 DOM 顺序上仍是「主列表单 → 侧栏说明」，读屏顺序与视觉一致。
+
+### 10.7 测试影响
+
+- E2E：getByRole('radio', { name: /较累/ }).check() 不变；新增 .int-card.on、.publish-grid 列数、.share-list svg、页头标题与副标题断言。
+- 行程卡：	rips.spec.ts 的日期文本断言回归（格式不变：M月D日 / 周X出发）。

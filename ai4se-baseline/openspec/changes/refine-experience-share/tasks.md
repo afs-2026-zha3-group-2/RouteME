@@ -89,3 +89,54 @@
 | 每个任务有验证命令 | 通过 |
 | 与 `atdd-design.md` 场景对应 | 通过：E1–E12 / U1–U4 落在 T2 / T3 / T5 |
 | 不含 out-of-scope 项 | 通过：无图片上传、无双栏布局、无 S17、无后端改动 |
+## R2 任务（2026-11-16 21:00）
+
+> 依据 proposal.md「R2」、design.md §10、tdd-design.md §7；完成状态以 P4 记录为准。
+
+### T8 [frontend] 日期格式共享
+
+- [x] 新增 rontend/src/trips/tripDateFormat.ts（ormatMonthDay / weekdayLabel）。
+- [x] 新增 	ripDateFormat.test.ts（合法 / 非法 / 周几）。
+- [x] TripCard 的 ormatDate / dayLabel 改为调用共享函数（文本不变）。
+
+**验证：** cd RouteME/frontend; npx vitest run src/trips/tripDateFormat.test.ts && npm run typecheck
+**覆盖：** E15、	rips.spec.ts 回归
+
+### T9 [frontend] 分享页图标组件
+
+- [x] 新增 rontend/src/experiences/shareIcons.tsx（spark / route / info / compass / copy / shield / check / send / left），路径取自原型。
+
+**验证：** cd RouteME/frontend; npm run typecheck
+**覆盖：** E17
+
+### T10 [frontend] 分享页布局重构
+
+- [x] ShareExperiencePage 改为 .page-head（标题 / 副标题）+ .detail-back + .share-hero + .publish-grid。
+- [x] 主列三个 Card.panel：真实感受 / 路线强度 / 给后来者的一条建议；操作按钮移入「建议」面板。
+- [x] 强度改为 label.int-card + 原生 radio，选中态由 draft.intensity 决定，INTENSITY_OPTIONS 增加 	one。
+- [x] 侧栏两个 Card.panel：「你的体验会去哪里」/「分享边界」+ ul.share-list。
+- [x] 	ripMessages 增加面板标题键（真实感受 / 给后来者的一条建议）与会话标题复用。
+
+**验证：** cd RouteME/frontend; npm run typecheck && npm test
+**覆盖：** E13–E17
+
+### T11 [frontend] R2 样式
+
+- [x] .share-hero 封面改 76×60 / 圆角 12；.intensity-picker / .int-card（含 jade / amber / coral 选中态、:focus-within）/ .int-radio / .share-list / .share-icon；≤680px 卡片单列。
+
+**验证：** cd RouteME/frontend; npm run build
+**覆盖：** E13 / E14 / E17 的视觉部分
+
+### T12 [e2e] R2 断言
+
+- [x] 新增 E13（双栏 / 单列、面板计数、无横向滚动）、E14（卡片选中态）、E15（hero 元信息）、E16（页头 / 返回）、E17（列表图标）断言。
+
+**验证：** cd RouteME/e2e; npx playwright test tests/experiences.spec.ts
+**覆盖：** E13–E17
+
+### T13 [docs] R2 验证记录
+
+- [x] docs/ai4se-plugins/<ts>-local-verify-report.md（R2 追加）、g2-decision-r2.md、P4 记录 R2 章节。
+
+**验证：** openspec validate refine-experience-share --strict
+**覆盖：** G2（R2）证据

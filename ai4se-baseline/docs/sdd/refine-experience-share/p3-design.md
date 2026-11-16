@@ -65,3 +65,10 @@
 - 提交信息：`docs(p3): refine-experience-share design atdd and task plan`
 - push 前 `git pull --rebase origin main`；仅提交本 change 的路径（工作区存在并行会话的规则文件改动，不纳入本提交）。
 - `docs/sdd/README.md` 的 P3 链接延后到 P4 同批更新：该文件此刻还有并行会话未提交的「签署人矩阵」改动，避免把他人工作混入本阶段提交。
+## 8. R2 增补（2026-11-16 21:04）：布局与原型对齐
+
+- **设计：** `design.md` §10（结构 / 强度卡片与组件选型 / 9 个原型图标 / `tripDateFormat` / 样式 / a11y / 测试影响）。
+- **ATDD：** `atdd-design.md` §7（E13–E17 + U5–U7）。
+- **任务：** `tasks.md`「R2 任务」T8–T13。
+- **评审：** `docs/reviews/20261116-refine-experience-share-{design,tasks}-review-2.md` 均 Pass，Neal + Jay 批准（21:04）。
+- **阶段提交：** `docs(p3): refine-experience-share add the R2 layout design and tasks`。
