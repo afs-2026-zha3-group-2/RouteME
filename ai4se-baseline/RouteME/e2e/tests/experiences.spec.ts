@@ -49,6 +49,30 @@ async function createCompletedTrip(page: Page, title: string) {
   return trip;
 }
 
+function tomorrowIso(): string {
+  const date = new Date();
+  date.setDate(date.getDate() + 1);
+  const pad = (value: number) => String(value).padStart(2, '0');
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
+}
+
+async function createOpenTrip(page: Page, title: string) {
+  const created = await page.request.post(`${API}/trips`, {
+    headers: { 'X-User-Id': '1', 'Content-Type': 'application/json' },
+    data: {
+      title,
+      destination_code: '440400',
+      start_date: tomorrowIso(),
+      end_date: tomorrowIso(),
+      stops: ['香洲港集合', '情侣路骑行'],
+      tags: ['摄影'],
+      capacity: 3,
+    },
+  });
+  expect(created.ok()).toBeTruthy();
+  return (await created.json()) as { id: number };
+}
+
 test('shows seeded experiences in the travel experience view', async ({ page }) => {
   await loginAs(page, 1);
   await page.goto('/');
@@ -70,6 +94,16 @@ test('shares an experience and reuses it to publish a new plan', async ({ page }
 
   await loginAs(page, 1);
   await page.goto(`/#/share/${trip.id}`);
+  const hero = page.locator('.share-hero');
+  await expect(hero).toContainText(title);
+  await expect(hero).toContainText('人同行');
+  await expect(hero.locator('[data-status="completed"]')).toContainText('已结束');
+  await expect(page.getByText('你的体验会去哪里')).toBeVisible();
+  await expect(page.getByText('出现在这条行程的详情页，和原路线放在一起。')).toBeVisible();
+  await expect(page.getByText('别人可以点「参考此行程发布」，把它变成自己的新计划。')).toBeVisible();
+  await expect(page.getByText('分享边界')).toBeVisible();
+  await expect(page.getByText('不要写入同行者的电话、学校班级或住宿地址。')).toBeVisible();
+
   await page.getByPlaceholder(/路况、强度、时间点/).fill(content);
   await page.getByRole('radio', { name: /较累/ }).check();
   await page.getByPlaceholder('例如：鞋一定要抓地，普通跑鞋会滑。').fill('带一件防风外套。');
@@ -79,6 +113,7 @@ test('shares an experience and reuses it to publish a new plan', async ({ page }
   await expect(page.getByText(content)).toBeVisible();
   await expect(page.getByText('强度 · 较累').first()).toBeVisible();
   await expect(page.getByRole('button', { name: '修改我的体验' })).toBeVisible();
+  await expect(page.locator('.experience-list li')).toHaveCount(1);
 
   await page.goto('/');
   await page.locator('.ant-segmented-item', { hasText: '旅行体验' }).click();
@@ -100,19 +135,72 @@ test('shares an experience and reuses it to publish a new plan', async ({ page }
   await expect(page.getByText(/给这条路线起个名字|请选择出发日期|含你在内至少 2 人/).first()).toBeVisible();
 });
 
-test('keeps experience entry points honest', async ({ page }) => {
-  await loginAs(page, 3);
-  await page.goto('/#/share/1');
-  await expect(page.getByText('只有已结束、并且你实际参加过的行程才能发表体验')).toBeVisible();
+test('updates the existing experience instead of adding another one', async ({ page }) => {
+  const title = `E2E 修改体验 ${Date.now()}`;
+  const trip = await createCompletedTrip(page, title);
+  const first = `第一次写下的感受，路线平缓，日落前到海滨泳场正好。${Date.now()}`;
+  const second = `改过之后的感受，风比想象大，记得带外套。${Date.now()}`;
 
-  await page.goto('/#/share/3');
-  await expect(page.getByText('只有已结束、并且你实际参加过的行程才能发表体验')).toBeVisible();
+  await loginAs(page, 1);
+  await page.goto(`/#/share/${trip.id}`);
+  await page.getByPlaceholder(/路况、强度、时间点/).fill(first);
+  await page.getByPlaceholder('例如：鞋一定要抓地，普通跑鞋会滑。').fill('带一件防风外套。');
+  await page.getByRole('button', { name: '发布体验' }).click();
+  await expect(page).toHaveURL(new RegExp(`#/trips/${trip.id}$`));
+  await expect(page.locator('.experience-list li')).toHaveCount(1);
+
+  await page.getByRole('button', { name: '修改我的体验' }).click();
+  await expect(page.getByRole('heading', { name: '修改我的游后体验' })).toBeVisible();
+  await expect(page.getByPlaceholder(/路况、强度、时间点/)).toHaveValue(first);
+  await page.getByPlaceholder(/路况、强度、时间点/).fill(second);
+  await page.getByRole('button', { name: '保存修改' }).click();
+
+  await expect(page).toHaveURL(new RegExp(`#/trips/${trip.id}$`));
+  await expect(page.getByText(second)).toBeVisible();
+  await expect(page.getByText(first)).toHaveCount(0);
+  await expect(page.locator('.experience-list li')).toHaveCount(1);
+});
+
+test('keeps experience entry points honest', async ({ page }) => {
+  const openTrip = await createOpenTrip(page, `E2E 未结束 ${Date.now()}`);
+
+  await loginAs(page, 3);
+  await page.goto(`/#/share/${openTrip.id}`);
+  await expect(page.getByText('行程结束后才能发表体验')).toBeVisible();
+  await expect(page.getByText('当前状态：招募中')).toBeVisible();
+  await expect(page.getByPlaceholder(/路况、强度、时间点/)).toHaveCount(0);
+
+  await page.goto('/#/share/1');
+  await expect(page.getByText('只有参加过的同行者才能发表体验')).toBeVisible();
+  await expect(page.getByPlaceholder(/路况、强度、时间点/)).toHaveCount(0);
 
   await switchUser(page, 1);
   await page.goto('/#/share/1');
   await expect(page.getByPlaceholder(/路况、强度、时间点/)).toBeVisible();
   await expect(page.getByRole('button', { name: /上传图片|添加图片/ })).toHaveCount(0);
   await expect(page.getByText('分享边界')).toBeVisible();
+});
+
+test('marks completed trips as shared in my trips', async ({ page }) => {
+  const title = `E2E 我的旅行分享 ${Date.now()}`;
+  const trip = await createCompletedTrip(page, title);
+  const content = `从我的旅行进入分享页，写下这段真实感受。${Date.now()}`;
+
+  await loginAs(page, 1);
+  await page.goto('/#/mine');
+  await page.getByRole('tab', { name: /已完成/ }).click();
+  const row = page.locator('.mine-row', { hasText: title });
+  await expect(row.getByRole('button', { name: '发表游后体验' })).toBeVisible();
+
+  await row.getByRole('button', { name: '发表游后体验' }).click();
+  await expect(page).toHaveURL(new RegExp(`#/share/${trip.id}$`));
+  await page.getByPlaceholder(/路况、强度、时间点/).fill(content);
+  await page.getByPlaceholder('例如：鞋一定要抓地，普通跑鞋会滑。').fill('早点出发。');
+  await page.getByRole('button', { name: '发布体验' }).click();
+
+  await page.getByRole('link', { name: '我的旅行' }).first().click();
+  await page.getByRole('tab', { name: /已完成/ }).click();
+  await expect(row.getByRole('button', { name: '修改我的体验' })).toBeVisible();
 });
 
 test('switches to the experience view and marks ended origin trips', async ({ page }) => {
@@ -127,6 +215,7 @@ test('switches to the experience view and marks ended origin trips', async ({ pa
 
   const first = page.locator('.exp-card').first();
   await expect(first).toBeVisible();
+  await expect(first.locator('.exp-cover')).toBeVisible();
   await expect(first.locator('.exp-origin')).toContainText('来自');
   await expect(first.locator('[data-status="completed"]')).toContainText('已结束');
   await expect(first.locator('[data-status-icon="completed"]')).toBeVisible();

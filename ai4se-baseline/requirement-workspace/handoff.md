@@ -16,7 +16,7 @@
 |---|---|---|---|---|---|
 | REQ-002 | `trip-plans` | `add-trip-plans` | `intents/REQ-002-trip-plans.md` | `requirements/REQ-002-trip-plans.md` | `openspec/changes/add-trip-plans/` |
 | REQ-003 | `trip-companions` | `add-trip-companions` | `intents/REQ-003-trip-companions.md` | `requirements/REQ-003-trip-companions.md` | `openspec/changes/add-trip-companions/` |
-| REQ-004 | `trip-experiences` | `add-trip-experiences` | `intents/REQ-004-trip-experiences.md` | `requirements/REQ-004-trip-experiences.md` | `openspec/changes/add-trip-experiences/` |
+| REQ-004 | `trip-experiences` | `add-trip-experiences`（基线，已归档）；R2 `refine-experience-share` | `intents/REQ-004-trip-experiences.md` | `requirements/REQ-004-trip-experiences.md` | `openspec/changes/refine-experience-share/`（R2 / S16：分享页说明与体验卡封面，不改后端与契约） |
 | REQ-005 | `trip-plans`（MODIFIED）/ `trip-experiences`（MODIFIED） | `refine-inspiration-home` | `intents/REQ-005-inspiration-home.md` | `requirements/REQ-005-inspiration-home.md` | `openspec/changes/refine-inspiration-home/` |
 | REQ-006 | `user-auth`（MODIFIED） | `add-user-logout` | `intents/REQ-006-user-logout.md` | `requirements/REQ-006-user-logout.md` | `openspec/changes/add-user-logout/`（依赖的 `add-user-auth` 已解档，Delta 已并入 Living Spec） |
 | REQ-007 | `trip-plans`（MODIFIED）+ `trip-experiences`（MODIFIED） | `add-destination-area-filters` | `intents/REQ-007-destination-area-filters.md` | `requirements/REQ-007-destination-area-filters.md` | `openspec/changes/add-destination-area-filters/` |

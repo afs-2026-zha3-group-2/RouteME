@@ -80,6 +80,31 @@
 
 ---
 
+# Story list — REQ-004（S16 发布游后体验）
+
+- **来源：** 原型故事 `docs/prototype/stories.html` S16「发布游后体验」及其 4 条 AC；issue #18 `[P1] S16 发布游后体验`（迭代 3 / P1 / 3 点 / 落点页面：游后分享页）
+- **Change：** 基线 `add-trip-experiences`（已归档，REQ-004）；本故事 R2 = `refine-experience-share`（`trip-experiences` MODIFIED + ADDED）
+- **口径：** 一条故事 = 一个页面（游后分享页）+ 复用一份体验契约 + 一次状态迁移（已结束行程 → 体验已发布 / 已修改）
+
+| Story | Title | 角色 | Priority | Iteration | Points | Page | Parent REQ | Change | Status |
+|---|---|---|---|---|---|---|---|---|---|
+| S16 | 发布游后体验 | 完成旅行的用户 | P1 | 3 | 3 | 游后分享页 | REQ-004 | `refine-experience-share` | P4 Pass / G2 Pass（2026-11-16，待 P5） |
+
+## Traceability（REQ-004 / S16）
+
+| Story | Requirement scenarios | Change spec | Story file |
+|---|---|---|---|
+| S16 | REQ-004 §4 #1–#8；`openspec/specs/trip-experiences/spec.md` 7 Requirement / 22 Scenario（基线） | `openspec/changes/refine-experience-share/specs/trip-experiences/spec.md`（MODIFIED 3） | 无独立故事文件：原型 S16 已提供 4 条 AC，本 change 以 proposal + delta 承接 |
+
+## Notes（REQ-004 / S16）
+
+- 主干能力（资格校验、两处展示、重复提交即修改、纯文字 + 三档强度 + 一条建议）已由 `add-trip-experiences` 归档交付；本故事 R2 只收敛展示口径：分享页 hero、「你的体验会去哪里」三条、「分享边界」两条、体验卡内置封面、两种不可用提示。
+- 图片上传按 AC 记为增强项，本迭代不做；E2E 继续断言分享页没有上传入口。
+- 「同一行程重复发布」按 AC 取更简单的一条：同一用户对同一行程只有一条体验，再次提交即修改（`upsert`），体验条数不变。
+- 不可用原因在前端区分（未结束 / 未参加），服务端仍以 `EXPERIENCE_NOT_ALLOWED`（403）拒绝；不升 `openapi.yaml`、不改数据库迁移。
+
+---
+
 # Story list — REQ-011（S15 结束行程）
 
 - **来源：** 用户提供的 S15 故事、10 条业务规则与 12 条验收标准（2026-11-16）

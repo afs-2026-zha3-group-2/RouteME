@@ -28,6 +28,7 @@ import {
 import { tripMessages } from '../i18n/tripMessages';
 import { intensityLabel } from '../experiences/experienceForm';
 import { meetingAreaText, meetingTimeText } from '../chat/chatMeeting';
+import { shareEligibility } from '../experiences/shareEligibility';
 import { publisherSummary } from '../profile/profileDisplay';
 import { ReportModal } from '../safety/ReportModal';
 import { SafetyNote } from '../safety/SafetyNote';
@@ -248,7 +249,7 @@ export function TripDetailPage({ currentUser, tripId }: Props) {
   const isPublisher = entry.kind === 'publisher';
   const isCompleted = trip.status === 'completed';
   const participant = trip.participants.some((member) => member.id === currentUser.id);
-  const canShare = isCompleted && participant;
+  const canShare = shareEligibility(trip, currentUser.id).kind === 'ready';
   const hasShared = experiences?.some((experience) => experience.author.id === currentUser.id) ?? false;
   const budget =
     trip.budget_min_cents === null
