@@ -1,0 +1,564 @@
+<!doctype html>
+<html lang="zh-CN" data-theme="light">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="description" content="S14 refine-safety-report 的 P3 实现预览：页头举报入口、弹窗三态与三档宽度（静态，不调用后端）" />
+<title>RouteMe · S14 举报入口与回执 · 实现预览</title>
+<style>
+  /* Tokens copied from RouteME/frontend/src/styles.css so the preview and the
+     implementation stay on the same palette. */
+  :root {
+    --deep:#06232b; --tide:#0f4c5c; --lagoon:#12707f; --lagoon-soft:#e3f0f1;
+    --coral:#ff6b35; --amber:#f5a524; --dusk:#7b5cff; --jade:#10925f;
+    --warn:#d98613; --danger:#d8402f; --info:#2b7fd4;
+    --bg:#f2ece1; --surface:#fffdf9; --surface-2:#f8f2e7; --surface-3:#f1e9db;
+    --ink:#0b2a33; --ink-2:#3f5d67; --ink-3:#576b72;
+    --line:#e4dbcb; --line-2:#d3c7b2;
+    --t-danger:#b32c1c; --t-warn:#8a5409; --t-jade:#0d774e; --t-info:#246ab2; --t-lagoon:#12707f;
+    --r-sm:8px; --r:14px; --r-lg:20px;
+    --sh-1:0 1px 2px rgba(6,35,43,.06),0 2px 8px -4px rgba(6,35,43,.1);
+    --sh-2:0 2px 6px rgba(6,35,43,.06),0 14px 30px -18px rgba(6,35,43,.34);
+    --sh-3:0 8px 24px -8px rgba(6,35,43,.22),0 32px 64px -32px rgba(6,35,43,.5);
+    --ring:0 0 0 3px rgba(18,112,127,.22);
+    --font:"Segoe UI","PingFang SC","Hiragino Sans GB","Microsoft YaHei",system-ui,sans-serif;
+    color-scheme:light;
+  }
+  [data-theme="dark"] {
+    --deep:#030e13; --tide:#0d4453; --lagoon:#2b93a4; --lagoon-soft:#10333c;
+    --coral:#ff8354; --amber:#ffbb3d; --dusk:#9b83ff; --jade:#2fc07f;
+    --warn:#f0a93c; --danger:#ff6b5c; --info:#56a3ee;
+    --bg:#061116; --surface:#0e1f26; --surface-2:#132a33; --surface-3:#19343e;
+    --ink:#e9f4f6; --ink-2:#a6c1c9; --ink-3:#869da4;
+    --line:#1d3742; --line-2:#274a57;
+    --t-danger:#ff7f70; --t-warn:#f0a93c; --t-jade:#2fc07f; --t-info:#56a3ee; --t-lagoon:#31a7ba;
+    --sh-1:0 1px 2px rgba(0,0,0,.5);
+    --sh-2:0 2px 6px rgba(0,0,0,.4),0 16px 34px -20px rgba(0,0,0,.9);
+    --sh-3:0 10px 30px -10px rgba(0,0,0,.7),0 40px 70px -34px rgba(0,0,0,1);
+    color-scheme:dark;
+  }
+
+  * { box-sizing: border-box; }
+  body {
+    margin:0; font-family:var(--font); color:var(--ink);
+    background:
+      radial-gradient(900px 380px at 88% -10%, color-mix(in srgb, var(--lagoon) 13%, transparent), transparent 70%),
+      var(--bg);
+    -webkit-font-smoothing:antialiased;
+  }
+  button, select, textarea { font-family:inherit; font-size:inherit; }
+
+  /* ---------- toolbar ---------- */
+  .bar {
+    position:sticky; top:0; z-index:120; display:flex; flex-wrap:wrap; gap:10px 14px;
+    align-items:center; padding:10px 18px; background:var(--deep); color:#f3fbfc;
+    box-shadow:var(--sh-2);
+  }
+  .bar b { font-size:13px; letter-spacing:.02em; }
+  .bar .sub { font-size:11.5px; opacity:.72; }
+  .group { display:flex; align-items:center; gap:6px; }
+  .group > span { font-size:11px; opacity:.7; }
+  .seg { display:inline-flex; background:rgba(255,255,255,.09); border-radius:999px; padding:3px; gap:2px; }
+  .seg button {
+    border:0; background:none; color:#dfeef1; font-size:11.5px; padding:5px 10px;
+    border-radius:999px; cursor:pointer; white-space:nowrap;
+  }
+  .seg button[aria-pressed="true"] { background:#f3fbfc; color:#06232b; font-weight:700; }
+  .seg button:focus-visible { outline:2px solid #ffd166; outline-offset:2px; }
+  .bar .spacer { margin-left:auto; }
+
+  /* ---------- layout ---------- */
+  .wrap { display:grid; grid-template-columns:minmax(0,1fr) 300px; gap:22px; padding:22px 18px 60px; }
+  @media (max-width:1180px) { .wrap { grid-template-columns:1fr; } }
+
+  .frame {
+    margin:0 auto; width:100%; max-width:var(--frame-w,100%);
+    transition:max-width .18s ease;
+  }
+  .frame-label {
+    display:flex; align-items:center; justify-content:space-between; gap:8px;
+    font-size:11px; color:var(--ink-3); padding:0 2px 6px;
+  }
+  .frame-label code { background:var(--surface-2); border:1px solid var(--line); border-radius:6px; padding:1px 5px; }
+
+  /* ---------- app chrome ---------- */
+  .app { background:var(--surface); border:1px solid var(--line); border-radius:var(--r-lg); box-shadow:var(--sh-2); overflow:hidden; }
+  .app-top { display:flex; align-items:center; gap:10px; padding:10px 14px; background:var(--deep); color:#eaf6f8; font-size:12px; }
+  .app-top .dot { width:8px; height:8px; border-radius:50%; background:var(--amber); }
+  .app-top .who { margin-left:auto; background:rgba(255,255,255,.12); border-radius:999px; padding:3px 9px; }
+  .page { padding:18px 16px 26px; background:var(--bg); }
+
+  .panel { background:var(--surface); border:1px solid var(--line); border-radius:var(--r); box-shadow:var(--sh-1); padding:16px; }
+  .back { display:inline-flex; align-items:center; gap:6px; font-size:12.5px; font-weight:700; color:var(--t-lagoon); text-decoration:none; margin-bottom:10px; }
+
+  h2.trip-title { margin:0; font-size:clamp(1.2rem,2.6vw,1.6rem); font-weight:800; line-height:1.2; letter-spacing:-.015em; }
+
+  /* ---------- detail head (D1) ---------- */
+  .detail-head { display:grid; gap:8px; }
+  .detail-badges { display:flex; flex-wrap:wrap; align-items:center; gap:6px; }
+  .tag { display:inline-flex; align-items:center; font-size:11.5px; font-weight:700; padding:2px 8px; border-radius:6px;
+         border:1px solid var(--line-2); color:var(--ink-2); background:var(--surface-2); }
+  .tag.status { color:var(--t-jade); border-color:color-mix(in srgb,var(--jade) 35%,var(--line)); background:color-mix(in srgb,var(--jade) 10%,var(--surface)); }
+  .tag.area { color:var(--t-info); border-color:color-mix(in srgb,var(--info) 30%,var(--line)); background:color-mix(in srgb,var(--info) 8%,var(--surface)); }
+
+  /* Planned rule: the entry sits at the right end of the badge row and wraps. */
+  .detail-badges .head-report { margin-left:auto; }
+  .linkbtn {
+    border:0; background:none; color:var(--t-danger); font-weight:700; font-size:12.5px;
+    padding:4px 2px; border-radius:6px; cursor:pointer;
+  }
+  .linkbtn:hover { text-decoration:underline; }
+  .linkbtn:focus-visible { outline:none; box-shadow:var(--ring); text-decoration:underline; }
+
+  .detail-meta { display:flex; flex-wrap:wrap; gap:6px 14px; margin:0; font-size:12px; color:var(--ink-3); }
+
+  /* ---------- shared blocks ---------- */
+  .section { margin-top:16px; }
+  .section h3 { margin:0 0 8px; font-size:13px; letter-spacing:.04em; text-transform:uppercase; color:var(--ink-3); }
+  .stops { margin:0; padding-left:20px; font-size:13px; line-height:1.9; color:var(--ink-2); }
+  .facts { display:flex; flex-wrap:wrap; gap:10px 26px; margin:12px 0 0; }
+  .facts div { min-width:120px; }
+  .facts dt { font-size:11px; color:var(--ink-3); }
+  .facts dd { margin:2px 0 0; font-size:13px; font-weight:700; }
+
+  .alert { display:flex; gap:9px; padding:10px 12px; border-radius:var(--r-sm); border:1px solid var(--line-2);
+           background:var(--surface-2); font-size:12.5px; line-height:1.6; color:var(--ink-2); }
+  .alert .ic { flex:none; font-weight:900; }
+  .alert.warn { border-color:color-mix(in srgb,var(--warn) 45%,var(--line)); background:color-mix(in srgb,var(--warn) 9%,var(--surface)); color:var(--ink); }
+  .alert.warn .ic { color:var(--t-warn); }
+  .alert.ok { border-color:color-mix(in srgb,var(--jade) 45%,var(--line)); background:color-mix(in srgb,var(--jade) 10%,var(--surface)); color:var(--ink); }
+  .alert.ok .ic { color:var(--t-jade); }
+  .alert.err { border-color:color-mix(in srgb,var(--danger) 45%,var(--line)); background:color-mix(in srgb,var(--danger) 9%,var(--surface)); color:var(--ink); }
+  .alert.err .ic { color:var(--t-danger); }
+  .alert b { font-weight:800; }
+  .alert code { font-size:11px; color:var(--ink-3); }
+
+  .actions { display:flex; flex-wrap:wrap; gap:8px; margin-top:16px; }
+  .btn { border:1px solid var(--line-2); background:var(--surface); color:var(--ink); border-radius:var(--r-sm);
+         padding:7px 14px; font-size:12.5px; font-weight:700; cursor:pointer; }
+  .btn.primary { background:var(--tide); border-color:var(--tide); color:#fff; }
+  .btn.danger { background:var(--danger); border-color:var(--danger); color:#fff; }
+  .btn.ghost { background:none; }
+  .btn:focus-visible { outline:none; box-shadow:var(--ring); }
+
+  /* ---------- chat head (D2) ---------- */
+  .chat-head { display:flex; align-items:center; gap:12px; flex-wrap:wrap; padding-bottom:12px; border-bottom:1px solid var(--line); }
+  .chat-head-text { min-width:0; }
+  .chat-head-text h2 { margin:0; font-size:15px; font-weight:800; }
+  .chat-head-meta { display:flex; flex-wrap:wrap; gap:4px 10px; margin:3px 0 0; font-size:11.5px; color:var(--ink-3); }
+  .chat-head-tags { display:flex; flex-wrap:wrap; gap:4px; margin:6px 0 0; }
+  .avatar { flex:none; width:40px; height:40px; border-radius:50%; display:grid; place-items:center;
+            background:color-mix(in srgb,var(--dusk) 18%,var(--surface)); color:var(--t-lagoon); font-weight:800; font-size:13px; }
+  .chat-report { margin-left:auto; align-self:flex-start; flex:none; }
+
+  .chat-list { display:grid; gap:8px; margin-top:12px; }
+  .bubble { max-width:82%; padding:8px 11px; border-radius:12px; background:var(--surface-2); border:1px solid var(--line); font-size:12.5px; }
+  .bubble.mine { margin-left:auto; background:color-mix(in srgb,var(--lagoon) 10%,var(--surface)); }
+  .bubble .who { display:block; font-size:10.5px; color:var(--ink-3); margin-bottom:2px; }
+  .bubble .meta { font-size:10px; color:var(--ink-3); margin-top:3px; }
+
+  /* ---------- modal ---------- */
+  .overlay { position:fixed; inset:0; z-index:80; display:none; place-items:center; padding:18px;
+             background:rgba(6,35,43,.42); backdrop-filter:blur(2px); }
+  .overlay[data-open="1"] { display:grid; }
+  .modal { width:100%; max-width:420px; background:var(--surface); border-radius:var(--r); box-shadow:var(--sh-3); border:1px solid var(--line); }
+  .modal-head { display:flex; align-items:flex-start; gap:10px; padding:14px 16px 6px; }
+  .modal-head h2 { margin:0; font-size:14.5px; font-weight:800; }
+  .modal-head .x { margin-left:auto; border:0; background:none; color:var(--ink-3); font-size:16px; line-height:1; cursor:pointer; padding:2px 4px; border-radius:6px; }
+  .modal-head .x:hover { background:var(--surface-2); color:var(--ink); }
+  .modal-body { padding:4px 16px 14px; display:grid; gap:9px; }
+  .target { font-size:12px; color:var(--ink-3); line-height:1.6; }
+  .target b { color:var(--ink); }
+  .label { font-size:12px; font-weight:700; color:var(--ink-2); }
+  .select, .note {
+    width:100%; border:1px solid var(--line-2); background:var(--surface); color:var(--ink);
+    border-radius:var(--r-sm); padding:8px 10px; font-size:12.5px;
+  }
+  .note { min-height:66px; resize:vertical; }
+  .counter { font-size:10.5px; color:var(--ink-3); text-align:right; margin-top:-4px; }
+  .privacy { display:flex; gap:7px; font-size:11.5px; line-height:1.6; color:var(--ink-3); border-top:1px dashed var(--line); padding-top:9px; }
+  .privacy b { color:var(--t-warn); }
+  .modal-foot { display:flex; justify-content:flex-end; gap:8px; padding:10px 16px 14px; border-top:1px solid var(--line); }
+
+  /* ---------- evidence panel ---------- */
+  .evidence { align-self:start; position:sticky; top:64px; display:grid; gap:12px; }
+  .card { background:var(--surface); border:1px solid var(--line); border-radius:var(--r); box-shadow:var(--sh-1); padding:14px; }
+  .card h3 { margin:0 0 8px; font-size:12px; letter-spacing:.06em; text-transform:uppercase; color:var(--ink-3); }
+  .card ul { margin:0; padding-left:16px; font-size:12px; line-height:1.75; color:var(--ink-2); }
+  .card li + li { margin-top:2px; }
+  .card code { font-size:11px; background:var(--surface-2); border:1px solid var(--line); border-radius:5px; padding:0 4px; }
+  .ok { color:var(--t-jade); font-weight:700; }
+  .warn-t { color:var(--t-warn); font-weight:700; }
+  .legend { font-size:11.5px; color:var(--ink-3); line-height:1.7; }
+  .sr-only { position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap; border:0; }
+</style>
+</head>
+<body>
+
+<div class="bar">
+  <b>S14 · 举报入口与回执</b>
+  <span class="sub">refine-safety-report · P3 实现预览（静态，不调用后端）</span>
+
+  <div class="group"><span>页面</span>
+    <div class="seg" id="segPage">
+      <button data-page="detail" aria-pressed="true">详情（他人）</button>
+      <button data-page="own" aria-pressed="false">详情（本人）</button>
+      <button data-page="chat" aria-pressed="false">聊天（只读）</button>
+      <button data-page="share" aria-pressed="false">体验发布页</button>
+    </div>
+  </div>
+
+  <div class="group"><span>宽度</span>
+    <div class="seg" id="segWidth">
+      <button data-w="1440" aria-pressed="true">1440</button>
+      <button data-w="768" aria-pressed="false">768</button>
+      <button data-w="390" aria-pressed="false">390</button>
+    </div>
+  </div>
+
+  <div class="group"><span>弹窗</span>
+    <div class="seg" id="segModal">
+      <button data-m="closed" aria-pressed="true">关闭</button>
+      <button data-m="form" aria-pressed="false">表单</button>
+      <button data-m="receipt" aria-pressed="false">回执</button>
+      <button data-m="failure" aria-pressed="false">失败</button>
+    </div>
+  </div>
+
+  <div class="group"><span>主题</span>
+    <div class="seg" id="segTheme">
+      <button data-t="light" aria-pressed="true">浅色</button>
+      <button data-t="dark" aria-pressed="false">深色</button>
+    </div>
+  </div>
+</div>
+
+<div class="wrap">
+  <div>
+    <div class="frame" id="frame">
+      <div class="frame-label">
+        <span id="frameName">详情页 · 他人行程</span>
+        <span>视口 <code id="frameW">1440</code> px</span>
+      </div>
+
+      <div class="app">
+        <div class="app-top"><span class="dot"></span><span>RouteMe</span><span class="who" id="appWho">林夏 · 学生</span></div>
+        <div class="page" id="stage"></div>
+      </div>
+    </div>
+  </div>
+
+  <aside class="evidence">
+    <div class="card">
+      <h3>本页在验什么</h3>
+      <ul id="checks"></ul>
+    </div>
+    <div class="card">
+      <h3>设计落点</h3>
+      <ul>
+        <li><code>D1</code> 详情入口在 <code>.detail-badges</code> 内，<code>margin-left:auto</code>；本人行程不渲染</li>
+        <li><code>D2</code> 聊天入口是 <code>.chat-head</code> 最后一个子节点，<code>flex-wrap</code> 换行不隐藏</li>
+        <li><code>D3</code> <code>SafetyNote</code> 只留体验发布页，无举报动作</li>
+        <li><code>D4</code> 弹窗三态同一标题与目标行；回执单一「关闭」</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h3>提示</h3>
+      <p class="legend">切换 390 / 768 / 1440 看页头换行：入口始终可见、始终靠右；页面宽度不再溢出。弹窗三态用上方「弹窗」切换，失败态的已选原因与说明会保留。</p>
+    </div>
+  </aside>
+</div>
+
+<div class="overlay" id="overlay" data-open="0">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+    <div class="modal-head">
+      <h2 id="modalTitle">举报这条行程</h2>
+      <button class="x" type="button" aria-label="关闭" data-close>✕</button>
+    </div>
+    <div class="modal-body" id="modalBody"></div>
+    <div class="modal-foot" id="modalFoot"></div>
+  </div>
+</div>
+
+<script>
+  const state = { page:'detail', width:'1440', modal:'closed', theme:'light' };
+
+  const COPY = {
+    detail: {
+      name: '详情页 · 他人行程',
+      entry: '举报这条行程',
+      target: '深圳大鹏半岛海岸线徒步'
+    },
+    own: {
+      name: '详情页 · 本人行程',
+      entry: null,
+      target: '珠海情侣路摄影一日游'
+    },
+    chat: {
+      name: '聊天页 · 已结束只读',
+      entry: '举报这位用户',
+      target: '陈屿'
+    },
+    share: {
+      name: '体验发布页 · 发布前提醒',
+      entry: null,
+      target: '深圳大鹏半岛海岸线徒步'
+    }
+  };
+
+  const CHECKS = {
+    detail: [
+      '入口在 <code>.detail-badges</code> 内，与状态标签同一行靠右',
+      '<code>.safety-note</code> 与「安全提示」文案计数 0',
+      '入口是文本按钮：可 Tab 聚焦，<code>Enter</code> 打开弹窗',
+      '三档宽度都可见、无横向溢出（E1 / RV-7）'
+    ],
+    own: [
+      '本人行程不渲染入口（<code>isPublisher</code>）',
+      '去掉提示后，页面没有任何安全相关内容',
+      '申请区与「查看同行的申请」保持原样',
+      '体验发布页另测：<code>安全提示</code> 仍在、无举报按钮（E4 / RV-4）'
+    ],
+    chat: [
+      '已结束只读聊天仍有入口，发送框隐藏',
+      '<code>.safety-note</code> 计数 0',
+      '入口在头像对侧，长昵称收缩不挤出',
+      '三档可见（E2 / RV-7）'
+    ],
+    share: [
+      '发布前提醒保留（<code>SafetyNote</code> 无举报动作）',
+      '页面不出现任何 <code>举报*</code> 按钮',
+      '组件收窄后调用点不变（D3 / T4）'
+    ]
+  };
+
+  const stage = document.getElementById('stage');
+  const overlay = document.getElementById('overlay');
+  const modalBody = document.getElementById('modalBody');
+  const modalFoot = document.getElementById('modalFoot');
+  const modalTitle = document.getElementById('modalTitle');
+
+  function detailPage({ own }) {
+    const title = own ? '珠海情侣路摄影一日游' : '深圳大鹏半岛海岸线徒步';
+    const status = own ? '已完成' : '招募中';
+    const area = own ? '珠海' : '深圳';
+    const stops = own
+      ? ['香洲港集合', '情侣路骑行段', '海滨泳场日落机位', '野狸岛夜景']
+      : ['大鹏所城集合', '东西涌穿越 12km', '天文台观景', '民宿休整', '次日杨梅坑骑行'];
+    const joined = own ? '4/4' : '1/6';
+    const dates = own ? '2026-11-06 → 2026-11-06' : '2026-11-23 → 2026-11-24';
+    return `
+      <a class="back" href="#" onclick="return false">← 回到首页</a>
+      <div class="panel">
+        <header class="detail-head">
+          <div class="detail-badges">
+            <span class="tag status">${status}</span>
+            <span class="tag area">${area}</span>
+            ${own ? '' : '<button class="linkbtn head-report" type="button" data-open-report="trip">举报这条行程</button>'}
+          </div>
+          <h2 class="trip-title">${title}</h2>
+          <p class="detail-meta"><span>${dates}</span><span>同行 ${joined}人</span></p>
+        </header>
+
+        <section class="section">
+          <h3>途经点</h3>
+          <ol class="stops">${stops.map((s) => `<li>${s}</li>`).join('')}</ol>
+          <dl class="facts">
+            <div><dt>集合</dt><dd>${own ? '香洲港公交站' : '大鹏所城正门'}</dd></div>
+            <div><dt>预算</dt><dd>${own ? '¥120–200' : '¥400–600'}</dd></div>
+          </dl>
+        </section>
+
+        ${own
+          ? `<div class="actions">
+               <button class="btn" type="button">查看同行的申请（2）</button>
+               <span class="tag">我发布的</span>
+             </div>`
+          : `<div class="actions">
+               <button class="btn primary" type="button">提交同行申请</button>
+               <button class="btn ghost" type="button">回到首页</button>
+             </div>`}
+      </div>`;
+  }
+
+  function chatPage() {
+    return `
+      <a class="back" href="#" onclick="return false">← 回到行程</a>
+      <div class="panel">
+        <div class="chat-head">
+          <div class="avatar">屿</div>
+          <div class="chat-head-text">
+            <h2>陈屿</h2>
+            <p class="chat-head-meta"><span>深圳大鹏半岛海岸线徒步</span><span>深圳大学</span></p>
+            <p class="chat-head-tags"><span class="tag">徒步</span><span class="tag">摄影</span></p>
+          </div>
+          <button class="linkbtn chat-report" type="button" data-open-report="user">举报这位用户</button>
+        </div>
+
+        <div class="alert" style="margin-top:12px">
+          <span class="ic">i</span><span>该行程已结束，只能查看历史消息。</span>
+        </div>
+
+        <div class="chat-list">
+          <div class="bubble mine"><span class="who">林夏（我）</span>周六七点在大鹏所城正门见？<div class="meta">2026-11-23 20:12</div></div>
+          <div class="bubble"><span class="who">陈屿</span>好，我带对讲机，礁石段慢一点。<div class="meta">2026-11-23 20:15</div></div>
+          <div class="bubble mine"><span class="who">林夏（我）</span>收到，鞋我换了抓地的。<div class="meta">2026-11-23 20:16</div></div>
+        </div>
+      </div>`;
+  }
+
+  function sharePage() {
+    return `
+      <a class="back" href="#" onclick="return false">← 回到行程</a>
+      <div class="panel">
+        <h2 class="trip-title" style="margin-bottom:12px">分享这次旅行</h2>
+        <div class="alert warn safety-note">
+          <span class="ic">!</span>
+          <span><b>安全提示</b><br>先在公开行程页沟通，确认路线与集合点再出发；不要公开电话、证件与精确住址。遇到不适可随时退出或举报。</span>
+        </div>
+        <div style="display:grid;gap:10px;margin-top:14px">
+          <div>
+            <div class="label">这次路线实际走下来怎么样</div>
+            <textarea class="note" placeholder="路况、强度、时间点、意料之外的情况……写具体的事，比“很好玩”有用得多。"></textarea>
+          </div>
+          <div><span class="label">强度</span> <span class="tag">中等</span></div>
+        </div>
+        <div class="actions"><button class="btn primary" type="button">发布体验</button></div>
+      </div>`;
+  }
+
+  function renderPage() {
+    stage.innerHTML = state.page === 'chat' ? chatPage()
+      : state.page === 'share' ? sharePage()
+      : detailPage({ own: state.page === 'own' });
+
+    document.getElementById('frameName').textContent = COPY[state.page].name;
+    document.getElementById('frameW').textContent = state.width;
+    document.getElementById('frame').style.setProperty('--frame-w', state.width === '1440' ? '100%' : state.width + 'px');
+    document.getElementById('appWho').textContent = state.page === 'chat' ? '林夏 · 与陈屿的对话' : '林夏 · 学生';
+
+    document.getElementById('checks').innerHTML = CHECKS[state.page].map((c) => `<li>${c}</li>`).join('');
+  }
+
+  function targetLine() {
+    const label = COPY[state.page].target;
+    return `<p class="target">举报对象：<b>${label}</b>。我们不会向对方透露你的身份。</p>`;
+  }
+
+  const EMERGENCY = `<div class="privacy"><span>⛨</span><span><b>如果你正处于危险中，请先联系当地警方或学校保卫处。</b>平台举报不能替代紧急求助。</span></div>`;
+
+  function renderModal() {
+    const kind = state.page === 'chat' ? 'user' : 'trip';
+    modalTitle.textContent = kind === 'user' ? '举报这位用户' : '举报这条行程';
+    overlay.dataset.open = state.modal === 'closed' ? '0' : '1';
+    if (state.modal === 'closed') return;
+
+    if (state.modal === 'form') {
+      modalBody.innerHTML = `
+        ${targetLine()}
+        <span class="label">举报原因</span>
+        <select class="select" aria-label="举报原因">
+          <option>骚扰或不当言行</option><option>虚假信息</option>
+          <option selected>安全风险</option><option>其他</option>
+        </select>
+        <span class="label">补充说明（选填，200 字以内）</span>
+        <textarea class="note" maxlength="200"></textarea>
+        <div class="counter">0 / 200</div>
+        ${EMERGENCY}`;
+      modalFoot.innerHTML = `<button class="btn ghost" type="button" data-close>取消</button>
+                             <button class="btn danger" type="button" data-go="receipt">提交举报</button>`;
+    } else if (state.modal === 'receipt') {
+      modalBody.innerHTML = `
+        ${targetLine()}
+        <div class="alert ok"><span class="ic">✓</span><span><b>已收到，我们会处理</b><br>关闭弹窗只结束回执展示，不改变行程、申请或聊天状态。</span></div>
+        ${EMERGENCY}`;
+      modalFoot.innerHTML = `<button class="btn primary" type="button" data-close>关闭</button>`;
+    } else {
+      modalBody.innerHTML = `
+        ${targetLine()}
+        <div class="alert err"><span class="ic">!</span><span><b>举报提交失败</b><br><code>NETWORK_ERROR · 已选原因与说明已保留，可直接重试</code></span></div>
+        <span class="label">举报原因</span>
+        <select class="select" aria-label="举报原因">
+          <option>骚扰或不当言行</option><option>虚假信息</option>
+          <option selected>安全风险</option><option>其他</option>
+        </select>
+        <span class="label">补充说明（选填，200 字以内）</span>
+        <textarea class="note" maxlength="200">约定七点集合，对方临时改到偏僻地点。</textarea>
+        <div class="counter">24 / 200</div>
+        ${EMERGENCY}`;
+      modalFoot.innerHTML = `<button class="btn ghost" type="button" data-close>取消</button>
+                             <button class="btn danger" type="button" data-go="receipt">重新提交</button>`;
+    }
+  }
+
+  function setSeg(id, key, value) {
+    document.querySelectorAll(`#${id} button`).forEach((b) => {
+      b.setAttribute('aria-pressed', String(b.dataset[key] === value));
+    });
+  }
+
+  document.getElementById('segPage').addEventListener('click', (e) => {
+    const b = e.target.closest('button'); if (!b) return;
+    state.page = b.dataset.page;
+    state.modal = 'closed';
+    setSeg('segPage', 'page', state.page); setSeg('segModal', 'm', 'closed');
+    renderPage(); renderModal();
+  });
+
+  document.getElementById('segWidth').addEventListener('click', (e) => {
+    const b = e.target.closest('button'); if (!b) return;
+    state.width = b.dataset.w;
+    setSeg('segWidth', 'w', state.width);
+    renderPage();
+  });
+
+  document.getElementById('segModal').addEventListener('click', (e) => {
+    const b = e.target.closest('button'); if (!b) return;
+    if (state.page === 'own' || state.page === 'share') return;
+    state.modal = b.dataset.m;
+    setSeg('segModal', 'm', state.modal);
+    renderModal();
+  });
+
+  document.getElementById('segTheme').addEventListener('click', (e) => {
+    const b = e.target.closest('button'); if (!b) return;
+    state.theme = b.dataset.t;
+    document.documentElement.dataset.theme = state.theme;
+    setSeg('segTheme', 't', state.theme);
+  });
+
+  document.addEventListener('click', (e) => {
+    const openEntry = e.target.closest('[data-open-report]');
+    if (openEntry) {
+      state.modal = 'form';
+      setSeg('segModal', 'm', 'form');
+      renderModal();
+      return;
+    }
+    if (e.target.closest('[data-close]')) {
+      state.modal = 'closed';
+      setSeg('segModal', 'm', 'closed');
+      renderModal();
+      return;
+    }
+    const go = e.target.closest('[data-go]');
+    if (go) {
+      state.modal = go.dataset.go;
+      setSeg('segModal', 'm', state.modal);
+      renderModal();
+    }
+  });
+
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && state.modal !== 'closed') {
+      state.modal = 'closed';
+      setSeg('segModal', 'm', 'closed');
+      renderModal();
+    }
+  });
+
+  renderPage();
+  renderModal();
+</script>
+</body>
+</html>
