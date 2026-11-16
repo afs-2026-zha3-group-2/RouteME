@@ -14,7 +14,7 @@ import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.jdbc.datasource.DriverManagerDataSource;
 
 /**
- * 在临时 SQLite 文件库执行 V1–V11，验证资料列建立、演示账号可读且新列为 NULL、
+ * 在临时 SQLite 文件库执行 V1–V12，验证资料列建立、演示账号可读且新列为 NULL、
  * 旧 school 文案不被回填改写。
  */
 class ProfileMigrationSqliteTest {
@@ -46,7 +46,7 @@ class ProfileMigrationSqliteTest {
                 .single();
         List<String> applied = jdbcClient.sql("""
                 SELECT version FROM flyway_schema_history
-                 WHERE success = 1 AND version IN ('1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11')
+                 WHERE success = 1 AND version IN ('1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12')
                 """).query(String.class).list();
 
         // Then
@@ -54,9 +54,10 @@ class ProfileMigrationSqliteTest {
                 () -> assertEquals(4, users, "demo users stay seeded"),
                 () -> assertEquals(0, unfilledProfiles, "new profile columns stay NULL for legacy rows"),
                 () -> assertEquals("研一 · 地理科学", secondSchool, "legacy school text is preserved"),
-                () -> assertEquals(11, applied.size(), "V1–V11 applied"),
+                () -> assertEquals(12, applied.size(), "V1–V12 applied"),
                 () -> assertTrue(applied.contains("10"), "V10 added profile columns"),
-                () -> assertTrue(applied.contains("11"), "V11 seeded the viewer profile user"));
+                () -> assertTrue(applied.contains("11"), "V11 added the destination code"),
+                () -> assertTrue(applied.contains("12"), "V12 seeded the viewer profile user"));
     }
 
     private String toSqlitePath(Path path) {

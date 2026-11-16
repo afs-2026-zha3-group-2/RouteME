@@ -15,9 +15,9 @@
 
 ### T2 [backend] 迁移与种子数据
 
-- [x] `V11__seed_viewer_profile_user.sql`（只增不改；V10 已被 main 的 `V10__add_user_profile.sql` 占用）：`app_users` id=4（上班族 · 互联网行业 · INFP，`username`/`password_hash` NULL，固定 `created_at`）+ `trip_plans` id=7（publisher_id=4，recruiting）。
+- [x] `V12__seed_viewer_profile_user.sql`（只增不改；V10 = main 的资料列、V11 = `add-destination-area-filters` 的目的地代码）：`app_users` id=4（上班族 · 互联网行业 · INFP，`username`/`password_hash` NULL，固定 `created_at`）+ `trip_plans` id=7（publisher_id=4，recruiting）。
 - [x] `ProfileDataMigrationSqliteTest` 校验用户 4/行程 7 与凭据列为 NULL。
-- [x] 更新 `ProfileMigrationSqliteTest`（V1–V11、4 个演示账号）；`DemoDataMigrationSqliteTest` / `AuthMigrationSqliteTest` 已在 main 侧容纳 4 个账号。
+- [x] 更新 `ProfileMigrationSqliteTest`（V1–V12、4 个演示账号）；`DemoDataMigrationSqliteTest` / `AuthMigrationSqliteTest` 已在 main 侧容纳 4 个账号。
 
 **验证：** `cd RouteME/backend; .\mvnw.cmd -Dtest=ProfileDataMigrationSqliteTest,ProfileMigrationSqliteTest test`
 **覆盖：** R2/R3 的数据前提；G1 种子数据条件
@@ -111,7 +111,7 @@
 
 ### T13 [docs] 知识库与登记（P5）
 
-- [ ] `docs/knowledge/interfaces/README.md` 补「复用 main profile 端点的 `joined_at`/`stats` 扩展」；`architecture/README.md` 补 `user-profiles` 能力与 V11。
+- [ ] `docs/knowledge/interfaces/README.md` 补「复用 main profile 端点的 `joined_at`/`stats` 扩展」；`architecture/README.md` 补 `user-profiles` 能力与 V12。
 - [ ] `requirement-workspace/registry.md` 更新 REQ-009 为 verified（G2/G3 后）。
 - [ ] 记录原型隐私文案与本 change 裁决文案的差异；原型举报按钮保留为未来迭代设计。
 

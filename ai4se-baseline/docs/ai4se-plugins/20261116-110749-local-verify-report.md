@@ -1,6 +1,6 @@
 ﻿# Local Verify Report: add-user-profiles
 
-**Date:** 2026-11-16（首次 11:07；合并 `origin/main` 后复验 12:58，timezone: Asia/Shanghai, +0800）
+**Date:** 2026-11-16（首次 11:07；合并 `origin/main` 后复验 12:58 与 14:00，timezone: Asia/Shanghai, +0800）
 **Root:** c:\Git\ITA\RouteME\ai4se-baseline
 **Scope:** local+evidence
 **Change id:** add-user-profiles (REQ-009 / capability `user-profiles`)
@@ -21,11 +21,11 @@
 
 | Command | Source | Exit | Summary |
 |---------|--------|------|---------|
-| `npx @redocly/cli lint openapi.yaml` | `docs/knowledge/rules/quality/rules.md`（`@rule:api-contract`） | 0 | 契约有效；9 个 warning（既有 7 个 + `joined_at`/`stats` 可空字段示例），0 error |
-| `.\mvnw.cmd -B clean verify`（backend） | `@rule:java-testing` / `quality/rules.md` | 0 | 200 tests，0 failures，BUILD SUCCESS（含打包） |
+| `npx @redocly/cli lint openapi.yaml` | `docs/knowledge/rules/quality/rules.md`（`@rule:api-contract`） | 0 | 契约有效；15 个 warning（含 main 目的地筛选的既有 warning），0 error |
+| `.\mvnw.cmd -B clean verify`（backend） | `@rule:java-testing` / `quality/rules.md` | 0 | 208 tests，0 failures，BUILD SUCCESS（含打包） |
 | `npm run build`（frontend） | `quality/rules.md` | 0 | tsc --noEmit + vite build 通过 |
-| `npm test`（frontend） | `quality/rules.md` | 0 | 13 files / 110 tests 全通过（含 `profileFormat.test.ts` 9 条） |
-| `npx playwright test`（全量，干净库） | tasks T11 / atdd-design | 0 | 43 passed / 0 failed（`profiles.spec.ts` 8、`profile.spec.ts` 10） |
+| `npm test`（frontend） | `quality/rules.md` | 0 | 14 files / 114 tests 全通过（含 `profileFormat.test.ts` 9 条） |
+| `npx playwright test`（全量，干净库） | tasks T11 / atdd-design | 0 | 44 passed / 0 failed（`profiles.spec.ts` 8、`profile.spec.ts` 10、main 目的地筛选新增用例亦绿） |
 | `gh pr checks 21` | `@rule:pipeline`（远端 CI） | 0 | CI/Backend、CI/Frontend 均 success（run [43807162099](https://github.com/afs-2026-zha3-group-2/RouteME/actions/runs/43807162099)，commit `b9fba48`） |
 
 > 说明：E2E 使用全新库 `SPRING_DATASOURCE_URL=jdbc:sqlite:target/e2e-clean.db`，避免多轮运行污染统计断言；`docs/feedback/verification-commands.md` 仍是占位模板（probe `whitelist_empty:yes`），按 C2 采用规则已声明的命令。
@@ -36,9 +36,9 @@
 `origin/main` 的 `add-user-profile`（REQ-008）已落地同名 `UserProfileController`、资料列迁移 `V10__add_user_profile.sql` 与前端公开主页。按用户裁决「复用 main 接口」收敛：
 
 - **契约/后端**：复用 `GET /api/users/{userId}/profile`（`X-User-Id`），`UserProfile` 增加可空 `joined_at`、`stats`，新增 `ProfileStats`；只新增 `UserProfileStatsService(Impl)`，controller/response 为最小扩展；契约 0.8.0。
-- **迁移**：种子改 `V11__seed_viewer_profile_user.sql`（V10 已归 main），避免 Flyway 重复版本。
+- **迁移**：种子改 `V12__seed_viewer_profile_user.sql`（V10 已归 main 的资料列、V11 已归目的地代码迁移），避免 Flyway 重复版本。
 - **前端**：`ProfileModal` 调 `loadUserProfile(userId, callerId)`，样式改为 `profile-modal-*` 作用域避免与 main 的 `ProfilePage` 类名冲突；发布者入口按 REQ-009 改为弹窗，公开主页路由保留。
-- **E2E**：`profile.spec.ts` 的发布者入口用例改为断言弹窗并保留主页直访验证；`profiles.spec.ts` 选择器改为 `aria-label`。
+- **E2E**：`profile.spec.ts` 的发布者入口用例改为断言弹窗并保留主页直访验证，首页定位改用「按最新发布」排序（搜索框已移除）；`profiles.spec.ts` 选择器改为 `aria-label`；main 的「空搜索引导」用例改写为「空筛选引导」（搜索已移除）。
 
 ## Code-review highlights
 
@@ -58,7 +58,7 @@
 | V3 | Scenario coverage | Pass | [fact] | 20 个 Scenario 由 `UserProfileControllerTest`（15）、`ProfileDataMigrationSqliteTest`（1）、`profileFormat.test.ts`（9）与 `profiles.spec.ts`（8）覆盖；关闭弹窗与既有举报回归均有 E2E |
 | V4 | Requirement↔impl mapping | Pass | [fact] | 端点契约 0.8.0 与实现字段一致；统计与种子数据核对（用户 2：3/1/2/1；用户 4：1/0/0/0，均为 API 实测） |
 | V5 | Spec drift | Pass | [fact] | 隐私文案按 G1 裁决；举报按钮按用户指示排除，未影响既有举报；发布者入口语义变化已在 design D7 与 `profile.spec.ts` 同步 |
-| V6 | Design follow-through | Pass | [fact] | D1 复用 main 端点；D2 只加统计聚合；D3 现算统计；D4 契约 0.8.0；D5 V11 种子；D6 Provider+Modal+纯函数（`profile-modal-*` 作用域）；D7 卡片重构；D8 自我/空交集不展示；D9 失败不保留旧资料；D10 测试落位 |
+| V6 | Design follow-through | Pass | [fact] | D1 复用 main 端点；D2 只加统计聚合；D3 现算统计；D4 契约 0.8.0；D5 V12 种子；D6 Provider+Modal+纯函数（`profile-modal-*` 作用域）；D7 卡片重构；D8 自我/空交集不展示；D9 失败不保留旧资料；D10 测试落位 |
 | V7 | Code pattern fit | Pass | [fact] | 新类位置与命名沿用现有多数分层；record 响应、`BusinessException` 子类、`@SpringBootTest + MockMvc + @Transactional` 测试风格一致 |
 | V8 | Necessity (anti-creep) | Pass | [fact] | 改动文件均可追溯到 tasks T1–T12；未实现举报、资料编辑、聊天页入口、NFR 专项；`profile.spec.ts` 的改写是收敛 S18 冲突的必要动作 |
 
@@ -107,12 +107,12 @@
 |---|------|----------|------------|
 | 1 | main 的 S18 发布者入口由「跳公开主页」改为「开弹窗」 | REQ-009 要求卡片/详情双入口弹窗 | accepted；公开主页路由保留，`profile.spec.ts` 已同步；SA 在 G2/归档前确认该行为变更 |
 | 2 | 资料端点沿用 main 的 `X-User-Id` 约定 | 与 main 实现保持一致，避免双端点 | accepted；共同兴趣仍在前端计算 |
-| 3 | V11 改变演示计数（用户 4、行程 7） | 种子数据是展示非学生形态与统计的必要前提 | mitigated，迁移/接口/E2E 计数已同批更新 |
+| 3 | V12 改变演示计数（用户 4、行程 7） | 种子数据是展示非学生形态与统计的必要前提 | mitigated，迁移/接口/E2E 计数已同批更新（含 main 的 `AreaCodeMigrationSqliteTest`） |
 | 4 | 统计在请求时全量计算 | 当前数据量小，避免过早优化 | accepted，见 SUGGESTION-2 |
 | 5 | 原型隐私文案与本实现文案不同（原型未含身份/加入时间） | G1 决定按实际展示字段调整 | accepted，P5 记录原型差异 |
 | 6 | 举报按钮按本次范围排除 | 用户明确要求未来迭代再议 | accepted，已有聊天/行程举报未受影响（E2E 覆盖） |
-| 7 | 迁移版本号与 main 的 V10 相邻 | 本 change 只能追加 V11 | mitigated，后续 change 从 V12 起 |
-| 8 | main 的 `add-user-profile/g2-decision.md` 把 `origin/feature/add-user-profiles` 旧实现列为残余风险（V10 同名冲突） | 该风险由本次合并消除 | mitigated，本分支已改为 V11 并复用 main 资料端点 |
+| 7 | 迁移版本号紧跟 main 的 V11（目的地代码） | 本 change 只能追加 V12 | mitigated，后续 change 从 V13 起 |
+| 8 | main 的 `add-user-profile/g2-decision.md` 把 `origin/feature/add-user-profiles` 旧实现列为残余风险（V10 同名冲突） | 该风险由本次合并消除 | mitigated，本分支已改为 V12 并复用 main 资料端点 |
 
 ## Waiver
 

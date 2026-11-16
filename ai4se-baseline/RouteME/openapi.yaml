@@ -423,17 +423,13 @@ paths:
         - $ref: '#/components/parameters/DemoUserId'
         - $ref: '#/components/parameters/Page'
         - $ref: '#/components/parameters/Size'
-        - name: q
+        - name: destination_code
           in: query
-          description: 关键词，匹配标题、目的地、途经点、标签与发布者昵称（大小写不敏感包含）
+          description: 目的地 6 位行政区划代码（二级，必须选到市）
           schema:
             type: string
-        - name: destination
-          in: query
-          description: 目的地，精确匹配地图地点库中的城市或地点名称
-          schema:
-            type: string
-            maxLength: 40
+            pattern: '^[0-9]{6}$'
+            example: '440400'
         - name: date_from
           in: query
           description: 出发不早于（与行程日期区间取交集）
@@ -464,7 +460,10 @@ paths:
                     items:
                       - id: 3
                         title: 珠海情侣路日落机位二刷
-                        destination: 珠海
+                        destination: 珠海市
+                        destination_code: '440400'
+                        province_code: '440000'
+                        province_name: 广东省
                         start_date: '2026-11-16'
                         end_date: '2026-11-16'
                         stops: [香洲港集合, 情侣北路步行, 海滨泳场日落]
@@ -533,7 +532,10 @@ paths:
               success:
                 value:
                   title: 广州老城骑楼扫街半日
+                  destination: 广州市
                   destination_code: '440100'
+                  province_code: '440000'
+                  province_name: 广东省
                   start_date: '2026-11-16'
                   end_date: '2026-11-16'
                   stops: [陈家祠地铁站集合, 恩宁路骑楼, 永庆坊]
@@ -546,7 +548,10 @@ paths:
               rejected:
                 value:
                   title: ''
-                  destination_code: '440000'
+                  destination: 广州市
+                  destination_code: '440100'
+                  province_code: '440000'
+                  province_name: 广东省
                   start_date: '2026-11-16'
                   end_date: '2026-11-15'
                   stops: [只有一处]
@@ -719,15 +724,13 @@ paths:
         - $ref: '#/components/parameters/DemoUserId'
         - $ref: '#/components/parameters/Page'
         - $ref: '#/components/parameters/Size'
-        - name: q
+        - name: destination_code
           in: query
+          description: 目的地 6 位行政区划代码（二级）
           schema:
             type: string
-        - name: destination
-          in: query
-          schema:
-            type: string
-            maxLength: 40
+            pattern: '^[0-9]{6}$'
+            example: '440400'
         - name: date_from
           in: query
           schema:
@@ -1131,22 +1134,33 @@ paths:
     get:
       operationId: loadExperiences
       summary: 旅行体验列表
-      description: 已发布体验，按最近保存时间倒序；支持关键词、目的地与兴趣筛选，结果按页返回。
+      description: 已发布体验，按最近保存时间倒序；支持目的地、日期与兴趣筛选，结果按页返回。
       parameters:
         - $ref: '#/components/parameters/DemoUserId'
         - $ref: '#/components/parameters/Page'
         - $ref: '#/components/parameters/Size'
-        - name: q
+        - name: destination_code
           in: query
           required: false
-          description: 关键词，命中行程标题/目的地/感受/建议
+          description: 目的地 6 位行政区划代码（二级）
           schema:
             type: string
-        - name: destination
+            pattern: '^[0-9]{6}$'
+            example: '440400'
+        - name: date_from
           in: query
           required: false
+          description: 出发不早于（与关联行程日期区间取交集）
           schema:
             type: string
+            format: date
+        - name: date_to
+          in: query
+          required: false
+          description: 出发不晚于（与关联行程日期区间取交集）
+          schema:
+            type: string
+            format: date
         - name: tags
           in: query
           required: false
@@ -1646,7 +1660,7 @@ components:
     TripPlan:
       type: object
       required:
-        [id, title, destination, start_date, end_date, stops, tags, capacity, joined_count, status, publisher, created_at]
+        [id, title, destination, destination_code, province_code, province_name, start_date, end_date, stops, tags, capacity, joined_count, status, publisher, created_at]
       properties:
         id:
           type: integer
@@ -1658,7 +1672,21 @@ components:
         destination:
           type: string
           maxLength: 40
-          description: 目的地名称，来自离线地图地点库（城市或可搜索的地点）
+          description: 目的地标准名称（直辖市为省级名，港澳台为“省级简称 · 二级名”）
+        destination_code:
+          type: string
+          pattern: '^[0-9]{6}$'
+          description: 目的地 6 位行政区划代码（二级）
+          example: '440400'
+        province_code:
+          type: string
+          pattern: '^[0-9]{6}$'
+          description: 省级行政区划代码（由二级代码前缀派生）
+          example: '440000'
+        province_name:
+          type: string
+          description: 省级展示名（普通省全名，港澳台简称）
+          example: 广东省
         start_date:
           type: string
           format: date
@@ -1746,7 +1774,7 @@ components:
         destination_code:
           type: string
           pattern: '^[0-9]{6}$'
-          description: 目的地二级行政区划代码（必须选到市，含港澳台二级区）；名称由后端按字典生成
+          description: 目的地 6 位行政区划代码（二级，必须选到市，含港澳台）；名称由后端按字典生成
         start_date:
           type: string
           format: date

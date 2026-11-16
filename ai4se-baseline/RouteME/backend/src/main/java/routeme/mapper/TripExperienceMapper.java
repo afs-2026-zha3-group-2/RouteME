@@ -13,7 +13,7 @@ import routeme.entity.TripExperienceEntity;
 /**
  * trip_experiences 的 MyBatis-Plus 映射。
  *
- * <p>复杂查询（join 行程表做目的地、标签与关键词过滤）写在
+ * <p>复杂查询（join 行程表做目的地、日期与标签过滤）写在
  * {@code resources/mapper/TripExperienceMapper.xml}。</p>
  */
 @Mapper
@@ -21,7 +21,8 @@ public interface TripExperienceMapper extends BaseMapper<TripExperienceEntity> {
 
     IPage<TripExperienceEntity> selectExperiencePage(
             IPage<TripExperienceEntity> page,
-            @Param("q") String keyword,
-            @Param("destination") String destination,
+            @Param("destinationCode") String destinationCode,
+            @Param("dateFrom") String dateFrom,
+            @Param("dateTo") String dateTo,
             @Param("tags") List<String> tags);
 }

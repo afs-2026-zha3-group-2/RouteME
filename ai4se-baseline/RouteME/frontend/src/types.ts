@@ -104,6 +104,9 @@ export type TripSummary = {
   id: number;
   title: string;
   destination: string;
+  destination_code: string;
+  province_code: string;
+  province_name: string;
   start_date: string;
   end_date: string;
   stops: string[];
@@ -139,8 +142,7 @@ export type TripCreateRequest = {
 };
 
 export type TripFilters = {
-  q?: string;
-  destination?: string;
+  destination_code?: string;
   date_from?: string;
   date_to?: string;
   tags?: string[];
@@ -225,7 +227,8 @@ export type ExperienceWriteRequest = {
 };
 
 export type ExperienceFilters = {
-  q?: string;
-  destination?: string;
+  destination_code?: string;
+  date_from?: string;
+  date_to?: string;
   tags?: string[];
 };

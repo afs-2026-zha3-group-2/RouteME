@@ -355,12 +355,12 @@
 
 | 资产 | As-is | Proposed delta |
 |---|---|---|
-| `trip_plans` 表 | `destination VARCHAR(20) NOT NULL`；无代码列 | **V10**（V9 已被 auth 占用）重建表：`destination_code VARCHAR(6) NOT NULL`、索引、存量映射回填、`destination` 回填标准名；`trip_experiences` 结构不变 |
+| `trip_plans` 表 | `destination VARCHAR(20) NOT NULL`；无代码列 | **V11**（V10 被 user-profile 占用，V9 被 auth 占用）加列：`destination_code VARCHAR(6) NOT NULL DEFAULT ''`、索引、存量映射回填、`destination` 回填标准名；不重建表（避开外键）；`trip_experiences` 结构不变 |
 | 领域/实体 | `TripPlan.destination`（名称，任意非空） | 目的地以 6 位代码为权威；实体持有 code + 名称 + 省 code/展示名；发布写入由 A 改为 `destination_code`，B 提供数据底座 |
 | 列表查询 | `q` + `destination`（名称）+ 日期 + 标签 | 移除 `q`；`destination` 改为 `destination_code`；日期/标签语义不变；体验列表新增 `date_from/date_to` |
 | 响应 | `destination`（名称） | 新增 `destination_code`、`province_code`、`province_name`（展示名：普通省“广东省”、港澳台“香港”/“澳门”）；`destination` 为城市标准名（直辖市=省名） |
 | 匹配打分 | `TripMatch` 按名称比较目的地 | 改为按 `destination_code` 比较；“目的地相同”理由文案不变 |
-| 前端筛选器 | 搜索框 + 地图城市 Select + 日期 + 兴趣 | 删除搜索框与 `q` 状态；Select → 省市级联 Cascader（全国含港澳台，必须选到市）；摘要按省/市/港澳台口径；日期/兴趣保留 |
+| 前端筛选器 | 搜索框 + 地图城市 Select + 日期 + 兴趣 | 删除搜索框与 `q` 状态；Select → 省市级联自绘面板（全国含港澳台，必须选到市；P4 实现修订）；摘要按省/市/港澳台口径；日期/兴趣保留 |
 | 前端展示 | 卡片/详情显示短地名 | 卡片市名；详情/摘要“省 / 市”；港澳台“省 · 二级”；体验卡不显示日期 |
 | 前端体验视图 | 目的地/标签/关键词 | 目的地改为代码 + 新增日期区间；关键词移除 |
 | 契约 | 0.6.0；三接口含 `q`；发布传名称 | 升至 **0.7.0**：删除 `q`；查询 `destination_code`；响应新增 code/province 字段；体验加日期参数；发布请求字段由 A 改为 `destination_code` |
@@ -385,14 +385,14 @@
 | Spec delta | 两份：`specs/trip-plans/spec.md`（MODIFIED 浏览 + ADDED 筛选/区划字典/无搜索 + REMOVED 旧“搜索、筛选与排序”）、`specs/trip-experiences/spec.md`（MODIFIED 体验视图）；**不修改发布 requirement** |
 | A 的 delta | `add-trip-publish/specs/trip-plans/spec.md` 目的地相关场景、`design.md`、`e2e/tests/trips.spec.ts` 目的地/搜索定位；不归档 |
 | 契约 | `openapi.yaml` 升 `0.7.0`：删除 `q`，目的地改 `destination_code`，响应新增 code/province 字段，体验加日期 |
-| 迁移 | **V10** 重建 `trip_plans`（含外键处理）+ 映射回填 + 索引 |
+| 迁移 | **V11** 加列 + 映射回填 + 标准名 + 索引（SQLite/H2 兼容，不重建表） |
 | 测试 | 后端 controller/service/openapi；前端纯函数与 api；E2E 目的地级联/日期/体验/展示；A 的发布目的地 E2E |
 | 文档 / KB | `docs/knowledge/**` 回写在 archive 阶段；P1 不改 |
 | Living Spec | 归档时合并；顺序见 §11.8 |
 
 ### 11.6 Dual-track notes（OpenSpec vs agile）
 
-- **OpenSpec 轨（主）：** B 单 change `add-destination-area-filters`，两份 delta；内部阶段：① 数据底座（V10 + 字典 + 响应字段）② 筛选/展示（级联/日期/摘要/空态）③ 体验日期 + 搜索移除。
+- **OpenSpec 轨（主）：** B 单 change `add-destination-area-filters`，两份 delta；内部阶段：① 数据底座（V11 + 字典 + 响应字段）② 筛选/展示（级联/日期/摘要/空态）③ 体验日期 + 搜索移除。
 - **Agile 轨（并行）：** 故事见 `requirement-workspace/stories.md` 的 REQ-007 段与 `stories/REQ-007-destination-area-filters.story.md`，与两份 delta 场景 1:1 归属。
 - **A 的发布目的地字段** 作为 `add-trip-publish` 的目的地相关修订，不并入 B 的 delta。
 
@@ -402,10 +402,10 @@
 |---|---|---|
 | Risk | `refine-inspiration-home` 未归档且同改两 requirement | 归档顺序 `refine-inspiration-home` → B；B 的 delta 以 refine 版本为基线并保留其场景；refine 的搜索相关测试由它的 owner 更新（本 change G1 记为条件） |
 | Risk | `add-trip-publish` 未归档 | B 拥有数据底座，A 的发布字段消费 B；归档顺序 B → A；A 的目的地相关工件已获授权修改但不归档 |
-| Risk | V9 被 auth 占用、契约已 0.6.0 | 迁移改 V10，契约升 0.7.0 |
+| Risk | V9 被 auth 占用、契约已 0.6.0 | 迁移改 V11，契约升 0.7.0 |
 | Risk | 区划数据 v5 较旧（约 2019/2020） | MVP 接受静态字典；后续可升级，不影响代码契约 |
 | Risk | 搜索移除影响 refine/A 的 E2E | A 已授权修改；refine 交 owner；B 自己的用例不用搜索 |
-| Risk | SQLite 重建表与外键 | `trip_experiences` 外键引用 `trip_plans`；V10 需关闭外键→新表→拷贝→drop→rename→校验，保证体验数据不丢 |
+| Risk | SQLite/H2 加列迁移 | H2 会拒绝 `DROP TABLE trip_plans`（外键），因此 V11 改为 `ADD COLUMN ... NOT NULL DEFAULT ''` + 回填；应用层拒绝空串，迁移测试覆盖 SQLite + H2 |
 | Risk | 匹配打分比较口径 | 字符串改代码后“目的地相同”理由可能失效；补匹配回归用例 |
 | Risk | 发布页目的地与地图选点交互 | A 的目的地改 Cascader，途经点/集合地点保留地图；需在 A 的 design/E2E 对齐 |
 | Blocker | 无 | blocking OQ=0、DoR BLOCKER=0、A0 ⑨–⑫ 全过；外部依赖均为非阻塞顺序条件 |
@@ -413,7 +413,7 @@
 ### 11.8 Suggested split boundaries（供 proposal-split / story-split）
 
 - **B 单 change，两份 delta：** `add-destination-area-filters` → `trip-plans` + `trip-experiences`。
-- **B 内部阶段（不拆 change）：** ① 数据底座（V10、6 位码、字典、响应字段）；② 筛选/展示（级联、日期、摘要、空态）；③ 体验日期 + 搜索移除。
+- **B 内部阶段（不拆 change）：** ① 数据底座（V11、6 位码、字典、响应字段）；② 筛选/展示（级联、日期、摘要、空态）；③ 体验日期 + 搜索移除。
 - **A 的发布目的地字段：** 归 `add-trip-publish` 的目的地相关修订，不并入 B。
 - **归档顺序：** `refine-inspiration-home` → `add-destination-area-filters` → `add-trip-publish`；三者分属不同 owner，本需求只归档自己。
 - **质量自检（split-heuristics）：** 垂直切片 ✓；端到端可观察 ✓（选城市 + 日期 → 列表变化）；数据底座后可独立运行 ✓；capability 名真实 ✓；无依赖环 ✓。
@@ -461,7 +461,7 @@
 | `trip-companions` / `trip-experiences` | 已定义隐私红线与作者展示 | checked, no direct impact —— 仅作为统计口径的只读数据源；规则不变 |
 | `openapi.yaml` | 0.6.0；有 `GET /users`、`GET /users/demo` 与 `/auth/*` | 0.8.0：**复用 main 已有** `GET /users/{userId}/profile`，`UserProfile` 增加可空 `joined_at` 与 `stats`（新增 `ProfileStats`）；`DemoUser` 保持兼容不改；响应 MUST NOT 含 username/password_hash（P4 收敛修订） |
 | 后端 | `DemoUserController` 仅账户列表；已有 `user-auth` 登录/注册；main 已有资料端点与资料列 | 不新建资料端点：新增 `UserProfileStatsService` 只读聚合并扩展 `UserProfileResponse`，在 main 的 `UserProfileController.profile()` 注入统计；不返回账户凭据 |
-| 数据库 | main 已到 V10（资料列）；本 change 追加 V11 | V11（只增不改）：新增 1 个非学生演示用户（「上班族 · 互联网行业 · INFP」，username/password_hash 为 NULL）与 1 条由其发布的招募中行程（用于从卡片/详情入口验收非学生资料） |
+| 数据库 | main 已到 V11（V10 资料列 + V11 目的地代码）；本 change 追加 V12 | V12（只增不改）：新增 1 个非学生演示用户（「上班族 · 互联网行业 · INFP」，username/password_hash 为 NULL）与 1 条由其发布的招募中行程（用于从卡片/详情入口验收非学生资料） |
 | 前端 | 卡片/详情无资料弹窗；身份门已含演示身份与注册/登录面板 | 新增资料弹窗组件与加载 hook；`TripCard` 发布者区域可点击且不触发卡片跳转；`TripDetailPage` 发布者卡片可点击；文案与样式按原型 S02 + 现有令牌；弹窗对演示会话与注册会话一致 |
 | 测试 | 迁移测试固定人数/行程数；E2E 身份门标题为 three | 同步更新 `DemoDataMigrationSqliteTest` 与 `AuthMigrationSqliteTest` 的计数；E2E 身份门标题与断言补第 4 个用户；新增资料弹窗 API/组件/E2E 用例 |
 | `requirement-workspace/registry.md` | 仅 REQ-001–004 | 新增 REQ-009 登记行（drafted → verified 按 Gate 推进） |
@@ -485,7 +485,7 @@
 | Spec（change delta） | 新增 `openspec/changes/add-user-profiles/specs/user-profiles/spec.md`（双入口、展示字段、共同兴趣、统计口径、隐私边界、自我查看、异常） |
 | Proposal | 新增 `proposal.md`（引用 REQ-009 与本次 impact 要点；含 effort/size 注记） |
 | 契约 | `openapi.yaml` 版本 0.8.0（main 0.7.0 之上）；`UserProfile` 新增 `joined_at`/`stats`（非必填）+ `ProfileStats`；`redocly lint`/`OpenApiTest` 需通过 |
-| 后端 | 扩展 main 的 controller/response；新增只读统计 service；V11 迁移；单元/控制器/迁移测试 |
+| 后端 | 扩展 main 的 controller/response；新增只读统计 service；V12 迁移；单元/控制器/迁移测试 |
 | 前端 | 新增资料弹窗组件、api/types、i18n 文案、样式；卡片与详情页入口改造；组件/纯函数测试 |
 | E2E | 新增卡片入口、详情入口、隐私字段缺席、自我查看用例；更新身份门标题与断言 |
 | 文档 | P1 仅本 brief 与需求条目；`docs/knowledge/` 与 `interfaces/README.md` 归档阶段回写 |
@@ -500,7 +500,7 @@
 
 | 级别 | 项 | 说明 / 缓解 |
 |---|---|---|
-| Risk | 新增演示用户/行程会改变种子数据计数 | `ProfileMigrationSqliteTest`（V1–V11、4 个账号）与 E2E 身份门标题需同批更新；避免只改迁移导致 CI 红 |
+| Risk | 新增演示用户/行程会改变种子数据计数 | `ProfileMigrationSqliteTest`（V1–V12、4 个账号）与 E2E 身份门标题需同批更新；避免只改迁移导致 CI 红 |
 | Risk | 公开资料容易误带账户凭据 | 响应与弹窗均只使用公开字段；`username`/`password_hash`/会话令牌不得出现在 profile 契约与 UI 中 |
 | Risk | 身份模式已分叉为演示账户与注册账户 | 资料读取沿用 main 的 `X-User-Id` 约定，不新增权限体系；验收覆盖两类账户 |
 | Risk | `TripCard` 整体是 `<a>`，发布者区域内嵌交互元素 | 需重构卡片点击结构，避免嵌套 `<a>/<button>`；发布者点击必须阻止卡片跳转，并保留键盘可达性 |
@@ -513,5 +513,5 @@
 - **一 REQ 一 change 一 capability：** `add-user-profiles` ← REQ-009（`user-profiles`）。
 - **依赖 / 阶段排序：** 无上游新依赖；与后续 change 的共享文件冲突点是 `TripCard.tsx` 与 `styles.css`，排期时避免并行修改同一文件。
 - **契约优先：** 先冻结「在 main 的 `UserProfile` 上新增 `joined_at` + 四项统计」（不改变必填字段），再并行后端聚合与前端弹窗。
-- **P4 收敛修订（2026-11-16）：** main 已落地同名资料端点，按用户裁决改为「复用 main 接口 + 扩展统计/加入时间」；迁移版号改为 V11（V10 归 main）。
+- **P4 收敛修订（2026-11-16）：** main 已落地同名资料端点，按用户裁决改为「复用 main 接口 + 扩展统计/加入时间」；迁移版号顺延至 V12（V10 = 资料列、V11 = 目的地代码）。
 - **质量自检（split-heuristics）：** 垂直切片、端到端可验证（卡片入口 → 弹窗 → 关闭）、可独立运行、capability 名真实、无依赖环。

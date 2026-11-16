@@ -40,7 +40,7 @@ public class MatchServiceImpl implements MatchService {
                 .map(trip -> new MatchCandidate(
                         trip,
                         tripPlanService.publisherOf(trip),
-                        TripMatch.of(trip, reference, query.destination(), query.dateFrom(), me.interests())))
+                        TripMatch.of(trip, reference, query.destinationCode(), query.dateFrom(), me.interests())))
                 .toList();
         if (query.sort() == TripQuery.SortOrder.MATCH) {
             return candidates.stream()
@@ -73,6 +73,6 @@ public class MatchServiceImpl implements MatchService {
         return new MatchCandidate(
                 trip,
                 tripPlanService.publisherOf(trip),
-                TripMatch.of(trip, reference, empty.destination(), empty.dateFrom(), me.interests()));
+                TripMatch.of(trip, reference, empty.destinationCode(), empty.dateFrom(), me.interests()));
     }
 }

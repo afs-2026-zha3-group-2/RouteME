@@ -53,13 +53,13 @@
   仍不包含 `username`、`password_hash`、任何 token/会话字段。
 - **Rejected：** 在 `DemoUser` schema 上扩展（会让账户列表也带统计）；把 `joined_at`/`stats` 设为必填（会改变 main 已在用的响应契约）。
 
-### D5 — V11 种子数据：第 4 个演示用户 + 1 条行程
+### D5 — V12 种子数据：第 4 个演示用户 + 1 条行程
 
-- **Context：** main 的 S18 已占用 `V10__add_user_profile.sql`（8 个可空列）；本 change 需在其后追加种子。
-- **Decision：** 新增 `V11__seed_viewer_profile_user.sql`（只增不改）：
+- **Context：** main 的 S18 已占用 `V10__add_user_profile.sql`（8 个可空列），`add-destination-area-filters` 已占用 `V11__add_destination_area_code.sql`；本 change 需在其后追加种子。
+- **Decision：** 新增 `V12__seed_viewer_profile_user.sql`（只增不改）：
   - `app_users` id=4：昵称/头像/身份专业/简介/兴趣/`created_at`；`username`、`password_hash` 为 NULL（保持演示账户，不出现在注册登录路径）。
   - `trip_plans` id=7：publisher_id=4，状态 recruiting，字段与 V4 种子风格一致。
-- **Rejected：** 修改 V3/V4（Flyway 只增不改）；改现有用户 1–3 的 `school`（破坏既有演示人设与测试预期）；继续用 V10（与 main 版本号重复，Flyway 拒绝）。
+- **Rejected：** 修改 V3/V4（Flyway 只增不改）；改现有用户 1–3 的 `school`（破坏既有演示人设与测试预期）；继续用 V11（与 `add-destination-area-filters` 版本号重复，Flyway 拒绝）。
 - **Consequence：** 身份门变为 4 个演示账户；首页多一条行程；需同步更新 `DemoDataMigrationSqliteTest`、`AuthMigrationSqliteTest`、`ProfileMigrationSqliteTest`、`trips.spec.ts`。
 
 ### D6 — 前端资料模块：Provider + Modal + 纯函数
@@ -95,7 +95,7 @@
 ### D10 — 测试策略
 
 - **API：** `UserProfileControllerTest`（MockMvc + H2）在 main 用例基础上扩展：公开字段、`joined_at`、四项统计、零统计、404、响应无凭据。
-- **迁移：** `ProfileDataMigrationSqliteTest` 校验 V11 用户 4/行程 7；`ProfileMigrationSqliteTest` 改为 V1–V11、4 个演示账号。
+- **迁移：** `ProfileDataMigrationSqliteTest` 校验 V12 用户 4/行程 7；`ProfileMigrationSqliteTest` 改为 V1–V12、4 个演示账号。
 - **E2E：** `profiles.spec.ts` 覆盖双入口、弹窗字段、共同兴趣、自我查看、隐私/举报/凭据缺席、失败态、既有举报回归；`profile.spec.ts` 的发布者入口改为弹窗断言；`trips.spec.ts` 身份门为 4 个演示账户。
 - **UT（apply）：** `profileFormat.test.ts` 覆盖交集与时间格式化。
 - **NFR：** 用户确认不做专项；仅保留基本可访问性/响应式检查。
@@ -107,7 +107,7 @@
 |---|---|
 | 契约 | `RouteME/openapi.yaml`（0.8.0，复用 main path + 新增 `joined_at`/`stats`/`ProfileStats`）、`backend/src/test/java/routeme/controller/OpenApiTest.java` |
 | 后端 | `controller/UserProfileController.java`（扩展）、`service/UserProfileStatsService.java`、`service/impl/UserProfileStatsServiceImpl.java`、`response/UserProfileResponse.java`（扩展）、`response/ProfileStatsResponse.java` |
-| 迁移 | `backend/src/main/resources/db/migration/V11__seed_viewer_profile_user.sql` |
+| 迁移 | `backend/src/main/resources/db/migration/V12__seed_viewer_profile_user.sql` |
 | 后端测试 | `UserProfileControllerTest.java`、`ProfileDataMigrationSqliteTest.java`、`ProfileMigrationSqliteTest.java` |
 | 前端 | `src/profiles/ProfileContext.tsx`、`ProfileModal.tsx`、`profileFormat.ts`、`profileFormat.test.ts`、`src/i18n/profileMessages.ts`、`src/api.ts`、`src/types.ts`、`src/App.tsx`、`src/trips/TripCard.tsx`、`src/trips/TripDetailPage.tsx`、`src/styles.css` |
 | E2E | `e2e/tests/profiles.spec.ts`、`e2e/tests/profile.spec.ts`、`e2e/tests/trips.spec.ts` |
@@ -117,6 +117,6 @@
 
 - 统计 O(n) 在演示规模可接受；若未来数据量增长，改为 mapper count 查询，不改变契约。
 - 卡片覆盖链接与发布者按钮的 z-index 需要与 hover/动画共存；E2E 覆盖键盘与点击行为。
-- V11 改变种子计数是预期副作用；测试同批更新，避免 CI 红。
-- 迁移版本号与 main 的 V10 相邻，后续 change 必须从 V12 起，避免再次撞号。
+- V12 改变种子计数是预期副作用；测试同批更新，避免 CI 红。
+- 迁移版本号紧跟 main 的 V11（目的地代码），后续 change 必须从 V13 起，避免再次撞号。
 - 公开端点沿用 main 的 `X-User-Id` 约定；任何新增字段都必须经过隐私/凭据审查。

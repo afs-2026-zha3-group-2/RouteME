@@ -13,7 +13,8 @@ import {
   toggleTag,
   type FilterState,
 } from '../trips/tripFilters';
-import { DESTINATIONS, INTEREST_TAGS } from '../trips/tripOptions';
+import { AreaCascader } from '../area/AreaCascader';
+import { INTEREST_TAGS } from '../trips/tripOptions';
 import { useMatches } from '../trips/useMatches';
 import { greetingForHour } from './greeting';
 import { useGreeting } from './useGreeting';
@@ -97,32 +98,17 @@ export function HomePage({ currentUser }: Props) {
 
       <section className="filters" aria-label="筛选行程">
         <div className="filter-row">
-          <label className="field search">
-            <span className="label">搜索</span>
-            <Input
-              allowClear
-              placeholder={tripMessages.searchPlaceholder}
-              value={filters.q}
-              onChange={(event) => update({ q: event.target.value })}
-            />
-          </label>
-          <label className="field">
+          <div className="field">
             <span className="label">{tripMessages.destinationLabel}</span>
-            <select
-              className="native-select"
-              aria-label={tripMessages.destinationLabel}
-              value={filters.destination}
-              onChange={(event) => update({ destination: event.target.value })}
-            >
-              <option value="">{tripMessages.anyDestination}</option>
-              {DESTINATIONS.map((destination) => (
-                <option key={destination} value={destination}>
-                  {destination}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label className="field">
+            <AreaCascader
+              style={{ width: '100%' }}
+              ariaLabel={tripMessages.destinationLabel}
+              value={filters.destinationCode}
+              onChange={(code) => update({ destinationCode: code })}
+              placeholder={tripMessages.anyDestination}
+            />
+          </div>
+          <div className="field">
             <span className="label">{tripMessages.dateFromLabel}</span>
             <Input
               type="date"
@@ -130,8 +116,8 @@ export function HomePage({ currentUser }: Props) {
               value={filters.dateFrom}
               onChange={(event) => update({ dateFrom: event.target.value })}
             />
-          </label>
-          <label className="field">
+          </div>
+          <div className="field">
             <span className="label">{tripMessages.dateToLabel}</span>
             <Input
               type="date"
@@ -139,9 +125,9 @@ export function HomePage({ currentUser }: Props) {
               value={filters.dateTo}
               onChange={(event) => update({ dateTo: event.target.value })}
             />
-          </label>
+          </div>
           {view === 'plans' && (
-            <label className="field">
+            <div className="field">
               <span className="label">{tripMessages.sortLabel}</span>
               <select
                 className="native-select"
@@ -153,7 +139,7 @@ export function HomePage({ currentUser }: Props) {
                 <option value="date">{tripMessages.sortDate}</option>
                 <option value="new">{tripMessages.sortNew}</option>
               </select>
-            </label>
+            </div>
           )}
         </div>
 

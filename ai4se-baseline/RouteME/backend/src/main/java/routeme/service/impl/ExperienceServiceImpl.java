@@ -2,6 +2,7 @@ package routeme.service.impl;
 
 import java.time.Clock;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -83,24 +84,24 @@ public class ExperienceServiceImpl
     }
 
     @Override
-    public List<ExperienceResponse> listAll(String q, String destination, Set<String> tags) {
+    public List<ExperienceResponse> listAll(String destinationCode, Set<String> tags) {
         return list(Wrappers.<TripExperienceEntity>lambdaQuery()
                 .orderByDesc(TripExperienceEntity::getUpdatedAt)
                 .orderByDesc(TripExperienceEntity::getId)).stream()
                 .map(TripExperienceEntity::toExperience)
-                .filter(experience -> matches(experience, q, destination, tags))
+                .filter(experience -> matches(experience, destinationCode, tags))
                 .map(this::describe)
                 .toList();
     }
 
     @Override
     public PageResult<ExperienceResponse> listPage(
-            String q, String destination, Set<String> tags, PageParam param) {
-        String keyword = q == null || q.isBlank() ? null : q.trim();
+            String destinationCode, LocalDate dateFrom, LocalDate dateTo, Set<String> tags, PageParam param) {
         IPage<TripExperienceEntity> page = baseMapper.selectExperiencePage(
                 new Page<>(param.page(), param.size()),
-                keyword,
-                destination,
+                destinationCode,
+                dateFrom == null ? null : dateFrom.toString(),
+                dateTo == null ? null : dateTo.toString(),
                 List.copyOf(tags == null ? Set.of() : tags));
         return new PageResult<>(
                 page.getRecords().stream().map(TripExperienceEntity::toExperience).map(this::describe).toList(),
@@ -132,22 +133,16 @@ public class ExperienceServiceImpl
                 .toList();
     }
 
-    private boolean matches(TripExperience experience, String q, String destination, Set<String> tags) {
+    private boolean matches(TripExperience experience, String destinationCode, Set<String> tags) {
         TripPlan trip = tripPlanService.require(experience.tripId());
-        if (destination != null && !destination.isBlank() && !destination.equals(trip.destination())) {
+        if (destinationCode != null && !destinationCode.isBlank()
+                && !destinationCode.equals(trip.destinationCode())) {
             return false;
         }
         if (tags != null && !tags.isEmpty() && trip.tags().stream().noneMatch(tags::contains)) {
             return false;
         }
-        if (q == null || q.isBlank()) {
-            return true;
-        }
-        String needle = q.trim().toLowerCase();
-        String haystack = String.join(" ",
-                        trip.title(), trip.destination(), experience.content(), experience.advice())
-                .toLowerCase();
-        return haystack.contains(needle);
+        return true;
     }
 
     private void requireCanShare(TripPlan trip, long authorId) {

@@ -3,16 +3,16 @@
 <mapper namespace="routeme.mapper.TripPlanMapper">
 
     <sql id="tripColumns">
-        t.id, t.publisher_id, t.title, t.destination, t.start_date, t.end_date, t.stops,
+        t.id, t.publisher_id, t.title, t.destination_code, t.destination, t.start_date, t.end_date, t.stops,
         t.meeting_area, t.note, t.budget_min_cents, t.budget_max_cents, t.tags,
         t.capacity, t.joined_count, t.completed_at, t.created_at, t.updated_at
     </sql>
 
-    <!-- 未结束行程的过滤条件：关键词覆盖标题/目的地/途经点/标签/发布者昵称，标签命中任一即保留。 -->
+    <!-- 未结束行程的过滤条件：目的地按 6 位代码等值匹配；标签命中任一即保留。 -->
     <sql id="openTripFilter">
         WHERE t.completed_at IS NULL
-        <if test="destination != null and destination != ''">
-            AND t.destination = #{destination}
+        <if test="destinationCode != null and destinationCode != ''">
+            AND t.destination_code = #{destinationCode}
         </if>
         <if test="dateFrom != null">
             AND t.end_date &gt;= #{dateFrom}
@@ -26,10 +26,6 @@
                 t.tags LIKE ('%"' || #{tag} || '"%')
             </foreach>
             )
-        </if>
-        <if test="q != null and q != ''">
-            AND LOWER(t.title || ' ' || t.destination || ' ' || t.stops || ' ' || t.tags || ' ' || u.nickname)
-                LIKE ('%' || LOWER(#{q}) || '%')
         </if>
     </sql>
 

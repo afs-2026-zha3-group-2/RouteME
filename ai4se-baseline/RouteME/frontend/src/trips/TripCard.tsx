@@ -1,3 +1,4 @@
+import { cityLabel } from '../area/areaOptions';
 import { tripMessages } from '../i18n/tripMessages';
 import { useProfile } from '../profiles/ProfileContext';
 import { publisherSummary } from '../profile/profileDisplay';
@@ -40,8 +41,8 @@ export function TripCard({ trip, match, compact = false }: Props) {
   return (
     <article className={compact ? 'trip-card compact' : 'trip-card'}>
       <a className="tc-overlay" href={`#/trips/${trip.id}`} aria-label={trip.title} />
-      <div className={`tc-cover cover-${coverTone(trip.destination)}`}>
-        <span className="tc-dest">{trip.destination}</span>
+      <div className={`tc-cover cover-${coverTone(trip.destination_code)}`}>
+        <span className="tc-dest">{cityLabel(trip.destination_code) || trip.destination}</span>
         <StatusBadge status={trip.status} />
       </div>
 

@@ -57,7 +57,7 @@
 - 引用需求：REQ-009；意图捕获 `requirement-workspace/intents/REQ-009-publisher-profile.md`。
 - 原型证据：`docs/prototype/ui.js` `profileModal()` / `hostPanel`；`store.js` `stats()`；`styles.css` `.profile-*` / `.privacy-note`。
 - 现有实现证据：`RouteME/backend/.../V3__create_demo_users.sql`（用户字段与 `created_at`）、`V9__add_user_credentials.sql`（演示/注册账户凭据）、`V10__add_user_profile.sql`（main S18 资料列）、`UserProfileController.java`（main 的 GET/PUT/头像端点）、`DemoUserController.java`（全部账户与 `/users/demo`）、`RouteME/frontend/src/trips/TripCard.tsx`、`TripDetailPage.tsx`、`RouteME/openapi.yaml`（main 0.7.0；本 change 0.8.0）。
-- Impact 要点：扩展 `user-profiles`（复用 main 端点）；`trip-companions` / `trip-experiences` 只读消费；`trip-plans` 仅展示触点、不新增 delta；种子数据（V11）会改变迁移测试与 E2E 身份门断言。
+- Impact 要点：扩展 `user-profiles`（复用 main 端点）；`trip-companions` / `trip-experiences` 只读消费；`trip-plans` 仅展示触点、不新增 delta；种子数据（V12）会改变迁移测试与 E2E 身份门断言。
 - DoR / A0：Base 8 全过，BLOCKER = 0；deep-dive ⑨–⑫ 见 `requirement-workspace/deep-dive.md`「Deep-dive 增补 — REQ-009」。
 
 ## 规模与交付

@@ -49,13 +49,13 @@ describe('loadGreeting', () => {
         vi.stubGlobal('fetch', fetchMock);
 
         await expect(
-          loadTrips(2, { destination: '珠海', tags: ['摄影', '海边'], sort: 'new' }),
+          loadTrips(2, { destination_code: '440400', tags: ['摄影', '海边'], sort: 'new' }),
         ).resolves.toEqual([]);
 
         const [url, init] = fetchMock.mock.calls[0] as [string, RequestInit];
         const parsed = new URL(url, 'http://localhost');
         expect(parsed.pathname).toBe('/api/trips');
-        expect(parsed.searchParams.get('destination')).toBe('珠海');
+        expect(parsed.searchParams.get('destination_code')).toBe('440400');
         expect(parsed.searchParams.get('tags')).toBe('摄影,海边');
         expect(parsed.searchParams.get('sort')).toBe('new');
         expect((init.headers as Headers).get('X-User-Id')).toBe('2');
@@ -97,7 +97,7 @@ describe('loadGreeting', () => {
         await expect(
           createTrip(1, {
             title: '周末骑行',
-                      destination_code: '440400',
+            destination_code: '440400',
             start_date: '2026-11-20',
             end_date: '2026-11-20',
             stops: ['集合', '终点'],

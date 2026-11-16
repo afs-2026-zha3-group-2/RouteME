@@ -45,8 +45,8 @@
 1. **契约先行（红）**：`openapi.yaml` 升至 0.8.0，复用 main 已有 `GET /users/{userId}/profile`（带 `X-User-Id`），`UserProfile` 增加 `joined_at`/`stats`，新增 `ProfileStats`；`OpenApiTest` 扩展断言字段与必填性。共同兴趣仍由前端用当前用户兴趣计算。
 2. **API 验收测试（红）**：
    - `UserProfileControllerTest`（MockMvc + H2）：公开字段、`joined_at`、四项统计、零统计、404、响应无账户凭据。
-   - `ProfileDataMigrationSqliteTest`（SQLite）：V11 写入第 4 个演示用户与其行程，且 `username`/`password_hash` 为 NULL。
-   - 更新 `ProfileMigrationSqliteTest`（V1–V11、4 个演示账号）。
+   - `ProfileDataMigrationSqliteTest`（SQLite）：V12 写入第 4 个演示用户与其行程，且 `username`/`password_hash` 为 NULL。
+   - 更新 `ProfileMigrationSqliteTest`（V1–V12、4 个演示账号）。
 3. **E2E（红）**：新增 `RouteME/e2e/tests/profiles.spec.ts`；`profile.spec.ts` 的发布者入口改弹窗断言；`trips.spec.ts` 身份门为 4 个演示账户。
 4. 再按 `/sdd:atdd-apply` 做 Red → Green → Refactor；UT 在 apply 阶段补：共同兴趣交集、统计组装、字段缺省格式化。
 
@@ -64,11 +64,11 @@
 
 | 层 | 夹具 | 清理 / 所有权 |
 |---|---|---|
-| API | Flyway V1–V11 迁移后的 H2/SQLite；第 4 个演示用户 + 行程；零统计账户由 `AuthService.register` 或测试内创建 | 每个测试类使用独立临时库/回滚；不依赖生产 SQLite 文件 |
+| API | Flyway V1–V12 迁移后的 H2/SQLite；第 4 个演示用户 + 行程；零统计账户由 `AuthService.register` 或测试内创建 | 每个测试类使用独立临时库/回滚；不依赖生产 SQLite 文件 |
 | E2E | 种子 SQLite：用户 1–4、行程 1–7；用户 1 作为浏览者，用户 4 的行程用于非学生资料 | 新发布的行程使用唯一标题；不复用/清理演示种子；不引入破坏性 reset |
 | 契约 | `openapi.yaml` 为唯一契约源 | 版本 0.8.0；`OpenApiTest` 与 Redocly 同源校验 |
 
-- V11 只增不改：新增用户 4（`上班族 · 互联网行业 · INFP`，`username`/`password_hash` NULL，`created_at` 固定）与行程 7（招募中，发布者 4）。V10 归 main 的 `add-user-profile`（资料列）。
+- V12 只增不改：新增用户 4（`上班族 · 互联网行业 · INFP`，`username`/`password_hash` NULL，`created_at` 固定）与行程 7（招募中，发布者 4）。V10 归 main 的 `add-user-profile`（资料列），V11 归 `add-destination-area-filters`（目的地代码）。
 - 统计夹具：未接受申请、未发布体验用于排除口径；零统计数据用新建账户；当前无「已取消」行程，不构造该状态。
 
 ## 6. Non-goals（含反向验证）

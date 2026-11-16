@@ -1,9 +1,9 @@
+import { destinationLabel } from '../area/areaOptions';
 import { tripMessages } from '../i18n/tripMessages';
 import type { TripFilters } from '../types';
 
 export type FilterState = {
-  q: string;
-  destination: string;
+  destinationCode: string;
   dateFrom: string;
   dateTo: string;
   tags: string[];
@@ -11,8 +11,7 @@ export type FilterState = {
 };
 
 export const emptyFilterState: FilterState = {
-  q: '',
-  destination: '',
+  destinationCode: '',
   dateFrom: '',
   dateTo: '',
   tags: [],
@@ -29,8 +28,7 @@ export function normalizeRange(dateFrom: string, dateTo: string): [string, strin
 export function toTripFilters(state: FilterState): TripFilters {
   const [dateFrom, dateTo] = normalizeRange(state.dateFrom, state.dateTo);
   return {
-    q: state.q.trim() === '' ? undefined : state.q.trim(),
-    destination: state.destination === '' ? undefined : state.destination,
+    destination_code: state.destinationCode === '' ? undefined : state.destinationCode,
     date_from: dateFrom === '' ? undefined : dateFrom,
     date_to: dateTo === '' ? undefined : dateTo,
     tags: state.tags.length === 0 ? undefined : state.tags,
@@ -40,12 +38,11 @@ export function toTripFilters(state: FilterState): TripFilters {
 
 export function hasActiveFilters(state: FilterState): boolean {
   return (
-    state.q.trim() !== '' ||
-    state.destination !== '' ||
+    state.destinationCode !== '' ||
     state.dateFrom !== '' ||
     state.dateTo !== '' ||
     state.tags.length > 0 ||
-        state.sort !== 'match'
+    state.sort !== 'match'
   );
 }
 
@@ -64,11 +61,9 @@ const SORT_LABELS: Record<FilterState['sort'], string> = {
  */
 export function describeFilters(state: FilterState): string {
   const parts: string[] = [];
-  if (state.q.trim() !== '') {
-    parts.push(`关键词「${state.q.trim()}」`);
-  }
-  if (state.destination !== '') {
-    parts.push(`目的地 ${state.destination}`);
+  if (state.destinationCode !== '') {
+    const label = destinationLabel(state.destinationCode);
+    parts.push(`目的地 ${label === '' ? state.destinationCode : label}`);
   }
   if (state.dateFrom !== '') {
     parts.push(`${tripMessages.dateFromLabel} ${state.dateFrom}`);

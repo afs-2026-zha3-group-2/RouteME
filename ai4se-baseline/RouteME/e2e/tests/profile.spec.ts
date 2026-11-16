@@ -268,7 +268,8 @@ test('opens a publisher profile from a trip card', async ({ page }) => {
 
   const viewer = await registerViaApi(page, { prefix: 'view' });
   await useAccount(page, viewer);
-  await page.getByPlaceholder('搜索路线、地点或发布者').fill(title);
+  // 首页用目的地/日期筛选，已无搜索框；切到「最新发布」使新行程排在最前。
+  await page.getByLabel('排序').selectOption('new');
 
   const card = page.locator('.trip-card', { hasText: title });
   await expect(card).toBeVisible();
