@@ -35,6 +35,8 @@
   --ink-3: #576b72;
   --line: #e4dbcb;
   --line-2: #d3c7b2;
+  /* 侧栏底色：与页面同为暖砂，只降饱和、略降明度；深色沿用 --surface */
+  --rail-bg: #eeebe3;
   --on-deep: #f3fbfc;
   --on-deep-accent: #ffd166;
 
@@ -99,6 +101,7 @@
   --ink-3: #869da4;
   --line: #1d3742;
   --line-2: #274a57;
+  --rail-bg: #0e1f26;
   --on-deep: #eaf6f8;
   --on-deep-accent: #ffd166;
 
@@ -637,13 +640,15 @@ svg {
   flex-direction: column;
   padding: 18px 14px;
   border-right: 1px solid var(--line);
-  background: var(--surface);
+  background: var(--rail-bg);
   overflow-y: auto;
-  --rail-active-bg: color-mix(in srgb, var(--lagoon) 18%, var(--surface));
+  --rail-hover: color-mix(in srgb, var(--ink) 6%, var(--rail-bg));
+  --rail-active-bg: color-mix(in srgb, var(--lagoon) 18%, var(--rail-bg));
   --rail-active-ink: var(--tide);
 }
 
 [data-theme="dark"] .rail {
+  --rail-hover: var(--surface-2);
   --rail-active-ink: var(--t-lagoon);
 }
 
@@ -692,7 +697,7 @@ svg {
 }
 
 .rail-link:hover {
-  background: var(--surface-2);
+  background: var(--rail-hover);
   color: var(--ink);
 }
 
@@ -719,12 +724,12 @@ svg {
 }
 
 .rail-user:hover {
-  background: var(--surface-2);
+  background: var(--rail-hover);
   color: var(--ink);
 }
 
 .rail-user[aria-expanded="true"] {
-  background: var(--surface-2);
+  background: var(--rail-hover);
   color: var(--ink);
 }
 

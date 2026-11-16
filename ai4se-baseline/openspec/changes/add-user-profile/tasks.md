@@ -127,7 +127,8 @@
 
 - [x] `shell/AppShell.tsx`：主导航按「浏览 / 我的」分组渲染；底部为账号入口（头像 + 昵称 + `publisherSummary`，为空显示「资料未完善」），点击展开菜单（「编辑我的资料」→ `#/profile/setup`、分隔线、「退出登录」→ `onLogout`）；删除底部「价值闭环」卡片与「演示环境 · 数据保存在本机」说明。
 - [x] 菜单用 `position: fixed` 按账号行 `getBoundingClientRect()` 定位（侧栏 `overflow-y: auto` 会裁剪绝对定位子树），与行底边对齐、距侧栏 10px、宽 188px，浮于内容之上；滚动 / 缩放时重算位置；Esc、外部点击、选中动作关闭，Esc 归还焦点，上下方向键在菜单项间移动。
-- [x] `styles.css`：侧栏改为实色面，分组标题 / 分组分隔线与选中态改用 `--lagoon` 混合色（浅色与深色各取可读文字色）；账号入口沿用导航悬停样式，以 `[aria-expanded=\"true\"]` 表示展开并旋转箭头；菜单 `--surface` + `--line-2` 描边（深色 `--surface-2`）+ `--sh-3`，与 `.id-panel` 同一层级语言；≤900px 仍整条收起、底部标签栏保留三个入口。
+- [x] `styles.css`：侧栏底色改为浅色专属 token `--rail-bg`（`#eeebe3`，与页面 `--bg` 同色系、降饱和；深色仍为 `--surface`），悬停 / 展开态用 `color-mix(--ink 6%, --rail-bg)`、选中态用 `color-mix(--lagoon 18%, --rail-bg)`，不再提亮到 `--surface-2`；分组标题 / 分组分隔线与选中态文字取 `--lagoon` 系可读色；≤900px 仍整条收起、底部标签栏保留三个入口。
+- [x] 账号入口沿用导航的悬停 / 展开底色并以 `[aria-expanded="true"]` 表示展开、箭头旋转；菜单 `--surface` + `--line-2` 描边（深色 `--surface-2`）+ `--sh-3`，与 `.id-panel` 同一层级语言。
 - [x] `specs/design-system/spec.md`：MODIFIED「应用外壳与导航」，新增账号入口 / 账号菜单 / 关闭账号菜单场景，保留原四个场景（共 7 个）。
 - [x] 视觉：浅 / 深色 × 1440 / 390 截图核对；`auth.spec.ts`「我的旅行」链接与 `profile.spec.ts` 全量不回归。
 
