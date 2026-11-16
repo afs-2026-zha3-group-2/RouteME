@@ -39,6 +39,13 @@
     if (diff === 1) return '昨天 ' + fmtClock(ts);
     return (d.getMonth() + 1) + '/' + d.getDate() + ' ' + fmtClock(ts);
   }
+  /* 集合时间是本地日期时间（yyyy-MM-ddTHH:mm），展示沿用消息时间口径。 */
+  function fmtMeeting(value) {
+    if (!value) return '待确认';
+    var d = new Date(value);
+    if (isNaN(d.getTime())) return value;
+    return fmtStamp(d.getTime());
+  }
   function relTime(ts) {
     var s = Math.floor((Date.now() - ts) / 1000);
     if (s < 60) return '刚刚';
@@ -461,10 +468,16 @@
 
     var facts = '<section class="panel"><h3 class="panel-title">' + icon('info') + '出发信息</h3><div class="fact-grid">' +
       '<div class="fact"><span>集合区域</span><b>' + esc(t.meetingArea || '待确认') + '</b></div>' +
+      '<div class="fact"><span>集合时间</span><b>' + esc(fmtMeeting(t.meetingTime)) + '</b></div>' +
       '<div class="fact"><span>预算区间</span><b>' + esc(budgetText(t)) + '</b></div>' +
       '<div class="fact"><span>行程天数</span><b>' + (S.dayDiff(t.endDate, t.startDate) + 1) + ' 天</b></div>' +
       '<div class="fact"><span>剩余名额</span><b>' + Math.max(0, t.capacity - n) + ' 人</b></div>' +
-      '</div><div class="tc-tags" style="margin-top:14px">' + tags(t.tags, m.shared) + '</div>' +
+      '</div>' +
+      (t.meetingArea && t.meetingTime ? '' : '<p class="hint" style="margin-top:12px">集合信息未填完，出发前请在聊天中确认。</p>') +
+      '<div class="tc-tags" style="margin-top:14px">' + tags(t.tags, m.shared) + '</div>' +
+      (t.creatorId === S.state.currentUserId && t.status !== 'COMPLETED'
+        ? '<div style="margin-top:14px"><button class="btn sm ghost" data-action="edit-meeting" data-id="' + id + '" type="button">' + icon('pin') + '编辑集合信息</button></div>'
+        : '') +
       (t.sourceTripId && S.trip(t.sourceTripId) ? '<p class="hint" style="margin-top:12px">' + icon('copy') + ' 参考自《' + esc(S.trip(t.sourceTripId).title) + '》</p>' : '') +
       '</section>';
 
@@ -595,8 +608,11 @@
       '<button class="stepper-btn" data-action="cap-step" data-delta="1" type="button" aria-label="增加人数">+</button></span>' +
       fieldErr(errors, 'capacity') + '<span class="hint">招满后系统自动停止接受新申请。</span></div>' +
       '<label class="field"><span class="label">集合区域<span class="opt">选填</span></span>' +
-      '<input class="input" data-form="meetingArea" maxlength="30" value="' + esc(d.meetingArea) + '" placeholder="例如：香洲港公交站">' +
+      '<input class="input" data-form="meetingArea" maxlength="100" value="' + esc(d.meetingArea) + '" placeholder="例如：香洲港公交站">' +
       '<span class="hint">只写公共区域，不要写宿舍或家庭住址。</span></label>' +
+      '<label class="field"><span class="label">集合时间<span class="opt">选填</span></span>' +
+      '<input class="input" type="datetime-local" data-form="meetingTime" value="' + esc(d.meetingTime || '') + '">' +
+      '<span class="hint">不晚于结束日期；出发前也可以在聊天里再确认。</span></label>' +
       '</div>' +
       '<div class="form-row">' +
       '<label class="field"><span class="label">预算下限<span class="opt">选填 · 元</span></span>' +
@@ -707,7 +723,7 @@
         var acts = '<a class="btn sm sea" href="#/chat/' + t.id + '/' + t.creatorId + '">' + icon('chat') + '与发起人沟通</a>' +
           '<a class="btn sm ghost" href="#/trip/' + t.id + '">' + icon('eye') + '行程</a>' +
           '<button class="btn sm danger" data-action="leave-trip" data-id="' + t.id + '" type="button">' + icon('exit') + '退出</button>';
-        var note = '集合：' + esc(t.meetingArea || '待确认') + ' · 同行 ' + S.count(t.id) + ' 人';
+        var note = '集合：' + esc(t.meetingArea || '待确认') + ' · ' + esc(fmtMeeting(t.meetingTime)) + ' · 同行 ' + S.count(t.id) + ' 人';
         return mineRow(t, acts, note, i);
       }).join('') + '</div>'
         : empty('还没有已匹配的同行', '申请被接受后，行程会出现在这里，并开放与发起人的文字沟通。', '<a class="btn primary" href="#/discover">' + icon('compass') + '发现同行者</a>', 'users');
@@ -779,7 +795,7 @@
       '<button class="btn sm danger" data-action="report" data-type="user" data-id="' + other.id + '" data-label="' + esc(other.nickname) + '" type="button">' + icon('flag') + '举报</button>' +
       (t.creatorId !== meId && !closed ? '<button class="btn sm danger" data-action="leave-trip" data-id="' + t.id + '" type="button">' + icon('exit') + '退出同行</button>' : '') +
       '</span></div>' +
-      '<div class="chat-safety">' + icon('shield') + '<span>首次见面请选择公共场所 · 集合区域：' + esc(t.meetingArea || '待确认') + ' · 不要转账或提供证件信息</span></div>' +
+      '<div class="chat-safety">' + icon('shield') + '<span>首次见面请选择公共场所 · 集合区域：' + esc(t.meetingArea || '待确认') + ' · 集合时间：' + esc(fmtMeeting(t.meetingTime)) + ' · 不要转账或提供证件信息</span></div>' +
       '<div class="chat-body" id="chat-body">' + bubbles + '</div>' + composer + '</section>';
 
     return head + '<div class="chat-layout"><div class="chat-list-pane">' + list + '</div>' + main + '</div>';
@@ -943,6 +959,22 @@
   }
 
   /* ---------------- S14 举报 ---------------- */
+  /* ---------------- 集合信息编辑 ---------------- */
+  function meetingModal(tripId) {
+    var t = S.trip(tripId);
+    if (!t) return '';
+    return '<div class="modal" role="dialog" aria-modal="true" aria-label="编辑集合信息">' +
+      '<div class="modal-head"><h2 class="modal-title">编辑集合信息</h2>' +
+      '<button class="icon-btn" data-action="close-overlay" type="button" aria-label="关闭">' + icon('x') + '</button></div>' +
+      '<div class="modal-body"><label class="field"><span class="label">集合区域<span class="opt">选填</span></span>' +
+      '<input class="input" data-meeting-area maxlength="100" value="' + esc(t.meetingArea || '') + '" placeholder="例如：香洲港公交站"></label>' +
+      '<label class="field" style="margin-top:14px"><span class="label">集合时间<span class="opt">选填</span></span>' +
+      '<input class="input" type="datetime-local" data-meeting-time value="' + esc(t.meetingTime || '') + '"></label>' +
+      '<p class="hint" style="margin-top:14px">只改集合区域与集合时间；不晚于结束日期（' + esc(fmtDate(t.endDate)) + '）。</p>' +
+      '</div><div class="modal-foot"><button class="btn ghost" data-action="close-overlay" type="button">取消</button>' +
+      '<button class="btn primary" data-action="submit-meeting" data-id="' + t.id + '" type="button">' + icon('check') + '保存</button></div></div>';
+  }
+
   function reportModal(type, id, label) {
     var reasons = type === 'user'
       ? ['骚扰或不当言论', '索要钱财或疑似诈骗', '资料不真实', '危险行为或挑战', '其他']
@@ -1022,6 +1054,7 @@
     gate: gate, nav: nav, userChip: userChip, discover: discover,
     detail: detail, tripForm: tripForm, previewCard: previewCard, safetyPanel: safetyPanel,
     mine: mine, chat: chat, share: share, profileModal: profileModal, appsDrawer: appsDrawer,
+    meetingModal: meetingModal,
     switchUserModal: switchUserModal, reportModal: reportModal, confirmModal: confirmModal,
     saveViewModal: saveViewModal, scriptDrawer: scriptDrawer
   };

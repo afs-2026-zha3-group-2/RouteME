@@ -93,6 +93,7 @@
         startDate: offsetDay(1), endDate: offsetDay(1),
         stops: ['香洲港集合', '情侣北路步行', '海滨泳场日落', '大排档晚饭'],
         meetingArea: '香洲港公交站', budgetMin: 100, budgetMax: 180,
+        meetingTime: offsetDay(1) + 'T08:30',
         tags: ['摄影', '海边'], capacity: 3, status: 'RECRUITING',
         note: '上次拍完发现西侧还有个机位没试。这次轻装，只带一机两镜。',
         createdAt: offsetTime(-3, 22, 5)
@@ -103,6 +104,7 @@
         startDate: offsetDay(1), endDate: offsetDay(1),
         stops: ['陈家祠地铁站集合', '恩宁路骑楼', '永庆坊', '宝华面店午饭', '上下九收尾'],
         meetingArea: '陈家祠地铁站 D 口', budgetMin: 80, budgetMax: 150,
+        meetingTime: offsetDay(1) + 'T09:00',
         tags: ['摄影', '历史', '美食'], capacity: 4, status: 'RECRUITING',
         note: '走街串巷为主，随时可以停下来吃东西。不赶景点。',
         createdAt: offsetTime(-5, 12, 30)

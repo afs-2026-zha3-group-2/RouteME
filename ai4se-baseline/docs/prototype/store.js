@@ -169,6 +169,8 @@
     if (!cap || cap < 2) e.capacity = '含你在内至少 2 人';
     else if (cap > 12) e.capacity = '首版单团不超过 12 人';
     if (p.budgetMin && p.budgetMax && Number(p.budgetMin) > Number(p.budgetMax)) e.budget = '预算下限不能高于上限';
+    if (p.meetingArea && p.meetingArea.trim().length > 100) e.meetingArea = '集合区域控制在 100 字以内';
+    if (p.meetingTime && p.endDate && p.meetingTime.slice(0, 10) > p.endDate) e.meetingTime = '集合时间不能晚于结束日期';
     return e;
   }
 
@@ -181,6 +183,7 @@
       startDate: p.startDate, endDate: p.endDate,
       stops: p.stops.filter(function (s) { return s && s.trim(); }).map(function (s) { return s.trim(); }),
       meetingArea: (p.meetingArea || '').trim(),
+      meetingTime: (p.meetingTime || '').trim(),
       budgetMin: p.budgetMin ? Number(p.budgetMin) : null,
       budgetMax: p.budgetMax ? Number(p.budgetMax) : null,
       tags: (p.tags || []).slice(0, 5),
@@ -206,12 +209,30 @@
     t.startDate = p.startDate; t.endDate = p.endDate;
     t.stops = p.stops.filter(function (s) { return s && s.trim(); }).map(function (s) { return s.trim(); });
     t.meetingArea = (p.meetingArea || '').trim();
+    t.meetingTime = (p.meetingTime || '').trim();
     t.budgetMin = p.budgetMin ? Number(p.budgetMin) : null;
     t.budgetMax = p.budgetMax ? Number(p.budgetMax) : null;
     t.tags = (p.tags || []).slice(0, 5);
     t.capacity = cap;
     t.note = (p.note || '').trim();
     syncStatus(t);
+    commit();
+    return { ok: true, trip: t };
+  }
+
+  /* 只改集合区域与集合时间：范围小，不碰其它字段；已结束行程不允许改。 */
+  function updateMeetingInfo(id, p) {
+    var t = trip(id);
+    if (!t || t.creatorId !== state.currentUserId) return { ok: false, errors: { _: '只有发布者可以编辑集合信息' } };
+    if (t.status === 'COMPLETED') return { ok: false, errors: { _: '行程已结束，不能再改集合信息' } };
+    var area = (p.meetingArea || '').trim();
+    var time = (p.meetingTime || '').trim();
+    var errors = {};
+    if (area.length > 30) errors.meetingArea = '集合区域最多 30 字';
+    if (time && time.slice(0, 10) > t.endDate) errors.meetingTime = '集合时间不能晚于结束日期';
+    if (Object.keys(errors).length) return { ok: false, errors: errors };
+    t.meetingArea = area;
+    t.meetingTime = time;
     commit();
     return { ok: true, trip: t };
   }
@@ -489,7 +510,7 @@
     hostPendingCount: hostPendingCount, experiencesOf: experiencesOf, myExperience: myExperience,
     canApply: canApply, canChat: canChat, canShare: canShare,
     matchOf: matchOf, referenceTrip: referenceTrip, dayDiff: dayDiff,
-    setUser: setUser, createTrip: createTrip, updateTrip: updateTrip,
+    setUser: setUser, createTrip: createTrip, updateTrip: updateTrip, updateMeetingInfo: updateMeetingInfo,
     cancelTrip: cancelTrip, deleteTrip: deleteTrip, completeTrip: completeTrip,
     apply: apply, cancelApplication: cancelApplication, decide: decide, bulkDecide: bulkDecide,
     leaveTrip: leaveTrip, sendMessage: sendMessage, thread: thread, chatPartners: chatPartners,

@@ -145,7 +145,7 @@
     return {
       title: '', destination: '', terrain: 'coast',
       startDate: D.offsetDay(1), endDate: D.offsetDay(1),
-      stops: ['', ''], meetingArea: '', budgetMin: '', budgetMax: '',
+      stops: ['', ''], meetingArea: '', meetingTime: '', budgetMin: '', budgetMax: '',
       tags: [], capacity: 3, note: ''
     };
   }
@@ -153,7 +153,7 @@
     return {
       id: t.id, title: t.title, destination: t.destination, terrain: t.terrain,
       startDate: t.startDate, endDate: t.endDate, stops: t.stops.slice(),
-      meetingArea: t.meetingArea || '', budgetMin: t.budgetMin || '', budgetMax: t.budgetMax || '',
+      meetingArea: t.meetingArea || '', meetingTime: t.meetingTime || '', budgetMin: t.budgetMin || '', budgetMax: t.budgetMax || '',
       tags: t.tags.slice(), capacity: t.capacity, note: t.note || ''
     };
   }
@@ -363,6 +363,8 @@
       modalRoot.innerHTML = scrim + '<div class="modal-wrap">' + UI.profileModal(o.id) + '</div>';
     } else if (o.kind === 'switch') {
       modalRoot.innerHTML = scrim + '<div class="modal-wrap">' + UI.switchUserModal() + '</div>';
+    } else if (o.kind === 'meeting') {
+      modalRoot.innerHTML = scrim + '<div class="modal-wrap">' + UI.meetingModal(o.id) + '</div>';
     } else if (o.kind === 'report') {
       modalRoot.innerHTML = scrim + '<div class="modal-wrap">' + UI.reportModal(o.type, o.id, o.label) + '</div>';
     } else if (o.kind === 'saveView') {
@@ -543,6 +545,22 @@
         return;
       }
       case 'del-view': S.deleteView(id); render(); toast('已删除这组常用筛选', 'ok'); return;
+
+      /* --- 集合信息编辑 --- */
+      case 'edit-meeting': App.overlay = { kind: 'meeting', id: id }; renderOverlay(); return;
+      case 'submit-meeting': {
+        var areaEl = modalRoot.querySelector('[data-meeting-area]');
+        var timeEl = modalRoot.querySelector('[data-meeting-time]');
+        var mr = S.updateMeetingInfo(id, {
+          meetingArea: areaEl ? areaEl.value : '',
+          meetingTime: timeEl ? timeEl.value : ''
+        });
+        if (!mr.ok) { toast(Object.keys(mr.errors)[0] === '_' ? mr.errors._ : '请检查集合信息', 'warn'); return; }
+        closeOverlay();
+        render();
+        toast('集合信息已更新', 'ok');
+        return;
+      }
 
       /* --- 资料与举报 --- */
       case 'profile': App.overlay = { kind: 'profile', id: id }; renderOverlay(); return;
