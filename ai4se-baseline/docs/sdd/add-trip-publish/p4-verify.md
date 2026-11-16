@@ -146,3 +146,23 @@
 | VL | Neal | 复核 R2 证据（截图 + e2e），G2 追加 Pass | 2026-11-16 |
 | AO | Jay | 交付实现与回归结果 | 2026-11-16 |
 | SM | Lewis | 认可 R2 交付；P5 仍暂缓 | 2026-11-16 |
+
+## 12. R3 实施结果（字典全国化后的返工，2026-11-16 13:48）
+
+| 项 | 结果 |
+|---|---|
+| 实现提交 | `refactor(p4): add-trip-publish R3 share the area dictionary and explain map coverage` |
+| 映射 | 新增 `areas/gazetteerCity.ts`（共享 `area/areaOptions`，去「市」后缀，港澳归并）；删除 `areas/areaCatalog.ts` 与其测试 |
+| 提示 | 未选目的地 → 「先选目的地…」；已选但无覆盖 → 「这个城市暂时没有离线点位…」；两种情况都不渲染地图 |
+| 后端 | 删除 `constant/AreaConstant`、`pojo/AreaCity` 与两条未使用 import；名称派生统一走 `AreaDictionary` / `AreaNames` |
+| 后端验证 | `clean test` 206 通过 |
+| 前端验证 | `npm test` 105 通过；`typecheck` / `build` 通过 |
+| 端到端 | 发布 / 未覆盖城市 / 字段级错误 3 项通过 |
+| 验证报告 | [`20261116-134800-local-verify-report.md`](../../../docs/ai4se-plugins/20261116-134800-local-verify-report.md) |
+| 遗留关闭 | R2 的「最小字典切片待替换」已关闭 |
+
+| 角色 | 姓名 | 确认内容 | 日期 |
+|---|---|---|---|
+| VL | Neal | 复核 R3 证据，G2 追加 Pass | 2026-11-16 |
+| AO | Jay | 交付清理与回归结果 | 2026-11-16 |
+| SM | Lewis | 认可 R3；P5 仍暂缓 | 2026-11-16 |
