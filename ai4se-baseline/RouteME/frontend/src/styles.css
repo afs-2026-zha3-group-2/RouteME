@@ -2121,6 +2121,17 @@ svg {
   color: var(--ink-3);
 }
 
+.pager-size .native-select {
+  width: auto;
+  height: 30px;
+  padding: 0 8px;
+  border-radius: 9px;
+  font-size: 12px;
+  font-weight: 650;
+  color: var(--ink-2);
+  cursor: pointer;
+}
+
 /* ---------- 我的旅行：行式列表 ---------- */
 .page-stack {
   display: grid;

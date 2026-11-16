@@ -1,6 +1,7 @@
-export const DEFAULT_PAGE_SIZE = 20;
-export const MAX_PAGE_SIZE = 50;
-export const PAGE_SIZE_OPTIONS = [10, 20, 50];
+// 卡片网格桌面端每行 3 列；容量取 15 的倍数，满页时每列都能填满，不留半行。
+export const PAGE_SIZE_OPTIONS = [15, 30, 45];
+export const DEFAULT_PAGE_SIZE = PAGE_SIZE_OPTIONS[0];
+export const MAX_PAGE_SIZE = PAGE_SIZE_OPTIONS[PAGE_SIZE_OPTIONS.length - 1];
 
 export type PageSlot = number | 'gap';
 

@@ -1,4 +1,3 @@
-import { Select } from 'antd';
 import { PAGE_SIZE_OPTIONS, pageWindow } from './paging';
 
 type Props = {
@@ -68,13 +67,18 @@ export function Pager({ page, size, total, totalPages, onPageChange, onSizeChang
 
       <label className="pager-size">
         <span>每页</span>
-        <Select
-          size="small"
+        <select
+          className="native-select"
           value={size}
-          options={PAGE_SIZE_OPTIONS.map((option) => ({ value: option, label: `${option} 条` }))}
-          onChange={onSizeChange}
           aria-label="每页条数"
-        />
+          onChange={(event) => onSizeChange(Number(event.target.value))}
+        >
+          {PAGE_SIZE_OPTIONS.map((option) => (
+            <option key={option} value={option}>
+              {option} 条
+            </option>
+          ))}
+        </select>
       </label>
     </nav>
   );
