@@ -240,15 +240,15 @@
 
 ## 11. REQ-007 变更影响 — 完善个人资料并生成个人主页
 
-- **日期：** 2026-11-16 ｜ **触发：** `/sdd:pre-spec-req` 内嵌 impact-analysis（5 项产品问题已由用户裁决，blocking OQ 与 DoR BLOCKER 均已清零）
+- **日期：** 2026-11-16 ｜ **触发：** `/sdd:pre-spec-req` 内嵌 impact-analysis（6 项产品问题已由用户裁决，blocking OQ 与 DoR BLOCKER 均已清零）
 - **粒度：** 应用架构（页面 / 资料契约 / 账号流程 / 发布者展示边界），非代码设计
 
 ### 11.1 As-is asset inventory（evidence paths）
 
 | 资产 | 路径 | 现状 |
 |---|---|---|
-| 需求条目 | `requirement-workspace/requirements/REQ-007-user-profile.md` | 本变更新增；六字段 + 17 场景 + 5 项用户裁决 + DoR / A0 全过 |
-| 账号表 | `backend/src/main/resources/db/migration/V3__create_demo_users.sql`、`V9__add_user_credentials.sql` | `app_users` 只有昵称、首字、学校、简介、兴趣 + 用户名 / 密码散列；无生日、性别、城市、专业、MBTI、旅行方式、头像地址 |
+| 需求条目 | `requirement-workspace/requirements/REQ-007-user-profile.md` | 本变更新增；六字段 + 17 场景 + 6 项用户裁决 + DoR / A0 全过 |
+| 账号表 | `backend/src/main/resources/db/migration/V3__create_demo_users.sql`、`V9__add_user_credentials.sql` | `app_users` 只有昵称、首字、学校、简介、兴趣 + 用户名 / 密码散列；无生日、性别、城市、专业、职业、MBTI、旅行方式、头像地址 |
 | 演示数据 | 同上 V3 | 3 个演示账号的 `school` 存「年级 · 专业」合并文案（如「研一 · 地理科学」） |
 | 注册表单 | `RouteME/frontend/src/identity/AuthPanel.tsx`、`authForm.ts` | 注册收集用户名、密码、昵称、学校、简介、兴趣；注册成功直接进入首页 |
 | 会话契约 | `openspec/specs/user-auth/spec.md` | 「注册账号」校验昵称与兴趣数量；「用户名密码登录」「会话校验与退出」「演示身份保留」 |
@@ -262,11 +262,11 @@
 | 资产 | As-is | Proposed delta |
 |---|---|---|
 | 注册表单 | 用户名 / 密码 / 昵称 / 学校 / 简介 / 兴趣 | 收窄为用户名 / 密码 / 昵称；注册成功进入资料完善页 |
-| 账号表 | 无资料字段 | 新增头像地址、生日、性别、城市、专业、MBTI、旅行方式列；学校 / 简介 / 兴趣保留并改由资料页写入 |
+| 账号表 | 无资料字段 | 新增头像地址、生日、性别、城市、专业、职业、MBTI、旅行方式列；学校 / 简介 / 兴趣保留并改由资料页写入；学校与专业改为选填 |
 | 资料接口 | 无 | 新增 `GET /api/users/{id}/profile`、`PUT /api/users/me/profile`、`POST /api/users/me/avatar` |
 | 契约 | 0.6.0，`DemoUser` 6 字段 | 0.7.0：新增 `UserProfile`；用户摘要增加头像与完善状态；注册请求体收窄并忽略旧字段 |
 | 页面 / 路由 | 首页 / 发布 / 详情 / 申请 / 我的 / 聊天 / 分享 | 新增 `#/profile/setup`、`#/users/{id}`；「我的」增加资料入口 |
-| 发布者展示 | 昵称 + 首字 + 学校，无跳转 | 增加头像与个人主页链接；未完善资料降级展示 |
+| 发布者展示 | 昵称 + 首字 + 学校，无跳转 | 增加头像与个人主页链接；摘要行按「学校 · 专业 → 职业 → 城市」取第一个可用值；未完善资料降级展示 |
 | 年龄 / 星座 | 无 | 服务端按生日与当前日期派生，资料响应返回只读值；生日原文不公开 |
 | 完善状态 | 无 | 由必填字段派生布尔值，不落库；影响注册后落点与「我的」入口 |
 | 演示身份 | 昵称 / 学校 / 兴趣只读 | 仍只读；不展示编辑入口，保存接口返回 403 |
@@ -277,7 +277,7 @@
 - **页面（3）：** 新增资料完善页、个人主页；改动「我的」与行程 / 体验发布者展示入口。
 - **能力（2）：** `user-profile`（ADDED，7 条需求）；`user-auth`（MODIFIED「注册账号」）；`trip-plans` / `trip-experiences` 仅消费展示，不改规则。
 - **接口契约（3 新增 + 1 收窄）：** 资料读取、资料保存、头像上传；`POST /api/auth/register` 请求体收窄。
-- **数据 / 迁移（1）：** `app_users` 增加 7 列；不新增表、不迁移演示数据。
+- **数据 / 迁移（1）：** `app_users` 增加 8 列（头像地址、生日、性别、城市、专业、职业、MBTI、旅行方式）；不新增表、不迁移演示数据。
 - **测试触点：** 前端单测（必填汇总、生日派生、兴趣上下限、头像回退）、后端（资料服务 / 控制器 / 迁移 / 权限 401 / 403）、E2E（注册 → 完善 → 主页 → 他人查看）。
 - **知识库：** 实现 / 归档阶段回写资料能力与契约版本；P1 不改 `docs/knowledge/`。
 
@@ -302,6 +302,7 @@
 | Risk | 注册请求体收窄破坏既有前端 / 测试 / 演示脚本 | 契约升 0.7.0，旧字段忽略而非报错；P4 同步更新单测与 E2E |
 | Risk | 生日派生年龄 / 星座口径分叉 | 统一由服务端计算并返回只读值；P3 用表驱动星座边界并加单测 |
 | Risk | 完善状态与字段更新漂移 | 状态由字段派生、不落库；派生函数与资料响应共用同一实现 |
+| Risk | 学校改为选填后，行程卡 / 详情的发布者摘要可能为空 | 摘要行按「学校 · 专业 → 职业 → 城市」回退；全空时只显示昵称与头像，不留空行 |
 | Blocker | 无 | blocking OQ = 0、DoR BLOCKER = 0、A0 ⑨–⑫ 全过；既有 `refine-inspiration-home` 的 validate 失败与本需求无关 |
 
 ### 11.6 Suggested split boundaries

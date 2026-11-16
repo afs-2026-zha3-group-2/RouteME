@@ -42,7 +42,8 @@
 - Optional / not-run / out-of-focus items marked Skipped do not block Overall Pass.
 - Overall aggregates in-focus required items only.
 - This report is not a Gate decision.
-- Product decisions recorded (user, 2026-11-16): avatar is real upload but **optional** (overrides the original AC's required avatar); school + major are two inputs (school required, major optional, no grade field); registration is slimmed to username/password/nickname; profile setup is skippable and can be completed later from「我的」; travel style is single-select and interests are 3–5.
+- Product decisions recorded (user, 2026-11-16): avatar is real upload but **optional** (overrides the original AC's required avatar); school + major are two inputs and **school is optional** (overrides the original AC's required school), major optional, no grade field; a new optional 职业 field (学生 / 上班族 / 自由职业 / 其他, single-select) covers non-students so 学校 can be left empty; registration is slimmed to username/password/nickname; profile setup is skippable and can be completed later from「我的」; travel style is single-select and interests are 3–5.
+- Refinement applied after the initial P1 commit: 学校 moved from required to optional (D2 amended) and 职业 added as optional (D6) across intent, ready requirement, S18 story, proposal, `user-profile` delta spec, deep-dive and impact brief; publisher summary falls back 学校 · 专业 → 职业 → 城市. Required set is now 昵称、生日、性别、所在城市、旅行兴趣（≥3）、旅行方式.
 - P1 scope only: no design / tasks / code / contract / migration artifacts were produced for this change.
 - Pre-existing, unrelated: `openspec validate --changes --strict` still reports scenario-drop errors in `refine-inspiration-home` and `add-trip-publish` MODIFIED `trip-plans` blocks; `add-user-profile` itself validates. `add-user-logout` also validates.
 - `openspec validate --specs --strict` → 6 passed (unchanged; no Living Spec was modified in P1).
