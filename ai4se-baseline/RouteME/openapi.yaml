@@ -107,6 +107,191 @@ paths:
                 unexpected:
                   value:
                     code: INTERNAL_ERROR
+  /users/{userId}/profile:
+    get:
+      operationId: loadUserProfile
+      summary: 读取个人资料
+      description: |
+        需携带 `X-User-Id`。本人读取时响应含 `birthday`；读取他人时省略该键，
+        只返回派生的 `age` / `zodiac` 与公开字段，不会泄露完整生日。
+      parameters:
+        - $ref: '#/components/parameters/DemoUserId'
+        - name: userId
+          in: path
+          required: true
+          description: 资料所属用户 id
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: 公开资料（本人额外含生日）
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserProfile'
+              examples:
+                self:
+                  value:
+                    id: 4
+                    nickname: 新同学
+                    avatar_initial: 新
+                    birthday: '2003-05-18'
+                    age: 23
+                    zodiac: 金牛
+                    gender: 女
+                    city: 珠海
+                    school: 中山大学
+                    major: 地理科学
+                    interests: [摄影, 美食, 徒步]
+                    travel_style: 休闲游
+                    profile_complete: true
+        '401':
+          $ref: '#/components/responses/DemoUserRequired'
+        '404':
+          description: 目标用户不存在
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                missingUser:
+                  value:
+                    code: USER_NOT_FOUND
+        '500':
+          $ref: '#/components/responses/Unexpected'
+  /users/me/profile:
+    put:
+      operationId: saveMyProfile
+      summary: 保存本人资料
+      description: |
+        需要登录会话。全部必填字段通过校验后一次性覆盖保存；
+        校验失败返回 400 `INVALID_INPUT` 与 `fields`（字段名 → 原因码），且不写入任何字段。
+      parameters:
+        - $ref: '#/components/parameters/BearerToken'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserProfileUpdateRequest'
+      responses:
+        '200':
+          description: 保存后的资料，含生日
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserProfile'
+        '400':
+          description: 字段校验失败，`fields` 为字段名 → 原因码
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                missingFields:
+                  value:
+                    code: INVALID_INPUT
+                    fields:
+                      birthday: REQUIRED
+                      gender: REQUIRED
+                      city: REQUIRED
+                      interests: TOO_FEW
+                      travel_style: REQUIRED
+        '401':
+          description: 缺少有效会话
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                invalidSession:
+                  value:
+                    code: SESSION_INVALID
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/Unexpected'
+  /users/me/avatar:
+    post:
+      operationId: uploadMyAvatar
+      summary: 上传本人头像
+      description: |
+        只接受 JPEG / PNG / WebP（按魔数判定，不信任声明类型与原始文件名），单文件不超过 2 MB；
+        文件名由服务端生成，响应返回带缓存版本的 `avatar_url`。
+      parameters:
+        - $ref: '#/components/parameters/BearerToken'
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [file]
+              properties:
+                file:
+                  type: string
+                  format: binary
+      responses:
+        '200':
+          description: 含新头像地址的资料
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserProfile'
+        '400':
+          $ref: '#/components/responses/InvalidInput'
+        '401':
+          description: 缺少有效会话
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                invalidSession:
+                  value:
+                    code: SESSION_INVALID
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/Unexpected'
+  /users/{userId}/avatar:
+    get:
+      operationId: loadUserAvatar
+      summary: 读取用户头像
+      description: |
+        公开只读图片端点：`<img>` 无法携带请求头。总是返回当前头像文件并忽略 `v` 参数；
+        缓存一年且标记 immutable，换头像时 `avatar_url` 的版本参数随之变化。
+      parameters:
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: 当前头像图片
+          headers:
+            Cache-Control:
+              description: '`public, max-age=31536000, immutable`'
+              schema:
+                type: string
+          content:
+            image/jpeg:
+              schema:
+                type: string
+                format: binary
+            image/png:
+              schema:
+                type: string
+                format: binary
+            image/webp:
+              schema:
+                type: string
+                format: binary
+        '404':
+          description: 用户不存在或尚未上传头像
   /auth/register:
     post:
       operationId: registerAccount
@@ -1192,7 +1377,7 @@ components:
           description: 问候语文本，来自 greetings 表的 message 列
     DemoUser:
       type: object
-      required: [id, nickname, avatar_initial, school, bio, interests]
+      required: [id, nickname, avatar_initial, bio, interests, profile_complete]
       properties:
         id:
           type: integer
@@ -1201,15 +1386,37 @@ components:
         nickname:
           type: string
           readOnly: true
-          description: 发布者昵称
+          description: 发布者昵称；唯一来源是 app_users.nickname
         avatar_initial:
           type: string
           readOnly: true
-          description: 头像首字
+          description: 头像首字；无头像时的展示回退
+        avatar_url:
+          type: string
+          nullable: true
+          readOnly: true
+          description: 头像地址（含缓存版本参数）；无头像时省略
         school:
           type: string
+          nullable: true
           readOnly: true
-          description: 学校与年级
+          description: 学校与年级；选填，迁移前账号保留旧文案
+        city:
+          type: string
+          nullable: true
+          readOnly: true
+          description: 所在城市
+        major:
+          type: string
+          nullable: true
+          readOnly: true
+          description: 专业
+        job:
+          type: string
+          nullable: true
+          readOnly: true
+          enum: [学生, 上班族, 自由职业, 其他]
+          description: 职业
         bio:
           type: string
           readOnly: true
@@ -1217,12 +1424,155 @@ components:
         interests:
           type: array
           readOnly: true
+          maxItems: 5
           items:
             type: string
+            maxLength: 12
           description: 旅行兴趣标签
+        profile_complete:
+          type: boolean
+          readOnly: true
+          description: 由必填字段派生的资料完善状态，不落库
+    UserProfile:
+      type: object
+      required: [id, nickname, avatar_initial, interests, profile_complete]
+      properties:
+        id:
+          type: integer
+          format: int64
+          readOnly: true
+        nickname:
+          type: string
+          readOnly: true
+        avatar_initial:
+          type: string
+          readOnly: true
+          description: 无头像时的展示回退字符（昵称首字）
+        avatar_url:
+          type: string
+          nullable: true
+          readOnly: true
+          description: 头像地址 `/api/users/{id}/avatar?v={8 位 hex}`；无头像时省略
+        birthday:
+          type: string
+          format: date
+          nullable: true
+          readOnly: true
+          description: 仅本人读取时出现；他人响应省略该键
+        age:
+          type: integer
+          nullable: true
+          readOnly: true
+          description: 按当前日期计算的周岁；无生日时省略
+        zodiac:
+          type: string
+          nullable: true
+          readOnly: true
+          enum: [摩羯, 水瓶, 双鱼, 白羊, 金牛, 双子, 巨蟹, 狮子, 处女, 天秤, 天蝎, 射手]
+          description: 由生日派生的星座；无生日时省略
+        gender:
+          type: string
+          nullable: true
+          enum: [男, 女, 其他]
+        city:
+          type: string
+          nullable: true
+          description: 所在城市，1–40 字
+        school:
+          type: string
+          nullable: true
+          description: 学校，选填；≤80 字
+        major:
+          type: string
+          nullable: true
+          description: 专业，选填；≤80 字
+        job:
+          type: string
+          nullable: true
+          enum: [学生, 上班族, 自由职业, 其他]
+        mbti:
+          type: string
+          nullable: true
+          enum:
+            [INTJ, INTP, ENTJ, ENTP, INFJ, INFP, ENFJ, ENFP,
+             ISTJ, ISFJ, ESTJ, ESFJ, ISTP, ISFP, ESTP, ESFP]
+        interests:
+          type: array
+          minItems: 3
+          maxItems: 5
+          items:
+            type: string
+            minLength: 1
+            maxLength: 12
+          description: 旅行兴趣，3–5 个
+        travel_style:
+          type: string
+          nullable: true
+          enum: [特种兵, 休闲游, 深度游, 随性游]
+        bio:
+          type: string
+          nullable: true
+          maxLength: 500
+        profile_complete:
+          type: boolean
+          readOnly: true
+          description: 六项必填同时成立时为 true；NULL / 空串 / 非法日期都算缺失
+    UserProfileUpdateRequest:
+      type: object
+      required: [nickname, birthday, gender, city, interests, travel_style]
+      properties:
+        nickname:
+          type: string
+          minLength: 1
+          maxLength: 20
+        birthday:
+          type: string
+          format: date
+          description: '`YYYY-MM-DD`，合法日期且 1900-01-01 ≤ d ≤ 今天'
+        gender:
+          type: string
+          enum: [男, 女, 其他]
+        city:
+          type: string
+          minLength: 1
+          maxLength: 40
+        school:
+          type: string
+          maxLength: 80
+          description: 选填
+        major:
+          type: string
+          maxLength: 80
+          description: 选填
+        job:
+          type: string
+          enum: [学生, 上班族, 自由职业, 其他]
+          description: 选填
+        mbti:
+          type: string
+          enum:
+            [INTJ, INTP, ENTJ, ENTP, INFJ, INFP, ENFJ, ENFP,
+             ISTJ, ISFJ, ESTJ, ESFJ, ISTP, ISFP, ESTP, ESFP]
+          description: 选填
+        interests:
+          type: array
+          minItems: 3
+          maxItems: 5
+          items:
+            type: string
+            minLength: 1
+            maxLength: 12
+          description: 必填；3–5 个，去重后保存
+        travel_style:
+          type: string
+          enum: [特种兵, 休闲游, 深度游, 随性游]
+        bio:
+          type: string
+          maxLength: 500
+          description: 选填
     AuthRegisterRequest:
       type: object
-      required: [username, password, nickname, school, interests]
+      required: [username, password, nickname]
       properties:
         username:
           type: string
@@ -1240,22 +1590,7 @@ components:
           type: string
           minLength: 1
           maxLength: 20
-        avatar_initial:
-          type: string
-          maxLength: 4
-          description: 选填；缺省时取昵称首字
-        school:
-          type: string
-          maxLength: 80
-        bio:
-          type: string
-          maxLength: 500
-        interests:
-          type: array
-          maxItems: 5
-          items:
-            type: string
-            maxLength: 12
+          description: 昵称；注册后进入资料完善页补全其余必填字段
     AuthLoginRequest:
       type: object
       required: [username, password]
@@ -1710,6 +2045,15 @@ components:
           type: string
           description: 大写下划线错误码，前端按原值判断
           enum:
-            [GREETING_NOT_FOUND, INVALID_INPUT, DEMO_USER_REQUIRED, FORBIDDEN, TRIP_NOT_FOUND, TRIP_NOT_OPEN,
+            [GREETING_NOT_FOUND, INVALID_INPUT, DEMO_USER_REQUIRED, FORBIDDEN, USER_NOT_FOUND, TRIP_NOT_FOUND, TRIP_NOT_OPEN,
              APPLICATION_NOT_FOUND, APPLICATION_NOT_PENDING, DUPLICATE_APPLICATION, CHAT_NOT_ALLOWED, CHAT_READ_ONLY,
              EXPERIENCE_NOT_ALLOWED, USERNAME_TAKEN, INVALID_CREDENTIALS, SESSION_INVALID, INTERNAL_ERROR]
+        fields:
+          type: object
+          description: |
+            仅资料校验失败（400 `INVALID_INPUT`）时出现：字段名 → 原因码。
+            其他错误不携带该键。
+          additionalProperties:
+            type: string
+            enum:
+              [REQUIRED, TOO_LONG, INVALID_DATE, OUT_OF_RANGE, TOO_FEW, TOO_MANY, DUPLICATE, INVALID_OPTION]

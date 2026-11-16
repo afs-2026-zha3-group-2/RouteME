@@ -19,13 +19,58 @@ export type Paging = {
   size: number;
 };
 
+/**
+ * 用户摘要：身份门、行程发布者、体验作者与会话用户共用。
+ * 资料未完善时 city / major / job 缺省，学校可为空串。
+ */
 export type DemoUser = {
   id: number;
   nickname: string;
   avatar_initial: string;
-  school: string;
+  avatar_url?: string | null;
+  school?: string | null;
   bio: string;
   interests: string[];
+  city?: string | null;
+  major?: string | null;
+  job?: string | null;
+  profile_complete: boolean;
+};
+
+/** 个人资料（`GET /api/users/{id}/profile`）：生日只出现在本人响应。 */
+export type UserProfile = {
+  id: number;
+  nickname: string;
+  avatar_initial: string;
+  avatar_url?: string | null;
+  birthday?: string | null;
+  age?: number | null;
+  zodiac?: string | null;
+  gender?: string | null;
+  city?: string | null;
+  school?: string | null;
+  major?: string | null;
+  job?: string | null;
+  mbti?: string | null;
+  interests: string[];
+  travel_style?: string | null;
+  bio?: string | null;
+  profile_complete: boolean;
+};
+
+/** 保存资料（`PUT /api/users/me/profile`）：六项必填，其余可留空。 */
+export type UserProfileUpdateRequest = {
+  nickname: string;
+  birthday: string;
+  gender: string;
+  city: string;
+  interests: string[];
+  travel_style: string;
+  school?: string | null;
+  major?: string | null;
+  job?: string | null;
+  mbti?: string | null;
+  bio?: string | null;
 };
 
 export type AuthSession = {
@@ -38,10 +83,6 @@ export type AuthRegisterRequest = {
   username: string;
   password: string;
   nickname: string;
-  avatar_initial?: string;
-  school: string;
-  bio?: string;
-  interests: string[];
 };
 
 export type TripStatus = 'recruiting' | 'full' | 'completed';

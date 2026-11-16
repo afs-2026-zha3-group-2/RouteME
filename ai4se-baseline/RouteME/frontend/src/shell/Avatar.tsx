@@ -1,19 +1,28 @@
-import type { CSSProperties } from 'react';
-import type { DemoUser } from '../types';
+import { useState, type CSSProperties } from 'react';
 
 const HUES = [186, 22, 268, 152, 206, 44];
 
+type AvatarUser = {
+  id: number;
+  avatar_initial: string;
+  avatar_url?: string | null;
+};
+
 type Props = {
-  user: DemoUser;
+  user: AvatarUser;
   size?: 'sm' | 'lg' | 'xl';
 };
 
 /**
- * 首字母头像：色相由用户 id 派生，避免为演示数据引入图片资源。
+ * 头像：有 `avatar_url` 时渲染图片，否则回退昵称首字（色相由用户 id 派生）。
+ * 图片加载失败同样回退首字，任何展示位都不留空框。
  */
 export function Avatar({ user, size }: Props) {
   const hue = HUES[Math.abs(user.id) % HUES.length];
   const className = size === undefined ? 'avatar' : `avatar ${size}`;
+  const url = user.avatar_url ?? '';
+  const [failedUrl, setFailedUrl] = useState<string | null>(null);
+  const showImage = url !== '' && failedUrl !== url;
 
   return (
     <span
@@ -21,7 +30,17 @@ export function Avatar({ user, size }: Props) {
       style={{ '--hue': String(hue) } as CSSProperties}
       aria-hidden="true"
     >
-      {user.avatar_initial}
+      {showImage ? (
+        <img
+          className="avatar-img"
+          src={url}
+          alt=""
+          loading="lazy"
+          onError={() => setFailedUrl(url)}
+        />
+      ) : (
+        user.avatar_initial
+      )}
     </span>
   );
 }
