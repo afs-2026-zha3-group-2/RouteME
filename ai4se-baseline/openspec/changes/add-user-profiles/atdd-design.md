@@ -1,6 +1,6 @@
 ﻿# ATDD design — add-user-profiles
 
-- **Change:** `add-user-profiles`（`user-profiles`，REQ-008）｜ **阶段：** P3
+- **Change:** `add-user-profiles`（`user-profiles`，REQ-009）｜ **阶段：** P3
 - **输入：** [`specs/user-profiles/spec.md`](specs/user-profiles/spec.md)（5 Requirement / 20 Scenario）、[`proposal.md`](proposal.md)、[`g1-decision.md`](g1-decision.md)、[`dov-ac-review.md`](dov-ac-review.md)
 - **规则：** `@rule:api-contract`、`@rule:java-testing`、`@rule:web-testing`
 - **NFR：** 用户确认本次不做专项 NFR 测试；仅保留 E2E 中的基本可访问性与响应式检查

@@ -1,8 +1,8 @@
 ﻿# Consistency lint — add-user-profiles
 
-- **Change:** `add-user-profiles`（capability `user-profiles`，REQ-008）
+- **Change:** `add-user-profiles`（capability `user-profiles`，REQ-009）
 - **Phase:** p2
-- **Focus:** proposal / delta spec / dov-ac-review / REQ-008 / impact / deep-dive
+- **Focus:** proposal / delta spec / dov-ac-review / REQ-009 / impact / deep-dive
 - **Timestamp:** 2026-11-16（+0800）
 - **Artifact level:** 2（proposal + specs；tasks/design 尚未生成）
 
@@ -36,9 +36,9 @@
 |---|---|---|
 | 1 Proposal scope vs Delta Spec scope | Pass | In/Out 与 5 条 Requirement 对应；无静默扩张或遗漏 |
 | 2 Delta capabilities internally consistent | Pass | 双入口、自我查看、共同兴趣（含自我排除）、统计口径、隐私边界相互一致 |
-| 3 Key scenarios / constraints have a home | Pass | REQ-008 §4 十条全部落点；种子数据作为交付任务（L-2） |
+| 3 Key scenarios / constraints have a home | Pass | REQ-009 §4 十条全部落点；种子数据作为交付任务（L-2） |
 | 4 tasks direction check | N/A | 无 tasks.md |
-| 5 Untraceable requirements | Pass | 5 条 Requirement 均可追溯到 proposal / REQ-008 |
+| 5 Untraceable requirements | Pass | 5 条 Requirement 均可追溯到 proposal / REQ-009 |
 | 6 P/S/T/D + C1/C2/C6 | Pass/N/A | Proposal 实质齐全；Spec 结构、Scenario 结构、Given/When/Then 均通过；C2/C6 N/A |
 
 ## Residual risks

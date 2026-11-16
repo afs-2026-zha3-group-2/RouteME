@@ -1,8 +1,8 @@
 ﻿# AC / DoV review — add-user-profiles
 
-- **Change:** `add-user-profiles`（capability `user-profiles`，REQ-008）
+- **Change:** `add-user-profiles`（capability `user-profiles`，REQ-009）
 - **Reviewed at:** 2026-11-16（+0800）
-- **Inputs:** [`proposal.md`](proposal.md)、[`specs/user-profiles/spec.md`](specs/user-profiles/spec.md)、[`REQ-008-publisher-profile.md`](../../../requirement-workspace/requirements/REQ-008-publisher-profile.md)、[`impact-brief.md`](../../../requirement-workspace/impact-brief.md)（REQ-008 增补）、[`deep-dive.md`](../../../requirement-workspace/deep-dive.md)（REQ-008 增补）、原型 `docs/prototype/`（`ui.js` `profileModal()` / `hostPanel`、`store.js` `stats()`、`styles.css`）
+- **Inputs:** [`proposal.md`](proposal.md)、[`specs/user-profiles/spec.md`](specs/user-profiles/spec.md)、[`REQ-009-publisher-profile.md`](../../../requirement-workspace/requirements/REQ-009-publisher-profile.md)、[`impact-brief.md`](../../../requirement-workspace/impact-brief.md)（REQ-009 增补）、[`deep-dive.md`](../../../requirement-workspace/deep-dive.md)（REQ-009 增补）、原型 `docs/prototype/`（`ui.js` `profileModal()` / `hostPanel`、`store.js` `stats()`、`styles.css`）
 - **裁决基线：** 原型 S02 为视觉与信息结构基准；举报按钮、聊天页资料入口按用户指示排除；隐私文案按实际展示字段调整。
 
 ## Acceptance criteria（AC）
@@ -13,23 +13,23 @@
 | AC-2 AC 可观测 | Pass | 弹窗打开/不跳详情、字段文本、共同兴趣有无、四项数字、错误提示、举报按钮缺席 | 不依赖内部实现细节 |
 | AC-3 高风险负向/边界已列出 | Pass | 用户不存在、读取失败、无共同兴趣、自我查看无共同兴趣、无 MBTI、统计为 0、非已接受/未发布不计入、账户凭据缺席、既有举报不受影响 | 已取消行程当前不存在（P3 澄清为未来状态规则，不列入当前测试矩阵） |
 | AC-4 不是伪装的实现细节 | Pass | 无表名、无 API 路径、无类名；身份/专业、统计口径为业务规则 | 长度/字段语义保留在业务层 |
-| AC-5 与 REQ-008 §4 十条场景对应 | Pass | 见 §需求映射 | 10 条全部落点，另补加入时间/隐私说明与账户凭据两个边界 |
+| AC-5 与 REQ-009 §4 十条场景对应 | Pass | 见 §需求映射 | 10 条全部落点，另补加入时间/隐私说明与账户凭据两个边界 |
 
 ## Definition of verified（DoV）
 
 | Item | Result | Evidence | Notes |
 |---|---|---|---|
 | DoV-1 范围与 proposal 一致 | Pass | proposal In/Out 与 spec 五条需求一一对应 | 举报、聊天页入口、资料编辑、隐私字段均已排除 |
-| DoV-2 歧义已解决 | Pass | 统计口径、字段语义（学生/上班族/MBTI 选填）、自我查看、隐私文案、种子数据 | 见 proposal §原型对齐决议与 REQ-008 §8 resolved 项 |
+| DoV-2 歧义已解决 | Pass | 统计口径、字段语义（学生/上班族/MBTI 选填）、自我查看、隐私文案、种子数据 | 见 proposal §原型对齐决议与 REQ-009 §8 resolved 项 |
 | DoV-3 IO/SA 残余风险已记录 | Partial | 见 §残余风险 | 无阻塞项，均有 owner；身份模式分叉需 P3 设计确认 |
 | DoV-4 未声称完成实现 | Pass | 仅规格与评审 | — |
-| DoV-5 可追溯到 proposal / REQ-008 | Pass | proposal 引用 REQ-008、impact 增补、deep-dive 增补；原型 S02 为视觉证据 | 无未匹配条目 |
+| DoV-5 可追溯到 proposal / REQ-009 | Pass | proposal 引用 REQ-009、impact 增补、deep-dive 增补；原型 S02 为视觉证据 | 无未匹配条目 |
 
 **评审结论：** 无阻塞 Fail；DoV-3 为 Partial（残余风险已列 owner），可进入 G1 人工裁决。本文件不是 G1 决策。
 
 ## 需求映射
 
-| REQ-008 §4 场景 | 落点 Requirement | 说明 |
+| REQ-009 §4 场景 | 落点 Requirement | 说明 |
 |---|---|---|
 | 1 从行程卡片打开资料 | 从行程卡片与详情页查看发布者公开资料 | 卡片入口不触发详情 |
 | 2 从详情页打开资料 | 同上 | 发布者卡片可点击 |

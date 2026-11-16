@@ -12,6 +12,7 @@
 | Local verify report | [`docs/ai4se-plugins/20261116-111241-local-verify-report.md`](../../../docs/ai4se-plugins/20261116-111241-local-verify-report.md) | Pass（构建、前端 74、后端 154、`auth.spec.ts` 7/7、全套 E2E 25/25、validate strict） |
 | Implementation commit | `79a7f42`（功能）、`e469a31`（行高对齐）；合入 `711da3d` | 已推送 `main` |
 | Pipeline report（required） | [`docs/ai4se-plugins/20261116-112704-pipeline-report.md`](../../../docs/ai4se-plugins/20261116-112704-pipeline-report.md) | Overall **Partial** / `Pass-by-human-confirm`（CI + CD success，证据 release `build-711da3d`；已在 Inputs 引用） |
+| Pipeline CI report（`phase=ci`，E1 slot） | [`ci-report.md`](ci-report.md) | Pass（Overall **Partial** / `Pass-by-human-confirm`；代码态 `d5d70fa`，release `build-d5d70fa`） |
 | Delta Spec | [`specs/user-auth/spec.md`](specs/user-auth/spec.md) | 1 Requirement（MODIFIED「会话校验与退出」）/ 10 Scenario，保留基线 3 场景 |
 | ATDD / Design / Tasks | [`atdd-design.md`](atdd-design.md)、[`design.md`](design.md)、[`tasks.md`](tasks.md) | T1–T5 完成并勾选；P4 执行记录已补 |
 | G1 decision | [`g1-decision.md`](g1-decision.md) | Pass（2026-11-16，条件 7 项已在 P4 落地） |

@@ -1,6 +1,6 @@
 ﻿# Design — add-user-profiles
 
-- **Change:** `add-user-profiles`（`user-profiles`，REQ-008）｜ **阶段：** P3
+- **Change:** `add-user-profiles`（`user-profiles`，REQ-009）｜ **阶段：** P3
 - **输入：** [`specs/user-profiles/spec.md`](specs/user-profiles/spec.md)、[`dov-ac-review.md`](dov-ac-review.md)、[`atdd-design.md`](atdd-design.md)、[`g1-decision.md`](g1-decision.md)
 - **规则：** `@rule:api-contract`、`@rule:package-structure`、`@rule:java-patterns`、`@rule:prototype-ui-alignment`、`@rule:web-coding-style`
 

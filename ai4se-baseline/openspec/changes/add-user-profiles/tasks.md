@@ -112,7 +112,7 @@
 ### T13 [docs] 知识库与登记（P5）
 
 - [ ] `docs/knowledge/interfaces/README.md` 补 profile 端点；`architecture/README.md` 补 `user-profiles` 能力与 V10。
-- [ ] `requirement-workspace/registry.md` 更新 REQ-008 为 verified（G2/G3 后）。
+- [ ] `requirement-workspace/registry.md` 更新 REQ-009 为 verified（G2/G3 后）。
 - [ ] 记录原型隐私文案与本 change 裁决文案的差异；原型举报按钮保留为未来迭代设计。
 
 **验证：** 相对链接 0 断链；术语与 spec 一致

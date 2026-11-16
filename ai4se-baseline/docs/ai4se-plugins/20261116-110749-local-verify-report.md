@@ -3,7 +3,7 @@
 **Date:** 2026-11-16 (timezone: Asia/Shanghai, +0800)
 **Root:** c:\Git\ITA\RouteME\ai4se-baseline
 **Scope:** local+evidence
-**Change id:** add-user-profiles (REQ-008 / capability `user-profiles`)
+**Change id:** add-user-profiles (REQ-009 / capability `user-profiles`)
 
 ## Summary
 
