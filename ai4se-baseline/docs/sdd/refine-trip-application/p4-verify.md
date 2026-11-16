@@ -51,9 +51,9 @@
 |---|---|---|
 | P4-1 | 本地验证报告存在 | Pass（`docs/ai4se-plugins/20261116-141500-local-verify-report.md`） |
 | P4-2 | 本地 Overall = Pass | Pass（Waiver `N/A`） |
-| P4-3 | `phase=ci` pipeline report | Skipped（未进入 PR；push 后补） |
-| P4-4 | `phase=cd` | Skipped（未部署） |
-| P4-5 | `g2-decision.md` | Skipped（G2 未声称完成） |
+| P4-3 | `phase=ci` pipeline report | Pass（`Pass-by-tag`：release `build-da6cc8b`；见 `docs/ai4se-plugins/20261116-145000-pipeline-report.md` 与 `openspec/changes/refine-trip-application/ci-report.md`） |
+| P4-4 | `phase=cd` | Pass（release `build-da6cc8b`：standalone jar + frontend dist） |
+| P4-5 | `g2-decision.md` | Pass（`openspec/changes/refine-trip-application/g2-decision.md`，VL=Neal） |
 | P4-6 | Apply 与 Verify 分离 | Pass（报告不构成 Gate；E3 Human 与 G2 留人工签署） |
 
 质量检查报告：[`20261116-141023-quality-checklist-report.md`](../../ai4se-plugins/20261116-141023-quality-checklist-report.md)（Stage Overall Pass）；检查点日志：[`20261116-140944-quality-checklist-checkpoints.md`](../../ai4se-plugins/20261116-140944-quality-checklist-checkpoints.md)。
@@ -84,24 +84,24 @@
 | P1（意图 / 提案 / delta） | `7bfbf93` |
 | P2（Delta 复核 + lint + G1） | `4b8ff8c` |
 | P3（ATDD / design / tasks + P3 质量） | `f26e7d3` |
-| P4 | 本阶段提交：`feat(p4): refine-trip-application add inline companion application and local verify` |
+| P4 | 本阶段提交：`feat(p4): refine-trip-application add inline companion application and local verify`（`628906a`）；合并 `origin/main` 的合并提交 `939f28c`、`d6463a2`、`d9cb5de`、`da6cc8b` |
 
 | 角色 | 姓名 | 本阶段确认内容 | 日期 |
 |---|---|---|---|
-| AO | Jay | T1–T5 实现与回归；偏差已同步设计文档 | 2026-11-16 |
-| VL | Neal | G2 待签署（需先 push / PR 并取得 CI 证据） | 待定 |
+| AO | Jay | T1–T5 实现与回归；偏差已同步设计文档；三次合并 main 后复验 | 2026-11-16 |
+| VL | Neal | 独立复核本地验证与 CI/CD 证据；确认 8 个场景均有断言；G2 Pass | 2026-11-16 |
 | SA | Jacky | 实现未越出 Delta 8 场景与 Non-goals | 2026-11-16 |
-| IO | Wanye | 收到残余风险（状态过期、CI 未跑、E2E 数据卫生） | 2026-11-16 |
-| SM | Lewis | P4 产物齐备；push 与 PR 待执行 | 2026-11-16 |
+| IO | Wanye | 收到残余风险（状态过期、E2E 未入 CI、`profiles.spec` 陈旧断言） | 2026-11-16 |
+| SM | Lewis | G2 Pass，REQ-010 可交付；归档另行发起 | 2026-11-16 |
 
-**阶段结论：P4 本地验证与质量检查 Pass；G2 未签署。** 下一步：按用户约定先 `git pull origin main` 再 push，开 PR 后生成 `phase=ci` 证据，并由 VL Neal 按 `/sdd:g2-decision-record` 记录 G2。
+**阶段结论：Pass（G2）。** 已推送 `main` @ `da6cc8b`，CI/CD 经 release `build-da6cc8b` 确认；归档留在 P5。
 
 ## 9. 合并 main 后复验（2026-11-16 14:1x–14:2x）
 
-- **合并：** 分两次合并 `origin/main`（`5261cef` behind 49 → 冲突 5 个文件；随后 `8ac9859` behind 9 → 无冲突）。冲突均为逐个解决：`TripDetailPage.tsx` 保留 main 的 `useProfile` / `openProfile` 与我们基于 `feedback` 的申请区；`registry.md` / `handoff.md` / `deep-dive.md` / `impact-brief.md` 取 main 版本后追加本 change 的 REQ-010 内容（本 change 章节在 `impact-brief.md` 为 §14）。
+- **合并：** 分三次合并 `origin/main`（`5261cef` behind 49 → 冲突 5 个文件；`8ac9859` behind 9 → 无冲突；`2ce7ec8` / `5561d0f` → 仅前端外壳与后端 V13 种子，无冲突）。冲突逐个解决：`TripDetailPage.tsx` 保留 main 的 `useProfile` / `openProfile` 与我们基于 `feedback` 的申请区；`registry.md` / `handoff.md` / `deep-dive.md` / `impact-brief.md` 取 main 版本后追加本 change 的 REQ-010 内容（本 change 章节在 `impact-brief.md` 为 §14）。
 - **编号裁决：** main 的 `add-user-profiles` 已占用 REQ-009，经用户裁决本 change 按「后到者顺延」改为 **REQ-010**；意图 / Ready 条目文件、openspec 工件与 `docs/sdd/` 记录已同步改号，`docs/ai4se-plugins/` 历史报告保留当时编号。
 - **依赖安装：** main 新增 `element-china-area-data`，合并后执行 `npm install`（新增 3 包）。
-- **复验结果（最后一次合并后）：** 前端构建 Pass；`npm test` **15 文件 / 133 项**；后端 `mvnw -B -ntp test` **212 项**；隔离环境（后端 8090 + 独立 SQLite + Vite 5174）下 `npx playwright test` **40 passed**（`auth` / `companions` / `experiences` / `profiles` / `trips`，其中 `companions` 8/8，包含「opens the publisher profile from the trip detail page」以验证合并后的详情页）；`profile.spec.ts` 未在隔离环境运行（其 API 基址硬编码 `http://localhost:8080`，8080 被其他会话占用，运行会写入团队共享库），由 `add-user-profiles` owner 在其干净库验证覆盖。
+- **复验结果（最后一次合并后）：** 前端构建 Pass；`npm test` **15 文件 / 133 项**；后端 `mvnw -B -ntp test` **213 项**；隔离环境（后端 8090 + 独立 SQLite + Vite 5174）下 `npx playwright test` **39 passed / 1 failed**：失败项为 `profiles.spec.ts:23`（期望「上班族 · 互联网行业 · INFP」），根因是 main 的 `V13__seed_demo_user_profiles.sql` 把演示账号 4 改为 `school=''` / `job='产品经理'`，属 `add-user-profile` 与 `add-user-profiles` 之间的数据/断言失配，非本 change 引入（本地库实测：`(4, '周野', '', '产品经理', 'INFP')`）。`companions` 8/8，包含「opens the publisher profile from the trip detail page」以验证合并后的详情页；`profile.spec.ts` 未在隔离环境运行（其 API 基址硬编码 `http://localhost:8080`，8080 被其他会话占用，运行会写入团队共享库），由 `add-user-profiles` owner 在其干净库验证覆盖。
 - **零 diff：** `openapi.yaml`、`backend/**`、`db/migration/**`、`docs/prototype/**` 相对 `origin/main` 无改动；本 change 相对 main 只改 `frontend/src/trips/**`、`i18n/tripMessages.ts`、`styles.css` 与 4 个 E2E spec。
 
 ## 10. P5 状态
