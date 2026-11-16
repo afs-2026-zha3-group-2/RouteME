@@ -129,8 +129,47 @@
   function avatar(u, size) {
     if (!u) return '';
     var a1 = hueInk(u.hue, 0.7, 0.163), a2 = hueInk(u.hue + 42, 0.66, 0.092);
+    /* 有头像时图片盖在首字上；加载失败隐藏图片即回首字，任何展示位不留空框。 */
+    var inner = '<span class="avatar-initial">' + esc(u.initial) + '</span>' +
+      (u.avatarUrl ? '<img class="avatar-img" src="' + esc(u.avatarUrl) + '" alt="" loading="lazy" onerror="this.style.display=\'none\'">' : '');
     return '<span class="avatar ' + (size || '') + '" style="--hue:' + u.hue +
-      ';--a1:' + a1 + ';--a2:' + a2 + '" aria-hidden="true">' + esc(u.initial) + '</span>';
+      ';--a1:' + a1 + ';--a2:' + a2 + '" aria-hidden="true">' + inner + '</span>';
+  }
+  /* 裸品牌标：无瓷砖底，弧线珊瑚 + 日点琥珀，亮暗色都直接读变量。 */
+  function brandMark() {
+    return '<svg class="brand-bare" viewBox="0 0 32 32" aria-hidden="true">' +
+      '<path d="M5 24c5-13 17-13 22 0" fill="none" stroke="var(--coral)" stroke-width="3" stroke-linecap="round"/>' +
+      '<circle cx="16" cy="10" r="3.4" fill="var(--amber)"/></svg>';
+  }
+
+  /* ---------------- 资料展示助手（与前端 profileDisplay 同口径） ---------------- */
+  function schoolMajor(u) {
+    var s = (u.school || '').trim();
+    if (!s) return '';
+    var m = (u.major || '').trim();
+    return m ? s + ' · ' + m : s;
+  }
+  function publisherSummary(u) {
+    return schoolMajor(u) || (u.job || '').trim() || (u.city || '').trim() || '';
+  }
+  function ageOf(birthday) {
+    if (!birthday) return null;
+    var b = dObj(birthday), now = new Date();
+    var age = now.getFullYear() - b.getFullYear();
+    var m = now.getMonth() - b.getMonth();
+    if (m < 0 || (m === 0 && now.getDate() < b.getDate())) age--;
+    return age >= 0 && age < 150 ? age : null;
+  }
+  var ZODIAC_NAMES = ['摩羯座', '水瓶座', '双鱼座', '白羊座', '金牛座', '双子座', '巨蟹座', '狮子座', '处女座', '天秤座', '天蝎座', '射手座', '摩羯座'];
+  var ZODIAC_CUT = [20, 19, 21, 20, 21, 22, 23, 23, 23, 24, 23, 22];
+  function zodiacOf(birthday) {
+    if (!birthday) return '';
+    var d = dObj(birthday), m = d.getMonth() + 1;
+    return d.getDate() < ZODIAC_CUT[m - 1] ? ZODIAC_NAMES[m - 1] : ZODIAC_NAMES[m];
+  }
+  function ageZodiacLabel(u) {
+    var age = ageOf(u.birthday), z = zodiacOf(u.birthday);
+    return age == null || !z ? '' : age + ' 岁 · ' + z;
   }
   function tripBadge(t) {
     var m = D.TRIP_STATUS[t.status];
@@ -217,9 +256,36 @@
       (actionHtml || '') + '</div>';
   }
 
-  /* ---------------- S01 身份选择 ---------------- */
-  function gate() {
-    var cards = S.state.users.map(function (u) {
+  /* ---------------- S01 身份门：双栏 + 登录注册 ---------------- */
+  function authPanel(mode, v, errors, submitError) {
+    v = v || {}; errors = errors || {};
+    var tabs = [['login', '登录'], ['register', '注册']].map(function (t) {
+      return '<button class="auth-tab' + (mode === t[0] ? ' on' : '') + '" data-action="auth-tab" data-mode="' + t[0] + '" role="tab" aria-selected="' + (mode === t[0]) + '" type="button">' + t[1] + '</button>';
+    }).join('');
+    var reg = mode === 'register';
+    var fields =
+      '<label class="field' + bad(errors, 'username') + '"><span class="label">用户名</span>' +
+      '<input class="input" data-auth="username" value="' + esc(v.username) + '" autocomplete="username" placeholder="例如：linjianxia">' +
+      (reg ? '<span class="hint">3–20 位字母、数字或下划线，登录时不区分大小写</span>' : '') + fieldErr(errors, 'username') + '</label>' +
+      '<label class="field' + bad(errors, 'password') + '"><span class="label">密码</span>' +
+      '<input class="input" type="password" data-auth="password" value="' + esc(v.password) + '" autocomplete="' + (reg ? 'new-password' : 'current-password') + '" placeholder="' + (reg ? '8–64 位' : '输入密码') + '">' +
+      (reg ? '<span class="hint">8–64 位；原型只在本机保存混淆散列</span>' : '') + fieldErr(errors, 'password') + '</label>' +
+      (reg ? '<label class="field' + bad(errors, 'nickname') + '"><span class="label">昵称</span>' +
+        '<input class="input" data-auth="nickname" maxlength="20" value="' + esc(v.nickname) + '" placeholder="别人看到的名字">' + fieldErr(errors, 'nickname') + '</label>' : '');
+    return '<section class="auth-panel" aria-label="登录或注册">' +
+      '<div class="auth-tabs" role="tablist">' + tabs + '</div>' +
+      '<div class="auth-fields">' + fields + '</div>' +
+      (submitError ? '<p class="err auth-submit-err">' + icon('alert') + esc(submitError) + '</p>' : '') +
+      '<button class="btn primary block auth-submit" data-action="auth-submit" type="button">' + (reg ? '注册并进入' : '登录') + '</button>' +
+      '<p class="hint auth-demo-hint">' + icon('info') + '<span>演示账号：linjianxia / chenyu / sunian，密码均为 123456</span></p>' +
+      '</section>';
+  }
+
+  function gate(auth) {
+    auth = auth || { mode: 'login', values: {}, errors: {}, submitError: '' };
+    var cards = S.state.users.filter(function (u) {
+      return D.SEED_ACCOUNTS.some(function (a) { return a.userId === u.id; });
+    }).map(function (u) {
       var st = S.stats(u.id);
       return '<button class="gate-card" data-action="pick-user" data-id="' + u.id + '" type="button">' +
         avatar(u, 'xl') +
@@ -232,13 +298,19 @@
         '</button>';
     }).join('');
     return '<div class="gate-inner">' +
-      '<div class="gate-brand"><span class="brand-mark"><svg viewBox="0 0 32 32"><path d="M5 24c5-13 17-13 22 0" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round"/><circle cx="16" cy="10" r="3.4" fill="currentColor"/></svg></span>' +
+      '<div class="gate-cols">' +
+      '<div class="gate-hero">' +
+      '<div class="gate-brand">' + brandMark() +
       '<span class="brand-text"><b style="font-size:19px">RouteMe</b><i>路觅</i></span></div>' +
       '<h1 class="gate-title">先有一条想走的路，<br>再遇到<em>同路的人</em>。</h1>' +
       '<p class="gate-sub">RouteMe 不是交友软件，也不是攻略平台。这里以真实旅行计划为媒介：看到别人的路线获得灵感，发布自己的行程，按目的地、日期和兴趣找到同行者，双方同意后才开始沟通，旅行结束再把体验留给下一个人。</p>' +
       '<div class="gate-loop"><span>旅行灵感</span><span>发布行程</span><span>发现同行者</span><span>建立连接</span><span>一起旅行</span><span>分享体验</span></div>' +
+      '</div>' +
+      '<div class="gate-side"><div class="gate-auth">' + authPanel(auth.mode, auth.values, auth.errors, auth.submitError) + '</div></div>' +
+      '</div>' +
+      '<p class="gate-divider"><span>或者用演示身份直接进入</span></p>' +
       '<div class="gate-cards">' + cards + '</div>' +
-      '<div class="gate-foot">' + icon('shield') + '<span>演示环境：三个预设账号，无注册与验证码。所有数据保存在本机浏览器，可随时重置。</span>' +
+      '<div class="gate-foot">' + icon('shield') + '<span>演示环境：登录注册与三个预设账号都在本机运行，数据可随时重置。</span>' +
       '<button class="btn sm ghost" data-action="reset-data" type="button">重置演示数据</button></div>' +
       '</div>';
   }
@@ -263,21 +335,193 @@
     return { rail: rail, tabs: tabs };
   }
   function userChip(u) {
-    return avatar(u, 'sm') + '<span style="text-align:left"><span class="uc-name">' + esc(u.nickname) + '</span>' +
-      '<span class="uc-hint">切换身份</span></span>' + icon('swap');
+    return avatar(u, 'sm') + '<span class="id-switch-text"><span class="id-switch-name">' + esc(u.nickname) + '</span>' +
+      '<span class="id-switch-label">切换身份</span></span>' +
+      '<svg class="id-switch-caret" viewBox="0 0 12 12" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="m3 4.5 3 3 3-3"/></svg>';
+  }
+  /* 头部身份下拉：当前身份（登录态）/ 演示身份列表 / 退出登录。 */
+  function idPanel() {
+    var cur = S.me();
+    var authed = S.isAuthed();
+    var html = '<div class="id-panel" role="dialog" aria-label="身份菜单">';
+    if (authed && cur) {
+      html += '<div class="id-current">' + avatar(cur, 'sm') +
+        '<span class="id-option-text"><b>' + esc(cur.nickname) + '</b><i>' + esc(publisherSummary(cur) || '资料未完善') + '</i></span>' +
+        '<span class="id-option-flag">已登录</span></div>';
+    }
+    html += '<p class="id-panel-label">' + (authed ? '切换为演示身份' : '选择一个演示身份') + '</p><div class="id-list" role="listbox">';
+    S.state.users.forEach(function (u) {
+      if (!D.SEED_ACCOUNTS.some(function (a) { return a.userId === u.id; })) return;
+      var selected = !authed && cur && u.id === cur.id;
+      html += '<button class="id-option' + (selected ? ' on' : '') + '" data-action="pick-user" data-id="' + u.id + '" role="option" aria-selected="' + !!selected + '" type="button">' +
+        avatar(u, 'sm') + '<span class="id-option-text"><b>' + esc(u.nickname) + '</b><i>' + esc(publisherSummary(u) || '资料未完善') + '</i></span>' +
+        (selected ? '<span class="id-option-flag">当前</span>' : '') + '</button>';
+    });
+    html += '</div><div class="id-divider" role="separator"></div>' +
+      '<button class="id-logout" data-action="logout" type="button">' + icon('exit') + '<span>退出登录</span></button>' +
+      '<p class="id-panel-note">' + (authed
+        ? '退出登录会结束本机会话并回到身份门；切换到演示身份会结束当前登录。'
+        : '演示身份无需密码；退出登录只清除本机身份并回到身份门。') + '</p></div>';
+    return html;
+  }
+
+  /* ---------------- 省市级联（与前端 AreaCascader 同口径的两级字典） ---------------- */
+  function areaPicker(ctx, code, opts) {
+    opts = opts || {};
+    var prov = opts.prov || '440000';
+    var label = code ? D.destinationLabel(code) : '';
+    var html = '<div class="area-picker' + (opts.open ? ' open' : '') + '" data-area-wrap="' + ctx + '">' +
+      '<button class="area-trigger" data-action="area-toggle" data-area="' + ctx + '" type="button" aria-haspopup="dialog" aria-expanded="' + !!opts.open + '">' +
+      '<span class="area-value' + (label ? '' : ' placeholder') + '">' + esc(label || opts.placeholder || '请选择省 / 市') + '</span>' +
+      '<svg class="area-arrow" viewBox="0 0 12 12" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="m3 4.5 3 3 3-3"/></svg></button>' +
+      (code ? '<button class="area-clear" data-action="area-clear" data-area="' + ctx + '" type="button" aria-label="清除目的地">' + icon('x') + '</button>' : '');
+    if (opts.open) {
+      var provObj = null;
+      for (var i = 0; i < D.AREAS.length; i++) if (D.AREAS[i].value === prov) { provObj = D.AREAS[i]; break; }
+      html += '<div class="area-panel" role="dialog" aria-label="选择省市">' +
+        '<div class="area-column" role="listbox" aria-label="省份">' +
+        D.AREAS.map(function (p) {
+          return '<button class="area-item' + (p.value === prov ? ' active' : '') + '" data-action="area-prov" data-area="' + ctx + '" data-code="' + p.value + '" type="button">' + esc(p.label) + '</button>';
+        }).join('') + '</div>' +
+        '<div class="area-column" role="listbox" aria-label="城市">' +
+        (provObj ? provObj.children.map(function (c) {
+          return '<button class="area-item' + (c.value === code ? ' active' : '') + '" data-action="area-city" data-area="' + ctx + '" data-code="' + c.value + '" type="button">' + esc(c.label) + '</button>';
+        }).join('') : '<p class="area-empty">先选择省份</p>') +
+        '</div></div>';
+    }
+    return html + '</div>';
+  }
+
+  /* ---------------- 离线示意地图（无地图厂商、无网络依赖） ----------------
+     点击任何位置吸附到最近的库内点位；viewBox 保持正方形，宽容器不会拉伸陆地。
+     scale = view.w / 100：缩放时点与标签保持恒定的屏幕尺寸。 */
+  function placeMap(city, selected, picker) {
+    var places = city ? D.placesInCity(city) : D.PLACES;
+    var view = { x: 0, y: 0, w: 100, h: 100 };
+    if (city && places.length) {
+      var pts = places.map(D.projectPlace);
+      var xs = pts.map(function (p) { return p.x; }), ys = pts.map(function (p) { return p.y; });
+      var minX = Math.min.apply(null, xs), maxX = Math.max.apply(null, xs);
+      var minY = Math.min.apply(null, ys), maxY = Math.max.apply(null, ys);
+      var side = Math.max(maxX - minX, maxY - minY, 26) + 16;
+      var clamp = function (v) { return Math.min(Math.max(v, 0), 100 - side); };
+      view = { x: clamp((maxX + minX) / 2 - side / 2), y: clamp((maxY + minY) / 2 - side / 2), w: side, h: side };
+    }
+    var scale = view.w / 100;
+    /* 贪心标签：城市锚点优先，POI 标签与已接受标签过近时省略。 */
+    var labeled = {};
+    if (!city) {
+      places.forEach(function (p) { if (p.kind === 'city') labeled[p.id] = 1; });
+    } else {
+      var accepted = [], minGap = view.w * 0.22;
+      places.slice().sort(function (a, b) { return (b.kind === 'city' ? 1 : 0) - (a.kind === 'city' ? 1 : 0); }).forEach(function (p) {
+        var pt = D.projectPlace(p);
+        for (var i = 0; i < accepted.length; i++) {
+          if (Math.hypot(accepted[i].x - pt.x, accepted[i].y - pt.y) < minGap) return;
+        }
+        accepted.push(pt); labeled[p.id] = 1;
+      });
+    }
+    var anchor = null;
+    for (var a = 0; a < places.length; a++) if (places[a].kind === 'city') { anchor = D.projectPlace(places[a]); break; }
+    var gid = 'mapgrad-' + picker;
+    var svg = '<svg class="map-canvas" data-action="map-bg" data-map="' + picker + '" data-city="' + esc(city || 'all') + '"' +
+      ' data-vx="' + view.x.toFixed(2) + '" data-vy="' + view.y.toFixed(2) + '" data-vw="' + view.w.toFixed(2) + '" data-vh="' + view.h.toFixed(2) + '"' +
+      ' viewBox="' + view.x.toFixed(2) + ' ' + view.y.toFixed(2) + ' ' + view.w.toFixed(2) + ' ' + view.h.toFixed(2) + '" preserveAspectRatio="xMidYMid meet" role="img"' +
+      ' aria-label="' + (city ? esc(city) + '示意地图，点击地图可以选择最近的候选地点' : '广东示意地图，点击地图可以选择最近的城市或地点') + '">' +
+      '<defs><linearGradient id="' + gid + '-sea" x1="0" y1="0" x2="0" y2="1">' +
+      '<stop offset="0%" stop-color="var(--map-sea-from, #d9eef3)"/><stop offset="100%" stop-color="var(--map-sea-to, #bcdde6)"/></linearGradient>' +
+      '<linearGradient id="' + gid + '-land" x1="0" y1="0" x2="1" y2="1">' +
+      '<stop offset="0%" stop-color="var(--map-land-from, #f3efe2)"/><stop offset="100%" stop-color="var(--map-land-to, #e5ddc8)"/></linearGradient></defs>' +
+      '<rect class="map-sea" x="0" y="0" width="100" height="100" fill="url(#' + gid + '-sea)"/>' +
+      '<path class="map-land-shape" d="' + D.LAND_PATH + '" fill="url(#' + gid + '-land)"/>' +
+      '<g class="map-grid" aria-hidden="true">' +
+      [20, 40, 60, 80].map(function (at) { return '<line x1="' + at + '" y1="0" x2="' + at + '" y2="100"/><line x1="0" y1="' + at + '" x2="100" y2="' + at + '"/>'; }).join('') + '</g>';
+    if (!city) {
+      svg += D.ISLANDS.map(function (is) { return '<circle class="map-island" cx="' + is.x + '" cy="' + is.y + '" r="' + is.r + '"/>'; }).join('') +
+        '<text class="map-sea-label" x="86" y="72" text-anchor="middle">南海</text>' +
+        '<text class="map-sea-label" x="12" y="86" text-anchor="middle">北部湾</text>';
+    } else if (anchor) {
+      svg += '<circle class="map-focus-ring" cx="' + anchor.x.toFixed(2) + '" cy="' + anchor.y.toFixed(2) + '" r="' + Math.max(view.w * 0.16, 6).toFixed(2) + '"/>';
+    }
+    svg += places.map(function (p) {
+      var pt = D.projectPlace(p);
+      var isCity = p.kind === 'city';
+      var nearRight = pt.x > view.x + view.w * 0.72;
+      var labelX = nearRight ? pt.x - 3 * scale : pt.x + 3 * scale;
+      var g = '<g class="map-pin ' + p.kind + '" data-action="map-pin" data-map="' + picker + '" data-place="' + esc(p.name) + '" role="button" tabindex="0"' +
+        ' aria-label="' + esc(p.name) + '（' + (isCity ? '城市' : '地点') + '，' + esc(p.city) + '）">' +
+        '<title>' + esc(p.name) + ' · ' + (isCity ? '城市' : '地点') + '</title>' +
+        '<circle class="map-pin-hit" cx="' + pt.x.toFixed(2) + '" cy="' + pt.y.toFixed(2) + '" r="' + (4.2 * scale).toFixed(2) + '"/>' +
+        '<circle class="map-pin-dot" cx="' + pt.x.toFixed(2) + '" cy="' + pt.y.toFixed(2) + '" r="' + ((isCity ? 1.9 : 1.4) * scale).toFixed(2) + '" style="stroke-width:' + (0.5 * scale).toFixed(2) + '"/>';
+      if ((isCity || city) && labeled[p.id]) {
+        g += '<text class="map-pin-label" x="' + labelX.toFixed(2) + '" y="' + (pt.y + 3.4 * scale).toFixed(2) + '" text-anchor="' + (nearRight ? 'end' : 'start') + '" style="font-size:' + (2.6 * scale).toFixed(2) + 'px">' + esc(p.name) + '</text>';
+      }
+      return g + '</g>';
+    }).join('');
+    var num = 0;
+    svg += selected.map(function (name) {
+      var p = null;
+      for (var i = 0; i < places.length; i++) if (places[i].name === name) { p = places[i]; break; }
+      if (!p) return '';
+      num++;
+      var pt = D.projectPlace(p);
+      return '<g class="map-selected"><circle class="map-selected-halo" cx="' + pt.x.toFixed(2) + '" cy="' + pt.y.toFixed(2) + '" r="' + (3.6 * scale).toFixed(2) + '"/>' +
+        '<circle class="map-selected-dot" cx="' + pt.x.toFixed(2) + '" cy="' + pt.y.toFixed(2) + '" r="' + (2.4 * scale).toFixed(2) + '" style="stroke-width:' + (0.5 * scale).toFixed(2) + '"/>' +
+        '<text class="map-selected-index" x="' + pt.x.toFixed(2) + '" y="' + (pt.y + 0.95 * scale).toFixed(2) + '" text-anchor="middle" style="font-size:' + (2 * scale).toFixed(2) + 'px">' + num + '</text></g>';
+    }).join('');
+    svg += '</svg>';
+    return '<div class="map-shell">' + svg +
+      '<p class="map-hint">' + (city
+        ? '已按' + esc(city) + '筛选候选点，点击地图或点位即可加入路线。'
+        : '点击地图任何位置会自动吸附到最近的城市/地点；选中的点带编号显示在路线上。') + '</p></div>';
+  }
+
+  /* ---------------- 地点选择器：搜索或点图，手动输入必须能解析到库内 ---------------- */
+  function placePicker(o) {
+    var value = o.value || [];
+    var q = o.q || '';
+    var sugg = q.trim() ? D.searchPlaces(q, 8) : [];
+    var multi = o.mode !== 'single';
+    var html = '<div class="place-picker" data-picker="' + o.picker + '">' +
+      '<div class="place-search"><input class="input" data-place-q="' + o.picker + '" value="' + esc(q) + '" autocomplete="off"' +
+      ' placeholder="' + esc(o.placeholder || '输入城市或地点名，必须能在地图上搜到') + '" aria-label="' + esc(o.ariaLabel || '搜索地图地点') + '">';
+    if (q.trim() && sugg.length) {
+      html += '<div class="place-suggest" role="listbox" aria-label="地点候选">' + sugg.map(function (p) {
+        return '<button class="place-suggest-item" data-action="place-pick" data-picker="' + o.picker + '" data-place="' + esc(p.name) + '" type="button">' +
+          '<span class="place-suggest-name">' + esc(p.name) + '</span>' +
+          '<span class="place-suggest-meta">' + esc(p.city) + ' · ' + (p.kind === 'city' ? '城市' : '地点') + '</span></button>';
+      }).join('') + '</div>';
+    }
+    html += '</div>';
+    if (value.length) {
+      html += '<ol class="place-chips">' + value.map(function (name, i) {
+        var known = D.PLACES.some(function (p) { return p.name === name; });
+        return '<li class="place-chip' + (known ? '' : ' free') + '"' + (multi ? ' draggable="true"' : '') + ' data-stop="' + i + '" data-picker="' + o.picker + '">' +
+          (multi ? '<span class="place-chip-index">' + (i + 1) + '</span>' : '') +
+          '<span class="place-chip-name">' + esc(name) + '</span>' +
+          (known ? '' : '<span class="place-chip-flag">非地图地点</span>') +
+          '<button class="place-chip-remove" data-action="place-remove" data-picker="' + o.picker + '" data-index="' + i + '" type="button" aria-label="移除 ' + esc(name) + '">×</button></li>';
+      }).join('') + '</ol>';
+    }
+    if (o.showMap) html += placeMap(o.city || null, value, o.picker);
+    if (o.message) html += '<p class="place-message">' + icon('alert') + esc(o.message) + '</p>';
+    else if (o.emptyHint) html += '<p class="hint">' + esc(o.emptyHint) + '</p>';
+    return html + '</div>';
   }
 
   /* ---------------- S03 / S04 / S07 发现页 ---------------- */
-  function discover(f) {
+  function discover(f, area) {
+    area = area || { open: false, prov: '440000' };
     var u = S.me();
     var hour = new Date().getHours();
     var hello = hour < 6 ? '夜深了' : hour < 11 ? '早上好' : hour < 14 ? '中午好' : hour < 18 ? '下午好' : '晚上好';
     var trips = S.queryTrips(f);
     var exps = S.queryExperiences(f);
     var open = S.visibleTrips().filter(function (t) { return t.status === 'RECRUITING'; }).length;
-    var matched = S.chatPartners().length;
     var ref = S.referenceTrip();
-    var basis = ref ? '匹配对照你发布的《' + ref.title + '》' : '匹配对照你的旅行兴趣：' + u.interests.join('、');
+    var basis = ref ? '匹配对照你发布的《' + ref.title + '》'
+      : (u.interests.length ? '匹配对照你的旅行兴趣：' + u.interests.join('、') : '先发布一条行程，匹配会更贴近你的偏好。');
 
     var hero = '<section class="disc-hero">' +
       '<h1 class="greet">' + hello + '，<em>' + esc(u.nickname) + '</em>。<br>今天想走哪条路？</h1>' +
@@ -285,8 +529,6 @@
       '<div class="hero-stats">' +
       '<span class="hero-stat"><b>' + open + '</b><span>招募中的行程</span></span>' +
       '<span class="hero-stat"><b>' + S.state.experiences.length + '</b><span>真实游后体验</span></span>' +
-      '<span class="hero-stat"><b>' + matched + '</b><span>已建立的同路</span></span>' +
-      '<span class="hero-stat"><b>' + S.hostPendingCount() + '</b><span>待我处理申请</span></span>' +
       '</div>' +
       '<p class="hero-basis">' + icon('spark') + esc(basis) + '</p>' +
       '</section>';
@@ -298,9 +540,6 @@
       icon('spark') + '旅行体验<span class="seg-count">' + exps.length + '</span></button>' +
       '</div>';
 
-    var destOpts = ['<option value="">全部目的地</option>'].concat(D.DESTINATIONS.map(function (d) {
-      return '<option value="' + d + '"' + (f.destination === d ? ' selected' : '') + '>' + d + '</option>';
-    })).join('');
     var sortOpts = [['match', '按匹配度'], ['date', '按出发日期'], ['new', '按最新发布']].map(function (o) {
       return '<option value="' + o[0] + '"' + (f.sort === o[0] ? ' selected' : '') + '>' + o[1] + '</option>';
     }).join('');
@@ -317,7 +556,7 @@
 
     var activeBits = [];
     if (f.q) activeBits.push('关键词「' + esc(f.q) + '」');
-    if (f.destination) activeBits.push('目的地 <b>' + esc(f.destination) + '</b>');
+    if (f.destinationCode) activeBits.push('目的地 <b>' + esc(D.destinationLabel(f.destinationCode)) + '</b>');
     if (f.from) activeBits.push('起 <b>' + esc(fmtDate(f.from)) + '</b>');
     if (f.to) activeBits.push('止 <b>' + esc(fmtDate(f.to)) + '</b>');
     if (f.tags.length) activeBits.push('兴趣 <b>' + esc(f.tags.join(' / ')) + '</b>');
@@ -329,7 +568,8 @@
       '<div class="filter-row">' +
       '<label class="field search"><span class="label">搜索</span>' + icon('search') +
       '<input class="input" type="search" data-filter="q" value="' + esc(f.q) + '" placeholder="路线、地点或发布者昵称"></label>' +
-      '<label class="field"><span class="label">目的地</span><select class="select" data-filter="destination">' + destOpts + '</select></label>' +
+      '<div class="field"><span class="label">目的地</span>' +
+      areaPicker('discover', f.destinationCode, { placeholder: '全部目的地', open: area.open, prov: area.prov }) + '</div>' +
       '<label class="field"><span class="label">出发不早于</span><input class="input" type="date" data-filter="from" value="' + esc(f.from) + '"></label>' +
       '<label class="field"><span class="label">出发不晚于</span><input class="input" type="date" data-filter="to" value="' + esc(f.to) + '"></label>' +
       '<label class="field"><span class="label">排序</span><select class="select" data-filter="sort">' + sortOpts + '</select></label>' +
@@ -518,13 +758,15 @@
   function previewCard(d) {
     var stops = (d.stops || []).filter(function (s) { return s && s.trim(); });
     var host = S.me();
+    var terrain = S.terrainOf(stops);
+    var dest = d.destinationCode ? D.cityLabel(d.destinationCode) : '目的地';
     return '<article class="trip-card" style="animation:none">' +
-      '<div class="tc-cover">' + cover(d.terrain || 'city', 'pv') +
-      '<div class="tc-cover-top"><span class="tc-dest">' + icon('pin') + esc(d.destination || '目的地') + '</span>' +
+      '<div class="tc-cover">' + cover(terrain, 'pv') +
+      '<div class="tc-cover-top"><span class="tc-dest">' + icon('pin') + esc(dest) + '</span>' +
       '<span class="badge surf">招募中</span></div></div>' +
       '<div class="tc-body"><h3 class="tc-title">' + esc(d.title || '你的行程标题') + '</h3>' +
       '<div class="tc-meta"><span>' + icon('calendar') + esc(d.startDate ? fmtRange(d.startDate, d.endDate || d.startDate) : '待选择日期') + '</span></div>' +
-      '<p class="tc-route"><b>路线</b> ' + esc(stops.length ? stops.join(' → ') : '至少写出两个途经点') + '</p>' +
+      '<p class="tc-route"><b>路线</b> ' + esc(stops.length ? stops.join(' → ') : '至少选出两个途经点') + '</p>' +
       '<div class="tc-tags">' + (d.tags && d.tags.length ? tags(d.tags) : '<span class="hint">未选择兴趣标签</span>') + '</div>' +
       '<div class="tc-foot"><span class="tc-host">' + avatar(host, 'sm') + '<span class="tc-host-name">' + esc(host.nickname) + '</span></span>' +
       '<span class="tc-cap"><span class="tc-cap-num">1 / ' + esc(d.capacity || 2) + ' 人</span>' +
@@ -536,25 +778,21 @@
   }
   function bad(errors, key) { return errors && errors[key] ? ' bad' : ''; }
 
-  function tripForm(d, errors, source, isEdit) {
+  function tripForm(d, errors, source, isEdit, fx) {
     errors = errors || {};
-    var destOpts = ['<option value="">选择目的地</option>'].concat(D.DESTINATIONS.map(function (x) {
-      return '<option value="' + x + '"' + (d.destination === x ? ' selected' : '') + '>' + x + '</option>';
-    })).join('');
-    var terrainOpts = Object.keys(D.TERRAIN).map(function (k) {
-      var ic = k === 'coast' ? 'wave' : k === 'mountain' ? 'mountain' : 'city';
-      return '<button class="terrain-opt' + (d.terrain === k ? ' on' : '') + '" data-action="set-terrain" data-terrain="' + k + '" type="button">' +
-        icon(ic) + '<span>' + D.TERRAIN[k].label + '</span></button>';
-    }).join('');
-    var stopRows = d.stops.map(function (s, i) {
-      return '<div class="stop-row" draggable="true" data-stop="' + i + '">' +
-        '<span class="stop-handle" title="拖动调整顺序">' + icon('grip') + '</span>' +
-        '<span class="stop-index">' + (i + 1) + '</span>' +
-        '<input class="input" data-stop-input="' + i + '" value="' + esc(s) + '" maxlength="30" placeholder="例如：情侣路骑行段">' +
-        '<button class="stop-del" data-action="del-stop" data-index="' + i + '" type="button" aria-label="删除这个途经点">' + icon('trash') + '</button></div>';
-    }).join('');
+    fx = fx || {};
+    var areaFx = fx.area || { open: false, prov: '440000' };
+    var placeFx = fx.place || {};
+    var stopsFx = placeFx.stops || {};
+    var meetFx = placeFx.meeting || {};
+    var mapCity = d.destinationCode ? D.gazetteerCityForCode(d.destinationCode) : null;
+    var hasDest = !!d.destinationCode;
+
     var tagBtns = D.TAGS.map(function (x) {
       return '<button class="chip' + (d.tags.indexOf(x) > -1 ? ' on' : '') + '" data-action="form-tag" data-tag="' + x + '" type="button">' + x + '</button>';
+    }).join('');
+    var customTags = d.tags.filter(function (x) { return D.TAGS.indexOf(x) === -1; }).map(function (x) {
+      return '<button class="chip on custom" data-action="form-tag" data-tag="' + esc(x) + '" type="button">' + esc(x) + ' ×</button>';
     }).join('');
 
     var banner = source
@@ -570,11 +808,9 @@
       '<section class="panel"><h3 class="panel-title">' + icon('spark') + '基本信息</h3><div class="stack">' +
       '<label class="field' + bad(errors, 'title') + '"><span class="label">行程标题<span class="req">*</span><span class="counter">' + (d.title || '').length + '/40</span></span>' +
       '<input class="input" data-form="title" maxlength="40" value="' + esc(d.title) + '" placeholder="例如：珠海情侣路日落机位二刷">' + fieldErr(errors, 'title') + '</label>' +
-      '<div class="form-row">' +
-      '<label class="field' + bad(errors, 'destination') + '"><span class="label">目的地<span class="req">*</span></span>' +
-      '<select class="select" data-form="destination">' + destOpts + '</select>' + fieldErr(errors, 'destination') + '</label>' +
-      '<div class="field"><span class="label">路线类型</span><div class="terrain-picker">' + terrainOpts + '</div></div>' +
-      '</div>' +
+      '<div class="field' + bad(errors, 'destination') + '"><span class="label">目的地<span class="req">*</span></span>' +
+      areaPicker('form', d.destinationCode, { placeholder: '请选择省 / 市', open: areaFx.open, prov: areaFx.prov }) +
+      fieldErr(errors, 'destination') + '</div>' +
       '<div class="form-row">' +
       '<label class="field' + bad(errors, 'startDate') + '"><span class="label">出发日期<span class="req">*</span></span>' +
       '<input class="input" type="date" data-form="startDate" value="' + esc(d.startDate) + '">' + fieldErr(errors, 'startDate') + '</label>' +
@@ -582,10 +818,16 @@
       '<input class="input" type="date" data-form="endDate" value="' + esc(d.endDate) + '">' + fieldErr(errors, 'endDate') + '</label>' +
       '</div></div></section>' +
 
-      '<section class="panel"><h3 class="panel-title">' + icon('route') + '简单路线<span style="font-weight:500;letter-spacing:0;text-transform:none;color:var(--ink-3);font-size:11px">拖动左侧手柄可以调整顺序</span></h3>' +
-      '<div class="field' + bad(errors, 'stops') + '"><div class="stop-list" id="stop-list">' + stopRows + '</div>' +
-      '<button class="btn sm ghost stop-add" data-action="add-stop" type="button">' + icon('plus') + '添加途经点</button>' +
-      fieldErr(errors, 'stops') + '<span class="hint">第一个点默认作为集合点，最后一个点作为收尾。不需要精确到分钟。</span></div></section>' +
+      '<section class="panel"><h3 class="panel-title">' + icon('route') + '路线<span style="font-weight:500;letter-spacing:0;text-transform:none;color:var(--ink-3);font-size:11px">最多 8 个途经点，拖动芯片可以调整顺序</span></h3>' +
+      '<div class="field' + bad(errors, 'stops') + '">' +
+      placePicker({
+        picker: 'stops', mode: 'multi', value: d.stops, max: 8, city: mapCity, showMap: !!mapCity,
+        q: stopsFx.q, message: stopsFx.message, ariaLabel: '途经点',
+        placeholder: '搜索地点名称，必须能在地图上搜到',
+        emptyHint: mapCity ? '至少两个途经点。输错的名字不会被接受，请从候选里选或直接点地图。'
+          : (hasDest ? '这个城市暂时没有离线点位；途经点目前只支持广东 14 城与港澳的地图地点。' : '先选目的地，再按城市点选途经点。')
+      }) +
+      fieldErr(errors, 'stops') + '</div></section>' +
 
       '<section class="panel"><h3 class="panel-title">' + icon('users') + '同行与预算</h3><div class="stack">' +
       '<div class="form-row">' +
@@ -594,9 +836,15 @@
       '<span class="stepper-val">' + esc(d.capacity) + '</span>' +
       '<button class="stepper-btn" data-action="cap-step" data-delta="1" type="button" aria-label="增加人数">+</button></span>' +
       fieldErr(errors, 'capacity') + '<span class="hint">招满后系统自动停止接受新申请。</span></div>' +
-      '<label class="field"><span class="label">集合区域<span class="opt">选填</span></span>' +
-      '<input class="input" data-form="meetingArea" maxlength="30" value="' + esc(d.meetingArea) + '" placeholder="例如：香洲港公交站">' +
-      '<span class="hint">只写公共区域，不要写宿舍或家庭住址。</span></label>' +
+      '<div class="field"><span class="label">集合区域<span class="opt">选填</span></span>' +
+      '<div class="meeting-row"><input class="input" data-form="meetingArea" maxlength="30" value="' + esc(d.meetingArea) + '" placeholder="例如：香洲港公交站">' +
+      '<button class="btn sm ghost" data-action="map-toggle" data-picker="meeting" type="button">' + icon('pin') + (meetFx.mapOpen ? '收起地图' : '地图选点') + '</button></div>' +
+      (meetFx.mapOpen ? placePicker({
+        picker: 'meeting', mode: 'single', value: d.meetingArea ? [d.meetingArea] : [],
+        showMap: true, city: null, q: meetFx.q, message: meetFx.message,
+        placeholder: '搜索集合地点', ariaLabel: '集合地点', emptyHint: '选中后会把地点名写进集合区域。'
+      }) : '') +
+      '<span class="hint">只写公共区域，不要写宿舍或家庭住址。</span></div>' +
       '</div>' +
       '<div class="form-row">' +
       '<label class="field"><span class="label">预算下限<span class="opt">选填 · 元</span></span>' +
@@ -606,7 +854,11 @@
       '</div></div></section>' +
 
       '<section class="panel"><h3 class="panel-title">' + icon('star') + '兴趣标签<span style="font-weight:500;letter-spacing:0;text-transform:none;color:var(--ink-3);font-size:11px">最多 5 个，用于匹配同路的人</span></h3>' +
-      '<div class="tag-picker">' + tagBtns + '</div>' +
+      '<div class="tag-picker">' + tagBtns + customTags + '</div>' +
+      '<div class="tag-add-row"><input class="input" data-form-tag maxlength="12" value="' + esc(fx.tagDraft || '') + '" placeholder="自定义兴趣标签（最多 5 个，每个 12 字以内）">' +
+      '<button class="btn sm ghost" data-action="form-tag-add" type="button">添加标签</button></div>' +
+      (fx.tagError ? '<p class="place-message">' + icon('alert') + esc(fx.tagError) + '</p>' : '') +
+      fieldErr(errors, 'tags') +
       '<label class="field" style="margin-top:15px"><span class="label">补充说明<span class="opt">选填</span></span>' +
       '<textarea class="textarea" data-form="note" maxlength="200" placeholder="强度、装备要求、节奏偏好，或者你希望同行者知道的事。">' + esc(d.note) + '</textarea></label>' +
       '<div class="form-actions" style="margin-top:16px">' +
@@ -666,7 +918,10 @@
     var head = '<div class="page-head"><div><h1 class="page-title">我的旅行</h1>' +
       '<p class="page-sub">发布、申请、同行与已完成的行程都在这里。' +
       (pend ? '<b style="color:var(--t-coral)">你有 ' + pend + ' 条申请等待处理。</b>' : '目前没有待处理的申请。') + '</p></div>' +
-      '<a class="btn primary" href="#/create">' + icon('plus') + '发布新行程</a></div>';
+      '<div class="row head-actions">' +
+      '<button class="btn ghost" data-action="profile" data-id="' + meId + '" type="button">' + icon('users') + '我的资料</button>' +
+      (S.isAuthed() ? '<a class="btn ghost" href="#/profile/setup">' + icon('edit') + (S.profileComplete(S.me()) ? '编辑资料' : '完善资料') + '</a>' : '') +
+      '<a class="btn primary" href="#/create">' + icon('plus') + '发布新行程</a></div></div>';
 
     var body = '';
     if (tab === 'published') {
@@ -836,33 +1091,168 @@
       '</aside></div>';
   }
 
-  /* ---------------- S02 资料弹窗 ---------------- */
+  /* ---------------- S02 资料弹窗（与前端个人主页同字段，未填不显示空行） ---------------- */
+  function profileFact(k, v) {
+    return v ? '<div class="profile-fact"><dt>' + k + '</dt><dd>' + esc(v) + '</dd></div>' : '';
+  }
   function profileModal(userId) {
     var u = S.user(userId);
     if (!u) return '';
     var st = S.stats(userId);
     var isMe = userId === S.state.currentUserId;
+    var authed = S.isAuthed();
+    var complete = S.profileComplete(u);
     var shared = S.me().interests.filter(function (x) { return u.interests.indexOf(x) > -1; });
+    var sm = schoolMajor(u), summary = publisherSummary(u), ageZ = ageZodiacLabel(u);
+    var hasFacts = !!(sm || u.job || u.mbti || u.travelStyle);
+    var hasContent = !!(hasFacts || u.interests.length || u.bio || summary || u.city);
+
+    var meta = [ageZ, u.city, u.gender].filter(function (x) { return x; })
+      .map(function (x) { return '<span>' + esc(x) + '</span>'; }).join('');
+    var chips = [sm, u.job, u.mbti, u.travelStyle].filter(function (x) { return x; })
+      .map(function (x) { return '<span class="chip">' + esc(x) + '</span>'; }).join('');
+    var hero = '<div class="profile-hero">' + avatar(u, 'xl') +
+      '<div class="profile-hero-main"><span class="profile-name">' + esc(u.nickname) +
+      (isMe ? ' <span class="badge dusk no-dot">这是你</span>' : '') +
+      ' <span class="badge ' + (complete ? 'jade' : 'muted') + '">' + (complete ? '资料已完善' : '资料未完善') + '</span></span>' +
+      (meta ? '<p class="profile-hero-meta">' + meta + '</p>' : '') +
+      (chips ? '<div class="profile-chips">' + chips + '</div>' : '') +
+      '<span class="muted" style="font-size:11.5px">加入于 ' + esc(relTime(u.joinedAt)) + '</span></div>' +
+      (isMe && authed ? '<a class="btn sm ghost" href="#/profile/setup" data-action="close-overlay">' + icon('edit') + '编辑资料</a>' : '') +
+      '</div>';
+
+    var notice = complete ? '' : '<div class="profile-notice">' + icon('info') +
+      '<span><b>该用户尚未完善资料</b><p>先看看 TA 已经填写的部分，未填字段不会显示空行。</p></span></div>';
+
+    var facts = '';
+    if (complete && hasFacts) {
+      facts = '<section class="profile-section"><h3 class="profile-section-title">关于 TA</h3><dl class="profile-facts">' +
+        profileFact('学校与专业', sm) + profileFact('职业', u.job) + profileFact('MBTI', u.mbti) + profileFact('旅行方式', u.travelStyle) +
+        '</dl></section>';
+    } else if (!complete && (summary || u.city)) {
+      facts = '<section class="profile-section"><h3 class="profile-section-title">已填写</h3><dl class="profile-facts">' +
+        profileFact('发布者摘要', summary) + profileFact('所在城市', u.city) +
+        '</dl></section>';
+    }
+    var interests = u.interests.length
+      ? '<section class="profile-section"><h3 class="profile-section-title">旅行兴趣</h3>' +
+      '<div class="tc-tags">' + u.interests.map(function (x) {
+        return '<span class="tag' + (shared.indexOf(x) > -1 ? ' hit' : '') + '">' + esc(D.interestLabel(x)) + '</span>';
+      }).join('') + '</div>' +
+      (shared.length && !isMe ? '<p class="hint" style="margin-top:8px">你们的共同兴趣：' + esc(shared.map(D.interestLabel).join('、')) + '</p>' : '') +
+      '</section>' : '';
+    var bio = u.bio ? '<section class="profile-section"><h3 class="profile-section-title">个人简介</h3><p class="profile-bio">' + esc(u.bio) + '</p></section>' : '';
+    var body = hasContent ? facts + interests + bio : '<p class="profile-empty">该用户还没有填写更多资料</p>';
+
     return '<div class="modal" role="dialog" aria-modal="true" aria-label="' + esc(u.nickname) + '的资料">' +
       '<div class="modal-head"><h2 class="modal-title">旅行者资料</h2>' +
       '<button class="icon-btn" data-action="close-overlay" type="button" aria-label="关闭">' + icon('x') + '</button></div>' +
-      '<div class="modal-body"><div class="profile-top">' + avatar(u, 'xl') +
-      '<span><span class="profile-name">' + esc(u.nickname) + (isMe ? ' <span class="badge dusk no-dot">这是你</span>' : '') + '</span>' +
-      '<span class="profile-school" style="display:block">' + esc(u.school) + '</span>' +
-      '<span class="muted" style="font-size:11.5px">加入于 ' + esc(relTime(u.joinedAt)) + '</span></span></div>' +
-      '<p class="profile-bio">' + esc(u.bio) + '</p>' +
-      '<div class="tc-tags" style="margin-top:14px">' + tags(u.interests, shared) + '</div>' +
-      (shared.length && !isMe ? '<p class="hint" style="margin-top:8px">你们的共同兴趣：' + esc(shared.join('、')) + '</p>' : '') +
+      '<div class="modal-body">' + hero + notice + body +
       '<div class="profile-stats">' +
       '<span class="profile-stat"><b>' + st.published + '</b><span>发布行程</span></span>' +
       '<span class="profile-stat"><b>' + st.completed + '</b><span>已完成</span></span>' +
       '<span class="profile-stat"><b>' + st.joined + '</b><span>参与同行</span></span>' +
       '<span class="profile-stat"><b>' + st.shared + '</b><span>游后分享</span></span>' +
       '</div>' +
-      '<p class="privacy-note">' + icon('shield') + ' 平台只展示昵称、简介与旅行兴趣。电话、证件、精确住址和实时位置不会向任何人公开，包括已匹配的同行者。</p>' +
+      '<p class="privacy-note">' + icon('shield') + ' 平台只展示昵称、简介与旅行兴趣。电话、证件、精确住址和实时位置不会向任何人公开，包括已匹配的同行者。生日只用于推算年龄与星座，不展示具体日期。</p>' +
       '</div><div class="modal-foot">' +
+      (isMe && !authed ? '<span class="hint grow">演示身份不能编辑资料；登录后可以完善。</span>' : '') +
       (isMe ? '' : '<button class="btn danger" data-action="report" data-type="user" data-id="' + u.id + '" data-label="' + esc(u.nickname) + '" type="button">' + icon('flag') + '举报这位用户</button>') +
       '<button class="btn ghost" data-action="close-overlay" type="button">关闭</button></div></div>';
+  }
+
+  /* ---------------- 资料完善 / 编辑页（#/profile/setup） ---------------- */
+  var PF_REQUIRED = [['nickname', '昵称'], ['birthday', '生日'], ['gender', '性别'], ['city', '所在城市'], ['interests', '旅行兴趣'], ['travelStyle', '旅行方式']];
+  function profileSetup(d, errors, fx) {
+    errors = errors || {}; fx = fx || {};
+    if (!S.isAuthed()) {
+      return '<div class="page-head"><div><h1 class="page-title">完善个人资料</h1>' +
+        '<p class="page-sub">补完带 * 的 6 项，就能生成可被同行者查看的个人主页。</p></div></div>' +
+        empty('演示身份只读', '演示身份不能编辑资料；登录后可以完善自己的资料。',
+          '<a class="btn primary" href="#/discover">' + icon('compass') + '回到旅行灵感</a>', 'shield');
+    }
+    var meU = S.me();
+    var complete = S.profileComplete(meU);
+    var missing = PF_REQUIRED.filter(function (f) { return errors[f[0]]; }).map(function (f) { return f[1]; });
+    var head = '<div class="page-head"><div><h1 class="page-title">' + (complete ? '编辑资料' : '完善个人资料') + '</h1>' +
+      '<p class="page-sub">' + (complete ? '修改会立即同步到你的个人主页与发布者入口。' : '补完带 * 的 6 项，就能生成可被同行者查看的个人主页。') + '</p></div>' +
+      '<a class="btn ghost" href="#/mine">' + icon('left') + '返回</a></div>';
+    var banner = missing.length
+      ? '<div class="profile-missing">' + icon('alert') + '<span><b>还有 ' + missing.length + ' 项未完成</b><p>' + esc(missing.join('、')) + '</p></span></div>'
+      : '';
+
+    var previewU = { hue: meU.hue, initial: (d.nickname || meU.nickname || '旅').charAt(0), avatarUrl: d.avatarUrl || '' };
+    var avatarSec = '<section class="profile-avatar">' + avatar(previewU, 'xl') +
+      '<div class="profile-avatar-body"><b>头像 <span class="opt">选填</span></b>' +
+      '<p class="hint">JPEG / PNG / WebP，单文件 ≤ 2 MB；不上传时使用昵称首字。</p>' +
+      '<div class="row"><button class="btn sm ghost" data-action="pf-avatar" type="button">' + icon('plus') + (d.avatarUrl ? '更换头像' : '上传头像') + '</button>' +
+      (d.avatarUrl ? '<button class="btn sm ghost" data-action="pf-avatar-remove" type="button">' + icon('trash') + '移除</button>' : '') +
+      '<input type="file" data-avatar-file accept="image/jpeg,image/png,image/webp" hidden></div>' +
+      (fx.avatarError ? '<p class="err">' + icon('alert') + esc(fx.avatarError) + '</p>' : '') +
+      '</div></section>';
+
+    var genderChips = D.GENDERS.map(function (g) {
+      return '<button class="chip' + (d.gender === g ? ' on' : '') + '" data-action="pf-gender" data-value="' + g + '" type="button">' + g + '</button>';
+    }).join('');
+    var styleChips = D.TRAVEL_STYLES.map(function (s) {
+      return '<button class="chip' + (d.travelStyle === s ? ' on' : '') + '" data-action="pf-style" data-value="' + s + '" type="button">' + s + '</button>';
+    }).join('');
+    var interestChips = D.PRESET_INTERESTS.map(function (p) {
+      return '<button class="chip' + (d.interests.indexOf(p.value) > -1 ? ' on' : '') + '" data-action="pf-interest" data-value="' + esc(p.value) + '" type="button">' + esc(p.label) + '</button>';
+    }).join('');
+    var customInterests = d.interests.filter(function (x) {
+      return !D.PRESET_INTERESTS.some(function (p) { return p.value === x; });
+    }).map(function (x) {
+      return '<button class="chip on custom" data-action="pf-interest" data-value="' + esc(x) + '" type="button">' + esc(x) + ' ×</button>';
+    }).join('');
+    var jobOpts = ['<option value="">不填写</option>'].concat(D.JOBS.map(function (j) {
+      return '<option value="' + j + '"' + (d.jobChoice === j ? ' selected' : '') + '>' + j + '</option>';
+    })).join('');
+    var mbtiOpts = ['<option value="">不填写</option>'].concat(D.MBTI_TYPES.map(function (m) {
+      return '<option value="' + m + '"' + (d.mbti === m ? ' selected' : '') + '>' + m + '</option>';
+    })).join('');
+    var cityList = '<datalist id="pf-cities">' + D.PROFILE_CITIES.map(function (c) { return '<option value="' + c + '">'; }).join('') + '</datalist>';
+
+    var grid = '<div class="profile-field-grid">' +
+      '<label class="field' + bad(errors, 'nickname') + '"><span class="label">昵称<span class="req">*</span><span class="opt">1–20 字</span></span>' +
+      '<input class="input" data-pf="nickname" maxlength="20" value="' + esc(d.nickname) + '">' + fieldErr(errors, 'nickname') + '</label>' +
+      '<label class="field' + bad(errors, 'birthday') + '"><span class="label">生日<span class="req">*</span><span class="opt">不公开</span></span>' +
+      '<input class="input" type="date" data-pf="birthday" min="' + D.PROFILE_LIMITS.minBirthday + '" max="' + D.iso(new Date()) + '" value="' + esc(d.birthday) + '">' + fieldErr(errors, 'birthday') + '</label>' +
+      '<div class="field' + bad(errors, 'gender') + '"><span class="label">性别<span class="req">*</span></span>' +
+      '<div class="chip-row">' + genderChips + '</div>' + fieldErr(errors, 'gender') + '</div>' +
+      '<label class="field' + bad(errors, 'city') + '"><span class="label">所在城市<span class="req">*</span></span>' +
+      '<input class="input" data-pf="city" list="pf-cities" maxlength="40" value="' + esc(d.city) + '" placeholder="例如：广州">' + fieldErr(errors, 'city') + '</label>' + cityList +
+      '<label class="field' + bad(errors, 'school') + '"><span class="label">学校<span class="opt">选填</span></span>' +
+      '<input class="input" data-pf="school" maxlength="80" value="' + esc(d.school) + '" placeholder="例如：中山大学">' + fieldErr(errors, 'school') + '</label>' +
+      '<label class="field' + bad(errors, 'major') + '"><span class="label">专业<span class="opt">选填</span></span>' +
+      '<input class="input" data-pf="major" maxlength="80" value="' + esc(d.major) + '" placeholder="例如：地理科学">' + fieldErr(errors, 'major') + '</label>' +
+      '<div class="field' + bad(errors, 'job') + '"><span class="label">职业<span class="opt">选填</span></span>' +
+      '<select class="select" data-pf="jobChoice">' + jobOpts + '</select>' +
+      (d.jobChoice === D.JOB_OTHER ? '<input class="input" data-pf="jobCustom" maxlength="20" value="' + esc(d.jobCustom) + '" placeholder="例如：厨师、摄影师" style="margin-top:8px">' : '') +
+      fieldErr(errors, 'job') + '</div>' +
+      '<div class="field' + bad(errors, 'mbti') + '"><span class="label">MBTI<span class="opt">选填</span></span>' +
+      '<select class="select" data-pf="mbti">' + mbtiOpts + '</select>' + fieldErr(errors, 'mbti') + '</div>' +
+      '<div class="field wide' + bad(errors, 'interests') + '"><span class="label">旅行兴趣<span class="req">*</span><span class="counter">' + d.interests.length + '/5</span></span>' +
+      '<div class="chip-row">' + interestChips + customInterests + '</div>' +
+      '<div class="tag-add-row"><input class="input" data-pf-interest maxlength="12" value="' + esc(fx.interestDraft || '') + '" placeholder="自定义标签，例如：温泉">' +
+      '<button class="btn sm ghost" data-action="pf-interest-add" type="button">添加</button></div>' +
+      (fx.interestError ? '<p class="place-message">' + icon('alert') + esc(fx.interestError) + '</p>' : '') +
+      fieldErr(errors, 'interests') +
+      '<span class="hint">点按卡片选择 3–5 个；也可以添加自己的兴趣（每个不超过 12 字）。</span></div>' +
+      '<div class="field wide' + bad(errors, 'travelStyle') + '"><span class="label">旅行方式<span class="req">*</span><span class="opt">单选</span></span>' +
+      '<div class="chip-row">' + styleChips + '</div>' + fieldErr(errors, 'travelStyle') + '</div>' +
+      '<label class="field wide' + bad(errors, 'bio') + '"><span class="label">个人简介<span class="opt">选填 · 500 字以内</span><span class="counter">' + (d.bio || '').length + '/500</span></span>' +
+      '<textarea class="textarea" data-pf="bio" rows="3" maxlength="500" placeholder="你的旅行节奏、偏好，或者想对同行者说的话。">' + esc(d.bio) + '</textarea>' + fieldErr(errors, 'bio') + '</label>' +
+      '</div>';
+
+    var foot = '<div class="form-actions profile-form-foot">' +
+      '<button class="btn primary" data-action="pf-save" type="button">' + icon('check') + '保存资料</button>' +
+      (complete ? '<a class="btn ghost" href="#/mine">取消</a>' : '<a class="btn ghost" href="#/discover">跳过，先去逛逛</a>') +
+      '<span class="hint">保存后可随时在「我的」里修改</span>' +
+      (errors._ ? '<span class="err">' + icon('alert') + esc(errors._) + '</span>' : '') +
+      '</div>';
+
+    return head + banner + '<section class="panel profile-setup-card">' + avatarSec + grid + foot + '</section>';
   }
 
   /* ---------------- S09 申请处理抽屉 ---------------- */
@@ -972,7 +1362,8 @@
   /* ---------------- 保存筛选 ---------------- */
   function saveViewModal(f) {
     var bits = [];
-    if (f.destination) bits.push(f.destination);
+    if (f.destinationCode) bits.push(D.destinationLabel(f.destinationCode));
+    else if (f.destination) bits.push(f.destination);
     if (f.tags.length) bits.push(f.tags.join('/'));
     if (f.from || f.to) bits.push('日期区间');
     if (f.q) bits.push('“' + f.q + '”');
@@ -1017,11 +1408,13 @@
   global.UI = {
     esc: esc, fmtDate: fmtDate, fmtWeek: fmtWeek, fmtRange: fmtRange, dayLabel: dayLabel,
     fmtClock: fmtClock, fmtStamp: fmtStamp, relTime: relTime, budgetText: budgetText,
-    icon: icon, avatar: avatar, tripBadge: tripBadge, appBadge: appBadge, tags: tags,
+    icon: icon, avatar: avatar, brandMark: brandMark, tripBadge: tripBadge, appBadge: appBadge, tags: tags,
+    schoolMajor: schoolMajor, publisherSummary: publisherSummary, ageZodiacLabel: ageZodiacLabel,
     cover: cover, matchBlock: matchBlock, tripCard: tripCard, expCard: expCard, empty: empty,
-    gate: gate, nav: nav, userChip: userChip, discover: discover,
+    authPanel: authPanel, gate: gate, nav: nav, userChip: userChip, idPanel: idPanel,
+    areaPicker: areaPicker, placeMap: placeMap, placePicker: placePicker, discover: discover,
     detail: detail, tripForm: tripForm, previewCard: previewCard, safetyPanel: safetyPanel,
-    mine: mine, chat: chat, share: share, profileModal: profileModal, appsDrawer: appsDrawer,
+    mine: mine, chat: chat, share: share, profileModal: profileModal, profileSetup: profileSetup, appsDrawer: appsDrawer,
     switchUserModal: switchUserModal, reportModal: reportModal, confirmModal: confirmModal,
     saveViewModal: saveViewModal, scriptDrawer: scriptDrawer
   };

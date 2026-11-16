@@ -14,10 +14,31 @@
       var raw = global.localStorage.getItem(KEY);
       if (raw) {
         var parsed = JSON.parse(raw);
-        if (parsed && parsed.version === 1 && Array.isArray(parsed.trips)) return parsed;
+        if (parsed && parsed.version === 1 && Array.isArray(parsed.trips)) return migrate(parsed);
       }
     } catch (e) { /* 隐私模式或损坏数据：回落到种子 */ }
     return global.RMData.buildSeed();
+  }
+  /* 旧版本地数据补齐账号与资料字段，不丢弃用户已产生的行程与申请。 */
+  function migrate(parsed) {
+    var D = global.RMData;
+    if (!Array.isArray(parsed.accounts)) {
+      parsed.accounts = D.SEED_ACCOUNTS.map(function (a) {
+        return { userId: a.userId, username: a.username, passHash: D.demoHash(a.password) };
+      });
+    }
+    if (typeof parsed.session !== 'boolean') parsed.session = false;
+    (parsed.users || []).forEach(function (u) {
+      ['birthday', 'gender', 'city', 'major', 'job', 'mbti', 'travelStyle', 'avatarUrl'].forEach(function (k) {
+        if (u[k] == null) u[k] = '';
+      });
+      if (!u.username) {
+        for (var i = 0; i < parsed.accounts.length; i++) {
+          if (parsed.accounts[i].userId === u.id) { u.username = parsed.accounts[i].username; break; }
+        }
+      }
+    });
+    return parsed;
   }
   function save() {
     try { global.localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) { /* 忽略写入失败 */ }
@@ -121,13 +142,22 @@
   function matchOf(t, ctx) {
     var u = me();
     if (!u) return { score: 0, reasons: [], shared: [], basis: '' };
+    var D = global.RMData;
     var ref = referenceTrip();
+    var destCode = ctx && ctx.destinationCode ? ctx.destinationCode : '';
     var dest = ctx && ctx.destination ? ctx.destination : (ref ? ref.destination : '');
     var date = ctx && ctx.from ? ctx.from : (ref ? ref.startDate : '');
     var reasons = [];
     var score = 0;
 
-    if (dest && t.destination === dest) { score += 50; reasons.push('目的地相同'); }
+    var destHit = false;
+    if (destCode) {
+      var cityName = D.gazetteerCityForCode(destCode) || D.cityLabel(destCode);
+      destHit = t.destinationCode ? t.destinationCode === destCode : t.destination === cityName;
+    } else if (dest) {
+      destHit = t.destination === dest;
+    }
+    if (destHit) { score += 50; reasons.push('目的地相同'); }
     if (date) {
       var d = Math.abs(dayDiff(t.startDate, date));
       if (d === 0) { score += 30; reasons.push('出发日期相同'); }
@@ -153,13 +183,127 @@
   }
 
   /* ---------------- 写操作 ---------------- */
-  function setUser(id) { state.currentUserId = id; commit(); }
+  /* 演示身份切换：结束任何登录会话（与前端「切换到演示身份会结束当前登录」一致）。 */
+  function setUser(id) { state.currentUserId = id; state.session = false; commit(); }
+  function isAuthed() { return !!state.session && !!state.currentUserId; }
+
+  function accountByUsername(username) {
+    var key = String(username || '').trim().toLowerCase();
+    for (var i = 0; i < state.accounts.length; i++) {
+      if (state.accounts[i].username.toLowerCase() === key) return state.accounts[i];
+    }
+    return null;
+  }
+  function login(username, password) {
+    var acc = accountByUsername(username);
+    if (!acc || acc.passHash !== global.RMData.demoHash(password || '') || !user(acc.userId)) {
+      return { ok: false, reason: '用户名或密码不正确' };
+    }
+    state.currentUserId = acc.userId;
+    state.session = true;
+    commit();
+    return { ok: true, user: user(acc.userId) };
+  }
+  var NEW_HUES = [186, 22, 268, 152, 206, 44];
+  function register(username, password, nickname) {
+    var name = String(username || '').trim();
+    var nick = String(nickname || '').trim();
+    var errors = {};
+    if (!/^[A-Za-z0-9_]{3,20}$/.test(name)) errors.username = '用户名需为 3–20 位字母、数字或下划线';
+    if (!password || password.length < 8 || password.length > 64) errors.password = '密码需为 8–64 位';
+    if (!nick || nick.length > 20) errors.nickname = '昵称需为 1–20 个字';
+    if (Object.keys(errors).length) return { ok: false, errors: errors };
+    if (accountByUsername(name)) return { ok: false, errors: { username: '这个用户名已经被占用了，换一个试试' } };
+    var id = nextId('u');
+    var u = {
+      id: id, nickname: nick, initial: nick.charAt(0), hue: NEW_HUES[state.seq % NEW_HUES.length],
+      school: '', bio: '', interests: [], joinedAt: Date.now(),
+      username: name, birthday: '', gender: '', city: '', major: '', job: '', mbti: '', travelStyle: '', avatarUrl: ''
+    };
+    state.users.push(u);
+    state.accounts.push({ userId: id, username: name, passHash: global.RMData.demoHash(password) });
+    state.currentUserId = id;
+    state.session = true;
+    commit();
+    return { ok: true, user: u };
+  }
+
+  /* ---------------- 个人资料 ---------------- */
+  function profileComplete(u) {
+    return !!(u && u.nickname && u.birthday && u.gender && u.city &&
+      (u.interests || []).length >= 3 && u.travelStyle);
+  }
+  function validBirthday(value) {
+    var m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value || '');
+    if (!m) return false;
+    var y = Number(m[1]), mo = Number(m[2]), d = Number(m[3]);
+    var parsed = new Date(Date.UTC(y, mo - 1, d));
+    if (parsed.getUTCFullYear() !== y || parsed.getUTCMonth() !== mo - 1 || parsed.getUTCDate() !== d) return false;
+    return value >= global.RMData.PROFILE_LIMITS.minBirthday && value <= global.RMData.iso(new Date());
+  }
+  function validateProfile(v) {
+    var L = global.RMData.PROFILE_LIMITS;
+    var D = global.RMData;
+    var e = {};
+    var nick = (v.nickname || '').trim();
+    if (!nick || nick.length > L.maxNickname) e.nickname = '请填写昵称（20 字以内）';
+    if (!validBirthday((v.birthday || '').trim())) e.birthday = '请选择合法生日（1900-01-01 至今天）';
+    if (!v.gender) e.gender = '请选择性别';
+    else if (D.GENDERS.indexOf(v.gender) === -1) e.gender = '请选择有效的选项';
+    var city = (v.city || '').trim();
+    if (!city || city.length > L.maxCity) e.city = '请填写所在城市（40 字以内）';
+    var ints = (v.interests || []).map(function (x) { return String(x).trim(); });
+    if (ints.length < L.minInterests || ints.length > L.maxInterests || ints.some(function (x) { return !x; })) {
+      e.interests = '至少选择 3 个、最多 5 个兴趣标签';
+    } else if (ints.some(function (x) { return x.length > L.maxInterestLength; })) {
+      e.interests = '每个兴趣标签最多 12 个字';
+    } else if (ints.filter(function (x, i) { return ints.indexOf(x) === i; }).length !== ints.length) {
+      e.interests = '兴趣标签不能重复';
+    }
+    if (!v.travelStyle) e.travelStyle = '请选择一种旅行方式';
+    else if (D.TRAVEL_STYLES.indexOf(v.travelStyle) === -1) e.travelStyle = '请选择有效的选项';
+    if ((v.school || '').trim().length > L.maxSchool) e.school = '学校最多 80 字';
+    if ((v.major || '').trim().length > L.maxSchool) e.major = '专业最多 80 字';
+    if ((v.bio || '').trim().length > L.maxBio) e.bio = '简介最多 500 个字';
+    if ((v.job || '').trim().length > L.maxJob) e.job = '职业最多 20 字';
+    if (v.mbti && D.MBTI_TYPES.indexOf(v.mbti) === -1) e.mbti = '请选择有效的选项';
+    return e;
+  }
+  function saveProfile(v) {
+    if (!isAuthed()) return { ok: false, reason: '演示身份不能保存资料' };
+    var errors = validateProfile(v);
+    if (Object.keys(errors).length) return { ok: false, errors: errors };
+    var u = me();
+    u.nickname = v.nickname.trim();
+    u.initial = u.nickname.charAt(0);
+    u.birthday = v.birthday.trim();
+    u.gender = v.gender;
+    u.city = v.city.trim();
+    u.school = (v.school || '').trim();
+    u.major = (v.major || '').trim();
+    u.job = (v.job || '').trim();
+    u.mbti = v.mbti || '';
+    u.interests = v.interests.map(function (x) { return x.trim(); });
+    u.travelStyle = v.travelStyle;
+    u.bio = (v.bio || '').trim();
+    if (v.avatarUrl != null) u.avatarUrl = v.avatarUrl;
+    commit();
+    return { ok: true, user: u };
+  }
+
+  /* 路线类型不再手选：由途经点名称推导，封面占位随之变化。 */
+  function terrainOf(stops) {
+    var text = (stops || []).join(' ');
+    if (/岛|湾|港|海|泳场|情侣路/.test(text)) return 'coast';
+    if (/山|峡|岭|峰|林|营地/.test(text)) return 'mountain';
+    return 'city';
+  }
 
   function validateTrip(p) {
     var e = {};
     if (!p.title || !p.title.trim()) e.title = '给这条路线起个名字';
     else if (p.title.trim().length > 40) e.title = '标题控制在 40 字以内';
-    if (!p.destination) e.destination = '请选择目的地';
+    if (!p.destinationCode || !global.RMData.findCity(p.destinationCode)) e.destination = '请选择目的地（必须选到城市）';
     if (!p.startDate) e.startDate = '请选择出发日期';
     if (!p.endDate) e.endDate = '请选择结束日期';
     if (p.startDate && p.endDate && dayDiff(p.endDate, p.startDate) < 0) e.endDate = '结束日期不能早于出发日期';
@@ -177,7 +321,8 @@
     if (Object.keys(errors).length) return { ok: false, errors: errors };
     var t = {
       id: nextId('t'), creatorId: state.currentUserId,
-      title: p.title.trim(), destination: p.destination, terrain: p.terrain || 'city',
+      title: p.title.trim(), destination: global.RMData.cityLabel(p.destinationCode),
+      destinationCode: p.destinationCode, terrain: terrainOf(p.stops),
       startDate: p.startDate, endDate: p.endDate,
       stops: p.stops.filter(function (s) { return s && s.trim(); }).map(function (s) { return s.trim(); }),
       meetingArea: (p.meetingArea || '').trim(),
@@ -202,7 +347,8 @@
     if (Object.keys(errors).length) return { ok: false, errors: errors };
     var cap = parseInt(p.capacity, 10);
     if (cap < count(id)) return { ok: false, errors: { capacity: '已有 ' + count(id) + ' 人，不能降到更少' } };
-    t.title = p.title.trim(); t.destination = p.destination; t.terrain = p.terrain || t.terrain;
+    t.title = p.title.trim(); t.destination = global.RMData.cityLabel(p.destinationCode);
+    t.destinationCode = p.destinationCode; t.terrain = terrainOf(p.stops);
     t.startDate = p.startDate; t.endDate = p.endDate;
     t.stops = p.stops.filter(function (s) { return s && s.trim(); }).map(function (s) { return s.trim(); });
     t.meetingArea = (p.meetingArea || '').trim();
@@ -386,7 +532,8 @@
   function saveView(view) {
     var v = {
       id: nextId('v'), name: view.name || '未命名筛选',
-      destination: view.destination || '', from: view.from || '', to: view.to || '',
+      destination: view.destination || '', destinationCode: view.destinationCode || '',
+      from: view.from || '', to: view.to || '',
       tags: (view.tags || []).slice(), sort: view.sort || 'match', q: view.q || ''
     };
     state.savedViews.push(v);
@@ -423,11 +570,21 @@
   function visibleTrips() {
     return state.trips.filter(function (t) { return t.status !== 'CANCELLED'; });
   }
+  /* 区域码命中：新行程比码；旧行程（无码）按地名库城市名兼容。 */
+  function destHit(t, f) {
+    var D = global.RMData;
+    if (f.destinationCode) {
+      var cityName = D.gazetteerCityForCode(f.destinationCode) || D.cityLabel(f.destinationCode);
+      return t.destinationCode ? t.destinationCode === f.destinationCode : t.destination === cityName;
+    }
+    if (f.destination) return t.destination === f.destination;
+    return true;
+  }
   function queryTrips(f) {
     var q = (f.q || '').trim().toLowerCase();
     var list = visibleTrips().filter(function (t) {
       if (t.status === 'COMPLETED') return false;
-      if (f.destination && t.destination !== f.destination) return false;
+      if (!destHit(t, f)) return false;
       if (f.from && dayDiff(t.endDate, f.from) < 0) return false;
       if (f.to && dayDiff(t.startDate, f.to) > 0) return false;
       if (f.tags && f.tags.length) {
@@ -453,7 +610,10 @@
     var list = state.experiences.filter(function (e) {
       var t = trip(e.tripId);
       if (!t || t.status === 'CANCELLED') return false;
-      if (f.destination && t.destination !== f.destination) return false;
+      if (!destHit(t, f)) return false;
+      /* 体验也按原行程日期过滤：与前端 a13416c 一致。 */
+      if (f.from && dayDiff(t.endDate, f.from) < 0) return false;
+      if (f.to && dayDiff(t.startDate, f.to) > 0) return false;
       if (f.tags && f.tags.length && !f.tags.some(function (tag) { return t.tags.indexOf(tag) > -1; })) return false;
       if (q) {
         var hay = (t.title + ' ' + t.destination + ' ' + e.content + ' ' + e.advice).toLowerCase();
@@ -489,7 +649,9 @@
     hostPendingCount: hostPendingCount, experiencesOf: experiencesOf, myExperience: myExperience,
     canApply: canApply, canChat: canChat, canShare: canShare,
     matchOf: matchOf, referenceTrip: referenceTrip, dayDiff: dayDiff,
-    setUser: setUser, createTrip: createTrip, updateTrip: updateTrip,
+    setUser: setUser, isAuthed: isAuthed, login: login, register: register,
+    profileComplete: profileComplete, validateProfile: validateProfile, saveProfile: saveProfile, terrainOf: terrainOf,
+    createTrip: createTrip, updateTrip: updateTrip,
     cancelTrip: cancelTrip, deleteTrip: deleteTrip, completeTrip: completeTrip,
     apply: apply, cancelApplication: cancelApplication, decide: decide, bulkDecide: bulkDecide,
     leaveTrip: leaveTrip, sendMessage: sendMessage, thread: thread, chatPartners: chatPartners,
