@@ -1,7 +1,7 @@
 import { tripMessages } from '../i18n/tripMessages';
 import { Avatar } from '../shell/Avatar';
 import type { Match, TripSummary } from '../types';
-import { statusLabel, statusTone } from './tripStatus';
+import { StatusBadge } from './StatusBadge';
 
 const COVER_TONES = ['lagoon', 'coral', 'jade', 'dusk', 'amber'] as const;
 
@@ -38,7 +38,7 @@ export function TripCard({ trip, match, compact = false }: Props) {
     <a className={compact ? 'trip-card compact' : 'trip-card'} href={`#/trips/${trip.id}`}>
       <div className={`tc-cover cover-${coverTone(trip.destination)}`}>
         <span className="tc-dest">{trip.destination}</span>
-        <span className={`badge ${statusTone(trip.status)}`}>{statusLabel(trip.status)}</span>
+        <StatusBadge status={trip.status} />
       </div>
 
       <div className="tc-body">
@@ -67,8 +67,8 @@ export function TripCard({ trip, match, compact = false }: Props) {
 
         {match !== undefined && (
           <div className="tc-match">
-            <span className="match-ring">
-              <svg viewBox="0 0 34 34" aria-hidden="true">
+                    <span className="match-ring" aria-hidden="true">
+                      <svg viewBox="0 0 34 34">
                 <circle className="ring-bg" cx="17" cy="17" r="15" fill="none" strokeWidth="3" />
                 <circle
                   className="ring-fg"
@@ -81,11 +81,19 @@ export function TripCard({ trip, match, compact = false }: Props) {
                   strokeDashoffset={RING_LENGTH * (1 - match.percentage / 100)}
                 />
               </svg>
-              <b>{match.percentage}</b>
-            </span>
-            <span className="match-reason">{match.reasons.join('，')}</span>
-          </div>
-        )}
+                    </span>
+                    <span className="match-copy">
+                      <span className="match-score">
+                        {tripMessages.matchPercentage}{' '}
+                        <b className="match-percentage">{match.percentage}%</b>
+                      </span>
+                      <span className="match-reason">
+                        <span className="match-reason-label">{tripMessages.matchReasons}</span>
+                        {match.reasons.join('，')}
+                      </span>
+                    </span>
+                  </div>
+                )}
 
         <div className="tc-foot">
           <span className="tc-host">

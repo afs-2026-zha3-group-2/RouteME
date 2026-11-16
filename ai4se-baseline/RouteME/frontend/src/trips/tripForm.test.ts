@@ -10,7 +10,7 @@ import {
 const validForm: TripFormValues = {
   ...emptyTripForm,
   title: '广州老城骑楼扫街半日',
-  destination: '广州',
+  destinationCode: '440100',
   startDate: '2026-11-20',
   endDate: '2026-11-20',
   stops: ['陈家祠地铁站集合', '永庆坊'],
@@ -35,6 +35,24 @@ describe('validateTripForm', () => {
     expect(errors.endDate).toBeDefined();
   });
 
+  it('reports every missing required field at once', () => {
+    const errors = validateTripForm({ ...emptyTripForm, capacity: '' });
+    expect(Object.keys(errors).sort()).toEqual([
+      'capacity',
+      'destination',
+      'endDate',
+      'startDate',
+      'stops',
+      'title',
+    ]);
+  });
+
+  it('rejects a destination that is not a city-level code', () => {
+    expect(validateTripForm({ ...validForm, destinationCode: '' }).destination).toBeDefined();
+    expect(validateTripForm({ ...validForm, destinationCode: '440000' }).destination).toBeDefined();
+    expect(validateTripForm({ ...validForm, destinationCode: '999999' }).destination).toBeDefined();
+  });
+
   it('rejects a title over the contract limit', () => {
     const errors = validateTripForm({ ...validForm, title: '路'.repeat(41) });
     expect(errors.title).toBeDefined();
@@ -54,9 +72,10 @@ describe('validateTripForm', () => {
   it('bounds the capacity to the contract range', () => {
     expect(validateTripForm({ ...validForm, capacity: '1' }).capacity).toBeDefined();
     expect(validateTripForm({ ...validForm, capacity: '13' }).capacity).toBeDefined();
-    expect(validateTripForm({ ...validForm, capacity: '2' }).capacity).toBeUndefined();
-    expect(validateTripForm({ ...validForm, capacity: '12' }).capacity).toBeUndefined();
-  });
+      expect(validateTripForm({ ...validForm, capacity: '2.5' }).capacity).toBeDefined();
+      expect(validateTripForm({ ...validForm, capacity: '2' }).capacity).toBeUndefined();
+      expect(validateTripForm({ ...validForm, capacity: '12' }).capacity).toBeUndefined();
+    });
 
   it('rejects an inverted budget range', () => {
     const errors = validateTripForm({ ...validForm, budgetMin: '200', budgetMax: '100' });
@@ -74,7 +93,7 @@ describe('toCreateRequest', () => {
     const request = toCreateRequest(validForm);
     expect(request).toMatchObject({
       title: '广州老城骑楼扫街半日',
-      destination: '广州',
+      destination_code: '440100',
       start_date: '2026-11-20',
       end_date: '2026-11-20',
       stops: ['陈家祠地铁站集合', '永庆坊'],

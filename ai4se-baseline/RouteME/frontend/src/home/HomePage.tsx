@@ -47,6 +47,16 @@ export function HomePage({ currentUser }: Props) {
       : '先发布一条行程，匹配会更贴近你的偏好。';
   const summary = describeFilters(filters);
 
+  const goPublish = () => {
+    window.location.hash = '#/trips/new';
+  };
+
+  const publishAction = (
+    <Button type="primary" onClick={goPublish}>
+      {tripMessages.goPublish}
+    </Button>
+  );
+
   return (
     <main className="trip-page">
       <section className="disc-hero">
@@ -75,6 +85,7 @@ export function HomePage({ currentUser }: Props) {
       <div className="seg-row">
         <Segmented
           className="view-seg"
+          aria-label="浏览视图"
           value={view}
           options={[
             { value: 'plans', label: tripMessages.plansView },
@@ -181,7 +192,11 @@ export function HomePage({ currentUser }: Props) {
       </section>
 
       {view === 'plans' && state.status === 'loading' && (
-        <div className="trip-grid">
+        <div
+          className="trip-grid"
+          aria-busy="true"
+          aria-label="正在加载招募中的行程"
+        >
           {[0, 1, 2].map((key) => (
             <div key={key} className="card-skeleton">
               <Skeleton active paragraph={{ rows: 4 }} />
@@ -206,9 +221,7 @@ export function HomePage({ currentUser }: Props) {
             <Button disabled={!hasActiveFilters(filters)} onClick={() => setFilters(emptyFilterState)}>
               {tripMessages.clearFilters}
             </Button>
-            <Button type="primary" onClick={() => (window.location.hash = '#/trips/new')}>
-              {tripMessages.publish}
-            </Button>
+            {publishAction}
           </div>
         </EmptyState>
       )}
@@ -238,7 +251,11 @@ export function HomePage({ currentUser }: Props) {
       )}
 
       {view === 'experiences' && experiences.state.status === 'loading' && (
-        <div className="experience-grid">
+        <div
+          className="experience-grid"
+          aria-busy="true"
+          aria-label="正在加载旅行体验"
+        >
           {[0, 1].map((key) => (
             <div key={key} className="card-skeleton">
               <Skeleton active paragraph={{ rows: 4 }} />
@@ -269,7 +286,9 @@ export function HomePage({ currentUser }: Props) {
           <EmptyState
             title={tripMessages.experienceEmpty}
             text={tripMessages.experienceEmptyHint}
-          />
+          >
+            <div className="empty-actions">{publishAction}</div>
+          </EmptyState>
         )}
 
       {view === 'experiences' &&

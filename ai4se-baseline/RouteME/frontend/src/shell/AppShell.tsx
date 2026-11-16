@@ -111,6 +111,7 @@ export function AppShell({
   const active = activeKey(route);
   const [identityOpen, setIdentityOpen] = useState(false);
   const identityRef = useRef<HTMLDivElement>(null);
+  const identityTriggerRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
     if (!identityOpen) {
@@ -124,6 +125,7 @@ export function AppShell({
     const closeOnEscape = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
         setIdentityOpen(false);
+        identityTriggerRef.current?.focus();
       }
     };
     document.addEventListener('mousedown', closeOnOutside);
@@ -183,9 +185,10 @@ export function AppShell({
 
         <div className="id-switch" ref={identityRef}>
           <button
+            ref={identityTriggerRef}
             type="button"
             className="id-switch-btn"
-            aria-haspopup="listbox"
+            aria-haspopup="dialog"
             aria-expanded={identityOpen}
             aria-label={`${tripMessages.identitySwitch}：当前 ${currentUser.nickname}`}
             onClick={() => setIdentityOpen((previous) => !previous)}
@@ -209,7 +212,7 @@ export function AppShell({
           </button>
 
           {identityOpen && (
-            <div className="id-panel" role="listbox" aria-label={tripMessages.identitySwitch}>
+            <div className="id-panel" role="dialog" aria-label="身份菜单">
               {isAuthenticated && (
                 <div className="id-current">
                   <Avatar user={currentUser} size="sm" />
@@ -220,48 +223,61 @@ export function AppShell({
                   <span className="id-option-flag">{tripMessages.authLoggedIn}</span>
                 </div>
               )}
-              <p className="id-panel-label">
+              <p className="id-panel-label" id="identity-options-label">
                 {isAuthenticated ? '切换为演示身份' : tripMessages.identityTitle}
               </p>
-              {demoUsers.map((user) => {
-                const selected = !isAuthenticated && user.id === currentUser.id;
-                return (
-                  <button
-                    key={user.id}
-                    type="button"
-                    role="option"
-                    aria-selected={selected}
-                    className={selected ? 'id-option on' : 'id-option'}
-                    onClick={() => {
-                      onSelectUser(user);
-                      setIdentityOpen(false);
-                    }}
-                  >
-                    <Avatar user={user} size="sm" />
-                    <span className="id-option-text">
-                      <b>{user.nickname}</b>
-                      <i>{user.school}</i>
-                    </span>
-                    {selected && <span className="id-option-flag">当前</span>}
-                  </button>
-                );
-              })}
-              {isAuthenticated && (
-                <button
-                  type="button"
-                  className="id-logout"
-                  onClick={() => {
-                    setIdentityOpen(false);
-                    onLogout();
-                  }}
+              <div className="id-list" role="listbox" aria-labelledby="identity-options-label">
+                {demoUsers.map((user) => {
+                  const selected = !isAuthenticated && user.id === currentUser.id;
+                  return (
+                    <button
+                      key={user.id}
+                      type="button"
+                      role="option"
+                      aria-selected={selected}
+                      className={selected ? 'id-option on' : 'id-option'}
+                      onClick={() => {
+                        onSelectUser(user);
+                        setIdentityOpen(false);
+                      }}
+                    >
+                      <Avatar user={user} size="sm" />
+                      <span className="id-option-text">
+                        <b>{user.nickname}</b>
+                        <i>{user.school}</i>
+                      </span>
+                      {selected && <span className="id-option-flag">当前</span>}
+                    </button>
+                  );
+                })}
+              </div>
+              <div className="id-divider" role="separator" />
+              <button
+                type="button"
+                className="id-logout"
+                onClick={() => {
+                  setIdentityOpen(false);
+                  onLogout();
+                }}
+              >
+                <svg
+                  viewBox="0 0 20 20"
+                  aria-hidden="true"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.7"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
                 >
-                  {tripMessages.authLogout}
-                </button>
-              )}
+                  <path d="M8 4H5.5A1.5 1.5 0 0 0 4 5.5v9A1.5 1.5 0 0 0 5.5 16H8" />
+                  <path d="M12 6.5 15.5 10 12 13.5M8.5 10h7" />
+                </svg>
+                <span>{tripMessages.authLogout}</span>
+              </button>
               <p className="id-panel-note">
                 {isAuthenticated
-                  ? '退出登录后会回到身份门；切换到演示身份会结束当前登录会话。'
-                  : '演示身份无需密码，切换后所有浏览与操作都以新身份计算。'}
+                  ? '退出登录会结束本机会话并回到身份门；切换到演示身份会结束当前登录。'
+                  : '演示身份无需密码；退出登录只清除本机身份并回到身份门。'}
               </p>
             </div>
           )}

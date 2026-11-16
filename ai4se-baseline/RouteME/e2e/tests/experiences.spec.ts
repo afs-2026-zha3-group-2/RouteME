@@ -13,12 +13,20 @@ async function switchUser(page: Page, userId: number) {
   await page.reload();
 }
 
+function createGate() {
+  let release!: () => void;
+  const opened = new Promise<void>((resolve) => {
+    release = resolve;
+  });
+  return { opened, release: () => release() };
+}
+
 async function createCompletedTrip(page: Page, title: string) {
   const created = await page.request.post(`${API}/trips`, {
     headers: { 'X-User-Id': '1', 'Content-Type': 'application/json' },
     data: {
       title,
-      destination: '珠海',
+      destination_code: '440400',
       start_date: '2026-12-20',
       end_date: '2026-12-20',
       stops: ['香洲港集合', '情侣路骑行'],
@@ -41,12 +49,12 @@ test('shows seeded experiences in the travel experience view', async ({ page }) 
 
   await page.locator('.ant-segmented-item', { hasText: '旅行体验' }).click();
 
-  await expect(page.locator('.experience-card').first()).toBeVisible();
+  await expect(page.locator('.exp-card').first()).toBeVisible();
     await expect(page.getByText(/强度 · 适中/).first()).toBeVisible();
     await expect(page.getByText(/强度 · 较累/).first()).toBeVisible();
-    expect(await page.locator('.experience-card').count()).toBeGreaterThanOrEqual(2);
+    expect(await page.locator('.exp-card').count()).toBeGreaterThanOrEqual(2);
     await expect(page.getByText(/带一件防风外套|鞋一定要抓地/).first()).toBeVisible();
-  await expect(page.getByRole('button', { name: '参考此行程发布' }).first()).toBeVisible();
+  await expect(page.getByRole('link', { name: '参考此行程发布' }).first()).toBeVisible();
 });
 
 test('shares an experience and reuses it to publish a new plan', async ({ page }) => {
@@ -76,10 +84,13 @@ test('shares an experience and reuses it to publish a new plan', async ({ page }
   await expect(page.getByText(/已预填目的地、途经点与兴趣/)).toBeVisible();
   await expect(page.getByLabel('计划人数（含自己，2–12）')).toHaveValue('');
   await expect(page.getByLabel('标题')).toHaveValue('');
-  await expect(page.getByLabel('途经点（每行一个，至少两个）')).toHaveValue(/香洲港集合/);
-  await expect(page.getByRole('checkbox', { name: '摄影' })).toBeChecked();
+  await expect(page.locator('.place-chip-name', { hasText: '香洲港集合' }).first()).toBeVisible();
+  await expect(page.getByRole('button', { name: '摄影', exact: true })).toHaveAttribute(
+    'aria-pressed',
+    'true',
+  );
 
-  await page.locator('.form-card button.ant-btn-primary').click();
+  await page.getByRole('button', { name: /^发\s*布$/ }).click();
   await expect(page.getByText(/给这条路线起个名字|请选择出发日期|含你在内至少 2 人/).first()).toBeVisible();
 });
 
@@ -96,4 +107,72 @@ test('keeps experience entry points honest', async ({ page }) => {
   await expect(page.getByPlaceholder(/路况、强度、时间点/)).toBeVisible();
   await expect(page.getByRole('button', { name: /上传图片|添加图片/ })).toHaveCount(0);
   await expect(page.getByText('分享边界')).toBeVisible();
+});
+
+test('switches to the experience view and marks ended origin trips', async ({ page }) => {
+  await loginAs(page, 1);
+  await page.goto('/');
+
+  await page.locator('.ant-segmented-item', { hasText: '旅行体验' }).click();
+
+  await expect(page.getByRole('radio', { name: '旅行体验' })).toBeChecked();
+  await expect(page.locator('.trip-card')).toHaveCount(0);
+  await expect(page.locator('.result-count')).toContainText('条体验');
+
+  const first = page.locator('.exp-card').first();
+  await expect(first).toBeVisible();
+  await expect(first.locator('.exp-origin')).toContainText('来自');
+  await expect(first.locator('[data-status="completed"]')).toContainText('已结束');
+  await expect(first.locator('[data-status-icon="completed"]')).toBeVisible();
+});
+
+test('guides an empty search to publish from both views', async ({ page }) => {
+  const keyword = `无结果-${Date.now()}`;
+  await loginAs(page, 1);
+  await page.goto('/');
+
+  await page.getByPlaceholder('搜索路线、地点或发布者').fill(keyword);
+  await expect(page.getByText('还没有符合条件的行程')).toBeVisible();
+  await expect(page.locator('.empty').getByRole('button', { name: '清除全部条件' })).toBeVisible();
+  await page.getByRole('button', { name: '去发布行程' }).click();
+  await expect(page).toHaveURL(/#\/trips\/new$/);
+
+  await page.goto('/');
+  await page.locator('.ant-segmented-item', { hasText: '旅行体验' }).click();
+  await page.getByPlaceholder('搜索路线、地点或发布者').fill(keyword);
+  await expect(page.getByText('还没有符合的旅行体验')).toBeVisible();
+  await page.getByRole('button', { name: '去发布行程' }).click();
+  await expect(page).toHaveURL(/#\/trips\/new$/);
+});
+
+test('shows skeletons instead of the previous view while lists load', async ({ page }) => {
+  const matchesGate = createGate();
+  const experiencesGate = createGate();
+  await page.route('**/api/matches**', async (route) => {
+    await matchesGate.opened;
+    await route.continue();
+  });
+  await page.route('**/api/experiences**', async (route) => {
+    await experiencesGate.opened;
+    await route.continue();
+  });
+
+  await loginAs(page, 1);
+  await page.goto('/');
+
+  await expect(
+    page.locator('[aria-busy="true"][aria-label="正在加载招募中的行程"]'),
+  ).toBeVisible();
+  await expect(page.locator('.trip-card')).toHaveCount(0);
+
+  await page.locator('.ant-segmented-item', { hasText: '旅行体验' }).click();
+  await expect(
+    page.locator('[aria-busy="true"][aria-label="正在加载旅行体验"]'),
+  ).toBeVisible();
+  await expect(page.locator('.trip-card')).toHaveCount(0);
+
+  matchesGate.release();
+  experiencesGate.release();
+  await expect(page.locator('.exp-card').first()).toBeVisible();
+  await expect(page.locator('[aria-busy="true"]')).toHaveCount(0);
 });

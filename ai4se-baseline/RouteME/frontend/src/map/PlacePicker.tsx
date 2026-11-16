@@ -17,7 +17,13 @@ type Props = {
   max?: number;
   placeholder?: string;
   emptyHint?: string;
-};
+  /** Distinguishes several pickers on one form for assistive tech and tests. */
+  ariaLabel?: string;
+    /** Ties the caller's label to the text input. */
+    inputId?: string;
+    /** Marks the input invalid and points at the field's error text. */
+    invalid?: boolean;
+  };
 
 const KIND_LABEL: Record<PlaceKind, string> = { city: '城市', poi: '地点' };
 
@@ -33,7 +39,10 @@ export function PlacePicker({
   max,
   placeholder = '输入城市或地点名，必须能在地图上搜到',
   emptyHint,
-}: Props) {
+    ariaLabel = '搜索地图地点',
+    inputId,
+    invalid = false,
+  }: Props) {
   const [query, setQuery] = useState('');
   const [message, setMessage] = useState<string | null>(null);
   const [focusIndex, setFocusIndex] = useState(-1);
@@ -88,8 +97,11 @@ export function PlacePicker({
     <div className="place-picker">
       <div className="place-search">
         <Input
-          value={query}
-          placeholder={placeholder}
+                  id={inputId}
+                  value={query}
+                  placeholder={placeholder}
+                  aria-invalid={invalid || undefined}
+                  aria-describedby={invalid && inputId !== undefined ? `${inputId}-error` : undefined}
           allowClear
           onChange={(event) => {
             setQuery(event.target.value);
@@ -111,7 +123,7 @@ export function PlacePicker({
               setFocusIndex(-1);
             }
           }}
-          aria-label="搜索地图地点"
+          aria-label={ariaLabel}
         />
         {query.trim() !== '' && suggestions.length > 0 && (
           <ul className="place-suggest" role="listbox" aria-label="地点候选">

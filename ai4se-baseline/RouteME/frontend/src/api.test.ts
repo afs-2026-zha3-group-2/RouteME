@@ -97,7 +97,7 @@ describe('loadGreeting', () => {
         await expect(
           createTrip(1, {
             title: '周末骑行',
-            destination: '珠海',
+                      destination_code: '440400',
             start_date: '2026-11-20',
             end_date: '2026-11-20',
             stops: ['集合', '终点'],
