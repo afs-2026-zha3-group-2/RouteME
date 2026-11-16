@@ -5,7 +5,6 @@ import {
   Button,
   Input,
   Radio,
-  Select,
   Skeleton,
   Typography,
 } from 'antd';
@@ -330,25 +329,41 @@ export function ProfileSetupPage({ currentUser, token, onSaved }: Props) {
           </Field>
 
           <Field label={tripMessages.profileFieldJob} error={errors.job} htmlFor="profile-job">
-            <Select
+            {/*
+             * Native select on purpose: antd 6.7 renders its popup off-screen when the OS asks for
+             * reduced motion (`prefers-reduced-motion: reduce`), so the option list never shows.
+             */}
+            <select
               id="profile-job"
-              allowClear
-              value={values.job === '' ? undefined : values.job}
-              placeholder="不填写"
-              options={JOBS.map((job) => ({ label: job, value: job }))}
-              onChange={(value?: string) => update({ job: value ?? '' })}
-            />
+              className="native-select"
+              aria-invalid={errors.job !== undefined}
+              value={values.job}
+              onChange={(event) => update({ job: event.target.value })}
+            >
+              <option value="">不填写</option>
+              {JOBS.map((job) => (
+                <option key={job} value={job}>
+                  {job}
+                </option>
+              ))}
+            </select>
           </Field>
 
           <Field label={tripMessages.profileFieldMbti} error={errors.mbti} htmlFor="profile-mbti">
-            <Select
+            <select
               id="profile-mbti"
-              allowClear
-              value={values.mbti === '' ? undefined : values.mbti}
-              placeholder="不填写"
-              options={MBTI_TYPES.map((mbti) => ({ label: mbti, value: mbti }))}
-              onChange={(value?: string) => update({ mbti: value ?? '' })}
-            />
+              className="native-select"
+              aria-invalid={errors.mbti !== undefined}
+              value={values.mbti}
+              onChange={(event) => update({ mbti: event.target.value })}
+            >
+              <option value="">不填写</option>
+              {MBTI_TYPES.map((mbti) => (
+                <option key={mbti} value={mbti}>
+                  {mbti}
+                </option>
+              ))}
+            </select>
           </Field>
 
           <InterestPicker

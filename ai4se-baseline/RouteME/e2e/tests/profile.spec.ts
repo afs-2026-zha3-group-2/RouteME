@@ -175,8 +175,7 @@ test('blocks the submit and names the missing required fields', async ({ page })
     }
   });
 
-  await page.locator('#profile-job').click();
-  await page.locator('.ant-select-item-option', { hasText: '学生' }).click();
+  await page.locator('#profile-job').selectOption('学生');
   await page.getByRole('button', { name: '保存资料' }).click();
 
   const summary = page.locator('.profile-summary');
@@ -185,6 +184,32 @@ test('blocks the submit and names the missing required fields', async ({ page })
     await expect(summary).toContainText(field);
   }
   expect(putCount).toBe(0);
+});
+
+test('offers every job and MBTI option in the setup form', async ({ page }) => {
+  const account = await registerViaApi(page);
+  await useAccount(page, account);
+  await openSetup(page);
+
+  const jobs = page.locator('#profile-job option');
+  await expect(jobs).toHaveCount(5);
+  await expect(jobs.nth(0)).toHaveText('不填写');
+  for (const job of ['学生', '上班族', '自由职业', '其他']) {
+    await expect(page.locator('#profile-job option', { hasText: job })).toHaveCount(1);
+  }
+
+  const mbti = page.locator('#profile-mbti option');
+  await expect(mbti).toHaveCount(17);
+  await expect(mbti.nth(0)).toHaveText('不填写');
+  for (const type of ['INTJ', 'INFP', 'ENFJ', 'ESFP']) {
+    await expect(page.locator('#profile-mbti option', { hasText: type })).toHaveCount(1);
+  }
+
+  // Selecting a value must be possible without relying on an overlay popup.
+  await page.locator('#profile-job').selectOption('上班族');
+  await expect(page.locator('#profile-job')).toHaveValue('上班族');
+  await page.locator('#profile-mbti').selectOption('INFP');
+  await expect(page.locator('#profile-mbti')).toHaveValue('INFP');
 });
 
 test('saves a complete profile and opens the public profile', async ({ page }) => {
