@@ -5,20 +5,20 @@
 - **Phase:** ci
 - **Data source:** local execution（本机按 `.github/workflows/ci.yml` 同命令执行；本机无 `gh` / API 凭据）
 - **Change id:** `add-user-profile`
-- **Target:** `main` @ `2423c01`（实现）→ `a95254c`（验证记录）→ 合并 tip `022659c`
+- **Target:** `main` @ `2423c01`（实现）→ `a95254c`（验证记录）→ 合并 tip `022659c` → `e54f273`（远端证据提交）
 - **Pipeline URL:** n/a（私有仓库且本机无 `gh`；以 release tag 作证据）
-- **Commit:** `2423c01` / `a95254c`；合并 tip `022659c`
+- **Commit:** `2423c01` / `a95254c` / `e54f273`；中间合并 tip `022659c`
 
 ## Summary
 
 | Phase | Status | Conclusion | Upstream URL | Notes |
 |-------|--------|------------|--------------|-------|
 | ci（local equivalent） | Pass | success | n/a | `.\mvnw.cmd -B -ntp verify` → 198 tests / BUILD SUCCESS；`npm run build && npm test` → 95 tests |
-| ci（remote run） | Pass | success（tag 证据） | n/a | `022659c`（含 `a95254c` 的合并 tip）CI 通过；证据 `refs/tags/build-022659c` |
+| ci（remote run） | Pass | success（tag 证据） | n/a | `e54f273` CI 通过；证据 `refs/tags/build-e54f273`（中间 tip `022659c` → `build-022659c`） |
 | cd（remote） | Pass | success | n/a | `cd.yml` 仅在 CI `conclusion == 'success'` 时发布 `build-${sha:0:7}` |
 | **Overall** | Partial | `Pass-by-tag-evidence` | — | job 级明细不可得（私有仓库 + 本机无 `gh`）；E2E 不在 CI 范围 |
 
-> 证据链：`a95254c` 于 12:07 推送后，另一会话将 `add-trip-publish` R2 合入并推送 `022659c`（`git merge-base --is-ancestor a95254c origin/main` 成立）。`cd.yml` 的 release job 带 `if: github.event.workflow_run.conclusion == 'success'`，`concurrency.cancel-in-progress: true` 会取消中间运行，因此只留下 tip 的 `build-022659c`；该 tag 同时证明 `022659c` 的 CI 结论为 success，且运行树包含本 change 的 `a95254c`。
+> 证据链：`a95254c` 于 12:07 推送后，另一会话将 `add-trip-publish` R2 合入并推送 `022659c`（`git merge-base --is-ancestor a95254c origin/main` 成立），随后本 change 的远端证据提交 `e54f273` 推送。`cd.yml` 的 release job 带 `if: github.event.workflow_run.conclusion == 'success'`，`concurrency.cancel-in-progress: true` 会取消中间运行，因此中间 tip 只留下 `build-022659c`；最终 `build-e54f273` 证明 `e54f273`（包含 `a95254c` 与全部 P4 代码）的 CI 结论为 success。
 
 ## E1 判定 (Machine Evidence)
 
@@ -69,13 +69,13 @@
 
 | # | Risk | Source | Status |
 |---|------|--------|--------|
-| 1 | CI job 级明细与 run URL 不可得 | 无 `gh` / 凭据；私有仓库 | accepted（tag 证据已补：`build-022659c`） |
+| 1 | CI job 级明细与 run URL 不可得 | 无 `gh` / 凭据；私有仓库 | accepted（tag 证据：`build-e54f273` / `build-022659c`） |
 | 2 | 10 条资料 E2E 不进 CI，回归依赖本地 | `ci.yml` 仅含 backend / frontend | open（AO 跟踪） |
 | 3 | 前端 bundle 923 kB（>500 kB 警告） | 既有体积问题，本 change 增加页面代码 | accepted（独立优化） |
 
 ## Artifacts
 
-- release `build-022659c`（`RouteME build-022659c`；产物 `routeme-standalone-022659c.jar` + `routeme-frontend-dist.zip`），指向 `022659c`。
+- release `build-e54f273`（`RouteME build-e54f273`），指向 `e54f273`；中间 `build-022659c`。
 - 本地完整输出：`target/surefire-reports/`（backend）、`frontend` vitest 输出、`e2e` Playwright 输出（均未入库）。
 - 本地验证报告：[`docs/ai4se-plugins/20261116-120800-local-verify-report.md`](../../../docs/ai4se-plugins/20261116-120800-local-verify-report.md)。
 
@@ -85,8 +85,8 @@
 |-------|-------|
 | Confirmer (named role/person) | opencode（agent，`git ls-remote` / `git merge-base` 核验）；人工复核并入 G2（VL） |
 | Phase covered | ci |
-| Explicit statement | `build-022659c` 存在且 `a95254c` 为其祖先；按 `cd.yml` 的 CI-success gating，判定 `022659c` 的 CI 结论为 success，运行树包含本 change |
-| Timestamp | 2026-11-16T12:25+0800 |
+| Explicit statement | `build-e54f273` 存在且 `a95254c` 为其祖先；按 `cd.yml` 的 CI-success gating，判定 `e54f273` 的 CI 结论为 success，运行树包含本 change；中间 `build-022659c` 佐证合并 tip |
+| Timestamp | 2026-11-16T12:35+0800 |
 
 **Overall when job-level detail is missing:** Partial（`Pass-by-tag-evidence`）。Agent 未自签 G2。
 

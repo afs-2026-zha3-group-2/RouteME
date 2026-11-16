@@ -13,8 +13,8 @@
 | Local verify report | [`docs/ai4se-plugins/20261116-120800-local-verify-report.md`](../../../docs/ai4se-plugins/20261116-120800-local-verify-report.md) | Pass（后端 198 / 前端 95 / E2E 35 / 迁移双路径 / 手工三档） |
 | P4 record | [`docs/sdd/add-user-profile/p4-verify.md`](../../../docs/sdd/add-user-profile/p4-verify.md) | T1–T8 完成；P4-1–P4-4 / P4-6 Pass，P4-5 文件已备待签 |
 | Implementation commit | `2423c01`（实现）→ `a95254c`（验证记录，已推送） | 已合入 `main` 的 `022659c` |
-| Pipeline CI（required） | [`ci-report.md`](ci-report.md) | 本地等价 Pass；远端 `022659c` 由 `build-022659c` tag 推断 success |
-| Pipeline CD | release `build-022659c` | Success（`cd.yml` 仅在 CI success 时发布） |
+| Pipeline CI（required） | [`ci-report.md`](ci-report.md) | 本地等价 Pass；远端 `e54f273` 由 `build-e54f273` tag 推断 success |
+| Pipeline CD | release `build-e54f273`（中间 `build-022659c`） | Success（`cd.yml` 仅在 CI success 时发布） |
 | Delta Spec | [`specs/user-profile/spec.md`](specs/user-profile/spec.md)、[`specs/user-auth/spec.md`](specs/user-auth/spec.md) | 7 Requirement / 24 Scenario + 1 Requirement / 6 Scenario |
 | ATDD / Design / Tasks | [`atdd-design.md`](atdd-design.md)、[`design.md`](design.md)、[`tasks.md`](tasks.md) | E1–E24 / A1–A6 有落点；D1–D12；T1–T8 |
 
@@ -26,15 +26,15 @@
 | scan | Skipped | 仓库未配置安全扫描器；本地演示环境无生产凭据 |
 | review | Skipped | 未运行独立评审工具；按 TDD + ATDD 覆盖 |
 | evidence | Pass | 本地验证报告 + 10 E2E + 95 前端 + 198 后端 + 迁移双路径 |
-| ci | Pass | 本地等价全绿；远端 `022659c` 由 `build-022659c` tag 推断 success |
-| cd | Pass | 发布 `build-022659c` |
+| ci | Pass | 本地等价全绿；远端 `e54f273` 由 `build-e54f273` tag 推断 success |
+| cd | Pass | 发布 `build-e54f273`（中间 `build-022659c`） |
 
 ## Defect grades
 
 | 级别 | 数量 | 说明 |
 |---|---|---|
 | CRITICAL | 0 | — |
-| WARNING | 5 | CI 缺 job 级明细（tag 证据已有）；E2E 不在 CI；双 capability 例外待 SA 追认；`origin/feature/add-user-profiles` 旧实现未作废（V10 迁移同名冲突）；`tasks.md` 的契约版本表述陈旧 |
+| WARNING | 6 | CI 缺 job 级明细（tag 证据已有）；E2E 不在 CI 且依赖种子库；双 capability 例外待 SA 追认；`origin/feature/add-user-profiles` 旧实现未作废（V10 迁移同名冲突）；`tasks.md` 的契约版本表述陈旧；头像目录需在启动时存在 |
 | SUGGESTION | 2 | 前端 bundle 923 kB（既有）；兴趣词表别名仅前端归一 |
 
 ## Decision
@@ -62,6 +62,8 @@
 | 清理 `origin/feature/add-user-profiles` 旧实现（`d3d6178`） | AO + SA | 归档前 |
 | 契约版本与 `tasks.md` 表述对齐 | AO | P5 |
 | 兴趣词表别名统一 | AO + BA | 独立 change |
+| E2E 种子库隔离 / 清理钩子 | AO（Jay） | 评估独立测试库 |
+| 头像目录写入前创建（容错） | AO（Jay） | 评估后决定是否改动 |
 
 ## Approvers
 
@@ -78,5 +80,5 @@
 ## Next
 
 - VL 签署 Decision 后，P4 方可关闭；P5 归档按用户指示另行发起。
-- CI 证据：本地等价全绿 + 远端 `build-022659c`（含 `a95254c`）。
+- CI 证据：本地等价全绿 + 远端 `build-e54f273`（含 `a95254c`；中间 `build-022659c`）。
 - **不要**在 VL 签署前把本文件当作 Pass 证据引用。

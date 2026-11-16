@@ -42,12 +42,12 @@ T1 的原始 red 日志未单独留存；上表为联调阶段留存并修复的
 | `cd RouteME/frontend; npm run build` | 成功（>500 kB chunk 警告为既有体积） |
 | `cd RouteME/frontend; npm test` | 11 files / **95** tests passed |
 | `cd RouteME/e2e; npx playwright test tests/profile.spec.ts` | **10 passed** |
-| `cd RouteME/e2e; npx playwright test` | **35 passed** |
+| `cd RouteME/e2e; npx playwright test` | **35 passed**（含合并 `add-trip-publish` R2 后在全新库上的复跑） |
 | 迁移（全新库） | `ProfileMigrationSqliteTest`：V1–V10，`now at version v10` |
 | 迁移（旧库） | 启动日志 `9 → 10 - add user profile` 成功；演示用户 1–3 新列为 NULL，旧 `school` 文案保留 |
 | 手工 1440 / 768 / 390 × 浅 / 深色 | setup 与公开主页均 `scrollWidth === innerWidth`；390 下标题 top=84 / 顶栏 bottom=66 |
 | 反向核对 | 行程 / 申请 / 聊天 / 体验控制器无逻辑 diff；匹配分数与理由未变；他人响应无 `birthday` |
-| CI（本地等价 + 远端） | backend + frontend 全绿；远端 release `build-022659c`（含 `a95254c`），见 [`ci-report.md`](../../../openspec/changes/add-user-profile/ci-report.md) |
+| CI（本地等价 + 远端） | backend + frontend 全绿；远端 release `build-e54f273`（含 `a95254c`；中间 `build-022659c`），见 [`ci-report.md`](../../../openspec/changes/add-user-profile/ci-report.md) |
 
 ## 5. P4 DoV 检查（`checklists/p4.md`）
 
@@ -55,8 +55,8 @@ T1 的原始 red 日志未单独留存；上表为联调阶段留存并修复的
 |---|---|---|
 | P4-1 | 本地验证报告存在 | Pass（`docs/ai4se-plugins/20261116-120800-local-verify-report.md`） |
 | P4-2 | 本地 Overall = Pass | Pass |
-| P4-3 | `phase=ci` | Pass（`ci-report.md` 本地等价全绿；远端 `022659c` 由 `build-022659c` tag 推断 success） |
-| P4-4 | `phase=cd` | Pass（release `build-022659c`） |
+| P4-3 | `phase=ci` | Pass（`ci-report.md` 本地等价全绿；远端 `e54f273` 由 `build-e54f273` tag 推断 success） |
+| P4-4 | `phase=cd` | Pass（release `build-e54f273`；中间 `build-022659c`） |
 | P4-5 | `g2-decision.md` | Prepared（文件已建，Decision 留空待 VL 签署） |
 | P4-6 | Apply 与 Verify 分离 | Pass（实现方未自签 G2；VL / SA 签署列留空） |
 
@@ -92,6 +92,8 @@ T1 的原始 red 日志未单独留存；上表为联调阶段留存并修复的
 | 4 | `origin/feature/add-user-profiles` 有一份未合并的旧实现（`d3d6178`，含同名 `V10__seed_viewer_profile_user.sql`、`UserProfileController`、`ProfileModal`） | AO + SA | 归档前确认作废 / 删除该分支，避免迁移版本冲突 |
 | 5 | 契约版本按现状保持 0.7.0；`tasks.md` 的「0.6.0 → 0.7.0」为陈旧表述 | AO | P5 校正文档 |
 | 6 | 兴趣词表别名仅在前端预设归一，服务端存规范值 | AO + BA | 独立 change |
+| 7 | E2E 依赖种子库：重复运行累积账号 / 行程，种子行程会被挤出首页第一页；本轮复跑前已重建本地库 | AO | 评估独立测试库 / 清理钩子 |
+| 8 | 头像目录在启动时创建；运行中删除目录会导致上传 500 | AO | 评估写入前 `createDirectories` |
 
 ## 9. P5 状态
 
