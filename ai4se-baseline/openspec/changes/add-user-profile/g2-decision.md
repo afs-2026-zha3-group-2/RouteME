@@ -12,9 +12,9 @@
 |---|---|---|
 | Local verify report | [`docs/ai4se-plugins/20261116-120800-local-verify-report.md`](../../../docs/ai4se-plugins/20261116-120800-local-verify-report.md) | Pass（后端 198 / 前端 95 / E2E 35 / 迁移双路径 / 手工三档） |
 | P4 record | [`docs/sdd/add-user-profile/p4-verify.md`](../../../docs/sdd/add-user-profile/p4-verify.md) | T1–T8 完成；P4-1–P4-4 / P4-6 Pass，P4-5 文件已备待签 |
-| Implementation commit | `2423c01`（实现）→ `a95254c`（验证记录，已推送）→ G2 前修复：其他职业自填（本地） | 已合入 `main` 的 `022659c`；修复提交待推送后由 CI 复核 |
-| Pipeline CI（required） | [`ci-report.md`](ci-report.md) | 本地等价 Pass；远端 `e54f273` 由 `build-e54f273` tag 推断 success |
-| Pipeline CD | release `build-e54f273`（中间 `build-022659c`） | Success（`cd.yml` 仅在 CI success 时发布） |
+| Implementation commit | `2423c01`（实现）→ `a95254c`（验证记录，已推送）→ `3c8355b`（G2 前修复：其他职业自填，已推送） | 已合入 `main`；`3c8355b` 由 `build-3c8355b` tag 复核 |
+| Pipeline CI（required） | [`ci-report.md`](ci-report.md) | 本地等价 Pass；远端 `e54f273` / `3c8355b` 由 `build-e54f273` / `build-3c8355b` tag 推断 success |
+| Pipeline CD | release `build-e54f273`、`build-3c8355b`（中间 `build-022659c`） | Success（`cd.yml` 仅在 CI success 时发布） |
 | Delta Spec | [`specs/user-profile/spec.md`](specs/user-profile/spec.md)、[`specs/user-auth/spec.md`](specs/user-auth/spec.md) | 7 Requirement / 26 Scenario + 1 Requirement / 6 Scenario |
 | ATDD / Design / Tasks | [`atdd-design.md`](atdd-design.md)、[`design.md`](design.md)、[`tasks.md`](tasks.md) | E1–E26 / A1–A6 有落点；D1–D12；T1–T8 |
 

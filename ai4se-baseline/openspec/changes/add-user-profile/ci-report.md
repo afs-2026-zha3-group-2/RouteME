@@ -5,20 +5,20 @@
 - **Phase:** ci
 - **Data source:** local execution（本机按 `.github/workflows/ci.yml` 同命令执行；本机无 `gh` / API 凭据）
 - **Change id:** `add-user-profile`
-- **Target:** `main` @ `2423c01`（实现）→ `a95254c`（验证记录）→ 合并 tip `022659c` → `e54f273`（远端证据提交）
+- **Target:** `main` @ `2423c01`（实现）→ `a95254c`（验证记录）→ 合并 tip `022659c` → `e54f273`（远端证据提交）→ `3c8355b`（其他职业自填修复）
 - **Pipeline URL:** n/a（私有仓库且本机无 `gh`；以 release tag 作证据）
-- **Commit:** `2423c01` / `a95254c` / `e54f273`；中间合并 tip `022659c`
+- **Commit:** `2423c01` / `a95254c` / `e54f273` / `3c8355b`；中间合并 tip `022659c`
 
 ## Summary
 
 | Phase | Status | Conclusion | Upstream URL | Notes |
 |-------|--------|------------|--------------|-------|
-| ci（local equivalent） | Pass | success | n/a | `.\mvnw.cmd -B -ntp verify` → 198 tests / BUILD SUCCESS；`npm run build && npm test` → 95 tests |
-| ci（remote run） | Pass | success（tag 证据） | n/a | `e54f273` CI 通过；证据 `refs/tags/build-e54f273`（中间 tip `022659c` → `build-022659c`） |
+| ci（local equivalent） | Pass | success | n/a | `.\mvnw.cmd -B -ntp verify` → 211 tests / BUILD SUCCESS；`npm run build && npm test` → 120 tests |
+| ci（remote run） | Pass | success（tag 证据） | n/a | `e54f273` / `3c8355b` CI 通过；证据 `refs/tags/build-e54f273`、`build-3c8355b`（中间 tip `022659c` → `build-022659c`） |
 | cd（remote） | Pass | success | n/a | `cd.yml` 仅在 CI `conclusion == 'success'` 时发布 `build-${sha:0:7}` |
 | **Overall** | Partial | `Pass-by-tag-evidence` | — | job 级明细不可得（私有仓库 + 本机无 `gh`）；E2E 不在 CI 范围 |
 
-> 证据链：`a95254c` 于 12:07 推送后，另一会话将 `add-trip-publish` R2 合入并推送 `022659c`（`git merge-base --is-ancestor a95254c origin/main` 成立），随后本 change 的远端证据提交 `e54f273` 推送。`cd.yml` 的 release job 带 `if: github.event.workflow_run.conclusion == 'success'`，`concurrency.cancel-in-progress: true` 会取消中间运行，因此中间 tip 只留下 `build-022659c`；最终 `build-e54f273` 证明 `e54f273`（包含 `a95254c` 与全部 P4 代码）的 CI 结论为 success。
+> 证据链：`a95254c` 于 12:07 推送后，另一会话将 `add-trip-publish` R2 合入并推送 `022659c`（`git merge-base --is-ancestor a95254c origin/main` 成立），随后本 change 的远端证据提交 `e54f273` 推送。`cd.yml` 的 release job 带 `if: github.event.workflow_run.conclusion == 'success'`，`concurrency.cancel-in-progress: true` 会取消中间运行，因此中间 tip 只留下 `build-022659c`；最终 `build-e54f273` 证明 `e54f273`（包含 `a95254c` 与全部 P4 代码）的 CI 结论为 success。`3c8355b`（其他职业自填）推送后 90 秒内出现 `build-3c8355b`，同一规则下推断该提交 CI 结论为 success。
 
 ## E1 判定 (Machine Evidence)
 
@@ -31,7 +31,7 @@
 
 **E1:** ⚠️ 不完整（缺 job 级明细 + E2E 未入 CI），整体结论 success。
 
-**Post-CI fix:** 「其他职业自填」在 `e54f273` 之后落地，当前只有本地验证（后端 211、前端 14 文件 / 120、`profile.spec.ts` 12/12）；尚未推送，不改变上述远端结论；推送后需补一次 CI 结论。
+**Post-CI fix:** 「其他职业自填」随 `3c8355b` 推送；`refs/tags/build-3c8355b` 已出现（`cd.yml` 仅在 CI success 后发布），远端结论 success；本地另有后端 211、前端 14 文件 / 120、`profile.spec.ts` 12/12。
 
 ## Jobs / checks
 
