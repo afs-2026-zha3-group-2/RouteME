@@ -21,6 +21,12 @@ async function pickDestination(page: Page, province: string, city: string) {
   await page.locator('.area-option', { hasText: city }).first().click();
 }
 
+async function pickDestinationByCode(page: Page, provinceCode: string, cityCode: string) {
+  await page.getByRole('button', { name: '目的地', exact: true }).click();
+  await page.locator(`[data-area-province="${provinceCode}"]`).click();
+  await page.locator(`[data-area-city="${cityCode}"]`).click();
+}
+
 /** Local calendar day, matching the form's default (never UTC). */
 function todayIso(): string {
   const now = new Date();
@@ -121,6 +127,17 @@ test('publishes a trip and finds it in the home list', async ({ page }) => {
 
   await page.goto('/');
   await expect(page.locator('.trip-card', { hasText: title })).toBeVisible();
+});
+
+test('explains a destination without offline map coverage', async ({ page }) => {
+  await loginAs(page, 1);
+  await page.goto('/#/trips/new');
+
+  await pickDestinationByCode(page, '110000', '110100');
+
+  await expect(page.locator('[data-testid="place-map"]')).toHaveCount(0);
+  await expect(page.getByText('这个城市暂时没有离线点位')).toBeVisible();
+  await expect(page.getByText('先选目的地，再按城市点选途经点。')).toHaveCount(0);
 });
 
 test('blocks publishing and flags every missing required field', async ({ page }) => {

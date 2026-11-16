@@ -2,7 +2,7 @@ import { useEffect, useState, type ReactNode } from 'react';
 import { Alert, Button, Card, Input, Space, Typography } from 'antd';
 import { createTrip, loadTrip } from '../api';
 import { AreaCascader } from '../area/AreaCascader';
-import { mapCityForCode } from '../areas/areaCatalog';
+import { gazetteerCityForCode } from '../areas/gazetteerCity';
 import { tripMessages } from '../i18n/tripMessages';
 import { PlacePicker } from '../map/PlacePicker';
 import type { DemoUser } from '../types';
@@ -66,7 +66,8 @@ export function TripCreatePage({ currentUser, fromTripId }: Props) {
     setValues((previous) => ({ ...previous, ...patch }));
   };
 
-  const mapCity = mapCityForCode(values.destinationCode);
+  const mapCity = gazetteerCityForCode(values.destinationCode);
+  const hasDestination = values.destinationCode !== '';
 
   const addCustomTag = () => {
     const next = addTag(values.tags, tagDraft);
@@ -194,7 +195,11 @@ export function TripCreatePage({ currentUser, fromTripId }: Props) {
               />
             </Field>
             {mapCity === undefined && (
-              <p className="form-hint">{tripMessages.waypointNeedsDestination}</p>
+              <p className="form-hint">
+                {hasDestination
+                  ? tripMessages.waypointCityUncovered
+                  : tripMessages.waypointNeedsDestination}
+              </p>
             )}
           </div>
         </section>
