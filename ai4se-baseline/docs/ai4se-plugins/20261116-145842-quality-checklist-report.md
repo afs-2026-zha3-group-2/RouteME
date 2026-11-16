@@ -14,7 +14,7 @@
 |----------|-----------|--------|----------|
 | P2-1 | yes | Pass | `openspec/changes/add-trip-completion/specs/trip-plans/spec.md`（MODIFIED 4 + ADDED 3）、`specs/trip-companions/spec.md`（MODIFIED 5）；`openspec validate --strict` valid |
 | P2-2 | yes | Pass | `openspec/changes/add-trip-completion/dov-ac-review.md`（AC 4/4 Pass、DoV 5/5 Pass；S15-1~26 全部 traceable） |
-| P2-3 | yes | Pass | `openspec/changes/add-trip-completion/g1-decision.md`（G1 Pass；IO=WAYNE、SA=Jacky / Karena；双 capability 例外已追认；无阻断条件） |
+| P2-3 | yes | Pass | `openspec/changes/add-trip-completion/g1-decision.md`（G1 Pass；IO=Wanye、SA=Jacky / Karena；双 capability 例外已追认；无阻断条件） |
 | P2-4 | no | Pass | `openspec/changes/add-trip-completion/consistency-lint.md`（phase=p2；Pass；0 BLOCKER / 0 WARNING / 5 SUGGESTION） |
 
 **Stage Overall:** Pass（3/3 required）

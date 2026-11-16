@@ -38,5 +38,5 @@
 ## Next
 
 - P3：`/sdd:atdd-design` → `/sdd:task-plan`（先定自动完成物化 / 批量取消触发 / 契约版本）
-- G1 已 Pass（IO=WAYNE；SA=Jacky、Karena；双 capability 例外已追认）
+- G1 已 Pass（IO=Wanye；SA=Jacky、Karena；双 capability 例外已追认）
 - do not invoke Gate skills from this checklist

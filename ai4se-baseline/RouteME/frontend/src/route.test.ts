@@ -19,6 +19,7 @@ describe('parseRoute', () => {
       expect(parseRoute('#/mine')).toEqual({ name: 'mine' });
       expect(parseRoute('#/trips/12/applications')).toEqual({ name: 'applications', tripId: 12 });
       expect(parseRoute('#/chat/12/3')).toEqual({ name: 'chat', tripId: 12, userId: 3 });
+      expect(parseRoute('#/chat')).toEqual({ name: 'chat' });
       expect(parseRoute('#/share/12')).toEqual({ name: 'share', tripId: 12 });
     });
 
@@ -48,6 +49,7 @@ describe('parseRoute', () => {
         { name: 'applications' as const, tripId: 7 },
         { name: 'mine' as const },
         { name: 'chat' as const, tripId: 7, userId: 2 },
+        { name: 'chat' as const },
         { name: 'share' as const, tripId: 7 },
         { name: 'profileSetup' as const },
         { name: 'userProfile' as const, userId: 7 },

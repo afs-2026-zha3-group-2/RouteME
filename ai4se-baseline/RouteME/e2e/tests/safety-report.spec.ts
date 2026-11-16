@@ -87,7 +87,7 @@ test('keeps the chat report entry in the header, including read-only chats', asy
   await loginAs(page, 1);
   await page.goto('/#/chat/1/2');
 
-  await expect(page.getByText('这次行程已经结束，聊天转为只读，历史消息仍可查看。')).toBeVisible();
+  await expect(page.getByText('该行程已结束，只能查看历史消息。')).toBeVisible();
   const entry = page.getByRole('button', { name: ENTRY_USER });
   await expect(entry).toBeVisible();
   await expectNoSafetyHint(page);
@@ -147,7 +147,7 @@ test('hides the entry on your own trip but keeps the pre-publish note', async ({
 
 test('submits once, shows the receipt and closes without changing state', async ({ page }) => {
   const title = `E2E 举报回执 ${Date.now()}`;
-  const created = await createTripViaApi(page, 2, title, 3, FIXTURE_DAYS);
+  const created = await createTripViaApi(page, 2, title, { daysFromToday: FIXTURE_DAYS });
   await applyViaApi(page, 1, created.id, '想一起走。');
   await acceptApplicationViaApi(page, 2, created.id, 1);
   const sent = await page.request.post(`/api/trips/${created.id}/messages`, {
@@ -158,8 +158,8 @@ test('submits once, shows the receipt and closes without changing state', async 
 
   await loginAs(page, 1);
   await page.goto(`/#/chat/${created.id}/2`);
-  await expect(page.locator('.chat-bubble').first()).toBeVisible();
-  const messagesBefore = await page.locator('.chat-bubble').count();
+  await expect(page.locator('.chat-body .msg .bubble').first()).toBeVisible();
+  const messagesBefore = await page.locator('.chat-body .msg .bubble').count();
 
   await page.getByRole('button', { name: ENTRY_USER }).click();
   const [response] = await Promise.all([
@@ -184,8 +184,8 @@ test('submits once, shows the receipt and closes without changing state', async 
   await footerButtons.click();
   await expect(dialog).toHaveCount(0);
 
-  await expect(page.locator('.chat-bubble')).toHaveCount(messagesBefore);
-  await expect(page.getByPlaceholder('输入消息（500 字以内）')).toBeVisible();
+  await expect(page.locator('.chat-body .msg .bubble')).toHaveCount(messagesBefore);
+  await expect(page.getByPlaceholder('输入消息，Enter 发送，Shift + Enter 换行')).toBeVisible();
 });
 
 test('keeps the reason and note on failure and retries to a single receipt', async ({ page }) => {

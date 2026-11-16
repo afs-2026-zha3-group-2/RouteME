@@ -24,23 +24,30 @@ export function todayIso(): string {
   return isoDaysFromToday(0);
 }
 
+type CreateTripOptions = {
+  capacity?: number;
+  meeting?: { area?: string; time?: string };
+  daysFromToday?: number;
+};
+
 export async function createTripViaApi(
   page: Page,
   publisherId: number,
   title: string,
-  capacity = 3,
-  daysFromToday = 0,
+  options: CreateTripOptions = {},
 ) {
   const response = await page.request.post(`${API}/trips`, {
     headers: { 'X-User-Id': String(publisherId), 'Content-Type': 'application/json' },
     data: {
       title,
       destination_code: '440400',
-      start_date: isoDaysFromToday(daysFromToday),
-      end_date: isoDaysFromToday(daysFromToday),
+      start_date: isoDaysFromToday(options.daysFromToday ?? 0),
+      end_date: isoDaysFromToday(options.daysFromToday ?? 0),
       stops: ['香洲港集合', '情侣路骑行'],
       tags: ['摄影'],
-      capacity,
+      capacity: options.capacity ?? 3,
+      meeting_area: options.meeting?.area ?? null,
+      meeting_time: options.meeting?.time ?? null,
     },
   });
   expect(response.ok()).toBeTruthy();

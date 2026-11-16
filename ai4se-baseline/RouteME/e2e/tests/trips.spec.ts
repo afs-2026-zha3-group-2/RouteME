@@ -39,6 +39,14 @@ async function clearDate(page: Page, label: string) {
   await picker.locator('.ant-picker-clear').click();
 }
 
+/** 前序用例会创建行程，切到每页 45 条避免 seed 卡片被挤到第二页。 */
+async function expandPageSize(page: Page) {
+  const select = page.getByLabel('每页条数');
+  if ((await select.count()) > 0) {
+    await select.selectOption('45');
+  }
+}
+
 /** Local calendar day, matching the form's default (never UTC). */
 function todayIso(): string {
   return isoDaysFromToday(0);
@@ -68,21 +76,17 @@ async function createTripViaApi(page: Page, title: string, startDate = todayIso(
   return (await response.json()) as { id: number };
 }
 
-test('shows the login-only identity gate and the unfinished trip list', async ({ page }) => {
+test('shows the identity gate with four demo accounts and the unfinished trip list', async ({ page }) => {
   await page.goto('/');
 
   await expect(page.getByRole('tab', { name: '登录' })).toBeVisible();
-  // 周野已落库凭据（V15），演示身份直接进入区块整体移除，首页无法一键进入。
-  await expect(page.locator('.gate-cards')).toHaveCount(0);
-  await expect(page.getByRole('button', { name: /周野/ })).toHaveCount(0);
-  await expect(page.getByRole('button', { name: /林见夏/ })).toHaveCount(0);
-  await expect(page.getByRole('button', { name: /陈屿/ })).toHaveCount(0);
-  await expect(page.getByRole('button', { name: /苏念/ })).toHaveCount(0);
+  await expect(page.getByRole('button', { name: /林见夏/ })).toBeVisible();
+  await expect(page.getByRole('button', { name: /陈屿/ })).toBeVisible();
+  await expect(page.getByRole('button', { name: /苏念/ })).toBeVisible();
+  await expect(page.getByRole('button', { name: /周野/ })).toBeVisible();
   await expect(page.getByRole('button', { name: /注册|找回密码/ })).toHaveCount(0);
 
-  // 以本机身份直接进入（同其他用例），保证下方未完成任务列表断言仍以 id1 视角成立。
-  await loginAs(page, 1);
-  await page.reload();
+  await page.getByRole('button', { name: /林见夏/ }).click();
 
   await expect(page.getByRole('heading', { level: 1 })).toContainText('今天想走哪条路');
   await expect(page.locator('.trip-card', { hasText: '珠海情侣路日落机位二刷' })).toBeVisible();
@@ -150,6 +154,56 @@ test('publishes a trip and finds it in the home list', async ({ page }) => {
 
   await page.goto('/');
   await expect(page.locator('.trip-card', { hasText: title })).toBeVisible();
+});
+
+test('publishes with a meeting time and edits it from the detail page', async ({ page }) => {
+  const title = `E2E 集合信息 ${Date.now()}`;
+  const day = isoDaysFromToday(7);
+  const [, month, date] = day.split('-').map(Number);
+  const meetingLabel = `${month}/${date} 08:30`;
+  const movedLabel = `${month}/${date} 09:00`;
+  await loginAs(page, 1);
+  await page.goto('/#/trips/new');
+  await page.getByLabel('标题').fill(title);
+  await pickDestination(page, '广东省', '珠海市');
+  await setDate(page, '出发日期', day);
+  await setDate(page, '结束日期', day);
+  await pickPlace(page, '途经点', '香洲港');
+  await pickPlace(page, '途经点', '情侣路');
+  await page.getByLabel(/集合区域/).fill('香洲港客运站');
+  await page.getByLabel(/集合时间/).fill(`${day}T08:30`);
+  await page.getByRole('button', { name: /^发\s*布$/ }).click();
+
+  await expect(page.getByRole('heading', { name: title })).toBeVisible();
+  await expect(page.locator('.detail-facts')).toContainText('香洲港客运站');
+  await expect(page.locator('.detail-facts')).toContainText(meetingLabel);
+
+  await page.getByRole('button', { name: '编辑集合信息' }).click();
+  const dialog = page.getByRole('dialog');
+  await dialog.getByLabel('集合区域').fill('香洲港新码头');
+  await dialog.getByLabel('集合时间').fill(`${day}T09:00`);
+  await dialog.getByRole('button', { name: /保\s*存/ }).click();
+  await expect(page.getByText('集合信息已更新')).toBeVisible();
+  await expect(page.locator('.detail-facts')).toContainText('香洲港新码头');
+  await expect(page.locator('.detail-facts')).toContainText(movedLabel);
+});
+
+test('rejects a meeting time after the end date on the publish form', async ({ page }) => {
+  const day = isoDaysFromToday(7);
+  const laterDay = isoDaysFromToday(8);
+  await loginAs(page, 1);
+  await page.goto('/#/trips/new');
+  await page.getByLabel('标题').fill(`E2E 集合校验 ${Date.now()}`);
+  await pickDestination(page, '广东省', '珠海市');
+  await setDate(page, '出发日期', day);
+  await setDate(page, '结束日期', day);
+  await pickPlace(page, '途经点', '香洲港');
+  await pickPlace(page, '途经点', '情侣路');
+  await page.getByLabel(/集合时间/).fill(`${laterDay}T08:30`);
+  await page.getByRole('button', { name: /^发\s*布$/ }).click();
+
+  await expect(page.getByText('集合时间不能晚于结束日期')).toBeVisible();
+  await expect(page).toHaveURL(/#\/trips\/new/);
 });
 
 test('explains a destination without offline map coverage', async ({ page }) => {
@@ -233,6 +287,7 @@ test('distinguishes full trips from recruiting trips without color alone', async
   await createTripViaApi(page, title, isoDaysFromToday(7), isoDaysFromToday(7));
   await loginAs(page, 1);
   await page.goto('/');
+  await expandPageSize(page);
 
   const full = page.locator('.trip-card', { hasText: '佛山祖庙与岭南天地一日' });
   await expect(full.locator('[data-status="full"]')).toContainText('已满员');
@@ -273,6 +328,7 @@ test('keeps out-of-scope actions off the screens', async ({ page }) => {
 test('filters by province and city without a search box', async ({ page }) => {
   await loginAs(page, 1);
   await page.goto('/');
+  await expandPageSize(page);
 
   await expect(page.getByPlaceholder('搜索路线、地点或发布者')).toHaveCount(0);
   await pickDestination(page, '广东省', '珠海市');

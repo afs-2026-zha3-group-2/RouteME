@@ -7,7 +7,7 @@ import type { DemoUser } from '../types';
 import { Avatar } from './Avatar';
 import { BrandMark } from './BrandMark';
 
-type NavKey = 'discover' | 'create' | 'mine';
+type NavKey = 'discover' | 'create' | 'mine' | 'chat';
 
 type NavItem = { key: NavKey; label: string; href: string };
 
@@ -15,6 +15,7 @@ const NAV_ITEMS: NavItem[] = [
   { key: 'discover', label: tripMessages.homeTitle, href: '#/' },
   { key: 'create', label: tripMessages.publish, href: '#/trips/new' },
   { key: 'mine', label: tripMessages.mineTitle, href: '#/mine' },
+  { key: 'chat', label: tripMessages.chatNav, href: '#/chat' },
 ];
 
 const NAV_GROUPS: Array<{ title: string; items: NavItem[] }> = [
@@ -31,6 +32,9 @@ function activeKey(route: Route): NavKey | null {
   }
   if (route.name === 'mine') {
     return 'mine';
+  }
+  if (route.name === 'chat') {
+    return 'chat';
   }
   return null;
 }
@@ -55,6 +59,20 @@ function NavIcon({ name }: { name: NavKey }) {
         strokeLinecap="round"
       >
         <path d="M10 4.5v11M4.5 10h11" />
+      </svg>
+    );
+  }
+  if (name === 'chat') {
+    return (
+      <svg
+        viewBox="0 0 20 20"
+        aria-hidden="true"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.7"
+        strokeLinejoin="round"
+      >
+        <path d="M17 11.4a2 2 0 0 1-2 2H7l-3.4 2.6V5a2 2 0 0 1 2-2h9.4a2 2 0 0 1 2 2z" />
       </svg>
     );
   }

@@ -1,29 +1,18 @@
 import { useCallback, useEffect, useState } from 'react';
-import { Alert, Button, Modal, Skeleton, Tabs, Typography, message } from 'antd';
+import { Alert, Button, Modal, Skeleton, Tabs, Typography } from 'antd';
 import { completeTrip, loadMyExperiences, loadMyTrips } from '../api';
+import { mineMeetingNote } from '../chat/chatMeeting';
 import { tripMessages } from '../i18n/tripMessages';
 import { publisherSummary } from '../profile/profileDisplay';
 import { Avatar } from '../shell/Avatar';
+import { applicationLabel } from '../trips/applicationStatus';
 import { TripCard } from '../trips/TripCard';
-import type { DemoUser, Experience, MyTrips, TripApplication } from '../types';
+import type { DemoUser, Experience, MyTrips } from '../types';
 
 type Props = {
   currentUser: DemoUser;
   isAuthenticated: boolean;
 };
-
-function applicationLabel(status: TripApplication['status']): string {
-  if (status === 'pending') {
-    return tripMessages.applyStatusPending;
-  }
-  if (status === 'accepted') {
-    return tripMessages.applyStatusAccepted;
-  }
-  if (status === 'rejected') {
-    return tripMessages.applyStatusRejected;
-  }
-  return tripMessages.applyStatusCancelled;
-}
 
 function EmptyGroup() {
   return <Typography.Text type="secondary">{tripMessages.mineEmpty}</Typography.Text>;
@@ -61,17 +50,9 @@ export function MyTripsPage({ currentUser, isAuthenticated }: Props) {
     try {
       await completeTrip(currentUser.id, confirmTripId);
       setConfirmTripId(null);
-      message.success(tripMessages.detailEndedToast);
       reload();
     } catch (caught: unknown) {
-      const code = caught instanceof Error ? caught.message : 'UNKNOWN_ERROR';
-      if (code === 'TRIP_NOT_OPEN') {
-        message.info(tripMessages.applyEnded);
-        setConfirmTripId(null);
-        reload();
-      } else {
-        setError(code);
-      }
+      setError(caught instanceof Error ? caught.message : 'UNKNOWN_ERROR');
     } finally {
       setCompletingId(null);
     }
@@ -220,6 +201,9 @@ export function MyTripsPage({ currentUser, isAuthenticated }: Props) {
                       {data.matched.map((trip) => (
                         <div key={trip.id} className="mine-row">
                           <TripCard trip={trip} compact />
+                          <p className="mine-meeting-note mine-row-meta">
+                            {mineMeetingNote(trip.meeting_area, trip.meeting_time, trip.joined_count)}
+                          </p>
                           <div className="mine-row-actions">
                             <Button
                               size="small"

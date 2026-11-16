@@ -50,7 +50,7 @@
 
 - [x] `cd RouteME/backend; .\mvnw.cmd -B -o test` → 绿（Windows 本地用 `mvnw.cmd`，CI 用 `./mvnw`），`ReportControllerTest` / `OpenApiTest` 未改且通过。
 - [x] `cd RouteME/frontend; npm run build && npm test` → 绿。
-- [x] `cd RouteME/e2e; npm run test` → 隔离环境（后端 8090 + 独立 SQLite + Vite 5180）48 passed / 13 failed：12 条来自并行会话未提交的 `profile.spec.ts`（依赖未跟踪的 `V16`），1 条为 `trips.spec.ts` 的 antd 6 picker 既有漂移；本 change 的 7 条与改动的既有 spec 全绿，逐条归因见 `p4-verify.md` §5。
+- [x] `cd RouteME/e2e; npm run test` → 隔离环境（后端 8090 + 独立 SQLite + Vite 5180）53 passed / 13 failed：11 条来自并行会话未提交的 `profile.spec.ts`（依赖未跟踪的 `V16`），2 条为 `trips.spec.ts` 的既有失败（身份门演示按钮已移除、antd 6 picker 漂移），三条文件均与 `origin/main` 逐字节一致；本 change 的 7 条与改动的既有 spec 全绿，逐条归因见 `p4-verify.md` §5。
 - [x] `git diff main -- RouteME/backend RouteME/openapi.yaml` → 为空（RV-6）。
 - [x] `cd ai4se-baseline; npx --no-install openspec validate refine-safety-report --strict` → valid。
 

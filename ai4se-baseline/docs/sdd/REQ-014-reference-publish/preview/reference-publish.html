@@ -1,0 +1,890 @@
+<!doctype html>
+<html lang="zh-CN" data-theme="light">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<meta name="description" content="S17 参考此行程发布 · REQ-014 P3 现状 UI 预览（静态，不调用后端）" />
+<title>RouteMe · S17 参考此行程发布 · P3 现状 UI 预览</title>
+<style>
+  /* Tokens are copied verbatim from RouteME/frontend/src/styles.css so the
+     preview and the implementation stay on the same palette. */
+  :root {
+    --deep: #06232b;
+    --tide: #0f4c5c;
+    --lagoon: #12707f;
+    --lagoon-soft: #e3f0f1;
+    --coral: #ff6b35;
+    --coral-deep: #e04f1c;
+    --amber: #f5a524;
+    --surf: #12a89b;
+    --jade: #10925f;
+    --warn: #d98613;
+    --danger: #d8402f;
+    --info: #2b7fd4;
+    --bg: #f2ece1;
+    --surface: #fffdf9;
+    --surface-2: #f8f2e7;
+    --surface-3: #f1e9db;
+    --ink: #0b2a33;
+    --ink-2: #3f5d67;
+    --ink-3: #576b72;
+    --line: #e4dbcb;
+    --line-2: #d3c7b2;
+    --on-deep: #f3fbfc;
+    --on-deep-accent: #ffd166;
+    --t-lagoon: #12707f;
+    --t-surf: #0d756c;
+    --t-jade: #0d774e;
+    --t-warn: #8a5409;
+    --t-danger: #b32c1c;
+    --t-coral: #b74117;
+    --t-info: #246ab2;
+    --grad-tide: linear-gradient(122deg, #0f4c5c 0%, #116b7a 42%, #623dff 100%);
+    --grad-sunset: linear-gradient(104deg, #ff6b35 0%, #f5a524 100%);
+    --r-sm: 8px;
+    --r: 14px;
+    --r-lg: 20px;
+    --r-xl: 28px;
+    --sh-1: 0 1px 2px rgba(6, 35, 43, 0.06), 0 2px 8px -4px rgba(6, 35, 43, 0.1);
+    --sh-2: 0 2px 6px rgba(6, 35, 43, 0.06), 0 14px 30px -18px rgba(6, 35, 43, 0.34);
+    --sh-3: 0 8px 24px -8px rgba(6, 35, 43, 0.22), 0 32px 64px -32px rgba(6, 35, 43, 0.5);
+    --ring: 0 0 0 3px rgba(18, 112, 127, 0.22);
+    --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+    --font: "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", system-ui, sans-serif;
+    --font-num: "SF Mono", "Cascadia Mono", "Segoe UI", ui-monospace, monospace;
+    color-scheme: light;
+  }
+
+  [data-theme="dark"] {
+    --deep: #030e13;
+    --tide: #0d4453;
+    --lagoon: #2b93a4;
+    --lagoon-soft: #10333c;
+    --coral: #ff8354;
+    --coral-deep: #ff6b35;
+    --amber: #ffbb3d;
+    --surf: #2fc9b8;
+    --jade: #2fc07f;
+    --warn: #f0a93c;
+    --danger: #ff6b5c;
+    --info: #56a3ee;
+    --bg: #061116;
+    --surface: #0e1f26;
+    --surface-2: #132a33;
+    --surface-3: #19343e;
+    --ink: #e9f4f6;
+    --ink-2: #a6c1c9;
+    --ink-3: #869da4;
+    --line: #1d3742;
+    --line-2: #274a57;
+    --on-deep: #eaf6f8;
+    --on-deep-accent: #ffd166;
+    --t-lagoon: #31a7ba;
+    --t-surf: #2fc9b8;
+    --t-jade: #2fc07f;
+    --t-warn: #f0a93c;
+    --t-danger: #ff7f70;
+    --t-coral: #ff8354;
+    --t-info: #56a3ee;
+    --sh-1: 0 1px 2px rgba(0, 0, 0, 0.5);
+    --sh-2: 0 2px 6px rgba(0, 0, 0, 0.4), 0 16px 34px -20px rgba(0, 0, 0, 0.9);
+    --sh-3: 0 10px 30px -10px rgba(0, 0, 0, 0.7), 0 40px 70px -34px rgba(0, 0, 0, 1);
+    color-scheme: dark;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    font-family: var(--font);
+    background:
+      radial-gradient(900px 380px at 88% -10%, color-mix(in srgb, var(--lagoon) 13%, transparent), transparent 70%),
+      var(--bg);
+    color: var(--ink);
+    -webkit-font-smoothing: antialiased;
+    padding-bottom: 64px;
+  }
+
+  button, input, textarea { font-family: inherit; }
+  a { color: var(--t-lagoon); }
+
+  /* ---------------- toolbar ---------------- */
+  .preview-bar {
+    position: sticky; top: 0; z-index: 400;
+    display: flex; flex-wrap: wrap; align-items: center; gap: 12px;
+    padding: 10px 18px;
+    border-bottom: 1px solid var(--line);
+    background: color-mix(in srgb, var(--surface) 93%, transparent);
+    backdrop-filter: blur(14px);
+  }
+  .pb-title { display: grid; line-height: 1.25; margin-right: 6px; }
+  .pb-title b { font-size: 13px; }
+  .pb-title span { font-size: 11px; color: var(--ink-3); }
+  .pb-group { display: flex; align-items: center; gap: 6px; }
+  .pb-group > label {
+    font-size: 10.5px; font-weight: 700; letter-spacing: 0.07em;
+    text-transform: uppercase; color: var(--ink-3);
+  }
+  .seg {
+    display: inline-flex; gap: 3px; padding: 3px;
+    border-radius: 99px; background: var(--surface-2); border: 1px solid var(--line);
+  }
+  .seg button {
+    padding: 5px 11px; border: 0; border-radius: 99px;
+    background: transparent; color: var(--ink-2);
+    font-size: 12px; font-weight: 600; cursor: pointer; white-space: nowrap;
+  }
+  .seg button[aria-pressed="true"] {
+    background: var(--surface); color: var(--t-lagoon);
+    box-shadow: var(--sh-1);
+  }
+  .pb-spacer { flex: 1 1 auto; }
+  .toggle {
+    display: inline-flex; align-items: center; gap: 6px;
+    font-size: 12px; color: var(--ink-2); cursor: pointer; user-select: none;
+  }
+  .toggle input { accent-color: var(--lagoon); }
+
+  /* ---------------- shell ---------------- */
+  .viewport { max-width: 1120px; margin: 20px auto 0; padding: 0 18px; }
+  .view { display: none; }
+  .view.active { display: block; animation: rise 260ms var(--ease-out); }
+  @keyframes rise { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+
+  .stage-head { display: flex; align-items: flex-end; gap: 12px; margin: 0 0 14px; }
+  .stage-head h2 { margin: 0; font-size: 15px; letter-spacing: 0.01em; }
+  .stage-head p { margin: 0 0 1px; font-size: 12px; color: var(--ink-3); }
+  .stage-tag {
+    font-size: 10.5px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase;
+    padding: 3px 8px; border-radius: 99px;
+    background: var(--lagoon-soft); color: var(--t-lagoon); border: 1px solid color-mix(in srgb, var(--lagoon) 30%, transparent);
+  }
+
+  .panel {
+    background: var(--surface); border: 1px solid var(--line);
+    border-radius: var(--r-lg); box-shadow: var(--sh-1); padding: 18px 20px;
+  }
+  .panel + .panel { margin-top: 14px; }
+  .panel-title {
+    margin: 0 0 12px; font-size: 13px; font-weight: 700;
+    color: var(--ink-2); letter-spacing: 0.02em;
+  }
+  .muted { color: var(--ink-3); font-size: 12px; }
+
+  /* ---------------- detail page ---------------- */
+  .crumb { font-size: 12px; color: var(--ink-3); text-decoration: none; display: inline-block; margin-bottom: 10px; }
+  .detail-head { border-bottom: 1px solid var(--line); padding-bottom: 14px; margin-bottom: 14px; }
+  .detail-badges { display: flex; gap: 6px; margin-bottom: 8px; }
+  .tag {
+    display: inline-flex; align-items: center; gap: 4px;
+    font-size: 11.5px; font-weight: 600; line-height: 1;
+    padding: 4px 9px; border-radius: 99px;
+    background: var(--surface-2); color: var(--ink-2); border: 1px solid var(--line);
+  }
+  .tag.done { background: color-mix(in srgb, var(--jade) 14%, transparent); color: var(--t-jade); border-color: color-mix(in srgb, var(--jade) 32%, transparent); }
+  .tag.recruiting { background: color-mix(in srgb, var(--lagoon) 14%, transparent); color: var(--t-lagoon); border-color: color-mix(in srgb, var(--lagoon) 30%, transparent); }
+  .detail-title { margin: 0 0 6px; font-size: 25px; line-height: 1.28; letter-spacing: -0.01em; }
+  .detail-meta { margin: 0; display: flex; flex-wrap: wrap; gap: 14px; font-size: 12.5px; color: var(--ink-2); }
+  .detail-meta span { font-variant-numeric: tabular-nums; }
+  .section-title { margin: 18px 0 8px; font-size: 12.5px; font-weight: 700; color: var(--ink-2); letter-spacing: 0.02em; }
+  .section-title:first-child { margin-top: 0; }
+  .stops { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; counter-reset: stop; }
+  .stops li {
+    counter-increment: stop; display: flex; align-items: center; gap: 10px;
+    font-size: 13.5px;
+  }
+  .stops li::before {
+    content: counter(stop);
+    width: 20px; height: 20px; flex: 0 0 20px; border-radius: 50%;
+    display: grid; place-items: center;
+    font-size: 11px; font-weight: 700;
+    background: var(--lagoon-soft); color: var(--t-lagoon);
+  }
+  .facts { display: flex; flex-wrap: wrap; gap: 8px 26px; margin: 12px 0 0; }
+  .facts div { display: grid; gap: 2px; }
+  .facts dt { font-size: 10.5px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--ink-3); }
+  .facts dd { margin: 0; font-size: 13px; }
+  .detail-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+
+  /* buttons */
+  .btn {
+    display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+    padding: 8px 15px; border-radius: 99px;
+    border: 1px solid var(--line-2); background: var(--surface); color: var(--ink);
+    font-size: 12.5px; font-weight: 600; cursor: pointer; text-decoration: none;
+    transition: transform 140ms var(--ease-out), box-shadow 140ms var(--ease-out);
+  }
+  .btn:hover { transform: translateY(-1px); box-shadow: var(--sh-1); }
+  .btn.primary {
+    background: var(--grad-sunset); border-color: transparent; color: #3a1405;
+    box-shadow: 0 6px 16px -8px rgba(224, 79, 28, 0.8);
+  }
+  .btn.ghost { background: transparent; }
+  .btn.sm { padding: 5px 11px; font-size: 11.5px; }
+  .btn:disabled { opacity: 0.55; cursor: not-allowed; transform: none; }
+
+  /* experience list (detail page) */
+  .exp-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+  .exp-list li {
+    border: 1px solid var(--line); border-left: 3px solid color-mix(in srgb, var(--amber) 60%, transparent);
+    border-radius: var(--r); background: var(--surface-2); padding: 12px 14px;
+  }
+  .exp-head { display: flex; align-items: center; gap: 8px; font-size: 12.5px; }
+  .avatar {
+    width: 24px; height: 24px; border-radius: 50%; flex: 0 0 24px;
+    display: grid; place-items: center;
+    background: var(--grad-tide); color: var(--on-deep);
+    font-size: 11px; font-weight: 700;
+  }
+  .exp-full { margin: 8px 0 6px; font-size: 13.5px; line-height: 1.62; }
+  .exp-advice { margin: 0; font-size: 12.5px; color: var(--ink-2); }
+  .exp-advice b { color: var(--t-warn); }
+
+  /* experience card (feed / card form) */
+  .exp-card {
+    border: 1px solid var(--line); border-radius: var(--r-lg);
+    background: var(--surface); padding: 14px 16px; box-shadow: var(--sh-1);
+  }
+  .exp-card .exp-head { gap: 10px; }
+  .exp-card .exp-author { display: grid; line-height: 1.3; text-decoration: none; color: inherit; }
+  .exp-author b { font-size: 13px; }
+  .exp-author span { font-size: 11.5px; color: var(--ink-3); }
+  .badge {
+    margin-left: auto; font-size: 10.5px; font-weight: 700;
+    padding: 3px 8px; border-radius: 99px;
+    background: color-mix(in srgb, var(--amber) 18%, transparent); color: var(--t-warn);
+  }
+  .exp-quote { margin: 10px 0 8px; font-size: 13.5px; line-height: 1.65; }
+  .exp-advice-box {
+    font-size: 12.5px; color: var(--ink-2); line-height: 1.6;
+    border-radius: var(--r-sm); background: var(--surface-2);
+    border: 1px solid var(--line); padding: 9px 11px;
+  }
+  .exp-advice-box b { color: var(--t-warn); margin-right: 4px; }
+  .exp-foot {
+    display: flex; flex-wrap: wrap; align-items: center; gap: 8px;
+    margin-top: 12px; padding-top: 11px; border-top: 1px dashed var(--line-2);
+  }
+  .exp-origin { display: inline-flex; align-items: center; gap: 6px; font-size: 11.5px; color: var(--ink-3); }
+  .exp-origin b { color: var(--ink-2); font-weight: 600; }
+  .exp-foot .btn:first-of-type { margin-left: auto; }
+
+  /* ---------------- publish page ---------------- */
+  .page-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; margin-bottom: 14px; }
+  .page-title { margin: 0 0 4px; font-size: 23px; letter-spacing: -0.01em; }
+  .page-sub { margin: 0; font-size: 12.5px; color: var(--ink-3); }
+  .prefill-banner {
+    display: flex; gap: 10px; align-items: flex-start;
+    border: 1px solid color-mix(in srgb, var(--info) 34%, transparent);
+    background: color-mix(in srgb, var(--info) 9%, var(--surface));
+    color: var(--t-info); border-radius: var(--r); padding: 11px 14px;
+    font-size: 12.5px; line-height: 1.6; margin-bottom: 14px;
+  }
+  .prefill-banner .ico {
+    width: 16px; height: 16px; flex: 0 0 16px; border-radius: 50%;
+    display: grid; place-items: center; font-size: 11px; font-weight: 800;
+    background: color-mix(in srgb, var(--info) 22%, transparent);
+  }
+  .publish-grid { display: grid; grid-template-columns: minmax(0, 1fr) 320px; gap: 16px; align-items: start; }
+  @media (max-width: 900px) { .publish-grid { grid-template-columns: minmax(0, 1fr); } }
+  .form-stack { display: grid; gap: 13px; }
+  .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  @media (max-width: 620px) { .form-row { grid-template-columns: 1fr; } }
+  .form-field { display: grid; gap: 6px; }
+  .form-label {
+    display: flex; align-items: baseline; gap: 6px;
+    font-size: 12px; font-weight: 650; color: var(--ink-2);
+  }
+  .form-label .req { color: var(--danger); }
+  .form-label .opt, .form-label .counter { margin-left: auto; font-size: 10.5px; font-weight: 500; color: var(--ink-3); }
+  .ctrl {
+    width: 100%; padding: 7px 11px; min-height: 34px;
+    border: 1px solid var(--line-2); border-radius: var(--r-sm);
+    background: var(--surface); color: var(--ink); font-size: 13px;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .ctrl.empty { color: var(--ink-3); }
+  .ctrl.invalid { border-color: var(--danger); box-shadow: 0 0 0 3px color-mix(in srgb, var(--danger) 16%, transparent); }
+  .ctrl.prefilled { border-style: dashed; border-color: color-mix(in srgb, var(--lagoon) 55%, transparent); background: color-mix(in srgb, var(--lagoon) 5%, var(--surface)); }
+  .ctrl .caret { margin-left: auto; color: var(--ink-3); font-size: 10px; }
+  .form-hint { font-size: 11px; color: var(--ink-3); line-height: 1.5; }
+  .form-error { font-size: 11.5px; color: var(--t-danger); }
+  .chip-row { display: flex; flex-wrap: wrap; gap: 6px; }
+  .chip {
+    font-size: 11.5px; padding: 4px 10px; border-radius: 99px;
+    border: 1px solid var(--line-2); background: var(--surface); color: var(--ink-2); cursor: default;
+  }
+  .chip.on {
+    border-color: transparent; background: var(--lagoon-soft);
+    color: var(--t-lagoon); font-weight: 650;
+  }
+  .stop-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+  .stop-chip {
+    display: inline-flex; align-items: center; gap: 6px;
+    font-size: 12px; padding: 4px 8px 4px 4px; border-radius: 99px;
+    background: var(--surface-2); border: 1px dashed color-mix(in srgb, var(--lagoon) 50%, transparent);
+  }
+  .stop-chip i {
+    width: 17px; height: 17px; border-radius: 50%; display: grid; place-items: center;
+    font-style: normal; font-size: 10px; font-weight: 700;
+    background: var(--lagoon-soft); color: var(--t-lagoon);
+  }
+  .form-actions { display: flex; gap: 8px; padding-top: 4px; }
+
+  /* aside */
+  .preview-label {
+    display: block; font-size: 10.5px; font-weight: 700; letter-spacing: 0.07em;
+    text-transform: uppercase; color: var(--ink-3); margin-bottom: 8px;
+  }
+  .trip-card {
+    border: 1px solid var(--line); border-radius: var(--r-lg);
+    background: var(--surface); box-shadow: var(--sh-2); overflow: hidden;
+  }
+  .trip-card .tc-top { height: 6px; background: var(--grad-tide); }
+  .tc-body { padding: 13px 15px 15px; display: grid; gap: 9px; }
+  .tc-title { font-size: 15px; font-weight: 700; line-height: 1.35; }
+  .tc-title.ghost { color: var(--ink-3); font-weight: 600; }
+  .tc-meta { display: flex; flex-wrap: wrap; gap: 4px 10px; font-size: 11.5px; color: var(--ink-3); }
+  .tc-route { font-size: 11.5px; color: var(--ink-2); line-height: 1.6; }
+  .tc-route b { color: var(--t-lagoon); font-weight: 600; }
+  .tc-tags { display: flex; flex-wrap: wrap; gap: 5px; }
+  .tc-tags span {
+    font-size: 10.5px; padding: 2px 7px; border-radius: 99px;
+    background: var(--surface-2); border: 1px solid var(--line); color: var(--ink-2);
+  }
+  .tc-foot { display: flex; align-items: center; gap: 7px; font-size: 11px; color: var(--ink-3); }
+  .safety-list { margin: 0; padding-left: 16px; display: grid; gap: 7px; font-size: 12px; color: var(--ink-2); line-height: 1.6; }
+
+  /* ---------------- annotations ---------------- */
+  .note {
+    display: none; gap: 8px; align-items: flex-start;
+    margin: 10px 0 0; padding: 8px 11px;
+    border-radius: var(--r-sm);
+    border: 1px dashed color-mix(in srgb, var(--coral) 55%, transparent);
+    background: color-mix(in srgb, var(--coral) 7%, var(--surface));
+    color: var(--t-coral); font-size: 11.5px; line-height: 1.6;
+  }
+  .note b { font-variant-numeric: tabular-nums; }
+  body.notes .note { display: flex; }
+  body.notes .mark {
+    outline: 1.5px dashed color-mix(in srgb, var(--coral) 60%, transparent);
+    outline-offset: 3px; border-radius: 4px;
+  }
+  .legend {
+    display: none; flex-wrap: wrap; gap: 14px; align-items: center;
+    margin: 0 0 14px; padding: 8px 12px;
+    border: 1px solid var(--line); border-radius: var(--r);
+    background: var(--surface-2); font-size: 11.5px; color: var(--ink-2);
+  }
+  body.notes .legend { display: flex; }
+  .legend i {
+    display: inline-block; width: 18px; height: 12px; border-radius: 3px;
+    border: 1.5px dashed color-mix(in srgb, var(--lagoon) 60%, transparent);
+    background: color-mix(in srgb, var(--lagoon) 6%, transparent);
+    margin-right: 5px; vertical-align: -1px;
+  }
+  .legend i.solid { border-style: solid; border-color: var(--line-2); background: transparent; }
+
+  /* ---------------- AC strip ---------------- */
+  .ac-strip { margin-top: 26px; border-top: 1px solid var(--line); padding-top: 16px; }
+  .ac-strip h3 { margin: 0 0 10px; font-size: 12.5px; color: var(--ink-2); }
+  .ac-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 10px; }
+  .ac-item {
+    border: 1px solid var(--line); border-radius: var(--r); background: var(--surface);
+    padding: 11px 13px; display: grid; gap: 5px;
+  }
+  .ac-item b { font-size: 11.5px; color: var(--t-lagoon); }
+  .ac-item span { font-size: 11.5px; color: var(--ink-2); line-height: 1.6; }
+  .foot-note { margin-top: 12px; font-size: 11px; color: var(--ink-3); line-height: 1.7; }
+</style>
+</head>
+<body>
+
+<div class="preview-bar">
+  <div class="pb-title">
+    <b>S17 参考此行程发布</b>
+    <span>REQ-014 · P3 现状 UI 预览 · 静态页面，不调用后端</span>
+  </div>
+
+  <div class="pb-group">
+    <label for="seg">视图</label>
+    <div class="seg" id="seg" role="group" aria-label="切换预览视图">
+      <button type="button" data-view="detail" aria-pressed="true">① 行程详情入口</button>
+      <button type="button" data-view="create" aria-pressed="false">② 参考发布页</button>
+      <button type="button" data-view="invalid" aria-pressed="false">③ 未重填就发布</button>
+      <button type="button" data-view="created" aria-pressed="false">④ 新计划（无归属）</button>
+    </div>
+  </div>
+
+  <div class="pb-spacer"></div>
+
+  <label class="toggle"><input type="checkbox" id="noteToggle" /> 标注层</label>
+  <label class="toggle"><input type="checkbox" id="themeToggle" /> 深色</label>
+</div>
+
+<div class="viewport">
+
+  <!-- ============ ① detail ============ -->
+  <section class="view active" id="view-detail">
+    <div class="stage-head">
+      <h2>已结束行程详情</h2>
+      <span class="stage-tag">入口 A</span>
+      <p>状态为「已结束」时，体验区底部出现「参考此行程发布」</p>
+    </div>
+
+    <div class="legend"><span><i></i>预填自原行程</span><span><i class="solid"></i>必须重新填写</span><span>红线标注 = 说明文字，不是 UI</span></div>
+
+    <a class="crumb" href="#0" onclick="return false;">← 返回首页</a>
+
+    <div class="panel">
+      <header class="detail-head">
+        <div class="detail-badges">
+          <span class="tag done">已结束</span>
+          <span class="tag">惠州 · 惠东县</span>
+        </div>
+        <h1 class="detail-title">惠州双月湾看日出｜两天一夜</h1>
+        <p class="detail-meta">
+          <span>2026-10-01 → 2026-10-02</span>
+          <span>同行 4/4 人</span>
+        </p>
+      </header>
+
+      <h3 class="section-title">路线</h3>
+      <ol class="stops">
+        <li>惠东汽车站</li>
+        <li>双月湾观景台</li>
+        <li>巽寮湾沙滩</li>
+      </ol>
+      <dl class="facts">
+        <div><dt>集合</dt><dd>惠东汽车站东广场</dd></div>
+        <div><dt>预算</dt><dd>¥300–500 / 人</dd></div>
+        <div><dt>补充说明</dt><dd>看日出要 4:30 起，强度中等</dd></div>
+      </dl>
+
+      <h3 class="section-title">游后真实体验</h3>
+      <ul class="exp-list">
+        <li>
+          <div class="exp-head">
+            <span class="avatar">林</span>
+            <strong>林一</strong>
+            <span class="badge">强度 · 适中</span>
+          </div>
+          <p class="exp-full">观景台的日出比照片更值得，4:30 起床确实难受，但值。沙滩那段别穿新鞋，沙子进得很深。</p>
+          <p class="exp-advice"><b>建议：</b>带一件薄外套，海边凌晨只有 19 度。</p>
+        </li>
+        <li>
+          <div class="exp-head">
+            <span class="avatar">周</span>
+            <strong>周舟</strong>
+            <span class="badge">强度 · 轻松</span>
+          </div>
+          <p class="exp-full">两天一夜走完三个点刚好，不赶。惠东汽车站到双月湾那段建议直接打车。</p>
+          <p class="exp-advice"><b>建议：</b>预算留 100 块给来回打车。</p>
+        </li>
+      </ul>
+
+      <div class="detail-actions">
+        <button class="btn" type="button">发表游后体验</button>
+        <button class="btn primary mark" type="button" data-go="create">参考此行程发布</button>
+      </div>
+
+      <div class="note"><b>入口 A ·</b> <span><code>TripDetailPage.tsx:416-420</code> 只在 <code>status = completed</code> 渲染；跳转 <code>#/trips/new?from=&lt;tripId&gt;</code>。进行中 / 招募中的行程不出现此按钮。</span></div>
+    </div>
+
+    <div class="stage-head" style="margin-top:22px">
+      <h2>体验卡（灵感首页 / 原行程卡片）</h2>
+      <span class="stage-tag">入口 B</span>
+      <p>同一个入口的第二落点，卡片底部右侧</p>
+    </div>
+
+    <div class="exp-card">
+      <div class="exp-head">
+        <span class="avatar">林</span>
+        <a class="exp-author" href="#0" onclick="return false;">
+          <b>林一</b>
+          <span>惠州 · 惠东县</span>
+        </a>
+        <span class="badge">强度 · 适中</span>
+      </div>
+      <p class="exp-quote">观景台的日出比照片更值得，4:30 起床确实难受，但值。沙滩那段别穿新鞋，沙子进得很深。</p>
+      <div class="exp-advice-box"><b>建议</b>带一件薄外套，海边凌晨只有 19 度。</div>
+      <div class="exp-foot">
+        <span class="exp-origin">出自 <b>惠州双月湾看日出｜两天一夜</b></span>
+        <button class="btn sm ghost" type="button">行程详情</button>
+        <button class="btn sm primary mark" type="button" data-go="create">参考此行程发布</button>
+      </div>
+      <div class="note"><b>入口 B ·</b> <span><code>ExperienceCard.tsx:53-55</code> 由体验数据里的 <code>trip.id</code> 定位原行程，因此从灵感首页也能直接进入参考发布。</span></div>
+    </div>
+  </section>
+
+  <!-- ============ ② create ============ -->
+  <section class="view" id="view-create">
+    <div class="stage-head">
+      <h2>参考发布页（已预填）</h2>
+      <span class="stage-tag">状态：刚进入</span>
+      <p>虚线 = 从原行程带入；其余为空，需要自己填</p>
+    </div>
+
+    <div class="legend"><span><i></i>预填自原行程（目的地 / 途经点 / 兴趣标签）</span><span><i class="solid"></i>必须重新填写（标题 / 日期 / 人数 / 集合区域）</span></div>
+
+    <div class="page-head">
+      <div>
+        <h1 class="page-title">发布一条想走的路</h1>
+        <p class="page-sub">写清楚目的地、日期和路线，别人才知道能不能和你同路。</p>
+      </div>
+      <button class="btn" type="button">返回首页</button>
+    </div>
+
+    <div class="prefill-banner">
+      <span class="ico">i</span>
+      <span>已预填目的地、途经点与兴趣；请重新选择标题、日期、人数与集合区域。</span>
+    </div>
+
+    <div class="publish-grid">
+      <div>
+        <div class="panel">
+          <h3 class="panel-title">基本信息</h3>
+          <div class="form-stack">
+            <div class="form-field">
+              <label class="form-label"><span>标题</span><span class="req">*</span><span class="counter">0/40</span></label>
+              <div class="ctrl empty">请输入标题 <span class="caret">▾</span></div>
+            </div>
+            <div class="form-field">
+              <label class="form-label"><span>目的地</span><span class="req">*</span></label>
+              <div class="ctrl prefilled mark">广东省 / 惠州市 <span class="caret">▾</span></div>
+            </div>
+            <div class="form-row">
+              <div class="form-field">
+                <label class="form-label"><span>出发日期</span><span class="req">*</span></label>
+                <div class="ctrl empty">选择日期 <span class="caret">▾</span></div>
+              </div>
+              <div class="form-field">
+                <label class="form-label"><span>结束日期</span><span class="req">*</span></label>
+                <div class="ctrl empty">选择日期 <span class="caret">▾</span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="panel">
+          <h3 class="panel-title">简单路线</h3>
+          <div class="form-field">
+            <label class="form-label"><span>途经点（地图点选或搜索，至少两个）</span></label>
+            <div class="stop-chips mark">
+              <span class="stop-chip"><i>1</i>双月湾观景台</span>
+              <span class="stop-chip"><i>2</i>巽寮湾沙滩</span>
+              <span class="chip">＋ 添加途经点</span>
+            </div>
+            <span class="form-hint">第一个点默认作为集合点，最后一个点作为收尾。不需要精确到分钟。</span>
+          </div>
+        </div>
+
+        <div class="panel">
+          <h3 class="panel-title">同行与预算</h3>
+          <div class="form-stack">
+            <div class="form-field">
+              <label class="form-label"><span>计划人数</span><span class="req">*</span></label>
+              <div class="ctrl empty">请输入人数 <span class="caret">▴</span></div>
+              <span class="form-hint">含你自己，2–12 人；招满后自动停止接受新申请。</span>
+            </div>
+            <div class="form-field">
+              <label class="form-label"><span>集合区域</span><span class="opt">选填</span></label>
+              <div class="ctrl empty">可以直接输入集合地点，或在地图上选</div>
+              <span class="form-hint">只写公共区域，不要写宿舍或家庭住址。</span>
+            </div>
+            <div class="form-row">
+              <div class="form-field">
+                <label class="form-label"><span>预算下限（元）</span><span class="opt">选填</span></label>
+                <div class="ctrl empty">—</div>
+              </div>
+              <div class="form-field">
+                <label class="form-label"><span>预算上限（元）</span><span class="opt">选填</span></label>
+                <div class="ctrl empty">—</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="panel">
+          <h3 class="panel-title">兴趣标签</h3>
+          <div class="form-stack">
+            <div class="form-field">
+              <label class="form-label"><span>兴趣标签（最多 5 个）</span></label>
+              <div class="chip-row mark">
+                <span class="chip on">海边</span>
+                <span class="chip on">日出</span>
+                <span class="chip on">徒步</span>
+                <span class="chip">摄影</span>
+                <span class="chip">美食</span>
+                <span class="chip">骑行</span>
+              </div>
+            </div>
+            <div class="form-field">
+              <label class="form-label"><span>补充说明</span><span class="opt">选填</span></label>
+              <div class="ctrl empty" style="min-height:64px;align-items:flex-start;">想说什么写在这里</div>
+            </div>
+            <div class="form-actions">
+              <button class="btn primary" type="button" data-go="invalid">发布</button>
+              <button class="btn" type="button" data-go="detail">取消</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <aside>
+        <span class="preview-label">实时预览 · 别人看到的样子</span>
+        <div class="trip-card">
+          <div class="tc-top"></div>
+          <div class="tc-body">
+            <div class="tc-title ghost">你的行程标题</div>
+            <div class="tc-meta"><span>广东省 · 惠州市</span><span>日期待定</span></div>
+            <div class="tc-route"><b>双月湾观景台</b> → 巽寮湾沙滩</div>
+            <div class="tc-tags"><span>海边</span><span>日出</span><span>徒步</span></div>
+            <div class="tc-foot"><span class="avatar" style="width:20px;height:20px;flex:0 0 20px;font-size:10px;">陈</span> 陈默 · 2 人起</div>
+          </div>
+        </div>
+
+        <div class="panel" style="margin-top:14px">
+          <h3 class="panel-title">发布前提醒</h3>
+          <ul class="safety-list">
+            <li>只填写公共集合区域，不要公开电话、证件号码或精确住址。</li>
+            <li>把强度和要求写清楚，比事后劝退更省事。</li>
+            <li>接受申请前先看对方资料，你有完全的拒绝权。</li>
+          </ul>
+        </div>
+
+        <div class="note"><b>预填范围 ·</b> <span><code>TripCreatePage.tsx:56-62</code> 只带入 <code>destination_code</code> / <code>stops</code> / <code>tags</code>，并把 <code>capacity</code> 显式清成 <code>''</code>；标题与日期走 <code>emptyTripForm</code> 的空值。</span></div>
+      </aside>
+    </div>
+  </section>
+
+  <!-- ============ ③ invalid ============ -->
+  <section class="view" id="view-invalid">
+    <div class="stage-head">
+      <h2>没重填就点「发布」</h2>
+      <span class="stage-tag">校验态</span>
+      <p>错误只落在必填项；集合区域是选填，空着也能发</p>
+    </div>
+
+    <div class="page-head">
+      <div>
+        <h1 class="page-title">发布一条想走的路</h1>
+        <p class="page-sub">写清楚目的地、日期和路线，别人才知道能不能和你同路。</p>
+      </div>
+      <button class="btn" type="button">返回首页</button>
+    </div>
+
+    <div class="prefill-banner">
+      <span class="ico">i</span>
+      <span>已预填目的地、途经点与兴趣；请重新选择标题、日期、人数与集合区域。</span>
+    </div>
+
+    <div class="publish-grid">
+      <div>
+        <div class="panel">
+          <h3 class="panel-title">基本信息</h3>
+          <div class="form-stack">
+            <div class="form-field">
+              <label class="form-label"><span>标题</span><span class="req">*</span><span class="counter">0/40</span></label>
+              <div class="ctrl empty invalid">请输入标题 <span class="caret">▾</span></div>
+              <span class="form-error">给这条路线起个名字（40 字以内）</span>
+            </div>
+            <div class="form-field">
+              <label class="form-label"><span>目的地</span><span class="req">*</span></label>
+              <div class="ctrl prefilled">广东省 / 惠州市 <span class="caret">▾</span></div>
+            </div>
+            <div class="form-row">
+              <div class="form-field">
+                <label class="form-label"><span>出发日期</span><span class="req">*</span></label>
+                <div class="ctrl empty invalid">选择日期 <span class="caret">▾</span></div>
+                <span class="form-error">请选择出发日期</span>
+              </div>
+              <div class="form-field">
+                <label class="form-label"><span>结束日期</span><span class="req">*</span></label>
+                <div class="ctrl empty invalid">选择日期 <span class="caret">▾</span></div>
+                <span class="form-error">请选择结束日期</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="panel">
+          <h3 class="panel-title">简单路线</h3>
+          <div class="form-field">
+            <label class="form-label"><span>途经点（地图点选或搜索，至少两个）</span></label>
+            <div class="stop-chips">
+              <span class="stop-chip"><i>1</i>双月湾观景台</span>
+              <span class="stop-chip"><i>2</i>巽寮湾沙滩</span>
+              <span class="chip">＋ 添加途经点</span>
+            </div>
+            <span class="form-hint">两个途经点已从原行程带入，满足最少两个的要求。</span>
+          </div>
+        </div>
+
+        <div class="panel">
+          <h3 class="panel-title">同行与预算</h3>
+          <div class="form-stack">
+            <div class="form-field">
+              <label class="form-label"><span>计划人数</span><span class="req">*</span></label>
+              <div class="ctrl empty invalid">请输入人数 <span class="caret">▴</span></div>
+              <span class="form-error">含你在内至少 2 人，最多 12 人</span>
+            </div>
+            <div class="form-field">
+              <label class="form-label"><span>集合区域</span><span class="opt">选填</span></label>
+              <div class="ctrl empty">可以直接输入集合地点，或在地图上选</div>
+              <span class="form-hint">空着不报错，但不会沿用原行程的「惠东汽车站东广场」。</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="panel">
+          <h3 class="panel-title">兴趣标签</h3>
+          <div class="form-stack">
+            <div class="chip-row">
+              <span class="chip on">海边</span><span class="chip on">日出</span><span class="chip on">徒步</span>
+              <span class="chip">摄影</span><span class="chip">美食</span><span class="chip">骑行</span>
+            </div>
+            <div class="form-actions">
+              <button class="btn primary" type="button" data-go="created">模拟：补全后发布</button>
+              <button class="btn" type="button" data-go="create">返回编辑</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <aside>
+        <span class="preview-label">实时预览 · 别人看到的样子</span>
+        <div class="trip-card">
+          <div class="tc-top"></div>
+          <div class="tc-body">
+            <div class="tc-title ghost">你的行程标题</div>
+            <div class="tc-meta"><span>广东省 · 惠州市</span><span>日期待定</span></div>
+            <div class="tc-route"><b>双月湾观景台</b> → 巽寮湾沙滩</div>
+            <div class="tc-tags"><span>海边</span><span>日出</span><span>徒步</span></div>
+            <div class="tc-foot"><span class="avatar" style="width:20px;height:20px;flex:0 0 20px;font-size:10px;">陈</span> 陈默 · 人数待定</div>
+          </div>
+        </div>
+
+        <div class="note"><b>集合区域 ·</b> <span>故事写「集合地点必须重新填写」，基线是「<b>不得沿用</b>」+ 选填（<code>trip-plans/spec.md:151</code>）。所以这里既不会预填，也不会校验必填——只是不会替你把原值带过来。</span></div>
+
+        <div class="note"><b>人数 ·</b> <span><code>TripCreatePage.tsx:61</code> 把 <code>capacity</code> 清成空串，而不是沿用 <code>emptyTripForm</code> 的默认 4，避免「看起来已经填过」。</span></div>
+      </aside>
+    </div>
+  </section>
+
+  <!-- ============ ④ created ============ -->
+  <section class="view" id="view-created">
+    <div class="stage-head">
+      <h2>发布成功 · 新计划</h2>
+      <span class="stage-tag">状态：招募中</span>
+      <p>新行程独立存在，不记录来源行程</p>
+    </div>
+
+    <a class="crumb" href="#0" onclick="return false;">← 返回首页</a>
+
+    <div class="panel">
+      <header class="detail-head">
+        <div class="detail-badges">
+          <span class="tag recruiting">招募中</span>
+          <span class="tag">惠州 · 惠东县</span>
+        </div>
+        <h1 class="detail-title">双月湾再看一次日出</h1>
+        <p class="detail-meta">
+          <span>2026-11-28 → 2026-11-29</span>
+          <span>同行 1/4 人</span>
+        </p>
+      </header>
+
+      <h3 class="section-title">路线</h3>
+      <ol class="stops">
+        <li>双月湾观景台</li>
+        <li>巽寮湾沙滩</li>
+      </ol>
+      <dl class="facts">
+        <div><dt>集合</dt><dd>—（未填写）</dd></div>
+        <div><dt>预算</dt><dd>—（未填写）</dd></div>
+        <div><dt>补充说明</dt><dd>—（未填写）</dd></div>
+      </dl>
+      <div class="detail-actions">
+        <button class="btn" type="button">编辑行程</button>
+        <button class="btn" type="button">查看申请</button>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h3 class="panel-title">原行程 ↔ 新行程</h3>
+      <div class="ac-grid">
+        <div class="ac-item">
+          <b>带过来的</b>
+          <span>目的地 广东省 / 惠州市 · 途经点 双月湾观景台、巽寮湾沙滩 · 兴趣 海边 / 日出 / 徒步</span>
+        </div>
+        <div class="ac-item">
+          <b>没带过来的</b>
+          <span>标题、起止日期、计划人数、集合区域、预算、补充说明 —— 全部由发布者重新填写</span>
+        </div>
+        <div class="ac-item">
+          <b>没有任何来源字段</b>
+          <span><code>TripCreateRequest</code> 只收目的地 / 日期 / 途经点 / 人数 / 集合 / 预算 / 标签 / 说明；没有 <code>from_trip_id</code>（<code>openapi.yaml</code> 的 <code>TripCreateRequest</code>）</span>
+        </div>
+        <div class="ac-item">
+          <b>互不影响</b>
+          <span>原行程仍是「已结束」，新行程是「招募中」；改其中一个不改另一个，删除 / 结束也不联动</span>
+        </div>
+      </div>
+      <p class="foot-note">对应 <code>e2e/tests/experiences.spec.ts:88-100</code> 与 <code>route.test.ts:25-28</code>：发布请求体里没有来源字段，服务端也不做来源校验。</p>
+    </div>
+  </section>
+
+  <!-- ============ AC strip ============ -->
+  <div class="ac-strip">
+    <h3>四条 AC 与上面四个视图的对应</h3>
+    <div class="ac-grid">
+      <div class="ac-item"><b>① 入口</b><span>已结束行程详情与体验卡都有「参考此行程发布」→ 视图 ①</span></div>
+      <div class="ac-item"><b>② 预填</b><span>目的地、途经点（路线）、兴趣标签带入 → 视图 ② 的虚线字段</span></div>
+      <div class="ac-item"><b>③ 重填</b><span>标题、日期、人数、集合区域为空且不报错于集合区域 → 视图 ② / ③</span></div>
+      <div class="ac-item"><b>④ 无归属</b><span>新计划不记录来源，两个行程互不影响 → 视图 ④</span></div>
+    </div>
+    <p class="foot-note">
+      本页只复刻现状 UI，不是新设计：所有文案取自 <code>frontend/src/i18n/tripMessages.ts</code>，布局与
+      <code>TripCreatePage.tsx</code> / <code>TripDetailPage.tsx</code> / <code>ExperienceCard.tsx</code> 对应。
+      标注层里的红色说明是评审辅助，不属于产品界面。页码 / 文件行号以 2026-11-16 的 <code>main</code> 为准。
+    </p>
+  </div>
+</div>
+
+<script>
+  const seg = document.getElementById('seg');
+  const views = Array.from(document.querySelectorAll('.view'));
+
+  function show(name) {
+    views.forEach((view) => view.classList.toggle('active', view.id === 'view-' + name));
+    seg.querySelectorAll('button').forEach((button) => {
+      button.setAttribute('aria-pressed', String(button.dataset.view === name));
+    });
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  seg.addEventListener('click', (event) => {
+    const button = event.target.closest('button[data-view]');
+    if (button) show(button.dataset.view);
+  });
+
+  document.addEventListener('click', (event) => {
+    const target = event.target.closest('[data-go]');
+    if (target) show(target.dataset.go);
+  });
+
+  document.getElementById('noteToggle').addEventListener('change', (event) => {
+    document.body.classList.toggle('notes', event.target.checked);
+  });
+
+  document.getElementById('themeToggle').addEventListener('change', (event) => {
+    document.documentElement.dataset.theme = event.target.checked ? 'dark' : 'light';
+  });
+
+  // Deep links: #detail / #create / #invalid / #created keep a view shareable.
+  const initial = location.hash.replace('#', '');
+  if (['detail', 'create', 'invalid', 'created'].includes(initial)) show(initial);
+</script>
+</body>
+</html>
