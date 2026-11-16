@@ -89,3 +89,10 @@ E2E 首轮有 2 个既有用例失败，归因为 dev 库累积数据（27 条�
 ## 7. 结论
 
 五层验证（后端 220 / 契约 7 + lint / 前端 146 + build / E2E 50 / 规格 strict）全部通过，无回归；用户四条要求均有可执行证据。**建议 G2 Pass**，待 VL（Neal）签署。
+
+## 合并 origin/main 后的复验（2026-11-16 17:22）
+
+- 两个 merge commit：`1d1140f`（52 commits，REQ 顺延 REQ-013、契约 0.9.0→0.10.0、迁移 V13→V14）、`2f6a74b`（588ef9e，采用登录门/账号菜单，迁移顺延 V16）。
+- 证据：后端 `mvnw.cmd -B test` → 242 tests 0 失败；前端 `npm test` → 23 files / 169 tests；`npm run build` Pass；`npx @redocly/cli lint openapi.yaml` → valid，15 warnings；E2E 关键 13 例（`companions.spec.ts` 11 + `chat-entry.spec.ts` 1 + `trips.spec.ts -g meeting` 2）全绿。
+- 全量 E2E 59 例在合并前基线通过；合并后只重跑受影响与新增用例（页面仅登录门/首页样式变化，后端仅迁移编号变化）。
+- dev 库按 V1–V16 全量重建（16 migrations applied）。

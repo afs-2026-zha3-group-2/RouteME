@@ -5,6 +5,8 @@
 - **Timestamp:** 2026-11-16T16:40+0800
 - **Recorded by:** Qoder（AI agent），按 Jay（AO / current developer）2026-11-16 P4 完成后的汇报记录；VL 签署待用户确认
 
+- 合并 origin/main（`1d1140f` + `2f6a74b`）后复验（2026-11-16 17:22）：后端 242 tests、前端 169 tests、契约 lint 15 基线、E2E 关键 13 例（companions 11 + chat-entry 1 + trips meeting 2）全绿；迁移顺延为 `V16__add_meeting_time.sql`，契约 0.10.0。
+
 ## Inputs
 
 | Artifact | Path | Result |
@@ -12,7 +14,7 @@
 | P4 实现记录 | [`docs/sdd/refine-trip-chat/p4-apply.md`](../../../docs/sdd/refine-trip-chat/p4-apply.md) | T1–T12 全部完成；代码、测试与偏差记录齐全 |
 | 本地验证报告 | [`docs/ai4se-plugins/20261116-163500-local-verify-report.md`](../../../docs/ai4se-plugins/20261116-163500-local-verify-report.md) | 五层验证全通过；数据卫生处置已记录 |
 | 任务清单 | [`tasks.md`](tasks.md) | 12 / 12 `[x]`；`openspec validate --strict` valid |
-| 契约 | [`RouteME/openapi.yaml`](../../../RouteME/openapi.yaml) | `0.9.0`；`OpenApiTest` 7/7；redocly lint valid（15 warnings = 基线） |
+| 契约 | [`RouteME/openapi.yaml`](../../../RouteME/openapi.yaml) | `0.10.0`；`OpenApiTest` 7/7；redocly lint valid（15 warnings = 基线） |
 | 规格重评（第 3 次） | [`docs/reviews/20261116-refine-trip-chat-spec-review-3.md`](../../../docs/reviews/20261116-refine-trip-chat-spec-review-3.md) | Pass（BLOCKER 0 / WARNING 0 / SUGGESTION 2）；AO 已补签 |
 | 设计与任务评审 | [`design-review.md`](../../../docs/reviews/20261116-refine-trip-chat-design-review.md)、[`tasks-review.md`](../../../docs/reviews/20261116-refine-trip-chat-tasks-review.md) | 均 Pass；WARNING 已修 |
 
@@ -21,7 +23,7 @@
 | 维度 | 结论 | 证据 |
 |---|---|---|
 | 正确性 | Pass：用户四条要求全部有可执行证据 | E2E 历史消息升序带时间与刷新仍在、仅 PENDING 被拒并说明、3 秒轮询无推送 / 富媒体、ACCEPTED 全流程落库 |
-| 回归 | Pass：后端 220 tests、前端 146 tests、E2E 50 tests 全绿 | `mvnw.cmd -B test` / `npm test` / `npx playwright test` |
+| 回归 | Pass：后端 220 tests、前端 146 tests、E2E 50 tests 全绿；合并 `origin/main` 后复验为后端 242 / 前端 169 / E2E 59 + 关键 13 例全绿 | `mvnw.cmd -B test` / `npm test` / `npx playwright test` |
 | 契约一致性 | Pass：字段、状态与端点与实现一致；lint 无新增 warning | `OpenApiTest`、`@redocly/cli lint`（17→15，新增 2 条已修） |
 | 原型一致性 | Pass：聊天页、集合信息、我的旅行按 `docs/prototype/` 实现；P3 已原型先行 | `p3-design.md` 原型证据；E2E 选择器对齐 `.chat-*` / `.mine-*` / `.detail-facts` |
 | 范围 | Pass：无 WebSocket、已读回执、推送、图片、完整行程编辑 | E2E `keeps companion entry points honest` 断言无文件输入与推送入口；`proposal.md` Out of scope |

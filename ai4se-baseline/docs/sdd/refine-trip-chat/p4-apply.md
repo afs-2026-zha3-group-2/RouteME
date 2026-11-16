@@ -14,8 +14,8 @@
 
 | 任务 | 落点 | 结果 |
 |---|---|---|
-| T1 契约 0.9.0 | `openapi.yaml`：`TripPlan` 增 `meeting_area` / `meeting_time`、`TripDetail` / `TripCreateRequest` 增 `meeting_time`、`ApplicationStatus` 增 `left`、新增 `PUT /trips/{tripId}/meeting` + `TripMeetingRequest`；`OpenApiTest` 同步版本、枚举与端点断言 | Pass |
-| T2 迁移 | `V13__add_meeting_time.sql`（`trip_plans.meeting_time VARCHAR(16)` 可空） | Pass |
+| T1 契约 0.10.0 | `openapi.yaml`：`TripPlan` 增 `meeting_area` / `meeting_time`、`TripDetail` / `TripCreateRequest` 增 `meeting_time`、`ApplicationStatus` 增 `left`、新增 `PUT /trips/{tripId}/meeting` + `TripMeetingRequest`；`OpenApiTest` 同步版本、枚举与端点断言 | Pass |
+| T2 迁移 | `V16__add_meeting_time.sql`（`trip_plans.meeting_time VARCHAR(16)` 可空；V13/V14/V15 已被远程 change 占用，后到者顺延） | Pass |
 | T3 退出语义 | `ApplicationStatusEnum.LEFT("left")`、`TripApplication#isLeft`、`leave` 置 `LEFT` 并 `removeCompanion` | Pass |
 | T4 聊天准入 | `ApplicationService#isChatPartner`（`ACCEPTED\|LEFT`）、`ChatServiceImpl#requireAccess` | Pass |
 | T5 会话列表 | 新增 `pojo/ChatCounterpart`、`ApplicationService#chatCounterparts`、`ChatServiceImpl#partners` 合并消息历史与既有配对，`THREAD_ORDER` 稳定排序 | Pass |
@@ -40,12 +40,12 @@
 
 | 层 | 命令 | 结果 |
 |---|---|---|
-| 后端全量 | `backend/mvnw.cmd -B test` | `Tests run: 220, Failures: 0, Errors: 0`，BUILD SUCCESS |
+| 后端全量 | `backend/mvnw.cmd -B test` | `Tests run: 242, Failures: 0, Errors: 0`，BUILD SUCCESS |
 | 契约单测 | `backend/mvnw.cmd test -Dtest=OpenApiTest` | 7/7 Pass |
 | 契约 lint | `npx @redocly/cli lint openapi.yaml` | valid，15 warnings（与改动前基线相同，新增 0） |
 | 前端构建 | `frontend/npm run build` | Pass（dist js 1,018 kB / gzip 324 kB；chunk 体积 warning 为既有现象） |
-| 前端单测 | `frontend/npm test` | 21 files / 146 tests Pass |
-| E2E 全量 | `e2e/npx playwright test` | 50 passed（2.1m） |
+| 前端单测 | `frontend/npm test` | 23 files / 169 tests Pass |
+| E2E 全量 | `e2e/npx playwright test` | 59 passed（合并前基线；合并后关键 13 例复跑全绿：companions 11 + chat-entry 1 + trips meeting 2） |
 | 规格校验 | `openspec validate refine-trip-chat --strict` | `Change 'refine-trip-chat' is valid` |
 
 ## 4. 数据卫生处置（dev 库）
@@ -61,7 +61,7 @@
 - 备份：`Sqlite/routeme-dev-backup-20261116-1610.db`。
 - 删除测试产物：`reports` 2 条、`chat_messages` id>4（13）、`trip_experiences` id>2（1）、`trip_applications` id>7（16）、`trip_plans` id>7（20）、`auth_sessions` 14、`app_users` id>4（17）；`PRAGMA integrity_check` = ok、`foreign_key_check` = 空。
 - **补充发现：** `trip_plans.joined_count` 是持久化列（`addCompanion` / `removeCompanion` 增减），删申请行不会回滚人数；按 `V4__seed_demo_trips.sql` / `V12__seed_viewer_profile_user.sql` 的种子原值重置为 2/3/1/2/1/2/1，API 复核 trip 3 = `1/3 recruiting`、trip 6 = `2/2 full`。
-- 随后全量 E2E 50/50 通过。
+- 随后全量 E2E 50/50 通过。合并 origin/main 后新增 `chat-entry.spec.ts`（导航/申请页/同行者列表三处聊天入口），关键 13 例复跑全绿。
 
 ## 5. 偏差与冲突记录
 
@@ -71,7 +71,8 @@
 | D-2 | 规格冲突 | Delta 场景「参与同行不因退出减少」与 G1 条件「joined 只认 `ACCEPTED`」相反 | 用户 2026-11-16 裁决当前口径（退出后减一）；订正 Delta 场景、`atdd-design.md` A7 / UT-4，并写 `spec-review-3.md` |
 | D-3 | 工具约束 | `openspec validate --strict` 要求 `tasks.md` 含 checkbox，原任务表只有表格 | 增「执行清单」12 条，P4 收尾时全部勾选 |
 | D-4 | 契约噪声 | 新端点示例引入 2 条 `no-invalid-media-type-examples` warning（示例时间缺 `T`、`Error` 无 `message` 字段） | 示例改为符合 pattern 的越界时间、删除多余 `message`；lint 回到 15 条基线 |
-| D-5 | 环境 | E2E 跑在 `routeme-dev.db`，被测后端为旧进程时无 `meeting_time` | 用户授权后重启后端，Flyway 应用 V13 后复跑 |
+| D-5 | 环境 | E2E 跑在 `routeme-dev.db`，被测后端为旧进程时无 `meeting_time` | 用户授权后重启后端，Flyway 应用 V16 后复跑 |
+| D-6 | 编号与版本冲突 | 合并 `origin/main` 期间远程已占用 REQ-010/011/012、迁移 V13/V14/V15、契约 0.9.0 | 本 change 顺延为 REQ-013；迁移两次顺延至 V16；契约改为 0.10.0（远程 0.9.0 + 本 change 增量）；工件 23 份批量改号 |
 
 ## 6. 遗留与风险
 
@@ -84,14 +85,18 @@
 
 | 角色 | 姓名 | 确认内容 | 状态 |
 |---|---|---|---|
-| VL | Neal | 五层验证证据（后端 220 / 前端 146 / 契约 / E2E 50 / 规格 strict）、数据卫生处置与偏差记录 | 待签 |
+| VL | Neal | 五层验证证据（后端 242 / 前端 169 / 契约 / E2E 59 + 关键复跑 / 规格 strict）、数据卫生处置与偏差记录 | 待签 |
 | AO | Jay | 实现与记录真实、范围未超出提案 | 已署（本文件） |
 
 ## 8. 阶段提交链
 
 | 阶段 | 提交 |
 |---|---|
-| P0 / P1 / P2 / P3 | 待提交（记录见 `p0-baseline.md`、`p1-intent.md`、`p2-spec.md`、`p3-design.md`） |
-| P4 | 本条记录与 `p4-apply.md`、本地验证报告、G2 决策同批提交（`docs(p4): refine-trip-chat apply record and local verify`） |
-
-> 提交动作待用户确认后执行；工作区另有前序 change 的未提交文件，需按 change 拆分提交。
+| P0 | `b4ff5e8` docs(p0) |
+| P1 | `d355c55` docs(p1) |
+| P2 | `5a31d70` docs(p2) |
+| P3 | `fdc3576` docs(p3) |
+| P4 实现 | `d5c24fc` feat(chat) |
+| P4 记录 | `20836a3` docs(p4) |
+| 同步远程（第一轮） | `1d1140f` Merge origin/main（REQ-010→REQ-013、迁移 V13→V14、契约 0.9.0→0.10.0） |
+| 同步远程（第二轮） | `2f6a74b` Merge origin/main（588ef9e，采用登录门/账号菜单，迁移顺延 V16） |
