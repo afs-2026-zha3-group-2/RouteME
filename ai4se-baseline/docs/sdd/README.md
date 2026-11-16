@@ -87,7 +87,7 @@
 
 阶段记录按 `<change-id>` 分目录保存；表中链接指向各阶段记录（提交哈希写在记录的「阶段提交链」小节）。
 
-> `REQ-013-reference-publish` 不是 OpenSpec change：它是 S17「参考此行程发布」按「已验证交付」收口的 P1 记录目录（复用已归档的 `add-trip-experiences`），P2–P5 不适用。
+> `REQ-013-reference-publish` 不是 OpenSpec change：它是 S17「参考此行程发布」按「已验证交付」收口的 P1 记录目录（复用已归档的 `add-trip-experiences`），P2–P5 不适用。P2 已按准入判定留档（无 Delta Spec、无 G1、不主张 Pass），见 [p2-spec.md](REQ-013-reference-publish/p2-spec.md) §2 / §5。
 
 | change-id | 能力 | 故事 | P0 | P1 | P2 | P3 | P4 | P5 |
 |---|---|---|---|---|---|---|---|---|
@@ -97,4 +97,4 @@
 | `refine-trip-application` | `trip-companions`（MODIFIED） | REQ-010 / S08 提交同行申请 | — | [p1](refine-trip-application/p1-intent.md) | [p2](refine-trip-application/p2-spec.md) | [p3](refine-trip-application/p3-design.md) | [p4](refine-trip-application/p4-verify.md) | 待 P5 |
 | `refine-safety-report` | `trip-companions`（REMOVED + ADDED） | REQ-012 / S14 同行举报入口与回执 | — | [p1](refine-safety-report/p1-intent.md) | [p2](refine-safety-report/p2-spec.md) | 待 P3（G1 rev2 Pass） | — | — |
 | `add-trip-completion` | `trip-plans` + `trip-companions`（MODIFIED / ADDED） | REQ-011 / S15 结束行程 | — | [p1](add-trip-completion/p1-intent.md) | [p2](add-trip-completion/p2-spec.md) | [p3](add-trip-completion/p3-design.md) | [p4](add-trip-completion/p4-verify.md) | 待 P5 |
-| `REQ-013-reference-publish` | `trip-experiences`（已交付，只读引用） | REQ-013 / S17 参考此行程发布 | — | [p1](REQ-013-reference-publish/p1-intent.md) | 不适用（无 change） | 不适用 | 不适用 | 不适用（复用 `add-trip-experiences`） |
+| `REQ-013-reference-publish` | `trip-experiences`（已交付，只读引用） | REQ-013 / S17 参考此行程发布 | — | [p1](REQ-013-reference-publish/p1-intent.md) | [不适用](REQ-013-reference-publish/p2-spec.md)（无 Delta / 无 G1） | 不适用 | 不适用 | 不适用（复用 `add-trip-experiences`） |

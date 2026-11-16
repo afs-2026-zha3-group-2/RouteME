@@ -27,4 +27,4 @@
 
 > **REQ-012 编号说明：** 本需求（S14 同行安全提示与举报，change `refine-safety-report`）起草时暂用 REQ-011；同日 `main` 已把 S15 结束行程登记为 REQ-011（`add-trip-completion`），按「后到者顺延」改为 **REQ-012**。意图 / Ready 条目（`REQ-012-safety-report.md`）、`stories.md`、`deep-dive.md`、`impact-brief.md` §15、openspec 工件与 `docs/sdd/` 阶段记录已同步改号；两需求范围不同（状态机 vs 展示口径），可共存。
 
-> **REQ-013 编号说明：** 本需求（S17 参考此行程发布，沿用已归档的 `add-trip-experiences`）接在 REQ-012 之后登记为 **REQ-013**，不新建 OpenSpec change。`status = verified` 表示能力已由 REQ-004 交付并经 E2E / Living Spec 取证，P1 只做「已验证交付」收口；它不是 `add-trip-experiences` 的别名——REQ-004 拥有体验能力，REQ-013 只登记 S17 的验收口径与证据。
+> **REQ-013 编号说明：** 本需求（S17 参考此行程发布，沿用已归档的 `add-trip-experiences`）接在 REQ-012 之后登记为 **REQ-013**，不新建 OpenSpec change。`status = verified` 表示能力已由 REQ-004 交付并经 E2E / Living Spec 取证，P1 只做「已验证交付」收口；它不是 `add-trip-experiences` 的别名——REQ-004 拥有体验能力，REQ-013 只登记 S17 的验收口径与证据。P2 已按准入判定记录为**不适用**（无 Delta Spec、无 G1、不主张 Pass），理由与重启条件见 `docs/sdd/REQ-013-reference-publish/p2-spec.md` §2 / §5。
