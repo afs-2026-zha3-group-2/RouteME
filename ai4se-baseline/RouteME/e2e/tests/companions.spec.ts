@@ -145,7 +145,7 @@ test('lists conversations, keeps history readable and still chats after leaving'
 
   // 我的旅行·已匹配展示集合区域、集合时间与同行人数
   await page.goto('/#/mine');
-  await page.getByRole('tab', { name: /已匹配/ }).click();
+  await page.locator('.ant-segmented-item', { hasText: '已匹配同行' }).click();
   await expect(page.locator('.mine-row', { hasText: title })).toContainText('集合：香洲港客运站');
   await expect(page.locator('.mine-row', { hasText: title })).toContainText(meetingLabel);
   await expect(page.locator('.mine-row', { hasText: title })).toContainText('同行 2 人');
@@ -206,9 +206,9 @@ test('lists conversations, keeps history readable and still chats after leaving'
 
   // 我的旅行：已匹配不再列出，「我申请的」显示已退出
   await page.goto('/#/mine');
-  await page.getByRole('tab', { name: /已匹配/ }).click();
+  await page.locator('.ant-segmented-item', { hasText: '已匹配同行' }).click();
   await expect(page.getByText(title)).toHaveCount(0);
-  await page.getByRole('tab', { name: /我申请的/ }).click();
+  await page.locator('.ant-segmented-item', { hasText: '我申请的' }).click();
   await expect(page.locator('.mine-row', { hasText: title })).toContainText('已退出');
 });
 

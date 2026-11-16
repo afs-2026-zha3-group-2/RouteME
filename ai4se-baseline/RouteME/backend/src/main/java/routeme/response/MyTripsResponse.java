@@ -7,5 +7,6 @@ public record MyTripsResponse(
         List<TripApplicationResponse> applied,
         List<TripSummaryResponse> matched,
         List<TripSummaryResponse> completed,
-        int pendingApplicationCount) {
+        int pendingApplicationCount,
+        List<PendingApplicationCount> pendingApplications) {
 }

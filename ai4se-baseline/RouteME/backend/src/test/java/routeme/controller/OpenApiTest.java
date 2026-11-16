@@ -220,6 +220,7 @@ class OpenApiTest {
         Map<String, Object> application = schema(document, "TripApplication");
         Map<String, Object> match = schema(document, "Match");
         Map<String, Object> myTrips = schema(document, "MyTrips");
+        Map<String, Object> pendingApplicationCount = schema(document, "PendingApplicationCount");
         Map<String, Object> reportRequest = schema(document, "ReportRequest");
         Map<String, Object> errorSchema = schema(document, "Error");
 
@@ -254,6 +255,19 @@ class OpenApiTest {
                                 .containsAll(List.of(
                                         "published", "applied", "matched", "completed", "pending_application_count")),
                         "my trips groups"),
+                () -> assertTrue(
+                        properties(myTrips).containsKey("pending_applications"),
+                        "my trips per-trip pending counts"),
+                () -> assertFalse(
+                        required(myTrips).contains("pending_applications"),
+                        "pending_applications stays optional"),
+                () -> assertTrue(
+                        required(pendingApplicationCount).containsAll(List.of("trip_id", "count")),
+                        "pending application count fields"),
+                () -> assertEquals(
+                        Integer.valueOf(1),
+                        properties(pendingApplicationCount).get("count").get("minimum"),
+                        "pending count minimum"),
                 () -> assertTrue(
                         enums(properties(reportRequest).get("reason"))
                                 .containsAll(List.of("harassment", "fake", "safety", "other")),

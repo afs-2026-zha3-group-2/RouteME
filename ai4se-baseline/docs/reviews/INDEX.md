@@ -3,7 +3,7 @@
 本索引汇总每个进行中 change 的 `all-specs-review` 报告。报告是审查记录，不是 Gate 结论；每个 change 目录下的 `review.md` 只是指向报告的索引。
 
 - 评审日期：2026-11-16
-- 评审范围：`openspec/changes/` 下 10 个进行中的 change（不含 `archive/`）
+- 评审范围：`openspec/changes/` 下进行中的 change（不含 `archive/`）
 - 报告目录：[docs/reviews](.)
 - 索引写法：`openspec/changes/<change-id>/review.md` → `../../../docs/reviews/20261116-<change-id>-all-specs-review.md`
 
@@ -21,6 +21,7 @@
 | 8 | add-user-profiles | Fail | 1 | 6 | 4 | [报告](20261116-add-user-profiles-all-specs-review.md) | [review.md](../../openspec/changes/add-user-profiles/review.md) |
 | 9 | refine-inspiration-home | Fail | 1 | 3 | 5 | [报告](20261116-refine-inspiration-home-all-specs-review.md) | [review.md](../../openspec/changes/refine-inspiration-home/review.md) |
 | 10 | refine-trip-application | Partial | 0 | 1 | 5 | [报告](20261116-refine-trip-application-all-specs-review.md) | [review.md](../../openspec/changes/refine-trip-application/review.md) |
+| 11 | refine-my-trips | Pass | 0 | 0 | 6 | [报告](20261116-refine-my-trips-all-specs-review.md) | [review.md](../../openspec/changes/refine-my-trips/review.md) |
 
 ## 共享验证证据
 

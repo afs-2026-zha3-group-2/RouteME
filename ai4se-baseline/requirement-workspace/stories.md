@@ -186,3 +186,26 @@
 - **「集合地点必须重新填写」按「不得沿用原行程取值」验收：** `trip-plans` 明确集合区域选填（`spec.md:151`）；本需求不把集合区域升级为必填。
 - **无代码 / 契约 / 迁移 / 测试改动：** 参考发布为纯前端预填，`TripCreateRequest` 无来源字段；证据见 `intents/REQ-014-reference-publish.md`。
 - 用户裁决 D1（已验证交付收口）/ D2（记录人 Jacky）/ D3（编号 REQ-014）。
+
+# Story list — REQ-015（S11 我的旅行）
+
+- **来源：** issue #13 `[P0] S11 我的旅行`；`docs/prototype/stories.html` S11
+- **口径：** 一条故事 = 一个页面 + 一份接口契约 + 一次状态迁移（本故事复用 `GET /api/me/trips`，只新增一个只读聚合字段；页面状态迁移为「进入页面 → 切换分组 → 行内动作」）
+- **更新时间：** 2026-11-16
+
+| Story | Title | 角色 | Priority | Iteration | Points | Page | Parent REQ | Change | Status |
+|---|---|---|---|---|---|---|---|---|---|
+| S11 | 一屏看到发布、申请、匹配与已结束 | 全部 | P0 | 2 | 2 | 我的旅行页 | REQ-015 | `refine-my-trips` | P1 drafted（2026-11-16） |
+
+## Traceability（REQ-015）
+
+| Story | Requirement scenarios | Change spec | Story file |
+|---|---|---|---|
+| S11 | REQ-015 §4 #1–#12 | `openspec/changes/refine-my-trips/specs/trip-companions/spec.md`（MODIFIED「我的旅行聚合与最低安全能力」） | `requirement-workspace/stories/refine-my-trips.story.md` |
+
+## Notes
+
+- 本故事只覆盖「我的旅行」聚合视图；发布行程（S06）、详情（S05）、申请处理（S09）、取消申请（S10）、退出同行（S13）、结束行程（S15）、体验分享（S16）、参考发布（S17）均不在本故事内，只作为行内入口被调用。
+- 四组划分与状态推导沿用 `MyTripsServiceImpl` 与 `trip-plans` 的四态，本故事不重复定义。
+- 原型中的「编辑 / 删除 / 参考发布」不在本迭代落地：前两者无路由与接口，后者属 S17。
+- 未接入外部 ALM；本表为仓库内权威故事清单，ALM Sync 状态记为 Pending。

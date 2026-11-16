@@ -2147,6 +2147,21 @@ components:
         pending_application_count:
           type: integer
           minimum: 0
+        pending_applications:
+          type: array
+          description: 按行程聚合的待处理申请数，只包含数量大于 0 的已发布行程；无待处理时为空数组
+          items:
+            $ref: '#/components/schemas/PendingApplicationCount'
+    PendingApplicationCount:
+      type: object
+      required: [trip_id, count]
+      properties:
+        trip_id:
+          type: integer
+          format: int64
+        count:
+          type: integer
+          minimum: 1
     ExperienceWriteRequest:
       type: object
       required: [content, intensity, advice]

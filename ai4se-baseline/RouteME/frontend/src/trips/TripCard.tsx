@@ -5,17 +5,8 @@ import { useProfile } from '../profiles/ProfileContext';
 import { publisherSummary } from '../profile/profileDisplay';
 import { Avatar } from '../shell/Avatar';
 import type { Match, TripSummary } from '../types';
+import { coverTone } from './coverTone';
 import { StatusBadge } from './StatusBadge';
-
-const COVER_TONES = ['lagoon', 'coral', 'jade', 'dusk', 'amber'] as const;
-
-function coverTone(destination: string): string {
-  let hash = 0;
-  for (const char of destination) {
-    hash = (hash + (char.codePointAt(0) ?? 0)) % 9973;
-  }
-  return COVER_TONES[hash % COVER_TONES.length];
-}
 
 function formatDate(iso: string): string {
   const [, month, day] = iso.split('-');
@@ -38,19 +29,17 @@ function dayLabel(iso: string): string {
 type Props = {
   trip: TripSummary;
   match?: Match;
-  /** 紧凑行式卡片：用于「我的旅行」列表，封面缩成窄条，信息单行排布。 */
-  compact?: boolean;
   /** 发布页实时预览：不跳详情、不打开资料弹窗。 */
   preview?: boolean;
 };
 
-export function TripCard({ trip, match, compact = false, preview = false }: Props) {
+export function TripCard({ trip, match, preview = false }: Props) {
   const { openProfile } = useProfile();
   const joinedRate = trip.capacity === 0 ? 0 : Math.round((trip.joined_count / trip.capacity) * 100);
   const width = Math.min(100, Math.max(0, joinedRate));
 
   return (
-    <article className={compact ? 'trip-card compact' : 'trip-card'}>
+    <article className="trip-card">
       {preview ? (
         <span className="tc-overlay" aria-hidden="true" />
       ) : (
