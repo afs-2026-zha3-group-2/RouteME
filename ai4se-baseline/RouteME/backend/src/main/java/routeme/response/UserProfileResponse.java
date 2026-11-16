@@ -27,9 +27,19 @@ public record UserProfileResponse(
         List<String> interests,
         String travelStyle,
         String bio,
-        boolean profileComplete) {
+        boolean profileComplete,
+        String joinedAt,
+        ProfileStatsResponse stats) {
 
     public static UserProfileResponse from(UserProfile profile, boolean includeBirthday) {
+        return from(profile, includeBirthday, null, null);
+    }
+
+    public static UserProfileResponse from(
+            UserProfile profile,
+            boolean includeBirthday,
+            String joinedAt,
+            ProfileStatsResponse stats) {
         return new UserProfileResponse(
                 profile.id(),
                 profile.nickname(),
@@ -47,6 +57,8 @@ public record UserProfileResponse(
                 profile.interests(),
                 profile.travelStyle(),
                 profile.bio(),
-                profile.profileComplete());
+                profile.profileComplete(),
+                joinedAt,
+                stats);
     }
 }

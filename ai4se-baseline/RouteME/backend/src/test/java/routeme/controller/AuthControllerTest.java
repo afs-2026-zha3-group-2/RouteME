@@ -187,12 +187,12 @@ class AuthControllerTest {
     }
 
     @Test
-    void in_registeredAccount_out_demoListStaysThree() throws Exception {
+    void in_registeredAccount_out_demoListStaysFour() throws Exception {
         register(REGISTER_BODY).andExpect(status().isCreated());
 
         mockMvc.perform(get("/api/users/demo"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.length()").value(3))
+                .andExpect(jsonPath("$.length()").value(4))
                 .andExpect(jsonPath("$[0].nickname").value("林见夏"));
     }
 

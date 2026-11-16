@@ -347,6 +347,17 @@ class UserProfileControllerTest {
     }
 
     @Test
+    void in_seededProfileRead_out_joinedAtAndStats() throws Exception {
+        mockMvc.perform(get("/api/users/2/profile").header("X-User-Id", "1"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.joined_at").exists())
+                .andExpect(jsonPath("$.stats.published").value(3))
+                .andExpect(jsonPath("$.stats.completed").value(1))
+                .andExpect(jsonPath("$.stats.joined").value(2))
+                .andExpect(jsonPath("$.stats.shared").value(1));
+    }
+
+    @Test
     void in_avatarReadWithoutAvatar_out_notFound() throws Exception {
         String session = register("小夏");
 

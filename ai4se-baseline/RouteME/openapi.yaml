@@ -1,7 +1,7 @@
 openapi: 3.0.3
 info:
   title: RouteME API
-  version: 0.7.0
+  version: 0.8.0
   description: |
     RouteME 后端对外契约。本文件是前后端唯一事实源，字段名、类型、状态码与错误码只在这里定稿。
         当前包含：脚手架问候语、演示账户与账号认证（注册/登录/会话/退出）、旅行计划（浏览/筛选/发布/详情/结束），同行匹配、申请、退出、聊天、我的旅行与举报，以及游后体验分享与参考发布所需数据。
@@ -1531,6 +1531,34 @@ components:
           type: boolean
           readOnly: true
           description: 六项必填同时成立时为 true；NULL / 空串 / 非法日期都算缺失
+        joined_at:
+          type: string
+          format: date-time
+          nullable: true
+          readOnly: true
+          description: 用户加入时间，UTC；仅读取端点返回
+        stats:
+          $ref: '#/components/schemas/ProfileStats'
+    ProfileStats:
+      type: object
+      required: [published, completed, joined, shared]
+      properties:
+        published:
+          type: integer
+          readOnly: true
+          description: 发布的行程数
+        completed:
+          type: integer
+          readOnly: true
+          description: 发布的已结束行程数
+        joined:
+          type: integer
+          readOnly: true
+          description: 被接受的同行申请数
+        shared:
+          type: integer
+          readOnly: true
+          description: 发布的游后体验数
     UserProfileUpdateRequest:
       type: object
       required: [nickname, birthday, gender, city, interests, travel_style]

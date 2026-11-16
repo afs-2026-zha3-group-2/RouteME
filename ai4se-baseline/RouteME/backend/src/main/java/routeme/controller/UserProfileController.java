@@ -23,6 +23,7 @@ import routeme.response.UserProfileResponse;
 import routeme.service.AuthService;
 import routeme.service.DemoUserService;
 import routeme.service.UserProfileService;
+import routeme.service.UserProfileStatsService;
 
 /**
  * 个人资料端点：读取用 {@code X-User-Id}，保存与上传用 Bearer；
@@ -36,14 +37,17 @@ public class UserProfileController {
     private static final String AVATAR_CACHE_CONTROL = "public, max-age=31536000, immutable";
 
     private final UserProfileService userProfileService;
+    private final UserProfileStatsService userProfileStatsService;
     private final DemoUserService demoUserService;
     private final AuthService authService;
 
     public UserProfileController(
             UserProfileService userProfileService,
+            UserProfileStatsService userProfileStatsService,
             DemoUserService demoUserService,
             AuthService authService) {
         this.userProfileService = userProfileService;
+        this.userProfileStatsService = userProfileStatsService;
         this.demoUserService = demoUserService;
         this.authService = authService;
     }
@@ -53,8 +57,12 @@ public class UserProfileController {
             @RequestHeader(value = "X-User-Id", required = false) Long callerId,
             @PathVariable long userId) {
         DemoUser caller = demoUserService.require(callerId);
+        UserEntity target = demoUserService.getById(userId);
         return UserProfileResponse.from(
-                userProfileService.read(userId, caller.id()), caller.id() == userId);
+                userProfileService.read(userId, caller.id()),
+                caller.id() == userId,
+                target.getCreatedAt(),
+                userProfileStatsService.stats(userId));
     }
 
     @PutMapping("/me/profile")
