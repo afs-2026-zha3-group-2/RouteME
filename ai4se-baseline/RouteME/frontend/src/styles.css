@@ -2056,14 +2056,6 @@ svg {
   margin-top: 4px;
 }
 
-.connectivity-note {
-  display: block;
-  margin-top: 28px;
-  font-size: 12px;
-  color: var(--ink-3);
-  opacity: 0.85;
-}
-
 /* ---------- 列表分页 ---------- */
 .list-block {
   scroll-margin-top: calc(var(--topbar-h) + 16px);

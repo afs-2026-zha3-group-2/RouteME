@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react';
-import { Alert, Button, DatePicker, Segmented, Select, Skeleton, Tag, Typography } from 'antd';
+import { Alert, Button, DatePicker, Segmented, Select, Skeleton, Tag } from 'antd';
 import { ExperienceCard } from '../experiences/ExperienceCard';
 import { useExperiences } from '../experiences/useExperiences';
 import { tripMessages } from '../i18n/tripMessages';
@@ -18,7 +18,6 @@ import { INTEREST_TAGS } from '../trips/tripOptions';
 import { useMatches } from '../trips/useMatches';
 import { dayjsToIso, isoToDayjs } from '../utils/dates';
 import { greetingForHour } from './greeting';
-import { useGreeting } from './useGreeting';
 import type { DemoUser } from '../types';
 
 type Props = {
@@ -311,23 +310,6 @@ export function HomePage({ currentUser }: Props) {
             />
           </div>
         )}
-
-      <ConnectivityNote />
     </main>
-  );
-}
-
-/**
- * 保留 hello-world 的验收能力：首页仍能证明问候语来自后端 SQLite。
- */
-function ConnectivityNote() {
-  const { state } = useGreeting();
-  if (state.status !== 'ready') {
-    return null;
-  }
-  return (
-    <Typography.Text type="secondary" className="connectivity-note">
-      {tripMessages.connectivityLabel}：{state.greeting.message}
-    </Typography.Text>
   );
 }

@@ -7,7 +7,6 @@ import type {
   Experience,
   ExperienceFilters,
   ExperienceWriteRequest,
-  Greeting,
   MatchCandidate,
   MyTrips,
   Page,
@@ -51,11 +50,6 @@ export async function request(path: string, init?: RequestInit, userId?: number)
     throw new ApiError(body?.code || `HTTP ${response.status}`, body?.fields);
   }
   return response;
-}
-
-export async function loadGreeting(): Promise<Greeting> {
-  const response = await request('/greeting');
-  return (await response.json()) as Greeting;
 }
 
 export async function loadUsers(): Promise<DemoUser[]> {

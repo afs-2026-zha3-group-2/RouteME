@@ -14,7 +14,6 @@ export const tripMessages = {
   goPublish: '去发布行程',
   clearFilters: '清除全部条件',
   appliedFilters: '已应用筛选',
-  connectivityLabel: '后端问候语',
   searchPlaceholder: '搜索路线、地点或发布者',
   destinationLabel: '目的地',
   anyDestination: '全部目的地',
