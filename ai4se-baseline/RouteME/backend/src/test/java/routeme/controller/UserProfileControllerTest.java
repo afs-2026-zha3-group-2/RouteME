@@ -389,6 +389,31 @@ class UserProfileControllerTest {
     }
 
     @Test
+    void in_seededDemoProfile_out_completeWithJobAndMbti() throws Exception {
+        mockMvc.perform(get("/api/users/1/profile").header("X-User-Id", "1"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.nickname").value("林见夏"))
+                .andExpect(jsonPath("$.school").value("大三 · 视觉传达"))
+                .andExpect(jsonPath("$.job").value("学生"))
+                .andExpect(jsonPath("$.mbti").value("ISFP"))
+                .andExpect(jsonPath("$.city").value("珠海"))
+                .andExpect(jsonPath("$.travel_style").value("休闲游"))
+                .andExpect(jsonPath("$.birthday").value("2005-06-12"))
+                .andExpect(jsonPath("$.zodiac").value("双子"))
+                .andExpect(jsonPath("$.profile_complete").value(true));
+
+        mockMvc.perform(get("/api/users/4/profile").header("X-User-Id", "1"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.nickname").value("周野"))
+                .andExpect(jsonPath("$.school").doesNotExist())
+                .andExpect(jsonPath("$.job").value("产品经理"))
+                .andExpect(jsonPath("$.mbti").value("INFP"))
+                .andExpect(jsonPath("$.city").value("上海"))
+                .andExpect(jsonPath("$.birthday").doesNotExist())
+                .andExpect(jsonPath("$.profile_complete").value(true));
+    }
+
+    @Test
     void in_avatarReadWithoutAvatar_out_notFound() throws Exception {
         String session = register("小夏");
 
