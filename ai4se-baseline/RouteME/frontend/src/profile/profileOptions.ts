@@ -5,7 +5,10 @@
 
 export const GENDERS = ['男', '女', '其他'] as const;
 
-export const JOBS = ['学生', '上班族', '自由职业', '其他'] as const;
+/** 选「其他」时由用户自己填写职业，保存的是自填文本（≤ `MAX_JOB_LENGTH` 字）。 */
+export const JOB_OTHER = '其他';
+
+export const JOBS = ['学生', '上班族', '自由职业', JOB_OTHER] as const;
 
 export const TRAVEL_STYLES = ['特种兵', '休闲游', '深度游', '随性游'] as const;
 
@@ -85,5 +88,7 @@ export const MAX_NICKNAME_LENGTH = 20;
 export const MAX_CITY_LENGTH = 40;
 export const MAX_SCHOOL_LENGTH = 80;
 export const MAX_BIO_LENGTH = 500;
+/** 职业列宽 20 字；预设值与自填文本共用这个上限。 */
+export const MAX_JOB_LENGTH = 20;
 
 export const MIN_BIRTHDAY = '1900-01-01';

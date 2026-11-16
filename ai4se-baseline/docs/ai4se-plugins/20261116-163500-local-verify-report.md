@@ -1,6 +1,6 @@
 # 验证报告：refine-trip-chat（P4 本地验证）
 
-- **变更：** `refine-trip-chat`（`trip-companions` MODIFIED + `trip-plans` MODIFIED，REQ-010）
+- **变更：** `refine-trip-chat`（`trip-companions` MODIFIED + `trip-plans` MODIFIED，REQ-013）
 - **契约版本：** `openapi.yaml` **0.9.0**（新增 `meeting_time` 链路、`left` 状态、`PUT /trips/{tripId}/meeting`）
 - **时间：** 2026-11-16 16:35（本机 Windows，Node 22+ / JDK 21）
 - **范围：** 已匹配同行者的集合确认与聊天闭环；含退出后仍可聊、集合信息展示与发布者维护

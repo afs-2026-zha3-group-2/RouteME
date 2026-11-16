@@ -99,13 +99,15 @@ T1 的原始 red 日志未单独留存；上表为联调阶段留存并修复的
 
 | 问题 | 定位 | 处理 |
 |---|---|---|
-| 注册返回 502 | P4 收尾时后端进程被停掉；Vite dev proxy 连 `localhost:8080` 被拒（`ECONNREFUSED`）即回 502 | 重启后端 `spring-boot:run`；`POST /api/auth/register` 直连与经 proxy 均 201 |
+| 注册返回 502 | P4 收尾时后端进程被停掉；Vite dev proxy 连 `localhost:8080` 被拒（`ECONNREFUSED`）即回 502 | 重启后端进程（`java -jar target/routeme-backend-0.0.1-SNAPSHOT.jar`）；`POST /api/auth/register` 直连与经 proxy 均 201 |
 | 职业 / MBTI 下拉「没有可选项」 | antd 6.7.0 的 Select 弹层在系统要求减少动效（`prefers-reduced-motion: reduce`）时定位到 `left: -1000vw`（实测 `-12800px`）：选项在 DOM 内、但整层不在视口；`no-preference` 下同一弹层位于 `left: 344` | 两处改用原生 `<select class="native-select">`（与 `HomePage` 排序筛选、设计稿一致），保留「不填写」空值；E2E 新增 `offers every job and MBTI option in the setup form` |
+| 职业「其他」无法自填 | 用户需要预设列表以外的职业；原 `job` 只允许 4 个枚举值，前后端都会拒绝自填文本 | 选「其他」时追加自填框（`#profile-job-custom`，≤20 字），仍只落一个 `job` 字段；后端改为长度校验（`MAX_JOB_LENGTH = 20`），契约 `job` 由 `enum` 改为 `maxLength: 20`；E2E 新增 `saves a custom job typed under 其他` |
+| 生日弹层在减少动效下不可见 | 与职业下拉同源：antd 6.7 的 popup 在 `prefers-reduced-motion: reduce` 下停在 `inset: -9000px auto auto -12800px`（对齐依赖 appear 动效），日历能看到但整层在视口外 | 生日改用 antd `DatePicker`（`needConfirm`，中文 locale）；弹层挂到字段锚点（`getPopupContainer`），reduce 媒体查询下固定到字段下方；E2E 新增 `opens the birthday calendar on screen and picks a day`（`reducedMotion: 'reduce'`） |
 
-验证：`npm run typecheck` 通过；`npm test` 13 files / **105** tests；`npx playwright test tests/profile.spec.ts` 11 条中 **10 通过**（`opens a publisher profile from a trip card` 因并行 change `a13416c` 移除首页搜索框而失败，与本修复无关）；Playwright 以 `reducedMotion: 'reduce'` 实测：5 个职业选项、17 个 MBTI 选项全部可选中，表单上不再出现 antd 弹层。
+验证：`npm run typecheck` 通过；`npm test` 15 files / **133** tests（含并行 change 的用例）；后端 `.\mvnw.cmd -B -ntp verify` **211** tests 全绿（`repackage` 受运行中的 jar 锁定，停进程后重打包）；`npx playwright test tests/profile.spec.ts` **13/13 通过**（含 reduce 下的生日日历用例）；Playwright 以 `reducedMotion: 'reduce'` 实测：生日日历弹层位于字段下方、可点选并「确定」，5 个职业选项、17 个 MBTI 选项全部可选中、页面上无 antd 弹层，选「其他」后自填框位于视口内，保存后主页 chip 显示「独立摄影师」，库中 `job = '独立摄影师'`。
 
 同一弹层缺陷仍影响 `ProfileSetupPage` 的城市 `AutoComplete`、`ReportModal` 与 `Pager` 的 `Select`（未见用户报告）；按「一次 change 一件事」留作独立 change。
 
 ## 10. P5 状态
 
-未执行。归档时需：新建 `openspec/specs/user-profile/`（7 Requirement / 24 Scenario 全量合入）、把 MODIFIED「注册账号」合并进 `openspec/specs/user-auth/spec.md`（保留 4 个基线场景）、补 `summary.md`、登记 `docs/knowledge/`、清理 `origin/feature/add-user-profiles` 旧实现，并将本 change 移入 `changes/archive/`。
+未执行。归档时需：新建 `openspec/specs/user-profile/`（7 Requirement / 26 Scenario 全量合入）、把 MODIFIED「注册账号」合并进 `openspec/specs/user-auth/spec.md`（保留 4 个基线场景）、补 `summary.md`、登记 `docs/knowledge/`、清理 `origin/feature/add-user-profiles` 旧实现，并将本 change 移入 `changes/archive/`。

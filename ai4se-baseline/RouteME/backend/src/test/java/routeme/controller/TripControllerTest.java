@@ -16,14 +16,18 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
+import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
 import org.springframework.transaction.annotation.Transactional;
 
+import routeme.config.FixedClockTestConfig;
+
 @SpringBootTest
 @AutoConfigureMockMvc
 @Transactional
+@Import(FixedClockTestConfig.class)
 class TripControllerTest {
 
     private static final String VALID_TRIP = """
@@ -306,7 +310,7 @@ class TripControllerTest {
         mockMvc.perform(get("/api/trips/3").header("X-User-Id", "1"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(3))
-                .andExpect(jsonPath("$.status").value("recruiting"))
+                .andExpect(jsonPath("$.status").value("ongoing"))
                 .andExpect(jsonPath("$.publisher.id").value(2))
                 .andExpect(jsonPath("$.participants", hasSize(1)))
                 .andExpect(jsonPath("$.participants[0].id").value(2));

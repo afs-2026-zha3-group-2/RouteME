@@ -2,11 +2,13 @@ import { tripMessages } from '../i18n/tripMessages';
 import type { UserProfile, UserProfileUpdateRequest } from '../types';
 import {
   GENDERS,
+  JOB_OTHER,
   JOBS,
   MAX_BIO_LENGTH,
   MAX_CITY_LENGTH,
   MAX_INTEREST_LENGTH,
   MAX_INTERESTS,
+  MAX_JOB_LENGTH,
   MAX_NICKNAME_LENGTH,
   MAX_SCHOOL_LENGTH,
   MBTI_TYPES,
@@ -84,7 +86,7 @@ export const emptyProfileForm: ProfileFormValues = {
 
 const DATE_PATTERN = /^(\d{4})-(\d{2})-(\d{2})$/;
 
-/** 本地时区的今天，`YYYY-MM-DD`；生日上限与 `<input type="date">` 的 max 共用。 */
+/** 本地时区的今天，`YYYY-MM-DD`；生日上限与日期控件的 `maxDate` 共用。 */
 export function todayIso(now: Date = new Date()): string {
   const year = String(now.getFullYear()).padStart(4, '0');
   const month = String(now.getMonth() + 1).padStart(2, '0');
@@ -114,6 +116,25 @@ export function isValidBirthday(value: string, today: string = todayIso()): bool
 
 function isOneOf<T extends string>(options: readonly T[], value: string): value is T {
   return (options as readonly string[]).includes(value);
+}
+
+/**
+ * 职业一栏用「预设下拉 + 其他自填」表达，但只落一个字段：
+ * 预设值直接对应选项，其余文本都算「其他」的自填内容。
+ */
+export function jobSelection(job: string): { choice: string; custom: string } {
+  if (job === '' || isOneOf(JOBS, job)) {
+    return { choice: job, custom: '' };
+  }
+  return { choice: JOB_OTHER, custom: job };
+}
+
+/** 下拉与自填文本合成保存值；选「其他」但没填文本时仍存「其他」。 */
+export function jobFromSelection(choice: string, custom: string): string {
+  if (choice !== JOB_OTHER) {
+    return choice;
+  }
+  return custom.trim() === '' ? JOB_OTHER : custom;
 }
 
 export function validateProfileForm(
@@ -169,8 +190,8 @@ export function validateProfileForm(
   if (values.bio.trim().length > MAX_BIO_LENGTH) {
     errors.bio = tripMessages.profileErrorBio;
   }
-  if (values.job !== '' && !isOneOf(JOBS, values.job)) {
-    errors.job = tripMessages.profileErrorOption;
+  if (values.job.trim().length > MAX_JOB_LENGTH) {
+    errors.job = tripMessages.profileErrorJob;
   }
   if (values.mbti !== '' && !isOneOf(MBTI_TYPES, values.mbti)) {
     errors.mbti = tripMessages.profileErrorOption;
@@ -193,7 +214,7 @@ const DEFAULT_MESSAGE: Record<ProfileField, string> = {
   city: tripMessages.profileErrorCity,
   school: tripMessages.profileErrorSchool,
   major: tripMessages.profileErrorMajor,
-  job: tripMessages.profileErrorOption,
+  job: tripMessages.profileErrorJob,
   mbti: tripMessages.profileErrorOption,
   interests: tripMessages.profileErrorInterests,
   travel_style: tripMessages.profileErrorTravelStyle,

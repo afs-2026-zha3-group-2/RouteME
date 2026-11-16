@@ -18,7 +18,7 @@ type Props = {
 };
 
 /**
- * 登录 / 注册表单。注册只收用户名 / 密码 / 昵称，
+ * 登录 / 注册表单。注册收用户名 / 密码（输入两次）/ 昵称，
  * 学校、兴趣等资料在注册后的完善页填写。
  */
 export function AuthPanel({ onAuthenticated }: Props) {
@@ -113,6 +113,22 @@ export function AuthPanel({ onAuthenticated }: Props) {
             onPressEnter={submit}
           />
         </AuthField>
+
+        {mode === 'register' && (
+          <AuthField
+            label={tripMessages.authPasswordConfirm}
+            error={errors.passwordConfirm}
+            htmlFor="auth-password-confirm"
+          >
+            <Input.Password
+              id="auth-password-confirm"
+              value={values.passwordConfirm}
+              autoComplete="new-password"
+              onChange={(event) => update({ passwordConfirm: event.target.value })}
+              onPressEnter={submit}
+            />
+          </AuthField>
+        )}
 
         {mode === 'register' && (
           <AuthField

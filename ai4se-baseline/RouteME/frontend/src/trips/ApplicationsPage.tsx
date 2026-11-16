@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { Alert, Button, Card, Skeleton, Space, Tag, Typography } from 'antd';
+import { Alert, Button, Card, Skeleton, Space, Tag, Typography, message } from 'antd';
 import { acceptApplication, loadTrip, loadTripApplications, rejectApplication } from '../api';
 import { tripMessages } from '../i18n/tripMessages';
 import type { DemoUser, TripApplication, TripDetail } from '../types';
@@ -44,7 +44,13 @@ export function ApplicationsPage({ currentUser, tripId }: Props) {
       }
       reload();
     } catch (caught: unknown) {
-      setError(caught instanceof Error ? caught.message : 'UNKNOWN_ERROR');
+      const code = caught instanceof Error ? caught.message : 'UNKNOWN_ERROR';
+      if (code === 'TRIP_NOT_OPEN') {
+        message.info(tripMessages.applicationsClosed);
+        reload();
+      } else {
+        setError(code);
+      }
     } finally {
       setBusyId(null);
     }
@@ -94,6 +100,10 @@ export function ApplicationsPage({ currentUser, tripId }: Props) {
               <Alert type="error" showIcon title={tripMessages.applicationsFailed} description={error} />
             )}
 
+            {trip?.status === 'completed' && (
+              <Alert type="info" showIcon title={tripMessages.applicationsClosed} />
+            )}
+
             {applications === null && <Skeleton active paragraph={{ rows: 4 }} />}
 
             {applications !== null && applications.length === 0 && (
@@ -115,11 +125,12 @@ export function ApplicationsPage({ currentUser, tripId }: Props) {
                       <Typography.Text className="application-message">
                         {application.message ?? tripMessages.applicationsNoMessage}
                       </Typography.Text>
-                      {application.status === 'pending' && (
+                      {application.status === 'pending' && trip?.status !== 'completed' && (
                         <Space size="small">
                           <Button
                             type="primary"
                             size="small"
+                            disabled={trip !== null && (trip.status === 'full' || trip.joined_count >= trip.capacity)}
                             loading={busyId === application.id}
                             onClick={() => decide(application, true)}
                           >
@@ -131,6 +142,18 @@ export function ApplicationsPage({ currentUser, tripId }: Props) {
                             onClick={() => decide(application, false)}
                           >
                             {tripMessages.applicationsReject}
+                          </Button>
+                        </Space>
+                      )}
+                      {application.status === 'accepted' && (
+                        <Space size="small">
+                          <Button
+                            size="small"
+                            onClick={() => {
+                              window.location.hash = `#/chat/${tripId}/${application.applicant.id}`;
+                            }}
+                          >
+                            {tripMessages.applicationsChat}
                           </Button>
                         </Space>
                       )}

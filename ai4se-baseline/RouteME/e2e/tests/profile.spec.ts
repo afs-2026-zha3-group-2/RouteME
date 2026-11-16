@@ -79,14 +79,21 @@ async function completeProfileViaApi(
   return (await response.json()) as Record<string, unknown>;
 }
 
+function isoDaysFromToday(days: number): string {
+  const now = new Date();
+  now.setDate(now.getDate() + days);
+  const pad = (value: number) => String(value).padStart(2, '0');
+  return `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
+}
+
 async function createTripViaApi(page: Page, account: Account, title: string): Promise<number> {
   const response = await page.request.post(`${API}/trips`, {
     headers: { 'X-User-Id': String(account.userId), 'Content-Type': 'application/json' },
     data: {
       title,
       destination_code: '440400',
-      start_date: '2026-12-01',
-      end_date: '2026-12-01',
+      start_date: isoDaysFromToday(7),
+      end_date: isoDaysFromToday(7),
       stops: ['香洲港集合', '情侣路骑行'],
       tags: ['摄影'],
       capacity: 3,
@@ -133,7 +140,10 @@ async function pickInterest(page: Page, label: string): Promise<void> {
 }
 
 async function fillCompleteProfile(page: Page): Promise<void> {
+  // The birthday uses a DatePicker with needConfirm: typing the date needs Enter to commit.
   await page.locator('#profile-birthday').fill('2003-05-18');
+  await page.locator('#profile-birthday').press('Enter');
+await expect(page.locator('#profile-birthday')).toHaveValue('2003-05-18');
   await pickGender(page, '女');
   await page.locator('#profile-city').fill('广州');
   await page.locator('#profile-school').fill('中山大学');
@@ -151,16 +161,39 @@ test('registers and lands on the profile setup page', async ({ page }) => {
   await page.goto('/');
   await page.getByRole('tab', { name: '注册' }).click();
   await page.getByLabel('用户名').fill(username);
-  await page.getByLabel('密码').fill(PASSWORD);
+  await page.locator('#auth-password').fill(PASSWORD);
+  await page.locator('#auth-password-confirm').fill(PASSWORD);
   await page.getByLabel('昵称').fill(nickname);
   await page.getByRole('button', { name: '注册并进入' }).click();
 
   await expect(page).toHaveURL(/#\/profile\/setup$/);
   await expect(page.getByRole('heading', { name: '完善个人资料' })).toBeVisible();
   // 注册后无需再次输入用户名 / 密码；昵称已带入资料表单。
-  await expect(page.getByLabel('用户名')).toHaveCount(0);
-  await expect(page.getByLabel('密码')).toHaveCount(0);
+  await expect(page.locator('#auth-username')).toHaveCount(0);
+  await expect(page.locator('#auth-password')).toHaveCount(0);
+  await expect(page.locator('#auth-password-confirm')).toHaveCount(0);
   await expect(page.locator('#profile-nickname')).toHaveValue(nickname);
+});
+
+test('blocks registration when the two passwords differ', async ({ page }) => {
+  const registerRequests: string[] = [];
+  page.on('request', (request) => {
+    if (request.method() === 'POST' && request.url().includes('/api/auth/register')) {
+      registerRequests.push(request.url());
+    }
+  });
+
+  await page.goto('/');
+  await page.getByRole('tab', { name: '注册' }).click();
+  await page.getByLabel('用户名').fill(uniqueUsername('m'));
+  await page.locator('#auth-password').fill(PASSWORD);
+  await page.locator('#auth-password-confirm').fill(`${PASSWORD}-typo`);
+  await page.getByLabel('昵称').fill(uniqueNickname('新同学'));
+  await page.getByRole('button', { name: '注册并进入' }).click();
+
+  await expect(page.getByText('两次输入的密码不一致')).toBeVisible();
+  await expect(page).not.toHaveURL(/#\/profile\/setup$/);
+  expect(registerRequests).toEqual([]);
 });
 
 test('blocks the submit and names the missing required fields', async ({ page }) => {
@@ -210,6 +243,55 @@ test('offers every job and MBTI option in the setup form', async ({ page }) => {
   await expect(page.locator('#profile-job')).toHaveValue('上班族');
   await page.locator('#profile-mbti').selectOption('INFP');
   await expect(page.locator('#profile-mbti')).toHaveValue('INFP');
+
+  // 选「其他」后出现自填框；改回预设值时自填框消失。
+  await page.locator('#profile-job').selectOption('其他');
+  const customJob = page.locator('#profile-job-custom');
+  await expect(customJob).toBeVisible();
+  await customJob.fill('独立摄影师');
+  await expect(customJob).toHaveValue('独立摄影师');
+  await page.locator('#profile-job').selectOption('学生');
+  await expect(customJob).toHaveCount(0);
+});
+
+test('saves a custom job typed under 其他', async ({ page }) => {
+  const account = await registerViaApi(page, { prefix: 'job' });
+  await useAccount(page, account);
+  await openSetup(page);
+  await fillCompleteProfile(page);
+
+  await page.locator('#profile-job').selectOption('其他');
+  await page.locator('#profile-job-custom').fill('独立摄影师');
+  await page.getByRole('button', { name: '保存资料' }).click();
+
+  await expect(page).toHaveURL(new RegExp(`#/users/${account.userId}$`));
+  await expect(page.locator('.profile-chips')).toContainText('独立摄影师');
+  await expect(page.locator('.profile-fact', { hasText: '职业' })).toContainText('独立摄影师');
+});
+
+test.describe('reduced motion', () => {
+  test.use({ reducedMotion: 'reduce' });
+
+  test('opens the birthday calendar on screen and picks a day', async ({ page }) => {
+    const account = await registerViaApi(page, { prefix: 'rm' });
+    await useAccount(page, account);
+    await openSetup(page);
+
+    await page.locator('#profile-birthday').click();
+    const popup = page.locator('.profile-birthday-popup');
+    await expect(popup).toBeVisible();
+
+    const box = await popup.boundingBox();
+    expect(box).not.toBeNull();
+    expect(box?.x ?? -1).toBeGreaterThanOrEqual(0);
+    expect(box?.y ?? -1).toBeGreaterThanOrEqual(0);
+
+    const now = new Date();
+    const iso = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+    await popup.locator(`td[title="${iso}"]`).click();
+    await popup.locator('button.ant-picker-ok').click();
+    await expect(page.locator('#profile-birthday')).toHaveValue(iso);
+  });
 });
 
 test('saves a complete profile and opens the public profile', async ({ page }) => {
@@ -294,7 +376,8 @@ test('opens a publisher profile from a trip card', async ({ page }) => {
   const viewer = await registerViaApi(page, { prefix: 'view' });
   await useAccount(page, viewer);
   // 首页用目的地/日期筛选，已无搜索框；切到「最新发布」使新行程排在最前。
-  await page.getByLabel('排序').selectOption('new');
+  await page.locator('.ant-select', { has: page.locator('#filter-sort') }).click();
+  await page.locator('.ant-select-item-option', { hasText: '按最新发布' }).click();
 
   const card = page.locator('.trip-card', { hasText: title });
   await expect(card).toBeVisible();
@@ -309,7 +392,7 @@ test('opens a publisher profile from a trip card', async ({ page }) => {
   const modal = page.locator('.ant-modal', { hasText: '旅行者资料' });
   await expect(modal).toBeVisible();
   await expect(modal.getByText(publisher.nickname, { exact: true })).toBeVisible();
-  await modal.getByRole('button', { name: /^关\s*闭$/ }).click();
+  await modal.locator('.ant-modal-footer button').click();
   await expect(modal).toBeHidden();
 
   // 公开主页路由仍可用：直接访问能看到同一份资料。

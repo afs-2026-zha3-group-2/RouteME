@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Alert, Button, Skeleton } from 'antd';
+import { Alert, Button, Skeleton, Typography } from 'antd';
 import { loadChatPartners, loadMessages, loadTrip, leaveTrip, sendMessage } from '../api';
 import { tripMessages } from '../i18n/tripMessages';
 import { useProfile } from '../profiles/ProfileContext';
@@ -13,13 +13,13 @@ import { shouldPoll, startChatPolling } from './chatPolling';
 
 type Props = {
   currentUser: DemoUser;
-  tripId: number;
-  otherUserId: number;
+  tripId?: number;
+  otherUserId?: number;
 };
 
 /**
  * 聊天页入口：短轮询 + 手动刷新，不做 WebSocket / 已读回执 / 推送 / 图片。
- * 左栏来自 `GET /api/me/chat-partners`（含已匹配但无消息的会话）。
+ * 不带参数时（`#/chat`）默认选中左栏第一个会话，与原型一致。
  */
 export function ChatPage({ currentUser, tripId, otherUserId }: Props) {
   const { openProfile } = useProfile();
@@ -33,10 +33,20 @@ export function ChatPage({ currentUser, tripId, otherUserId }: Props) {
   const [reportOpen, setReportOpen] = useState(false);
   const [reloadToken, setReloadToken] = useState(0);
 
-  const partner = useMemo(
-    () => partners?.find((item) => item.trip.id === tripId && item.other.id === otherUserId) ?? null,
-    [partners, tripId, otherUserId],
-  );
+  const partner = useMemo(() => {
+    if (partners === null) {
+      return null;
+    }
+    if (tripId !== undefined && otherUserId !== undefined) {
+      return (
+        partners.find((item) => item.trip.id === tripId && item.other.id === otherUserId) ?? null
+      );
+    }
+    return partners[0] ?? null;
+  }, [partners, tripId, otherUserId]);
+
+  const activeTripId = partner?.trip.id ?? tripId ?? 0;
+  const activeOtherId = partner?.other.id ?? otherUserId ?? 0;
 
   const reloadPartners = useCallback(() => {
     loadChatPartners(currentUser.id)
@@ -58,7 +68,7 @@ export function ChatPage({ currentUser, tripId, otherUserId }: Props) {
     if (partner === null) {
       return;
     }
-    loadMessages(currentUser.id, tripId, otherUserId)
+    loadMessages(currentUser.id, partner.trip.id, partner.other.id)
       .then((loaded) => {
         setMessages(loaded);
         setMessagesError(null);
@@ -67,7 +77,7 @@ export function ChatPage({ currentUser, tripId, otherUserId }: Props) {
         setMessages(null);
         setMessagesError(caught instanceof Error ? caught.message : 'UNKNOWN_ERROR');
       });
-  }, [partner, currentUser.id, tripId, otherUserId]);
+  }, [partner, currentUser.id]);
 
   useEffect(() => {
     if (partner === null) {
@@ -79,10 +89,10 @@ export function ChatPage({ currentUser, tripId, otherUserId }: Props) {
     setMessages(null);
     setMessagesError(null);
     reloadMessages();
-    loadTrip(currentUser.id, tripId)
+    loadTrip(currentUser.id, partner.trip.id)
       .then((loaded) => setTrip(loaded))
       .catch(() => setTrip(null));
-  }, [partner, currentUser.id, tripId, reloadMessages]);
+  }, [partner, currentUser.id, reloadMessages]);
 
   useEffect(() => {
     if (partner === null || trip === null || !shouldPoll(trip.status)) {
@@ -92,13 +102,18 @@ export function ChatPage({ currentUser, tripId, otherUserId }: Props) {
   }, [partner, trip, reloadMessages]);
 
   const send = async () => {
-    if (!canSendMessage(content) || sending) {
+    if (!canSendMessage(content) || sending || partner === null) {
       return;
     }
     setSending(true);
     setMessagesError(null);
     try {
-      const saved = await sendMessage(currentUser.id, tripId, otherUserId, content.trim());
+      const saved = await sendMessage(
+        currentUser.id,
+        partner.trip.id,
+        partner.other.id,
+        content.trim(),
+      );
       setMessages((previous) => [...(previous ?? []), saved]);
       setContent('');
       setReloadToken((token) => token + 1);
@@ -110,13 +125,13 @@ export function ChatPage({ currentUser, tripId, otherUserId }: Props) {
   };
 
   const leave = async () => {
-    if (!window.confirm(tripMessages.leaveConfirm)) {
+    if (partner === null || !window.confirm(tripMessages.leaveConfirm)) {
       return;
     }
     try {
-      await leaveTrip(currentUser.id, tripId);
+      await leaveTrip(currentUser.id, partner.trip.id);
       setReloadToken((token) => token + 1);
-      loadTrip(currentUser.id, tripId)
+      loadTrip(currentUser.id, partner.trip.id)
         .then((loaded) => setTrip(loaded))
         .catch(() => undefined);
     } catch (caught: unknown) {
@@ -169,7 +184,7 @@ export function ChatPage({ currentUser, tripId, otherUserId }: Props) {
           title={tripMessages.chatNotAllowed}
           description={tripMessages.chatNotAllowedHint}
           action={
-            <Button onClick={() => (window.location.hash = `#/trips/${tripId}`)}>
+            <Button onClick={() => (window.location.hash = `#/trips/${activeTripId}`)}>
               {tripMessages.detailTitle}
             </Button>
           }
@@ -197,7 +212,26 @@ export function ChatPage({ currentUser, tripId, otherUserId }: Props) {
 
   return (
     <main className="chat-page">
-      <ChatList partners={partners} activeTripId={tripId} activeOtherId={otherUserId} />
+      <div className="page-head chat-page-head">
+        <div>
+          <Typography.Title level={2} className="page-title">
+            {tripMessages.chatNav}
+          </Typography.Title>
+          <p className="page-sub">{tripMessages.chatPageSub}</p>
+        </div>
+        <Button
+          size="small"
+          type="text"
+          onClick={() => {
+            reloadPartners();
+            reloadMessages();
+          }}
+        >
+          {tripMessages.chatRefresh}
+        </Button>
+      </div>
+
+      <ChatList partners={partners} activeTripId={activeTripId} activeOtherId={activeOtherId} />
 
       {trip === null ? (
         <section className="chat-main">
@@ -215,7 +249,6 @@ export function ChatPage({ currentUser, tripId, otherUserId }: Props) {
           canLeave={canLeave}
           onContentChange={setContent}
           onSend={send}
-          onReload={reloadMessages}
           onProfile={() => openProfile(partner.other.id)}
           onReport={() => setReportOpen(true)}
           onLeave={leave}
@@ -226,7 +259,7 @@ export function ChatPage({ currentUser, tripId, otherUserId }: Props) {
         userId={currentUser.id}
         open={reportOpen}
         targetType="user"
-        targetId={otherUserId}
+        targetId={activeOtherId}
         onClose={() => setReportOpen(false)}
       />
     </main>

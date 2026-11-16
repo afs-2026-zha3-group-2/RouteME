@@ -171,6 +171,37 @@ class UserProfileControllerTest {
     }
 
     @Test
+    void in_customJobOutOfPresets_out_saved() throws Exception {
+        String session = register("小夏");
+
+        mockMvc.perform(put("/api/users/me/profile")
+                        .header("Authorization", bearer(session))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"nickname":"小夏","birthday":"2003-05-18","gender":"女","city":"珠海",
+                                 "job":"独立摄影师","interests":["摄影","美食","徒步"],"travel_style":"深度游"}
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.job").value("独立摄影师"))
+                .andExpect(jsonPath("$.profile_complete").value(true));
+    }
+
+    @Test
+    void in_jobTooLong_out_invalidInput() throws Exception {
+        String session = register("小夏");
+
+        mockMvc.perform(put("/api/users/me/profile")
+                        .header("Authorization", bearer(session))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"nickname":"小夏","job":"%s"}
+                                """.formatted("职".repeat(21))))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("INVALID_INPUT"))
+                .andExpect(jsonPath("$.fields.job").value("TOO_LONG"));
+    }
+
+    @Test
     void in_birthdayFutureOrMalformed_out_invalidInput() throws Exception {
         String session = register("小夏");
         saveProfile(session, COMPLETE_BODY);
@@ -355,6 +386,31 @@ class UserProfileControllerTest {
                 .andExpect(jsonPath("$.stats.completed").value(1))
                 .andExpect(jsonPath("$.stats.joined").value(2))
                 .andExpect(jsonPath("$.stats.shared").value(1));
+    }
+
+    @Test
+    void in_seededDemoProfile_out_completeWithJobAndMbti() throws Exception {
+        mockMvc.perform(get("/api/users/1/profile").header("X-User-Id", "1"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.nickname").value("林见夏"))
+                .andExpect(jsonPath("$.school").value("大三 · 视觉传达"))
+                .andExpect(jsonPath("$.job").value("学生"))
+                .andExpect(jsonPath("$.mbti").value("ISFP"))
+                .andExpect(jsonPath("$.city").value("珠海"))
+                .andExpect(jsonPath("$.travel_style").value("休闲游"))
+                .andExpect(jsonPath("$.birthday").value("2005-06-12"))
+                .andExpect(jsonPath("$.zodiac").value("双子"))
+                .andExpect(jsonPath("$.profile_complete").value(true));
+
+        mockMvc.perform(get("/api/users/4/profile").header("X-User-Id", "1"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.nickname").value("周野"))
+                .andExpect(jsonPath("$.school").doesNotExist())
+                .andExpect(jsonPath("$.job").value("产品经理"))
+                .andExpect(jsonPath("$.mbti").value("INFP"))
+                .andExpect(jsonPath("$.city").value("上海"))
+                .andExpect(jsonPath("$.birthday").doesNotExist())
+                .andExpect(jsonPath("$.profile_complete").value(true));
     }
 
     @Test

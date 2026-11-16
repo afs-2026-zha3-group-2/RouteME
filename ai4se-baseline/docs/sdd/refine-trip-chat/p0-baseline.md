@@ -1,6 +1,6 @@
 # P0 基线记录 — refine-trip-chat
 
-- **Change：** `refine-trip-chat`（能力 `trip-companions` MODIFIED + `trip-plans` MODIFIED）｜ **需求：** REQ-010 同行消息与集合确认
+- **Change：** `refine-trip-chat`（能力 `trip-companions` MODIFIED + `trip-plans` MODIFIED）｜ **需求：** REQ-013 同行消息与集合确认
 - **阶段：** P0（Project baseline）｜ **日期：** 2026-11-16
 - **记录人：** Jay（AO）
 
@@ -59,8 +59,8 @@
 
 | 角色 | 姓名 | 本阶段确认内容 | 日期 |
 |---|---|---|---|
-| SM | Lewis | 准入 P1；本 change 排期与 REQ-010 归属确认 | 2026-11-16 |
-| IO | Wanye | REQ-010 为需求来源；与 REQ-003（同行）与 REQ-002（行程）的边界清晰 | 2026-11-16 |
+| SM | Lewis | 准入 P1；本 change 排期与 REQ-013 归属确认 | 2026-11-16 |
+| IO | Wanye | REQ-013 为需求来源；与 REQ-003（同行）与 REQ-002（行程）的边界清晰 | 2026-11-16 |
 | AO | Jay | 基线证据可复现；同意进入 P1 | 2026-11-16 |
 
 **阶段结论：Pass**

@@ -27,9 +27,9 @@
 
 **DoV 结论：5/5 Pass。**
 
-## 3. REQ-010 §4 场景 → Delta 映射（25/25）
+## 3. REQ-013 §4 场景 → Delta 映射（25/25）
 
-| REQ-010 场景 | Delta Requirement | Delta Scenario |
+| REQ-013 场景 | Delta Requirement | Delta Scenario |
 |---|---|---|
 | #1 左栏列出可沟通会话 | `trip-companions` 匹配后的一对一文字沟通 | 会话列表列出全部可沟通会话 |
 | #2 打开指定会话 | 同上 | 会话列表列出全部可沟通会话（选中态） |

@@ -47,3 +47,14 @@
 
 - 未新增视觉快照；颜色与间距属 `design-system` 的既有要求。
 - 未覆盖「参照物多值」策略，属后续优化（已记为残余风险）。
+
+## 6. R2：筛选不参与匹配分（2026-11-16）
+
+| # | 场景 | 测试层 | 用例 |
+|---|---|---|---|
+| 10 | 筛选与排序不改变匹配分 | 接口 | `MatchControllerTest`：同一身份、同一行程，`GET /matches?destination_code=110100` 与 `GET /matches` 的 `match.score` 相同 |
+| 11 | 列表与详情给出同一分值 | 接口 | 同一用例比对列表项与 `GET /matches/{tripId}` 的 `score` / `reasons` / `basis` |
+| 12 | 参照目的地不同则不计目的地分 | 领域 | `TripMatchTest`：候选广州、参照珠海 → 不含「目的地相同」，分值只来自日期与兴趣 |
+| 13 | 无参照时只以兴趣为参照 | 领域 | `TripMatchTest#in_noOverlap_out_fallbackReasonAndInterestBasis`（既有，保持） |
+
+实现要点：删除 `TripMatch.of` 的筛选参数与覆盖分支；`MatchServiceImpl` 两处调用同步；契约描述更新并升 0.8.1。

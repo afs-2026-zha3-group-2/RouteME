@@ -130,4 +130,12 @@ public interface ApplicationService extends IService<TripApplicationEntity> {
      * @return 发布者 + 已接受同行者
      */
     List<DemoUser> participants(long tripId);
+
+    /**
+     * 行程进入已结束时，把该行程所有待处理申请批量置为已取消。
+     *
+     * @param tripId 行程 id
+     * @param now    取消时间
+     */
+    void cancelPending(long tripId, java.time.Instant now);
 }

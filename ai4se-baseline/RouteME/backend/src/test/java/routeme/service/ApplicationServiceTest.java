@@ -10,9 +10,11 @@ import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.context.annotation.Import;
 import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.transaction.annotation.Transactional;
 
+import routeme.config.FixedClockTestConfig;
 import routeme.enums.ApplicationStatusEnum;
 import routeme.enums.TripStatusEnum;
 import routeme.exception.ApplicationNotPendingException;
@@ -24,6 +26,7 @@ import routeme.pojo.TripPlan;
 
 @SpringBootTest
 @Transactional
+@Import(FixedClockTestConfig.class)
 class ApplicationServiceTest {
 
     @Autowired
@@ -49,7 +52,7 @@ class ApplicationServiceTest {
     }
 
     @Test
-    void in_acceptReachingCapacity_out_tripBecomesFullAndStopsApplications() {
+    void in_acceptReachingCapacity_out_tripStaysOngoingAndStopsApplications() {
             // Given two extra applicants, so a new one still exists after the trip turns full.
             insertExtraUser(5);
             insertExtraUser(6);
@@ -63,7 +66,7 @@ class ApplicationServiceTest {
             TripPlan trip = tripPlanService.require(3);
             assertAll(
                     () -> assertEquals(3, trip.joinedCount(), "capacity reached"),
-                    () -> assertEquals(TripStatusEnum.FULL, trip.status(), "auto full"),
+                    () -> assertEquals(TripStatusEnum.ONGOING, trip.status(FixedClockTestConfig.NOW), "full while ongoing stays ongoing"),
                     () -> assertThrows(TripNotOpenException.class, () -> applicationService.apply(3, 6, null),
                             "new applications rejected when full"));
         }

@@ -1,6 +1,6 @@
 # P1 意图与提案记录 — refine-trip-chat
 
-- **Change：** `refine-trip-chat`｜ **能力：** `trip-companions`（MODIFIED）+ `trip-plans`（MODIFIED）｜ **需求：** REQ-010
+- **Change：** `refine-trip-chat`｜ **能力：** `trip-companions`（MODIFIED）+ `trip-plans`（MODIFIED）｜ **需求：** REQ-013
 - **阶段：** P1（Intent & proposal）｜ **日期：** 2026-11-16｜ **记录人：** Jay（AO）
 
 ## 1. 阶段目标
@@ -11,8 +11,8 @@
 
 | 项 | 来源 | 结论 |
 |---|---|---|
-| 需求 | `requirement-workspace/requirements/REQ-010-trip-chat-meeting.md` | 六字段 + Ready 25 场景；blocking OQ 0；DoR BLOCKER 0 |
-| 意图 | `requirement-workspace/intents/REQ-010-trip-chat-meeting.md` | 用户原话 + 追加确认表 |
+| 需求 | `requirement-workspace/requirements/REQ-013-trip-chat-meeting.md` | 六字段 + Ready 25 场景；blocking OQ 0；DoR BLOCKER 0 |
+| 意图 | `requirement-workspace/intents/REQ-013-trip-chat-meeting.md` | 用户原话 + 追加确认表 |
 | 故事 | `requirement-workspace/stories/refine-trip-chat.story.md`（S12-1～S12-4） | 4 条垂直切片 |
 | 影响面 | `requirement-workspace/impact-brief.md` §13 | 逐资产 delta + blast radius + 风险 |
 | 原型 | `docs/prototype/ui.js` `chat()`、`styles.css` `.chat-*`、`main.js` 3 秒轮询 | 视觉与交互基准 |
@@ -64,8 +64,8 @@
 
 | 工件 | 路径 |
 |---|---|
-| 意图 | [`requirement-workspace/intents/REQ-010-trip-chat-meeting.md`](../../../requirement-workspace/intents/REQ-010-trip-chat-meeting.md) |
-| Ready 条目 | [`requirement-workspace/requirements/REQ-010-trip-chat-meeting.md`](../../../requirement-workspace/requirements/REQ-010-trip-chat-meeting.md) |
+| 意图 | [`requirement-workspace/intents/REQ-013-trip-chat-meeting.md`](../../../requirement-workspace/intents/REQ-013-trip-chat-meeting.md) |
+| Ready 条目 | [`requirement-workspace/requirements/REQ-013-trip-chat-meeting.md`](../../../requirement-workspace/requirements/REQ-013-trip-chat-meeting.md) |
 | 故事 | [`requirement-workspace/stories/refine-trip-chat.story.md`](../../../requirement-workspace/stories/refine-trip-chat.story.md) |
 | 影响面 | [`requirement-workspace/impact-brief.md`](../../../requirement-workspace/impact-brief.md) §13 |
 | 提案 | [`openspec/changes/refine-trip-chat/proposal.md`](../../../openspec/changes/refine-trip-chat/proposal.md) |
@@ -86,7 +86,7 @@
 | 角色 | 姓名 | 本阶段确认内容 | 日期 |
 |---|---|---|---|
 | SM | Lewis | 排期与故事归属：S12-1～S12-4 同批交付，不拆 PR | 2026-11-16 |
-| IO | Wanye | 需求来源 REQ-010 与用户裁决一致 | 2026-11-16 |
+| IO | Wanye | 需求来源 REQ-013 与用户裁决一致 | 2026-11-16 |
 | SA | Jacky | 接受六项关键裁定，同意进入 P2 | 2026-11-16 |
 | AO | Jay | 影响面与工作量判断（M）；承担实现与验证 | 2026-11-16 |
 
@@ -94,6 +94,6 @@
 
 ## 9. 准入 P2 的条件
 
-- Delta Spec 覆盖 REQ-010 的 25 条场景，且逐条映射到 `trip-companions` / `trip-plans`。
+- Delta Spec 覆盖 REQ-013 的 25 条场景，且逐条映射到 `trip-companions` / `trip-plans`。
 - MODIFIED 块写清旧行为与新行为差异，尤其是退出语义。
 - AC / DoV 复核无 BLOCKER；G1 由 SA（Jacky）与 IO（Wanye）签署。

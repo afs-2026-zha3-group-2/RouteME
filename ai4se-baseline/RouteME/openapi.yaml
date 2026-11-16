@@ -1,7 +1,7 @@
 openapi: 3.0.3
 info:
   title: RouteME API
-  version: 0.9.0
+  version: 0.10.0
   description: |
     RouteME 后端对外契约。本文件是前后端唯一事实源，字段名、类型、状态码与错误码只在这里定稿。
         当前包含：脚手架问候语、演示账户与账号认证（注册/登录/会话/退出）、旅行计划（浏览/筛选/发布/详情/结束），同行匹配、申请、退出、聊天、我的旅行与举报，以及游后体验分享与参考发布所需数据。
@@ -645,8 +645,8 @@ paths:
   /trips/{tripId}/complete:
     post:
       operationId: completeTrip
-      summary: 标记行程已结束
-      description: 仅行程发布者可调用。结束后 completed_at 写入，行程不再出现在默认列表。
+      summary: 结束行程
+      description: 仅行程发布者且行程为 ongoing（旅行中）时可调用。手动结束后 completed_at 写入，待处理申请自动取消，行程不再出现在默认列表；COMPLETED 为终态。
       parameters:
         - $ref: '#/components/parameters/DemoUserId'
         - name: tripId
@@ -1533,8 +1533,8 @@ components:
           type: string
           nullable: true
           readOnly: true
-          enum: [学生, 上班族, 自由职业, 其他]
-          description: 职业
+          maxLength: 20
+          description: 职业；预设值或「其他」自填文本
         bio:
           type: string
           readOnly: true
@@ -1607,7 +1607,8 @@ components:
         job:
           type: string
           nullable: true
-          enum: [学生, 上班族, 自由职业, 其他]
+          maxLength: 20
+          description: 职业，选填；预设值（学生 / 上班族 / 自由职业 / 其他）或「其他」的自填文本，≤20 字
         mbti:
           type: string
           nullable: true
@@ -1692,8 +1693,8 @@ components:
           description: 选填
         job:
           type: string
-          enum: [学生, 上班族, 自由职业, 其他]
-          description: 选填
+          maxLength: 20
+          description: 选填；预设值或自填文本
         mbti:
           type: string
           enum:
@@ -1833,9 +1834,15 @@ components:
           description: 已加入人数，含发布者；由 trip-plans 维护
         status:
           type: string
-          enum: [recruiting, full, completed]
+          enum: [recruiting, full, ongoing, completed]
           readOnly: true
-          description: 由 completed_at 与人数推导，不是独立写入的列
+          description: |
+            四态：招募中 / 已满员 / 旅行中 / 已结束。优先级为已结束 > 旅行中 > 已满员 > 招募中；
+            到期未手动结束的行程在读取时物化为已结束。
+        ending_soon:
+          type: boolean
+          readOnly: true
+          description: 是否处于「结束日期 21:00 起、距计划结束不足 3 小时」的提醒窗口；已结束时为 false
         publisher:
           $ref: '#/components/schemas/DemoUser'
         created_at:
@@ -1966,7 +1973,7 @@ components:
             type: string
         basis:
           type: string
-          description: 参照物说明（最近一条未结束的已发布行程，或我的兴趣与当前筛选）
+          description: 参照物说明：最近一条未结束的已发布行程，或你的旅行兴趣；筛选与排序不影响匹配分
     MatchCandidate:
       type: object
       required: [trip, match]

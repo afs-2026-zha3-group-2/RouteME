@@ -1,11 +1,14 @@
 package routeme.service.impl;
 
+import java.time.Clock;
+import java.time.Instant;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
 import org.springframework.stereotype.Service;
 
+import routeme.enums.TripStatusEnum;
 import routeme.pojo.DemoUser;
 import routeme.pojo.TripApplication;
 import routeme.pojo.TripPlan;
@@ -24,15 +27,19 @@ public class MyTripsServiceImpl implements MyTripsService {
 
     private final TripPlanService tripPlanService;
     private final ApplicationService applicationService;
+    private final Clock clock;
 
-    public MyTripsServiceImpl(TripPlanService tripPlanService, ApplicationService applicationService) {
+    public MyTripsServiceImpl(
+            TripPlanService tripPlanService, ApplicationService applicationService, Clock clock) {
         this.tripPlanService = tripPlanService;
         this.applicationService = applicationService;
+        this.clock = clock;
     }
 
     @Override
     public MyTripsResponse forUser(long userId) {
         List<TripPlan> trips = tripPlanService.findAllTrips();
+        Instant now = clock.instant();
         List<TripApplication> applications = applicationService.mine(userId);
         Set<Long> acceptedTripIds = applications.stream()
                 .filter(TripApplication::isAccepted)
@@ -43,12 +50,12 @@ public class MyTripsServiceImpl implements MyTripsService {
                 .filter(trip -> trip.publisherId() == userId)
                 .toList();
         List<TripPlan> matched = trips.stream()
-                .filter(trip -> trip.completedAt() == null
+                .filter(trip -> trip.status(now) != TripStatusEnum.COMPLETED
                         && trip.publisherId() != userId
                         && acceptedTripIds.contains(trip.id()))
                 .toList();
         List<TripPlan> completed = trips.stream()
-                .filter(trip -> trip.completedAt() != null
+                .filter(trip -> trip.status(now) == TripStatusEnum.COMPLETED
                         && (trip.publisherId() == userId || acceptedTripIds.contains(trip.id())))
                 .toList();
         int pendingCount = (int) published.stream()
@@ -57,15 +64,15 @@ public class MyTripsServiceImpl implements MyTripsService {
                 .count();
 
         return new MyTripsResponse(
-                published.stream().map(this::summary).toList(),
+                published.stream().map(trip -> summary(trip, now)).toList(),
                 applications.stream().map(applicationService::describe).toList(),
-                matched.stream().map(this::summary).toList(),
-                completed.stream().map(this::summary).toList(),
+                matched.stream().map(trip -> summary(trip, now)).toList(),
+                completed.stream().map(trip -> summary(trip, now)).toList(),
                 pendingCount);
     }
 
-    private TripSummaryResponse summary(TripPlan trip) {
+    private TripSummaryResponse summary(TripPlan trip, Instant now) {
         DemoUser publisher = tripPlanService.publisherOf(trip);
-        return TripSummaryResponse.from(trip, publisher);
+        return TripSummaryResponse.from(trip, publisher, now);
     }
 }

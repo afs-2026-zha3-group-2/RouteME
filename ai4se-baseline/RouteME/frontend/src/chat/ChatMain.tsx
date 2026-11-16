@@ -17,7 +17,6 @@ type Props = {
   canLeave: boolean;
   onContentChange: (value: string) => void;
   onSend: () => void;
-  onReload: () => void;
   onProfile: () => void;
   onReport: () => void;
   onLeave: () => void;
@@ -39,7 +38,6 @@ export function ChatMain({
   canLeave,
   onContentChange,
   onSend,
-  onReload,
   onProfile,
   onReport,
   onLeave,
@@ -77,12 +75,6 @@ export function ChatMain({
 
       <div className="chat-safety">
         <span>{chatSafetyText(trip.meeting_area, trip.meeting_time)}</span>
-      </div>
-
-      <div className="chat-tools">
-        <Button size="small" type="text" onClick={onReload}>
-          {tripMessages.chatRefresh}
-        </Button>
       </div>
 
       <div className="chat-body">

@@ -10,11 +10,13 @@ import static routeme.constant.TripCatalogConstant.MIN_STOPS;
 
 import java.time.Instant;
 import java.time.LocalDate;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
 
 import routeme.area.AreaNames;
+import routeme.constant.TripTimeZoneConstant;
 import routeme.enums.TripStatusEnum;
 import routeme.exception.InvalidInputException;
 
@@ -42,14 +44,41 @@ public record TripPlan(
         Instant createdAt,
         Instant updatedAt) {
 
-    public TripStatusEnum status() {
-        if (completedAt != null) {
+    public Instant plannedStart() {
+        return startDate.atStartOfDay(TripTimeZoneConstant.ZONE).toInstant();
+    }
+
+    public Instant plannedEnd() {
+        return endDate.plusDays(1).atStartOfDay(TripTimeZoneConstant.ZONE).toInstant();
+    }
+
+    /**
+     * 四态推导：已结束 > 旅行中 > 已满员 > 招募中。
+     * 到达结束日期次日 00:00（Asia/Shanghai）即视为已结束，无需人工操作。
+     */
+    public TripStatusEnum status(Instant now) {
+        if (completedAt != null || !now.isBefore(plannedEnd())) {
             return TripStatusEnum.COMPLETED;
+        }
+        if (!now.isBefore(plannedStart())) {
+            return TripStatusEnum.ONGOING;
         }
         if (joinedCount >= capacity) {
             return TripStatusEnum.FULL;
         }
         return TripStatusEnum.RECRUITING;
+    }
+
+    public TripStatusEnum status() {
+        return status(Instant.now());
+    }
+
+    /**
+     * 是否处于「距离结束不足 3 小时」的提醒窗口：结束日期 21:00 起至次日 00:00。
+     */
+    public boolean endingSoon(Instant now) {
+        return status(now) == TripStatusEnum.ONGOING
+                && !now.isBefore(plannedEnd().minus(3, ChronoUnit.HOURS));
     }
 
     public TripPlan withId(long newId) {
@@ -67,6 +96,10 @@ public record TripPlan(
     }
 
     public static TripPlan create(TripPlanDraft draft, Instant now) {
+        return create(draft, now, LocalDate.ofInstant(now, TripTimeZoneConstant.ZONE));
+    }
+
+    public static TripPlan create(TripPlanDraft draft, Instant now, LocalDate today) {
         String title = requireText(draft.title(), "title");
         if (title.length() > MAX_TITLE_LENGTH) {
             throw new InvalidInputException("title must be at most " + MAX_TITLE_LENGTH + " characters");
@@ -81,6 +114,9 @@ public record TripPlan(
         String destination = AreaNames.cityDisplayNameOf(destinationCode);
         if (draft.startDate() == null) {
             throw new InvalidInputException("start date is required");
+        }
+        if (draft.startDate().isBefore(today)) {
+            throw new InvalidInputException("start date must not be before today");
         }
         if (draft.endDate() == null) {
             throw new InvalidInputException("end date is required");

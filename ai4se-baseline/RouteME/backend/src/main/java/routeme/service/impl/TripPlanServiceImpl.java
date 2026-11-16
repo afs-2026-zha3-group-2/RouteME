@@ -4,9 +4,11 @@ import static routeme.constant.TripCatalogConstant.MAX_MEETING_AREA_LENGTH;
 
 import java.time.Clock;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -15,6 +17,7 @@ import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 
+import routeme.constant.TripTimeZoneConstant;
 import routeme.enums.TripStatusEnum;
 import routeme.exception.ForbiddenActionException;
 import routeme.exception.InvalidInputException;
@@ -32,6 +35,7 @@ import routeme.request.TripCreateRequest;
 import routeme.request.TripMeetingRequest;
 import routeme.request.TripQuery;
 import routeme.service.DemoUserService;
+import routeme.service.TripCompletedEvent;
 import routeme.service.TripPlanService;
 
 /**
@@ -44,10 +48,13 @@ public class TripPlanServiceImpl extends AbstractServiceImpl<TripPlanMapper, Tri
 
     private final DemoUserService demoUserService;
     private final Clock clock;
+    private final ApplicationEventPublisher events;
 
-    public TripPlanServiceImpl(DemoUserService demoUserService, Clock clock) {
+    public TripPlanServiceImpl(
+            DemoUserService demoUserService, Clock clock, ApplicationEventPublisher events) {
         this.demoUserService = demoUserService;
         this.clock = clock;
+        this.events = events;
     }
 
     @Override
@@ -75,14 +82,17 @@ public class TripPlanServiceImpl extends AbstractServiceImpl<TripPlanMapper, Tri
     }
 
     @Override
+    @Transactional
     public PageResult<TripPlan> searchPage(TripQuery query, PageParam param) {
+        materializeExpired();
         IPage<TripPlanEntity> page = baseMapper.selectOpenPage(
                 new Page<>(param.page(), param.size()),
                 query.destinationCode(),
                 query.dateFrom() == null ? null : query.dateFrom().toString(),
                 query.dateTo() == null ? null : query.dateTo().toString(),
                 List.copyOf(query.tags()),
-                sortKey(query));
+                sortKey(query),
+                today());
         return new PageResult<>(
                 page.getRecords().stream().map(TripPlanEntity::toTripPlan).toList(),
                 param.page(),
@@ -91,20 +101,25 @@ public class TripPlanServiceImpl extends AbstractServiceImpl<TripPlanMapper, Tri
     }
 
     @Override
+    @Transactional
     public List<TripPlan> findOpen(TripQuery query) {
+        materializeExpired();
         return baseMapper.selectOpenList(
                         query.destinationCode(),
                         query.dateFrom() == null ? null : query.dateFrom().toString(),
                         query.dateTo() == null ? null : query.dateTo().toString(),
                         List.copyOf(query.tags()),
-                        sortKey(query))
+                        sortKey(query),
+                        today())
                 .stream()
                 .map(TripPlanEntity::toTripPlan)
                 .toList();
     }
 
     @Override
+    @Transactional
     public List<TripPlan> findAllTrips() {
+        materializeExpired();
         return list(Wrappers.<TripPlanEntity>lambdaQuery()
                 .orderByDesc(TripPlanEntity::getCreatedAt)
                 .orderByDesc(TripPlanEntity::getId)).stream()
@@ -122,7 +137,43 @@ public class TripPlanServiceImpl extends AbstractServiceImpl<TripPlanMapper, Tri
     }
 
     @Override
+    @Transactional
+    public TripPlan requireCurrent(long tripId) {
+        return materializeIfExpired(tripId);
+    }
+
+    @Override
+    @Transactional
+    public TripPlan materializeIfExpired(long tripId) {
+        TripPlan trip = require(tripId);
+        Instant now = clock.instant();
+        if (trip.completedAt() != null || now.isBefore(trip.plannedEnd())) {
+            return trip;
+        }
+        boolean updated = lambdaUpdate()
+                .eq(TripPlanEntity::getId, tripId)
+                .isNull(TripPlanEntity::getCompletedAt)
+                .set(TripPlanEntity::getCompletedAt, trip.plannedEnd().toString())
+                .set(TripPlanEntity::getUpdatedAt, now.toString())
+                .update();
+        if (updated) {
+            events.publishEvent(new TripCompletedEvent(tripId, trip.plannedEnd()));
+        }
+        return require(tripId);
+    }
+
+    @Override
+    @Transactional
+    public void materializeExpired() {
+        for (Long id : baseMapper.selectExpiredIds(today())) {
+            materializeIfExpired(id);
+        }
+    }
+
+    @Override
+    @Transactional
     public Optional<TripPlan> latestOpenByPublisher(long publisherId) {
+        materializeExpired();
         LambdaQueryWrapper<TripPlanEntity> query = Wrappers.<TripPlanEntity>lambdaQuery()
                 .eq(TripPlanEntity::getPublisherId, publisherId)
                 .isNull(TripPlanEntity::getCompletedAt)
@@ -141,27 +192,32 @@ public class TripPlanServiceImpl extends AbstractServiceImpl<TripPlanMapper, Tri
     @Override
     @Transactional
     public TripPlan complete(long tripId, long userId) {
-        TripPlan trip = require(tripId);
+        TripPlan trip = requireCurrent(tripId);
         if (trip.publisherId() != userId) {
             throw new ForbiddenActionException("only the publisher can complete trip " + tripId);
         }
-        if (trip.status() == TripStatusEnum.COMPLETED) {
+        Instant now = clock.instant();
+        if (trip.status(now) != TripStatusEnum.ONGOING) {
             throw new TripNotOpenException(tripId);
         }
-        Instant now = clock.instant();
-        lambdaUpdate()
+        boolean updated = lambdaUpdate()
                 .eq(TripPlanEntity::getId, tripId)
+                .isNull(TripPlanEntity::getCompletedAt)
                 .set(TripPlanEntity::getCompletedAt, now.toString())
                 .set(TripPlanEntity::getUpdatedAt, now.toString())
                 .update();
+        if (updated) {
+            events.publishEvent(new TripCompletedEvent(tripId, now));
+        }
         return require(tripId);
     }
 
     @Override
     @Transactional
     public TripPlan addCompanion(long tripId) {
-        TripPlan trip = require(tripId);
-        if (trip.status() != TripStatusEnum.RECRUITING) {
+        TripPlan trip = requireCurrent(tripId);
+        Instant now = clock.instant();
+        if (trip.status(now) == TripStatusEnum.COMPLETED || trip.joinedCount() >= trip.capacity()) {
             throw new TripNotOpenException(tripId);
         }
         updateJoinedCount(tripId, trip.joinedCount() + 1);
@@ -171,8 +227,8 @@ public class TripPlanServiceImpl extends AbstractServiceImpl<TripPlanMapper, Tri
     @Override
     @Transactional
     public TripPlan removeCompanion(long tripId) {
-        TripPlan trip = require(tripId);
-        if (trip.status() == TripStatusEnum.COMPLETED) {
+        TripPlan trip = requireCurrent(tripId);
+        if (trip.status(clock.instant()) == TripStatusEnum.COMPLETED) {
             throw new TripNotOpenException(tripId);
         }
         if (trip.joinedCount() <= 1) {
@@ -224,5 +280,9 @@ public class TripPlanServiceImpl extends AbstractServiceImpl<TripPlanMapper, Tri
 
     private String sortKey(TripQuery query) {
         return query.sort() == TripQuery.SortOrder.NEW ? "new" : "date";
+    }
+
+    private String today() {
+        return LocalDate.ofInstant(clock.instant(), TripTimeZoneConstant.ZONE).toString();
     }
 }

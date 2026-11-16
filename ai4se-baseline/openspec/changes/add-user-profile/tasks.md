@@ -4,7 +4,7 @@
 - **Owner：** AO（Jay）；SA 复核契约与迁移；Dev 支持头像存储
 - **顺序：** T1 → T2 → T3 → T4 → T5 → T6 → T7 → T8。T1 先写失败验收（red）；T2 / T3 先于 T4；T6 先于 T7。
 - **契约：** `openapi.yaml` 0.6.0 → 0.7.0；新增资料读 / 存 / 头像 3 个端点，注册请求收窄。
-- **迁移：** 1 个（`V10__add_user_profile.sql`，8 列，全可空）。
+- **迁移：** 2 个（`V10__add_user_profile.sql` 加 8 列、全可空；`V13__seed_demo_user_profiles.sql` 只为 4 个演示账号回填资料）。
 - **并行提醒：** `AppShell.tsx`、`styles.css`、`i18n/tripMessages.ts`、`e2e/tests/auth.spec.ts` 可能正被其它会话修改；只改本 change 需要的行，不回退他人未提交内容。
 
 ## 任务清单
@@ -47,8 +47,9 @@
 
 - [x] 新增 `backend/src/main/resources/db/migration/V10__add_user_profile.sql`：8 条 `ALTER TABLE app_users ADD COLUMN`（`avatar_url`、`birthday`、`gender`、`city`、`major`、`job`、`mbti`、`travel_style`），全部可空。
 - [x] 不新增表、不建索引、不回填、不改演示行；`school` / `bio` / `interests` 继续使用既有 NOT NULL 列。
-- [x] 新增 / 扩展迁移测试（参照 `AuthMigrationSqliteTest`）：迁移后 3 个演示账号可读、新列为 NULL、旧 `school` 文案保留。
-- [x] 用全新数据库启动一次，确认 V1–V10 顺序通过。
+- [x] 新增 / 扩展迁移测试（参照 `AuthMigrationSqliteTest`）：V10 后演示账号新列为 NULL、旧 `school` 文案保留；V13 回填后 4 个演示账号资料列齐全（`ProfileMigrationSqliteTest` / `ProfileDataMigrationSqliteTest`）。
+- [x] 新增 `V13__seed_demo_user_profiles.sql`：为 id 1–4 回填 `birthday` / `gender` / `city` / `job` / `mbti` / `travel_style`，使演示账号 `profile_complete=true`；周野（id 4）的 `school` 编码拆到 `job` / `mbti` 并置空 `school`。
+- [x] 用全新数据库启动一次，确认 V1–V13 顺序通过。
 
 **验证：** `cd RouteME/backend; .\mvnw.cmd -B test -Dtest=*MigrationSqliteTest`
 **覆盖：** D1、D3、L-04（空值语义）
@@ -113,21 +114,34 @@
 - [x] `cd RouteME/backend; .\mvnw.cmd -B test`（含 `OpenApiTest`、`UserProfileControllerTest`、`UserProfileRulesTest`、迁移测试；既有 154 项不回归）。
 - [x] `cd RouteME/frontend; npm run build; npm test`（既有 9 文件 + 新增 2 文件全绿）。
 - [x] `cd RouteME/e2e; npx playwright test tests/profile.spec.ts`（10 项全绿）；再跑 `npx playwright test`（`trips` / `companions` / `experiences` 不回归；若并行 `auth.spec.ts` 已在工作区一并跑）。
-- [x] 迁移双路径：全新库启动 + 旧库启动（演示账号只读、未回填、`school` 旧文案保留）。
+- [x] 迁移双路径：全新库启动 + 旧库启动（V10 不回填老账号；V13 只为 4 个演示账号回填；演示账号仍只读、`school` 旧文案除周野外保持不变）。
 - [x] 手工：注册 → 完善 → 保存 → 本人主页；他人从卡片 / 详情 / 体验进入；未完善发布者降级；跳过 → 「我的」补全；演示身份无入口；390 / 768 / 1440；浅 / 深色；键盘与读屏；与 [`preview/profile-pages.html`](preview/profile-pages.html) 逐页对照。
 - [x] 反向核对：`TripController` / `ApplicationController` / `ChatController` / `ExperienceController` 无逻辑 diff；匹配分数与理由不变；他人响应无 `birthday`；注册带旧字段仍 201。
 - [x] 真实输出写入 `docs/ai4se-plugins/<timestamp>-local-verify-report.md`。
 - [x] 归档前提醒：SA 具名追认双 capability 例外；归档时新建 `user-profile` Living Spec 并用 MODIFIED 替换 `user-auth`「注册账号」（保留 4 个基线场景）。
 
 **验证：** 上述命令全绿；迁移与手工结果写入 local-verify 报告
-**覆盖：** 全部 24 + 6 场景、RV-1–RV-7、G1 条件 2–8
+**覆盖：** 全部 26 + 6 场景、RV-1–RV-7、G1 条件 2–8
+
+### T9 [frontend] 侧栏分组与账号菜单（VL 追加）
+
+- [x] `shell/AppShell.tsx`：主导航按「浏览 / 我的」分组渲染；底部为账号入口（头像 + 昵称 + `publisherSummary`，为空显示「资料未完善」），点击展开菜单（「编辑我的资料」→ `#/profile/setup`、分隔线、「退出登录」→ `onLogout`）；删除底部「价值闭环」卡片与「演示环境 · 数据保存在本机」说明。
+- [x] 菜单用 `position: fixed` 按账号行 `getBoundingClientRect()` 定位（侧栏 `overflow-y: auto` 会裁剪绝对定位子树），与行底边对齐、距侧栏 10px、宽 188px，浮于内容之上；滚动 / 缩放时重算位置；Esc、外部点击、选中动作关闭，Esc 归还焦点，上下方向键在菜单项间移动。
+- [x] `styles.css`：侧栏底色改为浅色专属 token `--rail-bg`（`#eeebe3`，与页面 `--bg` 同色系、降饱和；深色仍为 `--surface`），悬停 / 展开态用 `color-mix(--ink 6%, --rail-bg)`、选中态用 `color-mix(--lagoon 18%, --rail-bg)`，不再提亮到 `--surface-2`；分组标题 / 分组分隔线与选中态文字取 `--lagoon` 系可读色；≤900px 仍整条收起、底部标签栏保留三个入口。
+- [x] 账号入口沿用导航的悬停 / 展开底色并以 `[aria-expanded="true"]` 表示展开、箭头旋转；菜单 `--surface` + `--line-2` 描边（深色 `--surface-2`）+ `--sh-3`，与 `.id-panel` 同一层级语言。
+- [x] `specs/design-system/spec.md`：MODIFIED「应用外壳与导航」，新增账号入口 / 账号菜单 / 关闭账号菜单场景，保留原四个场景（共 7 个）。
+- [x] 视觉：浅 / 深色 × 1440 / 390 截图核对；`auth.spec.ts`「我的旅行」链接与 `profile.spec.ts` 全量不回归。
+
+**验证：** `cd RouteME/frontend; npm run typecheck; npm test; npm run build`；`cd RouteME/e2e; npx playwright test`
+**覆盖：** design-system「应用外壳与导航」7 个场景
 
 ## 对齐自检（Spec ↔ Design ↔ Tasks ↔ ATDD）
 
 | 检查 | Result | Evidence |
 |---|---|---|
-| `user-profile` 24 个 Scenario 均有 ATDD 行与任务 | Pass | E1–E24 见 `atdd-design.md` §1.2；D1–D12；T1–T8 |
+| `user-profile` 26 个 Scenario 均有 ATDD 行与任务 | Pass | E1–E26 见 `atdd-design.md` §1.2；D1–D12；T1–T8 |
 | `user-auth` 6 个 Scenario 有落点 | Pass | A1–A6；T1（测试）、T2（契约）、T5（实现） |
+| `design-system`「应用外壳与导航」7 个 Scenario 有落点 | Pass | T9；`specs/design-system/spec.md`（MODIFIED，保留原 4 个场景） |
 | 基线场景不丢 | Pass | MODIFIED 保留 4 个既有场景；T5 只收窄字段与校验，不删登录 / 重复 / 格式 / 密码用例 |
 | Non-goals 有反向验证 | Pass | RV-1–RV-7；T1（断言）、T8（复核） |
 | 无静默范围扩张 | Pass | 未加入裁剪、相册、可见性、演示编辑、兴趣词表统一、私信、改密码 |

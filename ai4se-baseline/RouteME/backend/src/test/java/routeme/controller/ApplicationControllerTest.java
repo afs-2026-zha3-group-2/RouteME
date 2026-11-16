@@ -11,13 +11,17 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
+import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
 
+import routeme.config.FixedClockTestConfig;
+
 @SpringBootTest
 @AutoConfigureMockMvc
 @Transactional
+@Import(FixedClockTestConfig.class)
 class ApplicationControllerTest {
 
     @Autowired
@@ -207,7 +211,7 @@ class ApplicationControllerTest {
 
             mockMvc.perform(get("/api/trips/4").header("X-User-Id", "1"))
                     .andExpect(jsonPath("$.joined_count").value(1))
-                    .andExpect(jsonPath("$.status").value("recruiting"))
+                    .andExpect(jsonPath("$.status").value("ongoing"))
                     .andExpect(jsonPath("$.participants.length()").value(1));
 
             mockMvc.perform(post("/api/trips/4/applications")

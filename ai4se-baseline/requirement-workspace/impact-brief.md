@@ -1,4 +1,4 @@
-﻿# Impact brief — REQ-002 / 003 / 004 / 005 / 006 / 007 / 008（MVP 业务能力集）
+# Impact brief — REQ-002 / 003 / 004 / 005 / 006 / 007 / 008（MVP 业务能力集）
 
 - **Workdir：** `requirement-workspace/`
 - **日期：** 2026-11-15 ｜ **触发：** `/sdd:pre-spec-req` 内嵌 impact-analysis（blocking OQ 与 DoR BLOCKER 均已清零）
@@ -516,13 +516,305 @@
 - **P4 收敛修订（2026-11-16）：** main 已落地同名资料端点，按用户裁决改为「复用 main 接口 + 扩展统计/加入时间」；迁移版号顺延至 V12（V10 = 资料列、V11 = 目的地代码）。
 - **质量自检（split-heuristics）：** 垂直切片、端到端可验证（卡片入口 → 弹窗 → 关闭）、可独立运行、capability 名真实、无依赖环。
 
+---
+
+## 14. REQ-010 变更影响 — 提交同行申请（S08）
+
+- **日期：** 2026-11-16 ｜ **触发：** `/sdd:pre-spec-req` 内嵌 impact-analysis（4 项范围问题已由用户裁决，blocking OQ 与 DoR BLOCKER 均已清零）
+- **粒度：** 应用架构（页面 / 申请展示 / 能力边界），非代码设计
+- **基线：** `origin/main@b93f45b` 的独立 worktree `feature/refine-trip-application`
+
+### 14.1 Requirement set
+
+- `requirement-workspace/requirements/REQ-010-trip-application-entry.md`（六字段 + 8 场景 + OQ + DoR）
+- `requirement-workspace/intents/REQ-010-trip-application-entry.md`
+- 能力：`trip-companions`（MODIFIED）；`trip-plans` 只读消费。
+
+### 14.2 As-is asset inventory（evidence paths）
+
+| 资产 | 路径 | 现状 |
+|---|---|---|
+| 需求条目 | `requirement-workspace/requirements/REQ-010-trip-application-entry.md` | 本变更新增；8 场景；用户裁决 D1–D4；DoR / A0 全过 |
+| Living Spec | `openspec/specs/trip-companions/spec.md` | 「提交与取消同行申请」已含招募中 / 未满员 / 选填 ≤120 / 本人 / 重复 / 满员 / 已结束 / 取消 5 场景 |
+| 已归档 change | `openspec/changes/archive/2026-11-15-add-trip-companions/` | 申请、接受、退出、聊天与我的旅行的原始实现与验收 |
+| 行程详情页 | `RouteME/frontend/src/trips/TripDetailPage.tsx` | 申请入口是 `Modal` + textarea；提交后独立 `application-status` Tag；不可申请显示 badge |
+| 文案 | `RouteME/frontend/src/i18n/tripMessages.ts` | `applyDialogTitle` / `applyMessageLabel（选填）` / `applySubmit（提交申请）` / `applyStatusPending（申请待处理）`；无重复申请文案 |
+| API 错误 | `RouteME/frontend/src/api.ts` | 非 2xx 只抛 `Error(body.code)`；无错误码 → 中文文案映射 |
+| 后端规则 | `ApplicationServiceImpl.apply` | 本人 403；重复 409 `DUPLICATE_APPLICATION`；非 recruiting 409 `TRIP_NOT_OPEN`；说明 trim 后空转 null，≤120 |
+| 后端测试 | `ApplicationServiceTest` / `ApplicationControllerTest` | 已覆盖满员拒新申请、重复、本人、重申请 |
+| 契约 | `RouteME/openapi.yaml` 0.7.0 | `ApplicationCreateRequest.message` nullable ≤120；`TripApplication.message` nullable ≤120；错误码已定义 |
+| 原型 | `docs/prototype/ui.js` `actionBox`；`store.js` `canApply`；`styles.css` | 内联申请表单；待处理提示 + 撤回；不可申请原因；`apply-form` 样式 |
+| 前端/E2E 测试 | `frontend/src/**/*.test.ts(x)`；`e2e/tests/companions.spec.ts` | E2E 走弹窗路径：点「申请同行」→ 填 placeholder → 点「提交申请」→ 断言「申请待处理」 |
+| 阶段记录 | `docs/sdd/README.md` | 阶段索引；尚无 `refine-trip-application` 行 |
+
+### 14.3 As-is → proposed delta（逐资产）
+
+| 资产 | As-is | Proposed delta |
+|---|---|---|
+| 详情页申请入口 | 弹窗表单 | 原型内联申请区：一句申请说明（选填，120 字）、提交按钮、聊天权限说明 |
+| 详情页待处理态 | 独立 Tag「申请待处理」+ 说明 + 取消按钮 | 原型等待提示「申请已提交，等待 {昵称} 回应。处理前你可以随时撤回。」+「撤回申请」；说明与状态不再重复展示 |
+| 重复申请反馈 | `Alert` 显示 `DUPLICATE_APPLICATION` | 映射为「已申请，请等待回应」，并刷新为待处理 / 已匹配 |
+| 满员 / 已结束入口 | badge「当前不可申请」/「这条行程已结束」 | 原型原因文案「人数已满」/「行程已结束」；后端拒绝不变 |
+| 本人行程 | 不展示申请按钮 + badge「这是你发布的行程」 | 保持不展示；发布者操作不变（不新增/删除按钮） |
+| 说明字段 | 选填 ≤120 | **不变**（用户裁决 D1） |
+| 后端 / 契约 / 迁移 | 规则与错误码已存在 | **不变**；保留回归测试；不改 `openapi.yaml` 版本 |
+| Living Spec | 「提交与取消同行申请」5 场景 | MODIFIED：保留 5 场景，新增入口状态与待处理展示场景 |
+| 原型 | 内联表单与待处理态 | **不改**；重复提示属于服务端错误映射，原型仅 mock 侧门禁文案 |
+| E2E | 弹窗路径与「申请待处理」断言 | 改为内联申请区、说明选填、待处理提示与撤回；补重复 / 满员后端拒绝断言 |
+| 阶段记录 | 无本 change 行 | `docs/sdd/refine-trip-application/p1-intent.md` 与 README 索引行 |
+
+### 14.4 Blast radius（应用架构）
+
+- **页面（1）：** 行程详情页的申请操作区；首页卡片、我的旅行、聊天不改。
+- **能力（1）：** `trip-companions`（MODIFIED「提交与取消同行申请」）；`trip-plans` 只读消费状态。
+- **接口契约（0）：** 无新增端点 / 字段 / 错误码 / 版本变更。
+- **数据 / 迁移（0）：** 无新表、无迁移、无状态列。
+- **测试触点：** 前端组件测试（入口派生、说明选填、错误映射、待处理态）；E2E `companions.spec.ts`（提交 → 待处理 → 发布者接受；满员 / 结束拒新申请）；后端回归 `ApplicationServiceTest`（不改实现）。
+- **知识库：** P1 不改 `docs/knowledge/`；归档时回写申请入口与展示口径。
+
+### 14.5 Artifact impact（specs / tests / docs）
+
+| 类型 | 影响 |
+|---|---|
+| Spec（change delta） | `openspec/changes/refine-trip-application/specs/trip-companions/spec.md`（MODIFIED，1 条 Requirement，保留 5 场景 + 新增入口 / 待处理场景） |
+| Proposal | `openspec/changes/refine-trip-application/proposal.md` |
+| Story | 不新增故事文件：原型 `stories.html` S08 已存在；本 change 以 proposal + delta 承接（与 REQ-006 同口径） |
+| Registry / handoff | 新增 REQ-010 行与 REQ-010 → `refine-trip-application` 映射 |
+| Tests / 代码 / design / tasks | 不在 P1 范围；交 P3 / P4 起 |
+| Living Spec | 归档时用 MODIFIED 替换 `openspec/specs/trip-companions/spec.md` 的「提交与取消同行申请」块 |
+| 阶段记录 | `docs/sdd/refine-trip-application/p1-intent.md`；`docs/sdd/README.md` 索引 |
+
+### 14.6 Dual-track notes（OpenSpec vs agile）
+
+- **OpenSpec 轨（主）：** 单 change `refine-trip-application`，一份 `trip-companions` delta；不拆内部 change。
+- **Agile 轨：** 原型故事 S08（迭代 2 / 2 点）即本 change 的业务口径；不另建故事文件，避免与原型故事双维护。
+
+### 14.7 Risks & blockers
+
+| 级别 | 项 | 说明 / 缓解 |
+|---|---|---|
+| Risk | 重复申请与满员错误码的优先级 | 后端先判重复再判非 recruiting；前端需分别映射 `DUPLICATE_APPLICATION` 与 `TRIP_NOT_OPEN`，不能只写一个分支 |
+| Risk | 页面停留期间状态变化 | 前端 `canApply` 是渲染时快照；提交失败后必须 `reload()` 行程并刷新申请状态，场景 8 验收 |
+| Risk | E2E 选择器变化 | 弹窗路径改为内联表单，需同步更新 `companions.spec.ts` 的按钮 / placeholder / 状态断言 |
+| Risk | 选填说明的空白处理 | 前端 trim 后空 → `null`；保留后端 `normalizeMessage`，不新增必填校验 |
+| Risk | 文案与原型的一个「请」字差异 | 用户 AC 指定「已申请，请等待回应」；原型 `store.js` 的「已申请，等待回应」是 mock 侧门禁，页面不展示该字符串，不构成视觉差异 |
+| Risk | 阶段提交与 `@rule:git-commit-conventions` 冲突 | 用户当次明确要求「每个阶段一次提交，P4 后推送，push 前先 pull」；以用户指示为准，按 `docs/sdd/README.md` 的 `<type>(p<N>)` 提交，偏离在交付说明记录 |
+| Blocker | 无 | blocking OQ=0、DoR BLOCKER=0、A0 ⑨–⑫ 全过；无外部依赖 |
+
+### 14.8 Suggested split boundaries（供 proposal-split / story-split）
+
+- **一个 change：** `refine-trip-application` ← REQ-010（S08，页面级垂直切片）。
+- **不拆故事：** 原型 S08 已提供 AC；再拆会与原型故事列表双维护。
+- **不并入 `add-trip-companions`：** 该 change 已归档；本需求只是展示与反馈增量，追加归档包会打乱历史边界。
+- **不并入 `add-user-profiles`：** 本 change 基于 `origin/main`，不依赖未合并的资料弹窗；避免两个 PR 相互堆叠。
+- **阶段：** 单阶段；依赖已归档的 `trip-companions`，无阻塞上游。
+- **质量自检（split-heuristics）：** 子目标一句话可说明 ✓；端到端可观察（打开详情 → 留一句话 → 提交 → 待处理 → 撤回）✓；可独立运行 ✓；capability 名真实 ✓；无依赖环 ✓。
+# Impact brief 增补 — REQ-011（S15 结束行程）
+
+- **日期：** 2026-11-16 ｜ **触发：** `/sdd:pre-spec-req` 内嵌 impact-analysis（blocking OQ = 0，DoR BLOCKER = 0）
+- **粒度：** 应用架构（能力 / 页面 / 集成边界），非代码设计
+
+## 1. Requirement set
+
+| id | 能力 | change（候选） | 条目路径 |
+|---|---|---|---|
+| REQ-011 | `trip-plans`（MODIFIED + ADDED）、`trip-companions`（MODIFIED） | `add-trip-completion` | `requirement-workspace/requirements/REQ-011-trip-completion.md` |
+
+意图捕获：`requirement-workspace/intents/REQ-011-trip-completion.md`。
+
+## 2. As-is asset inventory（evidence paths）
+
+| 资产 | 路径 | 现状 |
+|---|---|---|
+| Living Spec — 行程 | `openspec/specs/trip-plans/spec.md` | 「发布者结束自己的行程」只规定发布者可结束未结束行程；状态只有招募中/已满员/已结束；发布成功后状态为招募中；无日期驱动、无提醒 |
+| Living Spec — 同行 | `openspec/specs/trip-companions/spec.md` | 「提交与取消同行申请」限定招募中且未满员；「处理申请」未写满员后拒绝；「匹配后的一对一文字沟通」已定义已结束只读 |
+| Living Spec — 体验 | `openspec/specs/trip-experiences/spec.md` | 已结束 + 发布者/已接受同行者可发表体验；未参加拒绝 |
+| 后端状态模型 | `RouteME/backend/.../pojo/TripPlan.java`、`enums/TripStatusEnum.java` | 仅三态；`status()` 只看 `completedAt` 与人数，不看日期 |
+| 后端结束逻辑 | `RouteME/backend/.../service/impl/TripPlanServiceImpl.java` | 仅校验非 COMPLETED；未取消待处理申请 |
+| 后端申请逻辑 | `RouteME/backend/.../service/impl/ApplicationServiceImpl.java` | `apply` / `decide` 未覆盖 ONGOING；`decide` 未校验行程是否已结束；满员依赖 `addCompanion` 的 RECRUITING 校验间接拦截 |
+| 后端聚合 | `RouteME/backend/.../service/impl/MyTripsServiceImpl.java` | 已匹配与已完成分组按 `completedAt` 判断；无自动完成口径 |
+| 后端统计 | `RouteME/backend/.../service/impl/UserProfileStatsServiceImpl.java` | 已完成 = `completedAt != null` 计数 |
+| 后端聊天 | `RouteME/backend/.../service/impl/ChatServiceImpl.java` | 已结束发送抛 `CHAT_READ_ONLY` |
+| 后端体验 | `RouteME/backend/.../service/impl/ExperienceServiceImpl.java` | 已校验 COMPLETED + 参与者 |
+| 查询过滤 | `RouteME/backend/.../mapper/TripPlanMapper.xml` | `WHERE completed_at IS NULL`；日期已过仍出现在首页 |
+| 前端卡片 | `RouteME/frontend/src/trips/TripCard.tsx`、`tripStatus.ts`、`StatusBadge.tsx` | 三态徽标；无结束入口 |
+| 前端详情 | `RouteME/frontend/src/trips/TripDetailPage.tsx` | `isPublisher && !isCompleted` 显示「标记为已结束」+ 二次确认 Modal |
+| 前端我的旅行 | `RouteME/frontend/src/mine/MyTripsPage.tsx` | 四分组；无结束入口；已完成组只有体验入口 |
+| 前端聊天 | `RouteME/frontend/src/chat/ChatPage.tsx`、`i18n/tripMessages.ts` | 已只读提示「行程已结束，聊天只能查看历史消息。」 |
+| 契约 | `RouteME/openapi.yaml`（TripSummary.status / TripDetail.status / `/trips/{tripId}/complete`） | `enum: [recruiting, full, completed]`；complete 已声明 403/409 |
+| 测试 | `backend/.../TripPlanServicePersistenceTest.java`、`ChatControllerTest.java`、`OpenApiTest.java`；`e2e/tests/trips.spec.ts` | 现有断言基于三态；E2E 已有结束行程用例 |
+
+无缺失的权威树；未新造竞争性 authority root。
+
+## 3. As-is → proposed delta（逐资产）
+
+| 资产 | As-is | Proposed delta |
+|---|---|---|
+| `openspec/specs/`（Living Spec） | 三态行程 | change 归档后 `trip-plans` 为四态；`trip-companions` 扩展申请资格与自动取消；P1/P2 只产出 change delta |
+| `openspec/changes/add-trip-completion/` | 不存在 | 新建：`proposal.md` + `specs/trip-plans/spec.md`（MODIFIED + ADDED）+ `specs/trip-companions/spec.md`（MODIFIED） |
+| `trip-plans`（Living Spec） | 三态；结束限「未结束」；发布后招募中 | 四态与优先级；日期自动流转；结束限旅行中；发布校验今天；提醒；列表口径；我的旅行/统计口径 |
+| `trip-companions`（Living Spec） | 申请限招募中且未满员；处理未写满员分支 | 未结束且未满员可申请/接受（含旅行中）；满员后新申请拒绝、既有申请可拒绝不可接受；结束后待处理自动取消且处理关闭；聊天提示补「该行程已结束」 |
+| `trip-experiences` | 已结束 + 参加者可分享 | checked, no rule change —— 自动完成与手动结束同等适用（回归） |
+| `openapi.yaml` | 三态枚举 | `status` 新增 `ongoing`；`/trips/{tripId}/complete` 补充「仅 ongoing」描述；错误码不变（`TRIP_NOT_OPEN` 409 / `FORBIDDEN` 403）；契约版本递增 |
+| 后端状态与流转 | `TripPlan.status()` 只看完成时间与人数 | 引入日期推导（含自动完成口径）；结束校验改为仅 ONGOING；发布校验 `startDate >= today`；结束事务批量取消待处理申请 |
+| 后端聚合与统计 | 只认 `completedAt` | 已匹配/已完成分组与「已完成」统计改用统一的「已结束」判定（含自动完成） |
+| 后端查询 | `completed_at IS NULL` | 未结束列表排除到期自动完成；仍包含 ONGOING |
+| 后端申请 | `apply` / `decide` 未覆盖新四态 | 申请与接受改为「未结束且未满员」；满员后接受拒绝、拒绝允许；结束后全部关闭；结束触发批量取消 |
+| 前端状态展示 | 三态文案与颜色 | 新增「旅行中」文案与徽标色；满员的旅行中显示旅行中 |
+| 前端结束入口 | 仅详情页「标记为已结束」 | 我的旅行-我发布的 ONGOING 卡片 + 详情页；统一「结束行程」；二次确认文案补「申请关闭 / 待处理自动取消 / 不可恢复」 |
+| 前端提醒 | 无 | 我的旅行 + 详情页向发布者与已接受同行者展示「行程即将结束」（结束日期 21:00 起） |
+| 前端申请处理 | 申请页可接受/拒绝 | 已结束只读；满员时接受置灰、拒绝可用 |
+| 前端聊天 | 只读提示 | 文案对齐含「该行程已结束」 |
+| 前端我的旅行 | 已完成组 | 含自动完成；仍在旅行中的行程归入我发布的/已匹配，不归已完成 |
+| 测试 | 基于三态 | 四态推导（含边界 00:00/21:00）、结束权限、自动取消、列表口径、统计口径、E2E 结束入口与提醒 |
+| registry / handoff / stories / TODO | 无 REQ-011 | 补 REQ-011 登记与映射、故事 S15、业务清单 |
+
+## 4. Blast radius（应用架构）
+
+- **受影响能力：** `trip-plans`（状态机与结束）、`trip-companions`（申请资格/处理/聊天提示）、`trip-experiences`（资格回归）、`user-profiles`（统计口径）。
+- **受影响页面：** 旅行灵感首页（状态徽标/未结束列表）、行程详情页（结束入口/提醒/申请入口/体验入口）、我的旅行（结束入口/提醒/已完成分组）、同行申请页（满员与结束只读）、聊天页（只读提示）。
+- **跨能力集成边界：** `trip-plans` 拥有四态与自动流转；`trip-companions` 拥有申请状态机，接收 `trip-plans` 的「已结束」触发批量取消；`trip-experiences` 与 `user-profiles` 只读消费「已结束」。
+- **数据所有权不变：** 行程归 `trip-plans`；申请/聊天归 `trip-companions`；体验归 `trip-experiences`；统计为 `user-profiles` 请求时聚合。
+- **共享文件热点：** `TripPlan.java`、`TripPlanServiceImpl.java`、`ApplicationServiceImpl.java`、`MyTripsServiceImpl.java`、`TripPlanMapper.xml`、`TripDetailPage.tsx`、`MyTripsPage.tsx`、`tripMessages.ts`、`openapi.yaml`，排期时避免与其他 change 并行改同一文件。
+
+## 5. Artifact impact（specs / tests / docs）
+
+| 类型 | 影响 |
+|---|---|
+| Spec（change delta） | `specs/trip-plans/spec.md`（MODIFIED：浏览未结束/发布/详情状态/结束；ADDED：四态自动流转、即将结束提醒）；`specs/trip-companions/spec.md`（MODIFIED：提交与取消申请、处理申请、聊天只读提示） |
+| Proposal | `openspec/changes/add-trip-completion/proposal.md`（引用 REQ-011 与 S15；含 effort/size 与依赖顺序） |
+| 契约 | `openapi.yaml`：`status` 增加 `ongoing`，complete 描述收紧为仅 ongoing；Redocly lint 与 OpenApiTest 需通过 |
+| 后端 | 状态推导与日期边界、结束校验与批量取消、申请资格/处理分支、聚合与统计口径、列表过滤、发布日期校验；单元/控制器/迁移测试 |
+| 前端 | 状态文案与徽标、两处结束入口与二次确认、即将结束提醒、申请入口与处理禁用态、聊天提示文案、我的旅行已完成口径；组件测试 |
+| E2E | 添加旅行中结束用例、非 ONGOING 不可结束、二次确认取消/确认、结束后申请自动取消与处理关闭、聊天只读、体验入口、提醒窗口 |
+| 文档 | P1 仅本 brief 与需求条目；`docs/knowledge/domain` 与 `interfaces/README.md` 归档阶段回写四态与 `ongoing` |
+
+## 6. Dual-track notes（OpenSpec vs agile）
+
+- **OpenSpec 轨（主）：** 一个 change `add-trip-completion`，双 capability delta（`trip-plans` + `trip-companions`）；需 SA 追认双 capability 例外（参照 REQ-005 / REQ-007 / REQ-008 先例）。
+- **Agile 轨：** 单条故事 S15（故事点 1）。若需拆分，按 Happy-Sad 拆「四态与自动流转」「结束操作与善后」两条，但共用同一状态机，不建议拆前后端水平切片。
+- 两轨共用 REQ-011 与本节 impact。
+
+## 7. Risks & blockers
+
+| 级别 | 项 | 说明 / 缓解 |
+|---|---|---|
+| Risk | 自动完成依赖服务端时钟与时区 | 规格固定「结束日期次日 00:00 / 当日 21:00」，测试需注入固定 Clock；避免用前端时钟判定 |
+| Risk | 自动完成与待处理申请批量取消的触发时机 | 若纯推导不写入，申请状态不会自动变化；P3 需选定懒写入或读时投影，并保证一致性；MVP 数据量小可接受 |
+| Risk | 首页/匹配列表过滤条件变更影响既有分页与匹配排序 | 「未结束」改判为「非已结束」后需同步 `TripPlanMapper.xml` 与匹配候选；用回归用例覆盖 |
+| Risk | 满员后「可拒绝不可接受」与现有 `addCompanion` 的 RECRUITING 校验冲突 | ONGOING 满员会被误判为可接受；需把接受资格改为「未结束且未满员」而非仅 RECRUITING |
+| Risk | 结束入口同时落在我的旅行与详情页 | `MyTripsPage` 复用 `TripCard`，需避免卡片整体链接与按钮嵌套冲突；交互与可达性需 E2E 覆盖 |
+| Risk | 状态枚举新增 `ongoing` 破坏契约测试 | `openapi.yaml`、`OpenApiTest`、前端 `TripStatus` 类型与徽标需同批更新 |
+| Risk | 发布校验新增过去日期限制 | 可能使既有 E2E 使用固定过去日期的夹具失败；需改用相对日期 |
+| Blocker | 无 | blocking OQ = 0、DoR BLOCKER = 0；无使需求失效的未知依赖 |
+
+## 8. Suggested split boundaries（供 proposal-split / story-split）
+
+- **一 REQ 一 change：** `add-trip-completion` ← REQ-011（`trip-plans` MODIFIED+ADDED + `trip-companions` MODIFIED）。
+- **依赖 / 阶段排序：** 无上游新依赖；建议实施顺序 ① 状态推导与契约（四态 + 日期边界）→ ② 结束权限与批量取消 → ③ 申请资格/处理分支 → ④ 前端入口、提醒与文案 → ⑤ 列表/统计口径与回归。
+- **归档顺序：** 与 `add-match-reason`（`trip-companions`）共享 capability，若同窗口归档需串行；本 change 不依赖其它未归档 change。
+- **质量自检（split-heuristics）：** 垂直切片 ✓；端到端可观察 ✓（进入旅行中 → 结束 → 申请取消/聊天只读/体验入口）；可独立运行 ✓；capability 名真实 ✓；无依赖环 ✓。
+
+## 15. REQ-012 变更影响 — 同行安全提示与举报（S14）
+
+- **日期：** 2026-11-16 ｜ **触发：** `/sdd:pre-spec-req` 内嵌 impact-analysis（4 项展示口径问题已由用户裁决，blocking OQ 与 DoR BLOCKER 均已清零）
+- **粒度：** 应用架构（页面 / 安全展示 / 举报反馈），非代码设计
+- **基线：** `origin/main@9ee38e1`
+
+### 15.1 Requirement set
+
+- `requirement-workspace/requirements/REQ-012-safety-report.md`（六字段 + 7 场景 + OQ + DoR）
+- `requirement-workspace/intents/REQ-012-safety-report.md`
+- 能力：`trip-companions`（MODIFIED）；`trip-plans` 只读消费。
+
+### 15.2 As-is asset inventory（evidence paths）
+
+| 资产 | 路径 | 现状 |
+|---|---|---|
+| 需求条目 | `requirement-workspace/requirements/REQ-012-safety-report.md` | 本变更新增；7 场景；用户裁决 D1–D4；DoR / A0 全过 |
+| Living Spec | `openspec/specs/trip-companions/spec.md` | 「我的旅行聚合与最低安全能力」已含安全提示常驻、举报回执、不公开电话 / 证件 / 住址；4 场景 |
+| 已归档 change | `openspec/changes/archive/2026-11-15-add-trip-companions/` | 安全提示、举报入口与回执的原始实现与验收 |
+| 安全组件 | `RouteME/frontend/src/safety/SafetyNote.tsx` | `Alert` 单段 `safetyBody` + 可选举报按钮；无三条结构、无集合区域 |
+| 举报弹窗 | `RouteME/frontend/src/safety/ReportModal.tsx` | 对象标注 + 四类原因 + 说明 ≤200 + 回执；缺身份保密与紧急求助说明 |
+| 详情页 | `RouteME/frontend/src/trips/TripDetailPage.tsx` | 无条件渲染 `SafetyNote onReport`；已展示 `meeting_area` |
+| 聊天页 | `RouteME/frontend/src/chat/ChatPage.tsx` | 渲染 `SafetyNote onReport`；已加载行程对象（含 `meeting_area`） |
+| 体验页（范围外） | `RouteME/frontend/src/experiences/ShareExperiencePage.tsx` | 复用 `SafetyNote`（无举报按钮）；本需求保留其简化形态 |
+| 文案 | `RouteME/frontend/src/i18n/tripMessages.ts` | `safetyTitle` / `safetyBody` / `reportSuccess`「举报已收到，我们会记录处理。」 |
+| 后端 | `ReportController` / `ReportServiceImpl` / `ReportControllerTest` | `POST /api/reports` → 201 `{received:true}`；校验目标类型、目标存在与原因 |
+| 契约 | `RouteME/openapi.yaml` 0.8.1 | `ReportRequest`（`target_type` ∈ trip / user，`reason` 四值，`note ≤200`）、`ReportReceipt` |
+| 原型 | `docs/prototype/ui.js` `safetyPanel()` / `chat-safety` / `reportModal()` | 三条安全事实、聊天安全行、举报弹窗与身份保密 / 紧急求助说明 |
+| 前端 / E2E 测试 | `frontend/src/**/*.test.ts(x)`；`e2e/tests/companions.spec.ts`、`profiles.spec.ts` | companions 断言旧回执文案；profiles 断言弹窗标题与隐私词黑名单 |
+| 阶段记录 | `docs/sdd/README.md` | 阶段索引；尚无 `refine-safety-report` 行 |
+
+### 15.3 As-is → proposed delta（逐资产）
+
+| 资产 | As-is | Proposed delta |
+|---|---|---|
+| 详情页安全区 | 单段 `safetyBody` | 原型三条文本列表：公共场所 + 本行程集合区域 / 告知亲友 / 不公开电话证件住址 + 拒绝转账或索要证件 |
+| 聊天页安全区 | 与详情页同一段文字 | 一行同义提示：公共场所 + 集合区域（或待确认）+ 不转账不提供证件 |
+| 举报入口 | 详情页与聊天页均有按钮；详情页对本人行程也显示 | 详情页「举报这条行程」仅他人行程；聊天页「举报这位用户」常驻（含只读） |
+| 举报弹窗 | 对象 + 原因 + 说明 + 回执 | 增加「我们不会向对方透露你的身份」与紧急求助说明；回执文案改为「已收到，我们会处理」 |
+| 举报原因 | 四类共享词表 | **不变**（用户裁决 D2） |
+| 后端 / 契约 / 迁移 | 规则与错误码已存在 | **不变**；保留 `ReportControllerTest` 回归 |
+| 集合区域 | 详情元数据已展示 | 安全区复用同一字段；空值回退「尚未填写 / 待确认」 |
+| 体验发布页 | 复用 `SafetyNote` | **不变**：保留无举报按钮的简化提示 |
+| Living Spec | 4 场景（含安全与回执） | MODIFIED：保留「我的旅行」两个场景，补三条提示 / 聊天提示 / 本人入口 / 失败重试场景 |
+| E2E | 旧回执文案断言 | 改为「已收到，我们会处理」；补三条提示、本人无举报、失败重试断言 |
+
+### 15.4 Blast radius（应用架构）
+
+- **页面（2）：** 行程详情页、聊天页；首页、我的旅行、体验页不改。
+- **能力（1）：** `trip-companions`（MODIFIED「我的旅行聚合与最低安全能力」）；`trip-plans` 只读消费集合区域。
+- **接口契约（0）：** 无新增端点 / 字段 / 错误码 / 版本变更。
+- **数据 / 迁移（0）：** 无新表、无迁移、无列变更。
+- **测试触点：** 前端组件测试（提示三条、集合区域回退、举报入口可见性、回执态、失败保留内容）；E2E `companions.spec.ts`（举报回执）、详情页 / 聊天页提示断言；后端 `ReportControllerTest` 回归（不改实现）。
+- **知识库：** P1 不改 `docs/knowledge/`；归档时回写安全提示与回执口径。
+
+### 15.5 Artifact impact（specs / tests / docs）
+
+| 类型 | 影响 |
+|---|---|
+| Spec（change delta） | `openspec/changes/refine-safety-report/specs/trip-companions/spec.md`（MODIFIED，1 条 Requirement，保留我的旅行 2 场景 + 安全相关 7 场景） |
+| Proposal | `openspec/changes/refine-safety-report/proposal.md` |
+| Story | 不新增故事文件：原型 `stories.html` S14 已存在；本 change 以 proposal + delta 承接（与 REQ-010 同口径） |
+| Registry / handoff | 新增 REQ-012 行与 REQ-012 → `refine-safety-report` 映射 |
+| Tests / 代码 / design / tasks | 不在 P1 范围；交 P3 / P4 起 |
+| Living Spec | 归档时用 MODIFIED 替换 `openspec/specs/trip-companions/spec.md` 的「我的旅行聚合与最低安全能力」块 |
+| 阶段记录 | `docs/sdd/refine-safety-report/p1-intent.md`；`docs/sdd/README.md` 索引 |
+
+### 15.6 Dual-track notes（OpenSpec vs agile）
+
+- **OpenSpec 轨（主）：** 单 change `refine-safety-report`，一份 `trip-companions` delta；不拆内部 change。
+- **Agile 轨：** 原型故事 S14（迭代 3 / 1 点）即本 change 的业务口径；不另建故事文件，避免与原型故事双维护。
+
+### 15.7 Risks & blockers
+
+| 级别 | 项 | 说明 / 缓解 |
+|---|---|---|
+| Risk | 回执文案变更影响既有 E2E | `companions.spec.ts` 断言旧文案，需同步改为「已收到，我们会处理」；`profiles.spec.ts` 只断言标题与隐私词 |
+| Risk | 详情页 / 聊天页提示文案重复维护 | 三条文本与聊天行集中放入 `tripMessages`，组件只组装，避免两处各写一份 |
+| Risk | 集合区域为空时的回退 | 统一回退文案（详情「尚未填写，出发前请在聊天中确认」/ 聊天「待确认」），由组件派生，不写死空串 |
+| Risk | `SafetyNote` 被体验发布页复用 | 保留可选参数形态；体验页不传集合区域时仍渲染简化提示，不移除该调用点 |
+| Risk | 本人行程隐藏举报后被误认为功能缺失 | 安全提示保留，发布者仍有结束行程 / 查看申请等操作；AC 明确「本人行程无举报入口」 |
+| Risk | 举报原因词表与原型不一致 | 用户裁决 D2 明确以现有四类为准；原型分目标词表记为后续候选（non-blocking） |
+| Blocker | 无 | blocking OQ=0、DoR BLOCKER=0、A0 ⑨–⑫ 全过；无外部依赖 |
+
+### 15.8 Suggested split boundaries（供 proposal-split / story-split）
+
+- **一个 change：** `refine-safety-report` ← REQ-012（S14，页面级垂直切片）。
+- **不拆故事：** 原型 S14 已提供 AC；再拆会与原型故事列表双维护。
+- **不并入 `add-trip-companions`：** 该 change 已归档；本需求只是展示与反馈增量，追加归档包会打乱历史边界。
+- **不并入 `refine-trip-application`：** 两者都改 `trip-companions` 的不同 Requirement 块，且该 change 已进入 G2 阶段；并行会互相拖慢归档。
+- **阶段：** 单阶段；依赖已归档的 `trip-companions`，无阻塞上游。
+- **质量自检（split-heuristics）：** 子目标一句话可说明 ✓；端到端可观察（打开详情 / 聊天 → 读三条提示 → 举报 → 拿到回执）✓；可独立运行 ✓；capability 名真实 ✓；无依赖环 ✓。
+
 ## 13. REQ-010 增量影响 — 同行消息与集合确认（2026-11-16）
 
-### 13.1 Requirement set
+### 16.1 Requirement set
 
 REQ-010：聊天页按原型重构、聊天准入与退出语义调整、集合时间字段与三处展示、发布者维护集合信息。能力：`trip-companions`（MODIFIED）+ `trip-plans`（MODIFIED）。
 
-### 13.2 As-is asset inventory（evidence paths）
+### 16.2 As-is asset inventory（evidence paths）
 
 | 资产 | 路径 | 现状 |
 |---|---|---|
@@ -538,7 +830,7 @@ REQ-010：聊天页按原型重构、聊天准入与退出语义调整、集合�
 | 契约 | `openapi.yaml` `0.8.0` | `meeting_area` 已有；无 `meeting_time` 与集合更新端点；申请状态四值 |
 | 测试 | `ChatControllerTest`、`e2e/tests/companions.spec.ts` | 聊天单测与 E2E 基础用例；无退出后聊天断言 |
 
-### 13.3 As-is → proposed delta（逐资产）
+### 16.3 As-is → proposed delta（逐资产）
 
 | 资产 | 变更 |
 |---|---|
@@ -553,7 +845,7 @@ REQ-010：聊天页按原型重构、聊天准入与退出语义调整、集合�
 | 前端 | 聊天两栏、我的旅行备注、详情展示与编辑入口、发布页集合时间、类型与文案 |
 | 测试 | 新增/改写聊天、退出、集合字段与编辑用例 |
 
-### 13.4 Blast radius（应用架构）
+### 16.4 Blast radius（应用架构）
 
 - 影响 `trip-companions` 与 `trip-plans` 两个能力，边界为「聊天只读行程、集合由行程单一写入」。
 - 退出状态变化会影响：申请列表展示、`MyTripsResponse` 分组、参与同行统计、重新申请资格。确认口径：matched 与 joined 仍只认 `ACCEPTED`（`LEFT` 不计入）；`existsActive` 只拦 `PENDING`/`ACCEPTED`，`LEFT` 仍可重新申请；详情页同行者列表不含 `LEFT`；「我申请的」新增「已退出」标签。
@@ -561,19 +853,19 @@ REQ-010：聊天页按原型重构、聊天准入与退出语义调整、集合�
 - 聊天前端重构会复用 `ProfileModal` / `ReportModal` / `leaveTrip`，不新增权限模型。
 - 集合时间进入发布链路，会触及 `TripCreateRequest` / `TripDetailResponse` / `TripPlan` / 实体与前端表单校验。
 
-### 13.5 Artifact impact（specs / tests / docs）
+### 16.5 Artifact impact（specs / tests / docs）
 
 - Delta Spec：`specs/trip-companions/spec.md`（MODIFIED ×2）、`specs/trip-plans/spec.md`（MODIFIED ×2 + ADDED ×1）。
 - 原型：`docs/prototype/` 需先补集合时间与集合编辑入口。
 - 测试：`ChatControllerTest`、新增集合字段与编辑端点 API 测试、`e2e/tests/companions.spec.ts` 扩用例；`leave` 相关断言改写。
 - 文档：`docs/sdd/refine-trip-chat/` P0–P4 记录、评审报告、质量报告。
 
-### 13.6 Dual-track notes（OpenSpec vs agile）
+### 16.6 Dual-track notes（OpenSpec vs agile）
 
 - OpenSpec 轨（主）：一个 change `refine-trip-chat` 改两个 capability，归档前需 SA 具名追认双 capability 例外。
 - Agile 轨（可选）：按 4 条故事（S12-1～S12-4）排期，但共用同一改动集与同一验收链路，不建议拆成两个 PR。
 
-### 13.7 Risks & blockers
+### 16.7 Risks & blockers
 
 | 级别 | 项 | 说明 / 缓解 |
 |---|---|---|
@@ -584,7 +876,7 @@ REQ-010：聊天页按原型重构、聊天准入与退出语义调整、集合�
 | Risk | 聊天页重构回归面大 | 保留现有后端契约不变（除准入与状态），E2E 覆盖发送→重进→可见主链路 |
 | Blocker | 无 | blocking OQ = 0、DoR BLOCKER = 0 |
 
-### 13.8 Suggested split boundaries（供 story-split）
+### 16.8 Suggested split boundaries（供 story-split）
 
 | 故事 | 切片 | 依赖 |
 |---|---|---|

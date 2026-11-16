@@ -62,3 +62,24 @@
 ## Next
 
 - Decision = Pass，P5 按用户 2026-11-16 指示**暂不执行**（不归档）。
+
+## G2 追加：R2 筛选不参与匹配分（2026-11-16）
+
+| 项 | 结果 |
+|---|---|
+| 验证报告 | [`20261116-142800-local-verify-report.md`](../../../docs/ai4se-plugins/20261116-142800-local-verify-report.md) |
+| 契约 | 0.8.0 → **0.8.1**（`Match.basis` 描述与匹配语义） |
+| 后端 | `clean test` 209 通过（`TripMatchTest` 7 项、`MatchControllerTest` 7 项） |
+| 前端 | `npm test` 114 通过（无代码改动，回归确认） |
+| 契约 lint | valid，0 error / 15 既有 warning |
+| 端到端 | `companions.spec.ts` 3 项通过 |
+| 手工比对 | 带筛选列表与详情对 trip 4 均返回 score 0 |
+
+**结论：Pass**；新增残余项「参照物只取最近一条未结束行程」。
+
+| 角色 | 姓名 | 确认内容 | 日期 |
+|---|---|---|---|
+| VL | Neal | 复核 R2 证据（同分断言 + 手工比对），G2 追加 Pass | 2026-11-16 |
+| SA | Jacky、Karena | 实现符合「匹配规则不变」的边界 | 2026-11-16 |
+| AO | Jay | 交付实现与回归结果 | 2026-11-16 |
+| SM | Lewis | 认可 R2；看板状态待人工推进到 P4 | 2026-11-16 |

@@ -3,7 +3,7 @@
 - **Verdict: Pass**
 - **Scope:** focus=full（artifact-review-gate 的 Delta Spec 轮次）；root=`ai4se-baseline`；timestamp=2026-11-16
 - **Artifact under review:** [`specs/trip-companions/spec.md`](../../openspec/changes/refine-trip-chat/specs/trip-companions/spec.md)（3 Requirement / 21 Scenario）、[`specs/trip-plans/spec.md`](../../openspec/changes/refine-trip-chat/specs/trip-plans/spec.md)（3 Requirement / 22 Scenario）
-- **Supporting inputs:** `proposal.md`、`dov-ac-review.md`、`consistency-lint.md`、`requirement-workspace/requirements/REQ-010-trip-chat-meeting.md`
+- **Supporting inputs:** `proposal.md`、`dov-ac-review.md`、`consistency-lint.md`、`requirement-workspace/requirements/REQ-013-trip-chat-meeting.md`
 - **Evidence:**
   - `openspec validate refine-trip-chat --strict` → `Change 'refine-trip-chat' is valid`
   - 基线核对：`openspec/specs/trip-companions/spec.md`、`openspec/specs/trip-plans/spec.md` 中 5 个同名 Requirement 存在；基线场景 4/3/4/7/4 全部保留
@@ -30,7 +30,7 @@
 | D Security | Pass | 拒绝在服务端执行；准入不含「仅 PENDING」；未新增隐私字段 |
 | E Process | Pass | Delta 先于实现；冲突按 `rule-precedence` 记录；基线场景零丢失 |
 | F Documentation | Pass | 中文正文 + 英文标识符；相对路径；无行号引用 |
-| G Traceability | Pass | REQ-010 25/25 映射；故事 4 条与场景组一一对应 |
+| G Traceability | Pass | REQ-013 25/25 映射；故事 4 条与场景组一一对应 |
 
 ## 结论说明
 

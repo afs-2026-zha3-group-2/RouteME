@@ -7,8 +7,10 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.context.annotation.Import;
 import org.springframework.transaction.annotation.Transactional;
 
+import routeme.config.FixedClockTestConfig;
 import routeme.enums.TripStatusEnum;
 import routeme.exception.InvalidInputException;
 import routeme.exception.TripNotOpenException;
@@ -16,6 +18,7 @@ import routeme.pojo.TripPlan;
 
 @SpringBootTest
 @Transactional
+@Import(FixedClockTestConfig.class)
 class TripPlanServiceTest {
 
     @Autowired
@@ -24,12 +27,12 @@ class TripPlanServiceTest {
     @Test
     void in_recruitingTrip_out_joinedCountIncreases() {
         // When
-        TripPlan updated = tripPlanService.addCompanion(3);
+        TripPlan updated = tripPlanService.addCompanion(5);
 
         // Then
         assertAll(
                 () -> assertEquals(2, updated.joinedCount(), "joined count +1"),
-                () -> assertEquals(TripStatusEnum.RECRUITING, updated.status(), "still recruiting"));
+                () -> assertEquals(TripStatusEnum.RECRUITING, updated.status(FixedClockTestConfig.NOW), "still recruiting"));
     }
 
     @Test
@@ -50,7 +53,7 @@ class TripPlanServiceTest {
         // Then
         assertAll(
                 () -> assertEquals(1, updated.joinedCount(), "joined count -1"),
-                () -> assertEquals(TripStatusEnum.RECRUITING, updated.status(), "status falls back to recruiting"));
+                () -> assertEquals(TripStatusEnum.RECRUITING, updated.status(FixedClockTestConfig.NOW), "status falls back to recruiting"));
     }
 
     @Test

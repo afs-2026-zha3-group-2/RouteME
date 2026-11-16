@@ -1,6 +1,6 @@
 # P4 实现记录 — refine-trip-chat
 
-- **Change：** `refine-trip-chat`｜ **能力：** `trip-companions`（MODIFIED）+ `trip-plans`（MODIFIED）｜ **需求：** REQ-010
+- **Change：** `refine-trip-chat`｜ **能力：** `trip-companions`（MODIFIED）+ `trip-plans`（MODIFIED）｜ **需求：** REQ-013
 - **阶段：** P4（ATDD apply / G2）｜ **日期：** 2026-11-16｜ **记录人：** Jay（AO）
 - **任务清单：** [`tasks.md`](../../../openspec/changes/refine-trip-chat/tasks.md)（T1–T12 全部 `[x]`）
 

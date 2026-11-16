@@ -12,6 +12,7 @@
   },
   "dependencies": {
     "antd": "^6.7.0",
+    "dayjs": "^1.11.23",
     "element-china-area-data": "^5.0.2",
     "react": "^19.3.1",
     "react-dom": "^19.3.1"

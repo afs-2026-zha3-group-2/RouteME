@@ -59,7 +59,7 @@ public class ExperienceServiceImpl
     @Override
     @Transactional
     public ExperienceSaveResponse upsert(long tripId, long authorId, ExperienceWriteRequest request) {
-        TripPlan trip = tripPlanService.require(tripId);
+        TripPlan trip = tripPlanService.requireCurrent(tripId);
         requireCanShare(trip, authorId);
         Instant now = clock.instant();
         Optional<TripExperienceEntity> existing = lambdaQuery()
@@ -112,7 +112,7 @@ public class ExperienceServiceImpl
 
     @Override
     public List<ExperienceResponse> listByTrip(long tripId) {
-        tripPlanService.require(tripId);
+        tripPlanService.requireCurrent(tripId);
         return list(Wrappers.<TripExperienceEntity>lambdaQuery()
                 .eq(TripExperienceEntity::getTripId, tripId)
                 .orderByAsc(TripExperienceEntity::getCreatedAt)
@@ -146,7 +146,7 @@ public class ExperienceServiceImpl
     }
 
     private void requireCanShare(TripPlan trip, long authorId) {
-        if (trip.status() != TripStatusEnum.COMPLETED) {
+        if (trip.status(clock.instant()) != TripStatusEnum.COMPLETED) {
             throw new ExperienceNotAllowedException(trip.id(), authorId);
         }
         boolean participant = applicationService.participants(trip.id()).stream()
@@ -157,9 +157,9 @@ public class ExperienceServiceImpl
     }
 
     private ExperienceResponse describe(TripExperience experience) {
-        TripPlan trip = tripPlanService.require(experience.tripId());
+        TripPlan trip = tripPlanService.requireCurrent(experience.tripId());
         DemoUser publisher = tripPlanService.publisherOf(trip);
         DemoUser author = demoUserService.require(experience.authorId());
-        return ExperienceResponse.from(experience, trip, publisher, author);
+        return ExperienceResponse.from(experience, trip, publisher, author, clock.instant());
     }
 }

@@ -120,7 +120,7 @@
 | `gender` | `VARCHAR(8)` | 是 | 男 / 女 / 其他 | 必填（业务层） |
 | `city` | `VARCHAR(40)` | 是 | 1–40 字 | 必填（业务层） |
 | `major` | `VARCHAR(80)` | 是 | 0–80 字 | 选填 |
-| `job` | `VARCHAR(20)` | 是 | 学生 / 上班族 / 自由职业 / 其他 | 选填 |
+| `job` | `VARCHAR(20)` | 是 | 预设值（学生 / 上班族 / 自由职业 / 其他）或「其他」的自填文本，1–20 字 | 选填 |
 | `mbti` | `VARCHAR(4)` | 是 | 16 型之一 | 选填 |
 | `travel_style` | `VARCHAR(12)` | 是 | 特种兵 / 休闲游 / 深度游 / 随性游 | 必填（业务层） |
 
@@ -137,10 +137,11 @@
 
 ### 2.3 迁移与旧数据
 
-- 8 条 `ALTER TABLE` 逐列添加，SQLite 支持；不建索引、不改既有行。
-- 演示账号（1–3）新列为 NULL → `profile_complete=false`，`school` 保留旧文案「研一 · 地理科学」；只读。
-- 迁移前注册账号同样为未完善；「我的」会显示「完善资料」入口。
-- 不迁移、不改写演示数据的 `school` 文案。
+- 8 条 `ALTER TABLE` 逐列添加，SQLite 支持；不建索引、V10 自身不改既有行。
+- **V10 不改既有行；`V13__seed_demo_user_profiles.sql` 单独为 4 个演示账号回填资料列**（生日 / 性别 / 城市 / 职业 / MBTI / 旅行方式），使其 `profile_complete=true`，评审可直接看到完整资料页。
+- 演示账号仍只读（写入 403）、仍无用户名 / 密码，不能走注册登录路径。
+- 迁移前注册的老账号仍为未完善；「我的」会显示「完善资料」入口。
+- V13 把周野（id 4）的 `school = '上班族 · 互联网行业 · INFP'` 拆到 `job` / `mbti`，`school` 置空；其余演示账号的 `school` 旧文案（如「研一 · 地理科学」）保持不变。
 
 ## 3. 接口契约（0.7.0）
 
@@ -187,7 +188,7 @@
 | `travel_style` | 是 | `特种兵` / `休闲游` / `深度游` / `随性游` |
 | `school` | 否 | ≤80 |
 | `major` | 否 | ≤80 |
-| `job` | 否 | `学生` / `上班族` / `自由职业` / `其他` |
+| `job` | 否 | trim 后 ≤20；预设值或「其他」的自填文本 | `TOO_LONG` |
 | `mbti` | 否 | 16 型之一 |
 | `bio` | 否 | ≤500 |
 
@@ -210,7 +211,7 @@
 | 兴趣 | 是 | 数量 3–5；每项 1–12；去重 | `TOO_FEW` / `TOO_MANY` / `TOO_LONG` / `DUPLICATE` |
 | 旅行方式 | 是 | 枚举 | `REQUIRED` / `INVALID_OPTION` |
 | 学校 / 专业 | 否 | ≤80 | `TOO_LONG` |
-| 职业 | 否 | 枚举 | `INVALID_OPTION` |
+| 职业 | 否 | trim 后 ≤20；预设值或「其他」自填文本 | `TOO_LONG` |
 | MBTI | 否 | 16 型 | `INVALID_OPTION` |
 | 简介 | 否 | ≤500 | `TOO_LONG` |
 
@@ -253,13 +254,13 @@ main.profile-page.profile-setup
     section.profile-avatar   Avatar / img[alt="当前头像"]
                              button 上传头像 | 更换头像（选填，JPEG/PNG/WebP ≤2MB）
     field 昵称               Input[maxlength=20] *            aria-describedby
-    field 生日               input[type=date][min=1900-01-01][max=今天] *
+    field 生日               DatePicker[format=YYYY-MM-DD][minDate=1900-01-01][maxDate=今天][needConfirm] *（中文 locale；弹层锚定字段）
     field 性别               Radio.Group 男 / 女 / 其他 *
     field 所在城市           AutoComplete（CITY_NAMES，可自由输入）*
     field 学校               Input[maxlength=80]
     field 专业               Input[maxlength=80]
-    field 职业               Select 学生 / 上班族 / 自由职业 / 其他（可清空）
-    field MBTI               Select 16 型（可清空）
+    field 职业               native select 学生 / 上班族 / 自由职业 / 其他（选其他时自填 Input[maxlength=20]；可清空）
+    field MBTI               native select 16 型（可清空）
     field 旅行兴趣           InterestPicker *（计数 n/5；预设 10+；可自定义；取消保留）
     field 旅行方式           Radio.Group 特种兵 / 休闲游 / 深度游 / 随性游 *
     field 个人简介           TextArea[maxlength=500]
@@ -350,7 +351,7 @@ frontend/src/styles.css                     完善页 / 主页 / 头像 / 错误
 |---|---|
 | 契约 0.6.0 → 0.7.0 打破 `OpenApiTest` 对 `school` / `interests` 的断言 | T2 同一提交更新版本与注册必填断言；新增资料 schema 断言 |
 | Spring multipart 默认 1 MB 小于业务 2 MB | `application.yaml` 同步设 2 MB / 3 MB，并在 `GlobalExceptionHandler` 处理超限 → 400 |
-| 旧账号 / 演示账号新列为 NULL，误判为已完善 | `ProfileRules.complete` 把 NULL / 空串 / 空白都算缺失；迁移测试覆盖演示账号 |
+| 迁移前注册的老账号新列为 NULL，误判为已完善 | `ProfileRules.complete` 把 NULL / 空串 / 空白都算缺失；迁移测试分别断言老账号未完善、V13 回填的演示账号已完善 |
 | 注册后跳转若做全局守卫，会破坏深链与并行 `auth.spec.ts` | 只在 `handleAuthenticated` 跳一次；其余路由不检查 |
 | 卡片内发布者链接导致非法嵌套 `<a>` / 整卡跳转 | 用 `button` + `stopPropagation`；E2E 断言落在 `#/users/` |
 | `TripCard` / `AppShell` / `styles.css` / `auth.spec.ts` 正被并行会话修改 | 只改本 change 需要的行；合并时保留并行内容；不回退他人未提交文件 |

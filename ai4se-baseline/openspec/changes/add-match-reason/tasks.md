@@ -49,3 +49,52 @@
 
 - [x] `docs/ai4se-plugins/20261116-101500-local-verify-report.md` 记录真实命令、Red 证据与 Green 结果。
 - [ ] 归档时写 `summary.md`：change-id、契约版本、遗留项。
+
+## R2 任务（筛选不参与匹配分，2026-11-16）
+
+### T7 [backend] 匹配计算去掉筛选输入
+
+- [x] `TripMatch.of` 删除 `filterDestinationCode` / `filterDate` 参数与「筛选覆盖参照物」分支。
+- [x] `MatchServiceImpl#search` 与 `#matchFor` 改用同一签名。
+
+### T8 [contract] 描述与版本
+
+- [x] `Match.basis` 描述改为「最近一条未结束的已发布行程，或你的旅行兴趣；筛选与排序不影响匹配分」。
+- [x] `info.version` 0.8.0 → 0.8.1；`OpenApiTest` 同步。
+
+### T9 [tests] 分值与一致性断言
+
+- [x] `TripMatchTest`：删除筛选覆盖参照物的用例，新增「参照目的地不同不计分」。
+- [x] `MatchControllerTest`：同一行程在带筛选列表 / 无筛选列表 / 详情三处得分与理由一致。
+
+**验证：** `cd RouteME/backend; .\mvnw.cmd -B -o "-Dtest=TripMatchTest,MatchControllerTest,OpenApiTest" test`
+
+## R3 任务（Ant Design 组件收敛，2026-11-16）
+
+### T10 [frontend] 匹配原因改用 antd 组件
+
+- [x] 卡片：自绘 `svg` 匹配环 → `Progress type="circle"`（`strokeColor` 取 `--warn`，无信息文本）；满员进度条 → `Progress size="small"`；兴趣标签 → `Tag`。
+- [x] 详情：原因 `<ul>` → `Tag` 列表；百分比 → `Progress type="circle"` 的 `format`；`basis` 单独一行。
+- [x] 样式只保留布局类，颜色走 token；删除 `.match-reason-list`、`.meter`、`.ring-*`。
+
+### T11 [e2e] 选择器与回归
+
+- [x] 详情断言改 `.match-reasons .ant-tag` 与 `.match-progress-text`；满员进度改 `.tc-meter.is-full`。
+- [x] 回归：`npm test` 137 通过；`build` 通过；`companions.spec.ts` 8/8 通过。
+
+**验证：** `cd RouteME/frontend; npm test; npm run build`、`cd RouteME/e2e; npx playwright test tests/companions.spec.ts`
+
+## R4 任务（匹配块按原型重排，2026-11-16）
+
+### T12 [frontend] 卡片与详情匹配块
+
+- [x] 卡片 `Progress` 圆环内显示分值，理由改纯文本；移除「匹配度 / 匹配理由」两层标签。
+- [x] 卡片元信息用「周X出发」替换途经点数量。
+- [x] 详情标题改「为什么推荐给你」，圆环 + 理由 + `basis` + 可解释规则说明；保持单列。
+
+### T13 [e2e] 断言与回归
+
+- [x] `companions.spec` 改 `.match-ring .ant-progress-indicator`、`.match-summary .match-reason`、`.match-rule`。
+- [x] 回归：`npm test` 137 通过；`build` 通过；`companions.spec.ts` 8/8 通过；全量 53/54。
+
+**验证：** `cd RouteME/frontend; npm test; npm run build`、`cd RouteME/e2e; npx playwright test tests/companions.spec.ts`

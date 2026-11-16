@@ -1,6 +1,6 @@
 # 变更提案：refine-trip-chat
 
-- **需求：** REQ-010（`requirement-workspace/requirements/REQ-010-trip-chat-meeting.md`）｜ **故事：** S12-1～S12-4「同行消息与集合确认」
+- **需求：** REQ-013（`requirement-workspace/requirements/REQ-013-trip-chat-meeting.md`）｜ **故事：** S12-1～S12-4「同行消息与集合确认」
 - **能力：** `trip-companions`（MODIFIED）+ `trip-plans`（MODIFIED）｜ **规模：** M
 - **原型：** `docs/prototype/prototype.html#/chat/:tripId/:userId`、`ui.js` `chat()`、`styles.css` `.chat-*`
 
@@ -53,7 +53,7 @@
 
 ## 需求与证据
 
-- 需求来源：用户 2026-11-16 会话（REQ-010）；原型 `ui.js` `chat()` 为视觉与交互基准。
+- 需求来源：用户 2026-11-16 会话（REQ-013）；原型 `ui.js` `chat()` 为视觉与交互基准。
 - 既有实现：`add-trip-companions`（聊天与退出）、`add-trip-publish`（发布表单与集合区域）、`add-user-profiles`（资料弹窗）。
 - 既有测试：`ChatControllerTest`、`e2e/tests/companions.spec.ts`。
 

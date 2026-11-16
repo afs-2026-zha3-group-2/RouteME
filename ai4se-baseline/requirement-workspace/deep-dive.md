@@ -1,4 +1,4 @@
-﻿# Deep-dive（Phase 2.5）— REQ-002 / 003 / 004 / 005 / 006
+# Deep-dive（Phase 2.5）— REQ-002 / 003 / 004 / 005 / 006
 
 四张固定表，业务粒度（grain / 业务字段 / 状态流转 / 展示面），不含技术 schema（无列类型、无 SQL、无代码符号）。未知项标 `{TBD}`，不臆造。source 指 `records/discussion/2026-11-13/RouteMe_MVP_完整闭环_中文.md`（下称「闭环文档」）。
 
@@ -464,3 +464,237 @@ MVP 不做推送/邮件/短信；以下为 UI 展示面契约。
 - 跨 REQ 共享点（`school` 语义、统计源、隐私红线、展示位、举报）均已指定 anchor，无未收敛冲突。
 - `{TBD}`：无。non-blocking OQ（弹窗关闭/焦点/移动端、失败文案）已 deferred 交 dev 设计阶段。
 - A0 ⑨–⑫：数据契约、边界、跨 REQ、展示契约均通过。
+
+---
+
+## REQ-010 增补 — 提交同行申请（S08）
+
+来源：用户指令、原型故事 S08 与 3 条 AC、2026-11-16 四项用户裁决、`RouteME/frontend/src/trips/TripDetailPage.tsx`、`RouteME/frontend/src/i18n/tripMessages.ts`、`RouteME/frontend/src/api.ts`、`ApplicationServiceImpl.apply`、`ApplicationServiceTest`、`openapi.yaml` 0.7.0、`trip-companions` Living Spec、原型 `ui.js` `actionBox` / `store.js` `canApply`。本增补只覆盖申请入口与待处理展示，不重定义申请状态机、行程状态或聊天权限。
+
+### ① 数据契约（Data contract）
+
+| concept | grain（粒度） | 业务字段 | state transitions（状态流转） | source |
+|---|---|---|---|---|
+| 同行申请 (TripApplication) | 每条「行程 × 申请人 × 一次有效尝试」一行 | `id`、`trip_id`、`applicant`、`message`（nullable，≤120）、`status`、`created_at`、`decided_at` | `pending` → `accepted` / `rejected` / `cancelled`；`pending` 或 `accepted` 期间不可重复申请；`rejected` / `cancelled` 后可在行程仍可申请时重新申请（新建一行） | Living Spec `trip-companions`；`ApplicationServiceImpl`；`openapi.yaml` `TripApplication` |
+| 申请入口状态 (ApplyEntryState) | 每个「当前用户 × 行程」一个派生视图 | `own` / `eligible` / `pending` / `accepted` / `not-open(reason)` | 由行程状态、人数、当前用户与最近一条有效申请派生；不落库 | REQ-010 §4；原型 `store.js` `canApply` |
+| 行程状态 (TripStatus) | 每条行程一个派生值 | `recruiting` / `full` / `completed`；`joined_count`、`capacity` | 由 `completed_at` 与人数投影；接受达到上限自动 `full`，退出回退 `recruiting` | `trip-plans` Living Spec |
+| 申请说明 (ApplicationMessage) | 每条申请至多一条 | 文本（trim 后空视为未填写）、≤120 字 | 无独立状态 | `ApplicationServiceImpl.normalizeMessage` |
+
+本需求不新增持久化概念；「申请入口状态」是展示层派生视图，不落库、不新增状态列。
+
+### ② 边界归属（Boundary attribution）
+
+| rule | branch | in \| out | rationale |
+|---|---|---|---|
+| 申请入口 | 他人 + recruiting + 未满员 + 无 pending/accepted → 展示内联表单 | in (REQ-010，MODIFIED `trip-companions`) | 原型 S08 与用户 AC 的可申请前置 |
+| 申请入口 | 本人发布的行程 → 不展示申请入口 | in (REQ-010) | S08 AC；发布者操作保持 |
+| 申请入口 | 卡片列表 → 入口 | out (REQ-010) | 原型 S05/S08 只在详情页；避免本需求扩成列表交互 |
+| 申请说明 | 选填；留空或空白 → 允许 PENDING | in (REQ-010) | 用户裁决 D1；Living Spec 现状 |
+| 申请说明 | 改为必填 / 富文本 / 附件 | out (REQ-010) | 会改后端校验与契约，超出 S08 |
+| 提交结果 | 成功 → PENDING；申请区变待处理提示 + 撤回 | in (REQ-010) | S08 AC + 原型待处理态 |
+| 提交结果 | 提交后自动加入 / 立即开放聊天 | out (REQ-010) | 破坏发布者审核与聊天权限 |
+| 重复申请 | pending / accepted → 后端 409 + 前端「已申请，请等待回应」 | in (REQ-010) | S08 AC；后端已有 |
+| 重复申请 | 为重复申请新增端点 / 改成覆盖旧申请 | out (REQ-010) | 现状错误码已足够；改语义会破坏历史 |
+| 满员 / 已结束 | 前端入口不可用 + 原型原因；绕过前端时后端 409 | in (REQ-010) | S08 AC 明确要求后端同样拒绝 |
+| 满员 / 已结束 | 仅靠前端隐藏 | out (REQ-010) | 与 AC 冲突；后端已强制 |
+| 撤回 | pending → cancelled；仍可申请时恢复表单 | in (REQ-010) | 既有取消能力与原型撤回入口 |
+| 撤回 | 已接受后退出同行 | out (REQ-010) | 归既有「退出同行」，不在申请入口 |
+
+### ③ 跨 REQ 一致性（Cross-REQ consistency）
+
+| capability | per-REQ grain + fields | aligned? | anchor REQ |
+|---|---|---|---|
+| 同行申请 | `trip-companions` 已定义申请字段、状态机、取消与权限；REQ-010 只补入口与展示，不改状态机 | ✓ aligned（MODIFIED 单块，保留既有 5 场景） | `trip-companions`（Living Spec） |
+| 行程状态与人数 | `trip-plans` 单一写入 `joined_count` 与状态投影；REQ-010 只读消费 | ✓ aligned | `trip-plans` |
+| 聊天权限 | 「已接受」才开放聊天；REQ-010 不改变推导 | ✓ aligned | `trip-companions` |
+| 我的旅行 | 既有 pending / accepted 状态 Tag 可表达当前状态；REQ-010 不重做列表 | ✓ aligned（文案优化 deferred） | `trip-companions` |
+| 接口契约 | `openapi.yaml` 0.7.0 已含 `message` 选填 ≤120 与错误码；本需求不改 | ✓ aligned（无契约变更） | `openapi.yaml` |
+
+无未收敛的 ✗；A0 门 ⑪ 通过。
+
+### ④ 通知 / 展示契约（Notification / display contract）
+
+MVP 不做推送；以下为申请路径的 UI 展示面契约。
+
+| trigger / surface（展示面） | recipient role | content + display fields | channel | cardinality | source |
+|---|---|---|---|---|---|
+| 行程详情 — 可申请区 | 申请者 | 标题「一句申请说明」+ 选填提示；textarea 120 字；按钮「提交同行申请」；说明「提交后对方接受才会开放聊天，不会变成无条件私聊。」 | 应用内页面 | 每行程 1 处 | 原型 `actionBox`；§4 #1 |
+| 行程详情 — 待处理态 | 申请者 | 提示「申请已提交，等待 {发布者昵称} 回应。处理前你可以随时撤回。」+「撤回申请」 | 应用内页面 | 每行程 1 处 | 原型；§4 #2 |
+| 行程详情 — 本人发布 | 发布者 | 不展示申请表单；保留「查看同行的申请（N）」「标记为已结束」 | 应用内页面 | 每行程 1 处 | §4 #4 |
+| 行程详情 — 不可申请 | 浏览者 | 原型原因「人数已满」/「行程已结束」；不展示表单 | 应用内页面 | 每行程 1 处 | `store.js` `canApply`；§4 #6 |
+| 提交失败 — 重复 | 申请者 | 「已申请，请等待回应」；申请区刷新为待处理 / 已匹配 | 应用内提示 | 每次失败 1 条 | 用户 AC；§4 #5 |
+| 提交失败 — 不可申请 | 申请者 | 可读原因（人数已满 / 行程已结束 / 当前不可申请）；刷新行程状态 | 应用内提示 | 每次失败 1 条 | §4 #6 / #8 |
+| 撤回确认与结果 | 申请者 | 二次确认；成功后状态「已取消」并恢复申请区 | 应用内弹窗 + 页面 | 每次 1 组 | 既有取消能力；§4 #7 |
+| 我的旅行 — 我申请的 | 申请者 | 既有状态 Tag（待处理 / 已匹配 / 已拒绝 / 已取消）+ 申请说明 | 应用内页面 | 每条申请 1 行 | 既有能力（不改） |
+
+无展示面缺 display-fields；A0 门 ⑫ 通过。
+
+### 探针记录（REQ-010 同行申请入口）
+
+- `ApplicationServiceImpl.apply` 的检查顺序为「本人 → 重复 → 非 recruiting」；重复申请在满员前会先触发 `DUPLICATE_APPLICATION`，前端需同时处理两个错误码，不能只按 `TRIP_NOT_OPEN` 写分支。
+- `ApplicationServiceTest.in_acceptReachingCapacity_out_tripBecomesFullAndStopsApplications` 已证明满员后 `apply` 抛 `TripNotOpenException`；本需求不需要改后端，只需保留并回归该测试。
+- `TripDetailPage` 的 `canApply` 计算在渲染时缓存；页面停留期间行程变满 / 结束，提交才会暴露服务端拒绝。需求场景 8 要求此时刷新状态，不依赖前端预测。
+- `api.ts` 只抛 `body.code`，没有错误码到中文文案的映射层；重复申请的 `DUPLICATE_APPLICATION` 会原样进入 `Alert`。本需求的「已申请，请等待回应」应在页面或消息层映射，不改变 `api.ts` 的通用错误行为。
+- 原型 `ui.js` 的申请区是 `actionBox` 内的内联块，不是弹窗；`store.js` 的 `canApply` 文案为「已申请，等待回应」，用户 AC 指定「已申请，请等待回应」，两者相差一个「请」字；本需求以用户文案为准，原型 `store.js` 的字符串属于 mock 侧门禁提示，不构成页面视觉差异。
+- `openapi.yaml` 0.7.0 的 `message` 为 `nullable` + `maxLength 120`；`TripApplication` 的 `message` 同样可为空，契约无需改动。
+- `{TBD}`：无。非阻塞项（我的旅行文案、发布者提醒、重申请历史提示）已在 REQ-010 §8 标 deferred。
+- A0 门 ⑨–⑫：全部通过。
+# Deep-dive 增补 — REQ-011（S15 结束行程）
+
+日期：2026-11-16 ｜ 触发：`/sdd:pre-spec-req` 内嵌 impact（blocking OQ 全部 resolved）
+
+## ① 数据契约（Data contract）
+
+| concept | grain（粒度） | 业务字段 | state transitions（状态流转） | source |
+|---|---|---|---|---|
+| 行程 (TripPlan) | 一条行程 | 标题、目的地、起止日期、途经点、计划人数、已加入人数、发布者、手动结束时间 | 招募中 → 已满员（未开始时接受申请达上限）；招募中/已满员 → 旅行中（到达开始日期）；旅行中 → 已结束（发布者手动结束或到达结束时刻）；旅行中满员不改变状态；已结束为终态 | 用户故事 S15；`openspec/specs/trip-plans/spec.md`；现有 `trip_plans` |
+| 行程状态 (TripStatus) | 一条行程一个推导值 | recruiting / full / ongoing / completed；展示文案招募中 / 已满员 / 旅行中 / 已结束 | 优先级：已结束 > 旅行中 > 已满员 > 招募中 | 用户裁决 OQ-1/OQ-7/OQ-9 |
+| 结束提醒 (EndingSoonNotice) | 一条行程 × 一个参与者 | 行程、接收者、提醒文案；不持久化已读状态 | 在提醒窗口出现，行程结束后消失 | 用户裁决 OQ-1/OQ-2；MVP 无推送 |
+| 同行申请 (TripApplication) | 一条申请 | 行程、申请者、状态、申请说明、创建/更新时间 | 待处理 → 已取消（新增来源：行程结束或到期自动完成时系统批量取消）；待处理 → 已接受（未结束且未满员）；待处理 → 已拒绝（未结束；满员后仍可拒绝）；已接受 → 已取消（同行者退出） | 用户裁决 OQ-4/OQ-5；现有 `trip_applications` |
+| 聊天消息 (ChatMessage) | 一条消息 | 行程、发送者、接收者、文字、发送时间 | 无状态机；行程结束后仅追加被禁止，历史保留 | 现有实现；S15 验收 9 |
+| 游后体验 (TripExperience) | 一条体验 | 行程、作者、内容、强度、建议 | 无状态机；资格随行程进入已结束而开放 | 现有实现；S15 验收 10–11 |
+
+- 关键裁决：计划结束时刻 = 结束日期次日 00:00；提醒窗口 = 结束日期 21:00 至次日 00:00。
+- 自动完成不要求写入手动结束时间；「已结束」口径 = 手动结束时间非空或当前时间已到计划结束时刻。
+- 结束后不删除行程、同行成员、聊天与体验数据。
+
+## ② 边界归属（Boundary attribution）
+
+| rule | branch | in \| out | rationale |
+|---|---|---|---|
+| 状态推导 | 手动结束时间非空 → 已结束 | in (REQ-011) | 最高优先级分支 |
+| 状态推导 | 当前时间 ≥ 结束日期次日 00:00 → 已结束 | in (REQ-011) | 自动完成分支 |
+| 状态推导 | 未结束且当前日期 ≥ 开始日期 → 旅行中 | in (REQ-011) | 自动开始分支；满员也显示旅行中 |
+| 状态推导 | 未开始且人数达上限 → 已满员 | in (REQ-011) | 满员分支 |
+| 状态推导 | 未开始、未满员 → 招募中 | in (REQ-011) | 默认分支 |
+| 发布校验 | 开始日期 ≥ 今天 → 通过 | in (REQ-011) | 正常分支；等于今天发布后即旅行中 |
+| 发布校验 | 开始日期 < 今天 → 拒绝 | in (REQ-011) | 输入完整性分支 |
+| 结束操作 | 发布者 + 旅行中 → 允许 | in (REQ-011) | 主路径 |
+| 结束操作 | 非发布者 → 拒绝（403） | in (REQ-011) | 越权分支 |
+| 结束操作 | 招募中/已满员/已结束 → 拒绝（409） | in (REQ-011) | 状态边界 |
+| 结束操作 | 二次确认取消 → 无变化 | in (REQ-011) | 交互边界 |
+| 结束善后 | 待处理申请 → 批量已取消 | in (REQ-011 编排，状态数据归 REQ-003) | 跨能力：REQ-011 触发、REQ-003 拥有申请 |
+| 申请资格 | 未结束且未满员 → 可申请/可接受 | in (REQ-003，REQ-011 扩展旅行中) | 正常分支 |
+| 申请资格 | 满员 → 新申请拒绝；既有待处理保留、可拒绝不可接受 | in (REQ-003，REQ-011 确认) | 状态边界 |
+| 申请资格 | 已结束 → 提交/接受/拒绝全部关闭 | in (REQ-003，REQ-011 确认) | 终态边界 |
+| 聊天 | 已结束 → 只读、历史保留 | in (REQ-003，已实现，REQ-011 回归) | 终态消费 |
+| 体验分享 | 已结束 + 发布者/已接受 → 允许 | in (REQ-004，REQ-011 回归) | 资格消费 |
+| 体验分享 | 未参与/已拒绝/已取消 → 拒绝 | in (REQ-004，REQ-011 回归) | 越权分支 |
+| 提醒 | 旅行中且距结束不足 3 小时 → 展示 | in (REQ-011) | 正常分支 |
+| 提醒 | 未开始/已结束/无参与资格/未到窗口 → 不展示 | in (REQ-011) | 边界分支 |
+| 撤销结束 | 恢复为旅行中或其他状态 | out (MVP 不做) | COMPLETED 终态 |
+| 外部通知 | 推送/短信/邮件/定时提醒 | out (MVP 不做) | deep-dive ④ 既有约束 |
+
+## ③ 跨 REQ 一致性（Cross-REQ consistency）
+
+| capability | per-REQ grain + fields | aligned? | anchor REQ |
+|---|---|---|---|
+| 行程四态状态机 | REQ-002/REQ-011：定义与展示；REQ-003：消费「未结束/满员」判申请资格；REQ-004：消费「已结束」判分享；REQ-009：消费「已结束」计统计 | ✓ aligned（REQ-011 为四态唯一 anchor） | REQ-011 |
+| 申请资格与处理 | REQ-003：拥有申请状态机；REQ-011：扩展旅行中可申请、满员后可拒绝不可接受、结束后批量取消 | ✓ aligned（申请数据所有权不变） | REQ-003 |
+| 聊天只读 | REQ-003：已定义已结束只读；REQ-011：沿用并补「该行程已结束」提示 | ✓ aligned | REQ-003 |
+| 体验分享资格 | REQ-004：已结束 + 参加过；REQ-011：自动完成与手动结束同等 | ✓ aligned | REQ-004 |
+| 我的旅行四分组 | REQ-003：提供聚合视图；REQ-011：已完成分组与统计按「已结束」口径含自动完成 | ✓ aligned | REQ-003（视图）/ REQ-011（状态） |
+| 公开资料已完成统计 | REQ-009：已完成 = 发布的已结束行程数；REQ-011：口径含自动完成 | ✓ aligned | REQ-011（状态） |
+
+无未收敛的 ✗；A0 门 ⑪ 通过。
+
+## ④ 通知 / 展示契约（Notification / display contract）
+
+MVP 不做推送/邮件/短信；以下为 UI 展示面契约。
+
+| trigger / surface（展示面） | recipient role | content + display fields | channel | cardinality | source |
+|---|---|---|---|---|---|
+| 状态徽标（卡片 / 详情 / 我的旅行） | 所有查看者 | 招募中 / 已满员 / 旅行中 / 已结束；颜色不作为唯一表达 | 应用内页面 | 每行程一个 | 用户裁决 OQ-9 |
+| 结束行程入口 | 发布者 | 「结束行程」按钮；仅旅行中可见；我的旅行-我发布的 + 行程详情 | 应用内页面 | 每行程一个 | 用户裁决 OQ-3 |
+| 结束行程二次确认 | 发布者 | 标题「结束行程」；说明结束后不可恢复、申请将关闭、待处理申请自动取消；确认 / 取消 | 应用内弹窗 | 单次操作 | S15 验收 4–5 |
+| 行程即将结束提醒 | 发布者 + 已接受同行者 | “行程即将结束”提示；结束日期 21:00 起显示；结束后消失 | 应用内页面（我的旅行 / 详情） | 每行程每人一条 | 用户裁决 OQ-1/OQ-2 |
+| 申请入口 | 非发布者 | 未结束且未满员可见；已结束或满员隐藏或置灰 | 应用内页面 | 每行程一个 | S15 验收 7；REQ-003 |
+| 申请处理列表 | 发布者 | 已结束只读或关闭；满员时可拒绝、不可接受 | 应用内页面 | 每行程一个 | 用户裁决 OQ-4/OQ-5 |
+| 聊天只读提示 | 已匹配双方 | 必须包含「该行程已结束」；输入禁用；历史消息可见 | 应用内页面 | 每会话一条 | S15 验收 9 |
+| 体验入口 | 发布者 + 已接受同行者 | 「发表旅行体验」；已结束时展示 | 应用内页面（详情 / 我的旅行） | 每行程每人一个 | S15 验收 10–11 |
+
+无展示面缺 display-fields；A0 门 ⑫ 通过。
+
+## 探针记录（Probe log）
+
+- 状态四态、结束时刻、提醒窗口、入口落点、申请处理策略均由用户 2026-11-16 逐条裁决，未臆造。
+- 申请自动取消、满员后可拒绝不可接受、ONGOING 可申请与首页展示均按用户原话固化。
+- 自动完成是否物化与提醒去重属 P3 技术设计，已标 deferred；规格只约束可观察结果。
+- `{TBD}`：无。A0 ⑨–⑫：数据契约、边界、跨 REQ、展示契约均通过。
+
+---
+
+## REQ-012 增补 — 同行安全提示与举报（S14）
+
+来源：用户指令、原型故事 S14 与 3 条 AC、2026-11-16 四项展示口径裁决、`RouteME/frontend/src/safety/SafetyNote.tsx`、`RouteME/frontend/src/safety/ReportModal.tsx`、`RouteME/frontend/src/trips/TripDetailPage.tsx`、`RouteME/frontend/src/chat/ChatPage.tsx`、`RouteME/frontend/src/i18n/tripMessages.ts`、`ReportController`、`ReportServiceImpl`、`ReportControllerTest`、`openapi.yaml` 0.8.1、`trip-companions` / `trip-plans` Living Spec、原型 `ui.js` `safetyPanel()` / `chat-safety` / `reportModal()`。本增补只覆盖安全提示与举报的展示口径，不重定义举报记录、处置或隐私红线。
+
+### ① 数据契约（Data contract）
+
+| concept | grain（粒度） | 业务字段 | state transitions（状态流转） | source |
+|---|---|---|---|---|
+| 举报记录 (Report) | 每条「举报人 × 对象 × 一次提交」一行 | `id`、`reporter_id`、`target_type`（trip / user）、`target_id`、`reason`（harassment / fake / safety / other）、`note`（nullable，≤200）、`created_at` | 只写入（`created`）；MVP 无处置状态、无对外流转 | `openapi.yaml` 0.8.1 `ReportRequest` / `ReportReceipt`；`ReportServiceImpl`；`V7__create_reports.sql` |
+| 举报回执 (ReportReceipt) | 每次提交一个响应 | `received: boolean` | 提交成功 → `true` → 前端进入回执态；关闭弹窗即结束 | `ReportController`；`ReportModal` |
+| 安全提示展示面 (SafetySurface) | 每个「当前用户 × 行程 × 页面」一个派生视图 | 三条事实文本、集合区域文案、举报入口可见性（按是否本人发布）、举报对象类型 | 由行程 `meeting_area`、当前用户是否发布者、页面类型派生；不落库 | REQ-012 §4；原型 `safetyPanel()` / `chat-safety` |
+| 集合区域 (MeetingArea) | 每条行程至多一处 | `meeting_area`（nullable 文本）；空值时展示「尚未填写 / 待确认」回退 | 无独立状态；归 `trip-plans` 单一写入 | `trip-plans` Living Spec；`V4__seed_demo_trips.sql`；`TripDetailPage` |
+
+本需求不新增持久化概念；「安全提示展示面」是展示层派生视图，不落库、不新增列。
+
+### ② 边界归属（Boundary attribution）
+
+| rule | branch | in \| out | rationale |
+|---|---|---|---|
+| 安全提示 | 详情页三条文本（公共场所 + 集合区域 / 告知亲友 / 不公开电话证件住址） | in (REQ-012，MODIFIED `trip-companions`) | S14 AC #1；原型 `safetyPanel()` |
+| 安全提示 | 聊天页一行同义提示（含集合区域 / 待确认、不转账不提供证件） | in (REQ-012) | S14 AC #1（聊天页落点）；原型 `chat-safety` |
+| 安全提示 | 仅靠颜色 / 图标 / 悬停表达 | out (REQ-012) | S14 AC #3 明确禁止 |
+| 安全提示 | 折叠 / 收起以节省空间 | out (REQ-012) | 削弱常驻性；用户裁决 D1 要求原型文本列表 |
+| 安全提示 | 体验发布页改版 | out (REQ-012) | 故事落点只有详情页与聊天页；保留现状 |
+| 举报入口 | 详情页「举报这条行程」，仅他人行程 | in (REQ-012) | S14 AC #2；用户裁决 D3 |
+| 举报入口 | 本人行程显示举报 | out (REQ-012) | 自己举报自己没有业务意义；D3 |
+| 举报入口 | 聊天页「举报这位用户」，含已结束只读聊天 | in (REQ-012) | S14 AC #2；举报是安全通道，不随聊天写权限关闭 |
+| 举报入口 | 资料弹窗举报按钮 | out (REQ-012) | REQ-009 已明确不做 |
+| 举报原因 | 沿用四类（harassment / fake / safety / other） | in (REQ-012) | 用户裁决 D2；契约与枚举不变 |
+| 举报原因 | 按目标类型分表 / 扩充枚举 | out (REQ-012) | 需契约与后端校验变更，超出展示增量 |
+| 回执 | 提交成功 → 回执态「已收到，我们会处理」 | in (REQ-012) | S14 AC #2 原文 |
+| 回执 | 处置状态 / 处理结果 / 回执查询 / 工单系统 | out (REQ-012) | S14 明确「先不做后台工单系统」 |
+| 隐私 | 不采集 / 不展示电话、证件、精确住址；提示要求用户不公开 | in (REQ-012，仅回归断言) | S14 AC #1；`@rule:pii-scrubbing` |
+| 隐私 | 新增紧急联系人 / 位置共享 / 实名 | out (REQ-012) | 超出 S14 与 MVP 范围 |
+
+### ③ 跨 REQ 一致性（Cross-REQ consistency）
+
+| capability | per-REQ grain + fields | aligned? | anchor REQ |
+|---|---|---|---|
+| 举报记录 | `trip-companions` Living Spec 的「我的旅行聚合与最低安全能力」已定义举报入口与回执；REQ-012 只改展示文案与结构 | ✓ aligned（MODIFIED 单块，保留我的旅行两个场景） | `trip-companions`（Living Spec） |
+| 集合区域 | `trip-plans` 单一写入 `meeting_area`；REQ-012 只读展示 | ✓ aligned | `trip-plans` |
+| 聊天权限 | 「已接受」才开放聊天，已结束只读；REQ-012 不改变推导，只在只读态保留举报入口 | ✓ aligned | `trip-companions` |
+| 资料弹窗 | REQ-009 明确不含举报按钮；REQ-012 只在详情页与聊天页加入口 | ✓ aligned（无重叠） | `add-user-profiles` / REQ-009 |
+| 接口契约 | `openapi.yaml` 0.8.1 已含 `/reports`、四值 `reason`、`note ≤200`；本需求不改 | ✓ aligned（无契约变更） | `openapi.yaml` |
+
+无未收敛的 ✗；A0 门 ⑪ 通过。
+
+### ④ 通知 / 展示契约（Notification / display contract）
+
+MVP 不做推送与工单；以下为安全与举报路径的 UI 展示面契约。
+
+| trigger / surface（展示面） | recipient role | content + display fields | channel | cardinality | source |
+|---|---|---|---|---|---|
+| 行程详情 — 安全区 | 浏览者 / 申请者 / 同行者 / 发布者 | 标题「同行安全」+ 三条文本列表：①公共场所 + 「本行程集合区域：{meeting_area}」或「尚未填写，出发前请在聊天中确认」②告知亲友并约定报平安 ③不公开电话 / 证件 / 精确住址并拒绝转账或索要证件 | 应用内页面（文本列表） | 每行程 1 处 | 原型 `safetyPanel()`；§4 #1 |
+| 行程详情 — 举报入口 | 非发布者 | 按钮「举报这条行程」 | 应用内页面 | 每行程 1 处 | 原型；§4 #3 / #5 |
+| 聊天页 — 安全行 | 已匹配同行者 | 「首次见面请选择公共场所 · 集合区域：{meeting_area 或 待确认} · 不要转账或提供证件信息」 | 应用内页面（文本） | 每聊天 1 处 | 原型 `chat-safety`；§4 #2 |
+| 聊天页 — 举报入口 | 已匹配同行者（含只读） | 按钮「举报这位用户」 | 应用内页面 | 每聊天 1 处 | 原型；§4 #2 / #3 |
+| 举报弹窗 — 表单态 | 举报人 | 举报对象（行程标题 / 对方昵称）+ 原因四选一 + 补充说明（选填 ≤200）+ 「我们不会向对方透露你的身份」+ 紧急求助说明 | 应用内弹窗 | 每次 1 组 | 原型 `reportModal()`；§4 #3 |
+| 举报弹窗 — 回执态 | 举报人 | 「已收到，我们会处理」；关闭不改动业务状态 | 应用内弹窗 | 每次提交 1 条 | S14 AC #2；§4 #4 |
+| 举报失败 | 举报人 | 可读失败提示；保留原因与说明以重试 | 应用内提示 | 每次失败 1 条 | §4 #6 |
+
+无展示面缺 display-fields；A0 门 ⑫ 通过。
+
+### 探针记录（REQ-012 安全提示与举报）
+
+- `ReportController.submit` 用 `X-User-Id` 取举报人（`DemoUserService.require`），返回 201 `{received:true}`；回执文案完全由前端 `tripMessages.reportSuccess` 决定，因此改 AC 文案不需要动后端。
+- `ReportModal` 的 `received` 是本地 state；关闭时清空原因与说明。回执态下主按钮变为「取消」（`createCancel`），即关闭而非再次提交，避免重复举报。
+- 详情页 `TripDetailPage` 已加载 `trip.meeting_area`（详情元数据里已展示），聊天页 `ChatPage` 也已加载同一行程对象，两条落点都能直接取到集合区域，无需新增请求或字段。
+- 详情页当前对本人行程也渲染 `SafetyNote onReport`；`entry.kind === 'publisher'` 已能区分本人，隐藏举报只需改渲染条件。
+- `SafetyNote` 同时被 `ShareExperiencePage` 使用（无 `onReport`）；本需求改组件结构时需保留该调用点的简化形态，不能强制要求集合区域参数。
+- E2E `companions.spec.ts` 断言「举报已收到，我们会记录处理。」，`profiles.spec.ts` 断言弹窗标题「举报行程或用户」与隐私词黑名单；文案改动需同步断言，标题改动需评估是否影响 REQ-009 的断言。
+- `openapi.yaml` 0.8.1 的 `reason` 枚举为四值；采用 D2 后无需改契约、无需迁移。
+- `{TBD}`：无。非阻塞项（处置状态、聊天页资料入口、折叠形态）已在 REQ-012 §8 标 deferred。
+- A0 门 ⑨–⑫：全部通过。

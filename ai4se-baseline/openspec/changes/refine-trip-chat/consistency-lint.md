@@ -51,7 +51,7 @@
 | D1–D3 Design rules | N/A | 无 `design.md` |
 | p2-1 proposal scope vs Delta | Pass | 无静默扩张 / 丢弃 |
 | p2-2 Delta 内部一致 | Pass | 准入（发布者 / 已接受 / 已退出）、只读（已结束）、编辑（招募中 / 已满员）三组口径互不矛盾 |
-| p2-3 proposal 关键场景有落点 | Pass | REQ-010 §4 25 条 25/25 |
+| p2-3 proposal 关键场景有落点 | Pass | REQ-013 §4 25 条 25/25 |
 | p2-4 tasks 方向检查 | N/A | 无 `tasks.md` |
 | p2-5 无法追溯的 Requirement | Pass | 无 |
 

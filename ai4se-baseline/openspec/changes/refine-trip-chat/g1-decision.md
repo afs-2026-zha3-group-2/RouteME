@@ -1,7 +1,7 @@
 # G1 decision — refine-trip-chat
 
 - **Gate:** G1（Align）
-- **Change:** `refine-trip-chat`（`trip-companions` MODIFIED + `trip-plans` MODIFIED，REQ-010）
+- **Change:** `refine-trip-chat`（`trip-companions` MODIFIED + `trip-plans` MODIFIED，REQ-013）
 - **Timestamp:** 2026-11-16T15:45+0800
 - **Recorded by:** Qoder（AI agent），按 Jay（AO / current developer）2026-11-16「批准，进入 P2」指令记录；用户同次确认名册 SM=Lewis / AO=Jay / IO=Wanye / SA=Jacky / VL=Neal
 
@@ -15,8 +15,8 @@
 | Living Spec baseline | `openspec/specs/trip-companions/spec.md`、`openspec/specs/trip-plans/spec.md` | 5 个 MODIFIED 同名块存在；基线场景 4/3/4/7/4 全部保留 |
 | AC / DoV review | [`dov-ac-review.md`](dov-ac-review.md) | AC 4/4 Pass；DoV 5/5 Pass；场景覆盖 25/25 |
 | Consistency lint | [`consistency-lint.md`](consistency-lint.md) | Pass；BLOCKER 0 / WARNING 0 / SUGGESTION 4 |
-| Requirements | `requirement-workspace/requirements/REQ-010-trip-chat-meeting.md` | §4 25 条场景；§8 blocking OQ = 0；DoR BLOCKER = 0 |
-| Intent | `requirement-workspace/intents/REQ-010-trip-chat-meeting.md` | Discovery Decision `Go`；含用户裁决表 |
+| Requirements | `requirement-workspace/requirements/REQ-013-trip-chat-meeting.md` | §4 25 条场景；§8 blocking OQ = 0；DoR BLOCKER = 0 |
+| Intent | `requirement-workspace/intents/REQ-013-trip-chat-meeting.md` | Discovery Decision `Go`；含用户裁决表 |
 | Stories | `requirement-workspace/stories/refine-trip-chat.story.md` | S12-1～S12-4，与 25 场景可追溯 |
 | Impact brief | `requirement-workspace/impact-brief.md` §13 | as-is 盘点、逐资产 delta、blast radius、风险与拆分边界 |
 | Prototype evidence | `docs/prototype/ui.js` `chat()` / `mine()` / `tripDetail()` / `tripForm()`；`styles.css` `.chat-*` | 聊天页视觉与交互基准；集合时间与集合编辑入口待补原型 |
@@ -27,17 +27,17 @@
 
 | 维度 | 结论 | 证据 |
 |---|---|---|
-| Scope | 与 REQ-010 一致：聊天页两栏重构、准入与退出语义、集合时间字段与三处展示、发布者维护集合信息；不含完整行程编辑与实时能力 | `proposal.md` §范围；`dov-ac-review.md` DoV-1；`consistency-lint.md` p2-1 |
+| Scope | 与 REQ-013 一致：聊天页两栏重构、准入与退出语义、集合时间字段与三处展示、发布者维护集合信息；不含完整行程编辑与实时能力 | `proposal.md` §范围；`dov-ac-review.md` DoV-1；`consistency-lint.md` p2-1 |
 | Ambiguity | 无未决歧义：左栏无消息排序、退出后标签、集合时间语义（本地墙上时间、日期部分 ≤ 结束日期）、400/422 口径均已写死 | `dov-ac-review.md` DoV-2；`specs/trip-plans/spec.md` |
 | Conflict | 存在一处**已裁决的规格冲突**：用户要求「退出同行后仍可继续聊天」，与活规格「退出即关闭聊天」相反；按 `@rule:rule-precedence` 第 1 层以用户指示为准，Delta 用 MODIFIED 覆盖两条需求并写明新旧差异 | `proposal.md` §关键裁定「冲突裁决」；`specs/trip-companions/spec.md` |
-| Traceability | REQ-010 §4 25 条 25/25 有 Delta 落点；基线场景 22 条全部保留；故事 4 条与场景组一一对应 | `dov-ac-review.md` §3；`consistency-lint.md` S7 |
+| Traceability | REQ-013 §4 25 条 25/25 有 Delta 落点；基线场景 22 条全部保留；故事 4 条与场景组一一对应 | `dov-ac-review.md` §3；`consistency-lint.md` S7 |
 | Residual risk | 退出语义变更需 SA 追认；双 capability 需追认；会话列表补齐涉及后端组合逻辑；原型缺集合时间与编辑入口 | `dov-ac-review.md` §4；`consistency-lint.md` §Residual risks |
 
 ## Decision
 
 **Pass（条件式）**
 
-理由：范围与 REQ-010 一致，25 条场景全部可判定且有落点，基线场景零丢失，`openspec validate --strict` 通过；唯一高风险项（退出语义）已在提案与 Delta 写明并按规则记录冲突，只剩具名追认与实现期约束。
+理由：范围与 REQ-013 一致，25 条场景全部可判定且有落点，基线场景零丢失，`openspec validate --strict` 通过；唯一高风险项（退出语义）已在提案与 Delta 写明并按规则记录冲突，只剩具名追认与实现期约束。
 
 ## Conditions + owners
 

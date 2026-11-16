@@ -1,6 +1,6 @@
-# Story file — REQ-010 / refine-trip-chat
+# Story file — REQ-013 / refine-trip-chat
 
-- **Parent REQ：** REQ-010（`requirements/REQ-010-trip-chat-meeting.md`）
+- **Parent REQ：** REQ-013（`requirements/REQ-013-trip-chat-meeting.md`）
 - **Change：** `refine-trip-chat`（`trip-companions` MODIFIED + `trip-plans` MODIFIED）
 - **拆解模式：** Workflow（聊天页重构 → 退出语义 → 集合时间与展示 → 集合维护）
 - **范围说明：** 本文只覆盖本 change；完整行程编辑、实时推送、富媒体消息均在范围外。
@@ -18,7 +18,7 @@
   - 已结束行程只读并提示。
 - **Size：** M
 - **Spec：** `specs/trip-companions/spec.md`「匹配后的一对一文字沟通」
-- **场景：** REQ-010 §4 #1–#14、#16
+- **场景：** REQ-013 §4 #1–#14、#16
 
 ## S12-2 — 退出同行后保留会话并可继续沟通
 
@@ -30,7 +30,7 @@
   - 「参与同行」统计口径不变（「已退出」不计入）。
 - **Size：** S
 - **Spec：** `specs/trip-companions/spec.md`「退出同行」
-- **场景：** REQ-010 §4 #15
+- **场景：** REQ-013 §4 #15
 
 ## S12-3 — 集合时间字段与三处展示
 
@@ -42,7 +42,7 @@
   - 「我的旅行·已匹配」展示「集合：<区域或待确认> · 同行 N 人」。
 - **Size：** M
 - **Spec：** `specs/trip-plans/spec.md`（MODIFIED 发布 + 详情）
-- **场景：** REQ-010 §4 #17–#22
+- **场景：** REQ-013 §4 #17–#22
 
 ## S12-4 — 发布者维护集合区域与集合时间
 
@@ -53,13 +53,13 @@
   - 已结束行程不展示入口，接口拒绝；非发布者接口拒绝。
 - **Size：** S
 - **Spec：** `specs/trip-plans/spec.md`「发布者维护集合信息」（ADDED）
-- **场景：** REQ-010 §4 #23–#25
+- **场景：** REQ-013 §4 #23–#25
 
 ## 追溯矩阵
 
 | 故事 | Requirement | Change delta | 主要场景 |
 |---|---|---|---|
-| S12-1 | REQ-010 §4 #1–#14、#16 | `trip-companions` MODIFIED 聊天 | 会话列表 / 权限 / 读写 / 轮询 / 只读 |
-| S12-2 | REQ-010 §4 #15 | `trip-companions` MODIFIED 退出 | 退出后仍可沟通 |
-| S12-3 | REQ-010 §4 #17–#22 | `trip-plans` MODIFIED 发布 + 详情 | 集合时间 / 三处展示 |
-| S12-4 | REQ-010 §4 #23–#25 | `trip-plans` ADDED 集合维护 | 编辑入口 / 状态限制 / 权限 |
+| S12-1 | REQ-013 §4 #1–#14、#16 | `trip-companions` MODIFIED 聊天 | 会话列表 / 权限 / 读写 / 轮询 / 只读 |
+| S12-2 | REQ-013 §4 #15 | `trip-companions` MODIFIED 退出 | 退出后仍可沟通 |
+| S12-3 | REQ-013 §4 #17–#22 | `trip-plans` MODIFIED 发布 + 详情 | 集合时间 / 三处展示 |
+| S12-4 | REQ-013 §4 #23–#25 | `trip-plans` ADDED 集合维护 | 编辑入口 / 状态限制 / 权限 |

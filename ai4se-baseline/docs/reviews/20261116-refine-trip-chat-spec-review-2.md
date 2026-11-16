@@ -23,7 +23,7 @@
 | id | severity | rule | location | issue | suggested_fix | authority |
 |---|---|---|---|---|---|---|
 | S-1 | SUGGESTION | `rules/architecture/rules.md#api-contract` | 本 Delta 与 `design.md` D13 | 规则写 400/422，仓库实现为 400/403/409；本次按用户裁决降级规则措辞 | 在 P4 验证报告与交付说明记录该偏离（规则 ID、范围、原因），不改老端点状态码 | [fact] |
-| S-2 | SUGGESTION | `rules/documentation/rules.md#sdd-artifacts` | REQ-010 §5、`proposal.md`、`atdd-design.md` | 同一口径散落在四处文档，存在再次漂移的风险 | P4 完成后统一以 `design.md` D13 为唯一口径，其它文档只引用 | [inference] |
+| S-2 | SUGGESTION | `rules/documentation/rules.md#sdd-artifacts` | REQ-013 §5、`proposal.md`、`atdd-design.md` | 同一口径散落在四处文档，存在再次漂移的风险 | P4 完成后统一以 `design.md` D13 为唯一口径，其它文档只引用 | [inference] |
 
 **Counts:** BLOCKER 0 / WARNING 0 / SUGGESTION 2 → **Pass**
 

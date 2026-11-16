@@ -1,6 +1,6 @@
 import { expect, test, type Page } from '@playwright/test';
 
-const API = 'http://localhost:8080/api';
+const API = '/api';
 
 async function loginAs(page: Page, userId: number) {
   await page.addInitScript((id) => {
@@ -21,14 +21,20 @@ function createGate() {
   return { opened, release: () => release() };
 }
 
+function todayIso(): string {
+  const now = new Date();
+  const pad = (value: number) => String(value).padStart(2, '0');
+  return `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
+}
+
 async function createCompletedTrip(page: Page, title: string) {
   const created = await page.request.post(`${API}/trips`, {
     headers: { 'X-User-Id': '1', 'Content-Type': 'application/json' },
     data: {
       title,
       destination_code: '440400',
-      start_date: '2026-12-20',
-      end_date: '2026-12-20',
+      start_date: todayIso(),
+      end_date: todayIso(),
       stops: ['香洲港集合', '情侣路骑行'],
       tags: ['摄影'],
       capacity: 3,
@@ -80,13 +86,13 @@ test('shares an experience and reuses it to publish a new plan', async ({ page }
 
   await page.goto(`/#/trips/${trip.id}`);
   await page.getByRole('button', { name: '参考此行程发布' }).click();
-  await expect(page.getByRole('heading', { name: '发布旅行计划' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: '发布一条想走的路' })).toBeVisible();
   await expect(page.getByText(/已预填目的地、途经点与兴趣/)).toBeVisible();
-  await expect(page.getByLabel('计划人数（含自己，2–12）')).toHaveValue('');
+  await expect(page.getByLabel('计划人数')).toHaveValue('');
   await expect(page.getByLabel('标题')).toHaveValue('');
   await expect(page.locator('.place-chip-name', { hasText: '香洲港集合' }).first()).toBeVisible();
-  await expect(page.getByRole('button', { name: '摄影', exact: true })).toHaveAttribute(
-    'aria-pressed',
+  await expect(page.getByRole('checkbox', { name: '摄影', exact: true })).toHaveAttribute(
+    'aria-checked',
     'true',
   );
 
@@ -132,6 +138,7 @@ test('guides an empty filter state to publish from both views', async ({ page })
 
   // 搜索已移除；用未来日期筛选制造空态。
   await page.getByLabel('出发不早于').fill('2099-01-01');
+  await page.getByLabel('出发不早于').press('Enter');
   await expect(page.getByText('还没有符合条件的行程')).toBeVisible();
   await expect(page.getByRole('button', { name: '清除全部条件' }).first()).toBeVisible();
   await page.getByRole('button', { name: '去发布行程' }).click();
@@ -139,6 +146,7 @@ test('guides an empty filter state to publish from both views', async ({ page })
 
   await page.goto('/');
   await page.getByLabel('出发不早于').fill('2099-01-01');
+  await page.getByLabel('出发不早于').press('Enter');
   await page.locator('.ant-segmented-item', { hasText: '旅行体验' }).click();
   await expect(page.getByText('还没有符合的旅行体验')).toBeVisible();
   await page.getByRole('button', { name: '去发布行程' }).click();

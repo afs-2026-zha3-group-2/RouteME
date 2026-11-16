@@ -1,7 +1,7 @@
 # G2 decision — refine-trip-chat
 
 - **Gate:** G2（Verify）
-- **Change:** `refine-trip-chat`（`trip-companions` MODIFIED + `trip-plans` MODIFIED，REQ-010）
+- **Change:** `refine-trip-chat`（`trip-companions` MODIFIED + `trip-plans` MODIFIED，REQ-013）
 - **Timestamp:** 2026-11-16T16:40+0800
 - **Recorded by:** Qoder（AI agent），按 Jay（AO / current developer）2026-11-16 P4 完成后的汇报记录；VL 签署待用户确认
 
@@ -32,7 +32,7 @@
 
 **Pass（待 VL 签署）**
 
-理由：五层验证全部通过且无回归，用户四条要求与 REQ-010 的 25 条场景均有证据；规格冲突已按 `@rule:rule-precedence` 第 1 层裁决并留下重评记录；E2E 数据污染属既有环境问题，已按先例处置并在报告中留痕。
+理由：五层验证全部通过且无回归，用户四条要求与 REQ-013 的 25 条场景均有证据；规格冲突已按 `@rule:rule-precedence` 第 1 层裁决并留下重评记录；E2E 数据污染属既有环境问题，已按先例处置并在报告中留痕。
 
 ## Conditions + owners
 

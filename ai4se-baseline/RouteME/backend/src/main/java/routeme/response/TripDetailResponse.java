@@ -27,12 +27,14 @@ public record TripDetailResponse(
         int capacity,
         int joinedCount,
         String status,
+        boolean endingSoon,
         DemoUserResponse publisher,
         List<DemoUserResponse> participants,
         Instant completedAt,
         Instant createdAt) {
 
-    public static TripDetailResponse from(TripPlan trip, DemoUser publisher, List<DemoUser> participants) {
+    public static TripDetailResponse from(
+            TripPlan trip, DemoUser publisher, List<DemoUser> participants, Instant now) {
         return new TripDetailResponse(
                 trip.id(),
                 trip.title(),
@@ -51,7 +53,8 @@ public record TripDetailResponse(
                 trip.tags(),
                 trip.capacity(),
                 trip.joinedCount(),
-                trip.status().wireValue(),
+                trip.status(now).wireValue(),
+                trip.endingSoon(now),
                 DemoUserResponse.from(publisher),
                 participants.stream().map(DemoUserResponse::from).toList(),
                 trip.completedAt(),

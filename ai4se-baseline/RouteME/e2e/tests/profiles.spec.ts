@@ -20,7 +20,7 @@ test('opens the publisher profile from a trip card without entering the detail p
   await expect(modal).toBeVisible();
   await expect(page).not.toHaveURL(/#\/trips\//);
   await expect(modal.getByText('周野', { exact: true })).toBeVisible();
-  await expect(modal.getByText('上班族 · 互联网行业 · INFP')).toBeVisible();
+  await expect(modal.getByText('产品经理 · INFP')).toBeVisible();
   await expect(modal.getByText(/加入于/)).toBeVisible();
   await expect(modal.locator('.tag', { hasText: '城市漫步' }).first()).toBeVisible();
   await expect(modal.getByText('你们的共同兴趣：展览')).toBeVisible();
@@ -30,7 +30,7 @@ test('opens the publisher profile from a trip card without entering the detail p
   await expect(modal.locator('.profile-stat', { hasText: '游后分享' })).toContainText('0');
   await expect(modal.locator('.privacy-note')).toContainText('电话、证件、精确住址和实时位置');
 
-  await modal.getByRole('button', { name: /^关\s*闭$/ }).click();
+  await modal.locator('.ant-modal-footer').getByRole('button', { name: /^关\s*闭$/ }).click();
   await expect(modal).toBeHidden();
 });
 

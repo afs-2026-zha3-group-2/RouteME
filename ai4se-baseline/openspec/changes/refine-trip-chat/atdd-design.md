@@ -1,7 +1,7 @@
 # ATDD 设计 — refine-trip-chat
 
 - **Change：** `refine-trip-chat`｜ **日期：** 2026-11-16｜ **记录人：** Jay（AO）
-- **输入：** `specs/trip-companions/spec.md`（3 Requirement / 21 Scenario）、`specs/trip-plans/spec.md`（3 Requirement / 22 Scenario）、REQ-010 §4（25 场景）
+- **输入：** `specs/trip-companions/spec.md`（3 Requirement / 21 Scenario）、`specs/trip-plans/spec.md`（3 Requirement / 22 Scenario）、REQ-013 §4（25 场景）
 - **输出口径：** 每个验收场景 → 至少一层可执行验证（API / 前端 UT / E2E）；API 回归门禁覆盖权限与校验；不引入设计外的测试框架（沿用 `@rule:java-testing`、`@rule:web-testing`）
 
 ## 1. 分层策略
@@ -14,7 +14,7 @@
 | E2E | Playwright，`e2e/tests/companions.spec.ts`（扩）、`e2e/tests/trips.spec.ts`（扩） | 发送→重进→可见、未匹配被拒、退出后仍可聊、集合编辑生效 |
 | 契约 | `npm run lint:api`（Redocly） | 新字段、新端点、枚举与示例 |
 
-## 2. 场景 → 验证映射（REQ-010 25/25）
+## 2. 场景 → 验证映射（REQ-013 25/25）
 
 | # | 场景摘要 | API | UT | E2E |
 |---|---|---|---|---|

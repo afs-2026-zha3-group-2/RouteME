@@ -1,3 +1,4 @@
+import { Progress, Tag } from 'antd';
 import { cityLabel } from '../area/areaOptions';
 import { tripMessages } from '../i18n/tripMessages';
 import { useProfile } from '../profiles/ProfileContext';
@@ -24,23 +25,37 @@ function formatDate(iso: string): string {
   return `${Number(month)}月${Number(day)}日`;
 }
 
-const RING_LENGTH = 94.25;
+const WEEKDAYS = ['周日', '周一', '周二', '周三', '周四', '周五', '周六'];
+
+function dayLabel(iso: string): string {
+  if (iso === '') {
+    return '日期待定';
+  }
+  const date = new Date(`${iso}T00:00:00`);
+  return Number.isNaN(date.getTime()) ? '日期待定' : `${WEEKDAYS[date.getDay()]}出发`;
+}
 
 type Props = {
   trip: TripSummary;
   match?: Match;
   /** 紧凑行式卡片：用于「我的旅行」列表，封面缩成窄条，信息单行排布。 */
   compact?: boolean;
+  /** 发布页实时预览：不跳详情、不打开资料弹窗。 */
+  preview?: boolean;
 };
 
-export function TripCard({ trip, match, compact = false }: Props) {
+export function TripCard({ trip, match, compact = false, preview = false }: Props) {
   const { openProfile } = useProfile();
   const joinedRate = trip.capacity === 0 ? 0 : Math.round((trip.joined_count / trip.capacity) * 100);
   const width = Math.min(100, Math.max(0, joinedRate));
 
   return (
     <article className={compact ? 'trip-card compact' : 'trip-card'}>
-      <a className="tc-overlay" href={`#/trips/${trip.id}`} aria-label={trip.title} />
+      {preview ? (
+        <span className="tc-overlay" aria-hidden="true" />
+      ) : (
+        <a className="tc-overlay" href={`#/trips/${trip.id}`} aria-label={trip.title} />
+      )}
       <div className={`tc-cover cover-${coverTone(trip.destination_code)}`}>
         <span className="tc-dest">{cityLabel(trip.destination_code) || trip.destination}</span>
         <StatusBadge status={trip.status} />
@@ -53,7 +68,7 @@ export function TripCard({ trip, match, compact = false }: Props) {
           <span>
             {formatDate(trip.start_date)} → {formatDate(trip.end_date)}
           </span>
-          <span>{trip.stops.length} 个途经点</span>
+          <span>{dayLabel(trip.start_date)}</span>
         </div>
 
         <p className="tc-route">
@@ -63,63 +78,56 @@ export function TripCard({ trip, match, compact = false }: Props) {
         {trip.tags.length > 0 && (
           <div className="tc-tags">
             {trip.tags.map((tag) => (
-              <span key={tag} className="tag">
+              <Tag key={tag}>
                 {tag}
-              </span>
+              </Tag>
             ))}
           </div>
         )}
 
         {match !== undefined && (
           <div className="tc-match">
-            <span className="match-ring" aria-hidden="true">
-              <svg viewBox="0 0 34 34">
-                <circle className="ring-bg" cx="17" cy="17" r="15" fill="none" strokeWidth="3" />
-                <circle
-                  className="ring-fg"
-                  cx="17"
-                  cy="17"
-                  r="15"
-                  fill="none"
-                  strokeWidth="3"
-                  strokeDasharray={RING_LENGTH}
-                  strokeDashoffset={RING_LENGTH * (1 - match.percentage / 100)}
-                />
-              </svg>
+            <span className="match-ring">
+              <Progress
+                type="circle"
+                percent={match.percentage}
+                size={34}
+                strokeWidth={10}
+                strokeColor="var(--warn)"
+                format={(percent) => percent}
+              />
             </span>
-            <span className="match-copy">
-              <span className="match-score">
-                {tripMessages.matchPercentage}{' '}
-                <b className="match-percentage">{match.percentage}%</b>
-              </span>
-              <span className="match-reason">
-                <span className="match-reason-label">{tripMessages.matchReasons}</span>
-                {match.reasons.join('，')}
-              </span>
-            </span>
+            <span className="match-reason">{match.reasons.join('，')}</span>
           </div>
         )}
 
         <div className="tc-foot">
-          <button
-            type="button"
-            className="tc-host"
-            aria-label={`查看 ${trip.publisher.nickname} 的资料`}
-            onClick={() => openProfile(trip.publisher.id)}
-          >
-            <Avatar user={trip.publisher} size="sm" />
-            <span className="tc-host-name">
-              {trip.publisher.nickname}
-              {publisherSummary(trip.publisher) !== '' &&
-                ` · ${publisherSummary(trip.publisher)}`}
+          {preview ? (
+            <span className="tc-host">
+              <Avatar user={trip.publisher} size="sm" />
+              <span className="tc-host-name">{trip.publisher.nickname}</span>
             </span>
-          </button>
+          ) : (
+            <button
+              type="button"
+              className="tc-host"
+              aria-label={`查看 ${trip.publisher.nickname} 的资料`}
+              onClick={() => openProfile(trip.publisher.id)}
+            >
+              <Avatar user={trip.publisher} size="sm" />
+              <span className="tc-host-name">
+                {trip.publisher.nickname}
+                {publisherSummary(trip.publisher) !== '' &&
+                  ` · ${publisherSummary(trip.publisher)}`}
+              </span>
+            </button>
+          )}
           <span className="tc-cap">
             <span className="tc-cap-num">
               {trip.joined_count} / {trip.capacity} {tripMessages.peopleUnit}
             </span>
-            <span className={width >= 100 ? 'meter full' : 'meter'}>
-              <i style={{ width: `${width}%` }} />
+            <span className={width >= 100 ? 'tc-meter is-full' : 'tc-meter'}>
+              <Progress percent={width} size="small" showInfo={false} />
             </span>
           </span>
         </div>

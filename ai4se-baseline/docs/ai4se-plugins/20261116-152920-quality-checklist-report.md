@@ -12,7 +12,7 @@
 | Check id | Required? | Status | Evidence |
 |----------|-----------|--------|----------|
 | P2-1 | yes | Pass | `openspec/changes/refine-trip-chat/specs/trip-companions/spec.md`（3 Requirement / 21 Scenario）、`specs/trip-plans/spec.md`（3 Requirement / 22 Scenario）；`openspec validate refine-trip-chat --strict` → valid |
-| P2-2 | yes | Pass | `openspec/changes/refine-trip-chat/dov-ac-review.md`：AC 4/4 Pass、DoV 5/5 Pass、REQ-010 场景覆盖 25/25、基线场景 4/3/4/7/4 保留 |
+| P2-2 | yes | Pass | `openspec/changes/refine-trip-chat/dov-ac-review.md`：AC 4/4 Pass、DoV 5/5 Pass、REQ-013 场景覆盖 25/25、基线场景 4/3/4/7/4 保留 |
 | P2-3 | yes | Pass | `openspec/changes/refine-trip-chat/g1-decision.md`：Pass（条件式），IO=Wanye / SA=Jacky / AO=Jay / VL=Neal / SM=Lewis，10 项条件与 owner |
 | P2-4 | no | Pass | `openspec/changes/refine-trip-chat/consistency-lint.md`：Pass，BLOCKER 0 / WARNING 0 / SUGGESTION 4 / N/A 6 |
 

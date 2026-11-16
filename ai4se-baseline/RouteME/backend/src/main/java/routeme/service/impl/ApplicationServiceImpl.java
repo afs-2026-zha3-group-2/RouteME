@@ -6,6 +6,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
+import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -29,6 +30,7 @@ import routeme.request.ApplicationCreateRequest;
 import routeme.response.TripApplicationResponse;
 import routeme.service.ApplicationService;
 import routeme.service.DemoUserService;
+import routeme.service.TripCompletedEvent;
 import routeme.service.TripPlanService;
 
 /**
@@ -56,14 +58,17 @@ public class ApplicationServiceImpl
     @Override
     @Transactional
     public TripApplication apply(long tripId, long applicantId, ApplicationCreateRequest request) {
-        TripPlan trip = tripPlanService.require(tripId);
+        TripPlan trip = tripPlanService.requireCurrent(tripId);
         if (trip.publisherId() == applicantId) {
             throw new ForbiddenActionException("publisher cannot apply to own trip " + tripId);
         }
         if (existsActive(tripId, applicantId)) {
             throw new DuplicateApplicationException(tripId, applicantId);
         }
-        if (trip.status() != TripStatusEnum.RECRUITING) {
+        Instant now = clock.instant();
+        TripStatusEnum status = trip.status(now);
+        boolean open = status == TripStatusEnum.RECRUITING || status == TripStatusEnum.ONGOING;
+        if (!open || trip.joinedCount() >= trip.capacity()) {
             throw new TripNotOpenException(tripId);
         }
         TripApplication created = new TripApplication(
@@ -72,7 +77,7 @@ public class ApplicationServiceImpl
                 applicantId,
                 normalizeMessage(request == null ? null : request.message()),
                 ApplicationStatusEnum.PENDING,
-                clock.instant(),
+                now,
                 null);
         save(TripApplicationEntity.from(created));
         return created;
@@ -179,9 +184,10 @@ public class ApplicationServiceImpl
 
     @Override
     public TripApplicationResponse describe(TripApplication application) {
-        TripPlan trip = tripPlanService.require(application.tripId());
+        TripPlan trip = tripPlanService.requireCurrent(application.tripId());
         DemoUser applicant = demoUserService.require(application.applicantId());
-        return TripApplicationResponse.from(application, applicant, trip, tripPlanService.publisherOf(trip));
+        return TripApplicationResponse.from(
+                application, applicant, trip, tripPlanService.publisherOf(trip), clock.instant());
     }
 
     @Override
@@ -197,19 +203,44 @@ public class ApplicationServiceImpl
 
     private TripApplication decide(long applicationId, long publisherId, ApplicationStatusEnum next) {
         TripApplication application = require(applicationId);
-        TripPlan trip = tripPlanService.require(application.tripId());
+        TripPlan trip = tripPlanService.requireCurrent(application.tripId());
         if (trip.publisherId() != publisherId) {
             throw new ForbiddenActionException("only the publisher can decide application " + applicationId);
         }
         if (!application.isPending()) {
             throw new ApplicationNotPendingException(applicationId);
         }
+        Instant now = clock.instant();
+        TripStatusEnum status = trip.status(now);
+        if (status == TripStatusEnum.COMPLETED) {
+            throw new TripNotOpenException(trip.id());
+        }
         if (next == ApplicationStatusEnum.ACCEPTED) {
+            boolean open = status == TripStatusEnum.RECRUITING || status == TripStatusEnum.ONGOING;
+            if (!open || trip.joinedCount() >= trip.capacity()) {
+                throw new TripNotOpenException(trip.id());
+            }
             tripPlanService.addCompanion(trip.id());
         }
-        Instant now = clock.instant();
         updateStatus(applicationId, next, now);
         return application.withStatus(next, now);
+    }
+
+    @Override
+    @Transactional
+    public void cancelPending(long tripId, Instant now) {
+        lambdaUpdate()
+                .eq(TripApplicationEntity::getTripId, tripId)
+                .eq(TripApplicationEntity::getStatus, ApplicationStatusEnum.PENDING.name())
+                .set(TripApplicationEntity::getStatus, ApplicationStatusEnum.CANCELLED.name())
+                .set(TripApplicationEntity::getDecidedAt, now.toString())
+                .update();
+    }
+
+    @EventListener
+    @Transactional
+    public void onTripCompleted(TripCompletedEvent event) {
+        cancelPending(event.tripId(), event.completedAt());
     }
 
     private List<TripApplication> findByTrip(long tripId) {

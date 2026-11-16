@@ -11,6 +11,7 @@ const validRegister: AuthFormValues = {
   ...emptyAuthForm,
   username: 'NewUser',
   password: 'routeme-demo',
+  passwordConfirm: 'routeme-demo',
   nickname: '新同学',
 };
 
@@ -34,6 +35,7 @@ describe('validateAuthForm', () => {
       ...validRegister,
       username: 'bad name',
       password: 'short',
+      passwordConfirm: 'short',
     });
     expect(errors.username).toBeDefined();
     expect(errors.password).toBeDefined();
@@ -44,6 +46,20 @@ describe('validateAuthForm', () => {
     expect(
       validateAuthForm('register', { ...validRegister, nickname: '一'.repeat(21) }).nickname,
     ).toBeDefined();
+  });
+
+  it('requires the password to be typed a second time on register', () => {
+    const errors = validateAuthForm('register', { ...validRegister, passwordConfirm: '' });
+    expect(errors.passwordConfirm).toContain('再次');
+  });
+
+  it('rejects two different passwords on register', () => {
+    const errors = validateAuthForm('register', {
+      ...validRegister,
+      passwordConfirm: 'routeme-demo-2',
+    });
+    expect(errors.passwordConfirm).toContain('不一致');
+    expect(errors.password).toBeUndefined();
   });
 });
 

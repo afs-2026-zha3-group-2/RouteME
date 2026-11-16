@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
-import { Alert, Button, Skeleton, Tabs, Typography } from 'antd';
-import { loadMyExperiences, loadMyTrips } from '../api';
+import { Alert, Button, Modal, Skeleton, Tabs, Typography } from 'antd';
+import { completeTrip, loadMyExperiences, loadMyTrips } from '../api';
 import { mineMeetingNote } from '../chat/chatMeeting';
 import { tripMessages } from '../i18n/tripMessages';
 import { publisherSummary } from '../profile/profileDisplay';
@@ -22,6 +22,8 @@ export function MyTripsPage({ currentUser, isAuthenticated }: Props) {
   const [data, setData] = useState<MyTrips | null>(null);
   const [experiences, setExperiences] = useState<Experience[]>([]);
   const [error, setError] = useState<string | null>(null);
+  const [confirmTripId, setConfirmTripId] = useState<number | null>(null);
+  const [completingId, setCompletingId] = useState<number | null>(null);
 
   const reload = useCallback(() => {
     setError(null);
@@ -38,6 +40,23 @@ export function MyTripsPage({ currentUser, isAuthenticated }: Props) {
   useEffect(() => {
     reload();
   }, [reload]);
+
+  const completeTripNow = async () => {
+    if (confirmTripId === null) {
+      return;
+    }
+    setCompletingId(confirmTripId);
+    setError(null);
+    try {
+      await completeTrip(currentUser.id, confirmTripId);
+      setConfirmTripId(null);
+      reload();
+    } catch (caught: unknown) {
+      setError(caught instanceof Error ? caught.message : 'UNKNOWN_ERROR');
+    } finally {
+      setCompletingId(null);
+    }
+  };
 
   if (error !== null && data === null) {
     return (
@@ -123,6 +142,20 @@ export function MyTripsPage({ currentUser, isAuthenticated }: Props) {
                       {data.published.map((trip) => (
                         <div key={trip.id} className="mine-row">
                           <TripCard trip={trip} compact />
+                          <div className="mine-row-actions">
+                            {trip.ending_soon && (
+                              <span className="badge amber">{tripMessages.detailEndingSoon}</span>
+                            )}
+                            {trip.status === 'ongoing' && (
+                              <Button
+                                size="small"
+                                loading={completingId === trip.id}
+                                onClick={() => setConfirmTripId(trip.id)}
+                              >
+                                {tripMessages.mineCompleteTrip}
+                              </Button>
+                            )}
+                          </div>
                         </div>
                       ))}
                     </div>
@@ -226,6 +259,18 @@ export function MyTripsPage({ currentUser, isAuthenticated }: Props) {
           />
         )}
       </div>
+
+      <Modal
+        open={confirmTripId !== null}
+        title={tripMessages.detailCompleteTrip}
+        okText={tripMessages.detailCompleteTrip}
+        cancelText={tripMessages.createCancel}
+        confirmLoading={completingId !== null}
+        onOk={completeTripNow}
+        onCancel={() => setConfirmTripId(null)}
+      >
+        <Typography.Paragraph>{tripMessages.detailCompleteHint}</Typography.Paragraph>
+      </Modal>
     </main>
   );
 }

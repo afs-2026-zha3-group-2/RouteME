@@ -10,7 +10,7 @@
 | Artifact | Path | Result |
 |---|---|---|
 | Proposal | [`proposal.md`](proposal.md) | 问题、In/Out scope、影响面、决策与验收信号齐全；能力记为 `user-profile` ADDED + `user-auth` MODIFIED |
-| Delta Spec — `user-profile` | [`specs/user-profile/spec.md`](specs/user-profile/spec.md) | 7 Requirement / 24 Scenario；ADDED；`openspec validate add-user-profile --strict` valid |
+| Delta Spec — `user-profile` | [`specs/user-profile/spec.md`](specs/user-profile/spec.md) | 7 Requirement / 24 Scenario（G1 点数；G2 前追加 2 个「其他职业自填」场景，现为 26）；ADDED；`openspec validate add-user-profile --strict` valid |
 | Delta Spec — `user-auth` | [`specs/user-auth/spec.md`](specs/user-auth/spec.md) | 1 Requirement / 6 Scenario；MODIFIED「注册账号」；保留 4 个基线场景 |
 | Living Spec baseline | `openspec/specs/user-auth/spec.md`「注册账号」 | 同名 Requirement 存在（4 场景）；delta 未丢场景，校验通过 |
 | Living Spec consumers | `openspec/specs/trip-plans/spec.md`、`trip-experiences/spec.md` | 卡片 / 详情 / 体验区既有场景要求发布者昵称与资料；本 change 只增加头像、入口与摘要回退，不删既有字段 |

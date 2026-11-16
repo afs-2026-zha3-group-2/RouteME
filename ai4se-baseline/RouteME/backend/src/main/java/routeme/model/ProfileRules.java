@@ -224,12 +224,8 @@ public final class ProfileRules {
 
         validateOptionalLength(fields, "school", request.school(), ProfileConstant.MAX_SCHOOL_LENGTH);
         validateOptionalLength(fields, "major", request.major(), ProfileConstant.MAX_MAJOR_LENGTH);
+        validateOptionalLength(fields, "job", request.job(), ProfileConstant.MAX_JOB_LENGTH);
         validateOptionalLength(fields, "bio", request.bio(), ProfileConstant.MAX_BIO_LENGTH);
-
-        String job = trimToEmpty(request.job());
-        if (!job.isEmpty() && !ProfileConstant.JOBS.contains(job)) {
-            fields.put("job", ProfileConstant.REASON_INVALID_OPTION);
-        }
 
         String mbti = trimToEmpty(request.mbti());
         if (!mbti.isEmpty() && !ProfileConstant.MBTI_TYPES.contains(mbti.toUpperCase(Locale.ROOT))) {

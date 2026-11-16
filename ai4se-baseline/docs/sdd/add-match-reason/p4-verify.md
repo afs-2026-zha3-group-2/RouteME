@@ -78,3 +78,64 @@
 ## 8. P5 状态
 
 按用户 2026-11-16 指示：**暂不执行 P5，也不归档**。归档时需补：`summary.md`、living spec 合并（`trip-companions`）、`docs/knowledge/` 登记、`changes/archive/2026-11-16-add-match-reason/` 目录。
+
+## 9. R2 实施结果（筛选不参与匹配分，2026-11-16 14:28）
+
+| 项 | 结果 |
+|---|---|
+| 实现提交 | `fix(p4): add-match-reason keep home filters out of the match score` |
+| 匹配入口 | `TripMatch.of(candidate, reference, interests)`；`MatchServiceImpl` 的列表与详情共用 |
+| 契约 | `Match.basis` 描述与匹配语义同步；版本 0.8.0 → **0.8.1** |
+| 后端验证 | `clean test` 209 通过（`TripMatchTest` 7、`MatchControllerTest` 7） |
+| 前端验证 | `npm test` 114 通过（回归） |
+| 契约 lint | valid，0 error / 15 既有 warning |
+| 端到端 | `companions.spec.ts` 3 项通过 |
+| 手工比对 | 带筛选列表与详情对 trip 4 均返回 score 0 |
+| 顺带修复 | `TripMatchTest` 移到 `routeme/pojo`，消除包名不一致导致的增量编译残留 |
+| 看板 | S07 仍显示 P3；token 无 `project` 写权限，需人工拖到 P4 |
+
+| 角色 | 姓名 | 确认内容 | 日期 |
+|---|---|---|---|
+| VL | Neal | 复核 R2 证据，G2 追加 Pass | 2026-11-16 |
+| AO | Jay | 交付实现与回归结果 | 2026-11-16 |
+| SM | Lewis | 认可 R2；P5 仍暂缓 | 2026-11-16 |
+
+## 10. R3 实施结果（Ant Design 组件收敛，2026-11-16 15:05）
+
+| 项 | 结果 |
+|---|---|
+| 实现提交 | `refactor(p4): add-trip-publish add-match-reason use ant design controls` |
+| 规则 | `@rule:web-coding-style` 新增「组件选型（Ant Design 优先）」：匹配度与进度 MUST 用 `Progress`，标签用 `Tag`；自绘 SVG 圆环、`div` 进度条不再接受 |
+| 卡片 | 自绘 `svg` 匹配环 → `Progress type="circle"`（`strokeColor` 取 `--warn`）；满员进度条 → `Progress size="small"`（`is-full` 保留渐变）；兴趣标签 → `Tag` |
+| 详情 | 原因 `<ul>` → `Tag` 列表 + `Progress type="circle"`（`format` 显示「匹配度 N%」）；`basis` 单独一行 |
+| 样式 | 只保留布局类（`.tc-match`、`.match-summary`），颜色走 token；移除 `.match-reason-list`、`.meter`、`.ring-*` |
+| 前端验证 | `npm test` 137 通过（含上游 `main` 合并后的用例）；`typecheck` / `build` 通过 |
+| 端到端 | `companions.spec.ts` 8/8 通过（匹配理由 + 默认按匹配度排序 + 详情原因）；全量 53/54，唯一失败为既有 `profiles.spec.ts:23` 数据断言 |
+| CI | run [#128](https://github.com/afs-2026-zha3-group-2/RouteME/actions/runs/43823336483)（`d6a7407`）：Backend (Java 21) success、Frontend (Node 22) success |
+| 看板 | S07 仍显示 P3（token 无 `project` 写权限，需人工拖到 P4）；P5 暂缓、不归档 |
+
+| 角色 | 姓名 | 确认内容 | 日期 |
+|---|---|---|---|
+| AO | Jay | 交付组件替换、规则文档与回归结果 | 2026-11-16 |
+| VL | Neal | 待复核 R3 证据（G2 追加） | 待签 |
+| SM | Lewis | 待确认 R3 范围；P5 仍暂缓 | 待签 |
+
+## 11. R4 实施结果（匹配块按原型重排，2026-11-16）
+
+| 项 | 结果 |
+|---|---|
+| 实现提交 | `refactor(p4): add-trip-publish add-match-reason align S06/S07 with the prototype` |
+| 卡片 | `Progress type="circle"` 圆环内直接显示分值；理由改为一段纯文本；移除「匹配度 / 匹配理由」两层标签 |
+| 元信息 | 日期区间后显示「周X出发」，移除途经点数量（原型为 calendar / clock 两段） |
+| 详情 | 标题「为什么推荐给你」；圆环 + 理由文本 + `basis` + 可解释规则说明；保持单列，不改双栏 |
+| 样式 | 圆环文字改 `.ant-progress-indicator`（antd 6.7 类名）；卡片理由 11.5px、详情理由 13px；颜色走 `--warn` |
+| 前端验证 | `npm test` 137 通过；`typecheck` / `build` 通过 |
+| 端到端 | `companions.spec.ts` 8/8；全量 53/54（唯一失败为既有 `profiles.spec.ts:23` 数据断言） |
+| CI | run [#133](https://github.com/afs-2026-zha3-group-2/RouteME/actions/runs/43826642545)（`bde8024`）：Backend (Java 21) success、Frontend (Node 22) success |
+| 看板 | S07 仍显示 P3（token 无 `project` 写权限，需人工拖到 P4）；P5 暂缓、不归档 |
+
+| 角色 | 姓名 | 确认内容 | 日期 |
+|---|---|---|---|
+| AO | Jay | 交付原型匹配块与回归结果 | 2026-11-16 |
+| VL | Neal | 待复核 R4 证据（G2 追加） | 待签 |
+| SM | Lewis | 待确认 R4 范围；P5 仍暂缓 | 待签 |

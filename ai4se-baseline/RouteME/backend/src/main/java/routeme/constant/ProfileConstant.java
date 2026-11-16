@@ -12,6 +12,7 @@ public final class ProfileConstant {
     public static final int MAX_CITY_LENGTH = 40;
     public static final int MAX_SCHOOL_LENGTH = 80;
     public static final int MAX_MAJOR_LENGTH = 80;
+    public static final int MAX_JOB_LENGTH = 20;
     public static final int MAX_BIO_LENGTH = 500;
     public static final int MIN_INTERESTS = 3;
     public static final int MAX_INTERESTS = 5;
@@ -21,7 +22,6 @@ public final class ProfileConstant {
     public static final String EARLIEST_BIRTHDAY = "1900-01-01";
 
     public static final List<String> GENDERS = List.of("男", "女", "其他");
-    public static final List<String> JOBS = List.of("学生", "上班族", "自由职业", "其他");
     public static final List<String> TRAVEL_STYLES = List.of("特种兵", "休闲游", "深度游", "随性游");
     public static final List<String> MBTI_TYPES = List.of(
             "INTJ", "INTP", "ENTJ", "ENTP",

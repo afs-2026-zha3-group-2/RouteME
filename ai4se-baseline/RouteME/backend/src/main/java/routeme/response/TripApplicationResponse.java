@@ -17,7 +17,7 @@ public record TripApplicationResponse(
         TripSummaryResponse trip) {
 
     public static TripApplicationResponse from(
-            TripApplication application, DemoUser applicant, TripPlan trip, DemoUser publisher) {
+            TripApplication application, DemoUser applicant, TripPlan trip, DemoUser publisher, Instant now) {
         return new TripApplicationResponse(
                 application.id(),
                 application.tripId(),
@@ -26,6 +26,6 @@ public record TripApplicationResponse(
                 application.status().wireValue(),
                 application.createdAt(),
                 application.decidedAt(),
-                TripSummaryResponse.from(trip, publisher));
+                TripSummaryResponse.from(trip, publisher, now));
     }
 }

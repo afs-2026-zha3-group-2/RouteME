@@ -17,10 +17,10 @@ public record ExperienceResponse(
         Instant updatedAt) {
 
     public static ExperienceResponse from(
-            TripExperience experience, TripPlan trip, DemoUser publisher, DemoUser author) {
+            TripExperience experience, TripPlan trip, DemoUser publisher, DemoUser author, Instant now) {
         return new ExperienceResponse(
                 experience.id(),
-                TripSummaryResponse.from(trip, publisher),
+                TripSummaryResponse.from(trip, publisher, now),
                 DemoUserResponse.from(author),
                 experience.content(),
                 experience.intensity().wireValue(),

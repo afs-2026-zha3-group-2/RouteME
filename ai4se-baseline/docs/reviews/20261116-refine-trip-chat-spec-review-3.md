@@ -38,7 +38,7 @@
 | D Security | Pass | 不涉及权限变化 |
 | E Process | Pass | 语义修改走重评，不覆盖前两份报告；冲突按 `rule-precedence` 第 1 层以用户指示为准 |
 | F Documentation | Pass | 中文正文；路径可点 |
-| G Traceability | Pass | 场景总数仍 21；REQ-010 25/25 映射不变 |
+| G Traceability | Pass | 场景总数仍 21；REQ-013 25/25 映射不变 |
 
 ## Residual risks
 

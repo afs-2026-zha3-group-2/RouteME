@@ -6,6 +6,7 @@ import {
   Card,
   Input,
   Modal,
+  Progress,
   Skeleton,
   Space,
   Tag,
@@ -19,6 +20,7 @@ import {
   leaveTrip,
   loadMatch,
   loadMyApplications,
+  loadTrip,
   loadTripApplications,
   loadTripExperiences,
   saveTripMeeting,
@@ -31,7 +33,7 @@ import { ReportModal } from '../safety/ReportModal';
 import { SafetyNote } from '../safety/SafetyNote';
 import { Avatar } from '../shell/Avatar';
 import type { DemoUser, Experience, MatchCandidate, TripApplication } from '../types';
-import { applicationLabel } from './applicationStatus';
+import { applicationEntryState, applicationErrorMessage } from './applicationEntry';
 import {
   MAX_MEETING_AREA_LENGTH,
   meetingFormFrom,
@@ -51,15 +53,31 @@ type Props = {
   tripId: number;
 };
 
+type Feedback = {
+  tone: 'error' | 'warning';
+  title: string;
+  detail?: string;
+};
+
+function pickLatestApplication(
+  applications: TripApplication[],
+  tripId: number,
+): TripApplication | null {
+  return (
+    applications
+      .filter((application) => application.trip_id === tripId)
+      .sort((left, right) => right.id - left.id)[0] ?? null
+  );
+}
+
 export function TripDetailPage({ currentUser, tripId }: Props) {
   const { state, reload } = useTrip(currentUser.id, tripId);
   const { openProfile } = useProfile();
-  const [actionError, setActionError] = useState<string | null>(null);
+  const [feedback, setFeedback] = useState<Feedback | null>(null);
   const [completing, setCompleting] = useState(false);
   const [myApplication, setMyApplication] = useState<TripApplication | null>(null);
   const [pendingCount, setPendingCount] = useState(0);
   const [match, setMatch] = useState<MatchCandidate | null>(null);
-  const [applyOpen, setApplyOpen] = useState(false);
   const [applyMessage, setApplyMessage] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [leaving, setLeaving] = useState(false);
@@ -79,10 +97,7 @@ export function TripDetailPage({ currentUser, tripId }: Props) {
     loadMyApplications(currentUser.id)
       .then((applications) => {
         if (active) {
-          const latest = applications
-            .filter((application) => application.trip_id === tripId)
-            .sort((left, right) => right.id - left.id)[0];
-          setMyApplication(latest ?? null);
+          setMyApplication(pickLatestApplication(applications, tripId));
         }
       })
       .catch(() => undefined);
@@ -117,36 +132,32 @@ export function TripDetailPage({ currentUser, tripId }: Props) {
       .catch(() => undefined);
   }, [currentUser.id, tripId, state]);
 
+  const refreshMyApplication = async () => {
+    const applications = await loadMyApplications(currentUser.id);
+    setMyApplication(pickLatestApplication(applications, tripId));
+  };
+
+  const showActionError = (error: unknown) => {
+    const code = error instanceof Error ? error.message : 'UNKNOWN_ERROR';
+    setFeedback({ tone: 'error', title: tripMessages.applyFailed, detail: code });
+  };
+
   const complete = async () => {
     setCompleting(true);
-    setActionError(null);
+    setFeedback(null);
     try {
       await completeTrip(currentUser.id, tripId);
       reload();
     } catch (error: unknown) {
-      setActionError(error instanceof Error ? error.message : 'UNKNOWN_ERROR');
+      const code = error instanceof Error ? error.message : 'UNKNOWN_ERROR';
+      setFeedback({
+        tone: 'error',
+        title: code === 'FORBIDDEN' ? tripMessages.detailForbidden : tripMessages.detailCompleteFailed,
+        detail: code,
+      });
+      reload();
     } finally {
       setCompleting(false);
-    }
-  };
-
-  const submitApplication = async () => {
-    setSubmitting(true);
-    setActionError(null);
-    try {
-      const created = await applyForTrip(
-        currentUser.id,
-        tripId,
-        applyMessage.trim() === '' ? null : applyMessage.trim(),
-      );
-      setMyApplication(created);
-      setApplyOpen(false);
-      setApplyMessage('');
-      reload();
-    } catch (error: unknown) {
-      setActionError(error instanceof Error ? error.message : 'UNKNOWN_ERROR');
-    } finally {
-      setSubmitting(false);
     }
   };
 
@@ -155,12 +166,12 @@ export function TripDetailPage({ currentUser, tripId }: Props) {
       return;
     }
     setCancelling(true);
-    setActionError(null);
+    setFeedback(null);
     try {
       const cancelled = await cancelApplication(currentUser.id, myApplication.id);
       setMyApplication(cancelled);
     } catch (error: unknown) {
-      setActionError(error instanceof Error ? error.message : 'UNKNOWN_ERROR');
+      showActionError(error);
     } finally {
       setCancelling(false);
     }
@@ -168,13 +179,13 @@ export function TripDetailPage({ currentUser, tripId }: Props) {
 
   const leave = async () => {
     setLeaving(true);
-    setActionError(null);
+    setFeedback(null);
     try {
       await leaveTrip(currentUser.id, tripId);
       setMyApplication((current) => (current === null ? null : { ...current, status: 'left' }));
       reload();
     } catch (error: unknown) {
-      setActionError(error instanceof Error ? error.message : 'UNKNOWN_ERROR');
+      showActionError(error);
     } finally {
       setLeaving(false);
     }
@@ -193,14 +204,14 @@ export function TripDetailPage({ currentUser, tripId }: Props) {
       return;
     }
     setMeetingSaving(true);
-    setActionError(null);
+    setFeedback(null);
     try {
       await saveTripMeeting(currentUser.id, tripId, toMeetingRequest(meetingForm));
       setMeetingOpen(false);
       message.success(tripMessages.meetingSaved);
       reload();
     } catch (error: unknown) {
-      setActionError(error instanceof Error ? error.message : 'UNKNOWN_ERROR');
+      showActionError(error);
     } finally {
       setMeetingSaving(false);
     }
@@ -233,13 +244,9 @@ export function TripDetailPage({ currentUser, tripId }: Props) {
   }
 
   const { trip } = state;
-  const isPublisher = trip.publisher.id === currentUser.id;
+  const entry = applicationEntryState(trip, currentUser.id, myApplication);
+  const isPublisher = entry.kind === 'publisher';
   const isCompleted = trip.status === 'completed';
-  const isFull = trip.status === 'full';
-  const hasActiveApplication =
-    myApplication !== null &&
-    (myApplication.status === 'pending' || myApplication.status === 'accepted');
-  const canApply = !isPublisher && !isCompleted && !isFull && !hasActiveApplication;
   const participant = trip.participants.some((member) => member.id === currentUser.id);
   const canShare = isCompleted && participant;
   const hasShared = experiences?.some((experience) => experience.author.id === currentUser.id) ?? false;
@@ -250,13 +257,13 @@ export function TripDetailPage({ currentUser, tripId }: Props) {
 
   const confirmTitle =
     confirmAction === 'complete'
-      ? tripMessages.detailMarkCompleted
+      ? tripMessages.detailCompleteTrip
       : confirmAction === 'cancelApply'
         ? tripMessages.applyCancelConfirm
         : tripMessages.leaveConfirm;
   const confirmOkText =
     confirmAction === 'complete'
-      ? tripMessages.detailMarkCompleted
+      ? tripMessages.detailCompleteTrip
       : confirmAction === 'cancelApply'
         ? tripMessages.applyCancel
         : tripMessages.leaveTrip;
@@ -264,10 +271,49 @@ export function TripDetailPage({ currentUser, tripId }: Props) {
     confirmAction === 'complete' ? completing : confirmAction === 'leave' ? leaving : cancelling;
   const confirmHint =
     confirmAction === 'complete'
-      ? '结束后行程会从首页默认列表移除，也不再接受新的同行申请。'
+      ? tripMessages.detailCompleteHint
       : confirmAction === 'cancelApply'
-        ? '取消后可以再次申请，但需要发布者重新处理。'
+        ? '撤回后可以再次申请，但需要发布者重新处理。'
         : '退出后这条行程的聊天会保留，仍可继续和发布者沟通。';
+
+  const submitApplication = async () => {
+    if (submitting) {
+      return;
+    }
+    setSubmitting(true);
+    setFeedback(null);
+    try {
+      const created = await applyForTrip(
+        currentUser.id,
+        tripId,
+        applyMessage.trim() === '' ? null : applyMessage.trim(),
+      );
+      setMyApplication(created);
+      setApplyMessage('');
+      reload();
+    } catch (error: unknown) {
+      const code = error instanceof Error ? error.message : 'UNKNOWN_ERROR';
+      let currentTrip = trip;
+      try {
+        currentTrip = await loadTrip(currentUser.id, tripId);
+      } catch {
+        // 刷新失败时保留旧快照，原因退化为「当前不可申请」。
+      }
+      const mapped = applicationErrorMessage(code, currentTrip);
+      if (mapped === null) {
+        showActionError(error);
+      } else {
+        setFeedback({
+          tone: code === 'DUPLICATE_APPLICATION' ? 'warning' : 'error',
+          title: mapped,
+        });
+      }
+      await refreshMyApplication().catch(() => undefined);
+      reload();
+    } finally {
+      setSubmitting(false);
+    }
+  };
 
   const runConfirm = async () => {
     if (confirmAction === 'complete') {
@@ -304,6 +350,10 @@ export function TripDetailPage({ currentUser, tripId }: Props) {
               </span>
             </p>
           </header>
+
+          {trip.ending_soon && (isPublisher || participant) && (
+            <Alert type="warning" showIcon title={tripMessages.detailEndingSoon} />
+          )}
 
           <section className="detail-section">
             <h3 className="section-title">{tripMessages.detailStops}</h3>
@@ -379,9 +429,24 @@ export function TripDetailPage({ currentUser, tripId }: Props) {
           <section className="detail-section">
             <h3 className="section-title">{tripMessages.detailParticipants}</h3>
             <ul className="detail-participants">
-              {trip.participants.map((member) => (
-                <li key={member.id}>{member.nickname}</li>
-              ))}
+              {trip.participants.map((member) => {
+                const canChat =
+                  member.id !== currentUser.id &&
+                  (isPublisher || entry.kind === 'accepted');
+                return (
+                  <li key={member.id}>
+                    <span>{member.nickname}</span>
+                    {canChat && (
+                      <a
+                        className="ghost-link detail-participant-chat"
+                        href={`#/chat/${trip.id}/${member.id}`}
+                      >
+                        {tripMessages.mineChatEntry}
+                      </a>
+                    )}
+                  </li>
+                );
+              })}
             </ul>
           </section>
 
@@ -428,81 +493,123 @@ export function TripDetailPage({ currentUser, tripId }: Props) {
 
           {match !== null && (
             <section className="detail-section">
-              <h3 className="section-title">{tripMessages.matchPanelTitle}</h3>
-              <ul className="match-reason-list">
-                {match.match.reasons.map((reason) => (
-                  <li key={reason}>{reason}</li>
-                ))}
-              </ul>
-              <p className="detail-meta">
-                {tripMessages.matchPercentage} {match.match.percentage}% · {match.match.basis}
-              </p>
+              <h3 className="section-title">{tripMessages.matchPanelWhy}</h3>
+              <div className="match-summary">
+                <Progress
+                  type="circle"
+                  percent={match.match.percentage}
+                  size={56}
+                  strokeWidth={8}
+                  strokeColor="var(--warn)"
+                  format={(percent) => percent}
+                />
+                <span className="match-reason">{match.match.reasons.join('，')}</span>
+              </div>
+              <p className="detail-meta">{match.match.basis}</p>
+              <p className="form-hint match-rule">{tripMessages.matchRuleHint}</p>
             </section>
           )}
 
-          {actionError !== null && (
-            <Alert type="error" showIcon title={tripMessages.applyFailed} description={actionError} />
+          {feedback !== null && (
+            <Alert
+              type={feedback.tone}
+              showIcon
+              title={feedback.title}
+              description={feedback.detail}
+            />
           )}
 
           <SafetyNote onReport={() => setReportOpen(true)} />
 
-          {myApplication !== null && (
-            <section className="detail-section detail-section-plain">
-              <div className="application-status">
-                <Tag color={myApplication.status === 'accepted' ? 'green' : 'default'}>
-                  {applicationLabel(myApplication.status)}
-                </Tag>
-                {myApplication.message !== null && (
-                  <Typography.Text type="secondary">{myApplication.message}</Typography.Text>
+          {entry.kind !== 'publisher' && (
+            <section className="detail-section detail-application">
+              <h3 className="section-title">{tripMessages.applyAreaTitle}</h3>
+              <div className="action-box">
+                {entry.kind === 'pending' && (
+                  <>
+                    <p className="action-note warn">
+                      {`申请已提交，等待 ${trip.publisher.nickname} 回应。处理前你可以随时撤回。`}
+                    </p>
+                    <Button
+                      block
+                      loading={cancelling}
+                      onClick={() => setConfirmAction('cancelApply')}
+                    >
+                      {tripMessages.applyCancel}
+                    </Button>
+                  </>
                 )}
-              </div>
-              <div className="detail-actions">
-                {myApplication.status === 'pending' && (
-                  <Button size="small" loading={cancelling} onClick={() => setConfirmAction('cancelApply')}>
-                    {tripMessages.applyCancel}
-                  </Button>
+
+                {entry.kind === 'accepted' && (
+                  <>
+                    <p className="action-note">{tripMessages.applyAcceptedNote}</p>
+                    <Button
+                      block
+                      onClick={() => (window.location.hash = `#/chat/${trip.id}/${trip.publisher.id}`)}
+                    >
+                      {`与 ${trip.publisher.nickname} 沟通`}
+                    </Button>
+                    {!isCompleted && (
+                      <Button block danger loading={leaving} onClick={() => setConfirmAction('leave')}>
+                        {tripMessages.leaveTrip}
+                      </Button>
+                    )}
+                  </>
                 )}
-                {(myApplication.status === 'accepted' || myApplication.status === 'left') && (
-                  <Button
-                    size="small"
-                    onClick={() => (window.location.hash = `#/chat/${trip.id}/${trip.publisher.id}`)}
-                  >
-                    {tripMessages.chatEntry}
-                  </Button>
+                {myApplication?.status === 'left' && (
+                  <>
+                    <p className="action-note">{tripMessages.leaveRetainedNote}</p>
+                    <Button
+                      block
+                      onClick={() => (window.location.hash = `#/chat/${trip.id}/${trip.publisher.id}`)}
+                    >
+                      {tripMessages.chatEntry}
+                    </Button>
+                  </>
                 )}
-                {myApplication.status === 'accepted' && (
-                  <Button size="small" danger loading={leaving} onClick={() => setConfirmAction('leave')}>
-                    {tripMessages.leaveTrip}
-                  </Button>
+
+                {entry.kind === 'unavailable' && <p className="action-note warn">{entry.reason}</p>}
+
+                {entry.kind === 'apply' && (
+                  <div className="apply-form">
+                    <label className="field">
+                      <span className="label">
+                        {tripMessages.applyMessageLabel}
+                        <span className="opt">{tripMessages.applyMessageOptional}</span>
+                      </span>
+                      <Input.TextArea
+                        className="textarea"
+                        value={applyMessage}
+                        maxLength={MAX_MESSAGE_LENGTH}
+                        rows={3}
+                        placeholder={tripMessages.applyMessagePlaceholder}
+                        onChange={(event) => setApplyMessage(event.target.value)}
+                      />
+                    </label>
+                    <Button type="primary" block loading={submitting} onClick={submitApplication}>
+                      {tripMessages.applySubmit}
+                    </Button>
+                    <p className="hint">{tripMessages.applyChatHint}</p>
+                  </div>
                 )}
               </div>
             </section>
           )}
 
-          <div className="detail-actions detail-actions-primary">
-            {canApply && (
-              <Button type="primary" onClick={() => setApplyOpen(true)}>
-                {tripMessages.applyEntry}
-              </Button>
-            )}
-            {isPublisher && !isCompleted && (
-              <Button loading={completing} onClick={() => setConfirmAction('complete')}>
-                {tripMessages.detailMarkCompleted}
-              </Button>
-            )}
-            {isPublisher && (
+          {isPublisher && (
+            <div className="detail-actions detail-actions-primary">
+              {trip.status === 'ongoing' && (
+                <Button loading={completing} onClick={() => setConfirmAction('complete')}>
+                  {tripMessages.detailCompleteTrip}
+                </Button>
+              )}
               <Button onClick={() => (window.location.hash = `#/trips/${trip.id}/applications`)}>
                 {tripMessages.applicationsEntry}
                 {pendingCount > 0 ? `（${pendingCount}）` : ''}
               </Button>
-            )}
-            {isPublisher && <span className="badge dusk">{tripMessages.applyEntryOwn}</span>}
-            {!canApply && !isPublisher && !hasActiveApplication && (
-              <span className="badge muted">
-                {isCompleted ? tripMessages.detailCompleted : tripMessages.applyEntryDisabled}
-              </span>
-            )}
-          </div>
+              <span className="badge dusk">{tripMessages.applyEntryOwn}</span>
+            </div>
+          )}
         </Card>
       </div>
 
@@ -517,28 +624,6 @@ export function TripDetailPage({ currentUser, tripId }: Props) {
         onCancel={() => setConfirmAction(null)}
       >
         <Typography.Paragraph>{confirmHint}</Typography.Paragraph>
-      </Modal>
-
-      <Modal
-        open={applyOpen}
-        title={tripMessages.applyDialogTitle}
-        okText={tripMessages.applySubmit}
-        cancelText={tripMessages.createCancel}
-        confirmLoading={submitting}
-        onOk={submitApplication}
-        onCancel={() => setApplyOpen(false)}
-      >
-        <Space orientation="vertical" size="small" className="home-stack">
-          <Typography.Text>{tripMessages.applyMessageLabel}</Typography.Text>
-          <Input.TextArea
-            value={applyMessage}
-            maxLength={MAX_MESSAGE_LENGTH}
-            showCount
-            rows={3}
-            placeholder={tripMessages.applyMessagePlaceholder}
-            onChange={(event) => setApplyMessage(event.target.value)}
-          />
-        </Space>
       </Modal>
       <Modal
         open={meetingOpen}
@@ -581,6 +666,7 @@ export function TripDetailPage({ currentUser, tripId }: Props) {
           </div>
         </Space>
       </Modal>
+
 
       <ReportModal
         userId={currentUser.id}

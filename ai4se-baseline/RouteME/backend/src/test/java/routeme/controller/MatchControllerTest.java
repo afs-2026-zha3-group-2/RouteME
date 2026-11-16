@@ -47,7 +47,31 @@ class MatchControllerTest {
     }
 
     @Test
-    void in_matchDetailWithReferenceTrip_out_fullScore() throws Exception {
+        void in_filteredList_out_sameScoreAsDetail() throws Exception {
+            // When
+            String body = mockMvc.perform(get("/api/matches")
+                            .param("destination_code", "440100")
+                            .header("X-User-Id", "2"))
+                    .andExpect(status().isOk())
+                    .andReturn().getResponse().getContentAsString();
+            List<Integer> listScores = JsonPath.read(body, "$.items[*].match.score");
+            List<Integer> tripIds = JsonPath.read(body, "$.items[*].trip.id");
+            List<List<String>> reasons = JsonPath.read(body, "$.items[*].match.reasons");
+
+            // Then
+            assertFalse(listScores.isEmpty(), "filtered candidates");
+            for (int index = 0; index < listScores.size(); index += 1) {
+                int expected = listScores.get(index);
+                String expectedReason = reasons.get(index).get(0);
+                mockMvc.perform(get("/api/matches/" + tripIds.get(index)).header("X-User-Id", "2"))
+                        .andExpect(status().isOk())
+                        .andExpect(jsonPath("$.match.score").value(expected))
+                        .andExpect(jsonPath("$.match.reasons[0]").value(expectedReason));
+            }
+        }
+
+        @Test
+        void in_matchDetailWithReferenceTrip_out_fullScore() throws Exception {
         // user 2's latest unfinished trip is trip 5, so matching trip 5 against it scores 100.
         mockMvc.perform(get("/api/matches/5").header("X-User-Id", "2"))
                 .andExpect(status().isOk())

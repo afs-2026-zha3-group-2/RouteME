@@ -71,7 +71,7 @@ public class ChatServiceImpl extends AbstractServiceImpl<ChatMessageMapper, Chat
 
     @Override
     public List<ChatMessage> conversation(long tripId, long userId, long withUserId) {
-        TripPlan trip = tripPlanService.require(tripId);
+        TripPlan trip = tripPlanService.requireCurrent(tripId);
         requireAccess(trip, userId, withUserId);
         return messages(tripId, userId, withUserId);
     }
@@ -108,10 +108,10 @@ public class ChatServiceImpl extends AbstractServiceImpl<ChatMessageMapper, Chat
     @Override
     @Transactional
     public ChatMessage send(long tripId, long senderId, ChatMessageRequest request) {
-        TripPlan trip = tripPlanService.require(tripId);
+        TripPlan trip = tripPlanService.requireCurrent(tripId);
         long receiverId = request == null ? 0 : request.receiverId();
         requireAccess(trip, senderId, receiverId);
-        if (trip.status() == TripStatusEnum.COMPLETED) {
+        if (trip.status(clock.instant()) == TripStatusEnum.COMPLETED) {
             throw new ChatReadOnlyException(tripId);
         }
         ChatMessage message = new ChatMessage(
@@ -146,12 +146,13 @@ public class ChatServiceImpl extends AbstractServiceImpl<ChatMessageMapper, Chat
         return threads.values().stream()
                 .sorted(THREAD_ORDER)
                 .map(thread -> {
-                    TripPlan trip = tripPlanService.require(thread.tripId());
+                    TripPlan trip = tripPlanService.requireCurrent(thread.tripId());
                     return ChatPartnerResponse.from(
                             thread,
                             trip,
                             tripPlanService.publisherOf(trip),
-                            demoUserService.require(thread.otherUserId()));
+                            demoUserService.require(thread.otherUserId()),
+                            clock.instant());
                 })
                 .toList();
     }

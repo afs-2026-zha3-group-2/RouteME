@@ -14,8 +14,8 @@ import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.jdbc.datasource.DriverManagerDataSource;
 
 /**
- * 在临时 SQLite 文件库执行 V1–V12，验证资料列建立、演示账号可读且新列为 NULL、
- * 旧 school 文案不被回填改写。
+ * 在临时 SQLite 文件库执行 V1–V13，验证资料列建立、V13 为 4 个演示账号回填资料列，
+ * 旧 school 文案不被回填改写，且演示账号仍无凭据。
  */
 class ProfileMigrationSqliteTest {
 
@@ -35,29 +35,39 @@ class ProfileMigrationSqliteTest {
 
         // When
         int users = jdbcClient.sql("SELECT COUNT(*) FROM app_users").query(Integer.class).single();
-        int unfilledProfiles = jdbcClient.sql("""
+        int filledProfiles = jdbcClient.sql("""
                 SELECT COUNT(*) FROM app_users
-                 WHERE avatar_url IS NOT NULL OR birthday IS NOT NULL OR gender IS NOT NULL
-                    OR city IS NOT NULL OR major IS NOT NULL OR job IS NOT NULL
-                    OR mbti IS NOT NULL OR travel_style IS NOT NULL
+                 WHERE birthday IS NOT NULL AND gender IS NOT NULL AND city IS NOT NULL
+                   AND job IS NOT NULL AND mbti IS NOT NULL AND travel_style IS NOT NULL
                 """).query(Integer.class).single();
         String secondSchool = jdbcClient.sql("SELECT school FROM app_users WHERE id = 2")
                 .query(String.class)
                 .single();
+        String viewerSchool = jdbcClient.sql("SELECT school FROM app_users WHERE id = 4")
+                .query(String.class)
+                .single();
+        int credentialless = jdbcClient
+                .sql("SELECT COUNT(*) FROM app_users WHERE username IS NULL AND password_hash IS NULL")
+                .query(Integer.class)
+                .single();
         List<String> applied = jdbcClient.sql("""
                 SELECT version FROM flyway_schema_history
-                 WHERE success = 1 AND version IN ('1', '2', '3', '4', '5', '6', '7', '8', '9', '10', '11', '12')
+                 WHERE success = 1 AND version IN ('1', '2', '3', '4', '5', '6', '7', '8', '9',
+                                                   '10', '11', '12', '13')
                 """).query(String.class).list();
 
         // Then
         assertAll(
                 () -> assertEquals(4, users, "demo users stay seeded"),
-                () -> assertEquals(0, unfilledProfiles, "new profile columns stay NULL for legacy rows"),
+                () -> assertEquals(4, filledProfiles, "V13 fills every demo profile"),
                 () -> assertEquals("研一 · 地理科学", secondSchool, "legacy school text is preserved"),
-                () -> assertEquals(12, applied.size(), "V1–V12 applied"),
+                () -> assertEquals("", viewerSchool, "the viewer identity keeps job / mbti instead of school"),
+                () -> assertEquals(4, credentialless, "demo accounts stay credential-less"),
+                () -> assertEquals(13, applied.size(), "V1–V13 applied"),
                 () -> assertTrue(applied.contains("10"), "V10 added profile columns"),
                 () -> assertTrue(applied.contains("11"), "V11 added the destination code"),
-                () -> assertTrue(applied.contains("12"), "V12 seeded the viewer profile user"));
+                () -> assertTrue(applied.contains("12"), "V12 seeded the viewer profile user"),
+                () -> assertTrue(applied.contains("13"), "V13 seeded demo profiles"));
     }
 
     private String toSqlitePath(Path path) {

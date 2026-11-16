@@ -11,8 +11,8 @@
 
 | Check id | Required? | Status | Evidence |
 |----------|-----------|--------|----------|
-| P1-1 | yes | Pass | `requirement-workspace/` 具备 `intents/`、`requirements/`、`stories/`、`analysis/`、`ready/`；本 change 新增 `intents/REQ-010-trip-chat-meeting.md` 与 `stories/refine-trip-chat.story.md` |
-| P1-2 | yes | Pass | `requirement-workspace/requirements/REQ-010-trip-chat-meeting.md`：六字段 + Ready 25 条可观察场景；§8 blocking OQ 6 条全部 `resolved`；DoR Base 8 + deep-dive ⑨–⑫ 全 resolved，BLOCKER = 0 |
+| P1-1 | yes | Pass | `requirement-workspace/` 具备 `intents/`、`requirements/`、`stories/`、`analysis/`、`ready/`；本 change 新增 `intents/REQ-013-trip-chat-meeting.md` 与 `stories/refine-trip-chat.story.md` |
+| P1-2 | yes | Pass | `requirement-workspace/requirements/REQ-013-trip-chat-meeting.md`：六字段 + Ready 25 条可观察场景；§8 blocking OQ 6 条全部 `resolved`；DoR Base 8 + deep-dive ⑨–⑫ 全 resolved，BLOCKER = 0 |
 | P1-3 | yes | Pass | `requirement-workspace/impact-brief.md` §13：as-is 清单、逐资产 delta、blast radius、风险与 split 边界 |
 | P1-4 | yes | Pass | `openspec/changes/refine-trip-chat/proposal.md`（双 capability、in/out scope、关键裁定、冲突裁决）+ 故事文件 `stories/refine-trip-chat.story.md`（S12-1～S12-4）；registry / handoff / stories 已登记 |
 | P1-5 | no | Skipped | `/sdd:explore` 未运行；light intake 足够（Discovery Decision `Go`） |

@@ -6,6 +6,7 @@ package routeme.enums;
 public enum TripStatusEnum {
     RECRUITING("recruiting", "招募中"),
     FULL("full", "已满员"),
+    ONGOING("ongoing", "旅行中"),
     COMPLETED("completed", "已结束");
 
     private final String wireValue;

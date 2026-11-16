@@ -3,7 +3,7 @@
 - **Verdict: Pass**
 - **Scope:** focus=full（artifact-review-gate 的 proposal 轮次）；root=`ai4se-baseline`；timestamp=2026-11-16
 - **Artifact under review:** [`openspec/changes/refine-trip-chat/proposal.md`](../../openspec/changes/refine-trip-chat/proposal.md)
-- **Supporting inputs:** `requirement-workspace/requirements/REQ-010-trip-chat-meeting.md`（25 场景）、`requirement-workspace/intents/REQ-010-trip-chat-meeting.md`、`requirement-workspace/stories/refine-trip-chat.story.md`、`requirement-workspace/impact-brief.md` §13
+- **Supporting inputs:** `requirement-workspace/requirements/REQ-013-trip-chat-meeting.md`（25 场景）、`requirement-workspace/intents/REQ-013-trip-chat-meeting.md`、`requirement-workspace/stories/refine-trip-chat.story.md`、`requirement-workspace/impact-brief.md` §13
 - **Evidence:**
   - `openspec validate refine-trip-chat --strict` → `[ERROR] Change must have at least one delta. No deltas found.`（P1 预期：Delta Spec 属 P2 产出；CI 未调用该命令，不阻断流水线）
   - 未运行后端 / 前端 / E2E 测试：本阶段无代码与契约改动（N/A，不计入结论）
@@ -30,7 +30,7 @@
 | D Security | Pass | 拒绝在服务端执行（非仅隐藏入口）；未涉及电话/证件/住址；未新增凭据 |
 | E Process | Pass | 提案 → Delta → 任务 → 实现顺序明确；冲突按 `rule-precedence` 记录并说明被降级一方 |
 | F Documentation | Pass | 中文正文 + 英文标识符；相对路径；未引用行号；规则锚点正确 |
-| G Traceability | Pass | in-scope 与 REQ-010 §4 场景可对齐；4 条故事与 4 组场景一一对应 |
+| G Traceability | Pass | in-scope 与 REQ-013 §4 场景可对齐；4 条故事与 4 组场景一一对应 |
 
 ## 结论说明
 

@@ -24,10 +24,11 @@ public record TripSummaryResponse(
         int capacity,
         int joinedCount,
         String status,
+        boolean endingSoon,
         DemoUserResponse publisher,
         Instant createdAt) {
 
-    public static TripSummaryResponse from(TripPlan trip, DemoUser publisher) {
+    public static TripSummaryResponse from(TripPlan trip, DemoUser publisher, Instant now) {
         return new TripSummaryResponse(
                 trip.id(),
                 trip.title(),
@@ -43,7 +44,8 @@ public record TripSummaryResponse(
                 trip.tags(),
                 trip.capacity(),
                 trip.joinedCount(),
-                trip.status().wireValue(),
+                trip.status(now).wireValue(),
+                trip.endingSoon(now),
                 DemoUserResponse.from(publisher),
                 trip.createdAt());
     }

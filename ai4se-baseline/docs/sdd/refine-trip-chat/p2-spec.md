@@ -1,6 +1,6 @@
 # P2 规格记录 — refine-trip-chat
 
-- **Change：** `refine-trip-chat`｜ **能力：** `trip-companions`（MODIFIED）+ `trip-plans`（MODIFIED）｜ **需求：** REQ-010
+- **Change：** `refine-trip-chat`｜ **能力：** `trip-companions`（MODIFIED）+ `trip-plans`（MODIFIED）｜ **需求：** REQ-013
 - **阶段：** P2（Spec align / G1）｜ **日期：** 2026-11-16｜ **记录人：** Jay（AO）
 
 ## 1. 阶段目标

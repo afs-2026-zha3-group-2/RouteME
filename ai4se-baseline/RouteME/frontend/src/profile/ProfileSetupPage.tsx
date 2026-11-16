@@ -3,11 +3,15 @@ import {
   Alert,
   AutoComplete,
   Button,
+  DatePicker,
   Input,
   Radio,
   Skeleton,
   Typography,
 } from 'antd';
+import dayjs from 'dayjs';
+import 'dayjs/locale/zh-cn';
+import zhCN from 'antd/es/locale/zh_CN';
 import {
   ApiError,
   loadUserProfile,
@@ -21,6 +25,8 @@ import { InterestPicker } from './InterestPicker';
 import {
   emptyProfileForm,
   fieldErrorsFromReasons,
+  jobFromSelection,
+  jobSelection,
   missingFieldLabels,
   profileToForm,
   toUpdateRequest,
@@ -32,14 +38,19 @@ import {
 import {
   CITY_NAMES,
   GENDERS,
+  JOB_OTHER,
   JOBS,
   MAX_BIO_LENGTH,
+  MAX_JOB_LENGTH,
   MAX_NICKNAME_LENGTH,
   MAX_SCHOOL_LENGTH,
   MBTI_TYPES,
   MIN_BIRTHDAY,
   TRAVEL_STYLES,
 } from './profileOptions';
+
+// The picker lives in a Chinese-only UI; keep the panel month names Chinese as well.
+dayjs.locale('zh-cn');
 
 type Props = {
   currentUser: DemoUser;
@@ -272,16 +283,24 @@ export function ProfileSetupPage({ currentUser, token, onSaved }: Props) {
             error={errors.birthday}
             htmlFor="profile-birthday"
           >
-            <Input
-              id="profile-birthday"
-              type="date"
-              value={values.birthday}
-              min={MIN_BIRTHDAY}
-              max={todayIso()}
-              status={errors.birthday === undefined ? undefined : 'error'}
-              aria-invalid={errors.birthday !== undefined}
-              onChange={(event) => update({ birthday: event.target.value })}
-            />
+<div className="profile-birthday-anchor">
+              <DatePicker
+                id="profile-birthday"
+                className="profile-birthday"
+                classNames={{ popup: { root: 'profile-birthday-popup' } }}
+                getPopupContainer={(trigger) => trigger.parentElement ?? document.body}
+                value={values.birthday === '' ? null : dayjs(values.birthday)}
+                minDate={dayjs(MIN_BIRTHDAY)}
+                maxDate={dayjs(todayIso())}
+                format="YYYY-MM-DD"
+                locale={zhCN.DatePicker}
+                needConfirm
+                allowClear={false}
+                status={errors.birthday === undefined ? undefined : 'error'}
+                aria-invalid={errors.birthday !== undefined}
+                onChange={(date) => update({ birthday: date === null ? '' : date.format('YYYY-MM-DD') })}
+              />
+            </div>
           </Field>
 
           <Field label={tripMessages.profileFieldGender} required error={errors.gender}>
@@ -337,7 +356,7 @@ export function ProfileSetupPage({ currentUser, token, onSaved }: Props) {
               id="profile-job"
               className="native-select"
               aria-invalid={errors.job !== undefined}
-              value={values.job}
+              value={jobSelection(values.job).choice}
               onChange={(event) => update({ job: event.target.value })}
             >
               <option value="">不填写</option>
@@ -347,6 +366,19 @@ export function ProfileSetupPage({ currentUser, token, onSaved }: Props) {
                 </option>
               ))}
             </select>
+            {jobSelection(values.job).choice === JOB_OTHER && (
+              <Input
+                id="profile-job-custom"
+                className="profile-job-custom"
+                value={jobSelection(values.job).custom}
+                maxLength={MAX_JOB_LENGTH}
+                aria-label={tripMessages.profileJobCustom}
+                placeholder={tripMessages.profileJobCustomPlaceholder}
+                status={errors.job === undefined ? undefined : 'error'}
+                aria-invalid={errors.job !== undefined}
+                onChange={(event) => update({ job: jobFromSelection(JOB_OTHER, event.target.value) })}
+              />
+            )}
           </Field>
 
           <Field label={tripMessages.profileFieldMbti} error={errors.mbti} htmlFor="profile-mbti">

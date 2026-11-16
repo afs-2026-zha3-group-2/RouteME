@@ -11,7 +11,7 @@
 
 | Check id | Required? | Status | Evidence |
 |----------|-----------|--------|----------|
-| P3-1 | yes | Pass | `openspec/changes/refine-trip-chat/atdd-design.md`：A1–A10 API 层、UT-1–UT-7 前端 UT、E2E-1–E2E-13，REQ-010 25/25 场景映射，夹具与门禁、TDD 顺序齐全 |
+| P3-1 | yes | Pass | `openspec/changes/refine-trip-chat/atdd-design.md`：A1–A10 API 层、UT-1–UT-7 前端 UT、E2E-1–E2E-13，REQ-013 25/25 场景映射，夹具与门禁、TDD 顺序齐全 |
 | P3-2 | yes | Pass | `openspec/changes/refine-trip-chat/design.md`（D1–D15）、`tasks.md`（T1–T12）；评审 `docs/reviews/20261116-refine-trip-chat-design-review.md`（Pass，2 WARNING 已修复 / 4 SUGGESTION）、`20261116-refine-trip-chat-tasks-review.md`（Pass，2 WARNING 已修复 / 2 SUGGESTION） |
 | P3-3 | yes | Pass | `tasks.md`「对齐自检」7 项全 Pass；`tasks-review.md`「场景 → 任务覆盖」25/25；6 Requirement / 43 Scenario 无静默扩缩；Out of scope（WebSocket / 已读回执 / 推送 / 图片 / 完整行程编辑 / 消息分页）未进入任务 |
 | P3-4 | yes | Pass | `tasks.md` 每行含 ID / 层 / 任务 / 落点 / 可执行验证命令；依赖顺序 5 条；Owner = Jay（AO） |
