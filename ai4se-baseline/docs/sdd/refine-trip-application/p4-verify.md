@@ -98,10 +98,10 @@
 
 ## 9. 合并 main 后复验（2026-11-16 14:1x–14:2x）
 
-- **合并：** `origin/main@5261cef`（behind 49）；冲突 5 个文件，已逐个解决：`TripDetailPage.tsx` 保留 main 的 `useProfile` / `openProfile` 与我们基于 `feedback` 的申请区；`registry.md` / `handoff.md` / `deep-dive.md` / `impact-brief.md` 取 main 版本后追加本 change 的 REQ-010 内容（本 change 章节在 `impact-brief.md` 为 §14）。
+- **合并：** 分两次合并 `origin/main`（`5261cef` behind 49 → 冲突 5 个文件；随后 `8ac9859` behind 9 → 无冲突）。冲突均为逐个解决：`TripDetailPage.tsx` 保留 main 的 `useProfile` / `openProfile` 与我们基于 `feedback` 的申请区；`registry.md` / `handoff.md` / `deep-dive.md` / `impact-brief.md` 取 main 版本后追加本 change 的 REQ-010 内容（本 change 章节在 `impact-brief.md` 为 §14）。
 - **编号裁决：** main 的 `add-user-profiles` 已占用 REQ-009，经用户裁决本 change 按「后到者顺延」改为 **REQ-010**；意图 / Ready 条目文件、openspec 工件与 `docs/sdd/` 记录已同步改号，`docs/ai4se-plugins/` 历史报告保留当时编号。
 - **依赖安装：** main 新增 `element-china-area-data`，合并后执行 `npm install`（新增 3 包）。
-- **复验结果：** 前端构建 Pass（1010.82 kB / CSS 47.64 kB）；`npm test` **15 文件 / 127 项**；后端 `mvnw -B -ntp test` **208 项**；隔离环境（后端 8090 + 独立 SQLite + Vite 5174）下 `npx playwright test` **40 passed**（`auth` / `companions` / `experiences` / `profiles` / `trips`，其中 `companions` 8/8，包含「opens the publisher profile from the trip detail page」以验证合并后的详情页）；`profile.spec.ts` 未在隔离环境运行（其 API 基址硬编码 `http://localhost:8080`，8080 被其他会话占用，运行会写入团队共享库），由 `add-user-profiles` owner 在其干净库验证覆盖。
+- **复验结果（最后一次合并后）：** 前端构建 Pass；`npm test` **15 文件 / 133 项**；后端 `mvnw -B -ntp test` **212 项**；隔离环境（后端 8090 + 独立 SQLite + Vite 5174）下 `npx playwright test` **40 passed**（`auth` / `companions` / `experiences` / `profiles` / `trips`，其中 `companions` 8/8，包含「opens the publisher profile from the trip detail page」以验证合并后的详情页）；`profile.spec.ts` 未在隔离环境运行（其 API 基址硬编码 `http://localhost:8080`，8080 被其他会话占用，运行会写入团队共享库），由 `add-user-profiles` owner 在其干净库验证覆盖。
 - **零 diff：** `openapi.yaml`、`backend/**`、`db/migration/**`、`docs/prototype/**` 相对 `origin/main` 无改动；本 change 相对 main 只改 `frontend/src/trips/**`、`i18n/tripMessages.ts`、`styles.css` 与 4 个 E2E spec。
 
 ## 10. P5 状态

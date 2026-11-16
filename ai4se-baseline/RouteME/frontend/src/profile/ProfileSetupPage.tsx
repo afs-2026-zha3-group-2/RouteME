@@ -21,6 +21,8 @@ import { InterestPicker } from './InterestPicker';
 import {
   emptyProfileForm,
   fieldErrorsFromReasons,
+  jobFromSelection,
+  jobSelection,
   missingFieldLabels,
   profileToForm,
   toUpdateRequest,
@@ -32,8 +34,10 @@ import {
 import {
   CITY_NAMES,
   GENDERS,
+  JOB_OTHER,
   JOBS,
   MAX_BIO_LENGTH,
+  MAX_JOB_LENGTH,
   MAX_NICKNAME_LENGTH,
   MAX_SCHOOL_LENGTH,
   MBTI_TYPES,
@@ -337,7 +341,7 @@ export function ProfileSetupPage({ currentUser, token, onSaved }: Props) {
               id="profile-job"
               className="native-select"
               aria-invalid={errors.job !== undefined}
-              value={values.job}
+              value={jobSelection(values.job).choice}
               onChange={(event) => update({ job: event.target.value })}
             >
               <option value="">不填写</option>
@@ -347,6 +351,19 @@ export function ProfileSetupPage({ currentUser, token, onSaved }: Props) {
                 </option>
               ))}
             </select>
+            {jobSelection(values.job).choice === JOB_OTHER && (
+              <Input
+                id="profile-job-custom"
+                className="profile-job-custom"
+                value={jobSelection(values.job).custom}
+                maxLength={MAX_JOB_LENGTH}
+                aria-label={tripMessages.profileJobCustom}
+                placeholder={tripMessages.profileJobCustomPlaceholder}
+                status={errors.job === undefined ? undefined : 'error'}
+                aria-invalid={errors.job !== undefined}
+                onChange={(event) => update({ job: jobFromSelection(JOB_OTHER, event.target.value) })}
+              />
+            )}
           </Field>
 
           <Field label={tripMessages.profileFieldMbti} error={errors.mbti} htmlFor="profile-mbti">

@@ -120,7 +120,7 @@
 | `gender` | `VARCHAR(8)` | 是 | 男 / 女 / 其他 | 必填（业务层） |
 | `city` | `VARCHAR(40)` | 是 | 1–40 字 | 必填（业务层） |
 | `major` | `VARCHAR(80)` | 是 | 0–80 字 | 选填 |
-| `job` | `VARCHAR(20)` | 是 | 学生 / 上班族 / 自由职业 / 其他 | 选填 |
+| `job` | `VARCHAR(20)` | 是 | 预设值（学生 / 上班族 / 自由职业 / 其他）或「其他」的自填文本，1–20 字 | 选填 |
 | `mbti` | `VARCHAR(4)` | 是 | 16 型之一 | 选填 |
 | `travel_style` | `VARCHAR(12)` | 是 | 特种兵 / 休闲游 / 深度游 / 随性游 | 必填（业务层） |
 
@@ -187,7 +187,7 @@
 | `travel_style` | 是 | `特种兵` / `休闲游` / `深度游` / `随性游` |
 | `school` | 否 | ≤80 |
 | `major` | 否 | ≤80 |
-| `job` | 否 | `学生` / `上班族` / `自由职业` / `其他` |
+| `job` | 否 | trim 后 ≤20；预设值或「其他」的自填文本 | `TOO_LONG` |
 | `mbti` | 否 | 16 型之一 |
 | `bio` | 否 | ≤500 |
 
@@ -210,7 +210,7 @@
 | 兴趣 | 是 | 数量 3–5；每项 1–12；去重 | `TOO_FEW` / `TOO_MANY` / `TOO_LONG` / `DUPLICATE` |
 | 旅行方式 | 是 | 枚举 | `REQUIRED` / `INVALID_OPTION` |
 | 学校 / 专业 | 否 | ≤80 | `TOO_LONG` |
-| 职业 | 否 | 枚举 | `INVALID_OPTION` |
+| 职业 | 否 | trim 后 ≤20；预设值或「其他」自填文本 | `TOO_LONG` |
 | MBTI | 否 | 16 型 | `INVALID_OPTION` |
 | 简介 | 否 | ≤500 | `TOO_LONG` |
 

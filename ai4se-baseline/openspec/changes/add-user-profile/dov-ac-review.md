@@ -2,7 +2,7 @@
 
 - **Change:** `add-user-profile`（`user-profile` ADDED + `user-auth` MODIFIED，REQ-008）
 - **Reviewed artifacts:**
-  - [`specs/user-profile/spec.md`](specs/user-profile/spec.md) — 7 Requirement / 24 Scenario（ADDED）
+  - [`specs/user-profile/spec.md`](specs/user-profile/spec.md) — 7 Requirement / 26 Scenario（ADDED；G1 后追加 2 个「其他职业自填」场景）
   - [`specs/user-auth/spec.md`](specs/user-auth/spec.md) — 1 Requirement / 6 Scenario（MODIFIED「注册账号」）
 - **Inputs:** [`proposal.md`](proposal.md)、`requirement-workspace/requirements/REQ-008-user-profile.md`、`requirement-workspace/impact-brief.md` §12、`requirement-workspace/deep-dive.md`「REQ-008 增补」、`requirement-workspace/stories/add-user-profile.story.md`（S18）、`openspec/specs/user-auth/spec.md`（Living Spec 基线）、`openspec/specs/trip-plans/spec.md` / `trip-experiences/spec.md`（发布者展示基线）
 - **Timestamp:** 2026-11-16T11:01+0800
@@ -13,7 +13,7 @@
 
 | Item | Result | Evidence | Notes |
 |---|---|---|---|
-| AC-1 Each requirement has at least one testable AC | Pass | `user-profile` 7 Requirement / 24 Scenario；`user-auth` 1 Requirement / 6 Scenario | 每个 Requirement 均 ≥2 个场景；无空 Requirement |
+| AC-1 Each requirement has at least one testable AC | Pass | `user-profile` 7 Requirement / 26 Scenario；`user-auth` 1 Requirement / 6 Scenario | 每个 Requirement 均 ≥2 个场景；无空 Requirement |
 | AC-2 ACs are observable | Pass | 场景断言可见结果：资料完善状态、字段级缺失清单、年龄 / 星座、兴趣计数、旅行方式唯一值、401 / 403、展示回退 | 无「正常工作 / 快速 / 正确」类空泛表述 |
 | AC-3 Negative / edge cases called out | Pass | 「缺少必填字段」「生日为未来或格式非法」「头像文件类型或大小不合法」「少于 3 个兴趣」「没有有效会话」「演示身份尝试保存」「查看未完善的资料」 | 覆盖非法输入、权限边界与降级展示 |
 | AC-4 ACs are not disguised implementation detail | Pass | 场景写可观察行为与契约结果（`INVALID_INPUT` / `SESSION_INVALID` / 403），未指定组件、状态库或上传实现 | 头像只约束类型与大小，不绑定存储方案 |
@@ -22,7 +22,7 @@
 
 | Item | Result | Evidence | Notes |
 |---|---|---|---|
-| DoV-1 Scope matches proposal | Pass | `proposal.md` §范围 10 条 in-scope ↔ 24 + 6 Scenario；Out of scope 无对应需求 | 无静默扩张：未加入裁剪、相册、可见性开关、演示资料编辑、兴趣词表统一；MODIFIED 未丢弃基线场景 |
+| DoV-1 Scope matches proposal | Pass | `proposal.md` §范围 10 条 in-scope ↔ 26 + 6 Scenario；Out of scope 无对应需求 | 无静默扩张：未加入裁剪、相册、可见性开关、演示资料编辑、兴趣词表统一；MODIFIED 未丢弃基线场景 |
 | DoV-2 Ambiguities listed or resolved | Pass | 下方「规格解释裁决 1–9」 | 无未决 blocking 歧义 |
 | DoV-3 Role concerns noted for residual risk | Pass | 下方「残余风险」 | 含 SA（双 capability 例外、契约兼容）/ Dev（头像存储、迁移）/ BA（兴趣词表） |
 | DoV-4 No business implementation claimed done | Pass | 本 change 只有 Proposal + 两份 Delta Spec；仓库现有注册表单仅作现状证据 | `proposal.md` §交付边界明确 P1/P2 不含实现 |

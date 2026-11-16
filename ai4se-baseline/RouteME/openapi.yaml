@@ -1,7 +1,7 @@
 openapi: 3.0.3
 info:
   title: RouteME API
-  version: 0.8.0
+  version: 0.8.1
   description: |
     RouteME 后端对外契约。本文件是前后端唯一事实源，字段名、类型、状态码与错误码只在这里定稿。
         当前包含：脚手架问候语、演示账户与账号认证（注册/登录/会话/退出）、旅行计划（浏览/筛选/发布/详情/结束），同行匹配、申请、退出、聊天、我的旅行与举报，以及游后体验分享与参考发布所需数据。
@@ -1429,8 +1429,8 @@ components:
           type: string
           nullable: true
           readOnly: true
-          enum: [学生, 上班族, 自由职业, 其他]
-          description: 职业
+          maxLength: 20
+          description: 职业；预设值或「其他」自填文本
         bio:
           type: string
           readOnly: true
@@ -1503,7 +1503,8 @@ components:
         job:
           type: string
           nullable: true
-          enum: [学生, 上班族, 自由职业, 其他]
+          maxLength: 20
+          description: 职业，选填；预设值（学生 / 上班族 / 自由职业 / 其他）或「其他」的自填文本，≤20 字
         mbti:
           type: string
           nullable: true
@@ -1588,8 +1589,8 @@ components:
           description: 选填
         job:
           type: string
-          enum: [学生, 上班族, 自由职业, 其他]
-          description: 选填
+          maxLength: 20
+          description: 选填；预设值或自填文本
         mbti:
           type: string
           enum:
@@ -1825,7 +1826,7 @@ components:
             type: string
         basis:
           type: string
-          description: 参照物说明（最近一条未结束的已发布行程，或我的兴趣与当前筛选）
+          description: 参照物说明：最近一条未结束的已发布行程，或你的旅行兴趣；筛选与排序不影响匹配分
     MatchCandidate:
       type: object
       required: [trip, match]

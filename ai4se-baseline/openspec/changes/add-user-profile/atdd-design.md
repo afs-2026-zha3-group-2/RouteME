@@ -21,7 +21,7 @@
 
 ### 1.2 场景分类
 
-`user-profile`（24 场景）：
+`user-profile`（26 场景）：
 
 | # | 场景（Delta） | 层 | 依据 |
 |---|---|---|---|
@@ -49,6 +49,8 @@
 | E22 | 本人更新资料 | API + E2E | 覆盖同一份资料；展示位立即生效 |
 | E23 | 没有有效会话 | API | 401 `SESSION_INVALID` |
 | E24 | 演示身份尝试保存 | API + E2E | 403；界面无编辑 / 完善入口 |
+| E25 | 其他职业可自填 | API + UT + E2E | 选「其他」出现自填框；保存并回显自填文本 |
+| E26 | 自填职业超长 | API + UT | 400 `INVALID_INPUT` + `fields.job = TOO_LONG` |
 
 `user-auth`（MODIFIED「注册账号」，6 场景）：
 
@@ -79,6 +81,8 @@
 | `uploads an avatar and keeps the nickname initial when absent` | E8、E9 | 上传后主页出现图片；不设置头像时显示昵称首字 |
 | `limits interests and keeps a single travel style` | E5、E12、E13 | 5 个上限提示；取消自定义后仍可复选；旅行方式只保留最后一项 |
 | `keeps demo identities read-only` | E24 | 演示身份无「完善资料 / 编辑资料」；`PUT` 返回 403 |
+| `offers every job and MBTI option in the setup form` | E4、E25 | 职业 5 项、MBTI 17 项（含「不填写」）全部出现在原生下拉；`selectOption` 可直接选中 |
+| `saves a custom job typed under 其他` | E25 | 选「其他」→ 出现自填框 → 填「独立摄影师」→ 主页 chip 与「职业」行显示自填值 |
 
 ### 2.2 API 验收（red）
 
@@ -96,6 +100,8 @@
 | `in_avatarBadTypeOrOversize_out_invalidInput` | E10 | 400；其他字段保持原值 |
 | `in_otherUserProfile_out_birthdayOmitted` | E6 / E19 | 不含 `birthday`；含 `profile_complete` |
 | `in_demoSave_out_forbidden` | E24 | 403 |
+| `in_customJobOutOfPresets_out_saved` | E25 | 200；`job` 回显「独立摄影师」；`profile_complete=true` |
+| `in_jobTooLong_out_invalidInput` | E26 | 400 `INVALID_INPUT` + `fields.job = TOO_LONG` |
 | `in_noSessionSave_out_sessionInvalid` | E23 | 401 `SESSION_INVALID` |
 
 `AuthControllerTest` 追加：`in_registerLegacyFields_out_ignored`（A6）、`in_register_out_profileIncomplete`（A1）；A2–A5 原有用例作为回归门禁。
@@ -104,7 +110,7 @@
 
 | 文件 | 用例 | 覆盖 |
 |---|---|---|
-| `identity/profileForm.test.ts`（新增） | `requires nickname, birthday, gender, city, interests and travel style`；`lists the missing field labels`；`keeps a single travel style`；`rejects fewer than three interests`；`caps interests at five`；`keeps a cancelled custom tag`；`rejects a future or malformed birthday` | E2、E4、E5、E7、E11、E12、E13 |
+| `identity/profileForm.test.ts`（新增） | `requires nickname, birthday, gender, city, interests and travel style`；`lists the missing field labels`；`keeps a single travel style`；`rejects fewer than three interests`；`caps interests at five`；`keeps a cancelled custom tag`；`rejects a future or malformed birthday`；`accepts a custom job typed under 其他`；`rejects a job longer than twenty characters` | E2、E4、E5、E7、E11、E12、E13、E25、E26 |
 | `profile/profileDisplay.test.ts`（新增） | `joins school and major with a middot`；`falls back to job when school is empty`；`falls back to city when school and job are empty`；`omits the summary when all three are empty`；`returns the nickname initial when avatar is absent` | E9、E20、E21 |
 | `identity/authForm.test.ts`（改） | 删除学校 / 兴趣 / 简介相关断言；保留用户名 / 密码 / 昵称 | A1、A3–A5 |
 
@@ -117,6 +123,7 @@
 - `in_profileWithAllRequired_out_complete` / `in_profileMissingOneRequired_out_incomplete`
 - `in_publisherWithSchoolAndMajor_out_joined` / `in_publisherWithoutSchool_out_job` / `in_publisherWithoutAny_out_empty`
 - `in_avatarPngOrJpegOrWebp_out_accepted` / `in_avatarGifOrText_out_rejected`
+- `in_customJob_out_onlyLengthIsChecked`（预设值 / 自填文本 ≤20 均通过，超长 `TOO_LONG`）
 
 ## 3. 本地 vs CI 门禁
 
@@ -126,7 +133,7 @@
 | 后端单测 / 回归 | `cd RouteME/backend; .\mvnw.cmd -B test` | 全绿；新增 profile 用例与既有 154 项不回归 |
 | 前端类型 / 构建 | `cd RouteME/frontend; npm run build` | 0 error |
 | 前端单测 | `cd RouteME/frontend; npm test` | 全绿；新增 2 个文件 |
-| E2E | 启动后端 `8080` + 前端 `5173` 后 `cd RouteME/e2e; npx playwright test tests/profile.spec.ts` | 新增 10 项全绿 |
+| E2E | 启动后端 `8080` + 前端 `5173` 后 `cd RouteME/e2e; npx playwright test tests/profile.spec.ts` | 新增 12 项全绿 |
 | E2E 回归 | `cd RouteME/e2e; npx playwright test` | 既有 `trips` / `companions` / `experiences` 不回归（`auth.spec.ts` 属并行 change，若已在工作区则一并跑） |
 | 手工 | 1440 / 768 / 390；浅色 / 深色；键盘 | 完善页与主页不溢出；错误可聚焦；保存后回显 |
 
@@ -163,6 +170,6 @@
 
 ## 7. 交付边界
 
-- **本设计产出：** 分层、24 + 6 场景映射、red 用例清单、门禁、fixtures、反向验证、NFR 取舍。
+- **本设计产出：** 分层、26 + 6 场景映射、red 用例清单、门禁、fixtures、反向验证、NFR 取舍。
 - **不产出：** 生产代码、E2E / API / UT 代码、契约与迁移文件；这些属 `/sdd:atdd-apply`。
 - **下一步：** `/sdd:task-plan`（`design.md` + `tasks.md` + 对齐自检）。
