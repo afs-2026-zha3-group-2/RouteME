@@ -75,3 +75,43 @@
 
 - `proposal.md` 写清 in-scope / out-of-scope，并说明与 `add-trip-experiences` 的关系（不重复定义已交付行为）。
 - 缺口 G-01 ~ G-04 可追溯到 REQ-004、`openspec/specs/trip-experiences/spec.md` 与 issue #18。
+
+## 9. R2 基线：分享页布局与样式对齐原型（2026-11-16 20:50）
+
+用户评审已合入的分享页后指出「没有按照原型图来做布局和样式」。R2 只做**布局与样式对齐**，不改业务行为；沿用 `add-trip-publish` 的 R2/R3 先例，仍属同一 change（`refine-experience-share`），不新开 change、不归档。
+
+| 项 | 复现 / 证据 | 结论 |
+|---|---|---|
+| 基准 | `docs/prototype/ui.js` `share()`；`docs/prototype/styles.css` `.form-grid` / `.form-main` / `.form-side` / `.intensity-picker` / `.int-card` / `.share-hero` / `.page-head`；原型实机走查（1440，`#/share/t_zhuhai_1`） | 原型是「页头 + hero + 双栏」结构 |
+| 现状 | `frontend/src/experiences/ShareExperiencePage.tsx`；`styles.css` 无 `.form-grid` / `.intensity-picker` / `.int-card` | 现状是单列单卡，控件纵向堆叠 |
+
+### R2 缺口
+
+| # | 缺口 | 原型 | 现状 | 影响 |
+|---|---|---|---|---|
+| G-R2-01 | 无页头（标题 + 副标题）与返回链接样式 | `.back-link` + `.page-head`（`h1.page-title` + `p.page-sub`） | 只有 `detail-back` + 卡片内 `Typography.Title` | 页面的信息层级与其它页面不一致 |
+| G-R2-02 | 无双栏网格 | `.form-grid`：`1.5fr` 主列 + `minmax(300px,.9fr)` 侧栏，≤900px 单列 | 单列 | 桌面端表单与说明挤在一列，与原型差异最大 |
+| G-R2-03 | 表单未分组为面板 | 三个 `.panel`：真实感受 / 路线强度 / 给后来者的一条建议，标题带图标与分隔线 | 一个 `Card` 内用 `Typography.Text strong` 当字段标签 | 扫读性差，且缺少原型的分组语义 |
+| G-R2-04 | 强度选择是 radio 列表，不是卡片 | `.intensity-picker` + 三个 `.int-card`（jade / amber / coral，选中态底色） | `Radio.Group` 竖排 | 选择成本高，选中态只有单选点 |
+| G-R2-05 | 说明区不在侧栏面板 | `.form-side` 两个 `.panel`（你的体验会去哪里 / 分享边界），列表项带图标 | 卡片内联 `section.share-note`（上下堆叠） | 桌面端信息流与原型不同 |
+| G-R2-06 | hero 元信息格式不同 | `目的地 · 11月7日 · 周六 · 2 人同行`；封面 76×60、圆角 12 | `目的地 · 2026-11-06 → 2026-11-06 · 2 人同行`；封面 96×64 | 日期不可读、尺寸偏大 |
+| G-R2-07 | 操作按钮位置不同 | 主按钮 + 取消链接在「建议」面板底部 | 卡片最底部 `Space` + 取消按钮 | 与原型的信息节奏不一致 |
+
+### R2 的 P0 复核
+
+| id | 检查 | 结论 |
+|---|---|---|
+| P0-1 | 基线骨架 | Pass（同 §2） |
+| P0-2 | 规则载体 | Pass（`@rule:web-coding-style`（样式 / 组件选型 / 可访问性）、`@rule:web-testing`、`@rule:spec-first`、`@rule:artifact-review-gate`） |
+| P0-3 | 阶段技能可解析 | Pass |
+| P0-4 | pack 隔离 | Skipped（不改 pack） |
+| P0-5 | 管道骨架 | Pass（CI #157 / CD #89 已绿） |
+
+| 角色 | 姓名 | 确认内容 | 日期 |
+|---|---|---|---|
+| AO | Jay | 复现证据完整，承担 R2 实现 | 2026-11-16 |
+
+## 10. R2 准入 P1 的条件
+
+- `proposal.md` 增补 R2 章节：只改布局与样式、不改行为与契约；验收信号可观察（结构、断点、卡片选中态）。
+- 缺口 G-R2-01 ~ G-R2-07 可追溯到原型 `share()` / `styles.css` 与 `design.md` 的视觉基准声明。
