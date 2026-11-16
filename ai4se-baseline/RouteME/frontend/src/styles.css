@@ -716,10 +716,50 @@ svg {
   display: grid;
   place-items: center;
   padding: 40px 22px;
+  isolation: isolate;
+}
+
+.gate::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -2;
+  background: url('/login-bg.png') center / cover no-repeat;
+}
+
+.gate::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: linear-gradient(180deg, rgba(242, 236, 225, 0.58), rgba(242, 236, 225, 0.82));
+}
+
+[data-theme="dark"] .gate::after {
+  background: linear-gradient(180deg, rgba(6, 17, 22, 0.74), rgba(6, 17, 22, 0.9));
 }
 
 .gate-inner {
-  width: min(1080px, 100%);
+  position: relative;
+  z-index: 1;
+  width: min(1160px, 100%);
+}
+
+.gate-cols {
+  display: grid;
+  grid-template-columns: 1.05fr 0.95fr;
+  gap: 56px;
+  align-items: center;
+}
+
+.gate-hero,
+.gate-side {
+  min-width: 0;
+}
+
+.gate-side {
+  display: flex;
+  justify-content: center;
 }
 
 .gate-brand {
@@ -2339,6 +2379,11 @@ svg {
     background: var(--lagoon-soft);
   }
 
+  .gate-cols {
+    grid-template-columns: 1fr;
+    gap: 32px;
+  }
+
   .gate-cards {
     grid-template-columns: 1fr;
   }
@@ -2616,12 +2661,14 @@ svg {
 
 /* ---------- 登录 / 注册 ---------- */
 .gate-auth {
-  margin-top: 26px;
-  padding: 22px;
+  width: 100%;
+  max-width: 430px;
+  margin: 0 auto;
+  padding: 26px 24px;
   border: 1px solid var(--line);
-  border-radius: var(--r-lg);
+  border-radius: var(--r-xl);
   background: var(--surface);
-  box-shadow: var(--sh-1);
+  box-shadow: var(--sh-2);
 }
 
 .auth-panel {
