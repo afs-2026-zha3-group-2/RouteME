@@ -807,3 +807,80 @@
 - **不并入 `refine-trip-application`：** 两者都改 `trip-companions` 的不同 Requirement 块，且该 change 已进入 G2 阶段；并行会互相拖慢归档。
 - **阶段：** 单阶段；依赖已归档的 `trip-companions`，无阻塞上游。
 - **质量自检（split-heuristics）：** 子目标一句话可说明 ✓；端到端可观察（打开详情 / 聊天 → 读三条提示 → 举报 → 拿到回执）✓；可独立运行 ✓；capability 名真实 ✓；无依赖环 ✓。
+
+## 16. REQ-013 变更影响 — 我的旅行四组聚合（S11）
+
+### 16.1 Requirement set
+
+- REQ-013（S11，issue #13，P0 / 迭代 2 / 2 点）：四组聚合视图 + 待处理提醒定位 + 已交付动作入口 + 重新可见时同步。
+- 复用既有需求：REQ-003（四组与申请规则）、REQ-010（撤回申请）、REQ-011（结束行程）、REQ-004（体验分享入口）、REQ-008（资料卡）。
+
+### 16.2 As-is asset inventory（evidence paths）
+
+| 资产 | 路径 | 现状 |
+|---|---|---|
+| 聚合接口 | `RouteME/backend/src/main/java/routeme/controller/MyTripsController.java`、`service/impl/MyTripsServiceImpl.java` | 四组 + 总待处理数；无按行程计数 |
+| 响应 | `RouteME/backend/src/main/java/routeme/response/MyTripsResponse.java` | 5 字段 record |
+| 契约 | `RouteME/openapi.yaml` `MyTrips` | required 5 字段 |
+| 页面 | `RouteME/frontend/src/mine/MyTripsPage.tsx` | 裸标题 + 资料卡 + `Tabs` + `TripCard compact` |
+| 样式 | `RouteME/frontend/src/styles.css` `.page-head` / `.page-sub` / `.view-seg` / `.mine-*` | 已有原型令牌与胶囊分段样式 |
+| 动作 API | `RouteME/frontend/src/api.ts` | `cancelApplication` / `leaveTrip` / `completeTrip` / `loadMyExperiences` 已存在 |
+| 处理申请页 | `RouteME/frontend/src/trips/ApplicationsPage.tsx` | `#/trips/{id}/applications` |
+| 测试 | `MyTripsControllerTest.java`；`e2e/tests/companions.spec.ts`、`experiences.spec.ts` | 分组回归 + 页面锚点 |
+
+### 16.3 As-is → proposed delta（逐资产）
+
+| 资产 | 变化 |
+|---|---|
+| `MyTripsResponse` / `MyTripsServiceImpl` | 新增 `pendingApplications: List<PendingApplicationCount>`（`tripId`, `count`），与总数同源计算 |
+| `openapi.yaml` / `OpenApiTest` | `MyTrips.pending_applications` 数组 schema；断言新增字段与结构 |
+| `MyTripsPage.tsx` | 重排：`page-head` + `Segmented`（带计数）+ `.mine-row` 行式列表 + 分组空态 + 提醒定位 + 动作列 + 可见性同步 |
+| `mine/mineTrips.ts`（新增） | 纯逻辑：分组计数、提醒目标、行动作可用性、日期区间 / 出发日标签；node 环境可测 |
+| `i18n/tripMessages.ts` | 新增副标题、提醒、动作、空态文案；移除被替代的 `mineEmpty` 等死文案 |
+| `styles.css` | `.mine-row` 改为 84px 封面 + 主列 + 动作列；`.mr-cover` / `.mr-meta` / `.mr-note`；≤640px 动作换行 |
+| `e2e/tests/mine.spec.ts`（新增） | 四组与计数、提醒跳转、行内动作、重新可见同步；`companions.spec.ts` / `experiences.spec.ts` 的角色断言同批更新 |
+| 文档 | `docs/knowledge/interfaces/README.md` 的 `GET /me/trips` 行补新字段 |
+
+### 16.4 Blast radius（应用架构）
+
+- **后端：** 只改聚合响应与服务的一处收集；不动 mapper / 表 / 状态机 / 权限校验。
+- **前端：** 单页重排 + 一个纯逻辑模块 + 文案与样式；`TripCard` 的 `compact` 形态不再被本页使用（保留给其他调用点，若无调用再单独清理）。
+- **契约：** 只增字段，`required` 不变；前端类型 `MyTrips` 增字段。
+- **测试：** 新增 `mineTrips.test.ts`（node）与 `e2e/tests/mine.spec.ts`；更新两处既有 E2E 的角色断言。
+- **不影响：** 首页、详情、聊天、体验页、资料页。
+
+### 16.5 Artifact impact（specs / tests / docs）
+
+| 工件 | 影响 |
+|---|---|
+| OpenSpec Delta | `trip-companions` MODIFIED「我的旅行聚合与最低安全能力」，保留 4 条基线场景名并新增 8 条 |
+| 长期规格 | 归档时整块替换该 Requirement |
+| 契约 | `openapi.yaml` 次版本 + `OpenApiTest` |
+| 单测 | `mineTrips.test.ts`（node）、`MyTripsControllerTest` 增 `pending_applications` 断言 |
+| E2E | 新增 `mine.spec.ts`；`companions.spec.ts` / `experiences.spec.ts` 角色断言更新 |
+| 知识库 | `interfaces/README.md` 一行 |
+| 阶段记录 | `docs/sdd/refine-my-trips/p0..p4`；`docs/sdd/README.md` 索引 |
+
+### 16.6 Dual-track notes（OpenSpec vs agile）
+
+- **OpenSpec 轨：** 单 change `refine-my-trips`，一份 `trip-companions` delta；不拆内部 change。
+- **Agile 轨：** 原型故事 S11（迭代 2 / 2 点）即业务口径；不另建故事文件，避免双维护。
+
+### 16.7 Risks & blockers
+
+| 级别 | 项 | 说明 / 缓解 |
+|---|---|---|
+| Risk | 分段控件角色变化破坏既有 E2E | `Segmented` 角色为 `radio`；同批更新 `companions.spec.ts` 的两处 `tab` 断言 |
+| Risk | 行式列表重排丢失 `.mine-row` 锚点 | 保留 `.mine-row` 类名与行内标题文本；`experiences.spec.ts` 依赖它 |
+| Risk | 待处理提醒定位错误 | 由后端返回的 `pending_applications` 选目标；无数据时退回「不渲染入口」 |
+| Risk | 重新可见时重复请求 | 只在 `document.visibilityState === 'visible'` 或 `focus` 且页面挂载时触发；分组切换不请求 |
+| Risk | 原型动作 > 已交付能力 | 设计明确只落地已交付动作；编辑 / 删除 / 参考发布记为 out of scope |
+| Blocker | 无 | blocking OQ=0、DoR BLOCKER=0、A0 门 ⑨–⑫ 通过 |
+
+### 16.8 Suggested split boundaries（供 proposal-split / story-split）
+
+- **一个 change：** `refine-my-trips` ← REQ-013（S11，页面级垂直切片）。
+- **不并入 `add-trip-companions`：** 已归档；本需求是展示与入口增量。
+- **不并入 `refine-experience-share`：** 该 change 正在 P4 收尾，共用同一页面但改动面不同；并行会互相拖慢归档。
+- **阶段：** 单阶段；依赖已归档的 `trip-companions`、`trip-plans`、`trip-experiences`、`user-profile`。
+- **质量自检（split-heuristics）：** 子目标一句话可说明 ✓；端到端可观察（进入我的旅行 → 四段切换 → 行内动作 → 提醒跳转）✓；可独立运行 ✓；capability 名真实 ✓；无依赖环 ✓。

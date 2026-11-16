@@ -129,3 +129,28 @@
 - 安全提示与举报的**能力底座**由已归档的 `add-trip-companions` 提供；本故事只收敛展示口径（三条文本、集合区域、回执文案、本人行程入口）与边界说明，不重复定义举报记录与隐私红线。
 - 用户裁决 D1–D4：按原型三条文本列表（详情页带集合区域、聊天页一行）；举报原因沿用现有四类、不升契约；本人行程隐藏举报入口；编号 REQ-012 / `refine-safety-report`。
 - 子目标一句话可说明且端到端可观察（进入详情 / 聊天 → 读三条提示 → 举报 → 拿到「已收到，我们会处理」），故不再拆分。
+
+---
+
+# Story list — REQ-013（S11 我的旅行）
+
+- **来源：** issue #13 `[P0] S11 我的旅行`；`docs/prototype/stories.html` S11
+- **口径：** 一条故事 = 一个页面 + 一份接口契约 + 一次状态迁移（本故事复用 `GET /api/me/trips`，只新增一个只读聚合字段；页面状态迁移为「进入页面 → 切换分组 → 行内动作」）
+- **更新时间：** 2026-11-16
+
+| Story | Title | 角色 | Priority | Iteration | Points | Page | Parent REQ | Change | Status |
+|---|---|---|---|---|---|---|---|---|---|
+| S11 | 一屏看到发布、申请、匹配与已结束 | 全部 | P0 | 2 | 2 | 我的旅行页 | REQ-013 | `refine-my-trips` | P1 drafted（2026-11-16） |
+
+## Traceability（REQ-013）
+
+| Story | Requirement scenarios | Change spec | Story file |
+|---|---|---|---|
+| S11 | REQ-013 §4 #1–#12 | `openspec/changes/refine-my-trips/specs/trip-companions/spec.md`（MODIFIED「我的旅行聚合与最低安全能力」） | `requirement-workspace/stories/refine-my-trips.story.md` |
+
+## Notes
+
+- 本故事只覆盖「我的旅行」聚合视图；发布行程（S06）、详情（S05）、申请处理（S09）、取消申请（S10）、退出同行（S13）、结束行程（S15）、体验分享（S16）、参考发布（S17）均不在本故事内，只作为行内入口被调用。
+- 四组划分与状态推导沿用 `MyTripsServiceImpl` 与 `trip-plans` 的四态，本故事不重复定义。
+- 原型中的「编辑 / 删除 / 参考发布」不在本迭代落地：前两者无路由与接口，后者属 S17。
+- 未接入外部 ALM；本表为仓库内权威故事清单，ALM Sync 状态记为 Pending。

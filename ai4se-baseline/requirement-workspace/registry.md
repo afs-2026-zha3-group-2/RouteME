@@ -2,6 +2,7 @@
 
 | id | title | status | openspec change | notes |
 |---|---|---|---|---|
+| REQ-013 | 我的旅行四组聚合（S11） | p1-drafted | refine-my-trips | 迭代 2 / P0 / 2 点；落点「我的旅行」；MODIFIED `trip-companions`「我的旅行聚合与最低安全能力」（保留 4 条基线场景 + 新增 8 条）；按原型重排页面（`page-head` + 带计数分段 + `.mine-row` 84px 封面行 + 分组空态），补齐已交付动作（处理申请 / 撤回 / 退出同行 / 查看 / 写体验），待处理提醒定位到具体行程，页面重新可见与页内动作后重新拉取聚合；后端只增只读字段 `pending_applications`，分组规则与状态机不变；用户裁决 D1–D4：保留资料卡、只落地已交付动作、antd `Segmented`、可见性同步；P0 Pass（`docs/sdd/refine-my-trips/p0-baseline.md`）；P1 drafted（2026-11-16） |
 | REQ-001 | Hello World Home Page | verified | bootstrap-hello-world | 脚手架验收：SQLite + Flyway + Spring Boot 4.1.2 + React 19；接口返回 Hello World，首页展示（已归档，Living Spec `openspec/specs/hello-world/`） |
 | REQ-002 | 旅行灵感浏览与行程发布 | verified | add-trip-plans | 已归档（`openspec/changes/archive/2026-11-15-add-trip-plans/`），Living Spec `openspec/specs/trip-plans/`；契约 0.2.0；后端 32 / 前端 25 / E2E 5 测试通过；G1–G3 Pass |
 | REQ-003 | 同行匹配、申请与旅行前沟通 | verified | add-trip-companions | 已归档（`openspec/changes/archive/2026-11-15-add-trip-companions/`），Living Spec `openspec/specs/trip-companions/`；契约 0.3.0；后端 103 / 前端 27 / E2E 8 测试通过；G1–G3 Pass；CI #54/#55 全绿 |
