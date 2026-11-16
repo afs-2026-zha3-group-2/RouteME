@@ -94,7 +94,7 @@
 
 | Story | Requirement scenarios | Change spec | Story file |
 |---|---|---|---|
-| S16 | REQ-004 §4 #1–#8；`openspec/specs/trip-experiences/spec.md` 4 Requirement / 16 Scenario（基线） | `openspec/changes/refine-experience-share/specs/trip-experiences/spec.md`（MODIFIED 2 + ADDED 1） | 无独立故事文件：原型 S16 已提供 4 条 AC，本 change 以 proposal + delta 承接 |
+| S16 | REQ-004 §4 #1–#8；`openspec/specs/trip-experiences/spec.md` 7 Requirement / 22 Scenario（基线） | `openspec/changes/refine-experience-share/specs/trip-experiences/spec.md`（MODIFIED 3） | 无独立故事文件：原型 S16 已提供 4 条 AC，本 change 以 proposal + delta 承接 |
 
 ## Notes（REQ-004 / S16）
 

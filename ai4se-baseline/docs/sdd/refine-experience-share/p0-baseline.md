@@ -14,7 +14,7 @@
 | 项 | 证据 | 结论 |
 |---|---|---|
 | 规格树 | `openspec/specs/`（含 `trip-experiences`）、`openspec/changes/`（11 个进行中 change）、`openspec/templates/`、`openspec/config.yaml`（`schema: spec-driven`） | 存在且自洽 |
-| 长期规格权威 | `openspec/specs/trip-experiences/spec.md`（4 Requirement / 16 Scenario，已含「无图片也能发布并展示内置封面」与两条拒绝场景） | 本 change 以此为 MODIFIED 基线 |
+| 长期规格权威 | `openspec/specs/trip-experiences/spec.md`（7 Requirement / 22 Scenario，已含「无图片也能发布并展示内置封面」、两条拒绝场景与「我的旅行分享入口与分享边界」） | 本 change 以此为 MODIFIED 基线 |
 | 已交付基线 | `openspec/changes/archive/2026-11-15-add-trip-experiences/`；`ExperienceController` / `ExperienceServiceImpl` / `ShareExperiencePage` / `ExperienceCard` / `e2e/tests/experiences.spec.ts` | S16 主干已交付，本 change 只收敛缺口 |
 | 规则载体 | `docs/knowledge/rules/_INDEX.md`（6 分类 / 25 行索引）、`docs/knowledge/rules/{architecture,process,quality,security,testing,documentation}/rules.md` | 覆盖分支、提交、工件评审、前端样式、测试、PII |
 | 知识库 | `docs/knowledge/_INDEX.md`、`docs/knowledge/_LOG.md` | 槽位可写 |

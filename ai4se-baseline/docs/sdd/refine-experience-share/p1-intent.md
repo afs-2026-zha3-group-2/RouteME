@@ -16,7 +16,7 @@
 | 故事 | [`stories.md`「REQ-004（S16）」](../../../requirement-workspace/stories.md) | S16 / 迭代 3 / P1 / 3 点 / 游后分享页；无独立故事文件（原型 `stories.html` 已提供 AC） |
 | 登记与交接 | [`registry.md`](../../../requirement-workspace/registry.md)、[`handoff.md`](../../../requirement-workspace/handoff.md) | REQ-004 行追加 R2 记录；REQ → change 增补 `refine-experience-share` |
 | 提案 | [`proposal.md`](../../../openspec/changes/refine-experience-share/proposal.md) | 问题 / 范围 / 影响面 / 决策 / 验收信号 / 残余风险 |
-| Delta 草稿 | [`specs/trip-experiences/spec.md`](../../../openspec/changes/refine-experience-share/specs/trip-experiences/spec.md) | MODIFIED 2 Requirement（8 场景，既有场景名全保留）+ ADDED 1 Requirement（3 场景） |
+| Delta 草稿 | [`specs/trip-experiences/spec.md`](../../../openspec/changes/refine-experience-share/specs/trip-experiences/spec.md) | MODIFIED 3 Requirement / 12 场景（既有 10 个场景名全保留 + 新增 2 个）；P1 初稿为「MODIFIED 2 + ADDED 1」，P2 依据 Living Spec 既有「我的旅行分享入口与分享边界」收敛为 3 条 MODIFIED |
 | 工件评审 | [`proposal-review`](../../reviews/20261116-refine-experience-share-proposal-review.md)；[`spec-review`](../../reviews/20261116-refine-experience-share-spec-review.md) | 见评审结论与「批准记录」 |
 | 质量报告 | [`20261116-162000-quality-checklist-report.md`](../../ai4se-plugins/20261116-162000-quality-checklist-report.md) | P1-1 ~ P1-4 Pass；P1-5 / P1-6 optional Skipped；Overall Pass |
 
@@ -32,9 +32,9 @@
 ## 4. 校验
 
 - `openspec validate refine-experience-share --strict` → `Change 'refine-experience-share' is valid`。
-- `openspec show refine-experience-share --json --deltas-only` → `deltaCount: 3`（1 ADDED + 2 MODIFIED），`spec=trip-experiences`。
-- Delta 场景数：MODIFIED「对已结束且参加过的行程发布游后体验」5 场景（既有 5 个名称全保留，内容收敛）+ MODIFIED「游后体验的内容口径与纯文字降级」3 场景（既有 3 个名称全保留）+ ADDED「游后分享页说明体验去向与分享边界」3 场景。
-- Living Spec 基线场景名全部保留（校验器要求 MODIFIED 不得丢弃既有场景名）。
+- `openspec show refine-experience-share --json --deltas-only` → `deltaCount: 3`（3 条 MODIFIED），`spec=trip-experiences`。
+- Delta 场景数：MODIFIED「对已结束且参加过的行程发布游后体验」5 场景（既有 5 个名称全保留，内容收敛）+ MODIFIED「游后体验的内容口径与纯文字降级」3 场景（既有 3 个名称全保留）+ MODIFIED「我的旅行分享入口与分享边界」4 场景（既有 2 个名称全保留 + 新增 2 个），合计 12 场景。
+- Living Spec 基线场景名在 MODIFIED 中全部保留（校验器要求 MODIFIED 不得丢弃既有场景名）；Living Spec 现为 7 Requirement / 22 Scenario，本 delta 覆盖其中 3 条 Requirement。
 
 ## 5. 签署
 
@@ -53,3 +53,4 @@
 - **分支：** 按用户指示新建 `feature/refine-experience-share`（`@rule:git-branching-and-pr`），不在 `main` 直接提交。
 - **并行基线：** rebase 时吸收 `main@25b60f7`（`add-trip-completion` P4）。该提交把行程状态扩为四态并把体验资格判定的 `status()` 改为 `status(clock.instant())`；本 change 的「未结束」口径据此覆盖 `recruiting` / `full` / `ongoing`。
 - **范围偏离：** 无。故事 4 条 AC 全部有场景或验收信号承接；图片上传继续按 AC 记为增强项、不进本 change。
+- **P2 修订（2026-11-16）：** 原 Delta 草稿把分享页说明写成 ADDED「游后分享页说明体验去向与分享边界」；P2 一致性检查发现 Living Spec 已有「我的旅行分享入口与分享边界」Requirement（含「分享页面提示隐私边界」场景），ADDED 会形成平行权威。已改为 MODIFIED 第三条 Requirement（保留两个既有场景名 + 新增两个），proposal 同步由 「MODIFIED + ADDED」收敛为「MODIFIED（3 条）」。重评见 `20261116-refine-experience-share-{proposal,spec}-review-2.md`。

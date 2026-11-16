@@ -1,7 +1,7 @@
 # 变更提案：refine-experience-share
 
 - **需求来源：** 用户故事 S16「发布游后体验」（issue #18，P1 / 迭代 3 / 3 点 / 落点页面：游后分享页）｜ **需求条目：** `requirement-workspace/requirements/REQ-004-trip-experiences.md`
-- **能力：** `trip-experiences`（MODIFIED + ADDED）
+- **能力：** `trip-experiences`（MODIFIED）
 - **规模：** S（两个既有页面与一张卡片的展示增量；无后端、契约、迁移变更）
 - **规则：** `@rule:spec-first`、`@rule:sdd-artifacts`、`@rule:web-coding-style`、`@rule:web-testing`、`@rule:pii-scrubbing`；视觉基准：`docs/prototype/prototype.html` + `docs/prototype/styles.css`（原型 `ui.js` `share()` / `expCard()`）
 - **基线：** `main@25b60f7`（含 `add-trip-completion` 的四态生命周期）。已归档：`add-trip-experiences`（REQ-004 基线）、`add-trip-plans`、`add-trip-companions`、`add-user-auth`、`add-user-profile`、`add-user-profiles`。进行中：`refine-inspiration-home`、`add-destination-area-filters`、`add-match-reason`、`add-trip-completion`、`refine-safety-report`、`add-trip-publish`。
@@ -18,8 +18,7 @@
 
 ## What Changes
 
-- `trip-experiences`（MODIFIED）：「对已结束且参加过的行程发布游后体验」增加两种不可用原因的可区分提示（未结束含招募中 / 满员 / 旅行中；已结束但非发布者且非已接受）；「游后体验的内容口径与纯文字降级」把「内置封面」写实为体验卡上的目的地色调封面条。
-- `trip-experiences`（ADDED）：「游后分享页说明体验去向与分享边界」新 Requirement——分享页 MUST 展示行程 hero、体验去向三条与分享边界两条。
+- `trip-experiences`（MODIFIED）：「对已结束且参加过的行程发布游后体验」增加两种不可用原因的可区分提示（未结束含招募中 / 满员 / 旅行中；已结束但非发布者且非已接受）；「游后体验的内容口径与纯文字降级」把「内置封面」写实为体验卡上的目的地色调封面条；「我的旅行分享入口与分享边界」补分享页行程 hero、「你的体验会去哪里」三条与「分享边界」第二条。
 - 前端：`ShareExperiencePage` 增加行程 hero、「你的体验会去哪里」三条、「分享边界」两条与拆分后的资格提示；`ExperienceCard` 增加内置封面条；`tripMessages` 承载全部文案；`styles.css` 只补封面条与说明列表的布局。
 - 测试：新增分享页资格提示的组件测试；E2E 增补「重复提交即修改」「未参加者无入口且直达被拒」「体验卡含内置封面」。
 - 契约 / 后端 / 迁移：**不变**。`POST /api/trips/{tripId}/experiences`、`EXPERIENCE_NOT_ALLOWED`（403）、10–400 / ≤120 字校验与 `trip-experiences` 表均保持原样；资格判定继续由服务端执行。
@@ -40,7 +39,7 @@
 - 分享页「分享边界」两条：不写同行者电话 / 学校班级 / 住宿地址；只写真实走过的部分，未走到的注明。
 - 体验卡内置封面：`ExperienceCard` 增加封面条（目的地哈希到既有五色 `cover-*` 令牌），无图片时也不留空白占位。
 - 资格提示区分：行程未结束（`recruiting` / `full` / `ongoing`）→「行程结束后才能发表体验」+ 当前状态；已结束但非发布者且非已接受 →「只有参加过的同行者才能发表体验」。两者都不渲染表单。
-- 为 `trip-experiences` 写 MODIFIED（2 条既有 Requirement 收敛）+ ADDED（1 条分享页说明 Requirement）的 delta spec，保留 Living Spec 既有场景名。
+- 为 `trip-experiences` 写 MODIFIED delta spec：收敛 3 条既有 Requirement（发布资格与不可用提示、内容口径与内置封面、我的旅行分享入口与分享边界），保留 Living Spec 既有场景名。
 - E2E：重复提交即修改（体验条数不增、内容更新）、未参加者详情页无入口且直达 `#/share/{id}` 被拒、体验卡含内置封面；组件测试覆盖两种资格提示。
 
 **Out of scope**
@@ -64,7 +63,7 @@
 | `RouteME/e2e/tests/experiences.spec.ts` | 重复提交即修改、未参加者无入口且直达被拒、体验卡封面 |
 | `trip-plans`（上游，只读） | 只读 `status`（四态）与目的地 / 日期 / 人数；不改状态推导 |
 | 后端 / `openapi.yaml` / 迁移 | **无改动**：资格、校验与错误码已存在；保留 `ExperienceControllerTest` / `ExperienceServiceTest` 回归 |
-| Living Spec `openspec/specs/trip-experiences/spec.md` | 归档阶段用本 change 的 delta 替换 2 条 Requirement 并追加 1 条；既有场景名全部保留 |
+| Living Spec `openspec/specs/trip-experiences/spec.md` | 归档阶段用本 change 的 delta 替换 3 条 Requirement；三条的既有场景名全部保留（「分享页面提示隐私边界」内容扩充） |
 
 ## 决策
 
@@ -75,7 +74,7 @@
 | 不可用原因 | 前端按 `trip.status` 与 `participants` 拆分提示；服务端错误码不变 | 契约与后端已足够表达拒绝；拆分文案是展示口径问题，不升契约 |
 | 重复提交 | 维持 `upsert`（再次提交即修改） | 故事 AC 允许「提示或允许编辑最新一条」，现有实现取更简单的一条 |
 | 分享边界文案 | 沿用原型的「电话 / 学校班级 / 住宿地址」与「只写真实走过的部分」 | 与 `@rule:pii-scrubbing` 一致，且不采集任何隐私字段 |
-| capability 粒度 | 单一 `trip-experiences`（MODIFIED + ADDED） | 分享页、体验卡与资格提示同属该能力，不新增平行权威 |
+| capability 粒度 | 单一 `trip-experiences`（MODIFIED，3 条 Requirement） | 分享页、体验卡与资格提示同属该能力；分享页说明并入既有「我的旅行分享入口与分享边界」，不新增平行权威 |
 
 ## 验收信号
 
