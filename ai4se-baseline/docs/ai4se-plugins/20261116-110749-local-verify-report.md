@@ -1,9 +1,9 @@
-# Local Verify Report: add-user-profiles
+﻿# Local Verify Report: add-user-profiles
 
 **Date:** 2026-11-16 (timezone: Asia/Shanghai, +0800)
 **Root:** c:\Git\ITA\RouteME\ai4se-baseline
 **Scope:** local+evidence
-**Change id:** add-user-profiles (REQ-005 / capability `user-profiles`)
+**Change id:** add-user-profiles (REQ-008 / capability `user-profiles`)
 
 ## Summary
 
@@ -46,9 +46,9 @@
 | V1 | Task completion | Pass | [fact] | `tasks.md` T1–T12 完成；T13 属 P5（知识库/归档），按计划未做 |
 | V2 | Requirement coverage | Pass | [fact] | R1→双入口（TripCard/TripDetailPage）；R2→ProfileModal 字段/文案；R3→UserProfileServiceImpl 四项统计；R4→404/失败态；R5→响应白名单 + 无举报按钮 |
 | V3 | Scenario coverage | Pass | [fact] | 20 个 Scenario 由 `UserProfileControllerTest`（5）、`ProfileDataMigrationSqliteTest`（1）、`profileFormat.test.ts`（9）与 `profiles.spec.ts`（8）覆盖；关闭弹窗与既有举报回归均有 E2E |
-| V4 | Requirement↔impl mapping | Pass | [fact] | 端点契约 0.7.0 与实现字段一致；统计值与种子数据核对（用户 2：3/1/2/1；用户 3：2/0/1/1；用户 4：1/0/0/0） |
+| V4 | Requirement↔impl mapping | Pass | [fact] | 端点契约 0.8.0 与实现字段一致；统计值与种子数据核对（用户 2：3/1/2/1；用户 3：2/0/1/1；用户 4：1/0/0/0） |
 | V5 | Spec drift | Pass | [fact] | 隐私文案按 G1 裁决改为“昵称、头像、身份/专业、加入时间、简介与旅行兴趣”；举报按钮按用户指示排除，未影响既有举报 |
-| V6 | Design follow-through | Pass | [fact] | D1 无身份头；D2 分层；D3 现算统计；D4 契约 0.7.0；D5 V10；D6 Provider+Modal+纯函数；D7 卡片重构；D8 自我/空交集不展示；D9 失败不保留旧资料；D10 测试落位 |
+| V6 | Design follow-through | Pass | [fact] | D1 无身份头；D2 分层；D3 现算统计；D4 契约 0.8.0；D5 V10；D6 Provider+Modal+纯函数；D7 卡片重构；D8 自我/空交集不展示；D9 失败不保留旧资料；D10 测试落位 |
 | V7 | Code pattern fit | Pass | [fact] | 新类位置与命名沿用现有多数分层；record 响应、`BusinessException` 子类、`@SpringBootTest + MockMvc + @Transactional` 测试风格一致 |
 | V8 | Necessity (anti-creep) | Pass | [fact] | 改动文件均可追溯到 tasks T1–T12；未实现举报、资料编辑、聊天页入口、NFR 专项；`trips.spec.ts` 的两处断言属于 T11 指定的同一身份门用例更新 |
 

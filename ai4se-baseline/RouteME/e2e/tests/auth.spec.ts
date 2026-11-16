@@ -59,7 +59,7 @@ test('shows the logout entry for a demo identity', async ({ page }) => {
   const menu = await openIdentityMenu(page);
 
   await expect(menu.getByRole('listbox')).toBeVisible();
-  await expect(menu.getByRole('option')).toHaveCount(3);
+  await expect(menu.getByRole('option')).toHaveCount(4);
   await expect(menu.getByRole('button', { name: '退出登录' })).toBeVisible();
   await expect(
     menu.getByText('演示身份无需密码；退出登录只清除本机身份并回到身份门。'),

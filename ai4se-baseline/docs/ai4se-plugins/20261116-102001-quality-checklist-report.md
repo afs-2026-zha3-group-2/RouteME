@@ -1,4 +1,4 @@
-# Quality Checklist Report: p1
+﻿# Quality Checklist Report: p1
 
 **Date:** 2026-11-16 (Asia/Shanghai)
 **Root:** c:/Git/ITA/RouteME/ai4se-baseline
@@ -12,9 +12,9 @@
 | Check id | Required? | Status | Evidence |
 |----------|-----------|--------|----------|
 | P1-1 | yes | Pass | `requirement-workspace/` 存在；`analysis/`、`ready/` 已按 skeleton 补齐；probe-stage 全部 FOUND |
-| P1-2 | yes | Pass | `requirements/REQ-005-publisher-profile.md`：blocking OQ 全部 resolved，DoR BLOCKER=0；`deep-dive.md` REQ-005 增补 ⑨–⑫ 通过 |
-| P1-3 | yes | Pass | `requirement-workspace/impact-brief.md` 增补节（REQ-005）：as-is 清单、as-is→delta、blast radius、artifact impact、risks、split boundaries；Blocker=无 |
-| P1-4 | yes | Pass | `openspec/changes/add-user-profiles/proposal.md` + `specs/user-profiles/spec.md`；proposal 引用 REQ-005 与 impact 要点并含 effort/size |
+| P1-2 | yes | Pass | `requirements/REQ-008-publisher-profile.md`：blocking OQ 全部 resolved，DoR BLOCKER=0；`deep-dive.md` REQ-008 增补 ⑨–⑫ 通过 |
+| P1-3 | yes | Pass | `requirement-workspace/impact-brief.md` 增补节（REQ-008）：as-is 清单、as-is→delta、blast radius、artifact impact、risks、split boundaries；Blocker=无 |
+| P1-4 | yes | Pass | `openspec/changes/add-user-profiles/proposal.md` + `specs/user-profiles/spec.md`；proposal 引用 REQ-008 与 impact 要点并含 effort/size |
 | P1-5 | no | Skipped | 未运行 `/sdd:explore`；本需求为 light intake，无 explore 产物 |
 | P1-6 | no | Skipped | 非 agent-oriented change，未运行 `/sdd:agent-evalset` |
 

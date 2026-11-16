@@ -1,4 +1,4 @@
-# REQ-005 — 浏览者查看发布者公开资料（Ready 需求草稿）
+﻿# REQ-008 — 浏览者查看发布者公开资料（Ready 需求草稿）
 
 - **能力：** `user-profiles`（ADDED）；`trip-plans` 展示触点（MODIFIED 触点）
 - **对应 OpenSpec change：** `add-user-profiles`
@@ -13,7 +13,7 @@
 
 | 字段 | 内容 |
 |---|---|
-| id | REQ-005 |
+| id | REQ-008 |
 | statement | 让浏览者在提交同行申请前，从行程卡片或详情页点击发布者，通过弹窗查看其公开资料（昵称、头像、身份/年级与专业或行业（MBTI 选填）、加入时间、简介、兴趣与共同兴趣、行程/同行/分享统计），以便判断是否适合同行；同时严格不暴露电话、证件、精确住址、学校门牌等隐私字段。 |
 | actors | 浏览者（任意已进入的用户，含演示账户与注册账户；尚未申请者也可查看）；被查看的发布者。 |
 | rationale | 申请同行是一个高承诺动作；先让浏览者了解「对方是谁、喜欢怎么玩」，减少盲目申请与信息不对称，同时用公开资料边界保护隐私。 |
@@ -117,4 +117,4 @@ blocking 项 = 0 未 resolved，满足进入 impact/split 的硬门。
 | — | resolved | §7/§8 OQ-1 | ⑦能力归属与读取边界已确认（`user-profiles` + 单用户资料接口） | 通过 |
 | — | resolved | §8 OQ-3/OQ-4 | ⑧blocking 开放问题已清零 | 通过 |
 
-**DoR BLOCKER 计数 = 0。** deep-dive ⑨–⑫ 见 `requirement-workspace/deep-dive.md`「Deep-dive 增补 — REQ-005」：⑨ 数据契约、⑩ 边界、⑪ 跨 REQ、⑫ 展示契约均通过。
+**DoR BLOCKER 计数 = 0。** deep-dive ⑨–⑫ 见 `requirement-workspace/deep-dive.md`「Deep-dive 增补 — REQ-008」：⑨ 数据契约、⑩ 边界、⑪ 跨 REQ、⑫ 展示契约均通过。

@@ -1,8 +1,8 @@
-# Intent capture — 浏览者查看发布者公开资料
+﻿# Intent capture — 浏览者查看发布者公开资料
 
 - **捕获日期：** 2026-11-16
 - **来源：** 用户当次会话（SDD P1 输入）
-- **候选编号：** REQ-005（占位，待 registry 确认）
+- **候选编号：** REQ-008（占位，待 registry 确认）
 - **状态：** Discovery — Go（light intake）
 
 ## 原始意图（用户原话要点）

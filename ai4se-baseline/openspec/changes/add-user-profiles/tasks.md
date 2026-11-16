@@ -1,4 +1,4 @@
-# 任务：add-user-profiles
+﻿# 任务：add-user-profiles
 
 - **依据：** [`spec.md`](specs/user-profiles/spec.md)、[`design.md`](design.md)、[`atdd-design.md`](atdd-design.md)
 - **约束：** 一条任务只落一层；契约先行；按 P3 / P4 / P5 阶段提交（用户要求每阶段 commit + pull + push）。
@@ -7,7 +7,7 @@
 
 ### T1 [contract] 契约先行
 
-- [x] `openapi.yaml` 升至 0.7.0：新增 `GET /users/{id}/profile`、`UserProfile`、`ProfileStats`、`UserNotFound` 响应；profile 不要求身份头。
+- [x] `openapi.yaml` 升至 0.8.0：新增 `GET /users/{id}/profile`、`UserProfile`、`ProfileStats`、`UserNotFound` 响应；profile 不要求身份头。
 - [x] `OpenApiTest` 断言新路径、`UserProfile` 必填字段、`stats` 四项与 404 `USER_NOT_FOUND`；Redocly 0 error。
 
 **验证：** `cd RouteME; npx @redocly/cli lint openapi.yaml`；`cd RouteME/backend; .\mvnw.cmd -Dtest=OpenApiTest test`
@@ -112,7 +112,7 @@
 ### T13 [docs] 知识库与登记（P5）
 
 - [ ] `docs/knowledge/interfaces/README.md` 补 profile 端点；`architecture/README.md` 补 `user-profiles` 能力与 V10。
-- [ ] `requirement-workspace/registry.md` 更新 REQ-005 为 verified（G2/G3 后）。
+- [ ] `requirement-workspace/registry.md` 更新 REQ-008 为 verified（G2/G3 后）。
 - [ ] 记录原型隐私文案与本 change 裁决文案的差异；原型举报按钮保留为未来迭代设计。
 
 **验证：** 相对链接 0 断链；术语与 spec 一致

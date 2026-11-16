@@ -1,6 +1,6 @@
-# Design — add-user-profiles
+﻿# Design — add-user-profiles
 
-- **Change:** `add-user-profiles`（`user-profiles`，REQ-005）｜ **阶段：** P3
+- **Change:** `add-user-profiles`（`user-profiles`，REQ-008）｜ **阶段：** P3
 - **输入：** [`specs/user-profiles/spec.md`](specs/user-profiles/spec.md)、[`dov-ac-review.md`](dov-ac-review.md)、[`atdd-design.md`](atdd-design.md)、[`g1-decision.md`](g1-decision.md)
 - **规则：** `@rule:api-contract`、`@rule:package-structure`、`@rule:java-patterns`、`@rule:prototype-ui-alignment`、`@rule:web-coding-style`
 
@@ -40,9 +40,9 @@
 - **Rejected：** 新增 mapper 分组 SQL（当前数据量小，过早优化）；缓存（与行程/申请/体验状态不一致）；修改各源能力返回计数（扩大变更面）。
 - **Consequence：** 演示规模 O(n)；不新增表、不新增 XML；统计随源数据实时变化。
 
-### D4 — 契约先行：OpenAPI 0.7.0
+### D4 — 契约先行：OpenAPI 0.8.0
 
-- **Decision：** `openapi.yaml` 升至 0.7.0，新增 path、`UserProfile`、`ProfileStats`、`UserNotFound` 响应；`OpenApiTest` 校验路径、必填字段与错误码。
+- **Decision：** `openapi.yaml` 升至 0.8.0，新增 path、`UserProfile`、`ProfileStats`、`UserNotFound` 响应；`OpenApiTest` 校验路径、必填字段与错误码。
 - **Response shape：**
   ```text
   {
@@ -104,7 +104,7 @@
 
 | 层 | 文件 |
 |---|---|
-| 契约 | `RouteME/openapi.yaml`（0.7.0）、`backend/src/test/java/routeme/controller/OpenApiTest.java` |
+| 契约 | `RouteME/openapi.yaml`（0.8.0）、`backend/src/test/java/routeme/controller/OpenApiTest.java` |
 | 后端 | `controller/UserProfileController.java`、`service/UserProfileService.java`、`service/impl/UserProfileServiceImpl.java`、`response/UserProfileResponse.java`、`response/ProfileStatsResponse.java`、`exception/UserNotFoundException.java` |
 | 迁移 | `backend/src/main/resources/db/migration/V10__seed_viewer_profile_user.sql` |
 | 后端测试 | `UserProfileControllerTest.java`、`ProfileDataMigrationSqliteTest.java`、`DemoDataMigrationSqliteTest.java`、`AuthMigrationSqliteTest.java` |

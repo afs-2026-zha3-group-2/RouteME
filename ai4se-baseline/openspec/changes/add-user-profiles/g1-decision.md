@@ -1,7 +1,7 @@
-# G1 decision — add-user-profiles
+﻿# G1 decision — add-user-profiles
 
 - **Gate:** G1（Align）
-- **Change:** `add-user-profiles`（capability `user-profiles`，REQ-005）
+- **Change:** `add-user-profiles`（capability `user-profiles`，REQ-008）
 - **Timestamp:** 2026-11-16T10:26+0800
 - **Recorded by:** Qoder（记录人工决策）
 
@@ -13,18 +13,18 @@
 | Delta Spec | [`specs/user-profiles/spec.md`](specs/user-profiles/spec.md) | 5 Requirement / 20 Scenario；双入口、公开资料、共同兴趣、统计口径、读取异常、隐私与账户凭据边界 |
 | AC / DoV review | [`dov-ac-review.md`](dov-ac-review.md) | AC 5/5 Pass；DoV 4 Pass + 1 Partial（无阻塞；残余风险均有 owner） |
 | Consistency lint | [`consistency-lint.md`](consistency-lint.md) | Pass；BLOCKER 0、open WARNING 0；2 条 SUGGESTION 留待 P3 |
-| Requirements | [`REQ-005-publisher-profile.md`](../../../requirement-workspace/requirements/REQ-005-publisher-profile.md) | blocking OQ = 0、DoR BLOCKER = 0、A0 ⑨–⑫ 通过 |
-| Impact / Deep-dive | [`impact-brief.md`](../../../requirement-workspace/impact-brief.md)、[`deep-dive.md`](../../../requirement-workspace/deep-dive.md) | REQ-005 增补齐全；无 Blocker |
+| Requirements | [`REQ-008-publisher-profile.md`](../../../requirement-workspace/requirements/REQ-008-publisher-profile.md) | blocking OQ = 0、DoR BLOCKER = 0、A0 ⑨–⑫ 通过 |
+| Impact / Deep-dive | [`impact-brief.md`](../../../requirement-workspace/impact-brief.md)、[`deep-dive.md`](../../../requirement-workspace/deep-dive.md) | REQ-008 增补齐全；无 Blocker |
 | Prototype evidence | `docs/prototype/ui.js` `profileModal()` / `hostPanel`、`store.js` `stats()`、`styles.css` | 视觉与信息结构基线；举报按钮按用户指示排除 |
 
 ## Findings
 
 | 维度 | 结论 | 证据 |
 |---|---|---|
-| Scope | 与 REQ-005 一致：双入口、公开资料弹窗、共同兴趣、四项统计、自我查看、隐私边界；举报、聊天页资料入口、资料编辑、敏感字段已排除 | `proposal.md` §范围 |
+| Scope | 与 REQ-008 一致：双入口、公开资料弹窗、共同兴趣、四项统计、自我查看、隐私边界；举报、聊天页资料入口、资料编辑、敏感字段已排除 | `proposal.md` §范围 |
 | Ambiguity | 统计口径、字段语义（学生/上班族/MBTI 选填）、自我查看、隐私文案、种子数据均已 resolved；自我查看不展示共同兴趣已按原型补入 | `dov-ac-review.md`、`consistency-lint.md` L-1 |
 | Conflict | 原型 S02 与本次范围的差异已收口：举报不做、聊天页入口不做、隐私文案调整、卡片发布者入口新增 | `proposal.md#原型对齐决议` |
-| Traceability | 5 条 Requirement 均可追溯到 REQ-005 §4 十条场景与 proposal In scope | `dov-ac-review.md#需求映射` |
+| Traceability | 5 条 Requirement 均可追溯到 REQ-008 §4 十条场景与 proposal In scope | `dov-ac-review.md#需求映射` |
 | Residual risk | 统计实时聚合、身份模式分叉（演示/注册）、种子数据计数、`TripCard` 嵌套交互、`school` 字段名语义 | `dov-ac-review.md#残余风险`、`consistency-lint.md#残留风险` |
 
 ## Decision

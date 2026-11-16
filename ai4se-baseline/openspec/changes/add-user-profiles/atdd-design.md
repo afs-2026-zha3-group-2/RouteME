@@ -1,6 +1,6 @@
-# ATDD design — add-user-profiles
+﻿# ATDD design — add-user-profiles
 
-- **Change:** `add-user-profiles`（`user-profiles`，REQ-005）｜ **阶段：** P3
+- **Change:** `add-user-profiles`（`user-profiles`，REQ-008）｜ **阶段：** P3
 - **输入：** [`specs/user-profiles/spec.md`](specs/user-profiles/spec.md)（5 Requirement / 20 Scenario）、[`proposal.md`](proposal.md)、[`g1-decision.md`](g1-decision.md)、[`dov-ac-review.md`](dov-ac-review.md)
 - **规则：** `@rule:api-contract`、`@rule:java-testing`、`@rule:web-testing`
 - **NFR：** 用户确认本次不做专项 NFR 测试；仅保留 E2E 中的基本可访问性与响应式检查
@@ -42,7 +42,7 @@
 
 ## 3. 生产代码之前先写什么
 
-1. **契约先行（红）**：`openapi.yaml` 升至 0.7.0，新增 `GET /users/{id}/profile`、`UserProfile`、`ProfileStats`、404 `USER_NOT_FOUND`；`OpenApiTest` 断言路径、必填字段与错误响应。profile 端点**不要求** `X-User-Id` 或登录会话；共同兴趣由前端用当前用户兴趣计算。
+1. **契约先行（红）**：`openapi.yaml` 升至 0.8.0，新增 `GET /users/{id}/profile`、`UserProfile`、`ProfileStats`、404 `USER_NOT_FOUND`；`OpenApiTest` 断言路径、必填字段与错误响应。profile 端点**不要求** `X-User-Id` 或登录会话；共同兴趣由前端用当前用户兴趣计算。
 2. **API 验收测试（红）**：
    - `UserProfileControllerTest`（MockMvc + H2）：公开字段、`joined_at`、四项统计、零统计、404、响应无账户凭据。
    - `ProfileDataMigrationSqliteTest`（SQLite）：V10 写入第 4 个演示用户与其行程，且 `username`/`password_hash` 为 NULL。
@@ -66,7 +66,7 @@
 |---|---|---|
 | API | Flyway V1–V10 迁移后的 H2/SQLite；第 4 个演示用户 + 行程；零统计账户由 `AuthService.register` 或测试内创建 | 每个测试类使用独立临时库/回滚；不依赖生产 SQLite 文件 |
 | E2E | 种子 SQLite：用户 1–4、行程 1–7；用户 1 作为浏览者，用户 4 的行程用于非学生资料 | 新发布的行程使用唯一标题；不复用/清理演示种子；不引入破坏性 reset |
-| 契约 | `openapi.yaml` 为唯一契约源 | 版本 0.7.0；`OpenApiTest` 与 Redocly 同源校验 |
+| 契约 | `openapi.yaml` 为唯一契约源 | 版本 0.8.0；`OpenApiTest` 与 Redocly 同源校验 |
 
 - V10 只增不改：新增用户 4（`上班族 · 互联网行业 · INFP`，`username`/`password_hash` NULL，`created_at` 固定）与行程 7（招募中，发布者 4）。V9 已被 `user-auth` 占用。
 - 统计夹具：未接受申请、未发布体验用于排除口径；零统计数据用新建账户；当前无「已取消」行程，不构造该状态。

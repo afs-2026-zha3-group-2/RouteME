@@ -1,6 +1,6 @@
-# 变更提案：add-user-profiles
+﻿# 变更提案：add-user-profiles
 
-- **需求：** REQ-005（`requirement-workspace/requirements/REQ-005-publisher-profile.md`）
+- **需求：** REQ-008（`requirement-workspace/requirements/REQ-008-publisher-profile.md`）
 - **能力：** `user-profiles`（ADDED）｜ **规模：** S–M（1 个只读端点 + 1 个资料弹窗 + 2 个入口 + 1 条种子数据迁移）
 - **原型：** `docs/prototype/prototype.html`、`ui.js` `profileModal()` / `hostPanel`、`styles.css`（S02 资料弹窗）｜ **原型冲突裁决：** 见 §原型对齐决议
 
@@ -54,11 +54,11 @@
 
 ## 需求与证据
 
-- 引用需求：REQ-005；意图捕获 `requirement-workspace/intents/REQ-005-publisher-profile.md`。
+- 引用需求：REQ-008；意图捕获 `requirement-workspace/intents/REQ-008-publisher-profile.md`。
 - 原型证据：`docs/prototype/ui.js` `profileModal()` / `hostPanel`；`store.js` `stats()`；`styles.css` `.profile-*` / `.privacy-note`。
 - 现有实现证据：`RouteME/backend/.../V3__create_demo_users.sql`（用户字段与 `created_at`）、`V9__add_user_credentials.sql`（演示/注册账户凭据）、`DemoUserController.java`（全部账户与 `/users/demo`）、`RouteME/frontend/src/trips/TripCard.tsx`、`TripDetailPage.tsx`、`RouteME/openapi.yaml`（0.6.0）。
 - Impact 要点：新增 `user-profiles`；`trip-companions` / `trip-experiences` 只读消费；`trip-plans` 仅展示触点、不新增 delta；种子数据会改变迁移测试与 E2E 身份门断言。
-- DoR / A0：Base 8 全过，BLOCKER = 0；deep-dive ⑨–⑫ 见 `requirement-workspace/deep-dive.md`「Deep-dive 增补 — REQ-005」。
+- DoR / A0：Base 8 全过，BLOCKER = 0；deep-dive ⑨–⑫ 见 `requirement-workspace/deep-dive.md`「Deep-dive 增补 — REQ-008」。
 
 ## 规模与交付
 

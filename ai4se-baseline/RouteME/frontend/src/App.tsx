@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Alert, Button, ConfigProvider, Space, Spin, Typography } from 'antd';
+import { Alert, Button, ConfigProvider, Space, Spin, Typography, message } from 'antd';
 import { loadDemoUsers, loadSessionUser, loadUsers, logoutAccount } from './api';
 import { ChatPage } from './chat/ChatPage';
 import { ShareExperiencePage } from './experiences/ShareExperiencePage';
@@ -121,14 +121,17 @@ export function App() {
   };
 
   const logout = () => {
-    if (authToken !== null) {
-      void logoutAccount(authToken).catch(() => undefined);
-    }
+    const token = authToken;
     window.localStorage.removeItem(AUTH_TOKEN_KEY);
     window.localStorage.removeItem(CURRENT_USER_KEY);
     setAuthToken(null);
     setCurrentUserId(null);
     window.location.hash = '#/';
+    if (token !== null) {
+      void logoutAccount(token).catch(() => {
+        message.warning(tripMessages.authLogoutWarning);
+      });
+    }
   };
 
   const renderContent = () => {
