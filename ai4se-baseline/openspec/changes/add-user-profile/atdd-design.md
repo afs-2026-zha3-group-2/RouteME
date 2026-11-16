@@ -83,6 +83,7 @@
 | `keeps demo identities read-only` | E24 | 演示身份无「完善资料 / 编辑资料」；`PUT` 返回 403 |
 | `offers every job and MBTI option in the setup form` | E4、E25 | 职业 5 项、MBTI 17 项（含「不填写」）全部出现在原生下拉；`selectOption` 可直接选中 |
 | `saves a custom job typed under 其他` | E25 | 选「其他」→ 出现自填框 → 填「独立摄影师」→ 主页 chip 与「职业」行显示自填值 |
+| `reduced motion › opens the birthday calendar on screen and picks a day` | E1、E6 | 减少动效下生日日历在视口内；点选日期 + 「确定」后输入框回显 `YYYY-MM-DD` |
 
 ### 2.2 API 验收（red）
 
@@ -133,7 +134,7 @@
 | 后端单测 / 回归 | `cd RouteME/backend; .\mvnw.cmd -B test` | 全绿；新增 profile 用例与既有 154 项不回归 |
 | 前端类型 / 构建 | `cd RouteME/frontend; npm run build` | 0 error |
 | 前端单测 | `cd RouteME/frontend; npm test` | 全绿；新增 2 个文件 |
-| E2E | 启动后端 `8080` + 前端 `5173` 后 `cd RouteME/e2e; npx playwright test tests/profile.spec.ts` | 新增 12 项全绿 |
+| E2E | 启动后端 `8080` + 前端 `5173` 后 `cd RouteME/e2e; npx playwright test tests/profile.spec.ts` | 新增 13 项全绿 |
 | E2E 回归 | `cd RouteME/e2e; npx playwright test` | 既有 `trips` / `companions` / `experiences` 不回归（`auth.spec.ts` 属并行 change，若已在工作区则一并跑） |
 | 手工 | 1440 / 768 / 390；浅色 / 深色；键盘 | 完善页与主页不溢出；错误可聚焦；保存后回显 |
 

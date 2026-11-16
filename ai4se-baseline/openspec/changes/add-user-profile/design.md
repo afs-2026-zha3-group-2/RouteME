@@ -254,13 +254,13 @@ main.profile-page.profile-setup
     section.profile-avatar   Avatar / img[alt="当前头像"]
                              button 上传头像 | 更换头像（选填，JPEG/PNG/WebP ≤2MB）
     field 昵称               Input[maxlength=20] *            aria-describedby
-    field 生日               input[type=date][min=1900-01-01][max=今天] *
+    field 生日               DatePicker[format=YYYY-MM-DD][minDate=1900-01-01][maxDate=今天][needConfirm] *（中文 locale；弹层锚定字段）
     field 性别               Radio.Group 男 / 女 / 其他 *
     field 所在城市           AutoComplete（CITY_NAMES，可自由输入）*
     field 学校               Input[maxlength=80]
     field 专业               Input[maxlength=80]
-    field 职业               Select 学生 / 上班族 / 自由职业 / 其他（可清空）
-    field MBTI               Select 16 型（可清空）
+    field 职业               native select 学生 / 上班族 / 自由职业 / 其他（选其他时自填 Input[maxlength=20]；可清空）
+    field MBTI               native select 16 型（可清空）
     field 旅行兴趣           InterestPicker *（计数 n/5；预设 10+；可自定义；取消保留）
     field 旅行方式           Radio.Group 特种兵 / 休闲游 / 深度游 / 随性游 *
     field 个人简介           TextArea[maxlength=500]

@@ -3,11 +3,15 @@ import {
   Alert,
   AutoComplete,
   Button,
+  DatePicker,
   Input,
   Radio,
   Skeleton,
   Typography,
 } from 'antd';
+import dayjs from 'dayjs';
+import 'dayjs/locale/zh-cn';
+import zhCN from 'antd/es/locale/zh_CN';
 import {
   ApiError,
   loadUserProfile,
@@ -44,6 +48,9 @@ import {
   MIN_BIRTHDAY,
   TRAVEL_STYLES,
 } from './profileOptions';
+
+// The picker lives in a Chinese-only UI; keep the panel month names Chinese as well.
+dayjs.locale('zh-cn');
 
 type Props = {
   currentUser: DemoUser;
@@ -276,16 +283,24 @@ export function ProfileSetupPage({ currentUser, token, onSaved }: Props) {
             error={errors.birthday}
             htmlFor="profile-birthday"
           >
-            <Input
-              id="profile-birthday"
-              type="date"
-              value={values.birthday}
-              min={MIN_BIRTHDAY}
-              max={todayIso()}
-              status={errors.birthday === undefined ? undefined : 'error'}
-              aria-invalid={errors.birthday !== undefined}
-              onChange={(event) => update({ birthday: event.target.value })}
-            />
+            <div className="profile-birthday-anchor">
+              <DatePicker
+                id="profile-birthday"
+                className="profile-birthday"
+                classNames={{ popup: { root: 'profile-birthday-popup' } }}
+                getPopupContainer={(trigger) => trigger.parentElement ?? document.body}
+                value={values.birthday === '' ? null : dayjs(values.birthday)}
+                minDate={dayjs(MIN_BIRTHDAY)}
+                maxDate={dayjs(todayIso())}
+                format="YYYY-MM-DD"
+                locale={zhCN.DatePicker}
+                needConfirm
+                allowClear={false}
+                status={errors.birthday === undefined ? undefined : 'error'}
+                aria-invalid={errors.birthday !== undefined}
+                onChange={(date) => update({ birthday: date === null ? '' : date.format('YYYY-MM-DD') })}
+              />
+            </div>
           </Field>
 
           <Field label={tripMessages.profileFieldGender} required error={errors.gender}>

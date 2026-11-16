@@ -26,12 +26,12 @@
 |-----------|-----------|
 | All in-scope jobs success | ✅ E1 全绿（结论由 CD 发布 tag 推断） |
 | Any failed job | 未发现 |
-| Skipped / manual not run | ⚠️ Playwright E2E 不在 CI 工作流内（本地按 spec 全绿，资料 12/12） |
+| Skipped / manual not run | ⚠️ Playwright E2E 不在 CI 工作流内（本地按 spec 全绿，资料 13/13） |
 | No remote data | ❓ job 明细不可得；已用 `build-022659c` 记 Partial |
 
 **E1:** ⚠️ 不完整（缺 job 级明细 + E2E 未入 CI），整体结论 success。
 
-**Post-CI fix:** 「其他职业自填」随 `3c8355b` 推送；`refs/tags/build-3c8355b` 已出现（`cd.yml` 仅在 CI success 后发布），远端结论 success；本地另有后端 211、前端 14 文件 / 120、`profile.spec.ts` 12/12。
+**Post-CI fix:** 「其他职业自填」随 `3c8355b` 推送；`refs/tags/build-3c8355b` 已出现（`cd.yml` 仅在 CI success 后发布），远端结论 success。生日 DatePicker（13/13 E2E、前端 120）在本提交后落地，本地验证；本地另有后端 211。
 
 ## Jobs / checks
 
@@ -39,7 +39,7 @@
 |-------|-----------|--------|----------|-----|----------------|
 | ci | Backend (Java 21) — `./mvnw -B -ntp verify` | success（远端由 tag 推断；本地同命令复现 211/0） | 28.8 s（本地） | n/a | — |
 | ci | Frontend (Node 22) — `npm install --no-audit --no-fund && npm run build && npm test` | success（远端由 tag 推断；本地复现 120/120） | build 0.9 s / tests 0.7 s | n/a | — |
-| — | Playwright E2E — 本地全绿（`profile.spec.ts` 12/12） | n/a（不在 CI 范围） | — | — | — |
+| — | Playwright E2E — 本地全绿（`profile.spec.ts` 13/13） | n/a（不在 CI 范围） | — | — | — |
 
 ## 本 change 的 CI 覆盖
 

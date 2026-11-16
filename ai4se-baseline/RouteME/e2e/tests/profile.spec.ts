@@ -133,7 +133,10 @@ async function pickInterest(page: Page, label: string): Promise<void> {
 }
 
 async function fillCompleteProfile(page: Page): Promise<void> {
+  // The birthday uses a DatePicker with needConfirm: typing the date needs Enter to commit.
   await page.locator('#profile-birthday').fill('2003-05-18');
+  await page.locator('#profile-birthday').press('Enter');
+  await expect(page.locator('#profile-birthday')).toHaveValue('2003-05-18');
   await pickGender(page, '女');
   await page.locator('#profile-city').fill('广州');
   await page.locator('#profile-school').fill('中山大学');
@@ -234,6 +237,31 @@ test('saves a custom job typed under 其他', async ({ page }) => {
   await expect(page).toHaveURL(new RegExp(`#/users/${account.userId}$`));
   await expect(page.locator('.profile-chips')).toContainText('独立摄影师');
   await expect(page.locator('.profile-fact', { hasText: '职业' })).toContainText('独立摄影师');
+});
+
+test.describe('reduced motion', () => {
+  test.use({ reducedMotion: 'reduce' });
+
+  test('opens the birthday calendar on screen and picks a day', async ({ page }) => {
+    const account = await registerViaApi(page, { prefix: 'rm' });
+    await useAccount(page, account);
+    await openSetup(page);
+
+    await page.locator('#profile-birthday').click();
+    const popup = page.locator('.profile-birthday-popup');
+    await expect(popup).toBeVisible();
+
+    const box = await popup.boundingBox();
+    expect(box).not.toBeNull();
+    expect(box?.x ?? -1).toBeGreaterThanOrEqual(0);
+    expect(box?.y ?? -1).toBeGreaterThanOrEqual(0);
+
+    const now = new Date();
+    const iso = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+    await popup.locator(`td[title="${iso}"]`).click();
+    await popup.locator('button.ant-picker-ok').click();
+    await expect(page.locator('#profile-birthday')).toHaveValue(iso);
+  });
 });
 
 test('saves a complete profile and opens the public profile', async ({ page }) => {
