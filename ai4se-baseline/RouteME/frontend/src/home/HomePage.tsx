@@ -1,5 +1,5 @@
 import { useRef, useState } from 'react';
-import { Alert, Button, Input, Segmented, Select, Skeleton, Typography } from 'antd';
+import { Alert, Button, Input, Segmented, Skeleton, Typography } from 'antd';
 import { ExperienceCard } from '../experiences/ExperienceCard';
 import { useExperiences } from '../experiences/useExperiences';
 import { tripMessages } from '../i18n/tripMessages';
@@ -97,15 +97,19 @@ export function HomePage({ currentUser }: Props) {
           </label>
           <label className="field">
             <span className="label">{tripMessages.destinationLabel}</span>
-            <Select
+            <select
+              className="native-select"
               aria-label={tripMessages.destinationLabel}
               value={filters.destination}
-              options={[
-                { value: '', label: tripMessages.anyDestination },
-                ...DESTINATIONS.map((destination) => ({ value: destination, label: destination })),
-              ]}
-              onChange={(destination) => update({ destination })}
-            />
+              onChange={(event) => update({ destination: event.target.value })}
+            >
+              <option value="">{tripMessages.anyDestination}</option>
+              {DESTINATIONS.map((destination) => (
+                <option key={destination} value={destination}>
+                  {destination}
+                </option>
+              ))}
+            </select>
           </label>
           <label className="field">
             <span className="label">{tripMessages.dateFromLabel}</span>
@@ -128,16 +132,16 @@ export function HomePage({ currentUser }: Props) {
           {view === 'plans' && (
             <label className="field">
               <span className="label">{tripMessages.sortLabel}</span>
-              <Select
+              <select
+                className="native-select"
                 aria-label={tripMessages.sortLabel}
                 value={filters.sort}
-                options={[
-                  { value: 'match', label: tripMessages.sortMatch },
-                  { value: 'date', label: tripMessages.sortDate },
-                  { value: 'new', label: tripMessages.sortNew },
-                ]}
-                onChange={(sort) => update({ sort })}
-              />
+                onChange={(event) => update({ sort: event.target.value as FilterState['sort'] })}
+              >
+                <option value="match">{tripMessages.sortMatch}</option>
+                <option value="date">{tripMessages.sortDate}</option>
+                <option value="new">{tripMessages.sortNew}</option>
+              </select>
             </label>
           )}
         </div>

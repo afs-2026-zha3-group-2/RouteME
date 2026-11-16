@@ -10,6 +10,7 @@ public final class TripCatalogConstant {
     public static final List<String> DESTINATIONS =
             List.of("珠海", "广州", "深圳", "佛山", "清远", "中山", "江门", "肇庆");
 
+    public static final int MAX_DESTINATION_LENGTH = 40;
     public static final int MAX_TITLE_LENGTH = 40;
     public static final int MIN_STOPS = 2;
     public static final int MIN_CAPACITY = 2;

@@ -2224,6 +2224,402 @@ svg {
   }
 }
 
+/* ---------- 身份切换 / 地图选点 ---------- */
+.id-switch {
+  position: relative;
+}
+
+.id-switch-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 38px;
+  padding: 3px 10px 3px 5px;
+  border: 1px solid var(--line);
+  border-radius: 99px;
+  background: var(--surface);
+  color: var(--ink);
+  cursor: pointer;
+  transition: border-color 0.16s;
+}
+
+.id-switch-btn:hover {
+  border-color: var(--lagoon);
+}
+
+.id-switch-text {
+  display: grid;
+  line-height: 1.15;
+  text-align: left;
+}
+
+.id-switch-name {
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.id-switch-label {
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  color: var(--ink-3);
+}
+
+.id-switch-caret {
+  width: 12px;
+  height: 12px;
+  color: var(--ink-3);
+}
+
+.id-panel {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 8px);
+  z-index: 120;
+  display: grid;
+  gap: 3px;
+  width: 258px;
+  padding: 8px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--surface);
+  box-shadow: var(--sh-2);
+}
+
+.id-option {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 8px;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--ink);
+  text-align: left;
+  cursor: pointer;
+}
+
+.id-option:hover,
+.id-option.on {
+  background: var(--lagoon-soft);
+}
+
+.id-option-text {
+  display: grid;
+  flex: 1;
+  line-height: 1.25;
+}
+
+.id-option-text b {
+  font-size: 13px;
+}
+
+.id-option-text i {
+  font-style: normal;
+  font-size: 11px;
+  color: var(--ink-3);
+}
+
+.id-option-flag {
+  font-size: 10.5px;
+  font-weight: 700;
+  color: var(--t-lagoon);
+}
+
+.id-panel-note {
+  margin: 4px 6px 2px;
+  font-size: 11px;
+  line-height: 1.45;
+  color: var(--ink-3);
+}
+
+.native-select {
+  width: 100%;
+  height: 38px;
+  padding: 0 10px;
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+  background: var(--surface);
+  color: var(--ink);
+  font: inherit;
+}
+
+.native-select:focus-visible {
+  outline: 2px solid var(--lagoon);
+  outline-offset: 2px;
+}
+
+.place-picker {
+  display: grid;
+  gap: 8px;
+  width: 100%;
+}
+
+.place-search {
+  position: relative;
+}
+
+.place-suggest {
+  position: absolute;
+  top: calc(100% + 4px);
+  right: 0;
+  left: 0;
+  z-index: 30;
+  max-height: 240px;
+  margin: 0;
+  padding: 6px;
+  overflow: auto;
+  list-style: none;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface);
+  box-shadow: var(--sh-2);
+}
+
+.place-suggest-item {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  width: 100%;
+  padding: 7px 9px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--ink);
+  text-align: left;
+  cursor: pointer;
+}
+
+.place-suggest-item:hover,
+.place-suggest-item.on {
+  background: var(--lagoon-soft);
+}
+
+.place-suggest-name {
+  font-size: 13px;
+  font-weight: 650;
+}
+
+.place-suggest-meta {
+  font-size: 11px;
+  color: var(--ink-3);
+}
+
+.place-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.place-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 6px 3px 8px;
+  border: 1px solid var(--line);
+  border-radius: 99px;
+  background: var(--surface);
+  font-size: 12px;
+}
+
+.place-chip-index {
+  display: grid;
+  place-items: center;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--lagoon);
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.place-chip-name {
+  font-weight: 650;
+}
+
+.place-chip-flag {
+  font-size: 10px;
+  color: var(--ink-3);
+}
+
+.place-chip-remove {
+  padding: 0 2px;
+  border: 0;
+  background: transparent;
+  color: var(--ink-3);
+  font-size: 14px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.place-chip-remove:hover {
+  color: var(--danger);
+}
+
+.place-message {
+  font-size: 12px;
+}
+
+.map-shell {
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+  background: var(--surface-2);
+}
+
+.map-canvas {
+  display: block;
+  width: 100%;
+  height: 230px;
+  cursor: crosshair;
+}
+
+.map-land-shape {
+  stroke: var(--line-2);
+  stroke-width: 0.5;
+}
+
+.map-island {
+  fill: var(--map-land-to);
+  stroke: var(--line-2);
+  stroke-width: 0.35;
+}
+
+.map-sea-label {
+  fill: var(--ink-3);
+  font-size: 2.6px;
+  letter-spacing: 0.6px;
+  opacity: 0.5;
+}
+
+.map-pin {
+  cursor: pointer;
+  outline: none;
+}
+
+.map-pin-hit {
+  fill: transparent;
+}
+
+.map-pin-dot {
+  fill: var(--lagoon);
+  stroke: var(--surface);
+  stroke-width: 0.5;
+  transition: transform 0.14s var(--ease);
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+.map-pin.poi .map-pin-dot {
+  fill: var(--coral, #ff6b35);
+}
+
+.map-pin:hover .map-pin-dot,
+.map-pin.active .map-pin-dot {
+  transform: scale(1.5);
+}
+
+.map-pin:focus-visible .map-pin-hit {
+  fill: var(--lagoon-soft);
+}
+
+.map-pin-label {
+  fill: var(--ink-2);
+  font-size: 2.5px;
+  font-weight: 650;
+  pointer-events: none;
+}
+
+.map-selected-halo {
+  fill: var(--tide);
+  opacity: 0.18;
+}
+
+.map-selected-dot {
+  fill: var(--tide);
+  stroke: var(--surface);
+  stroke-width: 0.5;
+}
+
+.map-selected-index {
+  fill: #fff;
+  font-size: 2.2px;
+  font-weight: 800;
+}
+
+.map-hint {
+  margin: 0;
+  padding: 8px 12px;
+  border-top: 1px solid var(--line);
+  background: var(--surface-2);
+  font-size: 11.5px;
+  line-height: 1.5;
+  color: var(--ink-3);
+}
+
+/* ---------- 聊天参与者信息 ---------- */
+.chat-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--line);
+}
+
+.chat-head-text {
+  min-width: 0;
+}
+
+.chat-head-text .chat-title {
+  margin: 0;
+}
+
+.chat-head-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 10px;
+  margin: 3px 0 0;
+  font-size: 12px;
+  color: var(--ink-3);
+}
+
+.chat-head-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin: 6px 0 0;
+}
+
+.chat-author {
+  display: block;
+  margin-bottom: 3px;
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--ink-3);
+}
+
+.chat-bubble.mine .chat-author {
+  text-align: right;
+}
+
+:root {
+  --map-sea-from: #d9eef3;
+  --map-sea-to: #bcdde6;
+  --map-land-from: #f3efe2;
+  --map-land-to: #e5ddc8;
+}
+
+[data-theme="dark"] {
+  --map-sea-from: #0b2530;
+  --map-sea-to: #08202a;
+  --map-land-from: #1b333a;
+  --map-land-to: #15292f;
+}
+
 /* ---------- 减少动效 ---------- */
 @media (prefers-reduced-motion: reduce) {
   *,

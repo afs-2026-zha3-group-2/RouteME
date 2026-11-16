@@ -5,7 +5,6 @@ import {
   Card,
   Input,
   Modal,
-  Popconfirm,
   Skeleton,
   Space,
   Tag,
@@ -60,6 +59,10 @@ export function TripDetailPage({ currentUser, tripId }: Props) {
   const [applyMessage, setApplyMessage] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [leaving, setLeaving] = useState(false);
+  const [cancelling, setCancelling] = useState(false);
+  const [confirmAction, setConfirmAction] = useState<
+    'complete' | 'cancelApply' | 'leave' | null
+  >(null);
   const [reportOpen, setReportOpen] = useState(false);
   const [experiences, setExperiences] = useState<Experience[] | null>(null);
 
@@ -143,12 +146,15 @@ export function TripDetailPage({ currentUser, tripId }: Props) {
     if (myApplication === null) {
       return;
     }
+    setCancelling(true);
     setActionError(null);
     try {
       const cancelled = await cancelApplication(currentUser.id, myApplication.id);
       setMyApplication(cancelled);
     } catch (error: unknown) {
       setActionError(error instanceof Error ? error.message : 'UNKNOWN_ERROR');
+    } finally {
+      setCancelling(false);
     }
   };
 
@@ -207,6 +213,38 @@ export function TripDetailPage({ currentUser, tripId }: Props) {
     trip.budget_min_cents === null
       ? null
       : `${trip.budget_min_cents / 100}${trip.budget_max_cents === null ? '' : ` – ${trip.budget_max_cents / 100}`} 元`;
+
+  const confirmTitle =
+    confirmAction === 'complete'
+      ? tripMessages.detailMarkCompleted
+      : confirmAction === 'cancelApply'
+        ? tripMessages.applyCancelConfirm
+        : tripMessages.leaveConfirm;
+  const confirmOkText =
+    confirmAction === 'complete'
+      ? tripMessages.detailMarkCompleted
+      : confirmAction === 'cancelApply'
+        ? tripMessages.applyCancel
+        : tripMessages.leaveTrip;
+  const confirmBusy =
+    confirmAction === 'complete' ? completing : confirmAction === 'leave' ? leaving : cancelling;
+  const confirmHint =
+    confirmAction === 'complete'
+      ? '结束后行程会从首页默认列表移除，也不再接受新的同行申请。'
+      : confirmAction === 'cancelApply'
+        ? '取消后可以再次申请，但需要发布者重新处理。'
+        : '退出后这条行程的聊天会关闭。';
+
+  const runConfirm = async () => {
+    if (confirmAction === 'complete') {
+      await complete();
+    } else if (confirmAction === 'cancelApply') {
+      await cancelMyApplication();
+    } else if (confirmAction === 'leave') {
+      await leave();
+    }
+    setConfirmAction(null);
+  };
 
   return (
     <main className="form-page">
@@ -364,14 +402,9 @@ export function TripDetailPage({ currentUser, tripId }: Props) {
               </div>
               <div className="detail-actions">
                 {myApplication.status === 'pending' && (
-                  <Popconfirm
-                    title={tripMessages.applyCancelConfirm}
-                    onConfirm={cancelMyApplication}
-                    okText={tripMessages.applyCancel}
-                    cancelText={tripMessages.createCancel}
-                  >
-                    <Button size="small">{tripMessages.applyCancel}</Button>
-                  </Popconfirm>
+                  <Button size="small" loading={cancelling} onClick={() => setConfirmAction('cancelApply')}>
+                    {tripMessages.applyCancel}
+                  </Button>
                 )}
                 {myApplication.status === 'accepted' && (
                   <Button
@@ -382,16 +415,9 @@ export function TripDetailPage({ currentUser, tripId }: Props) {
                   </Button>
                 )}
                 {myApplication.status === 'accepted' && (
-                  <Popconfirm
-                    title={tripMessages.leaveConfirm}
-                    onConfirm={leave}
-                    okText={tripMessages.leaveTrip}
-                    cancelText={tripMessages.createCancel}
-                  >
-                    <Button size="small" danger loading={leaving}>
-                      {tripMessages.leaveTrip}
-                    </Button>
-                  </Popconfirm>
+                  <Button size="small" danger loading={leaving} onClick={() => setConfirmAction('leave')}>
+                    {tripMessages.leaveTrip}
+                  </Button>
                 )}
               </div>
             </section>
@@ -404,14 +430,9 @@ export function TripDetailPage({ currentUser, tripId }: Props) {
               </Button>
             )}
             {isPublisher && !isCompleted && (
-              <Popconfirm
-                title={tripMessages.detailMarkCompleted}
-                onConfirm={complete}
-                okText={tripMessages.detailMarkCompleted}
-                cancelText={tripMessages.createCancel}
-              >
-                <Button loading={completing}>{tripMessages.detailMarkCompleted}</Button>
-              </Popconfirm>
+              <Button loading={completing} onClick={() => setConfirmAction('complete')}>
+                {tripMessages.detailMarkCompleted}
+              </Button>
             )}
             {isPublisher && (
               <Button onClick={() => (window.location.hash = `#/trips/${trip.id}/applications`)}>
@@ -428,6 +449,19 @@ export function TripDetailPage({ currentUser, tripId }: Props) {
           </div>
         </Card>
       </div>
+
+      <Modal
+        open={confirmAction !== null}
+        title={confirmTitle}
+        okText={confirmOkText}
+        cancelText={tripMessages.createCancel}
+        confirmLoading={confirmBusy}
+        okButtonProps={{ danger: confirmAction !== 'complete' }}
+        onOk={runConfirm}
+        onCancel={() => setConfirmAction(null)}
+      >
+        <Typography.Paragraph>{confirmHint}</Typography.Paragraph>
+      </Modal>
 
       <Modal
         open={applyOpen}

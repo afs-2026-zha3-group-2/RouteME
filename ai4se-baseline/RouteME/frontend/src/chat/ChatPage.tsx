@@ -1,10 +1,11 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Alert, Button, Card, Input, Skeleton, Space, Typography } from 'antd';
-import { loadMessages, loadTrip, sendMessage } from '../api';
+import { loadMessages, loadTrip, loadUsers, sendMessage } from '../api';
 import { tripMessages } from '../i18n/tripMessages';
 import { ReportModal } from '../safety/ReportModal';
 import { SafetyNote } from '../safety/SafetyNote';
-import type { ChatMessage, DemoUser } from '../types';
+import { Avatar } from '../shell/Avatar';
+import type { ChatMessage, DemoUser, TripDetail } from '../types';
 
 const POLL_INTERVAL_MS = 5000;
 const MAX_CONTENT_LENGTH = 500;
@@ -17,6 +18,8 @@ type Props = {
 
 export function ChatPage({ currentUser, tripId, otherUserId }: Props) {
   const [messages, setMessages] = useState<ChatMessage[] | null>(null);
+  const [trip, setTrip] = useState<TripDetail | null>(null);
+  const [otherUser, setOtherUser] = useState<DemoUser | null>(null);
   const [completed, setCompleted] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [content, setContent] = useState('');
@@ -37,16 +40,24 @@ export function ChatPage({ currentUser, tripId, otherUserId }: Props) {
     let active = true;
     reload();
     loadTrip(currentUser.id, tripId)
-      .then((trip) => {
+      .then((loadedTrip) => {
         if (active) {
-          setCompleted(trip.status === 'completed');
+          setTrip(loadedTrip);
+          setCompleted(loadedTrip.status === 'completed');
+        }
+      })
+      .catch(() => undefined);
+    loadUsers()
+      .then((loadedUsers) => {
+        if (active) {
+          setOtherUser(loadedUsers.find((user) => user.id === otherUserId) ?? null);
         }
       })
       .catch(() => undefined);
     return () => {
       active = false;
     };
-  }, [currentUser.id, tripId, reload]);
+  }, [currentUser.id, tripId, otherUserId, reload]);
 
   useEffect(() => {
     if (completed) {
@@ -100,9 +111,27 @@ export function ChatPage({ currentUser, tripId, otherUserId }: Props) {
         </a>
         <Card className="panel chat-panel">
           <Space orientation="vertical" size="small" className="home-stack">
-            <Typography.Title level={3} className="trip-title">
-              {tripMessages.chatTitle}
-            </Typography.Title>
+            <div className="chat-head">
+              {otherUser !== null && <Avatar user={otherUser} size="lg" />}
+              <div className="chat-head-text">
+                <Typography.Title level={3} className="trip-title chat-title">
+                  {otherUser?.nickname ?? '同行者'}
+                </Typography.Title>
+                <p className="chat-head-meta">
+                  {trip !== null && <span>{trip.title}</span>}
+                  {otherUser !== null && <span>{otherUser.school}</span>}
+                </p>
+                {otherUser !== null && otherUser.interests.length > 0 && (
+                  <p className="chat-head-tags">
+                    {otherUser.interests.map((interest) => (
+                      <span key={interest} className="tag">
+                        {interest}
+                      </span>
+                    ))}
+                  </p>
+                )}
+              </div>
+            </div>
 
             <SafetyNote onReport={() => setReportOpen(true)} />
 
@@ -125,6 +154,11 @@ export function ChatPage({ currentUser, tripId, otherUserId }: Props) {
                     key={message.id}
                     className={`chat-bubble ${message.sender_id === currentUser.id ? 'mine' : ''}`}
                   >
+                    <span className="chat-author">
+                      {message.sender_id === currentUser.id
+                        ? `${currentUser.nickname}（我）`
+                        : (otherUser?.nickname ?? '同行者')}
+                    </span>
                     <Typography.Text>{message.content}</Typography.Text>
                     <div className="chat-meta">{new Date(message.sent_at).toLocaleString()}</div>
                   </div>

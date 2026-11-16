@@ -1,9 +1,9 @@
-import type { ReactNode } from 'react';
-import { Select } from 'antd';
+import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { tripMessages } from '../i18n/tripMessages';
 import type { Route } from '../route';
 import type { ColorMode } from '../theme';
 import type { DemoUser } from '../types';
+import { Avatar } from './Avatar';
 
 type NavKey = 'discover' | 'create' | 'mine';
 
@@ -105,6 +105,30 @@ export function AppShell({
   children,
 }: Props) {
   const active = activeKey(route);
+  const [identityOpen, setIdentityOpen] = useState(false);
+  const identityRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!identityOpen) {
+      return;
+    }
+    const closeOnOutside = (event: MouseEvent) => {
+      if (identityRef.current !== null && !identityRef.current.contains(event.target as Node)) {
+        setIdentityOpen(false);
+      }
+    };
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setIdentityOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', closeOnOutside);
+    document.addEventListener('keydown', closeOnEscape);
+    return () => {
+      document.removeEventListener('mousedown', closeOnOutside);
+      document.removeEventListener('keydown', closeOnEscape);
+    };
+  }, [identityOpen]);
 
   return (
     <div className="app-shell">
@@ -153,18 +177,62 @@ export function AppShell({
           )}
         </button>
 
-        <Select
-          className="user-switch"
-          value={currentUser.id}
-          aria-label={tripMessages.identitySwitch}
-          options={users.map((user) => ({ value: user.id, label: user.nickname }))}
-          onChange={(id) => {
-            const next = users.find((user) => user.id === id);
-            if (next !== undefined) {
-              onSelectUser(next);
-            }
-          }}
-        />
+        <div className="id-switch" ref={identityRef}>
+          <button
+            type="button"
+            className="id-switch-btn"
+            aria-haspopup="listbox"
+            aria-expanded={identityOpen}
+            aria-label={`${tripMessages.identitySwitch}：当前 ${currentUser.nickname}`}
+            onClick={() => setIdentityOpen((previous) => !previous)}
+          >
+            <Avatar user={currentUser} size="sm" />
+            <span className="id-switch-text">
+              <span className="id-switch-name">{currentUser.nickname}</span>
+              <span className="id-switch-label">{tripMessages.identitySwitch}</span>
+            </span>
+            <svg
+              className="id-switch-caret"
+              viewBox="0 0 12 12"
+              aria-hidden="true"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.6"
+              strokeLinecap="round"
+            >
+              <path d="m3 4.5 3 3 3-3" />
+            </svg>
+          </button>
+
+          {identityOpen && (
+            <div className="id-panel" role="listbox" aria-label={tripMessages.identitySwitch}>
+              {users.map((user) => {
+                const selected = user.id === currentUser.id;
+                return (
+                  <button
+                    key={user.id}
+                    type="button"
+                    role="option"
+                    aria-selected={selected}
+                    className={selected ? 'id-option on' : 'id-option'}
+                    onClick={() => {
+                      onSelectUser(user);
+                      setIdentityOpen(false);
+                    }}
+                  >
+                    <Avatar user={user} size="sm" />
+                    <span className="id-option-text">
+                      <b>{user.nickname}</b>
+                      <i>{user.school}</i>
+                    </span>
+                    {selected && <span className="id-option-flag">当前</span>}
+                  </button>
+                );
+              })}
+              <p className="id-panel-note">演示身份，切换后所有浏览与操作都以新身份计算。</p>
+            </div>
+          )}
+        </div>
       </header>
 
       <aside className="rail" aria-label="主导航">

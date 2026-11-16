@@ -84,6 +84,7 @@ RouteME/openapi.yaml   契约 SoT（info.version 0.5.0）
 ```
 
 - 根包 `routeme`：`@rule:package-structure` 的 `staffing` 根包是上一作业的领域名，RouteME 按产品名建包，层包与依赖方向不变；例外记录在 `openspec/changes/archive/2026-11-15-bootstrap-hello-world/design.md`。
+- 地图选点（2026-11-16）：`frontend/src/map/` 是离线地点能力，`placeCatalog`（广东城市与常见 POI 的固定地名库 + 投影/搜索/最近点）→ `PlaceMap`（SVG 示意地图，点击吸附最近地点）→ `PlacePicker`（搜索建议 + 地图点选 + 已选编号）。目的地、途经点与集合区域共用这一层；手输必须命中地点库，否则提示“地图上搜不到”。后端 `TripPlan` 只要求目的地非空且 ≤40 字，不再限制固定城市列表。
 
 ### RouteME 后端包结构（2026-11-15 定稿）
 

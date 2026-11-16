@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
+  addTag,
   emptyTripForm,
-  splitStops,
   toCreateRequest,
   validateTripForm,
   type TripFormValues,
@@ -13,7 +13,7 @@ const validForm: TripFormValues = {
   destination: '广州',
   startDate: '2026-11-20',
   endDate: '2026-11-20',
-  stopsText: '陈家祠地铁站集合\n永庆坊',
+  stops: ['陈家祠地铁站集合', '永庆坊'],
   capacity: '4',
   meetingArea: '陈家祠地铁站 D 口',
   budgetMin: '80',
@@ -46,8 +46,9 @@ describe('validateTripForm', () => {
   });
 
   it('requires at least two stops', () => {
-    const errors = validateTripForm({ ...validForm, stopsText: '只有一处' });
+    const errors = validateTripForm({ ...validForm, stops: ['只有一处'] });
     expect(errors.stops).toBeDefined();
+    expect(validateTripForm({ ...validForm, stops: ['一处', '  '] }).stops).toBeDefined();
   });
 
   it('bounds the capacity to the contract range', () => {
@@ -93,8 +94,15 @@ describe('toCreateRequest', () => {
   });
 });
 
-describe('splitStops', () => {
-  it('trims lines and drops blank ones', () => {
-    expect(splitStops(' 集合 \n\n 终点 ')).toEqual(['集合', '终点']);
+describe('addTag', () => {
+  it('adds a trimmed custom tag once', () => {
+    expect(addTag(['摄影'], ' 夜市 ')).toEqual(['摄影', '夜市']);
+    expect(addTag(['摄影', '夜市'], '夜市')).toEqual(['摄影', '夜市']);
+    expect(addTag(['摄影'], '   ')).toEqual(['摄影']);
+  });
+
+  it('stops at five tags', () => {
+    const full = ['一', '二', '三', '四', '五'];
+    expect(addTag(full, '六')).toEqual(full);
   });
 });

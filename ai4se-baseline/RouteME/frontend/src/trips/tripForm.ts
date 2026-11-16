@@ -7,7 +7,7 @@ export type TripFormValues = {
   destination: string;
   startDate: string;
   endDate: string;
-  stopsText: string;
+  stops: string[];
   capacity: string;
   meetingArea: string;
   budgetMin: string;
@@ -24,7 +24,7 @@ export const emptyTripForm: TripFormValues = {
   destination: '',
   startDate: '',
   endDate: '',
-  stopsText: '',
+  stops: [],
   capacity: '4',
   meetingArea: '',
   budgetMin: '',
@@ -33,20 +33,13 @@ export const emptyTripForm: TripFormValues = {
   note: '',
 };
 
-export function splitStops(stopsText: string): string[] {
-  return stopsText
-    .split('\n')
-    .map((line) => line.trim())
-    .filter((line) => line !== '');
-}
-
 export function validateTripForm(values: TripFormValues): TripFieldErrors {
   const errors: TripFieldErrors = {};
   const title = values.title.trim();
   if (title === '' || title.length > MAX_TITLE_LENGTH) {
     errors.title = tripMessages.errorTitleRequired;
   }
-  if (values.destination === '') {
+  if (values.destination.trim() === '') {
     errors.destination = tripMessages.errorDestinationRequired;
   }
   if (values.startDate === '') {
@@ -58,7 +51,7 @@ export function validateTripForm(values: TripFormValues): TripFieldErrors {
   if (values.startDate !== '' && values.endDate !== '' && values.endDate < values.startDate) {
     errors.endDate = tripMessages.errorDateOrder;
   }
-  if (splitStops(values.stopsText).length < MIN_STOPS) {
+  if (values.stops.filter((stop) => stop.trim() !== '').length < MIN_STOPS) {
     errors.stops = tripMessages.errorStopsRequired;
   }
   const capacity = Number(values.capacity);
@@ -81,10 +74,10 @@ export function validateTripForm(values: TripFormValues): TripFieldErrors {
 export function toCreateRequest(values: TripFormValues): TripCreateRequest {
   return {
     title: values.title.trim(),
-    destination: values.destination,
+    destination: values.destination.trim(),
     start_date: values.startDate,
     end_date: values.endDate,
-    stops: splitStops(values.stopsText),
+    stops: values.stops.map((stop) => stop.trim()).filter((stop) => stop !== ''),
     meeting_area: blankToNull(values.meetingArea),
     note: blankToNull(values.note),
     budget_min_cents: toCents(values.budgetMin),
@@ -92,6 +85,15 @@ export function toCreateRequest(values: TripFormValues): TripCreateRequest {
     tags: values.tags,
     capacity: Number(values.capacity),
   };
+}
+
+/** Adds a custom interest tag, keeping order, uniqueness and the count limit. */
+export function addTag(tags: string[], raw: string): string[] {
+  const tag = raw.trim();
+  if (tag === '' || tags.includes(tag) || tags.length >= MAX_TAGS) {
+    return tags;
+  }
+  return [...tags, tag];
 }
 
 function parseYuan(value: string): number | null {

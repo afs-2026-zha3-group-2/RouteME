@@ -58,6 +58,13 @@ class TripControllerTest {
     }
 
     @Test
+    void in_destinationOutsideLegacyCatalog_out_created() throws Exception {
+        String body = VALID_TRIP.replace("\"destination\": \"广州\"", "\"destination\": \"厦门\"");
+        postTrip(body, "1").andExpect(status().isCreated())
+                .andExpect(jsonPath("$.destination").value("厦门"));
+    }
+
+    @Test
     void in_missingTitle_out_invalidInput() throws Exception {
         String body = VALID_TRIP.replace("\"广州老城骑楼扫街半日\"", "\"  \"");
         postTrip(body, "1").andExpect(status().isBadRequest())

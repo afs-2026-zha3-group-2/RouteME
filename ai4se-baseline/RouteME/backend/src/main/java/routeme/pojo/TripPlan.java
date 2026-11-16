@@ -1,7 +1,7 @@
 package routeme.pojo;
 
-import static routeme.constant.TripCatalogConstant.DESTINATIONS;
 import static routeme.constant.TripCatalogConstant.MAX_CAPACITY;
+import static routeme.constant.TripCatalogConstant.MAX_DESTINATION_LENGTH;
 import static routeme.constant.TripCatalogConstant.MAX_MEETING_AREA_LENGTH;
 import static routeme.constant.TripCatalogConstant.MAX_NOTE_LENGTH;
 import static routeme.constant.TripCatalogConstant.MAX_TAGS;
@@ -60,8 +60,12 @@ public record TripPlan(
         if (title.length() > MAX_TITLE_LENGTH) {
             throw new InvalidInputException("title must be at most " + MAX_TITLE_LENGTH + " characters");
         }
-        if (draft.destination() == null || !DESTINATIONS.contains(draft.destination())) {
-            throw new InvalidInputException("destination is not in the supported list");
+        if (draft.destination() == null || draft.destination().isBlank()) {
+            throw new InvalidInputException("destination is required");
+        }
+        String destination = draft.destination().trim();
+        if (destination.length() > MAX_DESTINATION_LENGTH) {
+            throw new InvalidInputException("destination must be at most " + MAX_DESTINATION_LENGTH + " characters");
         }
         if (draft.startDate() == null) {
             throw new InvalidInputException("start date is required");
@@ -97,7 +101,7 @@ public record TripPlan(
         if (note != null && note.length() > MAX_NOTE_LENGTH) {
             throw new InvalidInputException("note is too long");
         }
-        return new TripPlan(0, draft.publisherId(), title, draft.destination(), draft.startDate(), draft.endDate(),
+        return new TripPlan(0, draft.publisherId(), title, destination, draft.startDate(), draft.endDate(),
                 stops, meetingArea, note, budgetMin, budgetMax, tags, capacity, 1, null, now, now);
     }
 
