@@ -5,16 +5,16 @@
 - **Phase:** ci
 - **Data source:** local execution（本机按 `.github/workflows/ci.yml` 同命令执行；本机无 `gh` / API 凭据）
 - **Change id:** `add-user-profile`
-- **Target:** `main` @ `2423c01`（实现）→ `a95254c`（验证记录）→ 合并 tip `022659c` → `e54f273`（远端证据提交）→ `3c8355b`（其他职业自填修复）
+- **Target:** `main` @ `2423c01`（实现）→ `a95254c`（验证记录）→ 合并 tip `022659c` → `e54f273`（远端证据提交）→ `3c8355b`（其他职业自填修复）→ `8de3351`（生日 DatePicker）→ `db8211b`（合并 main 后的测试计数）→ `9fd5764`（dayjs 解析源修复，当前绿色 tip）
 - **Pipeline URL:** n/a（私有仓库且本机无 `gh`；以 release tag 作证据）
-- **Commit:** `2423c01` / `a95254c` / `e54f273` / `3c8355b`；中间合并 tip `022659c`
+- **Commit:** `2423c01` / `a95254c` / `e54f273` / `3c8355b` / `8de3351` / `db8211b` / `9fd5764`；中间合并 tip `022659c`
 
 ## Summary
 
 | Phase | Status | Conclusion | Upstream URL | Notes |
 |-------|--------|------------|--------------|-------|
 | ci（local equivalent） | Pass | success | n/a | `.\mvnw.cmd -B -ntp verify` → 211 tests / BUILD SUCCESS；`npm run build && npm test` → 133 tests（合并 main 后全量） |
-| ci（remote run） | Pass | success（tag 证据） | n/a | `e54f273` / `3c8355b` CI 通过；证据 `refs/tags/build-e54f273`、`build-3c8355b`（中间 tip `022659c` → `build-022659c`） |
+| ci（remote run） | Pass | success（tag 证据） | n/a | `e54f273` / `3c8355b` CI 通过；证据 `refs/tags/build-e54f273`、`build-3c8355b`（中间 tip `022659c` → `build-022659c`）。最终绿色 tip `9fd5764`（包含 `8de3351` / `db8211b`）由 `build-9fd5764` tag 佐证 |
 | cd（remote） | Pass | success | n/a | `cd.yml` 仅在 CI `conclusion == 'success'` 时发布 `build-${sha:0:7}` |
 | **Overall** | Partial | `Pass-by-tag-evidence` | — | job 级明细不可得（私有仓库 + 本机无 `gh`）；E2E 不在 CI 范围 |
 
@@ -31,14 +31,14 @@
 
 **E1:** ⚠️ 不完整（缺 job 级明细 + E2E 未入 CI），整体结论 success。
 
-**Post-CI fix:** 「其他职业自填」随 `3c8355b` 推送；`refs/tags/build-3c8355b` 已出现（`cd.yml` 仅在 CI success 后发布），远端结论 success。生日 DatePicker（13/13 E2E、前端 120）在本提交后落地，本地验证；本地另有后端 211。
+**Post-CI fix:** 「其他职业自填」随 `3c8355b` 推送；`refs/tags/build-3c8355b` 已出现（`cd.yml` 仅在 CI success 后发布），远端结论 success。生日 DatePicker（13/13 E2E、前端 133）在本提交后落地。`8de3351` 首次远端运行在 Frontend job 失败：`npm install` 生成的 lockfile 记录了公司 Artifactory 的 tarball URL（GitHub runner 不可解析，`ENOTFOUND`）；`9f11bde` 仅把该条 `resolved` 改回 `registry.npmjs.org`（integrity 不变），随后 `build-9fd5764` tag 出现，证明含 `8de3351` / `db8211b` 的 main 已通过 CI。本地另有后端 211、前端 15 文件 / 133。
 
 ## Jobs / checks
 
 | Phase | Job/Stage | Status | Duration | URL | Failure reason |
 |-------|-----------|--------|----------|-----|----------------|
 | ci | Backend (Java 21) — `./mvnw -B -ntp verify` | success（远端由 tag 推断；本地同命令复现 211/0） | 28.8 s（本地） | n/a | — |
-| ci | Frontend (Node 22) — `npm install --no-audit --no-fund && npm run build && npm test` | success（远端由 tag 推断；本地复现 120/120） | build 0.9 s / tests 0.7 s | n/a | — |
+| ci | Frontend (Node 22) — `npm install --no-audit --no-fund && npm run build && npm test` | success（远端由 tag 推断；本地复现 133/133） | build 0.9 s / tests 0.7 s | n/a | 远端首次运行 `8de3351` 因 lockfile 指向内部 Artifactory 而失败（ENOTFOUND），`9f11bde` 修正后通过 |
 | — | Playwright E2E — 本地全绿（`profile.spec.ts` 13/13） | n/a（不在 CI 范围） | — | — | — |
 
 ## 本 change 的 CI 覆盖
@@ -71,13 +71,13 @@
 
 | # | Risk | Source | Status |
 |---|------|--------|--------|
-| 1 | CI job 级明细与 run URL 不可得 | 无 `gh` / 凭据；私有仓库 | accepted（tag 证据：`build-e54f273` / `build-022659c`） |
+| 1 | CI job 级明细与 run URL 不可得 | 无 `gh` / 凭据；私有仓库 | accepted（tag 证据：`build-e54f273` / `build-022659c` / `build-9fd5764`） |
 | 2 | 10 条资料 E2E 不进 CI，回归依赖本地 | `ci.yml` 仅含 backend / frontend | open（AO 跟踪） |
 | 3 | 前端 bundle 923 kB（>500 kB 警告） | 既有体积问题，本 change 增加页面代码 | accepted（独立优化） |
 
 ## Artifacts
 
-- release `build-e54f273`（`RouteME build-e54f273`），指向 `e54f273`；中间 `build-022659c`。
+- release `build-9fd5764`（当前绿色 tip，含 `8de3351` / `db8211b`）；历史 `build-e54f273`（指向 `e54f273`）、`build-3c8355b`、中间 `build-022659c`。
 - 本地完整输出：`target/surefire-reports/`（backend）、`frontend` vitest 输出、`e2e` Playwright 输出（均未入库）。
 - 本地验证报告：[`docs/ai4se-plugins/20261116-120800-local-verify-report.md`](../../../docs/ai4se-plugins/20261116-120800-local-verify-report.md)。
 
