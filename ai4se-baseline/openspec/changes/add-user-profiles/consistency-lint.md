@@ -60,3 +60,7 @@
 ## Next（non-Gate）
 
 `/sdd:g1-decision-record`（需人工签署）或继续 `/sdd:p2` 处理人工澄清。
+
+## Post-lint note（P3 clarification）
+
+- 2026-11-16：P3 核对发现 `trip-plans` 无「已取消」状态，Delta Spec 统计口径已按当前能力澄清（发布行程统计全部已发布行程；未来引入取消时再排除）。该澄清不新增 BLOCKER/WARNING，本报告 P2 结论仍为 Pass。

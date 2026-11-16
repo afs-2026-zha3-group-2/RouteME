@@ -67,7 +67,7 @@
 
 - 现有用户数据已具备 `nickname`、`avatar_initial`、`school`、`bio`、`interests`、`created_at`。`school` 的语义按用户确认扩展为「身份/年级 · 专业或行业 [· MBTI]」自由文本（例：「上班族 · 互联网行业 · INFP」「大三 · 软件工程专业 · ENTJ」）；MBTI 可缺省，前两段语义上必填，但本次只做展示、不新增填写/校验。
 - 远端最新状态：`app_users` 同时承载演示账户与注册账户（V9 增加 `username` / `password_hash`），注册账户的 `created_at` 由创建流程写入；公开资料读取对两类用户一致，但 MUST NOT 返回用户名、密码散列、会话令牌等账户凭据字段。
-- 四项统计口径已确认采用 prototype `S.stats`：发布行程 = 该用户发布且未取消的行程数；已完成 = 该用户发布的已结束行程数；参与同行 = 该用户被接受的申请数；游后分享 = 该用户发布的体验数。
+- 四项统计口径已确认采用 prototype `S.stats`：发布行程 = 该用户发布的行程数（当前 `trip-plans` 能力无「已取消」状态；若未来引入取消，取消行程不计入）；已完成 = 该用户发布的已结束行程数；参与同行 = 该用户被接受的申请数；游后分享 = 该用户发布的体验数。
 - 统计需要只读消费 `trip-plans`、`trip-companions`（已接受申请）、`trip-experiences` 的数据，不改变其数据所有权。
 - 隐私红线沿用 `trip-companions` 与 `pii-scrubbing` 规则：不公开电话、证件、精确住址。
 - 视觉与信息结构以 prototype S02 为准（`docs/prototype/prototype.html`、`styles.css`）；举报按钮本次不实现。
