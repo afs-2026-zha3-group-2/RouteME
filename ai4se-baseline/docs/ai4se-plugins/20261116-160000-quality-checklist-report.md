@@ -15,7 +15,7 @@
 |----------|-----------|--------|----------|
 | P2-1 | yes | Pass | `openspec/changes/refine-safety-report/specs/trip-companions/spec.md`（MODIFIED，1 Requirement / 9 Scenario）；`openspec show refine-safety-report --json --deltas-only` → `deltaCount: 1`、`spec=trip-companions`、`operation=MODIFIED` |
 | P2-2 | yes | Pass | `openspec/changes/refine-safety-report/dov-ac-review.md`：AC 4/4 Pass、DoV 5/5 Pass、REQ-012 §4 映射 7/7、Living Spec 基线保留 4/4 保留、无 blocking gap |
-| P2-3 | yes | Pass | `openspec/changes/refine-safety-report/g1-decision.md`：Decision **Pass**；IO Wanye / SA Karena / AO Jacky；无整改条件；8 项非阻断 follow-up 均带 owner 与时机；timestamp 2026-11-16T15:58+0800 |
+| P2-3 | yes | Pass | `openspec/changes/refine-safety-report/g1-decision.md`：Decision **Pass**；IO WAYNE / SA Karena / AO Jacky；无整改条件；8 项非阻断 follow-up 均带 owner 与时机；timestamp 2026-11-16T15:58+0800 |
 | P2-4 | no | Pass | `openspec/changes/refine-safety-report/consistency-lint.md`：phase=p2、artifact level 2；BLOCKER 0 / WARNING 0 / SUGGESTION 5（L-01 / L-02 / L-04 当场收口）/ N/A 7；`@rule:` 5 个 ID 全部可达 |
 
 | **Stage Overall** | — | **Pass** | required-only aggregation（P2-1 / P2-2 / P2-3 全 Pass） |
@@ -32,7 +32,7 @@
 |---|---|---|---|
 | `proposal.md` | `docs/reviews/20261116-refine-safety-report-proposal-review.md`（+ P2 变更摘要） | Pass（4 SUGGESTION / 0 BLOCKER）；P2 补 `## Why` / `## What Changes` 与 3 处措辞修正，语义未变 | Jacky · 2026-11-16T15:44+08:00 |
 | `specs/trip-companions/spec.md` | `docs/reviews/20261116-refine-safety-report-spec-review.md`（+ P2 变更摘要） | Pass（1 WARNING / 3 SUGGESTION / 0 BLOCKER）；P2 仅勘误场景计数 | Jacky · 2026-11-16T15:44+08:00 |
-| G1 决策记录 | `openspec/changes/refine-safety-report/g1-decision.md` | Pass | IO Wanye / SA Karena · 2026-11-16 |
+| G1 决策记录 | `openspec/changes/refine-safety-report/g1-decision.md` | Pass | IO WAYNE / SA Karena · 2026-11-16 |
 
 ## Gaps
 
@@ -48,7 +48,7 @@
 
 - **P2 发现的工具缺口（已修复）：** `openspec show refine-safety-report --json` 曾报 `Change must have a Why section`——`validate --strict` 不校验该段，`show` / 归档会拦。已在提案补 `## Why` / `## What Changes`（与 `add-trip-completion/proposal.md` 同构），复验 `deltaCount: 1` + `validate --strict` valid；按 `@rule:artifact-review-gate` 复用 P1 `Pass` 报告并追加「变更摘要」。
 - **P1 记录勘误：** `requirement-workspace/handoff.md` 的 P1 状态行与 `docs/sdd/refine-safety-report/p1-intent.md` 的 Delta 草稿行由「保留 3 个基线场景名 + 新增 6」改为「保留 4 个 + 新增 5」，与 Delta 的 9 个 `#### Scenario:` 对齐。
-- **签署人：** 用户在 2026-11-16 会话中明确 IO=Wanye、SA=Karena，并选定 G1 结论 Pass；本次 change 的 AO 为 Jacky，故 SA 由 Karena 签署，避免 AO 自签 SA。
+- **签署人：** 用户在 2026-11-16 会话中明确 IO=WAYNE、SA=Karena，并选定 G1 结论 Pass；本次 change 的 AO 为 Jacky，故 SA 由 Karena 签署，避免 AO 自签 SA。
 - `openspec status` 语义：`proposal` / `specs` 已完成，`design` / `tasks` 属 P3。
 - Optional / not-run / out-of-focus items marked Skipped do not block Overall Pass；Overall aggregates in-focus required items only。
 - This report is not a Gate decision。

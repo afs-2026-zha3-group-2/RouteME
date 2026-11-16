@@ -3,7 +3,7 @@
 - **Gate:** G1（Align）
 - **Change:** `refine-trip-chat`（`trip-companions` MODIFIED + `trip-plans` MODIFIED，REQ-013）
 - **Timestamp:** 2026-11-16T15:45+0800
-- **Recorded by:** Qoder（AI agent），按 Jay（AO / current developer）2026-11-16「批准，进入 P2」指令记录；用户同次确认名册 SM=Lewis / AO=Jay / IO=Wanye / SA=Jacky / VL=Neal
+- **Recorded by:** Qoder（AI agent），按 Jay（AO / current developer）2026-11-16「批准，进入 P2」指令记录；用户同次确认名册 SM=Lewis / AO=Jay / IO=WAYNE / SA=Jacky / VL=Neal
 
 ## Inputs
 
@@ -51,20 +51,20 @@
 | E2E 覆盖：发送 → 重新进入仍可见（升序 + 时间）、仅 PENDING 被拒、退出后仍可聊、集合编辑生效 | AO（Jay） | P4 |
 | `left` 不改变既有口径：matched 与 joined 仍只认 `ACCEPTED`；`existsActive` 不拦 `left`；同行者列表不含 `left` | AO（Jay） | P4 |
 | 归档前 SA 具名追认双 capability 例外（`trip-companions` + `trip-plans`） | SA（Jacky） | P5 / G3 前 |
-| 归档前 SA 具名追认「退出同行」与「匹配后的一对一文字沟通」两条 MODIFIED 的冲突裁决 | SA（Jacky）+ IO（Wanye） | P5 / G3 前 |
+| 归档前 SA 具名追认「退出同行」与「匹配后的一对一文字沟通」两条 MODIFIED 的冲突裁决 | SA（Jacky）+ IO（WAYNE） | P5 / G3 前 |
 | 归档合并核对：5 个 Requirement 场景数不低于基线（4/3/4/7/4），且 MODIFIED 正文被整体替换 | AO + SA | P5 `living-merge` |
 
 ## Approvers
 
 | 角色 | 姓名 |
 |---|---|
-| IO | Wanye |
+| IO | WAYNE |
 | SA | Jacky |
 | AO（当前开发） | Jay |
 | VL | Neal |
 | SM | Lewis |
 
-签署来源：用户 2026-11-16 当次确认「SM - LEWIS / AO - JAY / IO - WANYE / SA - JACKY / VL - NEAL，按这个来签」。本文件只记录 G1 结果，不代表 G2 / G3。
+签署来源：用户 2026-11-16 当次确认「SM - LEWIS / AO - JAY / IO - WAYNE / SA - JACKY / VL - NEAL，按这个来签」。本文件只记录 G1 结果，不代表 G2 / G3。
 
 ## Next
 

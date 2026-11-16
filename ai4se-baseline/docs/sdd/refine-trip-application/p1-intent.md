@@ -41,7 +41,7 @@
 | 角色 | 姓名 | 确认内容 | 日期 |
 |---|---|---|---|
 | SM | Lewis | P1 范围与排期确认（单 change、2 点、迭代 2） | 2026-11-16 |
-| IO | Wanye | 需求来源与跨能力影响确认（仅 `trip-companions` MODIFIED，`trip-plans` 只读） | 2026-11-16 |
+| IO | WAYNE | 需求来源与跨能力影响确认（仅 `trip-companions` MODIFIED，`trip-plans` 只读） | 2026-11-16 |
 | AO | Jay | 承接 P2–P4 | 2026-11-16 |
 
 **阶段结论：Pass**

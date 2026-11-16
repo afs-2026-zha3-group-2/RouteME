@@ -43,7 +43,7 @@
 | VL 签署本记录 | VL（Neal） | G2 关闭前 |
 | E2E 数据污染自动化治理（独立测试库或 `afterEach` 清理） | AO（Jay） | 另立 change；G3 前至少登记 |
 | 归档前 SA 追认双 capability 例外 | SA（Jacky） | P5 / G3 前 |
-| 归档前 SA + IO 追认「退出同行」与「匹配后的一对一文字沟通」冲突裁决 | SA（Jacky）+ IO（Wanye） | P5 / G3 前 |
+| 归档前 SA + IO 追认「退出同行」与「匹配后的一对一文字沟通」冲突裁决 | SA（Jacky）+ IO（WAYNE） | P5 / G3 前 |
 | 归档合并核对：MODIFIED 正文整体替换、场景数不低于基线（4/3/4/7/4） | AO + SA | P5 `living-merge` |
 
 ## Approvers
@@ -52,11 +52,11 @@
 |---|---|---|
 | VL | Neal | 待签 |
 | AO（当前开发） | Jay | 已署 |
-| IO | Wanye | 已署（口径裁决来源） |
+| IO | WAYNE | 已署（口径裁决来源） |
 | SA | Jacky | 已署（条件式 G1 追认待 P5） |
 | SM | Lewis | 知会 |
 
-签署来源：用户 2026-11-16 当次确认「SM - LEWIS / AO - JAY / IO - WANYE / SA - JACKY / VL - NEAL，按这个来签」。本文件只记录 G2 结果，不代表 G3。
+签署来源：用户 2026-11-16 当次确认「SM - LEWIS / AO - JAY / IO - WAYNE / SA - JACKY / VL - NEAL，按这个来签」。本文件只记录 G2 结果，不代表 G3。
 
 ## Next
 
