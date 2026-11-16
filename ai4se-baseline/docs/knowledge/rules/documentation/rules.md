@@ -175,12 +175,14 @@ openspec/
 | 变更摘要 | 固定文件名 | `summary.md` |
 | 验证报告 | `docs/ai4se-plugins/<时间戳>-<技能名>-report.md` | `20261110-104848-local-verify-report.md` |
 | 检查点记录 | `docs/ai4se-plugins/<时间戳>-<技能名>-checkpoints.md` | `20261110-104848-rules-govern-checkpoints.md` |
+| 工件评审报告 | `docs/reviews/<yyyymmdd>-<change-id>-<artifact>-review.md` | `20261116-add-user-auth-proposal-review.md` |
 | 需求交接 | `requirement-workspace/handoff.md` | 预规格阶段的入口 |
 
 - `<change-id>` 与分支名、PR 标题中的 change-id 完全相同，从提交能一路追到规格。
 - 一个 change 只改一个 capability；跨能力就拆成两个 change。
 - 决策记录不写 `G1决策-最终.md`、`g1-decision-final-v2.md` 这类变体，固定名 + 版本管理即历史。
 - 工件语言：正文中文；`SHALL` / `MUST` 等结构关键词保留英文；标题层级与 OpenSpec 模板一致。
+- 工件评审报告统一放 `docs/reviews/`，文件名固定为 `日期-change-id-工件-review.md`，不用时间戳、不混入 `docs/ai4se-plugins/`；四份工件（proposal / spec / design / tasks）各一份。
 
 ### 工件职责边界
 
