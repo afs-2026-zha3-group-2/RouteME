@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Alert, Button, ConfigProvider, Space, Spin, Typography, message } from 'antd';
 import zhCN from 'antd/locale/zh_CN';
-import { loadDemoUsers, loadSessionUser, loadUsers, logoutAccount } from './api';
+import { loadSessionUser, loadUsers, logoutAccount } from './api';
 import { ChatPage } from './chat/ChatPage';
 import { ShareExperiencePage } from './experiences/ShareExperiencePage';
 import { HomePage } from './home/HomePage';
@@ -42,7 +42,6 @@ function mergeUser(list: DemoUser[] | null, user: DemoUser): DemoUser[] {
 
 export function App() {
   const [users, setUsers] = useState<DemoUser[] | null>(null);
-  const [demoUsers, setDemoUsers] = useState<DemoUser[] | null>(null);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [currentUserId, setCurrentUserId] = useState<number | null>(readStoredUserId);
   const [authToken, setAuthToken] = useState<string | null>(readStoredToken);
@@ -51,11 +50,8 @@ export function App() {
   const { mode, toggleMode } = useColorMode();
 
   useEffect(() => {
-    Promise.all([loadUsers(), loadDemoUsers()])
-      .then(([loadedUsers, loadedDemoUsers]) => {
-        setUsers(loadedUsers);
-        setDemoUsers(loadedDemoUsers);
-      })
+    loadUsers()
+      .then(setUsers)
       .catch((error: unknown) => {
         setLoadError(error instanceof Error ? error.message : 'UNKNOWN_ERROR');
       });
@@ -106,16 +102,6 @@ export function App() {
 
   const currentUser = users?.find((user) => user.id === currentUserId) ?? null;
 
-  const selectUser = (user: DemoUser) => {
-    if (authToken !== null) {
-      void logoutAccount(authToken).catch(() => undefined);
-      window.localStorage.removeItem(AUTH_TOKEN_KEY);
-      setAuthToken(null);
-    }
-    setCurrentUserId(user.id);
-    window.localStorage.setItem(CURRENT_USER_KEY, String(user.id));
-  };
-
   const handleAuthenticated = (session: AuthSession) => {
     window.localStorage.setItem(AUTH_TOKEN_KEY, session.token);
     window.localStorage.setItem(CURRENT_USER_KEY, String(session.user.id));
@@ -161,7 +147,7 @@ export function App() {
       );
     }
 
-    if (users === null || demoUsers === null || restoring) {
+    if (users === null || restoring) {
       return (
         <main className="trip-page">
           <Space size="small">
@@ -174,11 +160,7 @@ export function App() {
 
     if (currentUser === null) {
       return (
-        <IdentityGate
-          users={demoUsers}
-          onSelect={selectUser}
-          onAuthenticated={handleAuthenticated}
-        />
+        <IdentityGate onAuthenticated={handleAuthenticated} />
       );
     }
 
@@ -186,13 +168,11 @@ export function App() {
       <ProfileProvider currentUser={currentUser}>
         <AppShell
           currentUser={currentUser}
-          demoUsers={demoUsers}
           isAuthenticated={authToken !== null}
           onLogout={logout}
           route={route}
           mode={mode}
           onToggleMode={toggleMode}
-          onSelectUser={selectUser}
         >
           {route.name === 'home' && <HomePage currentUser={currentUser} />}
           {route.name === 'create' && (

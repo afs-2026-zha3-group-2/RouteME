@@ -47,22 +47,24 @@ async function openIdentityMenu(page: Page) {
 
 async function expectIdentityGate(page: Page): Promise<void> {
   await expect(page.getByRole('tab', { name: '登录' })).toBeVisible();
-  await expect(page.getByRole('button', { name: /林见夏/ })).toBeVisible();
-  await expect(page.getByRole('button', { name: /陈屿/ })).toBeVisible();
-  await expect(page.getByRole('button', { name: /苏念/ })).toBeVisible();
+  await expect(page.getByLabel('用户名')).toBeVisible();
+  // 演示身份直接进入区块已移除，身份门只剩登录 / 注册表单。
+  await expect(page.locator('.gate-cards')).toHaveCount(0);
+  await expect(page.getByRole('button', { name: /周野/ })).toHaveCount(0);
 }
 
-test('shows the logout entry for a demo identity', async ({ page }) => {
+test('hides the demo identity switch list from the identity menu', async ({ page }) => {
   await useIdentity(page, { userId: 1 });
   await page.goto('/');
 
   const menu = await openIdentityMenu(page);
 
-  await expect(menu.getByRole('listbox')).toBeVisible();
-  await expect(menu.getByRole('option')).toHaveCount(4);
+  // 所有种子账号均已落库凭据，菜单不再提供切换身份的演示列表。
+  await expect(menu.getByRole('listbox')).toHaveCount(0);
+  await expect(menu.getByRole('option')).toHaveCount(0);
   await expect(menu.getByRole('button', { name: '退出登录' })).toBeVisible();
   await expect(
-    menu.getByText('演示身份无需密码；退出登录只清除本机身份并回到身份门。'),
+    menu.getByText('退出登录会清除本机身份并回到登录页。'),
   ).toBeVisible();
 });
 
@@ -76,7 +78,7 @@ test('shows the logout entry for a registered account', async ({ page }) => {
   await expect(menu.getByText('已登录')).toBeVisible();
   await expect(menu.getByRole('button', { name: '退出登录' })).toBeVisible();
   await expect(
-    menu.getByText('退出登录会结束本机会话并回到身份门；切换到演示身份会结束当前登录。'),
+    menu.getByText('退出登录会结束本机会话并回到登录页。'),
   ).toBeVisible();
 });
 
@@ -157,7 +159,7 @@ test('stays on the identity gate after logout, refresh, and navigation', async (
   await expect(page.getByRole('button', { name: '退出登录' })).toHaveCount(0);
 });
 
-test('re-enters with another identity after logout', async ({ page }) => {
+test('re-enters with a seeded account after logout', async ({ page }) => {
   await useIdentity(page, { userId: 1 });
   await page.goto('/');
 
@@ -165,8 +167,11 @@ test('re-enters with another identity after logout', async ({ page }) => {
   await menu.getByRole('button', { name: '退出登录' }).click();
   await expectIdentityGate(page);
 
-  await page.getByRole('button', { name: /陈屿/ }).click();
+  // 周野已落库凭据（V15），只能通过登录表单重新进入。
+  await page.getByLabel('用户名').fill('zhouye');
+  await page.getByLabel('密码').fill('123456');
+  await page.getByRole('button', { name: /^登\s*录$/ }).click();
 
-  await expect(page.locator('.id-switch-name')).toHaveText('陈屿');
+  await expect(page.locator('.id-switch-name')).toHaveText('周野');
   await expect(page.getByRole('dialog', { name: '身份菜单' })).toHaveCount(0);
 });

@@ -1,18 +1,14 @@
-import { tripMessages } from '../i18n/tripMessages';
-import { Avatar } from '../shell/Avatar';
 import { BrandMark } from '../shell/BrandMark';
-import type { AuthSession, DemoUser } from '../types';
+import type { AuthSession } from '../types';
 import { AuthPanel } from './AuthPanel';
 
 const LOOP_STEPS = ['旅行灵感', '发布行程', '发现同行者', '建立连接', '一起旅行', '分享体验'];
 
 type Props = {
-  users: DemoUser[];
-  onSelect: (user: DemoUser) => void;
   onAuthenticated: (session: AuthSession) => void;
 };
 
-export function IdentityGate({ users, onSelect, onAuthenticated }: Props) {
+export function IdentityGate({ onAuthenticated }: Props) {
   return (
     <main className="gate">
       <div className="gate-inner">
@@ -50,34 +46,6 @@ export function IdentityGate({ users, onSelect, onAuthenticated }: Props) {
               <AuthPanel onAuthenticated={onAuthenticated} />
             </div>
           </div>
-        </div>
-
-        <p className="gate-divider">{tripMessages.authDivider}</p>
-
-        <div className="gate-cards">
-          {users.map((user) => (
-            <button
-              key={user.id}
-              type="button"
-              className="gate-card"
-              onClick={() => onSelect(user)}
-            >
-              <Avatar user={user} size="xl" />
-              <span className="gate-name-block">
-                <span className="gate-name">{user.nickname}</span>
-                <span className="gate-school">{user.school}</span>
-              </span>
-              <span className="gate-bio">{user.bio}</span>
-              <span className="gate-tags">
-                {user.interests.map((interest) => (
-                  <span key={interest} className="tag">
-                    {interest}
-                  </span>
-                ))}
-              </span>
-              <span className="gate-cta">以 {user.nickname} 的身份进入</span>
-            </button>
-          ))}
         </div>
       </div>
     </main>

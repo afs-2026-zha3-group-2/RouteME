@@ -52,9 +52,9 @@ paths:
                     code: INTERNAL_ERROR
   /users:
     get:
-      operationId: loadDemoUsers
-      summary: 读取演示账户
-      description: 身份门使用。演示环境固定 3 个账户，不做注册与鉴权。
+      operationId: loadUsers
+      summary: 读取全部账户
+      description: 返回种子账户与注册账号（按 id 升序）；注册账号只落库，不会出现在首页。
       responses:
         '200':
           description: 演示账户列表
@@ -73,30 +73,6 @@ paths:
                       school: 大三 · 视觉传达
                       bio: 拍照比走路多。
                       interests: [摄影, 海边, 美食]
-        '500':
-          description: 未预期异常，响应不携带堆栈
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Error'
-              examples:
-                unexpected:
-                  value:
-                    code: INTERNAL_ERROR
-  /users/demo:
-    get:
-      operationId: loadDemoOnlyUsers
-      summary: 读取演示账户
-      description: 身份门使用。只返回没有用户名凭据的 3 个预设账户，注册账号不会出现在这里。
-      responses:
-        '200':
-          description: 演示账户列表
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/DemoUser'
         '500':
           description: 未预期异常，响应不携带堆栈
           content:

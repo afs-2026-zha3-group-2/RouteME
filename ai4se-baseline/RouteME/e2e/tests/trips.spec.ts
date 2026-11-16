@@ -68,17 +68,21 @@ async function createTripViaApi(page: Page, title: string, startDate = todayIso(
   return (await response.json()) as { id: number };
 }
 
-test('shows the identity gate with four demo accounts and the unfinished trip list', async ({ page }) => {
+test('shows the login-only identity gate and the unfinished trip list', async ({ page }) => {
   await page.goto('/');
 
   await expect(page.getByRole('tab', { name: '登录' })).toBeVisible();
-  await expect(page.getByRole('button', { name: /林见夏/ })).toBeVisible();
-  await expect(page.getByRole('button', { name: /陈屿/ })).toBeVisible();
-  await expect(page.getByRole('button', { name: /苏念/ })).toBeVisible();
-  await expect(page.getByRole('button', { name: /周野/ })).toBeVisible();
+  // 周野已落库凭据（V15），演示身份直接进入区块整体移除，首页无法一键进入。
+  await expect(page.locator('.gate-cards')).toHaveCount(0);
+  await expect(page.getByRole('button', { name: /周野/ })).toHaveCount(0);
+  await expect(page.getByRole('button', { name: /林见夏/ })).toHaveCount(0);
+  await expect(page.getByRole('button', { name: /陈屿/ })).toHaveCount(0);
+  await expect(page.getByRole('button', { name: /苏念/ })).toHaveCount(0);
   await expect(page.getByRole('button', { name: /注册|找回密码/ })).toHaveCount(0);
 
-  await page.getByRole('button', { name: /林见夏/ }).click();
+  // 以本机身份直接进入（同其他用例），保证下方未完成任务列表断言仍以 id1 视角成立。
+  await loginAs(page, 1);
+  await page.reload();
 
   await expect(page.getByRole('heading', { level: 1 })).toContainText('今天想走哪条路');
   await expect(page.locator('.trip-card', { hasText: '珠海情侣路日落机位二刷' })).toBeVisible();

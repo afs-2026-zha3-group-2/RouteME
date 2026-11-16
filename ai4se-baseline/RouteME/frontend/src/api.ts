@@ -57,11 +57,6 @@ export async function loadUsers(): Promise<DemoUser[]> {
   return (await response.json()) as DemoUser[];
 }
 
-export async function loadDemoUsers(): Promise<DemoUser[]> {
-  const response = await request('/users/demo');
-  return (await response.json()) as DemoUser[];
-}
-
 export async function registerAccount(body: AuthRegisterRequest): Promise<AuthSession> {
   const response = await request('/auth/register', {
     method: 'POST',

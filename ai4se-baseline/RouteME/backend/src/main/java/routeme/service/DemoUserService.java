@@ -9,7 +9,7 @@ import routeme.pojo.UserAccount;
 import com.baomidou.mybatisplus.spring.service.IService;
 
 /**
- * 演示账户：身份门的账户列表与 {@code X-User-Id} 解析。
+ * 演示账户：账户列表与 {@code X-User-Id} 解析。
  */
 public interface DemoUserService extends IService<UserEntity> {
 
@@ -19,13 +19,6 @@ public interface DemoUserService extends IService<UserEntity> {
      * @return 按 id 升序的账户列表
      */
     List<DemoUser> findAll();
-
-    /**
-     * 只返回没有用户名凭据的演示账户；注册账号不出现在身份门。
-     *
-     * @return 按 id 升序的演示账户
-     */
-    List<DemoUser> findAllDemo();
 
     /**
      * 解析请求头里的演示身份；缺失与未知都映射为 401 {@code DEMO_USER_REQUIRED}。

@@ -14,8 +14,8 @@ import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.jdbc.datasource.DriverManagerDataSource;
 
 /**
- * 在临时 SQLite 文件库执行 V1–V13，验证资料列建立、V13 为 4 个演示账号回填资料列，
- * 旧 school 文案不被回填改写，且演示账号仍无凭据。
+ * 在临时 SQLite 文件库执行全部迁移，验证资料列建立、V13 为 4 个演示账号回填资料列，
+ * 旧 school 文案不被回填改写；V14 与 V15 后全部种子账号均具备可登录凭据。
  */
 class ProfileMigrationSqliteTest {
 
@@ -62,7 +62,7 @@ class ProfileMigrationSqliteTest {
                 () -> assertEquals(4, filledProfiles, "V13 fills every demo profile"),
                 () -> assertEquals("研一 · 地理科学", secondSchool, "legacy school text is preserved"),
                 () -> assertEquals("", viewerSchool, "the viewer identity keeps job / mbti instead of school"),
-                () -> assertEquals(4, credentialless, "demo accounts stay credential-less"),
+                () -> assertEquals(0, credentialless, "every seeded account now carries login credentials"),
                 () -> assertEquals(13, applied.size(), "V1–V13 applied"),
                 () -> assertTrue(applied.contains("10"), "V10 added profile columns"),
                 () -> assertTrue(applied.contains("11"), "V11 added the destination code"),

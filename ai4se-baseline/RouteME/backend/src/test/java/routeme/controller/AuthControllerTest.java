@@ -139,12 +139,26 @@ class AuthControllerTest {
     }
 
     @Test
-    void in_unknownOrDemoAccount_out_invalidCredentials() throws Exception {
-        login("linjianxia", "routeme-demo")
+    void in_unknownAccount_out_invalidCredentials() throws Exception {
+        login("ghostuser", "routeme-demo")
                 .andExpect(status().isUnauthorized())
                 .andExpect(jsonPath("$.code").value("INVALID_CREDENTIALS"));
 
         login("", "")
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.code").value("INVALID_CREDENTIALS"));
+    }
+
+    @Test
+    void in_seededDemoAccount_out_loginWithDefaultPassword() throws Exception {
+        // V14 为演示账户林见夏写入 username=linjianxia，默认密码 123456，可直接登录。
+        login("linjianxia", "123456")
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.token").isNotEmpty())
+                .andExpect(jsonPath("$.user.nickname").value("林见夏"));
+
+        // 密码不对时仍拒绝。
+        login("linjianxia", "wrong-password")
                 .andExpect(status().isUnauthorized())
                 .andExpect(jsonPath("$.code").value("INVALID_CREDENTIALS"));
     }
@@ -184,16 +198,6 @@ class AuthControllerTest {
         mockMvc.perform(get("/api/auth/me").header("Authorization", bearer))
                 .andExpect(status().isUnauthorized())
                 .andExpect(jsonPath("$.code").value("SESSION_INVALID"));
-    }
-
-    @Test
-    void in_registeredAccount_out_demoListStaysFour() throws Exception {
-        register(REGISTER_BODY).andExpect(status().isCreated());
-
-        mockMvc.perform(get("/api/users/demo"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.length()").value(4))
-                .andExpect(jsonPath("$[0].nickname").value("林见夏"));
     }
 
     @Test

@@ -167,7 +167,7 @@ export function ProfileSetupPage({ currentUser, token, onSaved }: Props) {
           type="info"
           showIcon
           title={tripMessages.profileIncompleteShort}
-          description={tripMessages.profileDemoReadonly}
+          description={tripMessages.profileLoginRequired}
           action={
             <Button onClick={() => (window.location.hash = '#/')}>
               {tripMessages.backHome}

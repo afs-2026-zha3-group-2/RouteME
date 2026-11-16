@@ -321,19 +321,20 @@ class UserProfileControllerTest {
     }
 
     @Test
-    void in_demoSave_out_forbidden() throws Exception {
+    void in_legacyUserIdHeaderOnly_out_sessionInvalid() throws Exception {
+        // 写入口已不再接受 X-User-Id；即使指向已落库凭据的周野（id 4），也必须 401。
         mockMvc.perform(put("/api/users/me/profile")
-                        .header("X-User-Id", "1")
+                        .header("X-User-Id", "4")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(COMPLETE_BODY))
-                .andExpect(status().isForbidden())
-                .andExpect(jsonPath("$.code").value("FORBIDDEN"));
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.code").value("SESSION_INVALID"));
 
         mockMvc.perform(multipart("/api/users/me/avatar")
                         .file(new MockMultipartFile("file", "avatar.jpg", "image/jpeg", JPEG))
-                        .header("X-User-Id", "1"))
-                .andExpect(status().isForbidden())
-                .andExpect(jsonPath("$.code").value("FORBIDDEN"));
+                        .header("X-User-Id", "4"))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.code").value("SESSION_INVALID"));
     }
 
     @Test

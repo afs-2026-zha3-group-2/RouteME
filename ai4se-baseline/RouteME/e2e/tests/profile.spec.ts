@@ -39,7 +39,7 @@ async function registerViaApi(
   return { username, nickname, token: session.token, userId: session.user.id };
 }
 
-/** 把会话写入 localStorage；演示身份传 token: null。 */
+/** 把会话写入 localStorage；无会话的只读身份传 token: null。 */
 async function useAccount(page: Page, account: { userId: number; token: string | null }): Promise<void> {
   await page.addInitScript(
     ({ id, token }) => {
@@ -488,8 +488,9 @@ test('limits interests and keeps a single travel style', async ({ page }) => {
   ).not.toHaveClass(/ant-radio-button-wrapper-checked/);
 });
 
-test('keeps demo identities read-only', async ({ page }) => {
-  await useAccount(page, { userId: 1, token: null });
+test('keeps a session-less viewer read-only', async ({ page }) => {
+  // 无 Bearer 会话（例如 token 已失效）时只能浏览，不能编辑资料。
+  await useAccount(page, { userId: 4, token: null });
 
   await page.goto('/#/mine');
   const mineCard = page.locator('.mine-profile-card');
@@ -499,22 +500,29 @@ test('keeps demo identities read-only', async ({ page }) => {
   await expect(mineCard.getByRole('link', { name: '查看主页' })).toHaveCount(0);
 
   await page.goto('/#/profile/setup');
-  await expect(page.getByText('演示身份不能编辑资料；登录后可以完善自己的资料。')).toBeVisible();
+  await expect(page.getByText('登录后可以完善自己的资料。')).toBeVisible();
   await expect(page.getByRole('button', { name: '保存资料' })).toHaveCount(0);
 
   await page.goto('/#/users/2');
   await expect(page.getByRole('button', { name: '编辑资料' })).toHaveCount(0);
 
-  const response = await page.request.put(`${API}/users/me/profile`, {
-    headers: { 'X-User-Id': '1' },
-    data: {
-      nickname: '林见夏',
-      birthday: '2000-01-01',
-      gender: '女',
-      city: '广州',
-      interests: ['摄影', '美食', '徒步'],
-      travel_style: '休闲游',
-    },
+  const profileBody = {
+    nickname: '周野',
+    birthday: '2000-01-01',
+    gender: '女',
+    city: '广州',
+    interests: ['摄影', '美食', '徒步'],
+    travel_style: '休闲游',
+  };
+
+  const withoutSession = await page.request.put(`${API}/users/me/profile`, { data: profileBody });
+  expect(withoutSession.status()).toBe(401);
+  expect(((await withoutSession.json()) as { code: string }).code).toBe('SESSION_INVALID');
+
+  // 旧的 X-User-Id 直通身份已不再被写入口接受。
+  const legacyHeader = await page.request.put(`${API}/users/me/profile`, {
+    headers: { 'X-User-Id': '4' },
+    data: profileBody,
   });
-  expect(response.status()).toBe(403);
+  expect(legacyHeader.status()).toBe(401);
 });

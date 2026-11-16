@@ -3,8 +3,6 @@ export const tripMessages = {
   homeTitle: '旅行灵感',
   publish: '发布行程',
   backHome: '返回灵感首页',
-  identityTitle: '选择一个演示身份',
-  identityHint: '演示环境可直接选择身份；注册与登录将在后续能力中启用。',
   identitySwitch: '切换身份',
   loading: '正在加载',
   failedTitle: '加载失败',
@@ -216,7 +214,6 @@ export const tripMessages = {
   authAddInterest: '添加',
   authLoginSubmit: '登录',
   authRegisterSubmit: '注册并进入',
-  authDivider: '或者用演示身份直接进入',
   authLoggedIn: '已登录',
   authLogout: '退出登录',
   authLogoutWarning: '已退出本机，会话可能仍有效',
@@ -282,7 +279,7 @@ export const tripMessages = {
   profileCancel: '取消',
   profileSaveHint: '保存后可随时在「我的」里修改',
   profileSaveFailed: '保存资料失败',
-  profileDemoReadonly: '演示身份不能编辑资料；登录后可以完善自己的资料。',
+  profileLoginRequired: '登录后可以完善自己的资料。',
   profileErrorNickname: '请填写昵称（20 字以内）',
   profileErrorBirthday: '请选择合法生日（1900-01-01 至今天）',
   profileErrorGender: '请选择性别',
@@ -296,7 +293,6 @@ export const tripMessages = {
   profileErrorBio: '简介最多 500 个字',
   profileErrorJob: '职业最多 20 字',
   profileErrorOption: '请选择有效的选项',
-  profileErrorForbidden: '演示身份不能保存资料',
 
   // 个人主页
   profilePublicTitle: '个人主页',

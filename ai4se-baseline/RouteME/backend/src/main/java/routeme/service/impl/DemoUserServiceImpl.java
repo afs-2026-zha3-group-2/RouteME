@@ -39,15 +39,6 @@ public class DemoUserServiceImpl extends AbstractServiceImpl<UserMapper, UserEnt
     }
 
     @Override
-    public List<DemoUser> findAllDemo() {
-        return list(Wrappers.<UserEntity>lambdaQuery()
-                .isNull(UserEntity::getUsername)
-                .orderByAsc(UserEntity::getId)).stream()
-                .map(entity -> entity.toDemoUser(clock))
-                .toList();
-    }
-
-    @Override
     public DemoUser require(Long userId) {
         if (userId == null) {
             throw new DemoUserRequiredException("missing X-User-Id header");

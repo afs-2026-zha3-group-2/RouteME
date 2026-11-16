@@ -15,7 +15,7 @@ import { interestLabel } from './profileOptions';
 type Props = {
   currentUser: DemoUser;
   userId: number;
-  /** 只有带有效会话的本人可以编辑；演示身份只读（E24）。 */
+  /** 只有带有效会话的本人可以编辑；无会话时只读。 */
   canEdit: boolean;
 };
 
