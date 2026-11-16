@@ -12,12 +12,12 @@
 
 | 工件 | 路径 | 摘要 |
 |---|---|---|
-| 意图捕获 | [`intents/REQ-009-trip-application-entry.md`](../../requirement-workspace/intents/REQ-009-trip-application-entry.md) | 原始指令 / S08、现状核对、用户裁决 D1–D4、Discovery Decision `Go` |
-| Ready 需求 | [`requirements/REQ-009-trip-application-entry.md`](../../requirement-workspace/requirements/REQ-009-trip-application-entry.md) | 六字段 + 8 场景 + OQ + DoR（BLOCKER 0） |
-| Deep-dive | [`deep-dive.md`「REQ-009 增补」](../../requirement-workspace/deep-dive.md) | ① 数据契约 / ② 边界归属 / ③ 跨 REQ 一致 / ④ 展示契约 + 探针 |
-| 影响面 | [`impact-brief.md` §13](../../requirement-workspace/impact-brief.md) | as-is→delta、blast radius、风险、拆分边界 |
-| 提案 | [`proposal.md`](../../openspec/changes/refine-trip-application/proposal.md) | 问题 / 范围 / 影响面 / 决策 / 验收信号 / 残余风险 |
-| Delta 草稿 | [`specs/trip-companions/spec.md`](../../openspec/changes/refine-trip-application/specs/trip-companions/spec.md) | MODIFIED「提交与取消同行申请」，1 Requirement / 8 Scenario |
+| 意图捕获 | [`intents/REQ-009-trip-application-entry.md`](../../../requirement-workspace/intents/REQ-009-trip-application-entry.md) | 原始指令 / S08、现状核对、用户裁决 D1–D4、Discovery Decision `Go` |
+| Ready 需求 | [`requirements/REQ-009-trip-application-entry.md`](../../../requirement-workspace/requirements/REQ-009-trip-application-entry.md) | 六字段 + 8 场景 + OQ + DoR（BLOCKER 0） |
+| Deep-dive | [`deep-dive.md`「REQ-009 增补」](../../../requirement-workspace/deep-dive.md) | ① 数据契约 / ② 边界归属 / ③ 跨 REQ 一致 / ④ 展示契约 + 探针 |
+| 影响面 | [`impact-brief.md` §13](../../../requirement-workspace/impact-brief.md) | as-is→delta、blast radius、风险、拆分边界 |
+| 提案 | [`proposal.md`](../../../openspec/changes/refine-trip-application/proposal.md) | 问题 / 范围 / 影响面 / 决策 / 验收信号 / 残余风险 |
+| Delta 草稿 | [`specs/trip-companions/spec.md`](../../../openspec/changes/refine-trip-application/specs/trip-companions/spec.md) | MODIFIED「提交与取消同行申请」，1 Requirement / 8 Scenario |
 | 质量报告 | [`docs/ai4se-plugins/20261116-115348-quality-checklist-report.md`](../../ai4se-plugins/20261116-115348-quality-checklist-report.md) | P1-1–P1-4 Pass；P1-5/P1-6 optional Skipped；Overall Pass |
 
 ## 3. 关键决策
