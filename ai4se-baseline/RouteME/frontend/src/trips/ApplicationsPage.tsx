@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { Alert, Button, Card, Skeleton, Space, Tag, Typography } from 'antd';
+import { Alert, Button, Card, Skeleton, Space, Tag, Typography, message } from 'antd';
 import { acceptApplication, loadTrip, loadTripApplications, rejectApplication } from '../api';
 import { tripMessages } from '../i18n/tripMessages';
 import type { DemoUser, TripApplication, TripDetail } from '../types';
@@ -43,7 +43,13 @@ export function ApplicationsPage({ currentUser, tripId }: Props) {
       }
       reload();
     } catch (caught: unknown) {
-      setError(caught instanceof Error ? caught.message : 'UNKNOWN_ERROR');
+      const code = caught instanceof Error ? caught.message : 'UNKNOWN_ERROR';
+      if (code === 'TRIP_NOT_OPEN') {
+        message.info(tripMessages.applicationsClosed);
+        reload();
+      } else {
+        setError(code);
+      }
     } finally {
       setBusyId(null);
     }

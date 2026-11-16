@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { Alert, Button, Card, Input, Skeleton, Space, Typography } from 'antd';
+import { Alert, Button, Card, Input, Skeleton, Space, Typography, message } from 'antd';
 import { loadMessages, loadTrip, loadUsers, sendMessage } from '../api';
 import { tripMessages } from '../i18n/tripMessages';
 import { ReportModal } from '../safety/ReportModal';
@@ -79,7 +79,13 @@ export function ChatPage({ currentUser, tripId, otherUserId }: Props) {
       setMessages((previous) => [...(previous ?? []), saved]);
       setContent('');
     } catch (caught: unknown) {
-      setError(caught instanceof Error ? caught.message : 'UNKNOWN_ERROR');
+      const code = caught instanceof Error ? caught.message : 'UNKNOWN_ERROR';
+      if (code === 'CHAT_READ_ONLY') {
+        message.info(tripMessages.chatReadOnly);
+        setCompleted(true);
+      } else {
+        setError(code);
+      }
     } finally {
       setSending(false);
     }

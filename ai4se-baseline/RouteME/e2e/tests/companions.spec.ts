@@ -226,9 +226,9 @@ test('rejects a submission after the trip ends', async ({ page }) => {
   await completeTripViaApi(page, 2, created.id);
 
   await page.getByRole('button', { name: '提交同行申请' }).click();
-  await expect(page.locator('.ant-alert').filter({ hasText: '行程已结束' })).toBeVisible();
+  await expect(page.locator('.ant-message').filter({ hasText: '这次行程已经结束' })).toBeVisible();
   await expect(page.getByPlaceholder(APPLY_PLACEHOLDER)).toHaveCount(0);
-  await expect(page.locator('.detail-application .action-note')).toHaveText('行程已结束');
+  await expect(page.locator('.detail-application .action-note')).toHaveText('这次行程已经结束，申请入口已关闭。');
 });
 
 test('withdraws a pending application and restores the inline form', async ({ page }) => {
@@ -272,7 +272,7 @@ test('keeps companion entry points honest', async ({ page }) => {
   await expect(page.getByText('只有已匹配的同行者可以沟通。')).toBeVisible();
 
   await page.goto('/#/chat/1/2');
-  await expect(page.getByText('该行程已结束，只能查看历史消息。')).toBeVisible();
+  await expect(page.getByText('这次行程已经结束，聊天转为只读，历史消息仍可查看。')).toBeVisible();
   await expect(page.getByRole('button', { name: /发\s*送/ })).toHaveCount(0);
   await expect(page.getByRole('button', { name: /全部接受|标记已读|开启推送/ })).toHaveCount(0);
 });

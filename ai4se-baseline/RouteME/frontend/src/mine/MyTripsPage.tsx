@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { Alert, Button, Modal, Skeleton, Tabs, Typography } from 'antd';
+import { Alert, Button, Modal, Skeleton, Tabs, Typography, message } from 'antd';
 import { completeTrip, loadMyExperiences, loadMyTrips } from '../api';
 import { tripMessages } from '../i18n/tripMessages';
 import { publisherSummary } from '../profile/profileDisplay';
@@ -61,9 +61,17 @@ export function MyTripsPage({ currentUser, isAuthenticated }: Props) {
     try {
       await completeTrip(currentUser.id, confirmTripId);
       setConfirmTripId(null);
+      message.success(tripMessages.detailEndedToast);
       reload();
     } catch (caught: unknown) {
-      setError(caught instanceof Error ? caught.message : 'UNKNOWN_ERROR');
+      const code = caught instanceof Error ? caught.message : 'UNKNOWN_ERROR';
+      if (code === 'TRIP_NOT_OPEN') {
+        message.info(tripMessages.applyEnded);
+        setConfirmTripId(null);
+        reload();
+      } else {
+        setError(code);
+      }
     } finally {
       setCompletingId(null);
     }

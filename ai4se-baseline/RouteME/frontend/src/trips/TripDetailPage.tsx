@@ -10,6 +10,7 @@ import {
   Skeleton,
   Tag,
   Typography,
+  message,
 } from 'antd';
 import {
   applyForTrip,
@@ -131,14 +132,19 @@ export function TripDetailPage({ currentUser, tripId }: Props) {
     setFeedback(null);
     try {
       await completeTrip(currentUser.id, tripId);
+      message.success(tripMessages.detailEndedToast);
       reload();
     } catch (error: unknown) {
       const code = error instanceof Error ? error.message : 'UNKNOWN_ERROR';
-      setFeedback({
-        tone: 'error',
-        title: code === 'FORBIDDEN' ? tripMessages.detailForbidden : tripMessages.detailCompleteFailed,
-        detail: code,
-      });
+      if (code === 'TRIP_NOT_OPEN') {
+        message.info(tripMessages.applyEnded);
+      } else {
+        setFeedback({
+          tone: 'error',
+          title: code === 'FORBIDDEN' ? tripMessages.detailForbidden : tripMessages.detailCompleteFailed,
+          detail: code,
+        });
+      }
       reload();
     } finally {
       setCompleting(false);
@@ -260,11 +266,10 @@ export function TripDetailPage({ currentUser, tripId }: Props) {
       const mapped = applicationErrorMessage(code, currentTrip);
       if (mapped === null) {
         showActionError(error);
+      } else if (code === 'DUPLICATE_APPLICATION') {
+        setFeedback({ tone: 'warning', title: mapped });
       } else {
-        setFeedback({
-          tone: code === 'DUPLICATE_APPLICATION' ? 'warning' : 'error',
-          title: mapped,
-        });
+        message.info(mapped);
       }
       await refreshMyApplication().catch(() => undefined);
       reload();
