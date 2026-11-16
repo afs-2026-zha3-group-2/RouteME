@@ -295,7 +295,7 @@ BigDecimal shipping = calculateShipping(goods, member);
 
 ## web-coding-style
 
-**前端 Web 编码风格。** React 18 或 19（以 `package.json` 为准，不为统一而升级），TypeScript 严格模式，构建走 `tsc --noEmit && vite build`。测试框架按仓库现状使用，不引入第二套做同一件事。字段与错误码以 `@rule:api-contract` 为准，跨端命名见 `@rule:naming-conventions`。
+**前端 Web 编码风格。** React 18 或 19（以 `package.json` 为准，不为统一而升级），TypeScript 严格模式，构建走 `tsc --noEmit && vite build`。界面组件以 Ant Design 为第一选择（见下节「组件选型」）。测试框架按仓库现状使用，不引入第二套做同一件事。字段与错误码以 `@rule:api-contract` 为准，跨端命名见 `@rule:naming-conventions`。
 
 ### 目录
 
@@ -392,7 +392,30 @@ type LoadState =
 - 全局样式放 `src/styles.css`，颜色、间距、字号用 `:root` 变量，组件里不写十六进制色值；令牌取值以 [architecture/README.md](../../architecture/README.md) 的对照表为准。
 - 类名 kebab-case 带模块前缀，子元素用后代选择器（`.parcel-list li`）；状态类统一 `is-` 前缀（`.is-loading`）。
 - 内联 `style` 只用于运行时计算值（进度条宽度、拖拽位移），静态样式一律进 CSS。
-- 不引入 UI 组件库与 CSS 框架，除非当次提案写明理由并经组内确认（RouteME 的 Ant Design 是已记录例外）。
+- 组件库固定为 Ant Design（`antd`，版本以 `frontend/package.json` 为准），界面控件按下一节「组件选型」先查 antd，不引入第二套 UI 组件库或 CSS 框架。
+
+### 组件选型（Ant Design 优先）
+
+**界面组件 MUST 优先使用 Ant Design；只有 antd 没有对应组件、或存在阻断性缺陷时，才允许改用原生控件或其它实现，并在当次 change 的 P3 设计记录里写明原因与替代方案。**
+
+| 场景 | 首选（antd） | 禁止 / 避免 |
+|---|---|---|
+| 日期、日期区间、月份 | `DatePicker` / `DatePicker.RangePicker` | `<input type="date">`、手写日历 |
+| 排序、枚举下拉 | `Select`；选项不超过 3 个且需并排对比时用 `Segmented` | `<select>`、自绘下拉 |
+| 数字、人数、金额输入 | `InputNumber` | `<input type="number">` 配字符串状态 |
+| 单选 / 多选 | `Radio.Group` / `Checkbox.Group` | 自绘按钮组冒充选择器 |
+| 可切换标签 | `Tag.CheckableTag`；只读标签用 `Tag` | 自绘 `.chip` 按钮 |
+| 进度、占比、匹配度 | `Progress`（线形 / 圆形） | 手写 `<svg>` 圆环、`div` 进度条 |
+| 提示、空态、加载 | `Alert` / `Empty` / `Skeleton` / `Spin` | 自绘提示块 |
+| 弹窗、抽屉 | `Modal` / `Drawer` | 手写遮罩层 |
+| 分页 | `Pagination` | 自绘页码 |
+
+- 日期值在表单状态里仍保存 `YYYY-MM-DD` 字符串，只在组件边界用 `dayjs` 转换；不把 `Dayjs` 对象塞进契约类型或纯函数。
+- 通过 `ConfigProvider` + `theme.ts` 统一主题；不为单个页面覆盖 antd 组件内部样式。布局间距可以写页面 CSS，控件外观交给 antd。
+- 已记录的例外（2026-11-16）：
+  - `ProfileSetupPage` 的「职业」「MBTI」保留原生 `<select>`：antd 6.7 在系统开启「减少动态效果」（`prefers-reduced-motion: reduce`）时把弹层渲染到视口外，选项无法点选。修复该缺陷或升级到已修复版本后 MUST 改回 `Select`。
+  - 地图选点 `PlacePicker` / `PlaceMap`：antd 没有地图选点组件，沿用现有 SVG 地图实现。
+- 新增例外 MUST 追加到本清单，并在对应 change 的 P3 设计里引用；不得只在代码注释里说明。
 
 ### 可访问性
 
@@ -414,6 +437,7 @@ type LoadState =
 | 接口字段保持 snake_case，未转驼峰 | pr-merge |
 | 请求只走 `api.ts`，错误码用契约原值，过期响应有处理 | pr-merge |
 | 表单控件有 label，可点击元素是 button 或 a | pr-merge |
+| 日期/排序/数字/标签/进度是否使用 antd 对应组件；例外是否按「组件选型」记录 | pr-merge |
 | 同步替换 submit 按钮的步骤处理器是否带 `event.preventDefault()` | pr-merge |
 | 文案在 `messages.ts`，无拼接句；样式用 `:root` 变量 | pr-merge |
 
