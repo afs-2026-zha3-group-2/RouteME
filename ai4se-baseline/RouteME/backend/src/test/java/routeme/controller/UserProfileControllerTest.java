@@ -171,6 +171,37 @@ class UserProfileControllerTest {
     }
 
     @Test
+    void in_customJobOutOfPresets_out_saved() throws Exception {
+        String session = register("小夏");
+
+        mockMvc.perform(put("/api/users/me/profile")
+                        .header("Authorization", bearer(session))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"nickname":"小夏","birthday":"2003-05-18","gender":"女","city":"珠海",
+                                 "job":"独立摄影师","interests":["摄影","美食","徒步"],"travel_style":"深度游"}
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.job").value("独立摄影师"))
+                .andExpect(jsonPath("$.profile_complete").value(true));
+    }
+
+    @Test
+    void in_jobTooLong_out_invalidInput() throws Exception {
+        String session = register("小夏");
+
+        mockMvc.perform(put("/api/users/me/profile")
+                        .header("Authorization", bearer(session))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"nickname":"小夏","job":"%s"}
+                                """.formatted("职".repeat(21))))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("INVALID_INPUT"))
+                .andExpect(jsonPath("$.fields.job").value("TOO_LONG"));
+    }
+
+    @Test
     void in_birthdayFutureOrMalformed_out_invalidInput() throws Exception {
         String session = register("小夏");
         saveProfile(session, COMPLETE_BODY);

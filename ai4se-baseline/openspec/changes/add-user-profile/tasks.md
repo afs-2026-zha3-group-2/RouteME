@@ -120,13 +120,13 @@
 - [x] 归档前提醒：SA 具名追认双 capability 例外；归档时新建 `user-profile` Living Spec 并用 MODIFIED 替换 `user-auth`「注册账号」（保留 4 个基线场景）。
 
 **验证：** 上述命令全绿；迁移与手工结果写入 local-verify 报告
-**覆盖：** 全部 24 + 6 场景、RV-1–RV-7、G1 条件 2–8
+**覆盖：** 全部 26 + 6 场景、RV-1–RV-7、G1 条件 2–8
 
 ## 对齐自检（Spec ↔ Design ↔ Tasks ↔ ATDD）
 
 | 检查 | Result | Evidence |
 |---|---|---|
-| `user-profile` 24 个 Scenario 均有 ATDD 行与任务 | Pass | E1–E24 见 `atdd-design.md` §1.2；D1–D12；T1–T8 |
+| `user-profile` 26 个 Scenario 均有 ATDD 行与任务 | Pass | E1–E26 见 `atdd-design.md` §1.2；D1–D12；T1–T8 |
 | `user-auth` 6 个 Scenario 有落点 | Pass | A1–A6；T1（测试）、T2（契约）、T5（实现） |
 | 基线场景不丢 | Pass | MODIFIED 保留 4 个既有场景；T5 只收窄字段与校验，不删登录 / 重复 / 格式 / 密码用例 |
 | Non-goals 有反向验证 | Pass | RV-1–RV-7；T1（断言）、T8（复核） |

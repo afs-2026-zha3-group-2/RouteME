@@ -180,10 +180,14 @@ class OpenApiTest {
                 () -> assertTrue(
                         enums(properties(updateRequest).get("gender")).containsAll(List.of("男", "女", "其他")),
                         "gender enum"),
-                () -> assertTrue(
-                        enums(properties(updateRequest).get("job"))
-                                .containsAll(List.of("学生", "上班族", "自由职业", "其他")),
-                        "job enum"),
+                () -> assertEquals(
+                        20,
+                        asMap(properties(updateRequest).get("job")).get("maxLength"),
+                        "job accepts custom text up to 20 chars"),
+                () -> assertEquals(
+                        20,
+                        asMap(properties(profile).get("job")).get("maxLength"),
+                        "profile job max length"),
                 () -> assertTrue(
                         enums(properties(updateRequest).get("travel_style"))
                                 .containsAll(List.of("特种兵", "休闲游", "深度游", "随性游")),

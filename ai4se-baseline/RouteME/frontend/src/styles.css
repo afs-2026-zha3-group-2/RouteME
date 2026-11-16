@@ -3287,6 +3287,11 @@ svg {
   min-width: 0;
 }
 
+/* 职业选「其他」后追加的自填框，与下拉留出比标签更大的间距 */
+.profile-job-custom {
+  margin-top: 3px;
+}
+
 .profile-field.wide {
   grid-column: 1 / -1;
 }

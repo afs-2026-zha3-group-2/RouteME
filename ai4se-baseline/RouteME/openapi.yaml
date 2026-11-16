@@ -1429,8 +1429,8 @@ components:
           type: string
           nullable: true
           readOnly: true
-          enum: [学生, 上班族, 自由职业, 其他]
-          description: 职业
+          maxLength: 20
+          description: 职业；预设值或「其他」自填文本
         bio:
           type: string
           readOnly: true
@@ -1503,7 +1503,8 @@ components:
         job:
           type: string
           nullable: true
-          enum: [学生, 上班族, 自由职业, 其他]
+          maxLength: 20
+          description: 职业，选填；预设值（学生 / 上班族 / 自由职业 / 其他）或「其他」的自填文本，≤20 字
         mbti:
           type: string
           nullable: true
@@ -1588,8 +1589,8 @@ components:
           description: 选填
         job:
           type: string
-          enum: [学生, 上班族, 自由职业, 其他]
-          description: 选填
+          maxLength: 20
+          description: 选填；预设值或自填文本
         mbti:
           type: string
           enum:

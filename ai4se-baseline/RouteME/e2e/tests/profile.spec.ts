@@ -210,6 +210,30 @@ test('offers every job and MBTI option in the setup form', async ({ page }) => {
   await expect(page.locator('#profile-job')).toHaveValue('上班族');
   await page.locator('#profile-mbti').selectOption('INFP');
   await expect(page.locator('#profile-mbti')).toHaveValue('INFP');
+
+  // 选「其他」后出现自填框；改回预设值时自填框消失。
+  await page.locator('#profile-job').selectOption('其他');
+  const customJob = page.locator('#profile-job-custom');
+  await expect(customJob).toBeVisible();
+  await customJob.fill('独立摄影师');
+  await expect(customJob).toHaveValue('独立摄影师');
+  await page.locator('#profile-job').selectOption('学生');
+  await expect(customJob).toHaveCount(0);
+});
+
+test('saves a custom job typed under 其他', async ({ page }) => {
+  const account = await registerViaApi(page, { prefix: 'job' });
+  await useAccount(page, account);
+  await openSetup(page);
+  await fillCompleteProfile(page);
+
+  await page.locator('#profile-job').selectOption('其他');
+  await page.locator('#profile-job-custom').fill('独立摄影师');
+  await page.getByRole('button', { name: '保存资料' }).click();
+
+  await expect(page).toHaveURL(new RegExp(`#/users/${account.userId}$`));
+  await expect(page.locator('.profile-chips')).toContainText('独立摄影师');
+  await expect(page.locator('.profile-fact', { hasText: '职业' })).toContainText('独立摄影师');
 });
 
 test('saves a complete profile and opens the public profile', async ({ page }) => {
