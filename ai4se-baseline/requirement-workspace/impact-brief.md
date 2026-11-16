@@ -417,3 +417,97 @@
 - **A 的发布目的地字段：** 归 `add-trip-publish` 的目的地相关修订，不并入 B。
 - **归档顺序：** `refine-inspiration-home` → `add-destination-area-filters` → `add-trip-publish`；三者分属不同 owner，本需求只归档自己。
 - **质量自检（split-heuristics）：** 垂直切片 ✓；端到端可观察 ✓（选城市 + 日期 → 列表变化）；数据底座后可独立运行 ✓；capability 名真实 ✓；无依赖环 ✓。
+
+---
+
+## 13. REQ-009 变更影响 — 提交同行申请（S08）
+
+- **日期：** 2026-11-16 ｜ **触发：** `/sdd:pre-spec-req` 内嵌 impact-analysis（4 项范围问题已由用户裁决，blocking OQ 与 DoR BLOCKER 均已清零）
+- **粒度：** 应用架构（页面 / 申请展示 / 能力边界），非代码设计
+- **基线：** `origin/main@b93f45b` 的独立 worktree `feature/refine-trip-application`
+
+### 13.1 Requirement set
+
+- `requirement-workspace/requirements/REQ-009-trip-application-entry.md`（六字段 + 8 场景 + OQ + DoR）
+- `requirement-workspace/intents/REQ-009-trip-application-entry.md`
+- 能力：`trip-companions`（MODIFIED）；`trip-plans` 只读消费。
+
+### 13.2 As-is asset inventory（evidence paths）
+
+| 资产 | 路径 | 现状 |
+|---|---|---|
+| 需求条目 | `requirement-workspace/requirements/REQ-009-trip-application-entry.md` | 本变更新增；8 场景；用户裁决 D1–D4；DoR / A0 全过 |
+| Living Spec | `openspec/specs/trip-companions/spec.md` | 「提交与取消同行申请」已含招募中 / 未满员 / 选填 ≤120 / 本人 / 重复 / 满员 / 已结束 / 取消 5 场景 |
+| 已归档 change | `openspec/changes/archive/2026-11-15-add-trip-companions/` | 申请、接受、退出、聊天与我的旅行的原始实现与验收 |
+| 行程详情页 | `RouteME/frontend/src/trips/TripDetailPage.tsx` | 申请入口是 `Modal` + textarea；提交后独立 `application-status` Tag；不可申请显示 badge |
+| 文案 | `RouteME/frontend/src/i18n/tripMessages.ts` | `applyDialogTitle` / `applyMessageLabel（选填）` / `applySubmit（提交申请）` / `applyStatusPending（申请待处理）`；无重复申请文案 |
+| API 错误 | `RouteME/frontend/src/api.ts` | 非 2xx 只抛 `Error(body.code)`；无错误码 → 中文文案映射 |
+| 后端规则 | `ApplicationServiceImpl.apply` | 本人 403；重复 409 `DUPLICATE_APPLICATION`；非 recruiting 409 `TRIP_NOT_OPEN`；说明 trim 后空转 null，≤120 |
+| 后端测试 | `ApplicationServiceTest` / `ApplicationControllerTest` | 已覆盖满员拒新申请、重复、本人、重申请 |
+| 契约 | `RouteME/openapi.yaml` 0.7.0 | `ApplicationCreateRequest.message` nullable ≤120；`TripApplication.message` nullable ≤120；错误码已定义 |
+| 原型 | `docs/prototype/ui.js` `actionBox`；`store.js` `canApply`；`styles.css` | 内联申请表单；待处理提示 + 撤回；不可申请原因；`apply-form` 样式 |
+| 前端/E2E 测试 | `frontend/src/**/*.test.ts(x)`；`e2e/tests/companions.spec.ts` | E2E 走弹窗路径：点「申请同行」→ 填 placeholder → 点「提交申请」→ 断言「申请待处理」 |
+| 阶段记录 | `docs/sdd/README.md` | 阶段索引；尚无 `refine-trip-application` 行 |
+
+### 13.3 As-is → proposed delta（逐资产）
+
+| 资产 | As-is | Proposed delta |
+|---|---|---|
+| 详情页申请入口 | 弹窗表单 | 原型内联申请区：一句申请说明（选填，120 字）、提交按钮、聊天权限说明 |
+| 详情页待处理态 | 独立 Tag「申请待处理」+ 说明 + 取消按钮 | 原型等待提示「申请已提交，等待 {昵称} 回应。处理前你可以随时撤回。」+「撤回申请」；说明与状态不再重复展示 |
+| 重复申请反馈 | `Alert` 显示 `DUPLICATE_APPLICATION` | 映射为「已申请，请等待回应」，并刷新为待处理 / 已匹配 |
+| 满员 / 已结束入口 | badge「当前不可申请」/「这条行程已结束」 | 原型原因文案「人数已满」/「行程已结束」；后端拒绝不变 |
+| 本人行程 | 不展示申请按钮 + badge「这是你发布的行程」 | 保持不展示；发布者操作不变（不新增/删除按钮） |
+| 说明字段 | 选填 ≤120 | **不变**（用户裁决 D1） |
+| 后端 / 契约 / 迁移 | 规则与错误码已存在 | **不变**；保留回归测试；不改 `openapi.yaml` 版本 |
+| Living Spec | 「提交与取消同行申请」5 场景 | MODIFIED：保留 5 场景，新增入口状态与待处理展示场景 |
+| 原型 | 内联表单与待处理态 | **不改**；重复提示属于服务端错误映射，原型仅 mock 侧门禁文案 |
+| E2E | 弹窗路径与「申请待处理」断言 | 改为内联申请区、说明选填、待处理提示与撤回；补重复 / 满员后端拒绝断言 |
+| 阶段记录 | 无本 change 行 | `docs/sdd/refine-trip-application/p1-intent.md` 与 README 索引行 |
+
+### 13.4 Blast radius（应用架构）
+
+- **页面（1）：** 行程详情页的申请操作区；首页卡片、我的旅行、聊天不改。
+- **能力（1）：** `trip-companions`（MODIFIED「提交与取消同行申请」）；`trip-plans` 只读消费状态。
+- **接口契约（0）：** 无新增端点 / 字段 / 错误码 / 版本变更。
+- **数据 / 迁移（0）：** 无新表、无迁移、无状态列。
+- **测试触点：** 前端组件测试（入口派生、说明选填、错误映射、待处理态）；E2E `companions.spec.ts`（提交 → 待处理 → 发布者接受；满员 / 结束拒新申请）；后端回归 `ApplicationServiceTest`（不改实现）。
+- **知识库：** P1 不改 `docs/knowledge/`；归档时回写申请入口与展示口径。
+
+### 13.5 Artifact impact（specs / tests / docs）
+
+| 类型 | 影响 |
+|---|---|
+| Spec（change delta） | `openspec/changes/refine-trip-application/specs/trip-companions/spec.md`（MODIFIED，1 条 Requirement，保留 5 场景 + 新增入口 / 待处理场景） |
+| Proposal | `openspec/changes/refine-trip-application/proposal.md` |
+| Story | 不新增故事文件：原型 `stories.html` S08 已存在；本 change 以 proposal + delta 承接（与 REQ-006 同口径） |
+| Registry / handoff | 新增 REQ-009 行与 REQ-009 → `refine-trip-application` 映射 |
+| Tests / 代码 / design / tasks | 不在 P1 范围；交 P3 / P4 起 |
+| Living Spec | 归档时用 MODIFIED 替换 `openspec/specs/trip-companions/spec.md` 的「提交与取消同行申请」块 |
+| 阶段记录 | `docs/sdd/refine-trip-application/p1-intent.md`；`docs/sdd/README.md` 索引 |
+
+### 13.6 Dual-track notes（OpenSpec vs agile）
+
+- **OpenSpec 轨（主）：** 单 change `refine-trip-application`，一份 `trip-companions` delta；不拆内部 change。
+- **Agile 轨：** 原型故事 S08（迭代 2 / 2 点）即本 change 的业务口径；不另建故事文件，避免与原型故事双维护。
+
+### 13.7 Risks & blockers
+
+| 级别 | 项 | 说明 / 缓解 |
+|---|---|---|
+| Risk | 重复申请与满员错误码的优先级 | 后端先判重复再判非 recruiting；前端需分别映射 `DUPLICATE_APPLICATION` 与 `TRIP_NOT_OPEN`，不能只写一个分支 |
+| Risk | 页面停留期间状态变化 | 前端 `canApply` 是渲染时快照；提交失败后必须 `reload()` 行程并刷新申请状态，场景 8 验收 |
+| Risk | E2E 选择器变化 | 弹窗路径改为内联表单，需同步更新 `companions.spec.ts` 的按钮 / placeholder / 状态断言 |
+| Risk | 选填说明的空白处理 | 前端 trim 后空 → `null`；保留后端 `normalizeMessage`，不新增必填校验 |
+| Risk | 文案与原型的一个「请」字差异 | 用户 AC 指定「已申请，请等待回应」；原型 `store.js` 的「已申请，等待回应」是 mock 侧门禁，页面不展示该字符串，不构成视觉差异 |
+| Risk | 阶段提交与 `@rule:git-commit-conventions` 冲突 | 用户当次明确要求「每个阶段一次提交，P4 后推送，push 前先 pull」；按 `@rule:rule-precedence` 以用户指示为准，按 `docs/sdd/README.md` 的 `<type>(p<N>)` 提交，偏离在交付说明记录 |
+| Blocker | 无 | blocking OQ=0、DoR BLOCKER=0、A0 ⑨–⑫ 全过；无外部依赖 |
+
+### 13.8 Suggested split boundaries（供 proposal-split / story-split）
+
+- **一个 change：** `refine-trip-application` ← REQ-009（S08，页面级垂直切片）。
+- **不拆故事：** 原型 S08 已提供 AC；再拆会与原型故事列表双维护。
+- **不并入 `add-trip-companions`：** 该 change 已归档；本需求只是展示与反馈增量，追加归档包会打乱历史边界。
+- **不并入 `add-user-profiles`：** 本 change 基于 `origin/main`，不依赖未合并的资料弹窗；避免两个 PR 相互堆叠。
+- **阶段：** 单阶段；依赖已归档的 `trip-companions`，无阻塞上游。
+- **质量自检（split-heuristics）：** 子目标一句话可说明 ✓；端到端可观察（打开详情 → 留一句话 → 提交 → 待处理 → 撤回）✓；可独立运行 ✓；capability 名真实 ✓；无依赖环 ✓。

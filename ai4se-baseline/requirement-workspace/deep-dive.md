@@ -387,3 +387,78 @@ MVP 不做推送；以下为资料路径的 UI 展示面契约。
 - 跨 REQ 共享点（目的地 code+name、日期区间、兴趣、区划字典、参考发布预填、首页双视图）均指定 anchor，无未收敛冲突。
 - `{TBD}`：无。非阻塞项（数据包升级、SQLite 重建外键写法、体验卡日期展示已定不显示、搜索恢复时间、refine owner 更新搜索测试）已在 REQ-007 §8 标 deferred 或记录为外部条件。
 - A0 门 ⑨–⑫：全部通过。
+
+---
+
+## REQ-009 增补 — 提交同行申请（S08）
+
+来源：用户指令、原型故事 S08 与 3 条 AC、2026-11-16 四项用户裁决、`RouteME/frontend/src/trips/TripDetailPage.tsx`、`RouteME/frontend/src/i18n/tripMessages.ts`、`RouteME/frontend/src/api.ts`、`ApplicationServiceImpl.apply`、`ApplicationServiceTest`、`openapi.yaml` 0.7.0、`trip-companions` Living Spec、原型 `ui.js` `actionBox` / `store.js` `canApply`。本增补只覆盖申请入口与待处理展示，不重定义申请状态机、行程状态或聊天权限。
+
+### ① 数据契约（Data contract）
+
+| concept | grain（粒度） | 业务字段 | state transitions（状态流转） | source |
+|---|---|---|---|---|
+| 同行申请 (TripApplication) | 每条「行程 × 申请人 × 一次有效尝试」一行 | `id`、`trip_id`、`applicant`、`message`（nullable，≤120）、`status`、`created_at`、`decided_at` | `pending` → `accepted` / `rejected` / `cancelled`；`pending` 或 `accepted` 期间不可重复申请；`rejected` / `cancelled` 后可在行程仍可申请时重新申请（新建一行） | Living Spec `trip-companions`；`ApplicationServiceImpl`；`openapi.yaml` `TripApplication` |
+| 申请入口状态 (ApplyEntryState) | 每个「当前用户 × 行程」一个派生视图 | `own` / `eligible` / `pending` / `accepted` / `not-open(reason)` | 由行程状态、人数、当前用户与最近一条有效申请派生；不落库 | REQ-009 §4；原型 `store.js` `canApply` |
+| 行程状态 (TripStatus) | 每条行程一个派生值 | `recruiting` / `full` / `completed`；`joined_count`、`capacity` | 由 `completed_at` 与人数投影；接受达到上限自动 `full`，退出回退 `recruiting` | `trip-plans` Living Spec |
+| 申请说明 (ApplicationMessage) | 每条申请至多一条 | 文本（trim 后空视为未填写）、≤120 字 | 无独立状态 | `ApplicationServiceImpl.normalizeMessage` |
+
+本需求不新增持久化概念；「申请入口状态」是展示层派生视图，不落库、不新增状态列。
+
+### ② 边界归属（Boundary attribution）
+
+| rule | branch | in \| out | rationale |
+|---|---|---|---|
+| 申请入口 | 他人 + recruiting + 未满员 + 无 pending/accepted → 展示内联表单 | in (REQ-009，MODIFIED `trip-companions`) | 原型 S08 与用户 AC 的可申请前置 |
+| 申请入口 | 本人发布的行程 → 不展示申请入口 | in (REQ-009) | S08 AC；发布者操作保持 |
+| 申请入口 | 卡片列表 → 入口 | out (REQ-009) | 原型 S05/S08 只在详情页；避免本需求扩成列表交互 |
+| 申请说明 | 选填；留空或空白 → 允许 PENDING | in (REQ-009) | 用户裁决 D1；Living Spec 现状 |
+| 申请说明 | 改为必填 / 富文本 / 附件 | out (REQ-009) | 会改后端校验与契约，超出 S08 |
+| 提交结果 | 成功 → PENDING；申请区变待处理提示 + 撤回 | in (REQ-009) | S08 AC + 原型待处理态 |
+| 提交结果 | 提交后自动加入 / 立即开放聊天 | out (REQ-009) | 破坏发布者审核与聊天权限 |
+| 重复申请 | pending / accepted → 后端 409 + 前端「已申请，请等待回应」 | in (REQ-009) | S08 AC；后端已有 |
+| 重复申请 | 为重复申请新增端点 / 改成覆盖旧申请 | out (REQ-009) | 现状错误码已足够；改语义会破坏历史 |
+| 满员 / 已结束 | 前端入口不可用 + 原型原因；绕过前端时后端 409 | in (REQ-009) | S08 AC 明确要求后端同样拒绝 |
+| 满员 / 已结束 | 仅靠前端隐藏 | out (REQ-009) | 与 AC 冲突；后端已强制 |
+| 撤回 | pending → cancelled；仍可申请时恢复表单 | in (REQ-009) | 既有取消能力与原型撤回入口 |
+| 撤回 | 已接受后退出同行 | out (REQ-009) | 归既有「退出同行」，不在申请入口 |
+
+### ③ 跨 REQ 一致性（Cross-REQ consistency）
+
+| capability | per-REQ grain + fields | aligned? | anchor REQ |
+|---|---|---|---|
+| 同行申请 | `trip-companions` 已定义申请字段、状态机、取消与权限；REQ-009 只补入口与展示，不改状态机 | ✓ aligned（MODIFIED 单块，保留既有 5 场景） | `trip-companions`（Living Spec） |
+| 行程状态与人数 | `trip-plans` 单一写入 `joined_count` 与状态投影；REQ-009 只读消费 | ✓ aligned | `trip-plans` |
+| 聊天权限 | 「已接受」才开放聊天；REQ-009 不改变推导 | ✓ aligned | `trip-companions` |
+| 我的旅行 | 既有 pending / accepted 状态 Tag 可表达当前状态；REQ-009 不重做列表 | ✓ aligned（文案优化 deferred） | `trip-companions` |
+| 接口契约 | `openapi.yaml` 0.7.0 已含 `message` 选填 ≤120 与错误码；本需求不改 | ✓ aligned（无契约变更） | `openapi.yaml` |
+
+无未收敛的 ✗；A0 门 ⑪ 通过。
+
+### ④ 通知 / 展示契约（Notification / display contract）
+
+MVP 不做推送；以下为申请路径的 UI 展示面契约。
+
+| trigger / surface（展示面） | recipient role | content + display fields | channel | cardinality | source |
+|---|---|---|---|---|---|
+| 行程详情 — 可申请区 | 申请者 | 标题「一句申请说明」+ 选填提示；textarea 120 字；按钮「提交同行申请」；说明「提交后对方接受才会开放聊天，不会变成无条件私聊。」 | 应用内页面 | 每行程 1 处 | 原型 `actionBox`；§4 #1 |
+| 行程详情 — 待处理态 | 申请者 | 提示「申请已提交，等待 {发布者昵称} 回应。处理前你可以随时撤回。」+「撤回申请」 | 应用内页面 | 每行程 1 处 | 原型；§4 #2 |
+| 行程详情 — 本人发布 | 发布者 | 不展示申请表单；保留「查看同行的申请（N）」「标记为已结束」 | 应用内页面 | 每行程 1 处 | §4 #4 |
+| 行程详情 — 不可申请 | 浏览者 | 原型原因「人数已满」/「行程已结束」；不展示表单 | 应用内页面 | 每行程 1 处 | `store.js` `canApply`；§4 #6 |
+| 提交失败 — 重复 | 申请者 | 「已申请，请等待回应」；申请区刷新为待处理 / 已匹配 | 应用内提示 | 每次失败 1 条 | 用户 AC；§4 #5 |
+| 提交失败 — 不可申请 | 申请者 | 可读原因（人数已满 / 行程已结束 / 当前不可申请）；刷新行程状态 | 应用内提示 | 每次失败 1 条 | §4 #6 / #8 |
+| 撤回确认与结果 | 申请者 | 二次确认；成功后状态「已取消」并恢复申请区 | 应用内弹窗 + 页面 | 每次 1 组 | 既有取消能力；§4 #7 |
+| 我的旅行 — 我申请的 | 申请者 | 既有状态 Tag（待处理 / 已匹配 / 已拒绝 / 已取消）+ 申请说明 | 应用内页面 | 每条申请 1 行 | 既有能力（不改） |
+
+无展示面缺 display-fields；A0 门 ⑫ 通过。
+
+### 探针记录（REQ-009 同行申请入口）
+
+- `ApplicationServiceImpl.apply` 的检查顺序为「本人 → 重复 → 非 recruiting」；重复申请在满员前会先触发 `DUPLICATE_APPLICATION`，前端需同时处理两个错误码，不能只按 `TRIP_NOT_OPEN` 写分支。
+- `ApplicationServiceTest.in_acceptReachingCapacity_out_tripBecomesFullAndStopsApplications` 已证明满员后 `apply` 抛 `TripNotOpenException`；本需求不需要改后端，只需保留并回归该测试。
+- `TripDetailPage` 的 `canApply` 计算在渲染时缓存；页面停留期间行程变满 / 结束，提交才会暴露服务端拒绝。需求场景 8 要求此时刷新状态，不依赖前端预测。
+- `api.ts` 只抛 `body.code`，没有错误码到中文文案的映射层；重复申请的 `DUPLICATE_APPLICATION` 会原样进入 `Alert`。本需求的「已申请，请等待回应」应在页面或消息层映射，不改变 `api.ts` 的通用错误行为。
+- 原型 `ui.js` 的申请区是 `actionBox` 内的内联块，不是弹窗；`store.js` 的 `canApply` 文案为「已申请，等待回应」，用户 AC 指定「已申请，请等待回应」，两者相差一个「请」字；本需求以用户文案为准，原型 `store.js` 的字符串属于 mock 侧门禁提示，不构成页面视觉差异。
+- `openapi.yaml` 0.7.0 的 `message` 为 `nullable` + `maxLength 120`；`TripApplication` 的 `message` 同样可为空，契约无需改动。
+- `{TBD}`：无。非阻塞项（我的旅行文案、发布者提醒、重申请历史提示）已在 REQ-009 §8 标 deferred。
+- A0 门 ⑨–⑫：全部通过。
