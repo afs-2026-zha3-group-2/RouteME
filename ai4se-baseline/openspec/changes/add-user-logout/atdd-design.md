@@ -65,8 +65,8 @@
 
 ## 4. 数据 / Fixtures 策略
 
-- **演示身份：** `page.addInitScript` 写入 `routeme.currentUserId = 1`；`goto('/')` 直接进入首页。
-- **注册账号：** 通过 `page.request.post('/api/auth/register')` 创建唯一用户名（`logout_${Date.now()}`），再把返回的 `session.token` 与 `session.user.id` 写入 `localStorage`；不重复走注册表单，避免把退出验收绑到注册界面。
+- **演示身份：** 先 `goto('/')`，再用 `page.evaluate` 写入 `routeme.currentUserId = 1`，然后 `reload()` 进入首页。**不**用 `addInitScript`：它会在每次导航时重新写入身份，导致「退出后刷新不恢复身份」（E7）无法验证。
+- **注册账号：** 通过 `page.request.post('/api/auth/register')` 创建唯一用户名（`logout_${Date.now()}`），再把返回的 `session.token` 与 `session.user.id` 写入 `localStorage` 后 `reload()`；不重复走注册表单，避免把退出验收绑到注册界面。
 - **失败降级：** `page.route('**/api/auth/logout', (route) => route.abort())`，断言本地退出先完成；不等待真实超时。
 - **清理：** 注册账号使用唯一用户名；不删除数据库记录，沿用既有演示库累积约定。
 - **断言等待：** token 失效用 `expect.poll`（服务端删除会话是异步的），不使用固定等待。
