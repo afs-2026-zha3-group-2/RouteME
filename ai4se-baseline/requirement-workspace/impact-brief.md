@@ -176,7 +176,7 @@
 | 资产 | 路径 | 现状 |
 |---|---|---|
 | 需求条目 | `requirement-workspace/requirements/REQ-006-user-logout.md` | 本变更新增；六字段 + 9 场景 + DoR / A0 全过 |
-| 进行中的认证 change | `openspec/changes/add-user-auth/` | 已实现注册 / 登录 / 会话恢复与注册账号退出；`user-auth` 增量规格含「会话校验与退出」；T6 明确「演示身份不显示退出」 |
+| 已归档的认证 change（2026-11-16） | `openspec/changes/archive/2026-11-16-add-user-auth/` | 已实现注册 / 登录 / 会话恢复与注册账号退出；Living Spec `openspec/specs/user-auth/` 含「会话校验与退出」；T6 明确「演示身份不显示退出」 |
 | Living Spec `user-auth` | `openspec/specs/` | **不存在**（`add-user-auth` 未归档），因此本 change 只能 ADDED，不能 MODIFIED |
 | Living Spec `trip-plans` | `openspec/specs/trip-plans/spec.md` | 已定义「演示身份进入与切换」；不包含退出路径 |
 | 顶栏身份菜单 | `RouteME/frontend/src/shell/AppShell.tsx` | `isAuthenticated` 为真时才渲染 `id-logout`；演示身份仅能切换，无法回到身份门 |

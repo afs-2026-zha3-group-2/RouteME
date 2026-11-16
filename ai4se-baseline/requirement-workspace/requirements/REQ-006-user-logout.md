@@ -3,7 +3,7 @@
 - **能力：** `user-auth`（ADDED）
 - **对应 OpenSpec change：** `add-user-logout`
 - **Ready 日期：** 2026-11-16 ｜ **状态：** drafted
-- **证据：** 用户指令与顶栏身份菜单截图（`林见夏 / 切换身份` 下拉面板）；`RouteME/frontend/src/shell/AppShell.tsx`、`RouteME/frontend/src/App.tsx`；`openspec/changes/add-user-auth/specs/user-auth/spec.md`；`openspec/specs/trip-plans/spec.md`；`requirement-workspace/intents/REQ-006-user-logout.md`
+- **证据：** 用户指令与顶栏身份菜单截图（`林见夏 / 切换身份` 下拉面板）；`RouteME/frontend/src/shell/AppShell.tsx`、`RouteME/frontend/src/App.tsx`；`openspec/changes/archive/2026-11-16-add-user-auth/specs/user-auth/spec.md`（Living Spec `openspec/specs/user-auth/spec.md`）；`openspec/specs/trip-plans/spec.md`；`requirement-workspace/intents/REQ-006-user-logout.md`
 
 ## 六字段摘要
 

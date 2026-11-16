@@ -41,7 +41,7 @@ RouteME 进入系统有两条路径：选择演示身份、用注册账号登录
 | `frontend` 组件测试 / `e2e/` | 覆盖入口对两类身份可见、演示身份退出、注册账号退出、刷新不恢复 |
 | `openspec/changes/add-user-logout/specs/user-auth/spec.md` | ADDED：「退出当前身份」6 个场景 |
 | 后端 / `openapi.yaml` / 迁移 / Living Spec | **无改动**（退出端点已存在；Living Spec 归档阶段合并） |
-| `openspec/changes/add-user-auth/tasks.md` T6 | 不在此 change 改；实现时按本提案覆盖「演示身份不显示退出」的表述 |
+| `openspec/changes/archive/2026-11-16-add-user-auth/tasks.md` T6 | 不在此 change 改；实现时按本提案覆盖「演示身份不显示退出」的表述 |
 
 ## 决策
 

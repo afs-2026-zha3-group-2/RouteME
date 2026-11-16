@@ -3,7 +3,7 @@
 - **日期：** 2026-11-16
 - **范围：** 账号注册/登录/会话/退出（前端补充兴趣卡片选择器）的 P4 收口验证
 - **环境：** Windows / Node 22 / Vite 8 / Vitest 5.1；后端目标环境 Spring Boot 4.1.2（Java 21）+ SQLite
-- **说明：** 本轮验证在本机执行，后端因依赖不可下载未能复跑；浏览器链路使用临时 mock API（`localhost:8080`），验证后已停止并删除脚本。
+- **说明：** 本轮验证在本机执行。首轮后端因 JVM 根证书未信任未能复跑、浏览器链路使用临时 mock API；归档日（2026-11-16）设置 `WINDOWS-ROOT` 信任库后后端复跑 154 项全绿，并在真实 Spring Boot + SQLite 实例上手动复验登录链路，结果已回填第 4、6 节。
 
 ## 1. 前端测试
 
@@ -57,12 +57,9 @@ You have 7 warnings.
 - 0 error。7 条 warning：5 条为故意非法的 `rejected` 示例（`/trips` 的 stops/capacity、`/reports` 的 target_type、体验的 content/advice），2 条为 `/users` 与 `/users/demo` 未声明 4XX。
 - `openapi.yaml` 本轮未修改，版本仍为 `0.6.0`。
 
-## 4. 后端测试（未执行）
+## 4. 后端测试（归档日复跑，通过）
 
-```text
-cd RouteME/backend
-.\mvnw.cmd -B -o test
-```
+首次尝试 `.\mvnw.cmd -B -o test` 失败：
 
 ```text
 [FATAL] Non-resolvable parent POM for routeme:routeme-backend:0.0.1-SNAPSHOT:
@@ -73,9 +70,24 @@ Could not transfer artifact ... from/to central (https://repo.maven.apache.org/m
 unable to find valid certification path to requested target
 ```
 
-- 直接原因：本机无法建立到 Maven Central 的证书链；本地仓库也没有 Spring Boot `4.1.2` 的 parent POM。
-- 已尝试 `-Dmaven.wagon.http.ssl.insecure=true`、`-Dmaven.wagon.http.ssl.allowall=true`、`-Dmaven.wagon.http.ssl.ignore.validity.dates=true` 仍失败；`-o` 离线模式同样因缺少依赖失败。
-- 实现提交 `f5e984c` 的 `HANDOFF.md` 记录：此前 `.\mvnw.cmd -B -o clean test` 为 **151 项全绿**（含 `AuthControllerTest` 13、`PasswordUtilsTest` 3、认证迁移测试与 `OpenApiTest`）。本轮不把该历史结果当作本次复验。
+- 根因是本机 JVM 未信任企业/系统根证书，而非依赖缺失；设置 Windows 根证书信任库后即可解析。
+- 归档日复跑命令与结果（2026-11-16）：
+
+```text
+cd RouteME/backend
+$env:MAVEN_OPTS="-Djavax.net.ssl.trustStoreType=WINDOWS-ROOT"
+.\mvnw.cmd -B -ntp test
+```
+
+```text
+[INFO] Tests run: 154, Failures: 0, Errors: 0, Skipped: 0
+[INFO] BUILD SUCCESS
+[INFO] Total time:  25.619 s
+```
+
+- Flyway V1–V9 在 H2 与临时 SQLite 上均迁移成功；认证相关用例含 `AuthControllerTest` 13、`PasswordUtilsTest` 3、`AuthMigrationSqliteTest`、`OpenApiTest` 5。
+- 早先 `-Dmaven.wagon.http.ssl.insecure=true` 等不安全开关无效且不应使用；改信任库是正确做法。
+- 实现提交 `f5e984c` 的 `HANDOFF.md` 历史记录 151 项，本轮 154 项为归档日实测结果。
 
 ## 5. 浏览器走查（前端 5173 + 临时 mock API 8080）
 
@@ -95,10 +107,9 @@ unable to find valid certification path to requested target
 
 ## 6. 未执行
 
-- `.\mvnw.cmd -B -o test`（原因见第 4 节）。
-- 真实 Spring Boot + SQLite 下的注册/登录/刷新/退出端到端复验；需在可运行后端的机器上补一次。
 - Playwright E2E：本次未新增/修改 E2E 用例，未运行。
+- 真实 Spring Boot + SQLite 的注册/登录/刷新/退出已在本机起服后手动复验（`localhost:8080`），但未固化为自动化 E2E。
 
 ## 结论
 
-前端构建与 73 项测试全绿，契约 0 error。浏览器链路（注册 201、刷新恢复、退出清 token、密码登录、演示身份隔离、兴趣标签上限与自定义标签保留）按规格工作。后端 151 项历史记录未能复跑，是本轮唯一的验证缺口；补跑后再把结果回填 `tasks.md` T8。
+前端构建与 73 项测试全绿，契约 0 error；后端在设置 Windows 根证书信任库后复跑 **154 项全绿**（`BUILD SUCCESS` 25.6s）。浏览器链路（注册 201、刷新恢复、退出清 token、密码登录、演示身份隔离、兴趣标签上限与自定义标签保留）按规格工作，本轮无遗留验证缺口。

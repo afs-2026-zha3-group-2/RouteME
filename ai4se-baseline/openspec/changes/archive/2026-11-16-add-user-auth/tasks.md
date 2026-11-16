@@ -61,10 +61,10 @@
 ### T8 [verify] 全量验证
 
 - [x] `cd RouteME/frontend; npm run build; npm test`（2026-11-16：9 个测试文件 / 73 个测试通过；`tsc --noEmit` + `vite build` 成功，仅 chunk >500 kB 警告）
-- [ ] `cd RouteME/backend; .\mvnw.cmd -B -o test` — **本次未复跑**：本机 Maven Central 证书校验失败（PKIX），且本地仓库缺 Spring Boot `4.1.2` 依赖；实现提交 `f5e984c` 的 HANDOFF 记录为 151 项全绿，需在可联网/离线仓库环境补跑（详见 `docs/ai4se-plugins/20261116-101702-local-verify-report.md`）
+- [x] `cd RouteME/backend; $env:MAVEN_OPTS="-Djavax.net.ssl.trustStoreType=WINDOWS-ROOT"; .\mvnw.cmd -B -ntp test`（2026-11-16 归档日复跑：**154 项通过**，0 failure / 0 error / 0 skipped，`BUILD SUCCESS` 25.6s；含 Flyway V1–V9、`AuthControllerTest` 13、`PasswordUtilsTest` 3、`AuthMigrationSqliteTest`、`OpenApiTest`。设置 Windows 根证书信任库后 PKIX 问题消失，无需不安全 SSL 开关）
 - [x] 浏览器：注册新账号、错误密码、刷新保持、退出、演示身份进入。（2026-11-16，mock API 走查；注册 201、刷新恢复会话、退出清 token、密码登录、切演示身份清 token）
 
-**验证：** 前端命令全绿 + 浏览器检查记录；后端测试待补跑后回填
+**验证：** 前端命令全绿 + 后端 154 项全绿 + 浏览器检查记录（P5 归档前已补齐后端复跑）
 
 ## 覆盖场景
 

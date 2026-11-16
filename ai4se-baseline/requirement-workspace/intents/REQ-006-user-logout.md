@@ -1,7 +1,7 @@
 # 意图捕获 — REQ-006 退出当前身份（含演示身份）
 
 - **候选能力：** `user-auth`（ADDED）
-- **来源：** 用户指令「用户应该可以退出登录；按钮可放在顶栏身份菜单（截图：`林见夏 / 切换身份` 下拉面板）」；截图展示的组件为 `RouteME/frontend/src/shell/AppShell.tsx` 的 `id-switch` 面板；既有认证变更 `openspec/changes/add-user-auth/`
+- **来源：** 用户指令「用户应该可以退出登录；按钮可放在顶栏身份菜单（截图：`林见夏 / 切换身份` 下拉面板）」；截图展示的组件为 `RouteME/frontend/src/shell/AppShell.tsx` 的 `id-switch` 面板；既有认证变更 `openspec/changes/archive/2026-11-16-add-user-auth/`（Living Spec `openspec/specs/user-auth/`）
 - **捕获日期：** 2026-11-16
 
 ## 原始意图（一句话）

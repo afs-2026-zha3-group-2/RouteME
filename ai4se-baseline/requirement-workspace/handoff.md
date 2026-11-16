@@ -18,12 +18,13 @@
 | REQ-003 | `trip-companions` | `add-trip-companions` | `intents/REQ-003-trip-companions.md` | `requirements/REQ-003-trip-companions.md` | `openspec/changes/add-trip-companions/` |
 | REQ-004 | `trip-experiences` | `add-trip-experiences` | `intents/REQ-004-trip-experiences.md` | `requirements/REQ-004-trip-experiences.md` | `openspec/changes/add-trip-experiences/` |
 | REQ-005 | `trip-plans`（MODIFIED）/ `trip-experiences`（MODIFIED） | `refine-inspiration-home` | `intents/REQ-005-inspiration-home.md` | `requirements/REQ-005-inspiration-home.md` | `openspec/changes/refine-inspiration-home/` |
-| REQ-006 | `user-auth`（ADDED） | `add-user-logout` | `intents/REQ-006-user-logout.md` | `requirements/REQ-006-user-logout.md` | `openspec/changes/add-user-logout/` |
+| REQ-006 | `user-auth`（ADDED） | `add-user-logout` | `intents/REQ-006-user-logout.md` | `requirements/REQ-006-user-logout.md` | `openspec/changes/add-user-logout/`（依赖的 `add-user-auth` 已归档） |
 
 - 共享分析：`deep-dive.md`（①–④ 四表，含 REQ-005 / REQ-006 增补）、`impact-brief.md`（覆盖 002/003/004/005/006 需求集）。
 - 故事清单：`stories.md`（S03 → `stories/refine-inspiration-home.story.md`）；REQ-006 为单 change 小增量，P1 未拆故事，由 proposal + delta spec 承接（P1-4 允许 proposal 与 / 或 story list）。
-- 依赖排序（轻 DAG）：REQ-002 → REQ-003 → REQ-004；REQ-005 为 REQ-002 / REQ-004 已上线能力的首页浏览增量，不改主 DAG；REQ-006 依赖 `add-user-auth` 已实现的会话契约，归档顺序为先 `add-user-auth` 后 `add-user-logout`。
+- 依赖排序（轻 DAG）：REQ-002 → REQ-003 → REQ-004；REQ-005 为 REQ-002 / REQ-004 已上线能力的首页浏览增量，不改主 DAG；REQ-006 依赖 `add-user-auth` 已实现的会话契约。**`add-user-auth` 已于 2026-11-16 归档**（`openspec/changes/archive/2026-11-16-add-user-auth/`，Living Spec `openspec/specs/user-auth/`），`add-user-logout` 可在其后归档。
 - **BA 交付边界：** 以上为 P0/P1 业务产物。P2 起（delta-craft / design / task-plan / apply / verify / archive，含代码、契约、迁移、技术设计、任务分解）交 dev。
 - **P2 状态（REQ-005）：** G1 Pass（2026-11-16）；Delta 评审见 `openspec/changes/refine-inspiration-home/dov-ac-review.md`，一致性检查见同目录 `consistency-lint.md`，决策见 `g1-decision.md`。
 - **P3 状态（REQ-005）：** Pass（2026-11-16）；ATDD 设计 `atdd-design.md`、技术设计 `design.md`（D1–D8，含默认视图仍消费 `GET /api/matches` 的事实记录）、任务清单 `tasks.md`（T1–T6 + 对齐自检 Pass）；质量报告 `docs/ai4se-plugins/20261116-100821-quality-checklist-report.md`。下一步 P4（`/sdd:atdd-apply`）。
-- **P1 状态（REQ-006）：** Pass（2026-11-16）；提案与 delta 见 `openspec/changes/add-user-logout/`，`openspec validate add-user-logout --strict` 通过；质量报告 `docs/ai4se-plugins/20261116-102110-quality-checklist-report.md`。下一步 P2（`/sdd:delta-craft`）。
+- **P1 状态（REQ-006）：** Pass（2026-11-16）；提案与 delta 见 `openspec/changes/add-user-logout/`，`openspec validate add-user-logout --strict` 通过；质量报告 `docs/ai4se-plugins/20261116-102110-quality-checklist-report.md`。
+- **P2 状态（REQ-006）：** Pass（2026-11-16）；Delta 评审 `dov-ac-review.md`（AC 4/4 + DoV 5/5）、一致性检查 `consistency-lint.md`（Partial，BLOCKER 0 / WARNING 2）、决策 `g1-decision.md`（G1 Pass，条件 4 项）、质量报告 `docs/ai4se-plugins/20261116-103009-quality-checklist-report.md`。实现前先关闭 L-02（`add-user-auth` T6「演示身份不显示退出」）。下一步 P3（`/sdd:atdd-design` → `/sdd:task-plan`）。
