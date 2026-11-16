@@ -3,7 +3,7 @@
 - **需求来源：** 用户指令「作为想加入的人，我看到一个行程，我想要加入，所以希望点击申请后加入该行程团队，并且我希望留一句话说明」+ 原型故事 S08 ｜ **需求条目：** `requirement-workspace/requirements/REQ-009-trip-application-entry.md`
 - **能力：** `trip-companions`（MODIFIED）
 - **规模：** S（单页面展示增量；无后端、契约、迁移变更）
-- **规则：** `@rule:spec-first`、`@rule:prototype-ui-alignment`、`@rule:sdd-artifacts`、`@rule:web-coding-style`
+- **规则：** `@rule:spec-first`、`@rule:sdd-artifacts`、`@rule:web-coding-style`；视觉基准：`docs/prototype/prototype.html` + `docs/prototype/styles.css`（Qoder 项目规则投影 `prototype-ui-alignment`）
 
 ## 问题
 
@@ -46,6 +46,7 @@
 | `RouteME/frontend/src/styles.css` | 仅补内联申请区 / 等待提示的布局与令牌引用；不重做视觉 |
 | `RouteME/frontend/src/**/*.test.ts(x)`、`RouteME/e2e/tests/companions.spec.ts` | 申请入口派生、说明选填、错误映射、待处理 / 撤回、满员 / 结束拒绝 |
 | `openspec/changes/refine-trip-application/specs/trip-companions/spec.md` | MODIFIED：扩展「提交与取消同行申请」，保留既有 5 场景 + 新增 3 场景 |
+| `trip-plans`（上游，只读） | 行程状态（recruiting / full / completed）与人数仍由 `trip-plans` 单一写入；本 change 只读消费，不改规则 |
 | `docs/prototype/` | **不改**：入口 / 待处理 / 不可申请原因均以现有原型为准；重复提示是服务端错误映射，原型不展示 |
 | 后端 / `openapi.yaml` / 迁移 | **无改动**：`message` 选填 ≤120 与错误码已存在；保留 `ApplicationServiceTest` 回归 |
 | Living Spec `openspec/specs/trip-companions/spec.md` | 归档阶段用本 change 的 MODIFIED delta 替换「提交与取消同行申请」块，保留既有 5 场景 |
@@ -69,7 +70,7 @@
 2. 留空或填写说明后提交，生成 PENDING；申请区变为「申请已提交，等待 {发布者昵称} 回应」+「撤回申请」；刷新后仍为待处理。
 3. 自己发布的行程不显示申请入口；发布者的申请处理与结束行程入口保持可用。
 4. 已有 pending / accepted 时绕过前端再次提交，后端返回 `DUPLICATE_APPLICATION`，页面提示「已申请，请等待回应」，申请列表不新增记录。
-5. 满员 / 已结束行程的入口不可用并显示「人数已满」/「行程已结束」；直接调用接口返回 409 `TRIP_NOT_OPEN`。
+5. 满员 / 已结束行程的入口不可用并显示「人数已满」/「行程已结束」；直接调用接口返回 409（无有效申请时为 `TRIP_NOT_OPEN`；已有有效申请时按 `DUPLICATE_APPLICATION` 拒绝）。
 6. 撤回 pending 申请后状态变为「已取消」，且行程仍可申请时恢复内联表单。
 7. `openspec validate refine-trip-application --strict` 通过；`npm run build`、`npm test`、后端 `mvnw verify` 与相关 E2E 全绿。
 
@@ -82,7 +83,7 @@
 | E2E 选择器从弹窗改为内联表单 | 同步更新 `companions.spec.ts` 的按钮、placeholder 与状态断言；以用户可见文案定位 |
 | 说明为空白时被当作有效内容 | 前端 trim 后空 → `null`；后端 `normalizeMessage` 继续保持 |
 | 「已申请，请等待回应」与原型 mock 文案差一个「请」字 | 用户 AC 明确指定；该字符串只出现在服务端错误映射，原型页面不展示 |
-| 阶段提交与 `@rule:git-commit-conventions` 冲突 | 用户当次明确要求「每个阶段一次提交、P4 后推送、推送前先 pull」，按 `@rule:rule-precedence` 以用户指示为准，并在交付说明记录偏离 |
+| 阶段提交与 `@rule:git-commit-conventions` 冲突 | 用户当次明确要求「每个阶段一次提交、P4 后推送、推送前先 pull」，以用户指示为准，并在交付说明记录偏离 |
 
 ## 交付边界
 

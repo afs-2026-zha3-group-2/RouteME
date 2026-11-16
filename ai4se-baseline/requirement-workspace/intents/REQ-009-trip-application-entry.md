@@ -60,7 +60,7 @@
 - `trip-companions` 的 Living Spec「提交与取消同行申请」已经写明：招募中且未满员、说明选填 ≤120、阻止本人 / 重复 / 满员 / 已结束。本需求不新增业务规则，只把**入口状态与展示**补成可验收的增量，因此以 **MODIFIED** 表达，保留既有 5 个场景。
 - `trip-plans` 仍拥有行程状态与人数：`recruiting / full / completed` 与 `joined_count`。本需求只读消费，不改状态推导。
 - `openapi.yaml` 0.7.0 已定义 `message` 选填 ≤120 与 `DUPLICATE_APPLICATION` / `TRIP_NOT_OPEN` 错误码，本需求**预期不改契约**。
-- 原型 `docs/prototype/ui.js` 的 `actionBox` 与 `store.js` 的 `canApply` 是视觉与交互基准；不复制其 mock 数据与演示控制（`@rule:prototype-ui-alignment`）。
+- 原型 `docs/prototype/ui.js` 的 `actionBox` 与 `store.js` 的 `canApply` 是视觉与交互基准；不复制其 mock 数据与演示控制（视觉基准 `docs/prototype/prototype.html` + `styles.css`）。
 
 ## Discovery Decision
 

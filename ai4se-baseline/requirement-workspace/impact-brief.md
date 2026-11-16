@@ -500,7 +500,7 @@
 | Risk | E2E 选择器变化 | 弹窗路径改为内联表单，需同步更新 `companions.spec.ts` 的按钮 / placeholder / 状态断言 |
 | Risk | 选填说明的空白处理 | 前端 trim 后空 → `null`；保留后端 `normalizeMessage`，不新增必填校验 |
 | Risk | 文案与原型的一个「请」字差异 | 用户 AC 指定「已申请，请等待回应」；原型 `store.js` 的「已申请，等待回应」是 mock 侧门禁，页面不展示该字符串，不构成视觉差异 |
-| Risk | 阶段提交与 `@rule:git-commit-conventions` 冲突 | 用户当次明确要求「每个阶段一次提交，P4 后推送，push 前先 pull」；按 `@rule:rule-precedence` 以用户指示为准，按 `docs/sdd/README.md` 的 `<type>(p<N>)` 提交，偏离在交付说明记录 |
+| Risk | 阶段提交与 `@rule:git-commit-conventions` 冲突 | 用户当次明确要求「每个阶段一次提交，P4 后推送，push 前先 pull」；以用户指示为准，按 `docs/sdd/README.md` 的 `<type>(p<N>)` 提交，偏离在交付说明记录 |
 | Blocker | 无 | blocking OQ=0、DoR BLOCKER=0、A0 ⑨–⑫ 全过；无外部依赖 |
 
 ### 13.8 Suggested split boundaries（供 proposal-split / story-split）

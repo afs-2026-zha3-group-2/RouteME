@@ -62,7 +62,7 @@
 3. **说明选填与长度** — Given 用户在申请表单留空或只输入空白，When 提交，Then 系统 SHALL 接受并生成 PENDING（说明为空）；Given 用户输入超过 120 字，When 提交，Then 前端 MUST 阻止超长输入或提示最多 120 字，且不生成申请。
 4. **本人发布的行程不显示申请入口** — Given 用户打开自己发布的行程，When 查看操作区，Then 系统 MUST NOT 展示申请表单或「申请同行」入口；发布者的申请处理与结束行程入口保持可用。
 5. **重复申请被拦截并提示** — Given 用户对该行程已有 pending 或 accepted 申请（包括页面停留期间在其他标签页已提交），When 用户再次提交，Then 后端 MUST 返回 `DUPLICATE_APPLICATION` 且不新增申请；前端 SHALL 提示「已申请，请等待回应」，并把申请区刷新为待处理 / 已匹配状态。
-6. **满员或已结束不可申请** — Given 行程为「已满员」或「已结束」，When 用户打开详情，Then 申请入口 MUST 不可用，并 SHALL 展示「人数已满」或「行程已结束」的原因；When 用户绕过前端直接提交，Then 后端 MUST 返回 409 `TRIP_NOT_OPEN` 且不生成申请，前端 SHALL 展示当前不可申请并刷新行程状态。
+6. **满员或已结束不可申请** — Given 行程为「已满员」或「已结束」，When 用户打开详情，Then 申请入口 MUST 不可用，并 SHALL 展示「人数已满」或「行程已结束」的原因；When 用户绕过前端直接提交，Then 后端 MUST 拒绝且不生成申请（无有效申请时为 409 `TRIP_NOT_OPEN`；已有有效申请时为 409 `DUPLICATE_APPLICATION`），前端 SHALL 展示当前不可申请并刷新行程状态。
 7. **撤回后恢复可申请** — Given 用户有一条 pending 申请且行程仍招募中、未满员，When 用户确认撤回，Then 申请状态 SHALL 变为「已取消」，申请区 SHALL 恢复为内联申请表单。
 8. **页面停留期间状态变化** — *（异常 / 边界）* Given 用户打开可申请行程后停留，期间行程被接受至满员或被发布者标记为已结束，When 用户提交申请，Then 后端 MUST 拒绝，前端 SHALL 显示可读的不可申请原因，并在刷新后不再展示申请表单。
 
@@ -70,11 +70,11 @@
 
 - 申请说明选填，最长 120 字；后端 trim 后空字符串存为 `null`；不新增必填校验（用户裁决 D1）。
 - 复用 `POST /api/trips/{tripId}/applications` 与 `POST /api/applications/{applicationId}/cancel`；不新增端点、不迁移数据、不升契约版本。
-- 后端拒绝规则以现状为准：本人 → 403 `FORBIDDEN`；pending / accepted → 409 `DUPLICATE_APPLICATION`；非 recruiting → 409 `TRIP_NOT_OPEN`。
+- 后端拒绝规则以现状为准：本人 → 403 `FORBIDDEN`；pending / accepted → 409 `DUPLICATE_APPLICATION`；非 recruiting → 409 `TRIP_NOT_OPEN`；后端的检查顺序是「本人 → 重复 → 非 recruiting」，因此满员时若已有有效申请，错误码为 `DUPLICATE_APPLICATION`，两者都必须展示为可读原因。
 - 入口只在行程详情页；不做行程卡片入口（原型 S05 / S08 的落点为详情页）。
 - 待处理态严格按原型：等待回应提示 + 撤回申请；不使用字面「已申请，待处理」按钮（用户裁决 D2）。
 - 重复申请提示文案固定为「已申请，请等待回应」；满员 / 结束原因文案按原型「人数已满」/「行程已结束」。
-- 视觉遵循 `docs/prototype/prototype.html` 与 `docs/prototype/styles.css`；实现侧令牌取 `frontend/src/styles.css` 的 `:root` 与 `[data-theme="dark"]`，组件不写十六进制色值（`@rule:prototype-ui-alignment`）。
+- 视觉遵循 `docs/prototype/prototype.html` 与 `docs/prototype/styles.css`（Qoder 项目规则投影 `prototype-ui-alignment`）；实现侧令牌取 `frontend/src/styles.css` 的 `:root` 与 `[data-theme="dark"]`，组件不写十六进制色值。
 - 申请表单与撤回入口需键盘可达；错误与状态提示需可被读屏软件读出。
 - 不新增依赖、不改设计系统；既有接受 / 拒绝 / 聊天 / 退出 / 我的旅行行为不得回归。
 

@@ -18,7 +18,7 @@
 | 影响面 | [`impact-brief.md` §13](../../requirement-workspace/impact-brief.md) | as-is→delta、blast radius、风险、拆分边界 |
 | 提案 | [`proposal.md`](../../openspec/changes/refine-trip-application/proposal.md) | 问题 / 范围 / 影响面 / 决策 / 验收信号 / 残余风险 |
 | Delta 草稿 | [`specs/trip-companions/spec.md`](../../openspec/changes/refine-trip-application/specs/trip-companions/spec.md) | MODIFIED「提交与取消同行申请」，1 Requirement / 8 Scenario |
-| 质量报告 | [`docs/ai4se-plugins/20261116-115348-quality-checklist-report.md`](../ai4se-plugins/20261116-115348-quality-checklist-report.md) | P1-1–P1-4 Pass；P1-5/P1-6 optional Skipped；Overall Pass |
+| 质量报告 | [`docs/ai4se-plugins/20261116-115348-quality-checklist-report.md`](../../ai4se-plugins/20261116-115348-quality-checklist-report.md) | P1-1–P1-4 Pass；P1-5/P1-6 optional Skipped；Overall Pass |
 
 ## 3. 关键决策
 
@@ -49,5 +49,5 @@
 ## 6. 提交与偏离记录
 
 - **阶段提交：** 用户当次明确要求「每个阶段一次提交，P4 之后推送；push 前先从远程更新代码，防止误删团队成员代码」。本阶段提交信息按 `docs/sdd/README.md` 使用 `docs(p1): refine-trip-application ...`；P1–P4 仅本地提交，P4 完成后先 `git pull` 再 push。
-- **偏离：** 上述阶段提交做法偏离 Critical 规则 `@rule:git-commit-conventions`（一个 spec 只允许 verify / archive 两次提交）。按 `@rule:rule-precedence`，以用户当次显式指示为准，偏离已在 `proposal.md` 残余风险与 `requirement-workspace/handoff.md` 记录。
+- **偏离：** 上述阶段提交做法偏离 Critical 规则 `@rule:git-commit-conventions`（一个 spec 只允许 verify / archive 两次提交）。以用户当次显式指示为准，偏离已在 `proposal.md` 残余风险与 `requirement-workspace/handoff.md` 记录。
 - **范围偏离：** 无。S08 字面 AC「按钮变为已申请，待处理」被用户裁决 D2 覆盖为原型的等待提示 + 撤回；已在 REQ-009 §9 与 delta 场景中记录。

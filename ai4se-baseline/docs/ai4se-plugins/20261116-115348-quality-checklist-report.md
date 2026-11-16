@@ -39,4 +39,4 @@
 - Optional / not-run / out-of-focus items marked Skipped do not block Overall Pass.
 - Overall aggregates in-focus required items only.
 - This report is not a Gate decision.
-- 提交约定：用户当次明确要求“每个阶段一次提交、P4 后推送、推送前先 pull”，与 `@rule:git-commit-conventions` 的 verify/archive 两次提交冲突；按 `@rule:rule-precedence` 以用户指示为准，偏离已记录在 `proposal.md` 残余风险与 `handoff.md`。
+- 提交约定：用户当次明确要求“每个阶段一次提交、P4 后推送、推送前先 pull”，与 `@rule:git-commit-conventions` 的 verify/archive 两次提交冲突；以用户指示为准，偏离已记录在 `proposal.md` 残余风险与 `handoff.md`。
