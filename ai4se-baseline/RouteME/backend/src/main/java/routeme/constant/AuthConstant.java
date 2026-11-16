@@ -9,10 +9,6 @@ public final class AuthConstant {
     public static final int MIN_PASSWORD_LENGTH = 8;
     public static final int MAX_PASSWORD_LENGTH = 64;
     public static final int MAX_NICKNAME_LENGTH = 20;
-    public static final int MAX_SCHOOL_LENGTH = 80;
-    public static final int MAX_BIO_LENGTH = 500;
-    public static final int MAX_INTERESTS = 5;
-    public static final int MAX_INTEREST_LENGTH = 12;
     public static final int SESSION_TTL_DAYS = 7;
     public static final int TOKEN_BYTES = 32;
 

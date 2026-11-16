@@ -29,7 +29,7 @@ export function ProfileModal({ currentUser, userId, onClose }: Props) {
     }
     let active = true;
     setState({ status: 'loading' });
-    loadUserProfile(userId)
+    loadUserProfile(userId, currentUser.id)
       .then((profile) => {
         if (active) {
           setState({ status: 'ready', profile });
@@ -46,7 +46,7 @@ export function ProfileModal({ currentUser, userId, onClose }: Props) {
     return () => {
       active = false;
     };
-  }, [userId]);
+  }, [userId, currentUser.id]);
 
   return (
     <Modal
@@ -85,35 +85,46 @@ export function ProfileModal({ currentUser, userId, onClose }: Props) {
 function ProfileBody({ currentUser, profile }: { currentUser: DemoUser; profile: UserProfile }) {
   const isMe = currentUser.id === profile.id;
   const shared = sharedInterests(currentUser, profile);
+  const identity = [profile.school, profile.major, profile.job, profile.mbti]
+    .map((value) => (value ?? '').trim())
+    .filter((value) => value !== '')
+    .join(' · ');
+  const stats = profile.stats ?? { published: 0, completed: 0, joined: 0, shared: 0 };
 
   return (
-    <div className="profile-body">
-      <div className="profile-top">
+    <div className="profile-modal">
+      <div className="profile-modal-top">
         <Avatar user={profile} size="xl" />
-        <span className="profile-identity">
-          <span className="profile-name">
+        <span className="profile-modal-identity">
+          <span className="profile-modal-name">
             {profile.nickname}
             {isMe && <span className="badge dusk no-dot">{profileMessages.thisIsYou}</span>}
           </span>
-          <span className="profile-school">{profile.school}</span>
-          <span className="profile-joined">
-            {profileMessages.joinedPrefix} {formatJoinedAt(profile.joined_at, new Date())}
-          </span>
+          {identity !== '' && <span className="profile-modal-meta">{identity}</span>}
+          {profile.joined_at !== null && profile.joined_at !== undefined && (
+            <span className="profile-modal-joined">
+              {profileMessages.joinedPrefix} {formatJoinedAt(profile.joined_at, new Date())}
+            </span>
+          )}
         </span>
       </div>
 
-      <p className="profile-bio">{profile.bio}</p>
+      {profile.bio !== null && profile.bio !== undefined && profile.bio !== '' && (
+        <p className="profile-modal-bio">{profile.bio}</p>
+      )}
 
-      <div className="profile-tags">
-        {profile.interests.map((interest) => (
-          <span key={interest} className={shared.includes(interest) ? 'tag hit' : 'tag'}>
-            {interest}
-          </span>
-        ))}
-      </div>
+      {profile.interests.length > 0 && (
+        <div className="profile-modal-tags">
+          {profile.interests.map((interest) => (
+            <span key={interest} className={shared.includes(interest) ? 'tag hit' : 'tag'}>
+              {interest}
+            </span>
+          ))}
+        </div>
+      )}
 
       {shared.length > 0 && (
-        <p className="profile-shared">
+        <p className="profile-modal-shared">
           {profileMessages.sharedInterests}
           {shared.join('、')}
         </p>
@@ -121,19 +132,19 @@ function ProfileBody({ currentUser, profile }: { currentUser: DemoUser; profile:
 
       <div className="profile-stats">
         <span className="profile-stat">
-          <b>{profile.stats.published}</b>
+          <b>{stats.published}</b>
           <span>{profileMessages.statsPublished}</span>
         </span>
         <span className="profile-stat">
-          <b>{profile.stats.completed}</b>
+          <b>{stats.completed}</b>
           <span>{profileMessages.statsCompleted}</span>
         </span>
         <span className="profile-stat">
-          <b>{profile.stats.joined}</b>
+          <b>{stats.joined}</b>
           <span>{profileMessages.statsJoined}</span>
         </span>
         <span className="profile-stat">
-          <b>{profile.stats.shared}</b>
+          <b>{stats.shared}</b>
           <span>{profileMessages.statsShared}</span>
         </span>
       </div>

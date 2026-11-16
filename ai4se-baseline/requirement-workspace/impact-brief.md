@@ -459,9 +459,9 @@
 | `openspec/changes/add-user-profiles/` | 不存在 | 新建 change：`proposal.md` + `specs/user-profiles/spec.md`（ADDED） |
 | `trip-plans`（Living Spec） | 详情页展示发布者资料；卡片展示发布者昵称 | **不新增 trip-plans delta**：资料弹窗与双入口属新能力 `user-profiles` 的展示约定；行程业务规则与接口契约不变（沿用 REQ-004「展示触点由新能力 spec 拥有」先例） |
 | `trip-companions` / `trip-experiences` | 已定义隐私红线与作者展示 | checked, no direct impact —— 仅作为统计口径的只读数据源；规则不变 |
-| `openapi.yaml` | 0.6.0；有 `GET /users`、`GET /users/demo` 与 `/auth/*` | 0.8.0：新增 `GET /users/{id}/profile` 与 `UserProfile` schema（公开资料 + 四项统计 + joined_at）；`DemoUser` 保持兼容不改；响应 MUST NOT 含 username/password_hash |
-| 后端 | `DemoUserController` 仅账户列表；已有 `user-auth` 登录/注册；无统计聚合 | 新增单用户公开资料读取端点与只读聚合服务（参照 `MyTripsService` 不拥有表）；复用 `UserMapper` 与现有行程/申请/体验查询；MUST 同时支持演示账户与注册账户，且不返回账户凭据 |
-| 数据库 | V1–V9（V9 = 用户凭证与 auth_sessions）；3 个演示用户、6 条行程 | 追加 V10（只增不改，V9 已被 user-auth 占用）：新增 1 个非学生演示用户（「上班族 · 互联网行业 · INFP」，username/password_hash 为 NULL）与 1 条由其发布的招募中行程（用于从卡片/详情入口验收非学生资料） |
+| `openapi.yaml` | 0.6.0；有 `GET /users`、`GET /users/demo` 与 `/auth/*` | 0.8.0：**复用 main 已有** `GET /users/{userId}/profile`，`UserProfile` 增加可空 `joined_at` 与 `stats`（新增 `ProfileStats`）；`DemoUser` 保持兼容不改；响应 MUST NOT 含 username/password_hash（P4 收敛修订） |
+| 后端 | `DemoUserController` 仅账户列表；已有 `user-auth` 登录/注册；main 已有资料端点与资料列 | 不新建资料端点：新增 `UserProfileStatsService` 只读聚合并扩展 `UserProfileResponse`，在 main 的 `UserProfileController.profile()` 注入统计；不返回账户凭据 |
+| 数据库 | main 已到 V10（资料列）；本 change 追加 V11 | V11（只增不改）：新增 1 个非学生演示用户（「上班族 · 互联网行业 · INFP」，username/password_hash 为 NULL）与 1 条由其发布的招募中行程（用于从卡片/详情入口验收非学生资料） |
 | 前端 | 卡片/详情无资料弹窗；身份门已含演示身份与注册/登录面板 | 新增资料弹窗组件与加载 hook；`TripCard` 发布者区域可点击且不触发卡片跳转；`TripDetailPage` 发布者卡片可点击；文案与样式按原型 S02 + 现有令牌；弹窗对演示会话与注册会话一致 |
 | 测试 | 迁移测试固定人数/行程数；E2E 身份门标题为 three | 同步更新 `DemoDataMigrationSqliteTest` 与 `AuthMigrationSqliteTest` 的计数；E2E 身份门标题与断言补第 4 个用户；新增资料弹窗 API/组件/E2E 用例 |
 | `requirement-workspace/registry.md` | 仅 REQ-001–004 | 新增 REQ-009 登记行（drafted → verified 按 Gate 推进） |
@@ -484,8 +484,8 @@
 |---|---|
 | Spec（change delta） | 新增 `openspec/changes/add-user-profiles/specs/user-profiles/spec.md`（双入口、展示字段、共同兴趣、统计口径、隐私边界、自我查看、异常） |
 | Proposal | 新增 `proposal.md`（引用 REQ-009 与本次 impact 要点；含 effort/size 注记） |
-| 契约 | `openapi.yaml` 版本 0.6.0 → 0.8.0；新增 profile 端点与 schema；`redocly lint`/`OpenApiTest` 需通过 |
-| 后端 | 新增 controller 方法/response/只读聚合 service；V10 迁移；单元/控制器/迁移测试 |
+| 契约 | `openapi.yaml` 版本 0.8.0（main 0.7.0 之上）；`UserProfile` 新增 `joined_at`/`stats`（非必填）+ `ProfileStats`；`redocly lint`/`OpenApiTest` 需通过 |
+| 后端 | 扩展 main 的 controller/response；新增只读统计 service；V11 迁移；单元/控制器/迁移测试 |
 | 前端 | 新增资料弹窗组件、api/types、i18n 文案、样式；卡片与详情页入口改造；组件/纯函数测试 |
 | E2E | 新增卡片入口、详情入口、隐私字段缺席、自我查看用例；更新身份门标题与断言 |
 | 文档 | P1 仅本 brief 与需求条目；`docs/knowledge/` 与 `interfaces/README.md` 归档阶段回写 |
@@ -500,9 +500,9 @@
 
 | 级别 | 项 | 说明 / 缓解 |
 |---|---|---|
-| Risk | 新增演示用户/行程会改变种子数据计数 | `DemoDataMigrationSqliteTest`、`AuthMigrationSqliteTest` 与 E2E 身份门标题需同批更新；避免只改迁移导致 CI 红 |
+| Risk | 新增演示用户/行程会改变种子数据计数 | `ProfileMigrationSqliteTest`（V1–V11、4 个账号）与 E2E 身份门标题需同批更新；避免只改迁移导致 CI 红 |
 | Risk | 公开资料容易误带账户凭据 | 响应与弹窗均只使用公开字段；`username`/`password_hash`/会话令牌不得出现在 profile 契约与 UI 中 |
-| Risk | 身份模式已分叉为演示账户与注册账户 | 资料读取沿用现有身份进入方式，不新增权限体系；后端需同时支持 `X-User-Id` 与登录会话，验收覆盖两类账户 |
+| Risk | 身份模式已分叉为演示账户与注册账户 | 资料读取沿用 main 的 `X-User-Id` 约定，不新增权限体系；验收覆盖两类账户 |
 | Risk | `TripCard` 整体是 `<a>`，发布者区域内嵌交互元素 | 需重构卡片点击结构，避免嵌套 `<a>/<button>`；发布者点击必须阻止卡片跳转，并保留键盘可达性 |
 | Risk | 统计为请求时实时聚合 | MVP 数据量小可接受；不引入缓存，避免与行程/申请/体验状态不一致 |
 | Risk | 隐私文案与原型原文不一致 | 已确认按实际展示字段调整；验收时以调整后的文案为准，原型原文不作为实现依据 |
@@ -512,5 +512,6 @@
 
 - **一 REQ 一 change 一 capability：** `add-user-profiles` ← REQ-009（`user-profiles`）。
 - **依赖 / 阶段排序：** 无上游新依赖；与后续 change 的共享文件冲突点是 `TripCard.tsx` 与 `styles.css`，排期时避免并行修改同一文件。
-- **契约优先：** 先冻结 `GET /users/{id}/profile` 响应形状（公开字段 + 四项统计 + joined_at），再并行后端聚合与前端弹窗。
+- **契约优先：** 先冻结「在 main 的 `UserProfile` 上新增 `joined_at` + 四项统计」（不改变必填字段），再并行后端聚合与前端弹窗。
+- **P4 收敛修订（2026-11-16）：** main 已落地同名资料端点，按用户裁决改为「复用 main 接口 + 扩展统计/加入时间」；迁移版号改为 V11（V10 归 main）。
 - **质量自检（split-heuristics）：** 垂直切片、端到端可验证（卡片入口 → 弹窗 → 关闭）、可独立运行、capability 名真实、无依赖环。

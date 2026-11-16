@@ -4,6 +4,7 @@ import {
   PLACES,
   findPlaceByName,
   nearestPlace,
+  placesInCity,
   projectLatLng,
   projectPlace,
   resolvePlace,
@@ -17,6 +18,14 @@ describe('place catalog', () => {
     expect(cities).toEqual(expect.arrayContaining(['珠海', '广州', '深圳', '佛山']));
     expect(cities.length).toBeGreaterThanOrEqual(8);
   });
+
+    it('scopes places to one city for the waypoint map', () => {
+      const zhuhai = placesInCity('珠海');
+      expect(zhuhai.length).toBeGreaterThan(1);
+      expect(zhuhai.every((place) => place.city === '珠海')).toBe(true);
+      expect(zhuhai.map((place) => place.name)).toEqual(expect.arrayContaining(['珠海', '情侣路']));
+      expect(placesInCity('不存在的城市')).toEqual([]);
+    });
 
   it('resolves names and aliases exactly', () => {
     expect(findPlaceByName('珠海')?.name).toBe('珠海');

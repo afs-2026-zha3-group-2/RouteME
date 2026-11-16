@@ -38,16 +38,16 @@
 | 19 | 资料弹窗不提供举报入口 | E2E | 弹窗底部仅关闭，无举报按钮 |
 | 20 | 既有举报能力不受影响 | E2E（回归） | 聊天/行程场景既有举报入口仍可见可用 |
 
-**推荐附加层（advisory，不作为门禁）：** 安全（PII/凭据缺席、资料读取不要求身份头）、兼容性（1440/1024/768/390、浅色/深色）、a11y（弹窗焦点与 Esc、发布者入口键盘可达）。
+**推荐附加层（advisory，不作为门禁）：** 安全（PII/凭据缺席）、兼容性（1440/1024/768/390、浅色/深色）、a11y（弹窗焦点与 Esc、发布者入口键盘可达）。
 
 ## 3. 生产代码之前先写什么
 
-1. **契约先行（红）**：`openapi.yaml` 升至 0.8.0，新增 `GET /users/{id}/profile`、`UserProfile`、`ProfileStats`、404 `USER_NOT_FOUND`；`OpenApiTest` 断言路径、必填字段与错误响应。profile 端点**不要求** `X-User-Id` 或登录会话；共同兴趣由前端用当前用户兴趣计算。
+1. **契约先行（红）**：`openapi.yaml` 升至 0.8.0，复用 main 已有 `GET /users/{userId}/profile`（带 `X-User-Id`），`UserProfile` 增加 `joined_at`/`stats`，新增 `ProfileStats`；`OpenApiTest` 扩展断言字段与必填性。共同兴趣仍由前端用当前用户兴趣计算。
 2. **API 验收测试（红）**：
    - `UserProfileControllerTest`（MockMvc + H2）：公开字段、`joined_at`、四项统计、零统计、404、响应无账户凭据。
-   - `ProfileDataMigrationSqliteTest`（SQLite）：V10 写入第 4 个演示用户与其行程，且 `username`/`password_hash` 为 NULL。
-   - 更新 `DemoDataMigrationSqliteTest`、`AuthMigrationSqliteTest` 的用户/行程计数。
-3. **E2E（红）**：新增 `RouteME/e2e/tests/profiles.spec.ts`；更新 `trips.spec.ts` 身份门为 4 个演示账户。
+   - `ProfileDataMigrationSqliteTest`（SQLite）：V11 写入第 4 个演示用户与其行程，且 `username`/`password_hash` 为 NULL。
+   - 更新 `ProfileMigrationSqliteTest`（V1–V11、4 个演示账号）。
+3. **E2E（红）**：新增 `RouteME/e2e/tests/profiles.spec.ts`；`profile.spec.ts` 的发布者入口改弹窗断言；`trips.spec.ts` 身份门为 4 个演示账户。
 4. 再按 `/sdd:atdd-apply` 做 Red → Green → Refactor；UT 在 apply 阶段补：共同兴趣交集、统计组装、字段缺省格式化。
 
 ## 4. 门禁
@@ -64,11 +64,11 @@
 
 | 层 | 夹具 | 清理 / 所有权 |
 |---|---|---|
-| API | Flyway V1–V10 迁移后的 H2/SQLite；第 4 个演示用户 + 行程；零统计账户由 `AuthService.register` 或测试内创建 | 每个测试类使用独立临时库/回滚；不依赖生产 SQLite 文件 |
+| API | Flyway V1–V11 迁移后的 H2/SQLite；第 4 个演示用户 + 行程；零统计账户由 `AuthService.register` 或测试内创建 | 每个测试类使用独立临时库/回滚；不依赖生产 SQLite 文件 |
 | E2E | 种子 SQLite：用户 1–4、行程 1–7；用户 1 作为浏览者，用户 4 的行程用于非学生资料 | 新发布的行程使用唯一标题；不复用/清理演示种子；不引入破坏性 reset |
 | 契约 | `openapi.yaml` 为唯一契约源 | 版本 0.8.0；`OpenApiTest` 与 Redocly 同源校验 |
 
-- V10 只增不改：新增用户 4（`上班族 · 互联网行业 · INFP`，`username`/`password_hash` NULL，`created_at` 固定）与行程 7（招募中，发布者 4）。V9 已被 `user-auth` 占用。
+- V11 只增不改：新增用户 4（`上班族 · 互联网行业 · INFP`，`username`/`password_hash` NULL，`created_at` 固定）与行程 7（招募中，发布者 4）。V10 归 main 的 `add-user-profile`（资料列）。
 - 统计夹具：未接受申请、未发布体验用于排除口径；零统计数据用新建账户；当前无「已取消」行程，不构造该状态。
 
 ## 6. Non-goals（含反向验证）
@@ -89,4 +89,4 @@
 
 - 20 个 Scenario 全部落层：E2E 16 条、API 10 条（有重叠）、Defer UT 3 条；无未覆盖 Scenario。
 - 统计口径已按 P3 澄清：当前 `trip-plans` 无「已取消」状态，发布行程统计全部已发布行程；未来引入取消时再排除。
-- 身份模式：profile 端点为公开只读、不要求身份头；共同兴趣前端计算，避免与演示/注册身份模式耦合。
+- 身份模式：复用 main 的 `X-User-Id` 读取约定；共同兴趣前端计算，避免服务端为不同浏览者缓存差异结果。

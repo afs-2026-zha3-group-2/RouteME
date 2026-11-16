@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { tripMessages } from '../i18n/tripMessages';
+import { publisherSummary } from '../profile/profileDisplay';
 import type { Route } from '../route';
 import type { ColorMode } from '../theme';
 import type { DemoUser } from '../types';
@@ -218,7 +219,7 @@ export function AppShell({
                   <Avatar user={currentUser} size="sm" />
                   <span className="id-option-text">
                     <b>{currentUser.nickname}</b>
-                    <i>{currentUser.school}</i>
+                    <i>{publisherSummary(currentUser) || tripMessages.profileIncompleteShort}</i>
                   </span>
                   <span className="id-option-flag">{tripMessages.authLoggedIn}</span>
                 </div>
@@ -244,7 +245,7 @@ export function AppShell({
                       <Avatar user={user} size="sm" />
                       <span className="id-option-text">
                         <b>{user.nickname}</b>
-                        <i>{user.school}</i>
+                        <i>{publisherSummary(user) || tripMessages.profileIncompleteShort}</i>
                       </span>
                       {selected && <span className="id-option-flag">当前</span>}
                     </button>

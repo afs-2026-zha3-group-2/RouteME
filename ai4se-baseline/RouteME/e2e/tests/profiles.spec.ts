@@ -38,7 +38,7 @@ test('opens the publisher profile from the trip detail page', async ({ page }) =
   await loginAs(page, 1);
   await page.goto('/#/trips/3');
 
-  await page.getByRole('button', { name: /陈屿 · 研一 · 地理科学/ }).click();
+  await page.getByRole('button', { name: /查看 陈屿 的资料/ }).click();
 
   const modal = page.locator('.ant-modal', { hasText: '旅行者资料' });
   await expect(modal).toBeVisible();

@@ -1,9 +1,13 @@
 package routeme.entity;
 
+import java.time.Clock;
+import java.util.List;
+
 import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 
+import routeme.model.ProfileRules;
 import routeme.pojo.DemoUser;
 import routeme.pojo.UserAccount;
 import routeme.utils.JsonListUtils;
@@ -33,6 +37,24 @@ public class UserEntity {
 
     /** JSON 数组文本。 */
     private String interests;
+
+    /** 头像地址，含缓存版本参数；无头像为 null。 */
+    private String avatarUrl;
+
+    /** {@code YYYY-MM-DD}；只在本人资料响应中返回。 */
+    private String birthday;
+
+    private String gender;
+
+    private String city;
+
+    private String major;
+
+    private String job;
+
+    private String mbti;
+
+    private String travelStyle;
 
     private String createdAt;
 
@@ -100,6 +122,70 @@ public class UserEntity {
         this.interests = interests;
     }
 
+    public String getAvatarUrl() {
+        return avatarUrl;
+    }
+
+    public void setAvatarUrl(String avatarUrl) {
+        this.avatarUrl = avatarUrl;
+    }
+
+    public String getBirthday() {
+        return birthday;
+    }
+
+    public void setBirthday(String birthday) {
+        this.birthday = birthday;
+    }
+
+    public String getGender() {
+        return gender;
+    }
+
+    public void setGender(String gender) {
+        this.gender = gender;
+    }
+
+    public String getCity() {
+        return city;
+    }
+
+    public void setCity(String city) {
+        this.city = city;
+    }
+
+    public String getMajor() {
+        return major;
+    }
+
+    public void setMajor(String major) {
+        this.major = major;
+    }
+
+    public String getJob() {
+        return job;
+    }
+
+    public void setJob(String job) {
+        this.job = job;
+    }
+
+    public String getMbti() {
+        return mbti;
+    }
+
+    public void setMbti(String mbti) {
+        this.mbti = mbti;
+    }
+
+    public String getTravelStyle() {
+        return travelStyle;
+    }
+
+    public void setTravelStyle(String travelStyle) {
+        this.travelStyle = travelStyle;
+    }
+
     public String getCreatedAt() {
         return createdAt;
     }
@@ -109,11 +195,28 @@ public class UserEntity {
     }
 
     public DemoUser toDemoUser() {
-        return new DemoUser(id, nickname, avatarInitial, school, bio, JsonListUtils.parse(interests));
+        return toDemoUser(Clock.systemUTC());
+    }
+
+    public DemoUser toDemoUser(Clock clock) {
+        List<String> parsedInterests = JsonListUtils.parse(interests);
+        return new DemoUser(
+                id,
+                nickname,
+                avatarInitial,
+                avatarUrl,
+                school,
+                city,
+                major,
+                job,
+                bio,
+                parsedInterests,
+                ProfileRules.complete(nickname, birthday, gender, city, parsedInterests, travelStyle, clock));
     }
 
     public UserAccount toUserAccount() {
         return new UserAccount(
-                id, username, passwordHash, nickname, avatarInitial, school, bio, JsonListUtils.parse(interests));
+                id, username, passwordHash, nickname, avatarInitial, school, bio, JsonListUtils.parse(interests),
+                avatarUrl, birthday, gender, city, major, job, mbti, travelStyle);
     }
 }

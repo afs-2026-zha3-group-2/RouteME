@@ -1,7 +1,7 @@
 ﻿# 变更提案：add-user-profiles
 
 - **需求：** REQ-009（`requirement-workspace/requirements/REQ-009-publisher-profile.md`）
-- **能力：** `user-profiles`（ADDED）｜ **规模：** S–M（1 个只读端点 + 1 个资料弹窗 + 2 个入口 + 1 条种子数据迁移）
+- **能力：** `user-profiles`（ADDED）｜ **规模：** S–M（复用 main 资料端点并扩展统计 + 1 个资料弹窗 + 2 个入口 + 1 条种子数据迁移）
 - **原型：** `docs/prototype/prototype.html`、`ui.js` `profileModal()` / `hostPanel`、`styles.css`（S02 资料弹窗）｜ **原型冲突裁决：** 见 §原型对齐决议
 
 ## 问题
@@ -31,7 +31,7 @@
 
 | 位置（能力 / 页面） | 改动 |
 |---|---|
-| `user-profiles` 能力 | 新增：单用户公开资料读取与四项统计只读聚合 |
+| `user-profiles` 能力 | 扩展 main 的单用户资料读取（新增 `joined_at` 与四项统计），只读聚合 |
 | 旅行灵感首页 / 我的旅行（`TripCard` 展示触点） | 发布者区域可点击打开资料弹窗，且不触发卡片跳转；行程业务规则不变 |
 | 行程详情页（`trip-plans` 展示触点） | 发布者卡片可点击打开资料弹窗；详情内容与接口不变 |
 | 资料弹窗（新） | 按原型 S02 展示公开资料与统计，删除举报按钮，隐私文案按实际字段调整 |
@@ -50,21 +50,21 @@
 | 隐私说明文案 | 「只展示昵称、简介与旅行兴趣」 | 按实际字段调整为「昵称、头像、身份/专业、加入时间、简介与旅行兴趣」；电话、证件、精确住址和实时位置不公开 |
 | 自我查看 | 显示「这是你」并隐藏举报 | 保留「这是你」；举报本就不做，底部仅关闭 |
 | 卡片入口 | 卡片整体打开详情，无发布者独立入口 | 按用户指示新增发布者区域入口；点击发布者不触发卡片跳转 |
-| 四项统计 | 发布/已完成/参与同行/游后分享 | 按原型口径，作为本 change 的验收口径 |
+| 卡片入口（与 main 的 S18 差异） | S18 发布者入口跳 `#/users/{id}` | 改为弹窗；公开主页路由保留；`profile.spec.ts` 同步改写 |
 
 ## 需求与证据
 
 - 引用需求：REQ-009；意图捕获 `requirement-workspace/intents/REQ-009-publisher-profile.md`。
 - 原型证据：`docs/prototype/ui.js` `profileModal()` / `hostPanel`；`store.js` `stats()`；`styles.css` `.profile-*` / `.privacy-note`。
-- 现有实现证据：`RouteME/backend/.../V3__create_demo_users.sql`（用户字段与 `created_at`）、`V9__add_user_credentials.sql`（演示/注册账户凭据）、`DemoUserController.java`（全部账户与 `/users/demo`）、`RouteME/frontend/src/trips/TripCard.tsx`、`TripDetailPage.tsx`、`RouteME/openapi.yaml`（0.6.0）。
-- Impact 要点：新增 `user-profiles`；`trip-companions` / `trip-experiences` 只读消费；`trip-plans` 仅展示触点、不新增 delta；种子数据会改变迁移测试与 E2E 身份门断言。
+- 现有实现证据：`RouteME/backend/.../V3__create_demo_users.sql`（用户字段与 `created_at`）、`V9__add_user_credentials.sql`（演示/注册账户凭据）、`V10__add_user_profile.sql`（main S18 资料列）、`UserProfileController.java`（main 的 GET/PUT/头像端点）、`DemoUserController.java`（全部账户与 `/users/demo`）、`RouteME/frontend/src/trips/TripCard.tsx`、`TripDetailPage.tsx`、`RouteME/openapi.yaml`（main 0.7.0；本 change 0.8.0）。
+- Impact 要点：扩展 `user-profiles`（复用 main 端点）；`trip-companions` / `trip-experiences` 只读消费；`trip-plans` 仅展示触点、不新增 delta；种子数据（V11）会改变迁移测试与 E2E 身份门断言。
 - DoR / A0：Base 8 全过，BLOCKER = 0；deep-dive ⑨–⑫ 见 `requirement-workspace/deep-dive.md`「Deep-dive 增补 — REQ-009」。
 
 ## 规模与交付
 
-- **Effort：** S–M。契约（单用户资料响应）→ 后端只读聚合（同时覆盖演示账户与注册账户）→ 前端弹窗与双入口 → 种子数据与测试。
+- **Effort：** S–M。契约（资料响应增量）→ 后端统计聚合（同时覆盖演示账户与注册账户）→ 前端弹窗与双入口 → 种子数据与测试。
 - **阶段：** 单阶段，无上游新依赖；可独立演示（卡片入口 → 弹窗 → 关闭）。
-- **共享文件风险：** `TripCard.tsx`、`styles.css` 与活动中的视觉变更可能冲突，排期时避免并行修改同一文件。
+- **共享文件风险：** `TripCard.tsx`、`TripDetailPage.tsx`、`styles.css`、`profile.spec.ts` 与 main 的 S18 实现重叠，已按「复用 main 接口」收敛（见 design D1/D2/D5/D7）。
 
 ## Spec ID
 

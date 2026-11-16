@@ -14,7 +14,7 @@ import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.jdbc.datasource.DriverManagerDataSource;
 
 /**
- * 在临时 SQLite 文件库执行全部迁移，验证 V10 写入第 4 个演示用户与其行程：
+ * 在临时 SQLite 文件库执行全部迁移，验证 V11 写入第 4 个演示用户与其行程：
  * 该用户是非学生形态，且没有用户名/密码凭据。
  */
 class ProfileDataMigrationSqliteTest {

@@ -34,6 +34,18 @@ export const emptyTripForm: TripFormValues = {
   note: '',
 };
 
+/** Local calendar day as `yyyy-mm-dd`; `toISOString` would shift around UTC midnight. */
+export function todayIso(now: Date = new Date()): string {
+  const pad = (value: number) => String(value).padStart(2, '0');
+  return `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
+}
+
+/** Publish form starts on today's date; users can still change both ends. */
+export function initialTripForm(now: Date = new Date()): TripFormValues {
+  const today = todayIso(now);
+  return { ...emptyTripForm, startDate: today, endDate: today };
+}
+
 export function validateTripForm(values: TripFormValues): TripFieldErrors {
   const errors: TripFieldErrors = {};
   const title = values.title.trim();
