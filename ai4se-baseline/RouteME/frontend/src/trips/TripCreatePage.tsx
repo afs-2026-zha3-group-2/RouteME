@@ -1,6 +1,7 @@
 import { useEffect, useState, type ReactNode } from 'react';
-import { Alert, Button, Card, Input, Space, Typography } from 'antd';
+import { Alert, Button, Card, Cascader, Input, Space, Typography } from 'antd';
 import { createTrip, loadTrip } from '../api';
+import { AREA_PROVINCES, codesForCityName, DESTINATION_OPTIONS } from '../areas/areaCatalog';
 import { tripMessages } from '../i18n/tripMessages';
 import { PlacePicker } from '../map/PlacePicker';
 import type { DemoUser } from '../types';
@@ -45,7 +46,7 @@ export function TripCreatePage({ currentUser, fromTripId }: Props) {
         }
         setValues({
           ...emptyTripForm,
-          destination: source.destination,
+          destinationCode: codesForCityName(source.destination)?.[1] ?? '',
           stops: source.stops.slice(0, MAX_STOPS),
           tags: source.tags.slice(0, MAX_TAGS),
           capacity: '',
@@ -117,22 +118,24 @@ export function TripCreatePage({ currentUser, fromTripId }: Props) {
                               </Field>
 
                               <Field
-                                label={tripMessages.fieldDestination}
-                                htmlFor="trip-destination"
-                                error={errors.destination}
-                              >
-                                <PlacePicker
-                                  mode="single"
-                                  kinds={['city']}
-                                  inputId="trip-destination"
-                                  ariaLabel={tripMessages.fieldDestination}
-                                  invalid={errors.destination !== undefined}
-                                  value={values.destination === '' ? [] : [values.destination]}
-                                  onChange={(next) => update({ destination: next[0] ?? '' })}
-                                  placeholder="搜索城市名，或直接在地图上点选"
-                                  emptyHint="目的地按城市选择；输入城市名会即时匹配地图上的位置。"
-                                />
-                              </Field>
+            label={tripMessages.fieldDestination}
+            htmlFor="trip-destination"
+            error={errors.destination}
+          >
+            <Cascader
+              id="trip-destination"
+              options={DESTINATION_OPTIONS}
+              value={destinationPath(values.destinationCode)}
+              onChange={(next) =>
+                update({ destinationCode: Array.isArray(next) && next.length === 2 ? String(next[1]) : '' })
+              }
+              placeholder="选择省 / 市（必须选到城市）"
+              aria-label={tripMessages.fieldDestination}
+              aria-invalid={errors.destination !== undefined || undefined}
+              aria-describedby={errors.destination !== undefined ? 'trip-destination-error' : undefined}
+              allowClear
+            />
+          </Field>
 
           <div className="form-grid">
                       <Field label={tripMessages.fieldStartDate} htmlFor="trip-start-date" error={errors.startDate}>
@@ -309,6 +312,15 @@ export function TripCreatePage({ currentUser, fromTripId }: Props) {
       </Card>
     </main>
   );
+}
+
+/** Cascader 需要「省 → 市」两级路径，而表单只保存市级代码。 */
+function destinationPath(code: string): string[] {
+  if (code === '') {
+    return [];
+  }
+  const province = AREA_PROVINCES.find((item) => item.cities.some((city) => city.code === code));
+  return province === undefined ? [] : [province.code, code];
 }
 
 /** Wires a control to its field label and, when invalid, to its error text. */

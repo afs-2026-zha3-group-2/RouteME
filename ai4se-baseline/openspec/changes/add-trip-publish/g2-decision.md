@@ -63,3 +63,26 @@
 ## Next
 
 - Decision = Pass，P5 按用户 2026-11-16 指示**暂不执行**（不归档）。归档时补 `summary.md`、合并 living spec、登记知识库。
+
+## G2 追加：目的地代码化（REQ-007 协作，2026-11-16）
+
+| 项 | 修订前 | 修订后 |
+|---|---|---|
+| 契约版本 | 0.6.0 | **0.7.0**（`TripCreateRequest.destination_code`） |
+| 本地验证 | 后端 152 / 前端 67 / e2e 2 | 后端 **156** / 前端 **75** / 构建成功 / 契约 valid（7 既有 warning）/ 发布 e2e 2 通过 |
+| 验证报告 | `20261116-100500-local-verify-report.md` | 追加 [`20261116-113500-local-verify-report.md`](../../../docs/ai4se-plugins/20261116-113500-local-verify-report.md) |
+| 新增断言 | — | 省级码 / 未知码 / 缺失码 400；Cascader 必须选到市；详情页目的地为「珠海」 |
+| CI | run `43790134080` | 待本次提交推送后复核（结果写入归档时的 `summary.md`） |
+
+**结论：Pass**（继承 CVE/缺陷等级不变；新增残余项如下）。
+
+| 残余项 | Owner | 处理时机 |
+|---|---|---|
+| 最小字典切片需替换为全国字典并持久化 `destination_code` | AO（Jay）+ `add-destination-area-filters` | 该 change 落地时 |
+| 其它故事 e2e 测试债（S01 / S04 / S15、REQ-005 状态徽标） | AO（Jay） | 随各自 change |
+
+| 角色 | 姓名 | 确认内容 | 日期 |
+|---|---|---|---|
+| VL | Neal | 复核修订后的验证报告与断言覆盖，追加 G2 Pass | 2026-11-16 |
+| SA | Jacky、Karena | 确认修订未越出 G1 重评的规格 | 2026-11-16 |
+| AO | Jay | 记录字典切片遗留项 | 2026-11-16 |

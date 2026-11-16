@@ -1,7 +1,7 @@
 openapi: 3.0.3
 info:
   title: RouteME API
-  version: 0.6.0
+  version: 0.7.0
   description: |
     RouteME 后端对外契约。本文件是前后端唯一事实源，字段名、类型、状态码与错误码只在这里定稿。
         当前包含：脚手架问候语、演示账户与账号认证（注册/登录/会话/退出）、旅行计划（浏览/筛选/发布/详情/结束），同行匹配、申请、退出、聊天、我的旅行与举报，以及游后体验分享与参考发布所需数据。
@@ -333,8 +333,9 @@ paths:
       operationId: createTrip
       summary: 发布旅行计划
       description: |
-        必填与约束见 TripCreateRequest。发布成功后状态为 recruiting，joined_count 计入发布者本人。
-        字段级提示由前端表单给出；后端校验失败统一返回 400 INVALID_INPUT。
+        必填与约束见 TripCreateRequest。目的地只接受二级行政区划代码；名称由后端按字典生成（直辖市取省级名）。
+        发布成功后状态为 recruiting，joined_count 计入发布者本人。
+        字段级提示由前端表单给出；后端校验失败（含省级代码、字典中不存在的代码）统一返回 400 INVALID_INPUT。
       parameters:
         - $ref: '#/components/parameters/DemoUserId'
       requestBody:
@@ -347,7 +348,7 @@ paths:
               success:
                 value:
                   title: 广州老城骑楼扫街半日
-                  destination: 广州
+                  destination_code: '440100'
                   start_date: '2026-11-16'
                   end_date: '2026-11-16'
                   stops: [陈家祠地铁站集合, 恩宁路骑楼, 永庆坊]
@@ -360,7 +361,7 @@ paths:
               rejected:
                 value:
                   title: ''
-                  destination: 广州
+                  destination_code: '440000'
                   start_date: '2026-11-16'
                   end_date: '2026-11-15'
                   stops: [只有一处]
@@ -1374,14 +1375,15 @@ components:
               description: 结束时间；非空表示已结束
     TripCreateRequest:
       type: object
-      required: [title, destination, start_date, end_date, stops, capacity]
+      required: [title, destination_code, start_date, end_date, stops, capacity]
       properties:
         title:
           type: string
           maxLength: 40
-        destination:
+        destination_code:
           type: string
-          maxLength: 40
+          pattern: '^[0-9]{6}$'
+          description: 目的地二级行政区划代码（必须选到市，含港澳台二级区）；名称由后端按字典生成
         start_date:
           type: string
           format: date

@@ -59,7 +59,7 @@ class OpenApiTest {
 
         // Then
         assertAll(
-                () -> assertEquals("0.6.0", info.get("version"), "info.version"),
+                () -> assertEquals("0.7.0", info.get("version"), "info.version"),
                 () -> assertTrue(paths(document).containsKey("/users"), "/users declared"),
                 () -> assertTrue(paths(document).containsKey("/trips/{tripId}"), "detail path declared"),
                 () -> assertTrue(
@@ -74,7 +74,7 @@ class OpenApiTest {
                 () -> assertTrue(responses(completeTrip).containsKey("409"), "complete returns 409"),
                 () -> assertTrue(
                         required(createRequest)
-                                .containsAll(List.of("title", "destination", "start_date", "end_date", "stops", "capacity")),
+                                                .containsAll(List.of("title", "destination_code", "start_date", "end_date", "stops", "capacity")),
                         "create required fields"),
                 () -> assertTrue(
                         enums(properties(tripPlan).get("status"))

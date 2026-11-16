@@ -54,3 +54,20 @@
 
 - 页面级视觉与交互细节不在本 change 断言（属 `design-system` 能力的既有要求）。
 - 未新增 NFR 用例；MVP 无 SLA，沿用 `add-trip-plans` 的 deferred 记录。
+
+## 6. 目的地修订（REQ-007 协作）
+
+P2 阶段记录 §8 的修订把目的地改成二级代码，新增两条场景与两组断言：
+
+| # | 场景 | 测试层 | 用例 |
+|---|---|---|---|
+| 12 | 未选到市不能提交（发布页） | 前端 + 端到端 | `tripForm.test.ts › rejects a destination that is not a city-level code`；`trips.spec.ts › blocks publishing…`（目的地字段 `aria-invalid`） |
+| 13 | 非法或省级代码被后端拒绝 | 接口 | `TripControllerTest#in_provinceCodeOnly_out_invalidInput`、`#in_unknownDestinationCode_out_invalidInput`、`#in_missingDestinationCode_out_invalidInput` |
+| 14 | 选到市后按代码生成标准名 | 接口 + 端到端 | `TripControllerTest#in_validRequest_out_createdRecruitingTrip`（`destination = 广州`）；发布 e2e 断言详情页目的地为「珠海」 |
+
+实现要点：
+
+- 目的地控件改为 antd `Cascader`（`changeOnSelect = false`，必须点到第二级），选项来自 `frontend/src/areas/areaCatalog.ts`。
+- 表单只保存市级 `destinationCode`；`toCreateRequest` 输出 `destination_code`；参考发布预填时用 `codesForCityName` 反查两级路径。
+- 后端 `AreaConstant.cityOf` 负责二级码校验（长度 6、排除 `0000` 结尾的省级码、必须命中字典），名称由 `AreaCity.displayName()` 生成。
+- 字典是**最小切片**（广东 14 城 + 香港 / 澳门二级区），`add-destination-area-filters` 落地时替换为全国字典并持久化代码列。
