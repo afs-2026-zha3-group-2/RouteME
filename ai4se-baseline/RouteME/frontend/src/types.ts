@@ -72,7 +72,7 @@ export type TripDetail = TripSummary & {
 
 export type TripCreateRequest = {
   title: string;
-  destination: string;
+  destination_code: string;
   start_date: string;
   end_date: string;
   stops: string[];

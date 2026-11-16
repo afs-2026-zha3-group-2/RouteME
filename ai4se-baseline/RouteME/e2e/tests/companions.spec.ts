@@ -18,7 +18,7 @@ async function createTripViaApi(page: Page, publisherId: number, title: string) 
     headers: { 'X-User-Id': String(publisherId), 'Content-Type': 'application/json' },
     data: {
       title,
-      destination: '珠海',
+      destination_code: '440400',
       start_date: '2026-12-12',
       end_date: '2026-12-12',
       stops: ['香洲港集合', '情侣路骑行'],

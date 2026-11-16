@@ -27,7 +27,7 @@ class TripControllerTest {
     private static final String VALID_TRIP = """
             {
               "title": "广州老城骑楼扫街半日",
-              "destination": "广州",
+                  "destination_code": "440100",
               "start_date": "2026-11-20",
               "end_date": "2026-11-20",
               "stops": ["陈家祠地铁站集合", "永庆坊"],
@@ -51,18 +51,33 @@ class TripControllerTest {
                 .andExpect(jsonPath("$.status").value("recruiting"))
                 .andExpect(jsonPath("$.joined_count").value(1))
                 .andExpect(jsonPath("$.capacity").value(4))
-                .andExpect(jsonPath("$.publisher.id").value(1))
-                .andExpect(jsonPath("$.participants[0].id").value(1))
-                .andExpect(jsonPath("$.start_date").value("2026-11-20"))
-                .andExpect(jsonPath("$.budget_max_cents").value(15000));
-    }
+                    .andExpect(jsonPath("$.destination").value("广州"))
+                    .andExpect(jsonPath("$.publisher.id").value(1))
+                    .andExpect(jsonPath("$.participants[0].id").value(1))
+                    .andExpect(jsonPath("$.start_date").value("2026-11-20"))
+                    .andExpect(jsonPath("$.budget_max_cents").value(15000));
+        }
 
-    @Test
-    void in_destinationOutsideLegacyCatalog_out_created() throws Exception {
-        String body = VALID_TRIP.replace("\"destination\": \"广州\"", "\"destination\": \"厦门\"");
-        postTrip(body, "1").andExpect(status().isCreated())
-                .andExpect(jsonPath("$.destination").value("厦门"));
-    }
+        @Test
+        void in_provinceCodeOnly_out_invalidInput() throws Exception {
+            String body = VALID_TRIP.replace("\"destination_code\": \"440100\"", "\"destination_code\": \"440000\"");
+            postTrip(body, "1").andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.code").value("INVALID_INPUT"));
+        }
+
+        @Test
+        void in_unknownDestinationCode_out_invalidInput() throws Exception {
+            String body = VALID_TRIP.replace("\"destination_code\": \"440100\"", "\"destination_code\": \"999999\"");
+            postTrip(body, "1").andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.code").value("INVALID_INPUT"));
+        }
+
+        @Test
+        void in_missingDestinationCode_out_invalidInput() throws Exception {
+            String body = VALID_TRIP.replace("\"destination_code\": \"440100\",", "");
+            postTrip(body, "1").andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.code").value("INVALID_INPUT"));
+        }
 
     @Test
     void in_missingTitle_out_invalidInput() throws Exception {

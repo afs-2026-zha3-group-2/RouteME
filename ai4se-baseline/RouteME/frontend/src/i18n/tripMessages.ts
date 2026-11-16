@@ -48,7 +48,7 @@ export const tripMessages = {
   fieldTags: '兴趣标签（最多 5 个）',
   fieldNote: '补充说明（选填）',
   errorTitleRequired: '给这条路线起个名字（40 字以内）',
-  errorDestinationRequired: '请选择目的地',
+  errorDestinationRequired: '请选择目的地（必须选到城市）',
   errorStartDateRequired: '请选择出发日期',
   errorEndDateRequired: '请选择结束日期',
   errorDateOrder: '结束日期不能早于出发日期',

@@ -56,12 +56,14 @@
 
 **验证：** 人工核对报告中的命令可在本机复现
 
-## 目的地修订（REQ-007 协作，未完成）
+## 目的地修订（REQ-007 协作，已完成）
 
-- [ ] 发布页目的地从 `PlacePicker` 改省市级联 Cascader；请求改 `destination_code`；途经点/集合地点保留 `PlacePicker`。
-- [ ] `TripPlan.create` / `TripController` 目的地校验改为二级代码；非法代码 400。
-- [ ] `trips.spec.ts` 发布用例目的地改用 Cascader 语义定位；“按标题搜索”断言改为默认列表/目的地筛选。
-- [ ] `openapi.yaml` 目的地字段改 `destination_code`，契约 0.7.0；`OpenApiTest` 同步。
-- [ ] 回归：`.\mvnw.cmd -B test`、`npm test`、`npm run build`、`npx playwright test tests/trips.spec.ts`。
+- [x] 发布页目的地从 `PlacePicker` 改省市级联 Cascader；请求改 `destination_code`；途经点/集合地点保留 `PlacePicker`。
+- [x] `TripPlan.create` / `TripController` 目的地校验改为二级代码；非法代码 400（省级 `440000`、未知 `999999`、缺失三种情况各有断言）。
+- [x] `trips.spec.ts` 发布用例目的地改用 Cascader 语义定位（`.ant-cascader-menu-item`）；详情页断言目的地为「珠海」。
+- [x] `openapi.yaml` 目的地字段改 `destination_code`，契约 0.7.0；`OpenApiTest` 同步（版本与必填字段）。
+- [x] 回归：`.\mvnw.cmd -B -o clean test`（156 通过）、`npm test`（75 通过）、`npm run build`、发布 e2e（2 通过）。
 
-**边界：** 本 change 不归档；归档顺序为 `add-destination-area-filters` → 本 change；G1 需在目的地修订完成后重评。
+**实现边界（需在归档前复核）：** 数据底座（V10、全国省市字典、响应中的 `destination_code` / `province_*`）仍归 `add-destination-area-filters`。本 change 暂时携带一份**最小字典切片**（广东 14 城 + 香港 / 澳门二级区），后端 `AreaConstant` 与前端 `areas/areaCatalog.ts` 同步；该 change 落地时应把两处切片替换为完整字典，并让 `trip_plans` 持久化代码。
+
+**边界：** 本 change 不归档；归档顺序为 `add-destination-area-filters` → 本 change；G1 需在目的地修订完成后重评（已重评，见 `g1-decision.md`）。
