@@ -45,3 +45,10 @@
 - **阶段提交：** `docs(p1): refine-trip-map add proposal and delta draft`；push 前 `git pull --rebase origin main`。
 - **偏离：** P0 记录契约版本初稿误写 0.8.0→0.9.0，核实为 0.10.0→0.11.0，已在本阶段提交一并修正。
 - **validate：** `openspec validate refine-trip-map --strict` valid；归档模拟 INFO（MODIFIED 目标在未归档增量）登记为 G1 条件 C1。
+
+## 7. R2 轮（2026-11-16 第二轮验收）
+
+- **触发：** 发起人提示词＋六联参考图：三级地图架构（ChinaMap/ProvinceMap/CityTravelMap）＋六 Layer＋路线生成＋同行者面板＋全国数据驱动（10 城 MVP、广州主 Demo、fallback）＋面包屑＋指定配色；沿用本 change、不新增 changes。
+- **产出：** proposal.md §R2 增补（WAYNE 签 2026-11-16）；`docs/reviews/20261116-refine-trip-map-proposal-review-2.md`（Pass，4 advisory；WAYNE + Jay 签 2026-11-16）；`p0-baseline-r2.md`（G2-01–G2-10）。
+- **裁决沿用：** Jay 开发按名册签；不归档；每阶段一提交；push 前 pull --rebase；「清理已完成分支功能」＝退役旧 PlaceMap（本地无其它待删分支）。
+- **阶段结论：Pass。** 下一步 P2-R2：Delta 增补（MODIFIED 2 + ADDED 4）→ G1-r2。

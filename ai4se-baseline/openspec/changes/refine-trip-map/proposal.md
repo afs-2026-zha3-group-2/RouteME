@@ -108,3 +108,50 @@
 ## 交付边界
 
 本提案为 P1 产物。Delta Spec / AC/DoV / G1 属 P2；design / atdd / tasks 属 P3；代码与验证 / G2 属 P4；Living Spec 合并与归档属 P5——本 change 按发起人指示不归档。
+
+---
+
+## R2 增补（2026-11-16 第二轮验收，沿用本 change、不新增 changes）
+
+- **需求来源：** 发起人第二轮提示词＋六联参考图 `docs/preview/refine-trip-map-image.png`：地图不是产品核心，核心是「选目的地→选景点→生成路线→发现同行者→建立连接」；要求三级地图架构与数据驱动全国扩展。基线核对见 `docs/sdd/refine-trip-map/p0-baseline-r2.md`（G2-01–G2-10）。
+- **规模上调：** M→L（前端地图架构重做＋探索页＋数据层＋匹配面板；契约/后端本轮预计不变，若需则另登）。
+
+### R2 What Changes
+
+- **三级地图架构（ADDED「三级旅行地图探索」）：** 新增路由 `#/map`（中国）→ `#/map/{provinceCode}`（省）→ `#/map/{provinceCode}/{cityCode}`（城市旅行地图）；rail 增「旅行地图」入口。三级为**独立组件切换**（ChinaMap / ProvinceMap / CityTravelMap），Zoom 只缩放当前层，换层必须经点击/面包屑/搜索，不得无限 Zoom 代替。
+- **ChinaMap（ADDED 场景组）：** 简化省级区域 SVG（34 省级单元，离线手绘低多边形），hover/selected 态；点击省→ProvinceMap；搜索省/市（复用 `area-china-area-data` 字典）直达对应层；不显示景点/路线/同行者。
+- **ProvinceMap（ADDED 场景组）：** 省轮廓＋城市节点（广东手工布局，其余省由字典＋确定性布局生成）；**删除城市间无意义连线**；点击城市→CityTravelMap；面包屑「中国 > 广东省」。
+- **CityTravelMap（MODIFIED「行程详情路线地图」＋ADDED 场景组）：** 六个独立 SVG Layer：RoadLayer / WaterLayer / ParkLayer / PoiLayer / RouteLayer / TravelerLayer；轻导航视觉（简化道路/河流水域/公园绿地/城市分区/POI/路线/同行者）；POI 点击→信息卡（加入/移除路线）；面包屑「中国 > 广东省 > 广州市」。
+- **路线生成（ADDED「路线生成与行程同步」）：** ≥2 景点才可生成；RouteLayer 蓝→紫渐变高亮＋编号 pin 与行程列表双向同步；统计卡：景点数量/预计距离/预计时间（步行速度估算，标「预计」，不伪装真实导航）/顺序。
+- **同行者匹配（ADDED「地图同行者发现」）：** 路线生成后地图旁显示聚合气泡（重合度％＋人数＋查看同行者）；面板列每位：路线重合度、共同景点、旅行日期、偏好标签、查看资料、发起同行邀请。**Mock 数据走城市数据模型（travelers），百分比由 `travelerMatch.ts` 纯函数按共同景点计算，UI 不硬编码**；邀请优先接真实行程（traveler.tripId → 详情申请入口），无真实行程者给演示提示。
+- **全国数据驱动（ADDED「按级加载的城市数据」）：** `map/data/` 分层：china（省形）/ province layout / cities registry（`import()` 懒加载）；新增城市＝加 City Data＋POI Data＋Layer Data，不新增页面。MVP 10 城：北京/上海/广州/深圳/成都/重庆/杭州/西安/南京/苏州（广州完成度最高：珠江/广州塔/海心沙/花城广场/广东省博物馆/广州大剧院/北京路/越秀公园/沙面）；** legacy 广东城市（珠海等）保留为同构数据模块以不破坏发布/e2e**；无数据城市统一 fallback「该城市详细旅行地图正在完善」，不白屏不报错。
+- **交互（MODIFIED 地图上下文）：** 拖拽/滚轮/＋−/Reset View/Fullscreen/POI 点选/加入移除/面包屑返回全保留；发布页内嵌地图改挂 CityTravelMap（未选目的地时挂 ChinaMap→ProvinceMap 级联选目的地）；详情页只读 CityTravelMap＋RouteLayer＋TravelerLayer。
+- **视觉（MODIFIED 令牌）：** 按参考图指定：背景 #F7F2E8、地图 #F8F6F0、道路 #D8D2C5、河流 #BFE5F2、绿地 #CFE5D2、POI #F26B5E、路线 #3B82F6→#7C5CE7、主文字 #173F46；深色同套衍生；优先级：路线 > POI > 同行者 > 底图。
+- **清理（G2-09）：** 退役旧 `PlaceMap.tsx`（省轮廓＋城市散点＋高速连线形态）；视口逻辑抽 `useMapViewport`；`placeCatalog` 转为轻量索引 facade（搜索/校验静态小索引；道路/水域/公园/同行者等重数据按城懒加载）。
+
+### R2 决策
+
+| 决策点 | 选择 | 理由 |
+|---|---|---|
+| 探索页入口 | 新增 `#/map` 路由＋rail 入口；首页保持灵感列表 | 不破坏现有首页/e2e；验收流从旅行地图入口开始 |
+| 中国省形 | 离线手绘低多边形 SVG（示意图口径） | 无在线瓦片约束；参考图本身为 stylized |
+| 懒加载边界 | 搜索/校验索引静态（名称/别名/城市/坐标，体积小）；Layer/POI 详情/travelers 按城 `import()` | 满足「不一次性加载全国重数据」且保留手输校验权威 |
+| 非主 Demo 城 Layer | 确定性程序化生成（seed=cityCode）＋广州手工珠江/分区 | 控制 MVP 工作量；广州完成度最高 |
+| 同行者数据 | 城市数据模型 travelers（可引用真实 userId/tripId）；重合度纯函数计算 | 发起人允许 Mock 但禁止 UI 硬编码百分比 |
+| 邀请动作 | traveler.tripId 存在→跳真实详情申请；否则演示提示 | 不伪造真实社交动作 |
+| 预计时间 | 距离÷4.5km/h 步行估算，标「预计」 | 无真实 Routing；诚实标注 |
+| 未来在线地图 | design 登记 MapProvider 接口边界（本轮不实现） | 发起人预留高德等接入 |
+| legacy 兼容 | 珠海等广东城市转同构数据模块；e2e 语义断言随架构更新 | 「不破坏现有功能」 |
+
+### R2 Out of scope
+
+在线瓦片/付费 API/真实 Routing/每城复制页面/全国 POI 静态全量/真实陌生人社交（Mock 邀请演示）/行政区精确边界（示意低多边形）。
+
+### R2 验收信号（追加）
+
+9. `#/map` 见中国地图；点广东→广东省城市地图（无城市连线）；点广州→广州城市旅行地图（六 Layer、珠江/绿地/道路/分区可见）。
+10. 选广州塔+海心沙+花城广场+北京路→生成路线→①②③④ 与行程列表同步；统计卡数量 4/预计距离/预计时间标「预计」。
+11. 路线生成后出现同行者聚合气泡与面板：重合度由数据计算、共同景点/日期/偏好可见；查看资料与发起邀请可用（真实行程跳转申请入口）。
+12. 面包屑逐级返回；Zoom 不换层；搜索「广州」直达城市层。
+13. 无数据城市（如拉萨）显示 fallback 文案，不白屏不报错；10 城 MVP 均可进入城市层。
+14. 发布页/详情页原有功能回归不破（多途经点/多集合/详情聚焦/降级）；全量 E2E 绿。
