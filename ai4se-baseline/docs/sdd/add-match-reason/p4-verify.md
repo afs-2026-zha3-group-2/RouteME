@@ -111,6 +111,7 @@
 | 样式 | 只保留布局类（`.tc-match`、`.match-summary`），颜色走 token；移除 `.match-reason-list`、`.meter`、`.ring-*` |
 | 前端验证 | `npm test` 137 通过（含上游 `main` 合并后的用例）；`typecheck` / `build` 通过 |
 | 端到端 | `companions.spec.ts` 8/8 通过（匹配理由 + 默认按匹配度排序 + 详情原因）；全量 53/54，唯一失败为既有 `profiles.spec.ts:23` 数据断言 |
+| CI | run [#128](https://github.com/afs-2026-zha3-group-2/RouteME/actions/runs/43823336483)（`d6a7407`）：Backend (Java 21) success、Frontend (Node 22) success |
 | 看板 | S07 仍显示 P3（token 无 `project` 写权限，需人工拖到 P4）；P5 暂缓、不归档 |
 
 | 角色 | 姓名 | 确认内容 | 日期 |

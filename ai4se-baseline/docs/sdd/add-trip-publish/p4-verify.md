@@ -180,6 +180,7 @@
 | 前端验证 | `npm test` 137 通过（含新增 `utils/dates.test.ts` 2 项与上游 `main` 的用例）；`npm run typecheck` / `build` 通过 |
 | 端到端 | 重建种子库后全量 `npx playwright test`：53/54；`trips.spec.ts` 11/11 通过；唯一失败是既有断言 `profiles.spec.ts:23`（V13 已把周野职业改为「产品经理」，与本次改动无关） |
 | 数据基线 | e2e 前把本地库备份到 `SqlLite/routeme.db.bak-20261116-1505`，删除后由 Flyway 重建种子库 |
+| CI | run [#128](https://github.com/afs-2026-zha3-group-2/RouteME/actions/runs/43823336483)（`d6a7407`）：Backend (Java 21) success、Frontend (Node 22) success |
 | 看板 | S06 保持 P4，不归档 |
 
 | 角色 | 姓名 | 确认内容 | 日期 |
