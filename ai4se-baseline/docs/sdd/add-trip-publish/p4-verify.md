@@ -242,6 +242,7 @@
 | 前端验证 | `npm test` 198 通过（新增 `mapView.test.ts` 5 项）；`npm run typecheck` / `build` 通过 |
 | 端到端 | 新增 `map supports zoom, fullscreen and click-to-add` 通过；发布 / reduced-motion 用例通过；`trips.spec.ts` 13/15（既有身份门用例未更新 + 本地种子数据分页） |
 | 视觉证据 | `map-province.png` / `map-zhuhai.png` / `map-callout.png`（会话 files 目录） |
+| CI | run [#162](https://github.com/afs-2026-zha3-group-2/RouteME/actions/runs/43875683960)（`6f03261`）：Backend (Java 21) success、Frontend (Node 22) success |
 | 看板 | S06 保持 P4，不归档 |
 
 | 角色 | 姓名 | 确认内容 | 日期 |
