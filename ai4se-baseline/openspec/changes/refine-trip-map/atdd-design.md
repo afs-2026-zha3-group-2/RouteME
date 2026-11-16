@@ -38,3 +38,35 @@
 ## 对齐自检
 
 46 场景中 35 基线保留由既有 E2E/UT 回归覆盖（trips/companions/chat/mine 全量）；11 新增/取代由 E1–E10 + U1–U8 覆盖；无孤儿场景。
+
+---
+
+## R2 增补（三级地图架构，66 场景）
+
+### E2E（新 map.spec.ts E11–E18＋trips.spec 更新）
+
+| # | 场景覆盖 | 断言要点 |
+|---|---|---|
+| E11 | 探索三级切换 | `#/map` china-map 可见→点广东→province-map（无连线 svg line）→点广州→city-map＋六 layer testid＋面包屑文本 |
+| E12 | 搜索直达 | 中国层搜「广州」选结果→hash `#/map/440000/440100`；搜「广东」→省层 |
+| E13 | 面包屑回层＋Zoom 不换层 | 城市层点面包屑省→province-map；滚轮/＋−后 hash 不变 |
+| E14 | 路线生成同步 | 选 4 POI→route-generate 可用→点击→poi-pin 编号 1–4＋route-stats 含「预计」＋ItineraryList 同序；点列表第 3 项→focus |
+| E15 | 移除同步 | 移除第 2 个→编号 1–3＋stats 数量 3 |
+| E16 | 同行者 | traveler-bubble 百分比＝数据计算（75% 例）；panel 降序＋共同景点/日期/标签；查看资料→#/users/{id}；邀请→真实 trip 详情；无 tripId 者→演示提示 |
+| E17 | fallback | `#/map/540000/540100`（拉萨）→「该城市详细旅行地图正在完善」；无 console error |
+| E18 | 发布/详情兼容 | 发布页未选目的地→china-map 级联写目的地；珠海 stops 连加/上限/多集合回归；详情只读 city-map＋气泡＋strip 聚焦；拉萨目的地→fallback 文案 |
+
+### 单测 U6–U9
+
+- U6 travelerMatch：overlap 3/4=75、0 共同过滤、降序、空路线=0。
+- U7 routeEstimate：km 与 minutes=km/4.5*60；format 预计文案。
+- U8 registry：未登记城→null；登记城 loadCity 返回 layers/travelers（vitest dynamic import）。
+- U9 facade：searchPlaces/resolvePlace 命中新索引（广州塔/海心沙/香洲港）；placesInCity 珠海保留。
+
+### 走查与 bundle
+
+1440/768/390 × 浅/深：中国/省/城市三层＋路线＋面板截图；build 产物断言 city chunks 独立（懒加载证据）。
+
+### 对齐自检
+
+66 场景：R1 基线 35 仍由回归覆盖；R2 新增/取代 31 由 E11–E18 + U6–U9 + 走查覆盖；无孤儿场景。

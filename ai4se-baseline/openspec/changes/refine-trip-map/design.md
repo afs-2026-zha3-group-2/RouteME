@@ -75,3 +75,55 @@ openapi 0.11.0：三处 `meeting_area` → `meeting_areas`（`type: array, items
 | spec F-1/F-2/F-3 落点 | Pass（D1 / D6+D11 / D9） |
 | 任务可分层（见 tasks.md） | Pass |
 | 样式只追加、antd 优先 | Pass（D2/D5；浮层自绘为 SVG 锚定例外，记 web-coding-style 例外） |
+
+---
+
+## R2 设计增补（三级地图架构，2026-11-16）
+
+### D14 路由与页面编排
+
+`route.ts` 增 `{ name: 'map'; provinceCode?: string; cityCode?: string }`；parse `/^\/map(?:\/(\d{6}))?(?:\/(\d{6}))?$/`；`routeToHash` 同步。`pages/MapExplorerPage.tsx` 按 route 渲染 ChinaMap / ProvinceMap / CityTravelMap 之一（独立组件切换，非同一 SVG zoom）；rail「浏览」组增「旅行地图」入口（NavKey 'map'）。探索页状态：selectedPois（有序）、routeGenerated、travelerPanelOpen；URL 为层级唯一权威。
+
+### D15 组件边界（禁 monolithic）
+
+- `map/ChinaMap.tsx`：省形 hover/selected/点击/搜索（AREA_OPTIONS）；不含 POI/路线/同行者。
+- `map/ProvinceMap.tsx`：省轮廓＋城市节点；广东手工布局，其余省字典＋确定性布局；无连线。
+- `map/CityTravelMap.tsx`：组合六 Layer＋控制条＋面包屑＋POI 卡/候选浮层＋路线/行程/统计/同行者插槽；props：`cityCode, selected, onTogglePoi, readOnly, routeGenerated, onGenerate, travelers, focusPoiId, onFocusPoi, onBreadcrumb`。
+- `map/layers.tsx`：RoadLayer / WaterLayer / ParkLayer / PoiLayer / RouteLayer / TravelerLayer 六个纯 SVG `<g>` 组件（props 数据驱动，无内部 fetch）。
+- `map/useMapViewport.ts`：从旧 PlaceMap 抽拖拽/滚轮/按钮缩放/全屏/Reset（viewBox 状态＋clamp）；Zoom 不改 route。
+- `map/MapControls.tsx` / `map/MapBreadcrumbs.tsx` / `map/TravelerPanel.tsx` / `map/RouteStatsCard.tsx` / `map/ItineraryList.tsx`。
+
+### D16 数据层与懒加载
+
+- `map/data/types.ts`：Poi{id,name,aliases,kind,x,y,desc?}、CityLayers{roads,water,parks,districts}、Traveler{id,name,age,homeCity,userId?,tripId?,tags,dateRange,route:string[]}、CityMapData{kmPerX,kmPerY,layers,travelers}。
+- `map/data/china.ts`：34 省级单元低多边形 path＋label＋centroid（静态、小）。
+- `map/data/index.ts`：静态轻量索引＝每城 {code,name,provinceCode,pois:[{id,name,aliases,x,y}]}；搜索/校验权威（PlacePicker facade 同源）。
+- `map/data/cities/registry.ts`：`loadCity(code): Promise<CityMapData>`＝动态 `import()`；未登记→null→fallback。
+- 城市模块：guangzhou（手工珠江/分区/越秀公园等＋9 POI＋3 travelers 含真实 userId/tripId 引用）；beijing/shanghai/shenzhen/chengdu/chongqing/hangzhou/xian/nanjing/suzhou（4–6 POI＋程序化 layers＋1–2 travelers）；legacy 广东城市（zhuhai/shenzhen 除外已列…按 index 全量转换：zhuhai/foshan/dongguan/zhongshan/jiangmen/zhaoqing/qingyuan/huizhou/yangjiang/zhanjiang/shaoguan/shantou）由旧 catalog lat/lng 归一化生成同构模块（POI 名/别名保留以兼容 e2e）。
+- 程序化 layers：`map/data/procedural.ts` seed=cityCode 确定性生成道路网/河流带/公园块；广州 override 手工。
+
+### D17 纯函数与诚实口径
+
+`map/travelerMatch.ts`：`overlapPercent(route, travelerRoute)=round(shared/route.length*100)`；`matchTravelers(route, travelers)` 过滤 >0 降序；`map/routeEstimate.ts`：`estimateRoute(points, kmPerX, kmPerY)`→{km, minutes=km/4.5*60}；文案统一「预计」。UI 不存百分比常量。
+
+### D18 既有页面接线（不破坏）
+
+- PlacePicker：内嵌地图改 CityTravelMap（city 已选）或 ChinaMap→ProvinceMap 级联（未选）；级联点击写目的地（省→市）；面包屑回省清市保留省；搜索/校验/chips/上限语义不变。
+- TripDetailPage：只读 CityTravelMap＋RouteLayer＋TravelerLayer 气泡（matchTravelers(trip stops 解析, city travelers)）＋既有 route-strip/聚焦/降级不变。
+- facade：`placeCatalog.ts` 改 re-export index（searchPlaces/resolvePlace/findPlaceByName/placesInCity/nearestPlaces）；旧 projectPlace/MAP_BOUNDS/LAND_PATH/ISLANDS/cityProjection 退役，相关单测改写。
+
+### D19 视觉令牌（参考图指定）
+
+`--map-bg:#F7F2E8`（页面底沿用 app token）、`--map-surface:#F8F6F0`、`--map-road:#D8D2C5`、`--map-water:#BFE5F2`、`--map-park:#CFE5D2`、`--map-poi:#F26B5E`、`--map-route-from:#3B82F6`、`--map-route-to:#7C5CE7`、`--map-ink:#173F46`；深色同套衍生；RouteLayer 用 linearGradient(route-from→route-to)＋白 casing；层级视觉优先级：路线 > POI > 同行者 > 底图。
+
+### D20 退役清理（G2-09）
+
+删除 `PlaceMap.tsx`（省轮廓＋城市散点＋高速连线）；`mapView.ts` 保留 viewport 数学/distanceKm/formatKm/routePath 供 hook 与统计；旧地图样式块替换为新令牌块（选择器语义不残留）。
+
+### D21 MapProvider 边界（未来在线地图）
+
+`map/provider.ts`：`interface MapProvider { loadCity(code): Promise<CityMapData | null> }`；本轮唯一实现 OfflineSvgProvider（registry）；高德等未来实现同接口，组件不感知来源（仅登记不实现）。
+
+### D22 测试与 e2e 语义
+
+新 testid：china-map / province-map / city-map / map-breadcrumbs / route-generate / route-stats / traveler-bubble / traveler-panel / poi-pin(data-poi-id)；单测 U6–U9（overlap/estimate/registry lazy/facade）；e2e 新 map.spec.ts E11–E18＋trips.spec E1–E3 与发布断言随架构更新（data-city→data-level；北京覆盖例改拉萨 fallback）；bundle 断言：city chunks 独立（build 产物名单）。

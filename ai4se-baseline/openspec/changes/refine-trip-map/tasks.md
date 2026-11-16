@@ -33,6 +33,36 @@
 - [x] 11. T11 本地验证报告 + 三档视口双主题走查
 - [x] 12. T12 知识库回写 + p4 记录 + G2 + 索引（不归档）
 
+## R2 任务（三级地图架构，T13–T24）
+
+| id | 层 | 任务 | 落点 | 验证命令 |
+|---|---|---|---|---|
+| T13 | data | types/china/index 轻量索引 | `map/data/{types,china,index}.ts` | `npm test` |
+| T14 | data | registry 懒加载＋10 城＋legacy 广东转换＋procedural | `map/data/cities/*`、`procedural.ts` | `npm test` |
+| T15 | map-core | layers 六组件＋useMapViewport＋controls＋breadcrumbs | `map/layers.tsx`、`useMapViewport.ts` 等 | `npm test`/`build` |
+| T16 | map-levels | ChinaMap＋ProvinceMap | `map/ChinaMap.tsx`、`ProvinceMap.tsx` | `npm test`/`build` |
+| T17 | map-city | CityTravelMap＋路线生成＋stats＋ItineraryList | `map/CityTravelMap.tsx` 等 | `npm test`/`build` |
+| T18 | match | travelerMatch/routeEstimate＋TravelerPanel＋气泡＋邀请 | `map/travelerMatch.ts` 等 | `npm test` |
+| T19 | page | MapExplorerPage＋route＋rail 入口 | `pages/MapExplorerPage.tsx`、`route.ts`、`AppShell.tsx`、`App.tsx` | `build` |
+| T20 | integration | PlacePicker/TripCreatePage/TripDetailPage 接线＋facade | `PlacePicker.tsx`、`placeCatalog.ts` 等 | `npm test`/`build` |
+| T21 | visual | 新令牌＋渐变＋样式替换＋退役 PlaceMap | `styles.css`、删 `PlaceMap.tsx` | `build` |
+| T22 | ut | U6–U9＋旧地图单测改写 | `map/*.test.ts` | `npm test` |
+| T23 | e2e | map.spec E11–E18＋trips.spec 更新 | `e2e/tests/*` | `npx playwright test` |
+| T24 | verify | 全量验证＋走查＋报告＋G2-r2＋知识库/索引 | docs | 全链路 |
+
+- [ ] 13. T13 数据 types/china/index
+- [ ] 14. T14 registry＋城市模块
+- [ ] 15. T15 layers/hook/controls/breadcrumbs
+- [ ] 16. T16 ChinaMap/ProvinceMap
+- [ ] 17. T17 CityTravelMap/路线/stats/行程
+- [ ] 18. T18 匹配纯函数/面板/气泡/邀请
+- [ ] 19. T19 探索页/路由/导航
+- [ ] 20. T20 发布/详情/facade 接线
+- [ ] 21. T21 令牌/样式/退役
+- [ ] 22. T22 单测
+- [ ] 23. T23 e2e
+- [ ] 24. T24 验证收口（不归档）
+
 ## 对齐自检
 
 | 检查 | 结论 |

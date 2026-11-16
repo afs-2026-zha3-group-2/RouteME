@@ -38,3 +38,10 @@
 | P1 | `5f28d81` |
 | P2 | `7634500` |
 | P3 | 本阶段提交 |
+
+## 6. R2 轮（三级地图架构）
+
+- **产出：** design.md D14–D22（路由/组件边界/数据懒加载/纯函数/接线/令牌/退役/MapProvider/e2e 语义）；atdd-design.md §R2（E11–E18/U6–U9/走查/bundle）；tasks.md T13–T24＋勾选；consistency-lint.md §R2（0 BLOCKER/0 WARNING）。
+- **评审：** design-review-2 / tasks-review-2（Pass；签署待本轮问签）。
+- **签署矩阵：** design/tasks = Jay + Neal；两报告 = WAYNE + Jay。
+- **阶段结论：Pass。** 下一步 P4-r2：T13→T24。

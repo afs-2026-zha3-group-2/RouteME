@@ -16,3 +16,18 @@
 **Counts:** BLOCKER 0 / WARNING 0 / SUGGESTION 2（L4/L5，均有 P3 落点）/ Conditional 1（C1 归档顺序）。
 
 **结论：Pass（条件 C1 带入 G1）。**
+
+---
+
+## R2 一致性检查（2026-11-16）
+
+| 检查 | 结论 |
+|---|---|
+| design D14–D22 ↔ Delta 9 Requirement | Pass：探索/路线/同行者/数据四 ADDED 与两 MODIFIED 均有落点 |
+| atdd E11–E18/U6–U9 ↔ 66 场景 | Pass：无孤儿场景（R1 35 基线回归＋R2 31 新覆盖） |
+| tasks T13–T24 ↔ design | Pass：每任务单层＋真实验证命令；顺序 data→core→levels→city→match→page→integration→visual→ut→e2e→verify |
+| 术语 | Pass：CityTravelMap/六 Layer/重合度/预计/fallback 全文统一 |
+| 平行权威 | Pass：placeCatalog facade 单一索引权威；旧 PlaceMap 退役列入 T21 |
+| Counts | BLOCKER 0 / WARNING 0 / SUGGESTION 2（沿用 L4/L5）/ Conditional 1（C1） |
+
+**R2 结论：Pass（C1 延续带入 G1-r2）。**
