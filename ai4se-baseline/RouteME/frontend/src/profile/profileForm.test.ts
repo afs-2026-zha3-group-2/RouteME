@@ -4,6 +4,8 @@ import {
   addInterest,
   emptyProfileForm,
   fieldErrorsFromReasons,
+  jobFromSelection,
+  jobSelection,
   missingFieldLabels,
   profileToForm,
   removeInterest,
@@ -109,6 +111,40 @@ describe('validateProfileForm', () => {
         TODAY,
       ),
     ).toEqual({});
+  });
+
+  it('accepts a custom job typed under 其他', () => {
+    expect(validateProfileForm({ ...validProfile, job: '独立摄影师' }, TODAY)).toEqual({});
+    expect(validateProfileForm({ ...validProfile, job: '其他' }, TODAY)).toEqual({});
+  });
+
+  it('rejects a job longer than twenty characters', () => {
+    expect(validateProfileForm({ ...validProfile, job: '职'.repeat(21) }, TODAY).job).toContain('20');
+  });
+});
+
+describe('jobSelection', () => {
+  it('maps a preset straight to the option', () => {
+    expect(jobSelection('')).toEqual({ choice: '', custom: '' });
+    expect(jobSelection('学生')).toEqual({ choice: '学生', custom: '' });
+    expect(jobSelection('其他')).toEqual({ choice: '其他', custom: '' });
+  });
+
+  it('reads any other text as 其他 plus the custom value', () => {
+    expect(jobSelection('独立摄影师')).toEqual({ choice: '其他', custom: '独立摄影师' });
+  });
+});
+
+describe('jobFromSelection', () => {
+  it('keeps the preset choice', () => {
+    expect(jobFromSelection('学生', '')).toBe('学生');
+    expect(jobFromSelection('', '')).toBe('');
+  });
+
+  it('keeps the typed text and falls back to 其他 when blank', () => {
+    expect(jobFromSelection('其他', '独立摄影师')).toBe('独立摄影师');
+    expect(jobFromSelection('其他', '   ')).toBe('其他');
+    expect(jobFromSelection('其他', '')).toBe('其他');
   });
 });
 

@@ -13,6 +13,7 @@
 | ID | 规则 | 优先级 | 触发 | 适用栈 |
 |---|---|---|---|---|
 | spec-first | 先写规格再写代码 | Critical | always | — |
+| artifact-review-gate | 每份工件生成后先评审并由开发者批准再进入下一步 | Critical | always | — |
 | tdd-cycle | TDD Red / Green / Refactor 循环 | Critical | always | — |
 | git-commit-conventions | 提交时机、commit message 与提交前检查 | Critical | always | — |
 | git-branching-and-pr | 分支、PR、换行符与回滚 | High | always | — |
@@ -56,6 +57,52 @@
 
 - `docs/**` 纯文档改动在组织策略允许时可豁免。
 - 只修改 SDD 工作区自身（规格工具树）的元编辑不需要再套一层 change。
+
+## artifact-review-gate
+
+**每份工件生成后先评审、再由当前开发者批准，才能进入下一步。** 覆盖四份工件：`proposal.md`、`specs/<capability>/spec.md`（Delta Spec）、`design.md`、`tasks.md`。
+
+### 触发与顺序
+
+1. 工件写完（或修改完）后，**同一个回合内**调用一次 `all-specs-review` 技能（见 `.agents/skills/all-specs-review/SKILL.md`），不得跳步进入下一份工件。
+2. 评审报告写入 `docs/reviews/<yyyymmdd>-<change-id>-<artifact>-review.md`：
+   - `<artifact>` 取 `proposal` / `spec` / `design` / `tasks` 四值之一。
+   - 例：`docs/reviews/20261116-add-user-auth-proposal-review.md`。
+   - 一份工件一份报告；修改后重评不得覆盖旧报告，用日期区分（同一天重评加序号，如 `-review-2.md`）。
+3. 报告写完后**必须停下**，问当前开发者：
+   > 本次 `<artifact>` 评审结论为 `<Pass/Partial/Fail>`，是否批准并要求我进入下一步？
+4. 只有拿到**明确的 approve** 才继续下一份工件或下一阶段。未回复、回复含糊（如「先看看」）一律视为未批准，保持停在当前步骤。
+5. 评审结论为 `Fail` 时不得「带病前进」：先按报告的建议修好并重评，直到结论至少为 `Partial`，再请求 approve。
+6. 询问姓名与 approve 主体按 `@rule:documentation/rules.md#记录人与签署人` 执行；approve 只在报告里追加「批准人 / 批准时间」，不改写评审结论。
+
+### 边界
+
+- `all-specs-review` 只出评审意见，不批 Gate、不改规格与代码；它给出的 `Pass` 不等于 `G1/G2/G3` 通过。
+- 本规则约束的是**工件与阶段的推进**，不替代 `tdd-cycle`（实现内循环）与 `code-review-checklist`（代码评审）。
+- 只改错字、链接或格式且不改变语义的修订，可复用上一份 `Pass` 报告，在报告里追加「变更摘要」一行说明。
+
+### 检查项
+
+| 检查 | 阻断点 |
+|---|---|
+| `proposal.md` / Delta Spec / `design.md` / `tasks.md` 是否各有对应的 `docs/reviews/<yyyymmdd>-<change-id>-<artifact>-review.md` | pr-merge |
+| 报告文件名是否符合 `日期-change-id-artifact-review.md` 格式 | pr-merge |
+| 是否存在当前开发者对每份报告的 approve（批准人 + 时间） | pr-merge |
+| 结论为 `Fail` 的工件是否已修复并重评后才继续 | pr-merge |
+
+### 示例
+
+```text
+推荐：写完 tasks.md → 调 all-specs-review → 写 docs/reviews/20261116-add-user-auth-tasks-review.md
+     → 问「是否批准进入 P4 实现」→ 等到明确 approve 再写代码
+不推荐：proposal / spec / design / tasks 一次性全生成，最后才问一句「可以吗」
+不推荐：评审报告写 docs/ai4se-plugins/ 下，或没有开发者 approve 就开工
+```
+
+### 例外
+
+- 紧急线上故障修复（hotfix）可先实现后补评审，但必须在同一个 PR 内补齐四份报告与 approve。
+- 纯 `docs/**` 文档修订不产生工件，不触发本规则。
 
 ## tdd-cycle
 
@@ -261,7 +308,7 @@ target/  node_modules/  dist/  .metals/  *.mv.db  *.trace.db  .idea/  *.iml  e2e
 2. 架构：`api-contract`、`package-structure`、`no-circular-dependency`、`orchestration-execution-separation`、`java-patterns`。
 3. 质量：`coding-style`、`java-coding-style`、`naming-conventions`、`web-coding-style`。
 4. 测试：`java-testing`、`web-testing`；安全：`security-baseline`、`no-hardcoded-secrets`、`pii-scrubbing`、`prompt-injection-defense`、`java-security`。
-5. 流程与文档：`spec-first`、`tdd-cycle`、`git-commit-conventions`、`git-branching-and-pr`、`document-conventions`、`sdd-artifacts`。
+5. 流程与文档：`spec-first`、`artifact-review-gate`、`tdd-cycle`、`git-commit-conventions`、`git-branching-and-pr`、`document-conventions`、`sdd-artifacts`。
 
 - 本次变更涉及不到的分段（如纯后端变更的前端项）标记为「不适用」，并在评审记录写明，不勾选也不阻断。
 - 意见必须包含规则锚点、具体位置与可执行改法。

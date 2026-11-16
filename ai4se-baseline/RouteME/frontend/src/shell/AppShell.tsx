@@ -5,6 +5,7 @@ import type { Route } from '../route';
 import type { ColorMode } from '../theme';
 import type { DemoUser } from '../types';
 import { Avatar } from './Avatar';
+import { BrandMark } from './BrandMark';
 
 type NavKey = 'discover' | 'create' | 'mine';
 
@@ -27,23 +28,6 @@ function activeKey(route: Route): NavKey | null {
     return 'mine';
   }
   return null;
-}
-
-function BrandMark() {
-  return (
-    <span className="brand-mark" aria-hidden="true">
-      <svg viewBox="0 0 32 32">
-        <path
-          d="M5 24c5-13 17-13 22 0"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="3"
-          strokeLinecap="round"
-        />
-        <circle cx="16" cy="10" r="3.4" fill="currentColor" />
-      </svg>
-    </span>
-  );
 }
 
 function NavIcon({ name }: { name: NavKey }) {

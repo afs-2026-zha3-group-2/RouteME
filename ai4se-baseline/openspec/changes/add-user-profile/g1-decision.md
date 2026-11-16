@@ -10,7 +10,7 @@
 | Artifact | Path | Result |
 |---|---|---|
 | Proposal | [`proposal.md`](proposal.md) | 问题、In/Out scope、影响面、决策与验收信号齐全；能力记为 `user-profile` ADDED + `user-auth` MODIFIED |
-| Delta Spec — `user-profile` | [`specs/user-profile/spec.md`](specs/user-profile/spec.md) | 7 Requirement / 24 Scenario；ADDED；`openspec validate add-user-profile --strict` valid |
+| Delta Spec — `user-profile` | [`specs/user-profile/spec.md`](specs/user-profile/spec.md) | 7 Requirement / 24 Scenario（G1 点数；G2 前追加 2 个「其他职业自填」场景，现为 26）；ADDED；`openspec validate add-user-profile --strict` valid |
 | Delta Spec — `user-auth` | [`specs/user-auth/spec.md`](specs/user-auth/spec.md) | 1 Requirement / 6 Scenario；MODIFIED「注册账号」；保留 4 个基线场景 |
 | Living Spec baseline | `openspec/specs/user-auth/spec.md`「注册账号」 | 同名 Requirement 存在（4 场景）；delta 未丢场景，校验通过 |
 | Living Spec consumers | `openspec/specs/trip-plans/spec.md`、`trip-experiences/spec.md` | 卡片 / 详情 / 体验区既有场景要求发布者昵称与资料；本 change 只增加头像、入口与摘要回退，不删既有字段 |
@@ -21,7 +21,7 @@
 | Story S18 | `requirement-workspace/stories/add-user-profile.story.md` | P0 / 迭代 1 / 3 点；AC 与场景映射齐全 |
 | Impact brief | `requirement-workspace/impact-brief.md` §12 | as-is 盘点、delta、blast radius、风险与拆分边界；迁移按 8 列计 |
 | Deep-dive | `requirement-workspace/deep-dive.md`「REQ-008 增补」 | ①–④ 四表，A0 ⑨–⑫ 通过 |
-| Dependency | `openspec/changes/archive/2026-11-16-add-user-auth/` | 已归档；提供注册、会话与 `DemoUser` 既有契约 |
+| Dependency | `openspec/changes/add-user-auth/` | 提供注册、会话与 `DemoUser` 既有契约；该 change 于 2026-11-16 解档补记 G1 / G2（Pending），Delta 早已并入 Living Spec |
 | Implementation evidence | `frontend/src/identity/AuthPanel.tsx`、`authForm.ts`、`frontend/src/trip*`、`backend/.../AuthController.java`、`V3` / `V9` 迁移 | 注册当前收集昵称 / 学校 / 简介 / 兴趣；`app_users` 无资料新列；既有接口只返回 6 个用户字段 |
 | Contract evidence | `RouteME/openapi.yaml` v0.6.0 | `DemoUser` required = `id, nickname, avatar_initial, school, bio, interests` |
 

@@ -51,13 +51,14 @@ async function createTripViaApi(page: Page, title: string) {
   return (await response.json()) as { id: number };
 }
 
-test('shows the identity gate with three demo accounts and the unfinished trip list', async ({ page }) => {
+test('shows the identity gate with four demo accounts and the unfinished trip list', async ({ page }) => {
   await page.goto('/');
 
   await expect(page.getByRole('tab', { name: '登录' })).toBeVisible();
   await expect(page.getByRole('button', { name: /林见夏/ })).toBeVisible();
   await expect(page.getByRole('button', { name: /陈屿/ })).toBeVisible();
   await expect(page.getByRole('button', { name: /苏念/ })).toBeVisible();
+  await expect(page.getByRole('button', { name: /周野/ })).toBeVisible();
   await expect(page.getByRole('button', { name: /注册|找回密码/ })).toHaveCount(0);
 
   await page.getByRole('button', { name: /林见夏/ }).click();

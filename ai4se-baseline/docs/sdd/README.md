@@ -2,12 +2,27 @@
 
 本目录记录每个 change 在 P0–P5 各阶段的准入证据、产出与**具名签署**。阶段模型与门禁语义来自 `ai4se-baseline/vendor/ai4se-plugins/recipes/p0..p5.md` 与 `docs/knowledge/rules/process/rules.md#spec-first`。
 
+## 记录人姓名规则（强制）
+
+角色名册里 AO 是 **Jay**。但**每次记录阶段产出、每次 approve 签署之前**，执行者（含 AI agent）MUST 先向发起人确认本次的实际开发者，不得因为名册写着 Jay 就直接沿用。
+
+- 只在两个时点强制询问：
+  1. **记录阶段产出时** —— P0–P5 记录的「记录人」、`g1/g2/g3-decision.md` 的签署人、`tasks.md` 的 Owner、质量检查报告的 owner 列。
+  2. **approve / 签署时** —— G1 / G2 / G3 签署表、任何 approve 动作。
+- 询问话术固定为：
+  > 这次 change 的当前开发者是谁？approve / 签署由谁来做？请给姓名（如 Jay / Lewis / Wanye / Jacky / Karena / Neal）。
+- 拿到回答后才落笔；回答与名册不一致时，以发起人回答为准（名册是常任分工，实际执行人可能轮换）。
+- 未拿到回答时 MUST 暂停写记录或加签，不允许用 `AO` / `DEV` / `current developer` 等角色词占位，也不允许默认填 `Jay`。
+- 姓名写法：`Jay（AO）`、`Neal（VL）`；同一 change 内写法保持一致。
+- 一个 change 只有一个 AO；多人协作由该 AO 在签署表注明协助者，不新增 AO 行。
+- 历史记录保持可追溯：已存在的条目不做批量替换；确需更正时由对应责任人自行修改并说明。
+
 ## 角色名册
 
 | 角色 | 姓名 | 职责 |
 |---|---|---|
 | SM | Lewis | 阶段准入与排期确认；P1 范围签字 |
-| AO | Jay | 当前 change 的开发负责人；实现、本地验证、阶段记录提交 |
+| AO | Jay | 当前 change 的开发负责人；实现、本地验证、阶段记录提交。**每次记录与 approve 前仍须按上节询问本次实际开发者** |
 | IO | Wanye | 需求来源与跨能力影响确认 |
 | SA | Jacky、Karena | 规格、设计与验收口径签字（P2 起） |
 | VL | Neal | 独立验证签字（P4） |
@@ -17,11 +32,32 @@
 | 阶段 | 目标 | 关键产出 | 记录位置 |
 |---|---|---|---|
 | P0 | 项目基线可用 | 规格树、规则、知识库、CI 管道现状核对（`p0.md` 清单） | `docs/sdd/<change-id>/p0-baseline.md` |
-| P1 | 模糊意图 → 可判定提案 | 需求/故事映射、影响面、`proposal.md` | `docs/sdd/<change-id>/p1-intent.md` |
-| P2 | 提案 → 增量规格（G1） | Delta Spec、AC/DoV 复核、`g1-decision.md` | `docs/sdd/<change-id>/p2-spec.md` |
-| P3 | 规格 → 设计与可执行任务 | `design.md`、`atdd-design.md`、`tasks.md`、一致性检查 | `docs/sdd/<change-id>/p3-design.md` |
+| P1 | 模糊意图 → 可判定提案 | 需求/故事映射、影响面、`proposal.md` + 提案评审报告 | `docs/sdd/<change-id>/p1-intent.md` |
+| P2 | 提案 → 增量规格（G1） | Delta Spec、AC/DoV 复核、`g1-decision.md` + 规格评审报告 | `docs/sdd/<change-id>/p2-spec.md` |
+| P3 | 规格 → 设计与可执行任务 | `design.md`、`atdd-design.md`、`tasks.md`、一致性检查 + 设计与任务评审报告 | `docs/sdd/<change-id>/p3-design.md` |
 | P4 | 实现 → 本地验证 → CI（G2） | 代码与测试、本地验证报告、`g2-decision.md` | `docs/sdd/<change-id>/p4-verify.md` |
 | P5 | 合并与归档（G3） | `summary.md`、living spec 合并、知识库登记 | 归档后写入 `changes/archive/` |
+
+### 工件评审门禁（强制，`@rule:artifact-review-gate`）
+
+每写完一份工件都必须先评审、再由当前开发者批准，然后才能进入下一步：
+
+| 工件 | 评审报告路径 |
+|---|---|
+| `proposal.md` | `docs/reviews/<yyyymmdd>-<change-id>-proposal-review.md` |
+| `specs/<capability>/spec.md`（Delta） | `docs/reviews/<yyyymmdd>-<change-id>-spec-review.md` |
+| `design.md` | `docs/reviews/<yyyymmdd>-<change-id>-design-review.md` |
+| `tasks.md` | `docs/reviews/<yyyymmdd>-<change-id>-tasks-review.md` |
+
+1. 工件写完**同一个回合内**调用 `all-specs-review` 技能，不得跳步写下一份工件。
+2. 报告写进上表路径；修改后重评不得覆盖旧报告（同日加序号 `-review-2.md`）。
+3. 报告写完后**必须停下**询问当前开发者：本次结论为 `<Pass/Partial/Fail>`，是否批准进入下一步。
+4. 只有明确 approve 才继续；未回复或回复含糊视为未批准。
+5. 结论为 `Fail` 时先修复并重评至至少 `Partial`，再请求 approve。
+6. approve 以「批准人 + 批准时间」追加在报告内，不改写评审结论；批准人与记录人姓名规则同上节。
+
+- `all-specs-review` 的 `Pass` 不是 G1/G2/G3 通过，它只出评审意见。
+- 只改错字/链接/格式且不改语义的修订，可复用上一份 `Pass` 报告并追加「变更摘要」一行。
 
 ## 提交约定（本目录的约定）
 
@@ -29,6 +65,7 @@
   - 该写法是 `@rule:git-commit-conventions`（只允许 `verify` / `archive` 两个 stage）的本地扩展：本仓库按阶段留痕，因此 stage 位使用 `p0`–`p4`。`change-id` 仍出现在每条信息里，可从提交反查规格。
   - P4 仍承担该 change 的 verify 语义：代码、测试、验证证据与 G2 签署在同一条链路内。
 - 每个阶段提交必须包含该阶段的签署记录；签署缺失视为阶段未完成。
+- 提交前必须满足「记录人姓名规则」：记录人、Owner、签署人已确认为当次实际开发人。
 - 未归档的 change 不产生 P5 提交；P5 记录随归档提交写入 `changes/archive/`。
 
 ## 变更索引

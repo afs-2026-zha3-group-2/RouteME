@@ -15,7 +15,7 @@ import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.jdbc.datasource.DriverManagerDataSource;
 
 /**
- * 在临时 SQLite 文件库执行 V1–V11，验证 destination_code 非空回填、
+ * 在临时 SQLite 文件库执行 V1–V12，验证 destination_code 非空回填、
  * 种子目的地标准名、体验关联与索引。
  */
 class AreaCodeMigrationSqliteTest {
@@ -58,7 +58,7 @@ class AreaCodeMigrationSqliteTest {
 
         // Then
         assertAll(
-                () -> assertEquals(6, seedTrips.size(), "seed trips are preserved"),
+                () -> assertEquals(7, seedTrips.size(), "seed trips are preserved"),
                 () -> assertEquals("珠海市", seedTrips.get(0).get("destination"), "zhuhai standard name"),
                 () -> assertEquals("440400", seedTrips.get(0).get("destination_code"), "zhuhai code"),
                 () -> assertEquals("清远市", seedTrips.get(1).get("destination"), "qingyuan standard name"),
@@ -69,6 +69,8 @@ class AreaCodeMigrationSqliteTest {
                 () -> assertEquals("440300", seedTrips.get(4).get("destination_code"), "shenzhen code"),
                 () -> assertEquals("佛山市", seedTrips.get(5).get("destination"), "foshan standard name"),
                 () -> assertEquals("440600", seedTrips.get(5).get("destination_code"), "foshan code"),
+                () -> assertEquals("上海市", seedTrips.get(6).get("destination"), "V12 seed standard name"),
+                () -> assertEquals("310000", seedTrips.get(6).get("destination_code"), "V12 seed code"),
                 () -> assertEquals(2, experiences, "experiences are preserved"),
                 () -> assertEquals(2, linkedExperiences, "experiences still join trips"),
                 () -> assertEquals(1, codeNotNull, "destination_code is NOT NULL"),

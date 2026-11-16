@@ -45,7 +45,7 @@ class AuthMigrationSqliteTest {
 
         // Then
         assertAll(
-                () -> assertEquals(3, users, "demo users stay seeded"),
+                () -> assertEquals(4, users, "demo users stay seeded"),
                 () -> assertEquals(0, credentials, "demo accounts have no credentials"),
                 () -> assertEquals(0, sessions, "no sessions before login"),
                 () -> assertEquals(0, demoUsernames, "demo account usernames are null"));

@@ -166,11 +166,25 @@ class UserProfileRulesTest {
                 .isEmpty());
     }
 
+    @Test
+    void in_customJob_out_onlyLengthIsChecked() {
+        assertAll(
+                () -> assertNull(ProfileRules.validate(jobRequest("独立摄影师"), FIXED_CLOCK).get("job")),
+                () -> assertNull(ProfileRules.validate(jobRequest("其他"), FIXED_CLOCK).get("job")),
+                () -> assertEquals("TOO_LONG",
+                        ProfileRules.validate(jobRequest("职".repeat(21)), FIXED_CLOCK).get("job")));
+    }
+
     private static String validateInterests(List<String> interests) {
         return ProfileRules.validate(new routeme.request.UserProfileUpdateRequest(
                         "小夏", "2003-05-18", "女", "珠海", "", "", "", "", interests, "休闲游", ""),
                 FIXED_CLOCK)
                 .get("interests");
+    }
+
+    private static routeme.request.UserProfileUpdateRequest jobRequest(String job) {
+        return new routeme.request.UserProfileUpdateRequest(
+                "小夏", "2003-05-18", "女", "珠海", "", "", job, "", List.of("摄影", "美食", "徒步"), "休闲游", "");
     }
 
     private static routeme.request.UserProfileUpdateRequest updateRequest(

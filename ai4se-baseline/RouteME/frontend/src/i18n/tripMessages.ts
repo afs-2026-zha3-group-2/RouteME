@@ -240,6 +240,8 @@ export const tripMessages = {
   profileFieldInterests: '旅行兴趣',
   profileFieldTravelStyle: '旅行方式',
   profileFieldBio: '个人简介',
+  profileJobCustom: '自定义职业',
+  profileJobCustomPlaceholder: '例如：厨师、摄影师',
   profileNicknameHint: '1–20 字',
   profileBirthdayHint: '不公开',
   profileSingleChoiceHint: '单选',
@@ -265,6 +267,7 @@ export const tripMessages = {
   profileErrorSchool: '学校最多 80 字',
   profileErrorMajor: '专业最多 80 字',
   profileErrorBio: '简介最多 500 个字',
+  profileErrorJob: '职业最多 20 字',
   profileErrorOption: '请选择有效的选项',
   profileErrorForbidden: '演示身份不能保存资料',
 

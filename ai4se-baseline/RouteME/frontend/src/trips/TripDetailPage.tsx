@@ -30,6 +30,7 @@ import { Avatar } from '../shell/Avatar';
 import type { DemoUser, Experience, MatchCandidate, TripApplication } from '../types';
 import { statusColor, statusLabel } from './tripStatus';
 import { useTrip } from './useTrip';
+import { useProfile } from '../profiles/ProfileContext';
 
 const MAX_MESSAGE_LENGTH = 120;
 
@@ -53,6 +54,7 @@ function applicationLabel(status: TripApplication['status']): string {
 
 export function TripDetailPage({ currentUser, tripId }: Props) {
   const { state, reload } = useTrip(currentUser.id, tripId);
+  const { openProfile } = useProfile();
   const [actionError, setActionError] = useState<string | null>(null);
   const [completing, setCompleting] = useState(false);
   const [myApplication, setMyApplication] = useState<TripApplication | null>(null);
@@ -305,31 +307,32 @@ export function TripDetailPage({ currentUser, tripId }: Props) {
 
           <section className="detail-section">
             <h3 className="section-title">{tripMessages.detailPublisher}</h3>
-            <a
-              className="publisher-row"
-              href={`#/users/${trip.publisher.id}`}
-              aria-label={`查看 ${trip.publisher.nickname} 的个人主页`}
+            <button
+              type="button"
+              className="publisher-row publisher-button"
+              aria-label={`查看 ${trip.publisher.nickname} 的资料`}
+              onClick={() => openProfile(trip.publisher.id)}
             >
               <Avatar user={trip.publisher} size="lg" />
-              <div className="publisher-body">
-                <p className="publisher-name">
+              <span className="publisher-body">
+                <span className="publisher-name">
                   {trip.publisher.nickname}
                   {publisherSummary(trip.publisher) !== '' && ` · ${publisherSummary(trip.publisher)}`}
-                </p>
+                </span>
                 {trip.publisher.bio !== '' && (
-                  <p className="publisher-bio">{trip.publisher.bio}</p>
+                  <span className="publisher-bio">{trip.publisher.bio}</span>
                 )}
                 {trip.publisher.interests.length > 0 && (
-                  <div className="publisher-tags">
+                  <span className="publisher-tags">
                     {trip.publisher.interests.map((interest) => (
                       <span key={interest} className="tag">
                         {interest}
                       </span>
                     ))}
-                  </div>
+                  </span>
                 )}
-              </div>
-            </a>
+              </span>
+            </button>
           </section>
 
           <section className="detail-section">

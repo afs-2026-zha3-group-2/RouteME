@@ -24,7 +24,7 @@
 
 | id | Severity | Phase | Location | Issue | Suggested fix | Evidence | Authority | Type |
 |---|---|---|---|---|---|---|---|---|
-| L-01 | SUGGESTION | p2 | `../archive/2026-11-16-add-user-auth/tasks.md` T6、`design.md` 第 74 行、`summary.md` 第 12 行 | 已归档 change 写有「演示身份不显示退出」，与本 Delta Spec 的场景「退出入口对所有身份可见」相反；归档正文是历史快照，不应改写，但后续读者可能误读为仍然有效 | 在 `summary.md`（P5）/ G3 记录中注明该表述已被本 change 取代；`tasks.md`（P3）不加改写归档正文的任务 | 归档三处原文；`specs/user-auth/spec.md` 场景 5 | spec | [fact] |
+| L-01 | SUGGESTION | p2 | `../add-user-auth/tasks.md` T6、`design.md` 第 74 行、`summary.md` 第 12 行 | 该 change 写有「演示身份不显示退出」，与本 Delta Spec 的场景「退出入口对所有身份可见」相反；该 change 的正文是历史快照，不应改写，但后续读者可能误读为仍然有效 | 在 `summary.md`（P5）/ G3 记录中注明该表述已被本 change 取代；`tasks.md`（P3）不加改写该 change 正文的任务 | 三处原文；`specs/user-auth/spec.md` 场景 5 | spec | [fact] |
 | L-02 | SUGGESTION | p2 | `specs/user-auth/spec.md` Requirement 标题「会话校验与退出」 | Requirement 名同时覆盖会话校验与退出两个关注点，10 个场景中 3 个属校验、7 个属退出；名称本身不是歧义，但读者可能期待「退出」独立成条 | `design.md`（P3）声明：能力名保持「会话校验与退出」（对齐 Living Spec），退出行为由后 7 个场景定义；不新增平行 Requirement | Delta Spec；`openspec/specs/user-auth/spec.md` 同名 Requirement | spec | [fact] |
 | L-03 | SUGGESTION | p2 | `proposal.md` §残余风险；Living Spec 合并 | MODIFIED 会整体替换 Living Spec 的 Requirement 块；当前 delta 已保留 3 个基线场景，但归档合并时仍需人工核对合并结果，避免正文语义被无意收窄 | G3 / living-merge 前检查合并后仍有 10 个场景且会话语义完整；把该检查写入 `tasks.md`（P3）收口任务 | Delta Spec 第 7 行 vs `openspec/specs/user-auth/spec.md` 第 55 行 | spec | [fact] |
 

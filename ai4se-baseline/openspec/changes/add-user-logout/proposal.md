@@ -42,7 +42,7 @@ RouteME 进入系统有两条路径：选择演示身份、用注册账号登录
 | `openspec/changes/add-user-logout/specs/user-auth/spec.md` | MODIFIED：把「会话校验与退出」扩为全身份退出（10 个场景） |
 | 后端 / `openapi.yaml` / 迁移 | **无改动**（退出端点已存在） |
 | Living Spec `openspec/specs/user-auth/spec.md` | 归档阶段用本 change 的 MODIFIED delta 替换「会话校验与退出」；保留基线 3 个场景 |
-| `openspec/changes/archive/2026-11-16-add-user-auth/tasks.md` T6 | 不改写归档正文；由本 change 的 `summary.md` / G3 记录「演示身份不显示退出」已被取代 |
+| `openspec/changes/add-user-auth/tasks.md` T6 | 不改写该 change 正文（2026-11-16 解档，不再位于 `archive/`）；由本 change 的 `summary.md` / G3 记录「演示身份不显示退出」已被取代 |
 
 ## 决策
 
