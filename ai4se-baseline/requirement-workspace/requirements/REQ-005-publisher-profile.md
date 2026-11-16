@@ -2,7 +2,7 @@
 
 - **能力：** `user-profiles`（ADDED）；`trip-plans` 展示触点（MODIFIED 触点）
 - **对应 OpenSpec change：** `add-user-profiles`
-- **草稿日期：** 2026-11-16 ｜ **状态：** ready（P1 完成，proposal + delta spec 已创建；待 P2 delta-craft / G1）
+- **草稿日期：** 2026-11-16 ｜ **状态：** G1 Pass（P2 完成；Delta Spec 5 Requirement / 20 Scenario；待 P3 设计与任务）
 - **证据：** `docs/prototype/ui.js` `profileModal()` / `hostPanel`；`RouteME/backend/.../V3__create_demo_users.sql`；`RouteME/frontend/src/trips/TripCard.tsx` / `TripDetailPage.tsx`；`openspec/specs/trip-companions/spec.md`
 
 ## Discovery Decision
