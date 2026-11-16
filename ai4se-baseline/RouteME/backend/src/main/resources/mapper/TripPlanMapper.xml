@@ -8,9 +8,10 @@
         t.capacity, t.joined_count, t.completed_at, t.created_at, t.updated_at
     </sql>
 
-    <!-- 未结束行程的过滤条件：目的地按 6 位代码等值匹配；标签命中任一即保留。 -->
+    <!-- 未结束行程的过滤条件：到期日未过、目的地按 6 位代码等值匹配；标签命中任一即保留。 -->
     <sql id="openTripFilter">
         WHERE t.completed_at IS NULL
+          AND t.end_date &gt;= #{today}
         <if test="destinationCode != null and destinationCode != ''">
             AND t.destination_code = #{destinationCode}
         </if>
@@ -57,4 +58,21 @@
         <include refid="openTripFilter"/>
         <include refid="openTripOrder"/>
     </select>
+
+    <!-- 到期但尚未物化的行程：completed_at 为空且结束日期早于今天。 -->
+    <select id="selectExpiredIds" resultType="java.lang.Long">
+        SELECT t.id
+          FROM trip_plans t
+         WHERE t.completed_at IS NULL
+           AND t.end_date &lt; #{today}
+    </select>
+
+    <!-- 条件物化：只有 completed_at 为空时才写入，保证并发幂等。 -->
+    <update id="completeIfAbsent">
+        UPDATE trip_plans
+           SET completed_at = #{completedAt},
+               updated_at = #{updatedAt}
+         WHERE id = #{id}
+           AND completed_at IS NULL
+    </update>
 </mapper>

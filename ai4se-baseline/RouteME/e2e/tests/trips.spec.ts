@@ -41,19 +41,24 @@ async function clearDate(page: Page, label: string) {
 
 /** Local calendar day, matching the form's default (never UTC). */
 function todayIso(): string {
+  return isoDaysFromToday(0);
+}
+
+function isoDaysFromToday(days: number): string {
   const now = new Date();
+  now.setDate(now.getDate() + days);
   const pad = (value: number) => String(value).padStart(2, '0');
   return `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
 }
 
-async function createTripViaApi(page: Page, title: string) {
+async function createTripViaApi(page: Page, title: string, startDate = todayIso(), endDate = startDate) {
   const response = await page.request.post(`${API}/trips`, {
     headers: { 'X-User-Id': '1', 'Content-Type': 'application/json' },
     data: {
       title,
       destination_code: '440400',
-      start_date: '2026-12-01',
-      end_date: '2026-12-01',
+      start_date: startDate,
+      end_date: endDate,
       stops: ['香洲港集合', '情侣路骑行'],
       tags: ['摄影'],
       capacity: 3,
@@ -125,8 +130,8 @@ test('publishes a trip and finds it in the home list', async ({ page }) => {
   await expect(map).toBeVisible();
   await expect(map).toHaveAttribute('data-city', '珠海');
   await expect(map.getByRole('button', { name: /情侣路/ })).toBeVisible();
-  await setDate(page, '出发日期', '2026-12-05');
-  await setDate(page, '结束日期', '2026-12-05');
+  await setDate(page, '出发日期', isoDaysFromToday(7));
+  await setDate(page, '结束日期', isoDaysFromToday(7));
   await pickPlace(page, '途经点', '香洲港');
   await pickPlace(page, '途经点', '情侣路');
   await page.getByRole('checkbox', { name: '摄影', exact: true }).click();
@@ -175,7 +180,7 @@ test('blocks publishing and flags every missing required field', async ({ page }
   await expect(page.getByText('至少写出两个途经点，别人才看得懂路线')).toBeVisible();
 });
 
-test('publisher marks a trip completed and sees the experience section', async ({ page }) => {
+test('publisher ends an ongoing trip and sees the experience section', async ({ page }) => {
   const title = `E2E 结束行程 ${Date.now()}`;
   const created = await createTripViaApi(page, title);
   await loginAs(page, 1);
@@ -183,15 +188,23 @@ test('publisher marks a trip completed and sees the experience section', async (
 
   await expect(page.getByRole('heading', { name: title })).toBeVisible();
   await expect(page.getByText('这是你发布的行程')).toBeVisible();
-  await page.getByRole('button', { name: '标记为已结束' }).click();
-  await page.getByRole('dialog').getByRole('button', { name: '标记为已结束' }).click();
+  await expect(page.getByText('旅行中').first()).toBeVisible();
+
+  await page.locator('.detail-actions-primary').getByRole('button', { name: '结束行程' }).click();
+  await page.getByRole('dialog').getByRole('button', { name: /取\s*消/ }).click();
+  await expect(page.getByText('旅行中').first()).toBeVisible();
+
+  await page.locator('.detail-actions-primary').getByRole('button', { name: '结束行程' }).click();
+  await page.getByRole('dialog').getByRole('button', { name: '结束行程' }).click();
 
   await expect(page.getByText('已结束').first()).toBeVisible();
   await expect(page.getByText('游后真实体验')).toBeVisible();
-  await expect(page.getByRole('button', { name: '标记为已结束' })).toHaveCount(0);
+  await expect(page.getByRole('button', { name: '结束行程' })).toHaveCount(0);
 });
 
 test('defaults to the recruiting trips view with complete cards', async ({ page }) => {
+  const title = `E2E 默认卡片 ${Date.now()}`;
+  await createTripViaApi(page, title, isoDaysFromToday(7), isoDaysFromToday(7));
   await loginAs(page, 1);
   await page.goto('/');
 
@@ -199,20 +212,21 @@ test('defaults to the recruiting trips view with complete cards', async ({ page 
   await expect(page.getByRole('radio', { name: '招募中的行程' })).toBeChecked();
   await expect(page.getByRole('radio', { name: '旅行体验' })).not.toBeChecked();
 
-  const card = page.locator('.trip-card', { hasText: '珠海情侣路日落机位二刷' });
+  const card = page.locator('.trip-card', { hasText: title });
   await expect(card).toBeVisible();
-  await expect(card.locator('.tc-title')).toHaveText('珠海情侣路日落机位二刷');
+  await expect(card.locator('.tc-title')).toHaveText(title);
   await expect(card.locator('.tc-dest')).toHaveText('珠海市');
-  await expect(card.locator('.tc-meta')).toContainText('11月16日 → 11月16日');
   await expect(card.locator('.tc-meta')).toContainText(/周[一二三四五六日]出发/);
   await expect(card.locator('.tc-route')).toContainText('香洲港集合');
   await expect(card.locator('.tc-tags')).toContainText('摄影');
-  await expect(card.locator('.tc-host-name')).toContainText('陈屿');
+  await expect(card.locator('.tc-host-name')).toContainText('林见夏');
   await expect(card.locator('.tc-cap-num')).toHaveText('1 / 3 人');
   await expect(card.locator('[data-status="recruiting"]')).toContainText('招募中');
 });
 
 test('distinguishes full trips from recruiting trips without color alone', async ({ page }) => {
+  const title = `E2E 招募卡片 ${Date.now()}`;
+  await createTripViaApi(page, title, isoDaysFromToday(7), isoDaysFromToday(7));
   await loginAs(page, 1);
   await page.goto('/');
 
@@ -222,17 +236,19 @@ test('distinguishes full trips from recruiting trips without color alone', async
   await expect(full.locator('.tc-meter.is-full')).toBeVisible();
   await expect(full.locator('.tc-cap-num')).toHaveText('2 / 2 人');
 
-  const recruiting = page.locator('.trip-card', { hasText: '珠海情侣路日落机位二刷' });
+  const recruiting = page.locator('.trip-card', { hasText: title });
   await expect(recruiting.locator('[data-status="recruiting"]')).toContainText('招募中');
   await expect(recruiting.locator('[data-status-icon="recruiting"]')).toBeVisible();
   await expect(recruiting.locator('.tc-meter.is-full')).toHaveCount(0);
 });
 
 test('keeps ended trips out of the default view', async ({ page }) => {
+  const title = `E2E 未结束 ${Date.now()}`;
+  await createTripViaApi(page, title, isoDaysFromToday(7), isoDaysFromToday(7));
   await loginAs(page, 1);
   await page.goto('/');
 
-  await expect(page.locator('.trip-card', { hasText: '珠海情侣路日落机位二刷' })).toBeVisible();
+  await expect(page.locator('.trip-card', { hasText: title })).toBeVisible();
   await expect(page.locator('.trip-card', { hasText: '珠海情侣路摄影一日游' })).toHaveCount(0);
   await expect(page.locator('.trip-card', { hasText: '清远英西峰林两日露营' })).toHaveCount(0);
   await expect(page.locator('.trip-card [data-status="completed"]')).toHaveCount(0);
@@ -243,7 +259,7 @@ test('keeps out-of-scope actions off the screens', async ({ page }) => {
   await page.goto('/#/trips/5');
 
   await expect(page.getByRole('button', { name: '提交同行申请' })).toBeVisible();
-  await expect(page.getByRole('button', { name: '标记为已结束' })).toHaveCount(0);
+  await expect(page.getByRole('button', { name: '结束行程' })).toHaveCount(0);
   await expect(page.getByRole('button', { name: /编辑|删除|取消行程/ })).toHaveCount(0);
 
   await page.goto('/#/trips/9999');

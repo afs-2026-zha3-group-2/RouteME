@@ -93,6 +93,10 @@ export function ApplicationsPage({ currentUser, tripId }: Props) {
               <Alert type="error" showIcon title={tripMessages.applicationsFailed} description={error} />
             )}
 
+            {trip?.status === 'completed' && (
+              <Alert type="info" showIcon title={tripMessages.applicationsClosed} />
+            )}
+
             {applications === null && <Skeleton active paragraph={{ rows: 4 }} />}
 
             {applications !== null && applications.length === 0 && (
@@ -114,11 +118,12 @@ export function ApplicationsPage({ currentUser, tripId }: Props) {
                       <Typography.Text className="application-message">
                         {application.message ?? tripMessages.applicationsNoMessage}
                       </Typography.Text>
-                      {application.status === 'pending' && (
+                      {application.status === 'pending' && trip?.status !== 'completed' && (
                         <Space size="small">
                           <Button
                             type="primary"
                             size="small"
+                            disabled={trip !== null && (trip.status === 'full' || trip.joined_count >= trip.capacity)}
                             loading={busyId === application.id}
                             onClick={() => decide(application, true)}
                           >

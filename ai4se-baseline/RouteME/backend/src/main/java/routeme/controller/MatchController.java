@@ -1,5 +1,6 @@
 package routeme.controller;
 
+import java.time.Clock;
 import java.time.LocalDate;
 import java.util.List;
 
@@ -28,10 +29,12 @@ public class MatchController {
 
     private final DemoUserService demoUserService;
     private final MatchService matchService;
+    private final Clock clock;
 
-    public MatchController(DemoUserService demoUserService, MatchService matchService) {
+    public MatchController(DemoUserService demoUserService, MatchService matchService, Clock clock) {
         this.demoUserService = demoUserService;
         this.matchService = matchService;
+        this.clock = clock;
     }
 
     @GetMapping
@@ -51,7 +54,7 @@ public class MatchController {
                 destinationCode, dateFrom, dateTo,
                 TripQueryParam.parseTags(tags), TripQueryParam.parseSortWithMatch(sort));
         PageResult<MatchCandidate> result = matchService.searchPage(query, me.id(), PageParam.parse(page, size));
-        return PageResponse.from(result, MatchCandidateResponse::from);
+        return PageResponse.from(result, candidate -> MatchCandidateResponse.from(candidate, clock.instant()));
     }
 
     @GetMapping("/{tripId}")
@@ -59,6 +62,6 @@ public class MatchController {
             @RequestHeader(value = "X-User-Id", required = false) Long userId,
             @PathVariable long tripId) {
         DemoUser me = demoUserService.require(userId);
-        return MatchCandidateResponse.from(matchService.matchFor(tripId, me.id()));
+        return MatchCandidateResponse.from(matchService.matchFor(tripId, me.id()), clock.instant());
     }
 }

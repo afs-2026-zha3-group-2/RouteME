@@ -79,14 +79,21 @@ async function completeProfileViaApi(
   return (await response.json()) as Record<string, unknown>;
 }
 
+function isoDaysFromToday(days: number): string {
+  const now = new Date();
+  now.setDate(now.getDate() + days);
+  const pad = (value: number) => String(value).padStart(2, '0');
+  return `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
+}
+
 async function createTripViaApi(page: Page, account: Account, title: string): Promise<number> {
   const response = await page.request.post(`${API}/trips`, {
     headers: { 'X-User-Id': String(account.userId), 'Content-Type': 'application/json' },
     data: {
       title,
       destination_code: '440400',
-      start_date: '2026-12-01',
-      end_date: '2026-12-01',
+      start_date: isoDaysFromToday(7),
+      end_date: isoDaysFromToday(7),
       stops: ['香洲港集合', '情侣路骑行'],
       tags: ['摄影'],
       capacity: 3,

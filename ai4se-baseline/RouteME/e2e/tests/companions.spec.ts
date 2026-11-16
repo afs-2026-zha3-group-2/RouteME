@@ -15,14 +15,20 @@ async function switchUser(page: Page, userId: number) {
   await page.reload();
 }
 
+function todayIso(): string {
+  const now = new Date();
+  const pad = (value: number) => String(value).padStart(2, '0');
+  return `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
+}
+
 async function createTripViaApi(page: Page, publisherId: number, title: string, capacity = 3) {
   const response = await page.request.post(`${API}/trips`, {
     headers: { 'X-User-Id': String(publisherId), 'Content-Type': 'application/json' },
     data: {
       title,
       destination_code: '440400',
-      start_date: '2026-12-12',
-      end_date: '2026-12-12',
+      start_date: todayIso(),
+      end_date: todayIso(),
       stops: ['香洲港集合', '情侣路骑行'],
       tags: ['摄影'],
       capacity,
@@ -260,13 +266,13 @@ test('keeps companion entry points honest', async ({ page }) => {
   await expect(page.getByRole('button', { name: '提交同行申请' })).toHaveCount(0);
   await expect(page.getByPlaceholder(APPLY_PLACEHOLDER)).toHaveCount(0);
   await expect(page.getByRole('button', { name: /查看同行的申请/ })).toBeVisible();
-  await expect(page.getByRole('button', { name: '标记为已结束' })).toBeVisible();
+  await expect(page.getByRole('button', { name: '结束行程' })).toBeVisible();
 
   await page.goto('/#/chat/3/2');
   await expect(page.getByText('只有已匹配的同行者可以沟通。')).toBeVisible();
 
   await page.goto('/#/chat/1/2');
-  await expect(page.getByText('行程已结束，聊天只能查看历史消息。')).toBeVisible();
+  await expect(page.getByText('该行程已结束，只能查看历史消息。')).toBeVisible();
   await expect(page.getByRole('button', { name: /发\s*送/ })).toHaveCount(0);
   await expect(page.getByRole('button', { name: /全部接受|标记已读|开启推送/ })).toHaveCount(0);
 });

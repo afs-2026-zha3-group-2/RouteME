@@ -133,7 +133,13 @@ export function TripDetailPage({ currentUser, tripId }: Props) {
       await completeTrip(currentUser.id, tripId);
       reload();
     } catch (error: unknown) {
-      showActionError(error);
+      const code = error instanceof Error ? error.message : 'UNKNOWN_ERROR';
+      setFeedback({
+        tone: 'error',
+        title: code === 'FORBIDDEN' ? tripMessages.detailForbidden : tripMessages.detailCompleteFailed,
+        detail: code,
+      });
+      reload();
     } finally {
       setCompleting(false);
     }
@@ -209,13 +215,13 @@ export function TripDetailPage({ currentUser, tripId }: Props) {
 
   const confirmTitle =
     confirmAction === 'complete'
-      ? tripMessages.detailMarkCompleted
+      ? tripMessages.detailCompleteTrip
       : confirmAction === 'cancelApply'
         ? tripMessages.applyCancelConfirm
         : tripMessages.leaveConfirm;
   const confirmOkText =
     confirmAction === 'complete'
-      ? tripMessages.detailMarkCompleted
+      ? tripMessages.detailCompleteTrip
       : confirmAction === 'cancelApply'
         ? tripMessages.applyCancel
         : tripMessages.leaveTrip;
@@ -223,7 +229,7 @@ export function TripDetailPage({ currentUser, tripId }: Props) {
     confirmAction === 'complete' ? completing : confirmAction === 'leave' ? leaving : cancelling;
   const confirmHint =
     confirmAction === 'complete'
-      ? '结束后行程会从首页默认列表移除，也不再接受新的同行申请。'
+      ? tripMessages.detailCompleteHint
       : confirmAction === 'cancelApply'
         ? '撤回后可以再次申请，但需要发布者重新处理。'
         : '退出后这条行程的聊天会关闭。';
@@ -245,14 +251,13 @@ export function TripDetailPage({ currentUser, tripId }: Props) {
       reload();
     } catch (error: unknown) {
       const code = error instanceof Error ? error.message : 'UNKNOWN_ERROR';
-      let currentStatus = trip.status;
+      let currentTrip = trip;
       try {
-        const freshTrip = await loadTrip(currentUser.id, tripId);
-        currentStatus = freshTrip.status;
+        currentTrip = await loadTrip(currentUser.id, tripId);
       } catch {
-        // 刷新失败时保留旧状态，原因退化为「当前不可申请」。
+        // 刷新失败时保留旧快照，原因退化为「当前不可申请」。
       }
-      const mapped = applicationErrorMessage(code, currentStatus);
+      const mapped = applicationErrorMessage(code, currentTrip);
       if (mapped === null) {
         showActionError(error);
       } else {
@@ -303,6 +308,10 @@ export function TripDetailPage({ currentUser, tripId }: Props) {
               </span>
             </p>
           </header>
+
+          {trip.ending_soon && (isPublisher || participant) && (
+            <Alert type="warning" showIcon title={tripMessages.detailEndingSoon} />
+          )}
 
           <section className="detail-section">
             <h3 className="section-title">{tripMessages.detailStops}</h3>
@@ -509,9 +518,9 @@ export function TripDetailPage({ currentUser, tripId }: Props) {
 
           {isPublisher && (
             <div className="detail-actions detail-actions-primary">
-              {!isCompleted && (
+              {trip.status === 'ongoing' && (
                 <Button loading={completing} onClick={() => setConfirmAction('complete')}>
-                  {tripMessages.detailMarkCompleted}
+                  {tripMessages.detailCompleteTrip}
                 </Button>
               )}
               <Button onClick={() => (window.location.hash = `#/trips/${trip.id}/applications`)}>

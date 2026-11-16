@@ -34,6 +34,15 @@ export function StatusBadge({ status, className }: Props) {
 }
 
 function StatusIcon({ status }: { status: TripStatus }) {
+  if (status === 'ongoing') {
+    return (
+      <svg {...ICON_PROPS} data-status-icon={status}>
+        <path d="M3 12.5c2.2-1.4 3.4-3 4.2-5.1.5-1.3 1.1-2.4 2.4-3.4" />
+        <circle cx="11.6" cy="4.6" r="1.3" />
+        <path d="M3 14.2h10" />
+      </svg>
+    );
+  }
   if (status === 'full') {
     return (
       <svg {...ICON_PROPS} data-status-icon={status}>

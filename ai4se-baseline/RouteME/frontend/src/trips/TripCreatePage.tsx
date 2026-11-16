@@ -1,5 +1,6 @@
 import { useEffect, useState, type ReactNode } from 'react';
 import { Alert, Button, Card, DatePicker, Input, InputNumber, Space, Tag, Typography } from 'antd';
+import dayjs from 'dayjs';
 import { createTrip, loadTrip } from '../api';
 import { AreaCascader } from '../area/AreaCascader';
 import { cityLabel } from '../area/areaOptions';
@@ -87,6 +88,7 @@ export function TripCreatePage({ currentUser, fromTripId }: Props) {
     capacity: Number(values.capacity) || 2,
     joined_count: 1,
     status: 'recruiting',
+    ending_soon: false,
     publisher: currentUser,
     created_at: new Date().toISOString(),
   };
@@ -200,6 +202,7 @@ export function TripCreatePage({ currentUser, fromTripId }: Props) {
                   format="YYYY-MM-DD"
                   placeholder="选择日期"
                   style={{ width: '100%' }}
+                  disabledDate={(current) => current.isBefore(dayjs(), 'day')}
                   value={isoToDayjs(values.startDate)}
                   onChange={(value) => update({ startDate: dayjsToIso(value) })}
                   status={errors.startDate === undefined ? undefined : 'error'}
@@ -216,6 +219,7 @@ export function TripCreatePage({ currentUser, fromTripId }: Props) {
                   format="YYYY-MM-DD"
                   placeholder="选择日期"
                   style={{ width: '100%' }}
+                  disabledDate={(current) => current.isBefore(dayjs(), 'day')}
                   value={isoToDayjs(values.endDate)}
                   onChange={(value) => update({ endDate: dayjsToIso(value) })}
                   status={errors.endDate === undefined ? undefined : 'error'}

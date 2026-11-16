@@ -98,7 +98,7 @@ export type AuthRegisterRequest = {
   nickname: string;
 };
 
-export type TripStatus = 'recruiting' | 'full' | 'completed';
+export type TripStatus = 'recruiting' | 'full' | 'ongoing' | 'completed';
 
 export type TripSummary = {
   id: number;
@@ -114,6 +114,7 @@ export type TripSummary = {
   capacity: number;
   joined_count: number;
   status: TripStatus;
+  ending_soon: boolean;
   publisher: DemoUser;
   created_at: string;
 };

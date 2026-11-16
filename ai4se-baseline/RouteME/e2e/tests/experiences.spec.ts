@@ -21,14 +21,20 @@ function createGate() {
   return { opened, release: () => release() };
 }
 
+function todayIso(): string {
+  const now = new Date();
+  const pad = (value: number) => String(value).padStart(2, '0');
+  return `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
+}
+
 async function createCompletedTrip(page: Page, title: string) {
   const created = await page.request.post(`${API}/trips`, {
     headers: { 'X-User-Id': '1', 'Content-Type': 'application/json' },
     data: {
       title,
       destination_code: '440400',
-      start_date: '2026-12-20',
-      end_date: '2026-12-20',
+      start_date: todayIso(),
+      end_date: todayIso(),
       stops: ['香洲港集合', '情侣路骑行'],
       tags: ['摄影'],
       capacity: 3,

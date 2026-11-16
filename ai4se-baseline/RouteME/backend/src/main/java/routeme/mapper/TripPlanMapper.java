@@ -25,12 +25,23 @@ public interface TripPlanMapper extends BaseMapper<TripPlanEntity> {
             @Param("dateFrom") String dateFrom,
             @Param("dateTo") String dateTo,
             @Param("tags") List<String> tags,
-            @Param("sort") String sort);
+            @Param("sort") String sort,
+            @Param("today") String today);
 
     List<TripPlanEntity> selectOpenList(
             @Param("destinationCode") String destinationCode,
             @Param("dateFrom") String dateFrom,
             @Param("dateTo") String dateTo,
             @Param("tags") List<String> tags,
-            @Param("sort") String sort);
+            @Param("sort") String sort,
+            @Param("today") String today);
+
+    /** 到期但尚未物化的行程 id（结束日期早于今天）。 */
+    List<Long> selectExpiredIds(@Param("today") String today);
+
+    /** 条件写入完成时间；只有 completed_at 为空时才更新，返回受影响行数。 */
+    int completeIfAbsent(
+            @Param("id") long id,
+            @Param("completedAt") String completedAt,
+            @Param("updatedAt") String updatedAt);
 }

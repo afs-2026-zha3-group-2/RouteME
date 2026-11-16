@@ -63,6 +63,28 @@ public interface TripPlanService extends IService<TripPlanEntity> {
     TripPlan require(long tripId);
 
     /**
+     * 取行程前先物化到期状态：到期未完成的行程会写入计划结束时刻并取消待处理申请。
+     * 所有写操作与详情读取应使用本方法，避免页面停留导致的状态过期。
+     *
+     * @param tripId 行程 id
+     * @return 当前状态下的行程
+     */
+    TripPlan requireCurrent(long tripId);
+
+    /**
+     * 物化单条到期行程；未到期或已完成时原样返回。条件更新保证并发幂等。
+     *
+     * @param tripId 行程 id
+     * @return 物化后的行程
+     */
+    TripPlan materializeIfExpired(long tripId);
+
+    /**
+     * 批量物化所有到期未完成的行程；供列表、我的旅行与统计查询前调用。
+     */
+    void materializeExpired();
+
+    /**
      * 取发布者最近发布且未结束的行程，用于匹配对照。
      *
      * @param publisherId 发布者 id

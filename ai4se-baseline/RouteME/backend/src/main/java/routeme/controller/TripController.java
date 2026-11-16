@@ -1,5 +1,6 @@
 package routeme.controller;
 
+import java.time.Clock;
 import java.time.LocalDate;
 import java.util.List;
 
@@ -36,14 +37,17 @@ public class TripController {
     private final DemoUserService demoUserService;
     private final TripPlanService tripPlanService;
     private final ApplicationService applicationService;
+    private final Clock clock;
 
     public TripController(
             DemoUserService demoUserService,
             TripPlanService tripPlanService,
-            ApplicationService applicationService) {
+            ApplicationService applicationService,
+            Clock clock) {
         this.demoUserService = demoUserService;
         this.tripPlanService = tripPlanService;
         this.applicationService = applicationService;
+        this.clock = clock;
     }
 
     @GetMapping
@@ -62,7 +66,7 @@ public class TripController {
         TripQuery query = new TripQuery(
                 destinationCode, dateFrom, dateTo, TripQueryParam.parseTags(tags), TripQueryParam.parseSort(sort));
         PageResult<TripPlan> result = tripPlanService.searchPage(query, PageParam.parse(page, size));
-        return PageResponse.from(result, trip -> TripSummaryResponse.from(trip, tripPlanService.publisherOf(trip)));
+        return PageResponse.from(result, trip -> TripSummaryResponse.from(trip, tripPlanService.publisherOf(trip), clock.instant()));
     }
 
     @GetMapping("/{tripId}")
@@ -70,9 +74,10 @@ public class TripController {
             @RequestHeader(value = "X-User-Id", required = false) Long userId,
             @PathVariable long tripId) {
         demoUserService.require(userId);
-        TripPlan trip = tripPlanService.require(tripId);
+        TripPlan trip = tripPlanService.requireCurrent(tripId);
         DemoUser publisher = tripPlanService.publisherOf(trip);
-            return TripDetailResponse.from(trip, publisher, applicationService.participants(tripId));
+        return TripDetailResponse.from(
+                trip, publisher, applicationService.participants(tripId), clock.instant());
     }
 
     @PostMapping
@@ -82,7 +87,7 @@ public class TripController {
         DemoUser publisher = demoUserService.require(userId);
         TripPlan saved = tripPlanService.create(request, publisher.id());
         return ResponseEntity.status(HttpStatus.CREATED)
-                .body(TripDetailResponse.from(saved, publisher, List.of(publisher)));
+                .body(TripDetailResponse.from(saved, publisher, List.of(publisher), clock.instant()));
     }
 
         @PostMapping("/{tripId}/complete")
@@ -91,6 +96,7 @@ public class TripController {
                     @PathVariable long tripId) {
                 DemoUser publisher = demoUserService.require(userId);
                 TripPlan completed = tripPlanService.complete(tripId, publisher.id());
-                return TripDetailResponse.from(completed, publisher, applicationService.participants(tripId));
+                return TripDetailResponse.from(
+                        completed, publisher, applicationService.participants(tripId), clock.instant());
             }
         }

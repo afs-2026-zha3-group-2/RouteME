@@ -13,8 +13,12 @@ const publisher: DemoUser = {
   profile_complete: true,
 };
 
-function tripWith(status: TripStatus): Pick<TripDetail, 'status' | 'publisher'> {
-  return { status, publisher };
+function tripWith(
+  status: TripStatus,
+  joinedCount = 1,
+  capacity = 4,
+): Pick<TripDetail, 'status' | 'publisher' | 'joined_count' | 'capacity'> {
+  return { status, publisher, joined_count: joinedCount, capacity };
 }
 
 function applicationWith(status: ApplicationStatus): TripApplication {
@@ -52,6 +56,17 @@ describe('applicationEntryState', () => {
     expect(applicationEntryState(tripWith('recruiting'), 1, null).kind).toBe('apply');
   });
 
+  it('returns apply for an ongoing trip without an active application', () => {
+    expect(applicationEntryState(tripWith('ongoing'), 1, null).kind).toBe('apply');
+  });
+
+  it('returns unavailable for an ongoing trip that already reached capacity', () => {
+    expect(applicationEntryState(tripWith('ongoing', 4, 4), 1, null)).toEqual({
+      kind: 'unavailable',
+      reason: tripMessages.applyFull,
+    });
+  });
+
   it('returns apply again after the application is cancelled', () => {
     expect(applicationEntryState(tripWith('recruiting'), 1, applicationWith('cancelled')).kind).toBe('apply');
   });
@@ -63,22 +78,22 @@ describe('applicationEntryState', () => {
 
 describe('applicationErrorMessage', () => {
   it('maps a duplicate application to the waiting message', () => {
-    expect(applicationErrorMessage('DUPLICATE_APPLICATION', 'recruiting')).toBe(tripMessages.applyDuplicate);
+    expect(applicationErrorMessage('DUPLICATE_APPLICATION', tripWith('recruiting'))).toBe(tripMessages.applyDuplicate);
   });
 
   it('maps a closed full trip to the full reason', () => {
-    expect(applicationErrorMessage('TRIP_NOT_OPEN', 'full')).toBe(tripMessages.applyFull);
+    expect(applicationErrorMessage('TRIP_NOT_OPEN', tripWith('full', 4, 4))).toBe(tripMessages.applyFull);
   });
 
   it('maps a closed completed trip to the ended reason', () => {
-    expect(applicationErrorMessage('TRIP_NOT_OPEN', 'completed')).toBe(tripMessages.applyEnded);
+    expect(applicationErrorMessage('TRIP_NOT_OPEN', tripWith('completed'))).toBe(tripMessages.applyEnded);
   });
 
   it('maps any other closed trip to the generic reason', () => {
-    expect(applicationErrorMessage('TRIP_NOT_OPEN', 'recruiting')).toBe(tripMessages.applyUnavailable);
+    expect(applicationErrorMessage('TRIP_NOT_OPEN', tripWith('recruiting'))).toBe(tripMessages.applyUnavailable);
   });
 
   it('returns null for unknown error codes so the caller can keep the raw code', () => {
-    expect(applicationErrorMessage('UNKNOWN_ERROR', 'recruiting')).toBeNull();
+    expect(applicationErrorMessage('UNKNOWN_ERROR', tripWith('recruiting'))).toBeNull();
   });
 });
