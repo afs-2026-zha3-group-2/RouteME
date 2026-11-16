@@ -15,12 +15,12 @@
 |----------|-----------|--------|----------|
 | P4-1 | yes | Pass | `docs/ai4se-plugins/20261116-212000-local-verify-report.md`（命令、E13–E17 实测、走查、全量失败归属） |
 | P4-2 | yes | Pass | 报告 §6 Overall Pass；9 条全量 E2E 失败逐条归属并行 change / 共享库 |
-| P4-3 | no | Skipped | 尚未合入 `main`；合入后由 verify 阶段补 CI/CD 证据 |
-| P4-4 | no | Skipped | 未部署 |
+| P4-3 | yes | Pass | CI run [#163](https://github.com/afs-2026-zha3-group-2/RouteME/actions/runs/43875960658)（`main@6ff2d21`）success |
+| P4-4 | yes | Pass | CD run [#95](https://github.com/afs-2026-zha3-group-2/RouteME/actions/runs/43876124753) success；release `build-6ff2d21` |
 | P4-5 | yes | Pass | `openspec/changes/refine-experience-share/g2-decision-r2.md`：Pass，VL = Neal |
 | P4-6 | yes | Pass | VL 签署，AO 不自签 |
 
-| **Stage Overall** | — | **Pass** | required 4/4（P4-3 / P4-4 条件项后续补齐） |
+| **Stage Overall** | — | **Pass** | required 6/6 |
 
 ## 验证汇总
 
@@ -38,7 +38,6 @@
 
 | Check id | Gap | Owner | Suggested next |
 |----------|-----|-------|----------------|
-| P4-3/P4-4 | 未合入 / 未部署 | Jay（AO） | verify 阶段合入并记录 CI/CD |
 | E2E 产物 | 默认 `test-results/` 与并行会话冲突 | 测试 owner | 后续 change 默认隔离产物目录 |
 | 共享库 | 全量 E2E 依赖种子分页 | 测试 owner | 引入临时库 |
 

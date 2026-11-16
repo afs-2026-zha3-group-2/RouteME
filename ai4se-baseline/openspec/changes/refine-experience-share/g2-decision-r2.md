@@ -60,8 +60,14 @@
 
 | 角色 | 姓名 | 确认内容 | 日期 |
 |---|---|---|---|
-| VL | Neal | 布局与原型一致；测试与走查证据可复现；失败项归属清楚 | 2026-11-16 |
+| VL | Neal | 布局与原型一致；测试与走查证据可复现；失败项归属清楚；CI #163 / CD #95 通过、release `build-6ff2d21` | 2026-11-16 |
 | AO | Jay | 实现、走查与记录完成 | 2026-11-16 |
+
+## 追加记录（2026-11-16 21:30，CI/CD）
+
+- 合入 `main@6ff2d21`：CI run [#163](https://github.com/afs-2026-zha3-group-2/RouteME/actions/runs/43875960658)（job 级 success）→ CD run [#95](https://github.com/afs-2026-zha3-group-2/RouteME/actions/runs/43876124753)（release `build-6ff2d21`）。
+- P4-3 / P4-4 由 Skipped 变为 Pass；证据见 `docs/ai4se-plugins/20261116-213000-pipeline-report.md` 与 `ci-report.md`。
+- G2（R2）结论不变：**Pass**；签署 VL = Neal。
 
 ## Next
 

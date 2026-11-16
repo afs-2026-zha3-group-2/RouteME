@@ -106,4 +106,5 @@ E2E 不在 CI 流水线内，仍以本地隔离运行为准（`experiences.spec.
 - **全量 E2E：** 64 passed / 9 failed，逐条归属并行 change 与共享库数据（见报告 §4），不属本 change。
 - **有意差异：** 原型分享页无安全提示，保留 P4 的 `SafetyNote`（用户 2026-11-16 裁决保留）。
 - **G2（R2）：** Pass，VL = Neal（`g2-decision-r2.md`）。
+- **远端 CI/CD：** `main@6ff2d21` 的 CI run `43875960658`（#163）Pass → CD run `43876124753`（#95）Pass，release `build-6ff2d21`；报告 `docs/ai4se-plugins/20261116-213000-pipeline-report.md`。
 - **阶段提交：** `feat(p4): refine-experience-share align the share page with the prototype`。

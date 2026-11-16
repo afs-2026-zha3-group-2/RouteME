@@ -27,3 +27,13 @@
 ## 结论
 
 CI / CD 均通过；G2 的 pipeline slot 记为 **Pass（API 直证）**。
+## R2（2026-11-16 21:30）
+
+| Phase | Run | Conclusion |
+|---|---|---|
+| ci | [#163](https://github.com/afs-2026-zha3-group-2/RouteME/actions/runs/43875960658)（43875960658，sha 6ff2d21） | success（Backend verify + Frontend build/test） |
+| cd | [#95](https://github.com/afs-2026-zha3-group-2/RouteME/actions/runs/43876124753)（43876124753） | success；release uild-6ff2d21 → 6ff2d21 |
+
+- 报告：`docs/ai4se-plugins/20261116-213000-pipeline-report.md`。
+- E2E 仍不在 CI 内：R2 的布局断言（E13–E17）为本地 9/9。
+- E1 判定：**Pass（API 直证）**。
