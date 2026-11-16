@@ -13,7 +13,6 @@ import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 
-import routeme.constant.AreaConstant;
 import routeme.enums.TripStatusEnum;
 import routeme.exception.ForbiddenActionException;
 import routeme.exception.InvalidInputException;
@@ -21,7 +20,6 @@ import routeme.exception.TripNotFoundException;
 import routeme.exception.TripNotOpenException;
 import routeme.mapper.TripPlanMapper;
 import routeme.param.PageParam;
-import routeme.pojo.AreaCity;
 import routeme.pojo.DemoUser;
 import routeme.pojo.PageResult;
 import routeme.pojo.TripPlan;
@@ -52,13 +50,11 @@ public class TripPlanServiceImpl extends AbstractServiceImpl<TripPlanMapper, Tri
     @Transactional
     public TripPlan create(TripCreateRequest request, long publisherId) {
         Instant now = clock.instant();
-            AreaCity area = AreaConstant.cityOf(request.destinationCode())
-                    .orElseThrow(() -> new InvalidInputException("destination code is invalid"));
-            TripPlanDraft draft = new TripPlanDraft(
-                    publisherId,
-                    request.title(),
-                    area.displayName(),
-                    request.startDate(),
+        TripPlanDraft draft = new TripPlanDraft(
+                publisherId,
+                request.title(),
+                request.destinationCode(),
+                request.startDate(),
                 request.endDate(),
                 request.stops(),
                 request.meetingArea(),
@@ -77,8 +73,7 @@ public class TripPlanServiceImpl extends AbstractServiceImpl<TripPlanMapper, Tri
     public PageResult<TripPlan> searchPage(TripQuery query, PageParam param) {
         IPage<TripPlanEntity> page = baseMapper.selectOpenPage(
                 new Page<>(param.page(), param.size()),
-                query.keyword(),
-                query.destination(),
+                query.destinationCode(),
                 query.dateFrom() == null ? null : query.dateFrom().toString(),
                 query.dateTo() == null ? null : query.dateTo().toString(),
                 List.copyOf(query.tags()),
@@ -93,8 +88,7 @@ public class TripPlanServiceImpl extends AbstractServiceImpl<TripPlanMapper, Tri
     @Override
     public List<TripPlan> findOpen(TripQuery query) {
         return baseMapper.selectOpenList(
-                        query.keyword(),
-                        query.destination(),
+                        query.destinationCode(),
                         query.dateFrom() == null ? null : query.dateFrom().toString(),
                         query.dateTo() == null ? null : query.dateTo().toString(),
                         List.copyOf(query.tags()),

@@ -1,7 +1,6 @@
 package routeme.pojo;
 
 import static routeme.constant.TripCatalogConstant.MAX_CAPACITY;
-import static routeme.constant.TripCatalogConstant.MAX_DESTINATION_LENGTH;
 import static routeme.constant.TripCatalogConstant.MAX_MEETING_AREA_LENGTH;
 import static routeme.constant.TripCatalogConstant.MAX_NOTE_LENGTH;
 import static routeme.constant.TripCatalogConstant.MAX_TAGS;
@@ -15,6 +14,7 @@ import java.util.ArrayList;
 import java.util.LinkedHashSet;
 import java.util.List;
 
+import routeme.area.AreaNames;
 import routeme.enums.TripStatusEnum;
 import routeme.exception.InvalidInputException;
 
@@ -25,6 +25,7 @@ public record TripPlan(
         long id,
         long publisherId,
         String title,
+        String destinationCode,
         String destination,
         LocalDate startDate,
         LocalDate endDate,
@@ -51,7 +52,7 @@ public record TripPlan(
     }
 
     public TripPlan withId(long newId) {
-        return new TripPlan(newId, publisherId, title, destination, startDate, endDate, stops, meetingArea, note,
+        return new TripPlan(newId, publisherId, title, destinationCode, destination, startDate, endDate, stops, meetingArea, note,
                 budgetMinCents, budgetMaxCents, tags, capacity, joinedCount, completedAt, createdAt, updatedAt);
     }
 
@@ -60,13 +61,14 @@ public record TripPlan(
         if (title.length() > MAX_TITLE_LENGTH) {
             throw new InvalidInputException("title must be at most " + MAX_TITLE_LENGTH + " characters");
         }
-        if (draft.destination() == null || draft.destination().isBlank()) {
-            throw new InvalidInputException("destination is required");
+        if (draft.destinationCode() == null || draft.destinationCode().isBlank()) {
+            throw new InvalidInputException("destination_code is required");
         }
-        String destination = draft.destination().trim();
-        if (destination.length() > MAX_DESTINATION_LENGTH) {
-            throw new InvalidInputException("destination must be at most " + MAX_DESTINATION_LENGTH + " characters");
+        String destinationCode = draft.destinationCode().trim();
+        if (!AreaNames.isValidCityCode(destinationCode)) {
+            throw new InvalidInputException("destination_code is not a supported city");
         }
+        String destination = AreaNames.cityDisplayNameOf(destinationCode);
         if (draft.startDate() == null) {
             throw new InvalidInputException("start date is required");
         }
@@ -101,7 +103,7 @@ public record TripPlan(
         if (note != null && note.length() > MAX_NOTE_LENGTH) {
             throw new InvalidInputException("note is too long");
         }
-        return new TripPlan(0, draft.publisherId(), title, destination, draft.startDate(), draft.endDate(),
+        return new TripPlan(0, draft.publisherId(), title, destinationCode, destination, draft.startDate(), draft.endDate(),
                 stops, meetingArea, note, budgetMin, budgetMax, tags, capacity, 1, null, now, now);
     }
 

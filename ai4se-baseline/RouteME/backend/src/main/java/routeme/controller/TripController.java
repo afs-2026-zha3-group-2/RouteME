@@ -49,8 +49,7 @@ public class TripController {
     @GetMapping
     public PageResponse<TripSummaryResponse> list(
             @RequestHeader(value = "X-User-Id", required = false) Long userId,
-            @RequestParam(required = false) String q,
-            @RequestParam(required = false) String destination,
+            @RequestParam(name = "destination_code", required = false) String destinationCode,
             @RequestParam(name = "date_from", required = false)
             @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate dateFrom,
             @RequestParam(name = "date_to", required = false)
@@ -61,7 +60,7 @@ public class TripController {
             @RequestParam(required = false) Integer size) {
         demoUserService.require(userId);
         TripQuery query = new TripQuery(
-                q, destination, dateFrom, dateTo, TripQueryParam.parseTags(tags), TripQueryParam.parseSort(sort));
+                destinationCode, dateFrom, dateTo, TripQueryParam.parseTags(tags), TripQueryParam.parseSort(sort));
         PageResult<TripPlan> result = tripPlanService.searchPage(query, PageParam.parse(page, size));
         return PageResponse.from(result, trip -> TripSummaryResponse.from(trip, tripPlanService.publisherOf(trip)));
     }

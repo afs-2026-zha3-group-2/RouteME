@@ -65,7 +65,7 @@ class OpenApiTest {
                 () -> assertTrue(
                         parameterNames(document, getTrips)
                                 .containsAll(List.of(
-                                        "X-User-Id", "q", "destination", "date_from", "date_to", "tags",
+                                        "X-User-Id", "destination_code", "date_from", "date_to", "tags",
                                         "page", "size")),
                         "list query parameters"),
                 () -> assertTrue(responses(postTrips).containsKey("201"), "create returns 201"),
@@ -74,7 +74,7 @@ class OpenApiTest {
                 () -> assertTrue(responses(completeTrip).containsKey("409"), "complete returns 409"),
                 () -> assertTrue(
                         required(createRequest)
-                                                .containsAll(List.of("title", "destination_code", "start_date", "end_date", "stops", "capacity")),
+                                .containsAll(List.of("title", "destination_code", "start_date", "end_date", "stops", "capacity")),
                         "create required fields"),
                 () -> assertTrue(
                         enums(properties(tripPlan).get("status"))
@@ -89,7 +89,10 @@ class OpenApiTest {
                                         "TRIP_NOT_FOUND",
                                         "TRIP_NOT_OPEN")),
                         "error codes"),
-                () -> assertEquals(Boolean.TRUE, properties(tripPlan).get("status").get("readOnly"), "status readOnly")
+                () -> assertEquals(Boolean.TRUE, properties(tripPlan).get("status").get("readOnly"), "status readOnly"),
+                () -> assertTrue(properties(tripPlan).containsKey("destination_code"), "destination_code declared"),
+                () -> assertTrue(properties(tripPlan).containsKey("province_code"), "province_code declared"),
+                () -> assertTrue(properties(tripPlan).containsKey("province_name"), "province_name declared")
         );
     }
 
@@ -213,7 +216,10 @@ class OpenApiTest {
                 () -> assertTrue(responses(postApplications).containsKey("201"), "apply returns 201"),
                 () -> assertTrue(responses(postMessages).containsKey("409"), "chat read-only conflict"),
                 () -> assertTrue(
-                        parameterNames(document, getMatches).containsAll(List.of("X-User-Id", "q", "sort")),
+                        parameterNames(document, getMatches)
+                                .containsAll(List.of(
+                                        "X-User-Id", "destination_code", "date_from", "date_to", "tags",
+                                        "sort", "page", "size")),
                         "match query parameters"),
                 () -> assertTrue(
                         parameterNames(document, getMatches).containsAll(List.of("page", "size")),
@@ -270,7 +276,10 @@ class OpenApiTest {
                                 && responses(postExperience).containsKey("200"),
                         "experience create/update statuses"),
                 () -> assertTrue(
-                        parameterNames(document, getExperiences).containsAll(List.of("X-User-Id", "q", "destination", "tags")),
+                        parameterNames(document, getExperiences)
+                                .containsAll(List.of(
+                                        "X-User-Id", "destination_code", "date_from", "date_to", "tags",
+                                        "page", "size")),
                         "experience query parameters"),
                 () -> assertTrue(
                         required(writeRequest).containsAll(List.of("content", "intensity", "advice")),

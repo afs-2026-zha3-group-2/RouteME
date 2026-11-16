@@ -92,3 +92,19 @@ ATDD：`atdd-design.md` §7 把场景 15–19 映射到纯函数、端到端两�
 | SA | Jacky、Karena | 接受 D6–D9，同意按场景 15–19 验收 | 2026-11-16 |
 | AO | Jay | 承担实现与截图核验 | 2026-11-16 |
 | SM | Lewis | 准入 P4 | 2026-11-16 |
+
+## 11. R3 设计（字典全国化后的返工）
+
+| 编号 | 取舍 | 结论 |
+|---|---|---|
+| D10-1 | 目的地 → 地名库城市映射 | 只保留 `areas/gazetteerCity.ts` 一层，字典读共享 `area/areaOptions`；删除 16 城重复数据 |
+| D10-2 | 未覆盖城市的呈现 | 不渲染地图，改为一句话覆盖说明；不得复用「先选目的地」文案 |
+| D10-3 | 后端名称派生 | 统一走 `area/AreaDictionary` + `AreaNames`，删除 `AreaConstant` / `pojo/AreaCity` |
+
+ATDD：`atdd-design.md` §8 场景 20–23。任务：`tasks.md` §9 T12–T15。
+
+| 角色 | 姓名 | 确认内容 | 日期 |
+|---|---|---|---|
+| SA | Jacky、Karena | 接受 D10-1…D10-3 | 2026-11-16 |
+| AO | Jay | 承担清理与验证 | 2026-11-16 |
+| SM | Lewis | 准入 P4 | 2026-11-16 |

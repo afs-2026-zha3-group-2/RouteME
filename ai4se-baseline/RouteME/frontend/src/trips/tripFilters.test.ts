@@ -11,25 +11,22 @@ import {
 describe('toTripFilters', () => {
   it('omits blank inputs from the request params', () => {
     expect(toTripFilters(emptyFilterState)).toEqual({
-      q: undefined,
-      destination: undefined,
+      destination_code: undefined,
       date_from: undefined,
       date_to: undefined,
       tags: undefined,
-            sort: 'match',
+      sort: 'match',
     });
   });
 
-  it('trims the keyword and keeps selected filters', () => {
+  it('keeps selected filters', () => {
     const filters = toTripFilters({
       ...emptyFilterState,
-      q: '  海岸 ',
-      destination: '珠海',
+      destinationCode: '440400',
       tags: ['摄影'],
       sort: 'new',
     });
-    expect(filters.q).toBe('海岸');
-    expect(filters.destination).toBe('珠海');
+    expect(filters.destination_code).toBe('440400');
     expect(filters.tags).toEqual(['摄影']);
     expect(filters.sort).toBe('new');
   });
@@ -66,8 +63,7 @@ describe('describeFilters', () => {
   it('lists every applied condition in a stable order', () => {
     const summary = describeFilters({
       ...emptyFilterState,
-      q: ' 海岸 ',
-      destination: '珠海',
+      destinationCode: '440400',
       dateFrom: '2026-11-16',
       dateTo: '2026-11-20',
       tags: ['摄影', '海边'],
@@ -75,7 +71,7 @@ describe('describeFilters', () => {
     });
 
     expect(summary).toBe(
-      '关键词「海岸」 · 目的地 珠海 · 出发不早于 2026-11-16 · 出发不晚于 2026-11-20 · 兴趣 摄影 / 海边 · 按最新发布',
+      '目的地 广东省 / 珠海市 · 出发不早于 2026-11-16 · 出发不晚于 2026-11-20 · 兴趣 摄影 / 海边 · 按最新发布',
     );
   });
 });

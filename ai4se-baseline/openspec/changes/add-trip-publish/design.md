@@ -41,7 +41,7 @@ S06 的发布链路已由 `add-trip-plans` 与 `add-offline-map-place-picker` �
 
 | 方案 | 行为 | 结论 |
 |---|---|---|
-| 目的地继续用 `PlacePicker`（地图城市库 16 城） | 与全国省市/港澳台细分的筛选语义不一致；发布端无法产生九龙/新界等目的地 | 否决 |
+| 目的地继续用 `PlacePicker`（地图城市库 16 城） | 与全国省市/港澳台细分的筛选语义不一致；发布端无法产生香港 18 区/澳门 8 堂区等目的地 | 否决 |
 | 目的地改省市级联 Cascader，请求 `destination_code` | 与筛选共用同一份 6 位区划字典；途经点/集合地点保留地图选点 | 采用 |
 
 数据底座（V10、6 位码、字典、响应字段）由 `add-destination-area-filters` 提供；本 change 只负责发布页目的地字段与目的地校验/E2E。契约版本由 0.6.0 升至 0.7.0。本 change 不归档；归档顺序为 `add-destination-area-filters` → 本 change；G1 需在目的地修订完成后重评。
@@ -74,6 +74,21 @@ S06 的发布链路已由 `add-trip-plans` 与 `add-offline-map-place-picker` �
 | 未选目的地不渲染；选中后按该市点位算包围盒缩放 | 地图与目的地一致，顺带解决标签重叠 | 采用 |
 
 城市映射：广东直接用市名；香港 / 澳门二级区（香港岛、九龙、新界、澳门半岛、离岛）映射到地名库的「香港」「澳门」。
+
+### D10 R3 字典全国化后的映射与覆盖提示
+
+| 方案 | 行为 | 结论 |
+|---|---|---|
+| 继续保留 16 城切片做映射 | 与 REQ-007 的全国字典并存，出现两份数据；全国城市一律无地图且提示错误 | 否决 |
+| 映射读取共享 `area/areaOptions`，只保留「代码 → 地名库城市」一层 | 单一字典来源，删掉重复省市数据 | 采用 |
+| 未覆盖城市显示整张全国地名库地图 | 与「按目的地展示」冲突，用户会以为地图属于该市 | 否决 |
+| 未覆盖城市不渲染地图，改为覆盖说明 | 诚实表达能力边界 | 采用 |
+
+实现约束：
+
+- 前端新增 `areas/gazetteerCity.ts`：`gazetteerCityForCode(code)` 用 `findCity(code)` 取名，再判断地名库是否有该城市（港澳二级区归并到「香港」「澳门」）。
+- `TripCreatePage` 用 `hasDestination` 区分两种无地图状态：未选 → 「先选目的地」；已选但无覆盖 → 「该城市暂无离线点位…」。
+- 后端删除 `constant/AreaConstant`、`pojo/AreaCity` 与 `TripPlanServiceImpl` 的两条未使用 import；名称派生由 `area/AreaDictionary` + `AreaNames` 承担。
 
 ### D9 R2 布局与间距
 

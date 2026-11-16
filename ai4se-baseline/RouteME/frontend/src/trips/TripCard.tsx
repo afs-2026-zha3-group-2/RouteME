@@ -1,3 +1,4 @@
+import { cityLabel } from '../area/areaOptions';
 import { tripMessages } from '../i18n/tripMessages';
 import { publisherSummary } from '../profile/profileDisplay';
 import { Avatar } from '../shell/Avatar';
@@ -37,8 +38,8 @@ export function TripCard({ trip, match, compact = false }: Props) {
 
   return (
     <a className={compact ? 'trip-card compact' : 'trip-card'} href={`#/trips/${trip.id}`}>
-      <div className={`tc-cover cover-${coverTone(trip.destination)}`}>
-        <span className="tc-dest">{trip.destination}</span>
+      <div className={`tc-cover cover-${coverTone(trip.destination_code)}`}>
+        <span className="tc-dest">{cityLabel(trip.destination_code) || trip.destination}</span>
         <StatusBadge status={trip.status} />
       </div>
 

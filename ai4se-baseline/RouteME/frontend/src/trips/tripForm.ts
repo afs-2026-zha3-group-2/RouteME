@@ -1,4 +1,4 @@
-import { cityByCode } from '../areas/areaCatalog';
+import { findCity } from '../area/areaOptions';
 import { tripMessages } from '../i18n/tripMessages';
 import type { TripCreateRequest } from '../types';
 import { MAX_CAPACITY, MAX_TAGS, MAX_TITLE_LENGTH, MIN_CAPACITY, MIN_STOPS } from './tripOptions';
@@ -52,7 +52,7 @@ export function validateTripForm(values: TripFormValues): TripFieldErrors {
   if (title === '' || title.length > MAX_TITLE_LENGTH) {
     errors.title = tripMessages.errorTitleRequired;
   }
-  if (cityByCode(values.destinationCode) === undefined) {
+  if (findCity(values.destinationCode) === undefined) {
     errors.destination = tripMessages.errorDestinationRequired;
   }
   if (values.startDate === '') {
@@ -87,7 +87,7 @@ export function validateTripForm(values: TripFormValues): TripFieldErrors {
 export function toCreateRequest(values: TripFormValues): TripCreateRequest {
   return {
     title: values.title.trim(),
-    destination_code: values.destinationCode,
+    destination_code: values.destinationCode.trim(),
     start_date: values.startDate,
     end_date: values.endDate,
     stops: values.stops.map((stop) => stop.trim()).filter((stop) => stop !== ''),

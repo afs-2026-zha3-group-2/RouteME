@@ -1,7 +1,8 @@
 import { useEffect, useState, type ReactNode } from 'react';
-import { Alert, Button, Card, Cascader, Input, Space, Typography } from 'antd';
+import { Alert, Button, Card, Input, Space, Typography } from 'antd';
 import { createTrip, loadTrip } from '../api';
-import { AREA_PROVINCES, codesForCityName, DESTINATION_OPTIONS, mapCityForCode } from '../areas/areaCatalog';
+import { AreaCascader } from '../area/AreaCascader';
+import { gazetteerCityForCode } from '../areas/gazetteerCity';
 import { tripMessages } from '../i18n/tripMessages';
 import { PlacePicker } from '../map/PlacePicker';
 import type { DemoUser } from '../types';
@@ -49,7 +50,7 @@ export function TripCreatePage({ currentUser, fromTripId }: Props) {
         }
         setValues({
           ...emptyTripForm,
-          destinationCode: codesForCityName(source.destination)?.[1] ?? '',
+          destinationCode: source.destination_code,
           stops: source.stops.slice(0, MAX_STOPS),
           tags: source.tags.slice(0, MAX_TAGS),
           capacity: '',
@@ -65,7 +66,8 @@ export function TripCreatePage({ currentUser, fromTripId }: Props) {
     setValues((previous) => ({ ...previous, ...patch }));
   };
 
-  const mapCity = mapCityForCode(values.destinationCode);
+  const mapCity = gazetteerCityForCode(values.destinationCode);
+  const hasDestination = values.destinationCode !== '';
 
   const addCustomTag = () => {
     const next = addTag(values.tags, tagDraft);
@@ -129,25 +131,16 @@ export function TripCreatePage({ currentUser, fromTripId }: Props) {
               htmlFor="trip-destination"
               error={errors.destination}
             >
-              <Cascader
+              <AreaCascader
                 id="trip-destination"
-                className="field-control"
-                options={DESTINATION_OPTIONS}
-                value={destinationPath(values.destinationCode)}
-                getPopupContainer={(node) => node.parentElement ?? document.body}
-                onChange={(next) =>
-                  update({
-                    destinationCode:
-                      Array.isArray(next) && next.length === 2 ? String(next[1]) : '',
-                  })
-                }
-                placeholder="选择省 / 市（必须选到城市）"
-                aria-label={tripMessages.fieldDestination}
-                aria-invalid={errors.destination !== undefined || undefined}
-                aria-describedby={
+                ariaLabel={tripMessages.fieldDestination}
+                ariaDescribedBy={
                   errors.destination !== undefined ? 'trip-destination-error' : undefined
                 }
-                allowClear
+                invalid={errors.destination !== undefined}
+                value={values.destinationCode}
+                onChange={(code) => update({ destinationCode: code })}
+                placeholder="请选择省 / 市"
               />
             </Field>
 
@@ -202,7 +195,11 @@ export function TripCreatePage({ currentUser, fromTripId }: Props) {
               />
             </Field>
             {mapCity === undefined && (
-              <p className="form-hint">{tripMessages.waypointNeedsDestination}</p>
+              <p className="form-hint">
+                {hasDestination
+                  ? tripMessages.waypointCityUncovered
+                  : tripMessages.waypointNeedsDestination}
+              </p>
             )}
           </div>
         </section>
@@ -342,15 +339,6 @@ export function TripCreatePage({ currentUser, fromTripId }: Props) {
       </Card>
     </main>
   );
-}
-
-/** Cascader 需要「省 → 市」两级路径，而表单只保存市级代码。 */
-function destinationPath(code: string): string[] {
-  if (code === '') {
-    return [];
-  }
-  const province = AREA_PROVINCES.find((item) => item.cities.some((city) => city.code === code));
-  return province === undefined ? [] : [province.code, code];
 }
 
 /** Wires a control to its field label and, when invalid, to its error text. */
