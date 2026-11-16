@@ -55,3 +55,20 @@
 ## Next
 
 - Decision = Pass → P3（设计、ATDD、任务拆分）。
+
+## G1 重评 R2（筛选不参与匹配分，2026-11-16）
+
+| 维度 | 结论 | 证据 |
+|---|---|---|
+| Scope | 只改匹配计算入口、契约描述与测试；前端不动 | `docs/sdd/add-match-reason/p1-intent.md` §10 |
+| Contract | `Match.basis` 描述去掉「与当前筛选」，版本 0.8.0 → 0.8.1 | `openapi.yaml` |
+| Conflict | 旧实现让筛选覆盖参照物，与 REQ-007「匹配规则不变」冲突；本次回到个人参照 | P0 §6 复现 |
+| Traceability | 新增 2 个 Scenario，删除「筛选作为兴趣参照」的表述 | Delta Spec |
+
+**重评结论：Pass**。
+
+| 角色 | 姓名 | 确认内容 | 日期 |
+|---|---|---|---|
+| SA | Jacky、Karena | 接受 R2-1…R2-3 与契约描述修订 | 2026-11-16 |
+| AO | Jay | 承担实现与验证 | 2026-11-16 |
+| SM | Lewis | 准入 P3 | 2026-11-16 |
