@@ -36,5 +36,6 @@ coverage/
 playwright-report/
 test-results/
 
-# Local installer state (portable host assets are committed)
-.agents/
+# .agents/ IS tracked on purpose: team members share the installed agents,
+# commands and skills so everyone runs the same SDD behaviour. Re-run the
+# AI4SE installer only when the bundled pack version changes.
