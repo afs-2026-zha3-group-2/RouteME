@@ -35,7 +35,7 @@ async function createTripViaApi(page: Page, title: string) {
 test('shows the identity gate with three demo accounts and the unfinished trip list', async ({ page }) => {
   await page.goto('/');
 
-  await expect(page.getByRole('heading', { name: '选择一个演示身份' })).toBeVisible();
+  await expect(page.getByRole('tab', { name: '登录' })).toBeVisible();
   await expect(page.getByRole('button', { name: /林见夏/ })).toBeVisible();
   await expect(page.getByRole('button', { name: /陈屿/ })).toBeVisible();
   await expect(page.getByRole('button', { name: /苏念/ })).toBeVisible();
@@ -43,7 +43,7 @@ test('shows the identity gate with three demo accounts and the unfinished trip l
 
   await page.getByRole('button', { name: /林见夏/ }).click();
 
-  await expect(page.getByRole('heading', { name: '旅行灵感' })).toBeVisible();
+  await expect(page.getByRole('heading', { level: 1 })).toContainText('今天想走哪条路');
   await expect(page.locator('.trip-card', { hasText: '珠海情侣路日落机位二刷' })).toBeVisible();
   await expect(page.locator('.trip-card', { hasText: '佛山祖庙与岭南天地一日' })).toBeVisible();
   await expect(page.getByText('已满员').first()).toBeVisible();
@@ -54,7 +54,7 @@ test('filters the list by interest tag and keeps the filters visible', async ({ 
   await loginAs(page, 1);
   await page.goto('/');
 
-  await page.getByRole('checkbox', { name: '摄影' }).click();
+  await page.getByRole('button', { name: '摄影', exact: true }).click();
 
   await expect(page.getByText('已应用筛选')).toBeVisible();
   await expect(page.locator('.trip-card', { hasText: '珠海情侣路日落机位二刷' })).toBeVisible();
@@ -116,7 +116,7 @@ test('publisher marks a trip completed and sees the experience section', async (
   await expect(page.getByRole('heading', { name: title })).toBeVisible();
   await expect(page.getByText('这是你发布的行程')).toBeVisible();
   await page.getByRole('button', { name: '标记为已结束' }).click();
-  await page.locator('.ant-popconfirm .ant-btn-primary').click();
+  await page.getByRole('dialog').getByRole('button', { name: '标记为已结束' }).click();
 
   await expect(page.getByText('已结束').first()).toBeVisible();
   await expect(page.getByText('游后真实体验')).toBeVisible();
