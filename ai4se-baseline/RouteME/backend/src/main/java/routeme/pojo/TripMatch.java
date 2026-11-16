@@ -8,19 +8,17 @@ import java.util.List;
 /**
  * 匹配结果：目的地 50 / 出发日期相同 30 / 相差一天 20 / 共同兴趣每项 10（合计 ≤20），
  * 总分上限 100；理由必须写明命中的维度。
+ *
+ * <p>只与个人参照比较（最近一条未结束的已发布行程，或我的兴趣）；首页筛选不参与打分。</p>
  */
 public record TripMatch(int score, int percentage, List<String> reasons, String basis) {
 
     public static TripMatch of(
             TripPlan candidate,
             TripPlan reference,
-            String filterDestinationCode,
-            LocalDate filterDate,
             List<String> interests) {
-        String destinationCode = filterDestinationCode != null && !filterDestinationCode.isBlank()
-                ? filterDestinationCode
-                : reference == null ? "" : reference.destinationCode();
-        LocalDate date = filterDate != null ? filterDate : reference == null ? null : reference.startDate();
+        String destinationCode = reference == null ? "" : reference.destinationCode();
+        LocalDate date = reference == null ? null : reference.startDate();
 
         int score = 0;
         List<String> reasons = new ArrayList<>();

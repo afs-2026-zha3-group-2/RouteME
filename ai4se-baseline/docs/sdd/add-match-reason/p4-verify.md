@@ -78,3 +78,24 @@
 ## 8. P5 状态
 
 按用户 2026-11-16 指示：**暂不执行 P5，也不归档**。归档时需补：`summary.md`、living spec 合并（`trip-companions`）、`docs/knowledge/` 登记、`changes/archive/2026-11-16-add-match-reason/` 目录。
+
+## 9. R2 实施结果（筛选不参与匹配分，2026-11-16 14:28）
+
+| 项 | 结果 |
+|---|---|
+| 实现提交 | `fix(p4): add-match-reason keep home filters out of the match score` |
+| 匹配入口 | `TripMatch.of(candidate, reference, interests)`；`MatchServiceImpl` 的列表与详情共用 |
+| 契约 | `Match.basis` 描述与匹配语义同步；版本 0.8.0 → **0.8.1** |
+| 后端验证 | `clean test` 209 通过（`TripMatchTest` 7、`MatchControllerTest` 7） |
+| 前端验证 | `npm test` 114 通过（回归） |
+| 契约 lint | valid，0 error / 15 既有 warning |
+| 端到端 | `companions.spec.ts` 3 项通过 |
+| 手工比对 | 带筛选列表与详情对 trip 4 均返回 score 0 |
+| 顺带修复 | `TripMatchTest` 移到 `routeme/pojo`，消除包名不一致导致的增量编译残留 |
+| 看板 | S07 仍显示 P3；token 无 `project` 写权限，需人工拖到 P4 |
+
+| 角色 | 姓名 | 确认内容 | 日期 |
+|---|---|---|---|
+| VL | Neal | 复核 R2 证据，G2 追加 Pass | 2026-11-16 |
+| AO | Jay | 交付实现与回归结果 | 2026-11-16 |
+| SM | Lewis | 认可 R2；P5 仍暂缓 | 2026-11-16 |
