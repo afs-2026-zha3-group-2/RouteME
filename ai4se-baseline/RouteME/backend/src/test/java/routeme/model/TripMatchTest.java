@@ -64,7 +64,31 @@ class TripMatchTest {
     }
 
     @Test
-    void in_threeSharedInterests_out_cappedAtTwenty() {
+        void in_sameDateOnly_out_thirtyPoints() {
+            // When
+            TripMatch match = TripMatch.of(candidate, null, null, LocalDate.parse("2026-11-16"), List.of());
+
+            // Then
+            assertAll(
+                    () -> assertEquals(30, match.score(), "same start date"),
+                    () -> assertTrue(match.reasons().contains("出发日期相同"), "date reason")
+            );
+        }
+
+        @Test
+        void in_singleSharedInterest_out_tenPoints() {
+            // When
+            TripMatch match = TripMatch.of(candidate, null, null, null, List.of("摄影"));
+
+            // Then
+            assertAll(
+                    () -> assertEquals(10, match.score(), "one shared interest"),
+                    () -> assertTrue(match.reasons().contains("都喜欢摄影"), "interest reason")
+            );
+        }
+
+        @Test
+        void in_threeSharedInterests_out_cappedAtTwenty() {
         // When
         TripMatch match = TripMatch.of(
                 trip(5, "兴趣", "佛山", "2026-11-20", List.of("摄影", "美食", "历史")),
