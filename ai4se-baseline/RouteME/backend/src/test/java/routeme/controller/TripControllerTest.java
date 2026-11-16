@@ -112,10 +112,10 @@ class TripControllerTest {
     }
 
     @Test
-    void in_demoUsersEndpoint_out_threeAccounts() throws Exception {
+    void in_demoUsersEndpoint_out_fourAccounts() throws Exception {
         mockMvc.perform(get("/api/users"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$", hasSize(3)))
+                .andExpect(jsonPath("$", hasSize(4)))
                 .andExpect(jsonPath("$[0].nickname").value("林见夏"))
                 .andExpect(jsonPath("$[0].avatar_initial").value("夏"));
     }
@@ -127,7 +127,7 @@ class TripControllerTest {
                 .andExpect(jsonPath("$.page").value(1))
                 .andExpect(jsonPath("$.size").value(20))
                 .andExpect(jsonPath("$.total_pages", greaterThanOrEqualTo(1)))
-                .andExpect(jsonPath("$.items[*].id", hasItems(3, 4, 5, 6)))
+                .andExpect(jsonPath("$.items[*].id", hasItems(3, 4, 5, 6, 7)))
                 .andExpect(jsonPath("$.items[*].id", not(hasItem(1))))
                 .andExpect(jsonPath("$.items[*].status", not(hasItem("completed"))))
                 .andExpect(jsonPath("$.items[0].start_date").exists())
@@ -157,8 +157,8 @@ class TripControllerTest {
                 .andExpect(jsonPath("$.items.length()").value(2))
                 .andExpect(jsonPath("$.page").value(1))
                 .andExpect(jsonPath("$.size").value(2))
-                .andExpect(jsonPath("$.total").value(4))
-                .andExpect(jsonPath("$.total_pages").value(2));
+                .andExpect(jsonPath("$.total").value(5))
+                .andExpect(jsonPath("$.total_pages").value(3));
 
         mockMvc.perform(get("/api/trips").header("X-User-Id", "1").param("page", "2").param("size", "2"))
                 .andExpect(status().isOk())
@@ -168,8 +168,8 @@ class TripControllerTest {
         mockMvc.perform(get("/api/trips").header("X-User-Id", "1").param("page", "9").param("size", "2"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.items.length()").value(0))
-                .andExpect(jsonPath("$.total").value(4))
-                .andExpect(jsonPath("$.total_pages").value(2));
+                .andExpect(jsonPath("$.total").value(5))
+                .andExpect(jsonPath("$.total_pages").value(3));
     }
 
     @Test

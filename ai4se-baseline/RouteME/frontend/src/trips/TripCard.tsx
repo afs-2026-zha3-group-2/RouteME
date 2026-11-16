@@ -1,4 +1,5 @@
 import { tripMessages } from '../i18n/tripMessages';
+import { useProfile } from '../profiles/ProfileContext';
 import { Avatar } from '../shell/Avatar';
 import type { Match, TripSummary } from '../types';
 import { statusLabel, statusTone } from './tripStatus';
@@ -31,11 +32,13 @@ type Props = {
 };
 
 export function TripCard({ trip, match, compact = false }: Props) {
+  const { openProfile } = useProfile();
   const joinedRate = trip.capacity === 0 ? 0 : Math.round((trip.joined_count / trip.capacity) * 100);
   const width = Math.min(100, Math.max(0, joinedRate));
 
   return (
-    <a className={compact ? 'trip-card compact' : 'trip-card'} href={`#/trips/${trip.id}`}>
+    <article className={compact ? 'trip-card compact' : 'trip-card'}>
+      <a className="tc-overlay" href={`#/trips/${trip.id}`} aria-label={trip.title} />
       <div className={`tc-cover cover-${coverTone(trip.destination)}`}>
         <span className="tc-dest">{trip.destination}</span>
         <span className={`badge ${statusTone(trip.status)}`}>{statusLabel(trip.status)}</span>
@@ -96,10 +99,14 @@ export function TripCard({ trip, match, compact = false }: Props) {
                 )}
 
         <div className="tc-foot">
-          <span className="tc-host">
+          <button
+            type="button"
+            className="tc-host"
+            onClick={() => openProfile(trip.publisher.id)}
+          >
             <Avatar user={trip.publisher} size="sm" />
             <span className="tc-host-name">{trip.publisher.nickname}</span>
-          </span>
+          </button>
           <span className="tc-cap">
             <span className="tc-cap-num">
               {trip.joined_count} / {trip.capacity} {tripMessages.peopleUnit}
@@ -110,6 +117,6 @@ export function TripCard({ trip, match, compact = false }: Props) {
           </span>
         </div>
       </div>
-    </a>
+    </article>
   );
 }

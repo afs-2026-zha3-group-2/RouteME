@@ -32,18 +32,19 @@ async function createTripViaApi(page: Page, title: string) {
   return (await response.json()) as { id: number };
 }
 
-test('shows the identity gate with three demo accounts and the unfinished trip list', async ({ page }) => {
+test('shows the identity gate with four demo accounts and the unfinished trip list', async ({ page }) => {
   await page.goto('/');
 
-  await expect(page.getByRole('heading', { name: '选择一个演示身份' })).toBeVisible();
+  await expect(page.getByRole('heading', { level: 1 })).toContainText('同路的人');
   await expect(page.getByRole('button', { name: /林见夏/ })).toBeVisible();
   await expect(page.getByRole('button', { name: /陈屿/ })).toBeVisible();
   await expect(page.getByRole('button', { name: /苏念/ })).toBeVisible();
+  await expect(page.getByRole('button', { name: /周野/ })).toBeVisible();
   await expect(page.getByRole('button', { name: /注册|找回密码/ })).toHaveCount(0);
 
   await page.getByRole('button', { name: /林见夏/ }).click();
 
-  await expect(page.getByRole('heading', { name: '旅行灵感' })).toBeVisible();
+  await expect(page.getByRole('heading', { level: 1 })).toContainText('今天想走哪条路');
   await expect(page.locator('.trip-card', { hasText: '珠海情侣路日落机位二刷' })).toBeVisible();
   await expect(page.locator('.trip-card', { hasText: '佛山祖庙与岭南天地一日' })).toBeVisible();
   await expect(page.getByText('已满员').first()).toBeVisible();

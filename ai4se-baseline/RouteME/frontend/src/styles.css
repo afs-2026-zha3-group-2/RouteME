@@ -324,6 +324,10 @@ svg {
   color: var(--ink-3);
 }
 
+.badge.no-dot::before {
+  display: none;
+}
+
 .tag {
   display: inline-flex;
   align-items: center;
@@ -334,6 +338,13 @@ svg {
   color: var(--t-lagoon);
   background: var(--lagoon-soft);
   border: 1px solid color-mix(in srgb, var(--lagoon) 20%, transparent);
+}
+
+/* 共同兴趣：与原型一致的高亮样式 */
+.tag.hit {
+  background: color-mix(in srgb, var(--amber) 22%, transparent);
+  color: var(--t-warn);
+  border-color: color-mix(in srgb, var(--amber) 42%, transparent);
 }
 
 .chip {
@@ -1129,6 +1140,7 @@ svg {
 
 /* ---------- 行程卡 ---------- */
 .trip-card {
+  position: relative;
   display: flex;
   flex-direction: column;
   text-align: left;
@@ -1138,6 +1150,19 @@ svg {
   border: 1px solid var(--line);
   box-shadow: var(--sh-1);
   transition: transform 0.24s var(--ease-out), box-shadow 0.24s, border-color 0.2s;
+}
+
+/* 覆盖式详情链接：卡片主体可整块点击，发布者按钮浮在其上 */
+.tc-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  border-radius: inherit;
+}
+
+.tc-overlay:focus-visible {
+  outline: 2px solid var(--lagoon);
+  outline-offset: -3px;
 }
 
 .trip-card:hover {
@@ -1325,10 +1350,31 @@ svg {
 }
 
 .tc-host {
+  position: relative;
+  z-index: 2;
   display: flex;
   align-items: center;
   gap: 8px;
   min-width: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  border-radius: 99px;
+}
+
+.tc-host:hover .tc-host-name {
+  color: var(--t-lagoon);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.tc-host:focus-visible {
+  outline: 2px solid var(--lagoon);
+  outline-offset: 2px;
 }
 
 .tc-host-name {
@@ -1791,6 +1837,29 @@ svg {
   gap: 12px;
 }
 
+/* 发布者卡片整体是资料入口，去掉按钮默认外观 */
+.publisher-button {
+  width: 100%;
+  padding: 10px;
+  border: 0;
+  border-radius: 12px;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.16s;
+}
+
+.publisher-button:hover {
+  background: var(--surface-2);
+}
+
+.publisher-button:focus-visible {
+  outline: 2px solid var(--lagoon);
+  outline-offset: 2px;
+}
+
 .publisher-initial {
   flex: none;
 }
@@ -1816,6 +1885,109 @@ svg {
   display: flex;
   flex-wrap: wrap;
   gap: 5px;
+}
+
+.publisher-name,
+.publisher-bio {
+  display: block;
+}
+
+/* ---------- 公开资料弹窗 ---------- */
+.profile-body {
+  display: grid;
+}
+
+.profile-top {
+  display: flex;
+  gap: 15px;
+  align-items: center;
+}
+
+.profile-identity {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.profile-name {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  font-size: 20px;
+  font-weight: 780;
+  letter-spacing: -0.02em;
+}
+
+.profile-school {
+  font-size: 12.5px;
+  color: var(--ink-3);
+}
+
+.profile-joined {
+  font-size: 11.5px;
+  color: var(--ink-3);
+}
+
+.profile-bio {
+  margin-top: 15px;
+  font-size: 13.5px;
+  line-height: 1.7;
+  color: var(--ink-2);
+  overflow-wrap: anywhere;
+}
+
+.profile-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 14px;
+}
+
+.profile-shared {
+  margin-top: 8px;
+  font-size: 11.5px;
+  line-height: 1.5;
+  color: var(--ink-3);
+}
+
+.profile-stats {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.profile-stat {
+  padding: 11px 8px;
+  border-radius: 12px;
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  text-align: center;
+}
+
+.profile-stat b {
+  display: block;
+  font-size: 19px;
+  font-weight: 800;
+  font-family: var(--font-num);
+  color: var(--t-lagoon);
+}
+
+.profile-stat span {
+  font-size: 10px;
+  color: var(--ink-3);
+}
+
+.privacy-note {
+  margin-top: 16px;
+  padding: 11px 13px;
+  border-radius: 11px;
+  border-left: 3px solid var(--jade);
+  background: var(--surface-2);
+  font-size: 11.5px;
+  line-height: 1.55;
+  color: var(--ink-3);
 }
 
 .detail-actions {
@@ -2210,6 +2382,10 @@ svg {
 
   .trip-card.compact .tc-cover {
     min-height: 96px;
+  }
+
+  .profile-stats {
+    grid-template-columns: repeat(2, 1fr);
   }
 
   /* 窄屏选项卡换行展示，避免第四项被裁切或藏进不可点开的「更多」 */

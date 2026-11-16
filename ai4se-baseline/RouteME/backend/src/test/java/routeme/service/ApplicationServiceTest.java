@@ -51,12 +51,12 @@ class ApplicationServiceTest {
     @Test
     void in_acceptReachingCapacity_out_tripBecomesFullAndStopsApplications() {
             // Given two extra applicants, so a new one still exists after the trip turns full.
-            insertExtraUser(4);
             insertExtraUser(5);
+            insertExtraUser(6);
 
             // When the third member is accepted, capacity 3 is reached.
             applicationService.accept(4, 2);
-            TripApplication third = applicationService.apply(3, 4, null);
+            TripApplication third = applicationService.apply(3, 5, null);
             applicationService.accept(third.id(), 2);
 
             // Then
@@ -64,7 +64,7 @@ class ApplicationServiceTest {
             assertAll(
                     () -> assertEquals(3, trip.joinedCount(), "capacity reached"),
                     () -> assertEquals(TripStatusEnum.FULL, trip.status(), "auto full"),
-                    () -> assertThrows(TripNotOpenException.class, () -> applicationService.apply(3, 5, null),
+                    () -> assertThrows(TripNotOpenException.class, () -> applicationService.apply(3, 6, null),
                             "new applications rejected when full"));
         }
 

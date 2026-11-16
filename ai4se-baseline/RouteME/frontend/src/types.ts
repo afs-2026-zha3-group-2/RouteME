@@ -44,6 +44,21 @@ export type AuthRegisterRequest = {
   interests: string[];
 };
 
+export type ProfileStats = {
+  published: number;
+  completed: number;
+  joined: number;
+  shared: number;
+};
+
+/**
+ * 公开资料：只包含白名单字段与四项统计，不包含账户凭据。
+ */
+export type UserProfile = DemoUser & {
+  joined_at: string;
+  stats: ProfileStats;
+};
+
 export type TripStatus = 'recruiting' | 'full' | 'completed';
 
 export type TripSummary = {

@@ -18,6 +18,7 @@ import type {
   TripDetail,
   TripFilters,
   TripSummary,
+  UserProfile,
 } from './types';
 
 export async function request(path: string, init?: RequestInit, userId?: number): Promise<Response> {
@@ -47,6 +48,11 @@ export async function loadUsers(): Promise<DemoUser[]> {
 export async function loadDemoUsers(): Promise<DemoUser[]> {
   const response = await request('/users/demo');
   return (await response.json()) as DemoUser[];
+}
+
+export async function loadUserProfile(userId: number): Promise<UserProfile> {
+  const response = await request(`/users/${userId}/profile`);
+  return (await response.json()) as UserProfile;
 }
 
 export async function registerAccount(body: AuthRegisterRequest): Promise<AuthSession> {

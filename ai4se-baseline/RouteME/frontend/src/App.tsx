@@ -7,6 +7,7 @@ import { HomePage } from './home/HomePage';
 import { tripMessages } from './i18n/tripMessages';
 import { IdentityGate } from './identity/IdentityGate';
 import { MyTripsPage } from './mine/MyTripsPage';
+import { ProfileProvider } from './profiles/ProfileContext';
 import { parseRoute, routeToHash, type Route } from './route';
 import { AppShell } from './shell/AppShell';
 import { useColorMode } from './shell/useColorMode';
@@ -167,39 +168,41 @@ export function App() {
     }
 
     return (
-      <AppShell
-        currentUser={currentUser}
-        demoUsers={demoUsers}
-        isAuthenticated={authToken !== null}
-        onLogout={logout}
-        route={route}
-        mode={mode}
-        onToggleMode={toggleMode}
-        onSelectUser={selectUser}
-      >
-        {route.name === 'home' && <HomePage currentUser={currentUser} />}
-        {route.name === 'create' && (
-          <TripCreatePage currentUser={currentUser} fromTripId={route.fromTripId} />
-        )}
-        {route.name === 'share' && (
-          <ShareExperiencePage currentUser={currentUser} tripId={route.tripId} />
-        )}
-        {route.name === 'detail' && (
-          <TripDetailPage currentUser={currentUser} tripId={route.tripId} />
-        )}
-        {route.name === 'applications' && (
-          <ApplicationsPage currentUser={currentUser} tripId={route.tripId} />
-        )}
-        {route.name === 'mine' && <MyTripsPage currentUser={currentUser} />}
-        {route.name === 'chat' && (
-          <ChatPage
-            currentUser={currentUser}
-            tripId={route.tripId}
-            otherUserId={route.userId}
-          />
-        )}
-        {route.name === 'notFound' && <PlaceholderPage text={tripMessages.detailNotFound} />}
-      </AppShell>
+      <ProfileProvider currentUser={currentUser}>
+        <AppShell
+          currentUser={currentUser}
+          demoUsers={demoUsers}
+          isAuthenticated={authToken !== null}
+          onLogout={logout}
+          route={route}
+          mode={mode}
+          onToggleMode={toggleMode}
+          onSelectUser={selectUser}
+        >
+          {route.name === 'home' && <HomePage currentUser={currentUser} />}
+          {route.name === 'create' && (
+            <TripCreatePage currentUser={currentUser} fromTripId={route.fromTripId} />
+          )}
+          {route.name === 'share' && (
+            <ShareExperiencePage currentUser={currentUser} tripId={route.tripId} />
+          )}
+          {route.name === 'detail' && (
+            <TripDetailPage currentUser={currentUser} tripId={route.tripId} />
+          )}
+          {route.name === 'applications' && (
+            <ApplicationsPage currentUser={currentUser} tripId={route.tripId} />
+          )}
+          {route.name === 'mine' && <MyTripsPage currentUser={currentUser} />}
+          {route.name === 'chat' && (
+            <ChatPage
+              currentUser={currentUser}
+              tripId={route.tripId}
+              otherUserId={route.userId}
+            />
+          )}
+          {route.name === 'notFound' && <PlaceholderPage text={tripMessages.detailNotFound} />}
+        </AppShell>
+      </ProfileProvider>
     );
   };
 

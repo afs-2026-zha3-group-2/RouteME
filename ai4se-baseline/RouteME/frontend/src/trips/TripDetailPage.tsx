@@ -22,6 +22,7 @@ import {
 } from '../api';
 import { tripMessages } from '../i18n/tripMessages';
 import { intensityLabel } from '../experiences/experienceForm';
+import { useProfile } from '../profiles/ProfileContext';
 import { ReportModal } from '../safety/ReportModal';
 import { SafetyNote } from '../safety/SafetyNote';
 import type { DemoUser, Experience, MatchCandidate, TripApplication } from '../types';
@@ -49,6 +50,7 @@ function applicationLabel(status: TripApplication['status']): string {
 }
 
 export function TripDetailPage({ currentUser, tripId }: Props) {
+  const { openProfile } = useProfile();
   const { state, reload } = useTrip(currentUser.id, tripId);
   const [actionError, setActionError] = useState<string | null>(null);
   const [completing, setCompleting] = useState(false);
@@ -302,22 +304,26 @@ export function TripDetailPage({ currentUser, tripId }: Props) {
 
           <section className="detail-section">
             <h3 className="section-title">{tripMessages.detailPublisher}</h3>
-            <div className="publisher-row">
+            <button
+              type="button"
+              className="publisher-row publisher-button"
+              onClick={() => openProfile(trip.publisher.id)}
+            >
               <Tag className="publisher-initial">{trip.publisher.avatar_initial}</Tag>
-              <div className="publisher-body">
-                <p className="publisher-name">
+              <span className="publisher-body">
+                <span className="publisher-name">
                   {trip.publisher.nickname} · {trip.publisher.school}
-                </p>
-                <p className="publisher-bio">{trip.publisher.bio}</p>
-                <div className="publisher-tags">
+                </span>
+                <span className="publisher-bio">{trip.publisher.bio}</span>
+                <span className="publisher-tags">
                   {trip.publisher.interests.map((interest) => (
                     <span key={interest} className="tag">
                       {interest}
                     </span>
                   ))}
-                </div>
-              </div>
-            </div>
+                </span>
+              </span>
+            </button>
           </section>
 
           <section className="detail-section">

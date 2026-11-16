@@ -2,6 +2,7 @@ package routeme.controller;
 
 import static org.junit.jupiter.api.Assertions.assertAll;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.IOException;
@@ -59,7 +60,7 @@ class OpenApiTest {
 
         // Then
         assertAll(
-                () -> assertEquals("0.6.0", info.get("version"), "info.version"),
+                () -> assertEquals("0.7.0", info.get("version"), "info.version"),
                 () -> assertTrue(paths(document).containsKey("/users"), "/users declared"),
                 () -> assertTrue(paths(document).containsKey("/trips/{tripId}"), "detail path declared"),
                 () -> assertTrue(
@@ -213,6 +214,41 @@ class OpenApiTest {
                 () -> assertTrue(
                         enums(properties(errorSchema).get("code")).contains("EXPERIENCE_NOT_ALLOWED"),
                         "experience error code")
+        );
+    }
+
+    @Test
+    void in_openApiFile_out_userProfileContractDeclared() throws IOException {
+        // Given
+        Map<String, Object> document = loadYaml(SPEC_PATH);
+
+        // When
+        Map<String, Object> getProfile = operation(document, "/users/{id}/profile", "get");
+        Map<String, Object> profile = schema(document, "UserProfile");
+        Map<String, Object> stats = schema(document, "ProfileStats");
+        Map<String, Object> errorSchema = schema(document, "Error");
+
+        // Then
+        assertAll(
+                () -> assertTrue(paths(document).containsKey("/users/{id}/profile"), "profile path declared"),
+                () -> assertTrue(responses(getProfile).containsKey("200"), "profile 200"),
+                () -> assertTrue(responses(getProfile).containsKey("404"), "profile 404"),
+                () -> assertEquals(null, getProfile.get("security"), "profile does not require identity"),
+                () -> assertTrue(
+                        required(profile)
+                                .containsAll(List.of(
+                                        "id", "nickname", "avatar_initial", "school", "bio", "interests",
+                                        "joined_at", "stats")),
+                        "profile required fields"),
+                () -> assertFalse(properties(profile).containsKey("username"), "no username"),
+                () -> assertFalse(properties(profile).containsKey("password_hash"), "no password hash"),
+                () -> assertFalse(properties(profile).containsKey("token"), "no token"),
+                () -> assertTrue(
+                        required(stats).containsAll(List.of("published", "completed", "joined", "shared")),
+                        "profile stats fields"),
+                () -> assertTrue(
+                        enums(properties(errorSchema).get("code")).contains("USER_NOT_FOUND"),
+                        "profile error code")
         );
     }
 
