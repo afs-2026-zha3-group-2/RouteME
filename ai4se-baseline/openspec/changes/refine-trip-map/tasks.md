@@ -18,6 +18,21 @@
 | T11 | verify | 本地验证报告（V1–V8）+ 三档视口双主题走查截图 | `docs/ai4se-plugins/<ts>-local-verify-report.md` | 全链路命令复跑 |
 | T12 | docs | 知识库地图小节回写 + _LOG；p3/p4 记录、G2、索引；不归档 | `docs/knowledge/architecture/README.md`、`docs/sdd/refine-trip-map/*` | 链接核对 |
 
+## 任务勾选（openspec 跟踪，与上表同源）
+
+- [x] 1. T1 契约 0.11.0 + OpenApiTest
+- [x] 2. T2 V17 迁移 + entity/pojo/mapper 换列
+- [x] 3. T3 后端多值校验 + 控制器测试
+- [x] 4. T4 前端表单多值 + 单测
+- [x] 5. T5 地图视觉重做 + mapView/placeCatalog 纯函数 + 单测
+- [x] 6. T6 发布页多途经点/多集合接线
+- [x] 7. T7 详情页路线地图 + strip + 聚焦 + 编辑弹窗多值
+- [x] 8. T8 聊天/我的旅行/卡片多值展示
+- [x] 9. T9 导航风样式（浅+深）
+- [x] 10. T10 E2E E1–E10 增改 + 全量 81/81
+- [x] 11. T11 本地验证报告 + 三档视口双主题走查
+- [x] 12. T12 知识库回写 + p4 记录 + G2 + 索引（不归档）
+
 ## 对齐自检
 
 | 检查 | 结论 |

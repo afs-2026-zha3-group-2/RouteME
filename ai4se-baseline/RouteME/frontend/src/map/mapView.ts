@@ -1,4 +1,5 @@
 import type { Point } from './placeCatalog';
+import { MAP_BOUNDS } from './placeCatalog';
 
 export type Viewport = { x: number; y: number; w: number; h: number };
 
@@ -82,4 +83,63 @@ export function clientToViewPoint(
   point.y = clientY;
   const mapped = point.matrixTransform(matrix.inverse());
   return { x: mapped.x, y: mapped.y };
+}
+
+/** 每 viewBox 单位对应的公里数：北纬 23° 每经度≈102.5km、每纬度≈111km。 */
+export const KM_PER_X = ((MAP_BOUNDS.maxLng - MAP_BOUNDS.minLng) * 102.5) / 100;
+export const KM_PER_Y = ((MAP_BOUNDS.maxLat - MAP_BOUNDS.minLat) * 111) / 100;
+
+/** 两点间直线距离估算（公里），离线无路径规划，展示标「约」。 */
+export function distanceKm(a: Point, b: Point): number {
+  return Math.hypot((a.x - b.x) * KM_PER_X, (a.y - b.y) * KM_PER_Y);
+}
+
+export function formatKm(km: number): string {
+  return km >= 1 ? String(Math.round(km)) : km.toFixed(1);
+}
+
+/** Catmull-Rom → 三次贝塞尔平滑路线；共线点退化为直线。 */
+export function routePath(points: Point[]): string {
+  if (points.length === 0) {
+    return '';
+  }
+  if (points.length === 1) {
+    return `M ${points[0].x} ${points[0].y}`;
+  }
+  let d = `M ${points[0].x} ${points[0].y}`;
+  for (let i = 0; i < points.length - 1; i += 1) {
+    const p0 = points[i - 1] ?? points[i];
+    const p1 = points[i];
+    const p2 = points[i + 1];
+    const p3 = points[i + 2] ?? p2;
+    const c1x = p1.x + (p2.x - p0.x) / 6;
+    const c1y = p1.y + (p2.y - p0.y) / 6;
+    const c2x = p2.x - (p3.x - p1.x) / 6;
+    const c2y = p2.y - (p3.y - p1.y) / 6;
+    d += ` C ${c1x} ${c1y}, ${c2x} ${c2y}, ${p2.x} ${p2.y}`;
+  }
+  return d;
+}
+
+export type Park = { x: number; y: number; w: number; h: number; trees: Point[] };
+
+/** 确定性公园绿地布局：随视口平移缩放，纯函数可单测。 */
+export function buildScenery(view: Viewport): Park[] {
+  const slots = [
+    { fx: 0.08, fy: 0.14, fw: 0.24, fh: 0.18 },
+    { fx: 0.62, fy: 0.3, fw: 0.22, fh: 0.16 },
+    { fx: 0.28, fy: 0.72, fw: 0.18, fh: 0.14 },
+    { fx: 0.74, fy: 0.78, fw: 0.16, fh: 0.12 },
+  ];
+  return slots.map((slot, index) => {
+    const x = view.x + view.w * slot.fx;
+    const y = view.y + view.h * slot.fy;
+    const w = view.w * slot.fw;
+    const h = view.h * slot.fh;
+    const trees: Point[] = [0.25, 0.55, 0.8].map((tx, treeIndex) => ({
+      x: x + w * tx,
+      y: y + h * (treeIndex % 2 === 0 ? 0.4 : 0.65),
+    }));
+    return { x, y, w, h, trees: index % 2 === 0 ? trees : trees.slice(0, 2) };
+  });
 }

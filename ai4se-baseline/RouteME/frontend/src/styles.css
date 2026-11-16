@@ -3870,6 +3870,11 @@ svg {
     display: none;
   }
 
+  /* 小屏比例尺会遮住右下角 pin 标签，隐藏之。 */
+  .map-scale {
+    display: none;
+  }
+
   .map-canvas {
     aspect-ratio: 4 / 3;
   }
@@ -4397,5 +4402,339 @@ svg {
   .mine-profile-actions {
     width: 100%;
     margin-left: 0;
+  }
+}
+
+/* ---------- refine-trip-map：导航风地图（方案1 SVG，参考图口径） ---------- */
+:root {
+  --map-land-from: #f7f4ec;
+  --map-land-to: #efe9db;
+  --map-park: #cfe8c4;
+  --map-park-tree: #8fc79a;
+  --map-water-from: #bfe0f2;
+  --map-water-to: #9ccbe8;
+  --map-road: #ffffff;
+  --map-road-casing: #e3ddcd;
+  --map-route: #3d7bff;
+  --map-pin: #f4623a;
+  --map-pin-city: #3d7bff;
+}
+
+[data-theme="dark"] {
+  --map-land-from: #17262b;
+  --map-land-to: #122026;
+  --map-park: #28513c;
+  --map-park-tree: #3f7a58;
+  --map-water-from: #12384a;
+  --map-water-to: #0e2c3c;
+  --map-road: #233a41;
+  --map-road-casing: #0d1a20;
+  --map-route: #6ea8ff;
+  --map-pin: #ff7a52;
+  --map-pin-city: #6ea8ff;
+}
+
+.map-shell {
+  border-radius: 14px;
+}
+
+.map-viewport {
+  background: var(--map-land-to);
+}
+
+.map-scope-card {
+  position: absolute;
+  z-index: 4;
+  top: 10px;
+  left: 10px;
+  display: grid;
+  gap: 1px;
+  padding: 8px 12px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--surface) 94%, transparent);
+  box-shadow: var(--sh-1);
+}
+
+.map-scope-card b {
+  font-size: 13px;
+  font-weight: 750;
+}
+
+.map-scope-card span {
+  font-size: 10.5px;
+  color: var(--ink-3);
+}
+
+.map-controls {
+  position: absolute;
+  z-index: 4;
+  top: 10px;
+  right: 10px;
+}
+
+.map-controls .ant-btn {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface);
+  box-shadow: var(--sh-1);
+}
+
+.map-parks rect {
+  fill: var(--map-park);
+  stroke: color-mix(in srgb, var(--map-park-tree) 45%, transparent);
+  stroke-width: 0.3;
+}
+
+.map-tree circle {
+  fill: var(--map-park-tree);
+}
+
+.map-tree line {
+  stroke: var(--map-park-tree);
+}
+
+.map-water-band {
+  fill: none;
+  stroke: var(--map-water-from);
+  stroke-linecap: round;
+  opacity: 0.95;
+}
+
+.map-water-band.inner {
+  stroke: var(--map-water-to);
+  opacity: 0.7;
+}
+
+.map-highways line {
+  stroke: var(--map-road);
+  stroke-width: 0.8;
+  opacity: 0.75;
+  stroke-dasharray: none;
+}
+
+.map-streets line {
+  stroke: var(--map-road);
+  opacity: 0.95;
+}
+
+.map-streets line.casing {
+  stroke: var(--map-road-casing);
+  opacity: 1;
+}
+
+.map-streets line.major {
+  stroke: var(--map-road);
+}
+
+.map-streets line.arterial {
+  stroke: color-mix(in srgb, var(--map-road) 70%, var(--amber) 30%);
+  opacity: 0.9;
+}
+
+.map-route-casing {
+  fill: none;
+  stroke: var(--map-road);
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.map-route-line {
+  fill: none;
+  stroke: var(--map-route);
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.map-pin-dot {
+  fill: var(--map-pin);
+  stroke: var(--surface);
+}
+
+.map-pin.city .map-pin-dot {
+  fill: var(--map-pin-city);
+}
+
+.map-pin-teardrop {
+  fill: var(--map-pin);
+  stroke: #fff;
+  stroke-width: 0.5;
+}
+
+.map-selected-anchor {
+  fill: var(--map-pin-city);
+  stroke: #fff;
+  stroke-width: 0.3;
+}
+
+.map-selected-index {
+  fill: #fff;
+  font-size: 2.4px;
+  font-weight: 800;
+}
+
+.map-pin.selected .map-pin-label {
+  font-weight: 800;
+}
+
+.map-callout {
+  width: 232px;
+  border-radius: 14px;
+  box-shadow: var(--sh-2);
+}
+
+.map-callout-cover {
+  display: grid;
+  place-items: center;
+  height: 64px;
+  border-radius: 10px;
+  color: #fff;
+}
+
+.map-callout-cover .map-glyph {
+  width: 26px;
+  height: 26px;
+}
+
+.map-callout-list {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.map-callout-list li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.map-callout-candidate-name {
+  font-size: 12.5px;
+  font-weight: 650;
+}
+
+.legend-poi {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--map-pin);
+}
+
+.legend-road {
+  background: var(--map-road);
+  border: 1px solid var(--map-road-casing);
+}
+
+.legend-stop {
+  background: var(--map-pin);
+}
+
+.legend-line {
+  background: var(--map-route);
+}
+
+.detail-map-section {
+  display: grid;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.route-strip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.route-strip-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.route-strip-card {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 132px;
+  padding: 8px 10px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface);
+  box-shadow: var(--sh-1);
+  cursor: pointer;
+  text-align: left;
+}
+
+.route-strip-card.off {
+  cursor: default;
+  opacity: 0.7;
+}
+
+.route-strip-card:not(.off):hover {
+  border-color: var(--map-route);
+}
+
+.route-strip-index {
+  display: grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 800;
+  flex: none;
+}
+
+.route-strip-index.tone-0 { background: #f4623a; }
+.route-strip-index.tone-1 { background: #3d7bff; }
+.route-strip-index.tone-2 { background: #8b5cf6; }
+.route-strip-index.tone-3 { background: #22a06b; }
+
+.route-strip-name {
+  font-size: 12.5px;
+  font-weight: 700;
+}
+
+.route-strip-off {
+  font-size: 10px;
+  color: var(--ink-3);
+}
+
+.route-strip-leg {
+  font-size: 10.5px;
+  color: var(--ink-3);
+  white-space: nowrap;
+}
+
+.detail-stop-button {
+  border: 0;
+  background: transparent;
+  padding: 0;
+  color: var(--map-route);
+  font: inherit;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+@media (max-width: 700px) {
+  .map-legend {
+    display: none;
+  }
+
+  .route-strip-card {
+    min-width: 112px;
   }
 }

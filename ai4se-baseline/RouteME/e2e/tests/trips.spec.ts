@@ -54,34 +54,48 @@ function isoDaysFromToday(days: number): string {
   return `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
 }
 
-async function createTripViaApi(page: Page, title: string, startDate = todayIso(), endDate = startDate) {
+async function createTripViaApi(
+  page: Page,
+  title: string,
+  startDate = todayIso(),
+  endDate = startDate,
+  options: {
+    destinationCode?: string;
+    stops?: string[];
+    meetingAreas?: string[] | null;
+    meetingTime?: string | null;
+  } = {},
+) {
   const response = await page.request.post(`${API}/trips`, {
     headers: { 'X-User-Id': '1', 'Content-Type': 'application/json' },
     data: {
       title,
-      destination_code: '440400',
+      destination_code: options.destinationCode ?? '440400',
       start_date: startDate,
       end_date: endDate,
-      stops: ['香洲港集合', '情侣路骑行'],
+      stops: options.stops ?? ['香洲港集合', '情侣路骑行'],
       tags: ['摄影'],
       capacity: 3,
+      meeting_areas: options.meetingAreas ?? null,
+      meeting_time: options.meetingTime ?? null,
     },
   });
   expect(response.ok()).toBeTruthy();
   return (await response.json()) as { id: number };
 }
 
-test('shows the identity gate with four demo accounts and the unfinished trip list', async ({ page }) => {
+test('shows the identity gate with login form and the unfinished trip list', async ({ page }) => {
   await page.goto('/');
 
+  // 68d17ae 后身份门只剩登录 / 注册表单，演示身份直选区块已移除。
   await expect(page.getByRole('tab', { name: '登录' })).toBeVisible();
-  await expect(page.getByRole('button', { name: /林见夏/ })).toBeVisible();
-  await expect(page.getByRole('button', { name: /陈屿/ })).toBeVisible();
-  await expect(page.getByRole('button', { name: /苏念/ })).toBeVisible();
-  await expect(page.getByRole('button', { name: /周野/ })).toBeVisible();
-  await expect(page.getByRole('button', { name: /注册|找回密码/ })).toHaveCount(0);
+  await expect(page.getByRole('tab', { name: '注册' })).toBeVisible();
+  await expect(page.getByLabel('用户名')).toBeVisible();
+  await expect(page.locator('.gate-cards')).toHaveCount(0);
+  await expect(page.getByRole('button', { name: /林见夏|陈屿|苏念|周野/ })).toHaveCount(0);
 
-  await page.getByRole('button', { name: /林见夏/ }).click();
+  await loginAs(page, 1);
+  await page.reload();
 
   await expect(page.getByRole('heading', { level: 1 })).toContainText('今天想走哪条路');
   await expect(page.locator('.trip-card', { hasText: '珠海情侣路日落机位二刷' })).toBeVisible();
@@ -170,6 +184,8 @@ test('publishes with a meeting time and edits it from the detail page', async ({
   await pickPlace(page, '途经点', '香洲港');
   await pickPlace(page, '途经点', '情侣路');
   await page.getByLabel(/集合区域/).fill('香洲港客运站');
+  await page.getByLabel(/集合区域/).press('Enter');
+  await expect(page.locator('.place-chip-name', { hasText: '香洲港客运站' })).toBeVisible();
   await page.getByLabel(/集合时间/).fill(`${day}T08:30`);
   await page.getByRole('button', { name: /^发\s*布$/ }).click();
 
@@ -179,11 +195,14 @@ test('publishes with a meeting time and edits it from the detail page', async ({
 
   await page.getByRole('button', { name: '编辑集合信息' }).click();
   const dialog = page.getByRole('dialog');
+  await dialog.getByRole('button', { name: '移除 香洲港客运站' }).click();
   await dialog.getByLabel('集合区域').fill('香洲港新码头');
+  await dialog.getByLabel('集合区域').press('Enter');
   await dialog.getByLabel('集合时间').fill(`${day}T09:00`);
   await dialog.getByRole('button', { name: /保\s*存/ }).click();
   await expect(page.getByText('集合信息已更新')).toBeVisible();
   await expect(page.locator('.detail-facts')).toContainText('香洲港新码头');
+  await expect(page.locator('.detail-facts')).not.toContainText('香洲港客运站');
   await expect(page.locator('.detail-facts')).toContainText(movedLabel);
 });
 
@@ -335,7 +354,7 @@ test('filters by province and city without a search box', async ({ page }) => {
   await expect(page.locator('.trip-card', { hasText: '广州老城骑楼扫街半日' })).toBeVisible();
 });
 
-test('map supports zoom, fullscreen and click-to-add', async ({ page }) => {
+test('map supports zoom, fullscreen, pin cards and click-to-add', async ({ page }) => {
   await loginAs(page, 1);
   await page.goto('/#/trips/new');
 
@@ -356,14 +375,231 @@ test('map supports zoom, fullscreen and click-to-add', async ({ page }) => {
   await pickDestination(page, '广东省', '珠海市');
   await expect(map).toHaveAttribute('data-city', '珠海');
 
+  // 点击点位 pin：弹出地点卡并可加入路线（相邻 pin 命中圆重叠，用事件派发避免拦截）。
+  await map.locator('[data-place-id="珠海-珠海渔女"]').dispatchEvent('click');
+  const pinCallout = page.locator('.map-callout').first();
+  await expect(pinCallout.locator('.map-callout-name')).toHaveText('珠海渔女');
+  await pinCallout.getByRole('button', { name: '加入路线' }).click();
+  await expect(page.locator('.place-chip-name', { hasText: '珠海渔女' })).toBeVisible();
+
+  // 点击空白处：弹出附近候选浮层，同样可以加入路线。
+  await shell.getByRole('button', { name: '回到当前范围' }).click();
   await shell.scrollIntoViewIfNeeded();
   const box = await map.boundingBox();
   expect(box).not.toBeNull();
-  await page.mouse.click(box!.x + box!.width * 0.62, box!.y + box!.height * 0.55);
+  await page.mouse.click(box!.x + box!.width * 0.5, box!.y + box!.height * 0.03);
   const callout = page.locator('.map-callout').first();
   await expect(callout).toBeVisible();
-  await callout.getByRole('button', { name: '加入路线' }).click();
-  await expect(page.locator('.place-chip-name').first()).toBeVisible();
+  await expect(callout.locator('.map-callout-list')).toBeVisible();
+  await callout.getByRole('button', { name: '加入路线' }).first().click();
+  await expect(page.locator('.place-chip-name')).toHaveCount(2);
+});
+
+test('map pins add multiple stops and enforce the eight-stop limit', async ({ page }) => {
+  await loginAs(page, 1);
+  await page.goto('/#/trips/new');
+  await pickDestination(page, '广东省', '珠海市');
+
+  const shell = page.locator('.map-shell').first();
+  const map = shell.locator('[data-testid="place-map"]');
+
+  // 连续点选两个 pin 加入路线，编号水滴按顺序出现。
+  await map.locator('[data-place-id="珠海-香洲港"]').dispatchEvent('click');
+  await page.locator('.map-callout').getByRole('button', { name: '加入路线' }).click();
+  await expect(page.locator('.place-chip-name', { hasText: '香洲港' })).toBeVisible();
+  await shell.getByRole('button', { name: '回到当前范围' }).click();
+  await map.locator('[data-place-id="珠海-情侣路"]').dispatchEvent('click');
+  await page.locator('.map-callout').getByRole('button', { name: '加入路线' }).click();
+  await expect(page.locator('.place-chip-name', { hasText: '情侣路' })).toBeVisible();
+  await expect(map.locator('.map-pin.selected')).toHaveCount(2);
+  await expect(map.locator('.map-selected-index').first()).toHaveText('1');
+
+  // 其余途经点用搜索补齐到 8 个。
+  for (const name of ['珠海渔女', '日月贝', '圆明新园', '外伶仃岛', '东澳岛', '港珠澳大桥']) {
+    await pickPlace(page, '途经点', name);
+  }
+  await expect(page.locator('.place-chip-name')).toHaveCount(8);
+
+  // 第 9 个被拒绝并给出上限提示。
+  const input = page.getByLabel('途经点');
+  await input.fill('珠海');
+  await input.press('Enter');
+  await expect(page.locator('.place-message')).toContainText('最多选择 8 个地点');
+  await expect(page.locator('.place-chip-name')).toHaveCount(8);
+});
+
+test('province overview city clicks only focus and never write stops', async ({ page }) => {
+  await loginAs(page, 1);
+  await page.goto('/#/trips/new');
+
+  const shell = page.locator('.map-shell').first();
+  const map = shell.locator('[data-testid="place-map"]');
+  await expect(map).toHaveAttribute('data-city', 'all');
+  const before = await map.getAttribute('viewBox');
+
+  // 空白点击的候选浮层提供「聚焦」，不写途经点（选海域空白处，避免命中 pin）。
+  await shell.scrollIntoViewIfNeeded();
+  const box = await map.boundingBox();
+  expect(box).not.toBeNull();
+  await page.mouse.click(box!.x + box!.width * 0.85, box!.y + box!.height * 0.8);
+  const callout = page.locator('.map-callout').first();
+  await expect(callout).toContainText('附近候选');
+  await callout.getByRole('button', { name: /聚\s*焦/ }).first().click();
+  await expect(page.locator('.place-chip-name')).toHaveCount(0);
+  await expect(shell.locator('.map-scope-card')).not.toContainText('广东全省');
+
+  // 重置回全省视图后，直接点城市 pin 也只聚焦。
+  await page.reload();
+  await expect(map).toHaveAttribute('data-city', 'all');
+  await map.locator('[data-place-id="广州-广州"]').dispatchEvent('click');
+  await expect.poll(async () => map.getAttribute('viewBox')).not.toBe(before);
+  await expect(shell.locator('.map-scope-card')).toContainText('广州');
+  await expect(shell.locator('.map-scope-card')).toContainText('个可选地点');
+  await expect(map).toHaveAttribute('data-city', 'all');
+  await expect(page.locator('.place-chip-name')).toHaveCount(0);
+});
+
+test('publishes multiple meeting areas and adds a third from the edit dialog', async ({ page }) => {
+  const title = `E2E 多集合区域 ${Date.now()}`;
+  await loginAs(page, 1);
+  await page.goto('/#/trips/new');
+  await page.getByLabel('标题').fill(title);
+  await pickDestination(page, '广东省', '珠海市');
+  await pickPlace(page, '途经点', '香洲港');
+  await pickPlace(page, '途经点', '情侣路');
+
+  const draft = page.getByLabel(/集合区域/);
+  await draft.fill('香洲港客运站');
+  await draft.press('Enter');
+  await draft.fill('情侣路驿站');
+  await draft.press('Enter');
+  await expect(page.locator('.place-chip-name', { hasText: '香洲港客运站' })).toBeVisible();
+  await expect(page.locator('.place-chip-name', { hasText: '情侣路驿站' })).toBeVisible();
+  await page.getByRole('button', { name: /^发\s*布$/ }).click();
+
+  await expect(page.getByRole('heading', { name: title })).toBeVisible();
+  await expect(page.locator('.detail-facts')).toContainText('香洲港客运站、情侣路驿站');
+
+  await page.getByRole('button', { name: '编辑集合信息' }).click();
+  const dialog = page.getByRole('dialog');
+  await expect(dialog.locator('.place-chip-name')).toHaveCount(2);
+  await dialog.getByLabel('集合区域').fill('拱北口岸');
+  await dialog.getByLabel('集合区域').press('Enter');
+  await dialog.getByRole('button', { name: /保\s*存/ }).click();
+  await expect(page.getByText('集合信息已更新')).toBeVisible();
+  await expect(page.locator('.detail-facts')).toContainText('香洲港客运站、情侣路驿站、拱北口岸');
+});
+
+test('rejects a fourth meeting area and overlong area text on the publish form', async ({ page }) => {
+  await loginAs(page, 1);
+  await page.goto('/#/trips/new');
+
+  const draft = page.getByLabel(/集合区域/);
+  // 超长先于上限校验：空列表时 101 字被拒绝。
+  await draft.fill('长'.repeat(101));
+  await draft.press('Enter');
+  await expect(page.getByText('集合区域最多 100 字')).toBeVisible();
+
+  for (const area of ['甲集合点', '乙集合点', '丙集合点']) {
+    await draft.fill(area);
+    await draft.press('Enter');
+  }
+  await draft.fill('丁集合点');
+  await draft.press('Enter');
+  await expect(page.getByText('最多选择 3 个集合区域')).toBeVisible();
+});
+
+test('detail page renders the route map with numbered pins and a route strip', async ({ page }) => {
+  const title = `E2E 路线地图 ${Date.now()}`;
+  const created = await createTripViaApi(page, title, todayIso(), todayIso(), {
+    destinationCode: '440100',
+    stops: ['广州塔', '北京路', '陈家祠'],
+  });
+  await loginAs(page, 1);
+  await page.goto(`/#/trips/${created.id}`);
+
+  const section = page.locator('.detail-map-section');
+  await expect(section).toBeVisible();
+  const map = section.locator('[data-testid="place-map"]');
+  await expect(map).toHaveAttribute('data-city', '广州');
+  await expect(map.locator('.map-pin.selected')).toHaveCount(3);
+  await expect(map.locator('.map-selected-index')).toHaveText(['1', '2', '3']);
+  await expect(map.locator('.map-route-line')).toBeVisible();
+
+  await expect(section.locator('.route-strip-card')).toHaveCount(3);
+  await expect(section.locator('.route-strip-leg')).toHaveCount(2);
+  await expect(section.locator('.route-strip-leg').first()).toContainText(/步行 约 .+ km/);
+});
+
+test('route strip click focuses the map and read-only pin cards carry no add action', async ({ page }) => {
+  const title = `E2E 地图聚焦 ${Date.now()}`;
+  const created = await createTripViaApi(page, title, todayIso(), todayIso(), {
+    destinationCode: '440100',
+    stops: ['广州塔', '北京路', '陈家祠'],
+  });
+  await loginAs(page, 1);
+  await page.goto(`/#/trips/${created.id}`);
+
+  const map = page.locator('.detail-map-section [data-testid="place-map"]');
+  const before = await map.getAttribute('viewBox');
+  await page.locator('.route-strip-card').nth(1).click();
+  await expect.poll(async () => map.getAttribute('viewBox')).not.toBe(before);
+
+  await map.locator('[data-place-id="广州-北京路"]').dispatchEvent('click');
+  const callout = page.locator('.map-callout').first();
+  await expect(callout.locator('.map-callout-name')).toHaveText('北京路');
+  await expect(callout.getByRole('button', { name: '加入路线' })).toHaveCount(0);
+});
+
+test('detail page degrades to text when stops are off the gazetteer', async ({ page }) => {
+  const title = `E2E 地图降级 ${Date.now()}`;
+  const created = await createTripViaApi(page, title);
+  await loginAs(page, 1);
+  await page.goto(`/#/trips/${created.id}`);
+
+  await expect(page.locator('.detail-map-section')).toHaveCount(0);
+  await expect(page.getByText('部分途经点不在地图地名库，路线地图未渲染。')).toBeVisible();
+  await expect(page.locator('.detail-stops')).toContainText('香洲港集合');
+});
+
+test('meeting edit syncs multiple areas and the API guards limit and ownership', async ({ page }) => {
+  const title = `E2E 集合守护 ${Date.now()}`;
+  const created = await createTripViaApi(page, title, todayIso(), todayIso(), {
+    meetingAreas: ['香洲港客运站', '情侣路驿站'],
+  });
+  await loginAs(page, 1);
+  await page.goto(`/#/trips/${created.id}`);
+  await expect(page.locator('.detail-facts')).toContainText('香洲港客运站、情侣路驿站');
+
+  await page.getByRole('button', { name: '编辑集合信息' }).click();
+  const dialog = page.getByRole('dialog');
+  await expect(dialog.locator('.place-chip-name')).toHaveCount(2);
+  await dialog.getByRole('button', { name: '移除 情侣路驿站' }).click();
+  await dialog.getByLabel('集合区域').fill('拱北口岸');
+  await dialog.getByLabel('集合区域').press('Enter');
+  await dialog.getByRole('button', { name: /保\s*存/ }).click();
+  await expect(page.getByText('集合信息已更新')).toBeVisible();
+  await expect(page.locator('.detail-facts')).toContainText('香洲港客运站、拱北口岸');
+
+  const tooMany = await page.request.put(`${API}/trips/${created.id}/meeting`, {
+    headers: { 'X-User-Id': '1', 'Content-Type': 'application/json' },
+    data: { meeting_areas: ['一', '二', '三', '四'], meeting_time: null },
+  });
+  expect(tooMany.status()).toBe(400);
+
+  const notPublisher = await page.request.put(`${API}/trips/${created.id}/meeting`, {
+    headers: { 'X-User-Id': '2', 'Content-Type': 'application/json' },
+    data: { meeting_areas: ['别人的集合点'], meeting_time: null },
+  });
+  expect(notPublisher.status()).toBe(403);
+});
+
+test('legacy single meeting area is backfilled and shown on the detail page', async ({ page }) => {
+  await loginAs(page, 1);
+  await page.goto('/#/trips/7');
+
+  await expect(page.getByRole('heading', { name: '上海武康路咖啡散步' })).toBeVisible();
+  await expect(page.locator('.detail-facts')).toContainText('武康大楼正门');
 });
 
 test.describe('date pickers under reduced motion', () => {

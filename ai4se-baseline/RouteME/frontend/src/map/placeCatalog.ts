@@ -193,6 +193,40 @@ export function placesInCity(city: string): Place[] {
   return PLACES.filter((place) => place.city === city || place.name === city);
 }
 
+export type CityProjection = {
+  project: (place: Place) => Point;
+  /** 城市视图下每 viewBox 单位对应的公里数（比例尺用）。 */
+  kmPerX: number;
+  kmPerY: number;
+};
+
+/**
+ * 城市局部投影：把该城点位的经纬度线性铺满 22..78 视口区间。
+ * 省级投影会把城内距离压到 ~1 单位导致点位挤成一团；城市视图改用局部投影
+ * 让编号 pin 与路线像导航地图一样展开。距离估算仍走真实投影 distanceKm。
+ */
+export function cityProjection(city: string): CityProjection {
+  const places = placesInCity(city);
+  const lats = places.map((place) => place.lat);
+  const lngs = places.map((place) => place.lng);
+  const minLat = Math.min(...lats);
+  const maxLat = Math.max(...lats);
+  const minLng = Math.min(...lngs);
+  const maxLng = Math.max(...lngs);
+  const spanLat = Math.max(maxLat - minLat, 0.04);
+  const spanLng = Math.max(maxLng - minLng, 0.04);
+  const min = 22;
+  const side = 56;
+  return {
+    project: (place) => ({
+      x: min + ((place.lng - minLng) / spanLng) * side,
+      y: min + ((maxLat - place.lat) / spanLat) * side,
+    }),
+    kmPerX: (spanLng * 102.5) / side,
+    kmPerY: (spanLat * 111) / side,
+  };
+}
+
 /** Inverse of {@link projectLatLng}; used by map click handling and tests. */
 export function unprojectPoint(point: Point): { lat: number; lng: number } {
   const { minLng, maxLng, minLat, maxLat } = MAP_BOUNDS;
@@ -203,6 +237,19 @@ export function unprojectPoint(point: Point): { lat: number; lng: number } {
 }
 
 export type NearestPlace = { place: Place; distance: number };
+
+/** 距投影点最近的 limit 个地名库条目，按距离升序（候选浮层用）。 */
+export function nearestPlaces(
+  point: Point,
+  limit = 3,
+  pool: Place[] = PLACES,
+  project: (place: Place) => Point = projectPlace,
+): NearestPlace[] {
+  return pool
+    .map((place) => ({ place, distance: Math.hypot(project(place).x - point.x, project(place).y - point.y) }))
+    .sort((left, right) => left.distance - right.distance)
+    .slice(0, limit);
+}
 
 /** Nearest catalog entry to a projected point, plus distance in viewBox units. */
 export function nearestPlace(point: Point): NearestPlace {

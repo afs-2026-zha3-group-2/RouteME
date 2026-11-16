@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { destinationLabel } from '../area/areaOptions';
 import {
   Alert,
@@ -28,6 +28,10 @@ import {
 import { tripMessages } from '../i18n/tripMessages';
 import { intensityLabel } from '../experiences/experienceForm';
 import { meetingAreaText, meetingTimeText } from '../chat/chatMeeting';
+import { gazetteerCityForCode } from '../areas/gazetteerCity';
+import { PlaceMap } from '../map/PlaceMap';
+import { findPlaceByName, projectPlace, type Place } from '../map/placeCatalog';
+import { distanceKm, formatKm } from '../map/mapView';
 import { shareEligibility } from '../experiences/shareEligibility';
 import { publisherSummary } from '../profile/profileDisplay';
 import { ReportModal } from '../safety/ReportModal';
@@ -37,12 +41,16 @@ import type { DemoUser, Experience, MatchCandidate, TripApplication } from '../t
 import { applicationEntryState, applicationErrorMessage } from './applicationEntry';
 import {
   MAX_MEETING_AREA_LENGTH,
+  addMeetingArea,
+  emptyMeetingForm,
   meetingFormFrom,
   toMeetingRequest,
   validateMeetingForm,
   type MeetingFieldErrors,
   type MeetingFormValues,
 } from './meetingForm';
+import { MAX_MEETING_AREAS } from './tripOptions';
+import { PlacePicker } from '../map/PlacePicker';
 import { statusColor, statusLabel } from './tripStatus';
 import { useTrip } from './useTrip';
 import { useProfile } from '../profiles/ProfileContext';
@@ -89,9 +97,13 @@ export function TripDetailPage({ currentUser, tripId }: Props) {
   const [reportOpen, setReportOpen] = useState(false);
   const [experiences, setExperiences] = useState<Experience[] | null>(null);
   const [meetingOpen, setMeetingOpen] = useState(false);
-  const [meetingForm, setMeetingForm] = useState<MeetingFormValues>({ meetingArea: '', meetingTime: '' });
+  const [meetingForm, setMeetingForm] = useState<MeetingFormValues>(emptyMeetingForm());
   const [meetingErrors, setMeetingErrors] = useState<MeetingFieldErrors>({});
   const [meetingSaving, setMeetingSaving] = useState(false);
+  const [meetingDraft, setMeetingDraft] = useState('');
+  const [meetingDraftError, setMeetingDraftError] = useState<string | null>(null);
+  const [focusStop, setFocusStop] = useState<string | null>(null);
+  const mapSectionRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     let active = true;
@@ -192,9 +204,11 @@ export function TripDetailPage({ currentUser, tripId }: Props) {
     }
   };
 
-  const openMeeting = (meetingArea: string | null, meetingTime: string | null) => {
-    setMeetingForm(meetingFormFrom({ meeting_area: meetingArea, meeting_time: meetingTime }));
+  const openMeeting = (meetingAreas: string[] | null, meetingTime: string | null) => {
+    setMeetingForm(meetingFormFrom({ meeting_areas: meetingAreas, meeting_time: meetingTime }));
     setMeetingErrors({});
+    setMeetingDraft('');
+    setMeetingDraftError(null);
     setMeetingOpen(true);
   };
 
@@ -255,6 +269,16 @@ export function TripDetailPage({ currentUser, tripId }: Props) {
     trip.budget_min_cents === null
       ? null
       : `${trip.budget_min_cents / 100}${trip.budget_max_cents === null ? '' : ` – ${trip.budget_max_cents / 100}`} 元`;
+
+  const mapCity = gazetteerCityForCode(trip.destination_code);
+  const resolvedStops = trip.stops
+    .map((stop) => findPlaceByName(stop))
+    .filter((place): place is Place => place !== undefined);
+  const showRouteMap = mapCity !== undefined && resolvedStops.length > 0;
+  const focusPlace = (place: Place) => {
+    setFocusStop(place.id);
+    mapSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  };
 
   const confirmTitle =
     confirmAction === 'complete'
@@ -358,15 +382,67 @@ export function TripDetailPage({ currentUser, tripId }: Props) {
 
           <section className="detail-section">
             <h3 className="section-title">{tripMessages.detailStops}</h3>
+            {showRouteMap && (
+              <div className="detail-map-section" ref={mapSectionRef}>
+                <PlaceMap
+                  readOnly
+                  selected={resolvedStops.map((place) => place.name)}
+                  city={mapCity}
+                  focusPlaceId={focusStop}
+                />
+                <ol className="route-strip">
+                  {trip.stops.map((stop, index) => {
+                    const place = findPlaceByName(stop);
+                    const nextPlace =
+                      index < trip.stops.length - 1 ? findPlaceByName(trip.stops[index + 1]) : undefined;
+                    const leg =
+                      place !== undefined && nextPlace !== undefined
+                        ? distanceKm(projectPlace(place), projectPlace(nextPlace))
+                        : null;
+                    return (
+                      <li key={`${stop}-${index}`} className="route-strip-item">
+                        <button
+                          type="button"
+                          className={place === undefined ? 'route-strip-card off' : 'route-strip-card'}
+                          disabled={place === undefined}
+                          onClick={() => place !== undefined && focusPlace(place)}
+                        >
+                          <span className={`route-strip-index tone-${index % 4}`}>{index + 1}</span>
+                          <span className="route-strip-name">{stop}</span>
+                          {place === undefined && <span className="route-strip-off">不在地图</span>}
+                        </button>
+                        {leg !== null && <span className="route-strip-leg">步行 约 {formatKm(leg)} km</span>}
+                      </li>
+                    );
+                  })}
+                </ol>
+              </div>
+            )}
+            {!showRouteMap && (
+              <p className="form-hint">
+                {mapCity === undefined ? tripMessages.detailMapNoCity : tripMessages.detailMapNoStops}
+              </p>
+            )}
             <ol className="detail-stops">
-              {trip.stops.map((stop) => (
-                <li key={stop}>{stop}</li>
-              ))}
+              {trip.stops.map((stop) => {
+                const place = findPlaceByName(stop);
+                return (
+                  <li key={stop}>
+                    {place !== undefined && showRouteMap ? (
+                      <button type="button" className="detail-stop-button" onClick={() => focusPlace(place)}>
+                        {stop}
+                      </button>
+                    ) : (
+                      stop
+                    )}
+                  </li>
+                );
+              })}
             </ol>
             <dl className="detail-facts">
               <div>
                 <dt>{tripMessages.detailMeetingArea}</dt>
-                <dd>{meetingAreaText(trip.meeting_area)}</dd>
+                <dd>{meetingAreaText(trip.meeting_areas)}</dd>
               </div>
               <div>
                 <dt>{tripMessages.detailMeetingTime}</dt>
@@ -385,12 +461,12 @@ export function TripDetailPage({ currentUser, tripId }: Props) {
                 </div>
               )}
             </dl>
-            {(trip.meeting_area === null || trip.meeting_time === null) && (
+            {(trip.meeting_areas.length === 0 || trip.meeting_time === null) && (
               <p className="detail-meta">{tripMessages.meetingEmptyHint}</p>
             )}
             {isPublisher && !isCompleted && (
               <div className="detail-actions">
-                <Button size="small" onClick={() => openMeeting(trip.meeting_area, trip.meeting_time)}>
+                <Button size="small" onClick={() => openMeeting(trip.meeting_areas, trip.meeting_time)}>
                   {tripMessages.meetingEdit}
                 </Button>
               </div>
@@ -639,13 +715,53 @@ export function TripDetailPage({ currentUser, tripId }: Props) {
           <Typography.Text type="secondary">{tripMessages.meetingEditHint}</Typography.Text>
           <div className="form-field">
             <label htmlFor="meeting-area">{tripMessages.meetingAreaLabel}</label>
-            <Input
-              id="meeting-area"
-              value={meetingForm.meetingArea}
-              maxLength={MAX_MEETING_AREA_LENGTH}
-              onChange={(event) =>
-                setMeetingForm((current) => ({ ...current, meetingArea: event.target.value }))
-              }
+            <Space.Compact style={{ width: '100%' }}>
+              <Input
+                id="meeting-area"
+                value={meetingDraft}
+                maxLength={MAX_MEETING_AREA_LENGTH + 10}
+                placeholder="手输集合地点，回车添加"
+                onChange={(event) => {
+                  setMeetingDraft(event.target.value);
+                  setMeetingDraftError(null);
+                }}
+                onPressEnter={() => {
+                  const result = addMeetingArea(meetingForm.meetingAreas, meetingDraft);
+                  if (result.error !== null) {
+                    setMeetingDraftError(result.error);
+                    return;
+                  }
+                  setMeetingForm((current) => ({ ...current, meetingAreas: result.next }));
+                  setMeetingDraft('');
+                }}
+              />
+              <Button
+                disabled={meetingDraft.trim() === ''}
+                onClick={() => {
+                  const result = addMeetingArea(meetingForm.meetingAreas, meetingDraft);
+                  if (result.error !== null) {
+                    setMeetingDraftError(result.error);
+                    return;
+                  }
+                  setMeetingForm((current) => ({ ...current, meetingAreas: result.next }));
+                  setMeetingDraft('');
+                }}
+              >
+                添加
+              </Button>
+            </Space.Compact>
+            {meetingDraftError !== null && (
+              <Typography.Text type="warning">{meetingDraftError}</Typography.Text>
+            )}
+            <PlacePicker
+              mode="multi"
+              max={MAX_MEETING_AREAS}
+              ariaLabel="集合地点"
+              value={meetingForm.meetingAreas}
+              onChange={(next) => setMeetingForm((current) => ({ ...current, meetingAreas: next }))}
+              placeholder="搜索集合地点"
+              showMap={false}
+              city={mapCity}
             />
             {meetingErrors.meetingArea !== undefined && (
               <Typography.Text type="danger">{meetingErrors.meetingArea}</Typography.Text>

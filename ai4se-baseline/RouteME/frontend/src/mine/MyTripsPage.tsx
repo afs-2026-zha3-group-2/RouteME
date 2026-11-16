@@ -338,7 +338,7 @@ export function MyTripsPage({ currentUser, isAuthenticated }: Props) {
           {data.matched.map((trip) =>
             renderRow(
               trip,
-              mineMeetingNote(trip.meeting_area, trip.meeting_time, trip.joined_count),
+              mineMeetingNote(trip.meeting_areas, trip.meeting_time, trip.joined_count),
             ),
           )}
         </div>

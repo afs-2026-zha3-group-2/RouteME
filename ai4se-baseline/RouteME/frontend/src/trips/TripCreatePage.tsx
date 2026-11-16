@@ -21,8 +21,10 @@ import {
   type TripFieldErrors,
   type TripFormValues,
 } from './tripForm';
+import { addMeetingArea } from './meetingForm';
 import {
   INTEREST_TAGS,
+  MAX_MEETING_AREAS,
   MAX_STOPS,
   MAX_TAGS,
   MAX_TAG_LENGTH,
@@ -47,6 +49,8 @@ export function TripCreatePage({ currentUser, fromTripId }: Props) {
   const [submitting, setSubmitting] = useState(false);
   const [tagDraft, setTagDraft] = useState('');
   const [tagError, setTagError] = useState<string | null>(null);
+  const [meetingDraft, setMeetingDraft] = useState('');
+  const [meetingDraftError, setMeetingDraftError] = useState<string | null>(null);
 
   useEffect(() => {
     if (fromTripId === undefined) {
@@ -89,7 +93,7 @@ export function TripCreatePage({ currentUser, fromTripId }: Props) {
     start_date: values.startDate,
     end_date: values.endDate === '' ? values.startDate : values.endDate,
     stops: values.stops.length > 0 ? values.stops : ['至少写出两个途经点'],
-    meeting_area: values.meetingArea.trim() === '' ? null : values.meetingArea,
+    meeting_areas: values.meetingAreas,
     meeting_time: values.meetingTime.trim() === '' ? null : values.meetingTime,
     tags: values.tags,
     capacity: Number(values.capacity) || 2,
@@ -303,20 +307,55 @@ export function TripCreatePage({ currentUser, fromTripId }: Props) {
                 htmlFor="trip-meeting-area"
                 optional
                 hint={tripMessages.hintMeeting}
+                error={errors.meetingArea}
               >
-                <Input
-                  id="trip-meeting-area"
-                  value={values.meetingArea}
-                  placeholder="可以直接输入集合地点，或在地图上选"
-                  onChange={(event) => update({ meetingArea: event.target.value })}
-                />
+                <Space.Compact style={{ width: '100%' }}>
+                  <Input
+                    id="trip-meeting-area"
+                    value={meetingDraft}
+                    placeholder="手输集合地点，或从下方地图多选（最多 3 个）"
+                    onChange={(event) => {
+                      setMeetingDraft(event.target.value);
+                      setMeetingDraftError(null);
+                    }}
+                    onPressEnter={() => {
+                      const result = addMeetingArea(values.meetingAreas, meetingDraft);
+                      if (result.error !== null) {
+                        setMeetingDraftError(result.error);
+                        return;
+                      }
+                      update({ meetingAreas: result.next });
+                      setMeetingDraft('');
+                      setMeetingDraftError(null);
+                    }}
+                  />
+                  <Button
+                    onClick={() => {
+                      const result = addMeetingArea(values.meetingAreas, meetingDraft);
+                      if (result.error !== null) {
+                        setMeetingDraftError(result.error);
+                        return;
+                      }
+                      update({ meetingAreas: result.next });
+                      setMeetingDraft('');
+                      setMeetingDraftError(null);
+                    }}
+                    disabled={meetingDraft.trim() === ''}
+                  >
+                    添加
+                  </Button>
+                </Space.Compact>
+                {meetingDraftError !== null && (
+                  <Typography.Text type="warning">{meetingDraftError}</Typography.Text>
+                )}
                 <PlacePicker
-                  mode="single"
+                  mode="multi"
+                  max={MAX_MEETING_AREAS}
                   ariaLabel="集合地点"
-                  value={values.meetingArea === '' ? [] : [values.meetingArea]}
-                  onChange={(next) => update({ meetingArea: next[0] ?? '' })}
+                  value={values.meetingAreas}
+                  onChange={(next) => update({ meetingAreas: next })}
                   placeholder="搜索集合地点"
-                  emptyHint="选中后会把地点名写进集合区域。"
+                  emptyHint="可添加多个集合区域，选中后按顺序编号。"
                   showMap={mapCity !== undefined || !hasDestination}
                   city={mapCity}
                 />

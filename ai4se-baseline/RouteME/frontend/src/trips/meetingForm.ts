@@ -1,34 +1,37 @@
 import { tripMessages } from '../i18n/tripMessages';
 import type { TripMeetingRequest } from '../types';
+import { MAX_MEETING_AREAS } from './tripOptions';
 
 export const MAX_MEETING_AREA_LENGTH = 100;
 const MEETING_TIME_PATTERN = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/;
 
 export type MeetingFormValues = {
-  meetingArea: string;
+  meetingAreas: string[];
   meetingTime: string;
 };
 
 export type MeetingFieldErrors = Partial<Record<'meetingArea' | 'meetingTime', string>>;
 
 export function emptyMeetingForm(): MeetingFormValues {
-  return { meetingArea: '', meetingTime: '' };
+  return { meetingAreas: [], meetingTime: '' };
 }
 
 export function meetingFormFrom(trip: {
-  meeting_area: string | null;
+  meeting_areas: string[] | null;
   meeting_time: string | null;
 }): MeetingFormValues {
   return {
-    meetingArea: trip.meeting_area ?? '',
+    meetingAreas: trip.meeting_areas ?? [],
     meetingTime: trip.meeting_time ?? '',
   };
 }
 
-/** 与后端 TripMeetingRules 同口径；仅为体验校验，服务端仍是权威。 */
+/** 与后端 TripPlan.cleanMeetingAreas 同口径；仅为体验校验，服务端仍是权威。 */
 export function validateMeetingForm(values: MeetingFormValues, endDate: string): MeetingFieldErrors {
   const errors: MeetingFieldErrors = {};
-  if (values.meetingArea.trim().length > MAX_MEETING_AREA_LENGTH) {
+  if (values.meetingAreas.length > MAX_MEETING_AREAS) {
+    errors.meetingArea = tripMessages.errorMeetingAreasLimit;
+  } else if (values.meetingAreas.some((area) => area.trim().length > MAX_MEETING_AREA_LENGTH)) {
     errors.meetingArea = tripMessages.errorMeetingAreaTooLong;
   }
   const time = values.meetingTime.trim();
@@ -42,10 +45,31 @@ export function validateMeetingForm(values: MeetingFormValues, endDate: string):
   return errors;
 }
 
+/** 手动添加一个集合区域：trim（含全角空格）、去重保序、上限 3。 */
+export function addMeetingArea(
+  areas: string[],
+  raw: string,
+): { next: string[]; error: string | null } {
+  const trimmed = raw.trim();
+  if (trimmed === '') {
+    return { next: areas, error: null };
+  }
+  if (areas.includes(trimmed)) {
+    return { next: areas, error: '这个集合区域已经添加过了' };
+  }
+  if (areas.length >= MAX_MEETING_AREAS) {
+    return { next: areas, error: tripMessages.errorMeetingAreasLimit };
+  }
+  if (trimmed.length > MAX_MEETING_AREA_LENGTH) {
+    return { next: areas, error: tripMessages.errorMeetingAreaTooLong };
+  }
+  return { next: [...areas, trimmed], error: null };
+}
+
 /** 两个字段整体替换：空值传 null 表示清空。 */
 export function toMeetingRequest(values: MeetingFormValues): TripMeetingRequest {
   return {
-    meeting_area: blankToNull(values.meetingArea),
+    meeting_areas: values.meetingAreas.length > 0 ? values.meetingAreas : null,
     meeting_time: blankToNull(values.meetingTime),
   };
 }

@@ -105,7 +105,7 @@ export type TripSummary = {
   start_date: string;
   end_date: string;
   stops: string[];
-  meeting_area: string | null;
+  meeting_areas: string[];
   meeting_time: string | null;
   tags: string[];
   capacity: number;
@@ -130,7 +130,7 @@ export type TripCreateRequest = {
   start_date: string;
   end_date: string;
   stops: string[];
-  meeting_area?: string | null;
+  meeting_areas?: string[] | null;
   meeting_time?: string | null;
   note?: string | null;
   budget_min_cents?: number | null;
@@ -140,7 +140,7 @@ export type TripCreateRequest = {
 };
 
 export type TripMeetingRequest = {
-  meeting_area?: string | null;
+  meeting_areas?: string[] | null;
   meeting_time?: string | null;
 };
 

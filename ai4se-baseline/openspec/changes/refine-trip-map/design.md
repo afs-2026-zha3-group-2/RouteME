@@ -63,6 +63,10 @@ openapi 0.11.0：三处 `meeting_area` → `meeting_areas`（`type: array, items
 
 在线瓦片 / 照片 / 同路气泡 / 时长编辑 / 拖拽排序 / 旧列删除（proposal out）。
 
+## D13 城市局部投影（P4 走查增补）
+
+省级投影把城内距离压到 ~1 viewBox 单位，城市缩放后点位挤成一团、标注重叠（走查截图证实）。增补 `placeCatalog.cityProjection(city)`：把该城点位经纬度线性铺满 22..78 视口区间（span 下限 0.04° 防除零），城市视图的 pin / 路线 / 聚焦 / 候选浮层全部改用局部投影；全省视图不变。距离估算（行程条 leg）仍走真实投影 `distanceKm`，口径不变；比例尺城市视图改用 `cityProjection.kmPerX`。城市视图地名标签常显（导航地图观感）；≤700px 隐藏比例尺避免遮 pin 标签。另修 `PlaceMap` 重置 effect：仅外部 `city` prop 变化才清内部聚焦，`cityView` 变化只重置视口（原合并依赖会把刚设置的城市聚焦立刻撤销）。单测：placeCatalog.test 增 3 例（展开度 / km 标定 / 自定义投影 nearestPlaces）。
+
 ## 对齐自检
 
 | 检查 | 结论 |

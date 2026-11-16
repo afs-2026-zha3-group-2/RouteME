@@ -2,8 +2,10 @@ import { describe, expect, it } from 'vitest';
 import {
   LAND_PATH,
   PLACES,
+  cityProjection,
   findPlaceByName,
   nearestPlace,
+  nearestPlaces,
   placesInCity,
   projectLatLng,
   projectPlace,
@@ -74,5 +76,46 @@ describe('place catalog', () => {
     const numbers = LAND_PATH.match(/-?\d+(\.\d+)?/g)?.map(Number) ?? [];
     expect(numbers.length).toBeGreaterThan(0);
     expect(numbers.every((value) => value >= 0 && value <= 100)).toBe(true);
+  });
+
+  it('nearestPlaces returns ascending distances capped at the limit', () => {
+    const point = projectPlace(findPlaceByName('广州塔')!);
+    const result = nearestPlaces(point, 3);
+    expect(result.length).toBe(3);
+    expect(result[0].place.name).toBe('广州塔');
+    expect(result[0].distance).toBeLessThanOrEqual(result[1].distance);
+    expect(result[1].distance).toBeLessThanOrEqual(result[2].distance);
+  });
+
+  it('cityProjection spreads city places across the view box', () => {
+    const projection = cityProjection('广州');
+    const points = placesInCity('广州').map(projection.project);
+    const xs = points.map((point) => point.x);
+    const ys = points.map((point) => point.y);
+    expect(Math.min(...xs)).toBeGreaterThanOrEqual(22);
+    expect(Math.max(...xs)).toBeLessThanOrEqual(78);
+    expect(Math.max(...xs) - Math.min(...xs)).toBeGreaterThan(40);
+    expect(Math.max(...ys) - Math.min(...ys)).toBeGreaterThan(40);
+    // 真实投影下城内跨度仅 ~1 单位，局部投影必须显著展开。
+    const real = placesInCity('广州').map(projectPlace);
+    expect(Math.max(...xs) - Math.min(...xs)).toBeGreaterThan(
+      10 * (Math.max(...real.map((p) => p.x)) - Math.min(...real.map((p) => p.x))),
+    );
+  });
+
+  it('cityProjection keeps a kilometre calibration for the scale bar', () => {
+    const projection = cityProjection('广州');
+    expect(projection.kmPerX).toBeGreaterThan(0);
+    expect(projection.kmPerY).toBeGreaterThan(0);
+    // 广州东西跨度约 0.08 经度 ≈ 8km，铺满 56 单位后每单位远小于 1km。
+    expect(projection.kmPerX).toBeLessThan(1);
+  });
+
+  it('nearestPlaces honours a custom projection', () => {
+    const projection = cityProjection('广州');
+    const point = projection.project(findPlaceByName('北京路')!);
+    const result = nearestPlaces(point, 1, placesInCity('广州'), projection.project);
+    expect(result[0].place.name).toBe('北京路');
+    expect(result[0].distance).toBeLessThan(1);
   });
 });
