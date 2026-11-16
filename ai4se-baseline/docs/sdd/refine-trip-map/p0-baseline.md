@@ -23,7 +23,7 @@
 | CI / CD | `.github/workflows/ci.yml` / `cd.yml`；`main@6d2116b` 带 `build-6d2116b` 标签（CD 已产出） | 管道绿 |
 | 工具链 | Node `v24.18.0`、npm `11.16.0`、OpenJDK `21.0.11`（后端启动日志） | 满足 pom / package.json |
 | 迁移号段 | Flyway 当前 head `V16`；全仓 `openspec/changes/` 无 `V17__` 预留 | 本 change 使用 `V17`（集合区域多值） |
-| 契约 | `openapi.yaml` v0.8.0；`OpenApiTest` 强断言版本与 `meeting_area` 字段 | 本 change 升 `0.9.0`，`meeting_area` → `meeting_areas` 数组（发起人 2026-11-16 裁决） |
+| 契约 | `openapi.yaml` v0.10.0（`refine-trip-chat` 已升版）；`OpenApiTest` 强断言 `0.10.0` 与 `meeting_area` 字段 | 本 change 升 `0.11.0`，`meeting_area` → `meeting_areas` 数组（发起人 2026-11-16 裁决） |
 
 ## 3. 验证链路（本 change 将使用的命令）
 
