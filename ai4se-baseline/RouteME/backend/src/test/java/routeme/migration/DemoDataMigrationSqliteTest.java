@@ -45,10 +45,10 @@ class DemoDataMigrationSqliteTest {
 
         // Then
         assertAll(
-                () -> assertEquals(3, users, "demo users"),
-                () -> assertEquals(6, trips, "seeded trips"),
+                () -> assertEquals(4, users, "demo users"),
+                () -> assertEquals(7, trips, "seeded trips"),
                 () -> assertEquals(2, completed, "completed trips"),
-                () -> assertEquals(4, unfinished, "unfinished trips"),
+                () -> assertEquals(5, unfinished, "unfinished trips"),
                 () -> assertEquals(1, full, "full trips"),
                 () -> assertTrue(stops.contains("情侣北路步行"), "stops are stored as JSON text")
         );

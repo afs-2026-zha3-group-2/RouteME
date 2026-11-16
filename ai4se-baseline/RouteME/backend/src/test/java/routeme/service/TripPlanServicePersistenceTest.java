@@ -36,13 +36,13 @@ class TripPlanServicePersistenceTest {
         assertAll(
                 () -> assertTrue(unfinished.stream().noneMatch(trip -> trip.status() == TripStatusEnum.COMPLETED),
                         "unfinished list excludes completed trips"),
-                () -> assertTrue(unfinished.stream().map(TripPlan::id).toList().containsAll(List.of(3L, 4L, 5L, 6L)),
+                () -> assertTrue(unfinished.stream().map(TripPlan::id).toList().containsAll(List.of(3L, 4L, 5L, 6L, 7L)),
                         "seeded unfinished trips are returned"),
                 () -> assertEquals(TripStatusEnum.FULL, full.status(), "joined_count reaches capacity"),
                 () -> assertEquals(TripStatusEnum.COMPLETED, completed.status(), "completed_at wins"),
                 () -> assertTrue(full.tags().contains("历史"), "tags parsed from json"),
                 () -> assertEquals(2, full.joinedCount(), "joined count"),
-                () -> assertEquals(3, demoUserService.findAll().size(), "demo users")
+                () -> assertEquals(4, demoUserService.findAll().size(), "demo users")
         );
     }
 }

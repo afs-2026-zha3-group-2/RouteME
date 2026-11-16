@@ -268,7 +268,8 @@ test('opens a publisher profile from a trip card', async ({ page }) => {
 
   const viewer = await registerViaApi(page, { prefix: 'view' });
   await useAccount(page, viewer);
-  await page.getByPlaceholder('搜索路线、地点或发布者').fill(title);
+  // 首页用目的地/日期筛选，已无搜索框；切到「最新发布」使新行程排在最前。
+  await page.getByLabel('排序').selectOption('new');
 
   const card = page.locator('.trip-card', { hasText: title });
   await expect(card).toBeVisible();
@@ -276,10 +277,18 @@ test('opens a publisher profile from a trip card', async ({ page }) => {
   await expect(card.locator('.tc-host-name')).toContainText('上班族');
 
   await card
-    .getByRole('button', { name: `查看 ${publisher.nickname} 的个人主页` })
+    .getByRole('button', { name: `查看 ${publisher.nickname} 的资料` })
     .click();
 
-  await expect(page).toHaveURL(new RegExp(`#/users/${publisher.userId}$`));
+  // 卡片入口打开公开资料弹窗（REQ-009），不离开当前页。
+  const modal = page.locator('.ant-modal', { hasText: '旅行者资料' });
+  await expect(modal).toBeVisible();
+  await expect(modal.getByText(publisher.nickname, { exact: true })).toBeVisible();
+  await modal.getByRole('button', { name: /^关\s*闭$/ }).click();
+  await expect(modal).toBeHidden();
+
+  // 公开主页路由仍可用：直接访问能看到同一份资料。
+  await page.goto(`/#/users/${publisher.userId}`);
   await expect(page.getByRole('heading', { name: new RegExp(publisher.nickname) })).toBeVisible();
   await expect(page.getByRole('button', { name: '编辑资料' })).toHaveCount(0);
   await expect(page.locator('.profile-chips')).toContainText('上班族');

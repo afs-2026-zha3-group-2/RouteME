@@ -37,7 +37,18 @@ export type DemoUser = {
   profile_complete: boolean;
 };
 
-/** 个人资料（`GET /api/users/{id}/profile`）：生日只出现在本人响应。 */
+/** 公开资料弹窗的四项旅行统计。 */
+export type ProfileStats = {
+  published: number;
+  completed: number;
+  joined: number;
+  shared: number;
+};
+
+/**
+ * 个人资料（`GET /api/users/{id}/profile`）：生日只出现在本人响应；
+ * joined_at 与 stats 是公开字段，不包含账户凭据。
+ */
 export type UserProfile = {
   id: number;
   nickname: string;
@@ -56,6 +67,8 @@ export type UserProfile = {
   travel_style?: string | null;
   bio?: string | null;
   profile_complete: boolean;
+  joined_at?: string | null;
+  stats?: ProfileStats;
 };
 
 /** 保存资料（`PUT /api/users/me/profile`）：六项必填，其余可留空。 */

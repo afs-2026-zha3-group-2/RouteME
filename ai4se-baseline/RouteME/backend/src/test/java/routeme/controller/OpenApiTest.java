@@ -2,6 +2,7 @@ package routeme.controller;
 
 import static org.junit.jupiter.api.Assertions.assertAll;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 import java.io.IOException;
@@ -59,7 +60,7 @@ class OpenApiTest {
 
         // Then
         assertAll(
-                () -> assertEquals("0.7.0", info.get("version"), "info.version"),
+                () -> assertEquals("0.8.0", info.get("version"), "info.version"),
                 () -> assertTrue(paths(document).containsKey("/users"), "/users declared"),
                 () -> assertTrue(paths(document).containsKey("/trips/{tripId}"), "detail path declared"),
                 () -> assertTrue(
@@ -137,6 +138,7 @@ class OpenApiTest {
         Map<String, Object> demoUser = schema(document, "DemoUser");
         Map<String, Object> profile = schema(document, "UserProfile");
         Map<String, Object> updateRequest = schema(document, "UserProfileUpdateRequest");
+        Map<String, Object> profileStats = schema(document, "ProfileStats");
         Map<String, Object> errorSchema = schema(document, "Error");
 
         // Then
@@ -163,8 +165,14 @@ class OpenApiTest {
                 () -> assertTrue(
                         properties(profile).keySet().containsAll(List.of(
                                 "avatar_url", "birthday", "age", "zodiac", "gender", "city", "school", "major", "job",
-                                "mbti", "travel_style", "bio")),
+                                "mbti", "travel_style", "bio", "joined_at", "stats")),
                         "profile derived and optional fields"),
+                () -> assertTrue(
+                        required(profile).stream().noneMatch(List.of("joined_at", "stats")::contains),
+                        "joined_at and stats are optional"),
+                () -> assertTrue(
+                        required(profileStats).containsAll(List.of("published", "completed", "joined", "shared")),
+                        "profile stats fields"),
                 () -> assertTrue(
                         required(updateRequest).containsAll(
                                 List.of("nickname", "birthday", "gender", "city", "interests", "travel_style")),
