@@ -28,8 +28,8 @@
 | L-02 | SUGGESTION | p2 | `specs/user-auth/spec.md`「注册成功后自动登录」+ `specs/user-profile/spec.md`「个人资料字段与必填规则」 | 昵称同时出现在注册（`user-auth`）与完善页（`user-profile`），规格未说明两者是同一条账号字段，读者可能理解为两份昵称 | P3 `design.md` 声明：昵称唯一来源为 `app_users.nickname`；注册写入初值，完善页编辑同一字段；不新增资料昵称列 | 两份 Delta Spec 的昵称要求 | spec | [fact] |
 | L-03 | SUGGESTION | p2 | `proposal.md` §影响面 `openapi.yaml`；`specs/user-profile/spec.md`「头像上传与回退」 | 现契约 `DemoUser` 将 `avatar_initial`、`school` 列为 required；学校改选填、头像改 URL 后，0.7.0 需定义新旧字段并存与兼容期，否则既有响应消费方可能断档 | P3 / P4 明确：保留 `avatar_initial` 直到消费方迁移；`school` 允许空字符串或可空并同步所有响应；`avatar_url` 为新增可空字段；契约 diff 进 PR | `RouteME/openapi.yaml` 第 1192–1210 行（`DemoUser` required 列表） | spec | [fact] |
 | L-04 | SUGGESTION | p2 | `proposal.md` §影响面 `V10__*.sql`；`specs/user-profile/spec.md`「资料完善状态与稍后补全」 | 迁移给既有 `app_users` 加列；3 个演示账户与迁移前注册账号没有新字段。规格未声明空值语义，派生「完善状态」可能把 NULL 误判 | P3 迁移任务：所有新列可空并给默认空值；完善状态派生把 NULL / 空串视为缺失；加迁移测试覆盖「演示账号」「迁移前注册账号」 | `V3__create_demo_users.sql`、`V9__add_user_credentials.sql` | spec | [fact] |
-| L-05 | SUGGESTION | p2 | `specs/user-profile/spec.md` Requirement「旅行兴趣 3–5 个」 | 预设标签（自然风景 / 文化历史 / 看展）与 `trip-plans` 的行程标签（自然 / 历史 / 展览）不是同一词表，匹配消费精确字符串，会导致匹配理由对不上 | P3 `design.md` 定义词表 / 别名归一化或映射表；本 change 只保证 3–5 个可保存，不改匹配算法 | `trip-plans/spec.md` 第 117 行（兴趣包含匹配）；REQ-007 §8 deferred 项 | spec | [fact] |
-| L-06 | SUGGESTION | p2 | `specs/user-profile/spec.md` Requirement「头像上传与回退」 | 规格只约束类型与大小，未定义存储目录、文件名生成、静态访问路径与替换 / 清理策略 | P3 `design.md` 固定服务端生成文件名、目录与访问路径；P4 补安全与非法文件测试 | REQ-007 §5；`proposal.md` §残余风险 | spec | [fact] |
+| L-05 | SUGGESTION | p2 | `specs/user-profile/spec.md` Requirement「旅行兴趣 3–5 个」 | 预设标签（自然风景 / 文化历史 / 看展）与 `trip-plans` 的行程标签（自然 / 历史 / 展览）不是同一词表，匹配消费精确字符串，会导致匹配理由对不上 | P3 `design.md` 定义词表 / 别名归一化或映射表；本 change 只保证 3–5 个可保存，不改匹配算法 | `trip-plans/spec.md` 第 117 行（兴趣包含匹配）；REQ-008 §8 deferred 项 | spec | [fact] |
+| L-06 | SUGGESTION | p2 | `specs/user-profile/spec.md` Requirement「头像上传与回退」 | 规格只约束类型与大小，未定义存储目录、文件名生成、静态访问路径与替换 / 清理策略 | P3 `design.md` 固定服务端生成文件名、目录与访问路径；P4 补安全与非法文件测试 | REQ-008 §5；`proposal.md` §残余风险 | spec | [fact] |
 
 ## Checklist coverage
 
@@ -53,7 +53,7 @@
 | D1–D3 Design rules | N/A | 无 `design.md` |
 | p2-1 proposal scope vs Delta | Pass | 无静默扩张 / 丢弃；用户裁决 D1 / D2 / D6 的覆盖关系已写明 |
 | p2-2 Delta 内部一致 | Pass | 「资料未完善 → 已完善 → 编辑覆盖」在 30 个场景中一致；必填集合（昵称 / 生日 / 性别 / 城市 / 兴趣 / 旅行方式）全文一致 |
-| p2-3 proposal 关键场景有落点 | Pass | REQ-007 §4 十七条场景 17/17（见 `dov-ac-review.md` §Requirement mapping） |
+| p2-3 proposal 关键场景有落点 | Pass | REQ-008 §4 十七条场景 17/17（见 `dov-ac-review.md` §Requirement mapping） |
 | p2-4 tasks 方向检查 | N/A | 无 `tasks.md` |
 | p2-5 无法追溯的 Requirement | Pass | 无 |
 

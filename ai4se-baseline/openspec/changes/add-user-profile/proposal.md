@@ -1,6 +1,6 @@
 # 变更提案：add-user-profile
 
-- **需求来源：** 用户故事「作为新用户，我希望完善个人资料……让其他用户在查看我的行程时能够更好地了解我」+ 16 条验收标准 ｜ **需求条目：** `requirement-workspace/requirements/REQ-007-user-profile.md`
+- **需求来源：** 用户故事「作为新用户，我希望完善个人资料……让其他用户在查看我的行程时能够更好地了解我」+ 16 条验收标准 ｜ **需求条目：** `requirement-workspace/requirements/REQ-008-user-profile.md`
 - **能力：** `user-profile`（ADDED）、`user-auth`（MODIFIED）
 - **规模：** M（新增 1 个页面 + 1 份资料契约 + 3 个资料端点 + 1 次迁移；注册表单收窄；行程 / 体验只改发布者展示入口）
 - **规则：** `@rule:package-structure`、`@rule:java-patterns`、`@rule:web-coding-style`、`@rule:api-contract`、`@rule:security-baseline`、`@rule:sdd-artifacts`

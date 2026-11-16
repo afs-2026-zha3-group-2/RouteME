@@ -1,16 +1,16 @@
-# REQ-007 — 完善个人资料并生成个人主页（Ready 需求条目）
+# REQ-008 — 完善个人资料并生成个人主页（Ready 需求条目）
 
 - **能力：** `user-profile`（ADDED）、`user-auth`（MODIFIED）
 - **对应 OpenSpec change：** `add-user-profile`
 - **Ready 日期：** 2026-11-16 ｜ **状态：** drafted（P1）
 - **故事口径：** P0 ｜ 迭代 1（第 1–2 天）｜ 3 点 ｜ 落点页面：个人资料完善页 / 个人主页 ｜ 垂直切片：一个页面 + 一份接口契约 + 一次状态变化（资料未完善 → 资料已完善）
-- **证据：** 用户故事与 16 条验收标准；用户 6 项裁决（见 §9）；`RouteME/frontend/src/identity/AuthPanel.tsx`、`authForm.ts`；`RouteME/frontend/src/shell/AppShell.tsx`；`RouteME/frontend/src/trips/`（发布者展示）；`RouteME/backend/src/main/resources/db/migration/V3__create_demo_users.sql`、`V9__add_user_credentials.sql`；`RouteME/openapi.yaml` 0.6.0；Living Spec `openspec/specs/user-auth/spec.md`；`requirement-workspace/intents/REQ-007-user-profile.md`
+- **证据：** 用户故事与 16 条验收标准；用户 6 项裁决（见 §9）；`RouteME/frontend/src/identity/AuthPanel.tsx`、`authForm.ts`；`RouteME/frontend/src/shell/AppShell.tsx`；`RouteME/frontend/src/trips/`（发布者展示）；`RouteME/backend/src/main/resources/db/migration/V3__create_demo_users.sql`、`V9__add_user_credentials.sql`；`RouteME/openapi.yaml` 0.6.0；Living Spec `openspec/specs/user-auth/spec.md`；`requirement-workspace/intents/REQ-008-user-profile.md`
 
 ## 六字段摘要
 
 | 字段 | 内容 |
 |---|---|
-| id | REQ-007 |
+| id | REQ-008 |
 | statement | 让注册用户在一个页面上补全头像、生日、性别、城市、学校与专业、职业、MBTI、旅行兴趣、旅行方式与简介并保存，系统派生年龄与星座并生成可被他人查看的个人主页。 |
 | actors | 新注册用户（资料未完善）、已注册用户（补全 / 编辑）、浏览者（查看行程发布者资料）、演示身份（只读） |
 | rationale | 现在发布者对浏览者只是一个昵称、首字和一句简介，无法判断是否合得来；注册时顺手收的学校 / 兴趣也不足以构成一份可展示的资料。 |
@@ -153,4 +153,4 @@
 | — | resolved | deep-dive ③ | ⑪跨 REQ 一致：账号锚点 `user-auth`，展示锚点 `trip-plans` / `trip-experiences`，资料新开 `user-profile` | 通过 |
 | — | resolved | deep-dive ④ | ⑫展示契约：完善页、个人主页、发布者入口、降级与错误提示字段齐全 | 通过 |
 
-**DoR BLOCKER 计数 = 0；A0 ⑨–⑫ 全过。** 增补表见 `requirement-workspace/deep-dive.md`「REQ-007 增补」。
+**DoR BLOCKER 计数 = 0；A0 ⑨–⑫ 全过。** 增补表见 `requirement-workspace/deep-dive.md`「REQ-008 增补」。

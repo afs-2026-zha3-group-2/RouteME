@@ -3,7 +3,7 @@
 **Date:** 2026-11-16 (timezone: +0800)
 **Root:** D:\zha_training\RouteME\ai4se-baseline
 **Stages:** p2
-**Change:** `add-user-profile`（REQ-007）
+**Change:** `add-user-profile`（REQ-008）
 **Focus:** full-stage
 
 ## Summary
@@ -13,7 +13,7 @@
 | Check id | Required? | Status | Evidence |
 |----------|-----------|--------|----------|
 | P2-1 | yes | Pass | `openspec/changes/add-user-profile/specs/user-profile/spec.md`（7 Requirement / 24 Scenario；ADDED）+ `specs/user-auth/spec.md`（1 Requirement / 6 Scenario；MODIFIED「注册账号」，保留全部 4 个基线场景）；`openspec validate add-user-profile --strict` = valid |
-| P2-2 | yes | Pass | `openspec/changes/add-user-profile/dov-ac-review.md`（AC 4/4 Pass；DoV 5/5 Pass；REQ-007 17/17 场景映射；Living Spec 基线场景保留 4/4；无阻塞） |
+| P2-2 | yes | Pass | `openspec/changes/add-user-profile/dov-ac-review.md`（AC 4/4 Pass；DoV 5/5 Pass；REQ-008 17/17 场景映射；Living Spec 基线场景保留 4/4；无阻塞） |
 | P2-3 | yes* | Pass | `openspec/changes/add-user-profile/g1-decision.md`（Pass；IO=Wanye，SA=Jacky/Karena；Conditions 9 项含 owner；双 capability 例外待 SA 具名追认） |
 | P2-4 | no | Pass | `openspec/changes/add-user-profile/consistency-lint.md`（phase=p2；Pass；BLOCKER 0 / WARNING 0 / SUGGESTION 6；CLI 校验通过） |
 
@@ -43,7 +43,7 @@
 - Optional / not-run / out-of-focus items marked Skipped do not block Overall Pass；本阶段无可选项跳过。
 - Overall aggregates in-focus required items only.
 - This report is not a Gate decision.
-- P2 期间为闭合追溯补了两个场景：「学校与专业拼接展示」「旅行方式只能单选」；均来自 REQ-007 §4 #7 / #9，未新增需求。
+- P2 期间为闭合追溯补了两个场景：「学校与专业拼接展示」「旅行方式只能单选」；均来自 REQ-008 §4 #7 / #9，未新增需求。
 - P2 前已按用户裁决完成细化：学校由必填改为选填（D2 追加），新增选填「职业」（D6）；必填集合为昵称、生日、性别、所在城市、兴趣（≥3）、旅行方式。
 - 双 capability 例外与 REQ-005 同口径：注册收窄是「注册 → 完善 → 主页」状态迁移的起点，拆成两个 change 会切断垂直切片；归档前需 SA 追认。
 - G1 记录沿用 2026-11-15 / 2026-11-16 既有 G1 的具名角色名单；若名单变更需更新 `g1-decision.md`。

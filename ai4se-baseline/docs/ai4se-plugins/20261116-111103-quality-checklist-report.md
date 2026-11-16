@@ -3,7 +3,7 @@
 **Date:** 2026-11-16 (timezone: +0800)
 **Root:** D:\zha_training\RouteME\ai4se-baseline
 **Stages:** p3
-**Change:** `add-user-profile`（REQ-007）
+**Change:** `add-user-profile`（REQ-008）
 **Focus:** full-stage
 
 ## Summary

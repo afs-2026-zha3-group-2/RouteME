@@ -3,7 +3,7 @@
 **Date:** 2026-11-16 (timezone: +0800)
 **Root:** D:\zha_training\RouteME\ai4se-baseline
 **Stages:** p1
-**Change:** `add-user-profile`（REQ-007）
+**Change:** `add-user-profile`（REQ-008）
 **Focus:** full-stage
 
 ## Summary
@@ -12,11 +12,11 @@
 
 | Check id | Required? | Status | Evidence |
 |----------|-----------|--------|----------|
-| P1-1 | yes | Pass | Workspace probed (`intents/`, `requirements/`, `analysis/`, `ready/`, `stories/`, `deep-dive.md`, `impact-brief.md` all found); new intent `intents/REQ-007-user-profile.md` |
-| P1-2 | yes | Pass | `requirement-workspace/requirements/REQ-007-user-profile.md` — 17 observable scenarios; §8 blocking OQ = 0 unresolved; DoR BLOCKER = 0; A0 ⑨–⑫ pass; supplement in `deep-dive.md`「REQ-007 增补」 |
-| P1-3 | yes | Pass | `requirement-workspace/impact-brief.md` §11 (REQ-007): as-is inventory, per-asset delta, blast radius, risks, split boundaries |
+| P1-1 | yes | Pass | Workspace probed (`intents/`, `requirements/`, `analysis/`, `ready/`, `stories/`, `deep-dive.md`, `impact-brief.md` all found); new intent `intents/REQ-008-user-profile.md` |
+| P1-2 | yes | Pass | `requirement-workspace/requirements/REQ-008-user-profile.md` — 17 observable scenarios; §8 blocking OQ = 0 unresolved; DoR BLOCKER = 0; A0 ⑨–⑫ pass; supplement in `deep-dive.md`「REQ-008 增补」 |
+| P1-3 | yes | Pass | `requirement-workspace/impact-brief.md` §12 (REQ-008): as-is inventory, per-asset delta, blast radius, risks, split boundaries |
 | P1-4 | yes | Pass | `openspec/changes/add-user-profile/proposal.md` + `specs/user-profile/spec.md` (ADDED, 7 requirements) + `specs/user-auth/spec.md` (MODIFIED「注册账号」, 6 scenarios incl. all 4 baseline scenarios); story S18 `stories/add-user-profile.story.md`; `openspec validate add-user-profile --strict` → valid; registry / handoff rows added |
-| P1-5 | no | Skipped | `/sdd:explore` not run; light intake was sufficient after the 5 product decisions (`Discovery Decision` = `Go` in `intents/REQ-007-user-profile.md`) |
+| P1-5 | no | Skipped | `/sdd:explore` not run; light intake was sufficient after the 5 product decisions (`Discovery Decision` = `Go` in `intents/REQ-008-user-profile.md`) |
 | P1-6 | no | Skipped | `/sdd:agent-evalset` not run; profile completion is a user-facing product change, not an agent-oriented change |
 
 | **Stage Overall** | — | Pass | All in-focus required items Pass; optional items Skipped |

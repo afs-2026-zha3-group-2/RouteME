@@ -1,6 +1,6 @@
 # ATDD 设计：add-user-profile
 
-- **Change:** `add-user-profile`（REQ-007，`user-profile` ADDED + `user-auth` MODIFIED）
+- **Change:** `add-user-profile`（REQ-008，`user-profile` ADDED + `user-auth` MODIFIED）
 - **依据：** [`proposal.md`](proposal.md)、[`specs/user-profile/spec.md`](specs/user-profile/spec.md)、[`specs/user-auth/spec.md`](specs/user-auth/spec.md)、[`dov-ac-review.md`](dov-ac-review.md)、[`g1-decision.md`](g1-decision.md)
 - **规则：** `@rule:web-testing`、`@rule:web-coding-style`、`@rule:api-contract`、`@rule:sdd-artifacts`
 - **范围提醒：** 本 change 同时改后端、契约（0.7.0）、迁移（1 个）与前端页面；ATDD 覆盖 **API 验收 + 前端 UT + E2E 垂直切片**。不产出实现代码。

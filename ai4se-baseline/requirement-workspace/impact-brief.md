@@ -1,4 +1,4 @@
-# Impact brief — REQ-002 / 003 / 004 / 005 / 006 / 007（MVP 业务能力集）
+# Impact brief — REQ-002 / 003 / 004 / 005 / 006 / 007 / 008（MVP 业务能力集）
 
 - **Workdir：** `requirement-workspace/`
 - **日期：** 2026-11-15 ｜ **触发：** `/sdd:pre-spec-req` 内嵌 impact-analysis（blocking OQ 与 DoR BLOCKER 均已清零）
@@ -238,18 +238,18 @@
 
 ---
 
-## 11. REQ-007 变更影响 — 完善个人资料并生成个人主页
+## 12. REQ-008 变更影响 — 完善个人资料并生成个人主页
 
-> 说明：`add-destination-area-filters` 的 REQ-007 影响分析同样编号为 §11（见下一节）；两个 change 的文档各自引用本文 §11，合并时未重编号以免断链，编号冲突待 SA 裁决。
+> 编号说明：本节为 `add-user-profile`（**REQ-008**）的影响分析，编号 **§12**；`add-destination-area-filters`（**REQ-007**）的影响分析为 **§11**（2026-11-16 远程追加，见文末）。REQ-007 的产物已引用 §11，故由其保留该编号，本 change 顺延为 §12。
 
 - **日期：** 2026-11-16 ｜ **触发：** `/sdd:pre-spec-req` 内嵌 impact-analysis（6 项产品问题已由用户裁决，blocking OQ 与 DoR BLOCKER 均已清零）
 - **粒度：** 应用架构（页面 / 资料契约 / 账号流程 / 发布者展示边界），非代码设计
 
-### 11.1 As-is asset inventory（evidence paths）
+### 12.1 As-is asset inventory（evidence paths）
 
 | 资产 | 路径 | 现状 |
 |---|---|---|
-| 需求条目 | `requirement-workspace/requirements/REQ-007-user-profile.md` | 本变更新增；六字段 + 17 场景 + 6 项用户裁决 + DoR / A0 全过 |
+| 需求条目 | `requirement-workspace/requirements/REQ-008-user-profile.md` | 本变更新增；六字段 + 17 场景 + 6 项用户裁决 + DoR / A0 全过 |
 | 账号表 | `backend/src/main/resources/db/migration/V3__create_demo_users.sql`、`V9__add_user_credentials.sql` | `app_users` 只有昵称、首字、学校、简介、兴趣 + 用户名 / 密码散列；无生日、性别、城市、专业、职业、MBTI、旅行方式、头像地址 |
 | 演示数据 | 同上 V3 | 3 个演示账号的 `school` 存「年级 · 专业」合并文案（如「研一 · 地理科学」） |
 | 注册表单 | `RouteME/frontend/src/identity/AuthPanel.tsx`、`authForm.ts` | 注册收集用户名、密码、昵称、学校、简介、兴趣；注册成功直接进入首页 |
@@ -259,7 +259,7 @@
 | 前端路由 | `RouteME/frontend/src/route.ts` | 无资料完善页 / 个人主页路由 |
 | 测试 | `frontend/src/identity/authForm.test.ts`、`backend/.../AuthControllerTest.java`、`e2e/` | 覆盖既有注册校验；未覆盖资料字段、头像、个人主页 |
 
-### 11.2 As-is → proposed delta（逐资产）
+### 12.2 As-is → proposed delta（逐资产）
 
 | 资产 | As-is | Proposed delta |
 |---|---|---|
@@ -274,7 +274,7 @@
 | 演示身份 | 昵称 / 学校 / 兴趣只读 | 仍只读；不展示编辑入口，保存接口返回 403 |
 | 行程 / 体验业务规则 | 既有 | **不变**：只改发布者展示入口 |
 
-### 11.3 Blast radius（应用架构）
+### 12.3 Blast radius（应用架构）
 
 - **页面（3）：** 新增资料完善页、个人主页；改动「我的」与行程 / 体验发布者展示入口。
 - **能力（2）：** `user-profile`（ADDED，7 条需求）；`user-auth`（MODIFIED「注册账号」）；`trip-plans` / `trip-experiences` 仅消费展示，不改规则。
@@ -283,18 +283,18 @@
 - **测试触点：** 前端单测（必填汇总、生日派生、兴趣上下限、头像回退）、后端（资料服务 / 控制器 / 迁移 / 权限 401 / 403）、E2E（注册 → 完善 → 主页 → 他人查看）。
 - **知识库：** 实现 / 归档阶段回写资料能力与契约版本；P1 不改 `docs/knowledge/`。
 
-### 11.4 Artifact impact（specs / tests / docs）
+### 12.4 Artifact impact（specs / tests / docs）
 
 | 类型 | 影响 |
 |---|---|
 | Spec（change delta） | `openspec/changes/add-user-profile/specs/user-profile/spec.md`（ADDED，7 条需求）＋ `specs/user-auth/spec.md`（MODIFIED「注册账号」） |
 | Proposal | `openspec/changes/add-user-profile/proposal.md` |
-| Story | `requirement-workspace/stories/add-user-profile.story.md`（S18，P0 / 迭代 1 / 3 点）；`stories.md` 增补 REQ-007 段 |
-| Registry / handoff | 新增 REQ-007 行与 REQ-007 → `add-user-profile` 映射 |
+| Story | `requirement-workspace/stories/add-user-profile.story.md`（S18，P0 / 迭代 1 / 3 点）；`stories.md` 增补 REQ-008 段 |
+| Registry / handoff | 新增 REQ-008 行与 REQ-008 → `add-user-profile` 映射 |
 | Tests / 代码 / 契约 / 迁移 / design / tasks | 不在 P1 范围；交 P3 / P4 起（design / task-plan / apply） |
 | Living Spec | 归档时新建 `openspec/specs/user-profile/spec.md`，并用 MODIFIED 替换 `openspec/specs/user-auth/spec.md` 的「注册账号」；`trip-plans` / `trip-experiences` 是否同步改展示验收由 P3 确认 |
 
-### 11.5 Risks & blockers
+### 12.5 Risks & blockers
 
 | 级别 | 项 | 说明 / 缓解 |
 |---|---|---|
@@ -307,9 +307,9 @@
 | Risk | 学校改为选填后，行程卡 / 详情的发布者摘要可能为空 | 摘要行按「学校 · 专业 → 职业 → 城市」回退；全空时只显示昵称与头像，不留空行 |
 | Blocker | 无 | blocking OQ = 0、DoR BLOCKER = 0、A0 ⑨–⑫ 全过；既有 `refine-inspiration-home` 的 validate 失败与本需求无关 |
 
-### 11.6 Suggested split boundaries
+### 12.6 Suggested split boundaries
 
-- **一个 change：** `add-user-profile` ← REQ-007（S18，页面级垂直切片）。
+- **一个 change：** `add-user-profile` ← REQ-008（S18，页面级垂直切片）。
 - **双 capability 例外：** `user-profile`（ADDED）承载资料与主页；`user-auth`（MODIFIED）只收窄注册。拆成两个 change 会让「注册 → 完善 → 主页」断成两段，且注册端口径无人负责。
 - **不并入 `add-user-auth`：** 该 change 已归档；资料是新业务概念，追加归档包会打乱历史边界。
 - **不并入 `refine-inspiration-home`：** 该 change 聚焦首页双视图，发布者入口只被消费，避免两个页面级切片互相阻塞。

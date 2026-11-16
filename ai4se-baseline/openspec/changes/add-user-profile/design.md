@@ -1,7 +1,7 @@
 # 设计：add-user-profile
 
-- **Change:** `add-user-profile`（REQ-007，`user-profile` ADDED + `user-auth` MODIFIED）
-- **依据：** [`proposal.md`](proposal.md)、[`specs/user-profile/spec.md`](specs/user-profile/spec.md)、[`specs/user-auth/spec.md`](specs/user-auth/spec.md)、[`atdd-design.md`](atdd-design.md)、[`dov-ac-review.md`](dov-ac-review.md)、[`g1-decision.md`](g1-decision.md)、`requirement-workspace/impact-brief.md` §11、`deep-dive.md`「REQ-007 增补」
+- **Change:** `add-user-profile`（REQ-008，`user-profile` ADDED + `user-auth` MODIFIED）
+- **依据：** [`proposal.md`](proposal.md)、[`specs/user-profile/spec.md`](specs/user-profile/spec.md)、[`specs/user-auth/spec.md`](specs/user-auth/spec.md)、[`atdd-design.md`](atdd-design.md)、[`dov-ac-review.md`](dov-ac-review.md)、[`g1-decision.md`](g1-decision.md)、`requirement-workspace/impact-brief.md` §11、`deep-dive.md`「REQ-008 增补」
 - **规则：** `@rule:api-contract`、`@rule:package-structure`、`@rule:java-patterns`、`@rule:web-coding-style`、`@rule:security-baseline`、`@rule:sdd-artifacts`
 - **设计预览：** 未新增预览页；结构与状态以 §8 为准，样式沿用 `styles.css` 既有令牌。
 

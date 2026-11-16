@@ -1,10 +1,10 @@
 # AC / DoV review — add-user-profile
 
-- **Change:** `add-user-profile`（`user-profile` ADDED + `user-auth` MODIFIED，REQ-007）
+- **Change:** `add-user-profile`（`user-profile` ADDED + `user-auth` MODIFIED，REQ-008）
 - **Reviewed artifacts:**
   - [`specs/user-profile/spec.md`](specs/user-profile/spec.md) — 7 Requirement / 24 Scenario（ADDED）
   - [`specs/user-auth/spec.md`](specs/user-auth/spec.md) — 1 Requirement / 6 Scenario（MODIFIED「注册账号」）
-- **Inputs:** [`proposal.md`](proposal.md)、`requirement-workspace/requirements/REQ-007-user-profile.md`、`requirement-workspace/impact-brief.md` §11、`requirement-workspace/deep-dive.md`「REQ-007 增补」、`requirement-workspace/stories/add-user-profile.story.md`（S18）、`openspec/specs/user-auth/spec.md`（Living Spec 基线）、`openspec/specs/trip-plans/spec.md` / `trip-experiences/spec.md`（发布者展示基线）
+- **Inputs:** [`proposal.md`](proposal.md)、`requirement-workspace/requirements/REQ-008-user-profile.md`、`requirement-workspace/impact-brief.md` §12、`requirement-workspace/deep-dive.md`「REQ-008 增补」、`requirement-workspace/stories/add-user-profile.story.md`（S18）、`openspec/specs/user-auth/spec.md`（Living Spec 基线）、`openspec/specs/trip-plans/spec.md` / `trip-experiences/spec.md`（发布者展示基线）
 - **Timestamp:** 2026-11-16T11:01+0800
 - **Reviewer:** opencode（AI agent）
 - **Tooling:** `openspec validate add-user-profile --strict` → valid；`openspec validate --specs --strict` → 6/6 passed
@@ -26,13 +26,13 @@
 | DoV-2 Ambiguities listed or resolved | Pass | 下方「规格解释裁决 1–9」 | 无未决 blocking 歧义 |
 | DoV-3 Role concerns noted for residual risk | Pass | 下方「残余风险」 | 含 SA（双 capability 例外、契约兼容）/ Dev（头像存储、迁移）/ BA（兴趣词表） |
 | DoV-4 No business implementation claimed done | Pass | 本 change 只有 Proposal + 两份 Delta Spec；仓库现有注册表单仅作现状证据 | `proposal.md` §交付边界明确 P1/P2 不含实现 |
-| DoV-5 Requirements trace to proposal / approved requirements | Pass | 下方「需求映射」17/17 + 「基线保留」4/4 | REQ-007 §4 十七个场景全部有 Delta 落点；Living Spec 4 个既有场景保留 |
+| DoV-5 Requirements trace to proposal / approved requirements | Pass | 下方「需求映射」17/17 + 「基线保留」4/4 | REQ-008 §4 十七个场景全部有 Delta 落点；Living Spec 4 个既有场景保留 |
 
 **Blocking gaps:** 无。G1-ready from the review's perspective.
 
-## Requirement mapping（REQ-007 §4 → Delta Spec）
+## Requirement mapping（REQ-008 §4 → Delta Spec）
 
-| REQ-007 场景 | Delta Scenario | 覆盖判定 |
+| REQ-008 场景 | Delta Scenario | 覆盖判定 |
 |---|---|---|
 | #1 注册后进入资料完善页 | `user-auth`「注册成功后自动登录」+ `user-profile`「注册后资料未完善」 | 完整（自动登录 + 未完善标记 + 进入完善页） |
 | #2 提交完整资料并生成个人主页 | 「完整必填资料保存成功」「保存后进入本人主页」 | 完整（状态迁移 + 主页展示） |
@@ -83,7 +83,7 @@ Requirement 正文由「校验昵称与兴趣标签数量」收窄为「校验�
 1. **ADDED / MODIFIED 分工。** `user-profile` 是新业务概念，用 ADDED；`user-auth` 的「注册账号」是既有块，用 MODIFIED 并原样保留 4 个基线场景。`add-user-auth` 已归档，Living Spec 是唯一权威基线，不能用 ADDED 再造一条注册需求。
 2. **昵称只有一个来源。** 注册时收集的昵称写入账号；完善页的昵称是同一条账号字段的编辑入口，不新建第二份资料表。P3 `design.md` 需明确这一点，避免出现「账号昵称」与「资料昵称」两个值。
 3. **年龄 / 星座由服务端派生。** 只返回只读年龄与星座；完整生日对其他人不可见，本人编辑时可回填。星座边界由 P3 表驱动并加单测。
-4. **学校选填覆盖原始 AC。** 原始 AC 把学校列为必填；用户裁决 D2 追加改为选填，并新增选填「职业」（D6）承载非学生身份。必填集合以 REQ-007 §5 为准。
+4. **学校选填覆盖原始 AC。** 原始 AC 把学校列为必填；用户裁决 D2 追加改为选填，并新增选填「职业」（D6）承载非学生身份。必填集合以 REQ-008 §5 为准。
 5. **职业是四选一而非自由文本。** 学生 / 上班族 / 自由职业 / 其他，单选；「其他」承接残余情况，保证展示与后续筛选稳定。职业与学校可同时填写，也可只填其一。
 6. **头像选填覆盖原始 AC。** 用户裁决 D1：真实上传但选填；无头像回退昵称首字，任何展示位不出现空框。
 7. **完善状态派生、不落库。** 「资料未完善」是必填字段的函数；跳过是允许的，且不阻断浏览、发布、申请、聊天与体验。

@@ -1,6 +1,6 @@
 # S18 — 完善个人资料并生成个人主页
 
-- **Parent REQ：** REQ-007 `requirement-workspace/requirements/REQ-007-user-profile.md`
+- **Parent REQ：** REQ-008 `requirement-workspace/requirements/REQ-008-user-profile.md`
 - **Change：** `add-user-profile`
 - **Priority：** P0 ｜ **Iteration：** 1（第 1–2 天）｜ **Points：** 3
 - **Page：** 个人资料完善页 / 个人主页
@@ -15,7 +15,7 @@
 
 | 组 | AC | 覆盖场景 |
 |---|---|---|
-| 入口 | 注册成功后可进入个人资料完善页 | REQ-007 §4 #1 |
+| 入口 | 注册成功后可进入个人资料完善页 | REQ-008 §4 #1 |
 | 身份 | 上传头像（选填）、填写昵称 | §4 #5、#6 |
 | 派生 | 填写生日，系统自动计算并展示年龄与星座 | §4 #3、#15 |
 | 基本资料 | 选择性别、填写所在城市、学校（选填）、专业（选填）、职业（选填） | §4 #7、#10 |
@@ -35,7 +35,7 @@
 
 ## Requirement traceability
 
-| Story AC | REQ-007 scenario | Change spec scenario |
+| Story AC | REQ-008 scenario | Change spec scenario |
 |---|---|---|
 | 注册后进入完善页 | §4 #1 | `user-auth` / 注册成功后自动登录（进入资料完善页） |
 | 头像 + 昵称 | §4 #5、#6 | `user-profile` / 上传头像成功、未上传头像 |
