@@ -1,6 +1,6 @@
 import { expect, test, type Page } from '@playwright/test';
 
-const API = 'http://localhost:8080/api';
+const API = '/api';
 
 async function loginAs(page: Page, userId: number) {
   await page.addInitScript((id) => {

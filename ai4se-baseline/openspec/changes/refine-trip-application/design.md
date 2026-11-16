@@ -26,7 +26,7 @@
 - **Context：** 现状是独立「申请待处理」Tag + 申请说明 + 小号取消按钮；原型是等待提示 + 撤回，已匹配是名单提示 + 沟通，不可申请是原因提示。
 - **Decision：** 非发布者的申请区统一按原型分支渲染：
   - pending：「申请已提交，等待 {发布者昵称} 回应。处理前你可以随时撤回。」+「撤回申请」；
-  - accepted：「你已在同行名单中，可以和发起人确认集合与安排。」+「和 TA 聊聊」+「退出同行」；
+  - accepted：「你已在同行名单中，可以和发起人确认集合与安排。」+「与 {发布者昵称} 沟通」+「退出同行」；
   - unavailable：`.action-note.warn` 展示「人数已满」/「行程已结束」/「当前不可申请」；
   - apply：说明框 +「提交同行申请」+ 聊天说明。
   待处理态不重复展示申请人自己填写的说明（原型不展示；发布者仍可在申请列表看到）。
@@ -36,7 +36,7 @@
 ### D4 错误码在页面层映射为可读文案，并刷新状态
 
 - **Context：** `api.ts` 把所有非 2xx 统一抛成 `Error(body.code)`；现状把 `DUPLICATE_APPLICATION` 直接放进 `Alert`。后端顺序是「本人 → 重复 → 非 recruiting」，满员时若已有有效申请会先返回重复错误。
-- **Decision：** 新增纯函数 `applicationErrorMessage(code, tripStatus)`：`DUPLICATE_APPLICATION` → 「已申请，请等待回应」；`TRIP_NOT_OPEN` → 按当前行程状态返回「人数已满」/「行程已结束」/「当前不可申请」；其它错误码返回 `null`，保留原始错误码作诊断描述。提交失败后同时刷新「我的申请」与行程详情；成功时写入返回的申请并清空输入。
+- **Decision：** 新增纯函数 `applicationErrorMessage(code, tripStatus)`：`DUPLICATE_APPLICATION` → 「已申请，请等待回应」；`TRIP_NOT_OPEN` → 按刷新后的行程状态返回「人数已满」/「行程已结束」/「当前不可申请」；其它错误码返回 `null`，保留原始错误码作诊断描述。提交失败后先重新拉取行程状态（页面快照可能过期），再同时刷新「我的申请」与行程详情；成功时写入返回的申请并清空输入。刷新失败时 `TRIP_NOT_OPEN` 退化为「当前不可申请」。
 - **Rejected：** 改 `api.ts` 的通用错误行为（影响全站）；只在前端隐藏入口（用户要求后端同样拒绝）；把两种 409 合并成一句「当前不可申请」（丢失重复提示的 AC）。
 - **Consequence：** 重复申请出现可读提示并自动进入待处理态；满员 / 结束后入口原因随刷新收敛；未知错误仍能定位错误码。
 
@@ -64,7 +64,7 @@
 ### D8 测试先行：E2E 覆盖用户路径，纯函数用 Vitest
 
 - **Context：** 现有 `companions.spec.ts` 走弹窗选择器；仓库只有纯逻辑单测（Vitest），没有组件测试库。
-- **Decision：** 先改 E2E 并跑红；新增 `applicationEntry.test.ts` 覆盖状态派生与错误映射；E2E 用 `getByRole` / `getByPlaceholder` / `getByText`，停留页用例用 `page.request` 制造服务端变化；测试行程用唯一标题并在可完成时由发布者结束，避免污染首页。
+- **Decision：** 先改 E2E 并跑红；新增 `applicationEntry.test.ts` 覆盖状态派生与错误映射；E2E 用 `getByRole` / `getByPlaceholder` / `getByText`，直接 API 调用改为相对 `/api`（经 Playwright `baseURL` + Vite proxy，支持隔离端口验证），停留页用例用 `page.request` 制造服务端变化；测试行程用唯一标题并在可完成时由发布者结束，避免污染首页。
 - **Rejected：** 只靠 E2E 覆盖状态组合（慢且定位差）；引入组件测试库（仓库未使用，违反「不引入第二套」）；用 `waitForTimeout` 等待刷新。
 - **Consequence：** 状态顺序与错误映射有快速回归；用户路径由 6 条 E2E 守住。
 

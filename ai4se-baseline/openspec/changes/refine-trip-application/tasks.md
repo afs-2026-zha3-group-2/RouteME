@@ -10,66 +10,67 @@
 
 ### T1 [tests] 先改 / 补同行申请 E2E 验收
 
-- [ ] 改造 `RouteME/e2e/tests/companions.spec.ts` 的 `applies, gets accepted, chats, reports and leaves`：删除「点击申请同行 → 弹窗填写」路径，改为直接定位内联 `textbox`（placeholder 为原型示例）→ 填写 → 点「提交同行申请」→ 断言「申请已提交，等待 … 回应。处理前你可以随时撤回。」；接受、聊天、举报、退出断言保持不动。
-- [ ] 新增 `applies inline and keeps the pending state after reload`：可申请详情页出现 `textbox` 与「提交同行申请」，`getByRole('dialog')` 数量为 0；输入 130 字后值长度为 120；提交后表单消失、出现「撤回申请」；`reload()` 后仍为待处理。
-- [ ] 新增 `blocks a duplicate application submitted from a stale page`：先加载可申请详情，再用 `page.request` 以当前用户提交申请，并由第三人申请、发布者接受至满员；页面仍点「提交同行申请」→ 出现「已申请，请等待回应」，刷新为待处理，`/me/applications` 中该行程仍只有 1 条。
-- [ ] 新增 `rejects a submission after the trip fills and shows the reason`：停留页期间由第三人申请并被接受至满员；仍提交 → 展示「人数已满」；刷新后无表单、无「提交同行申请」。
-- [ ] 新增 `rejects a submission after the trip ends`：停留页期间由发布者结束行程；仍提交 → 展示「行程已结束」；刷新后无表单。
-- [ ] 新增 `withdraws a pending application and restores the inline form`：空说明提交成功且 `/me/applications` 的 `message` 为 `null`；点「撤回申请」→ 确认弹窗 → 状态「已取消」；表单恢复；刷新后仍可申请。
-- [ ] 改造 `keeps companion entry points honest`：自己发布的行程无 `textbox`、无「提交同行申请」；「查看同行的申请」「标记为已结束」仍可见；既有聊天只读断言保留。
-- [ ] 增加辅助函数：`createTripViaApi(page, publisherId, title, capacity)`、`applyViaApi`、`acceptViaApi`（按 `applicant.id === 3` 找申请）、`completeViaApi`；测试行程用唯一标题并在可完成时于用例末尾结束。
-- [ ] 运行新 spec，记录预期失败（仍为弹窗入口、无「提交同行申请」、无「已申请，请等待回应」）。
+- [x] 改造 `RouteME/e2e/tests/companions.spec.ts` 的 `applies, gets accepted, chats, reports and leaves`：删除「点击申请同行 → 弹窗填写」路径，改为直接定位内联 `textbox`（placeholder 为原型示例）→ 填写 → 点「提交同行申请」→ 断言「申请已提交，等待 … 回应。处理前你可以随时撤回。」；接受、聊天、举报、退出断言保持不动。
+- [x] 新增 `applies inline and keeps the pending state after reload`：可申请详情页出现 `textbox` 与「提交同行申请」，`getByRole('dialog')` 数量为 0；输入 130 字后值长度为 120；提交后表单消失、出现「撤回申请」；`reload()` 后仍为待处理。
+- [x] 新增 `blocks a duplicate application submitted from a stale page`：先加载可申请详情，再用 `page.request` 以当前用户提交申请，并由第三人申请、发布者接受至满员；页面仍点「提交同行申请」→ 出现「已申请，请等待回应」，刷新为待处理，`/me/applications` 中该行程仍只有 1 条。
+- [x] 新增 `rejects a submission after the trip fills and shows the reason`：停留页期间由第三人申请并被接受至满员；仍提交 → 展示「人数已满」；刷新后无表单、无「提交同行申请」。
+- [x] 新增 `rejects a submission after the trip ends`：停留页期间由发布者结束行程；仍提交 → 展示「行程已结束」；刷新后无表单。
+- [x] 新增 `withdraws a pending application and restores the inline form`：空说明提交成功且 `/me/applications` 的 `message` 为 `null`；点「撤回申请」→ 确认弹窗 → 状态「已取消」；表单恢复；刷新后仍可申请。
+- [x] 改造 `keeps companion entry points honest`：自己发布的行程无 `textbox`、无「提交同行申请」；「查看同行的申请」「标记为已结束」仍可见；既有聊天只读断言保留。
+- [x] 增加辅助函数：`createTripViaApi(page, publisherId, title, capacity)`、`applyViaApi`、`acceptViaApi`（按 `applicant.id === 3` 找申请）、`completeViaApi`；测试行程用唯一标题并在可完成时于用例末尾结束。
+- [x] 运行新 spec，记录预期失败（仍为弹窗入口、无「提交同行申请」、无「已申请，请等待回应」）。
 
 **验证：** 启动后端 + 前端后 `cd RouteME/e2e; npx playwright test tests/companions.spec.ts`（新用例 red，既有 trips / experiences / auth spec 不受影响）
 **覆盖：** E1–E8、RV-1、RV-4、RV-6
 
 ### T2 [frontend] 入口状态与错误映射纯函数 + 文案
 
-- [ ] 新增 `RouteME/frontend/src/trips/applicationEntry.ts`：
+- [x] 新增 `RouteME/frontend/src/trips/applicationEntry.ts`：
   - `applicationEntryState(trip, userId, application)` 返回 `publisher | pending | accepted | apply | unavailable`，顺序为「发布者 → pending → accepted → completed → full → apply」；`cancelled` / `rejected` 不算有效申请。
   - `applicationErrorMessage(code, tripStatus)`：`DUPLICATE_APPLICATION` →「已申请，请等待回应」；`TRIP_NOT_OPEN` →「人数已满」/「行程已结束」/「当前不可申请」；未知错误码返回 `null`。
-- [ ] 先写 `applicationEntry.test.ts`（red），覆盖 ATDD §1.2 的全部状态与错误码组合，包括「满员 + accepted 仍为 accepted」「cancelled → apply」。
-- [ ] `tripMessages.ts`：新增 `applyAreaTitle: '下一步'`、`applyMessageLabel: '一句申请说明'`、`applyMessageOptional: '让对方知道你为什么合适'`、`applyChatHint`、`applyDuplicate: '已申请，请等待回应'`、`applyFull: '人数已满'`、`applyEnded: '行程已结束'`、`applyUnavailable: '当前不可申请'`、`applyAcceptedNote`；`applySubmit` 改为「提交同行申请」，`applyCancel` 改为「撤回申请」，`applyCancelConfirm` 改为「撤回这条申请？」，`applyMessagePlaceholder` 改为原型示例「例如：这条线我走过一半，想补上日落那段，可以帮忙背装备。」；删除仅弹窗使用的 `applyDialogTitle`（若确认无引用）。
-- [ ] 运行 `npm test`，确认新增单测由 red 转 green。
+- [x] 先写 `applicationEntry.test.ts`（red），覆盖 ATDD §1.2 的全部状态与错误码组合，包括「满员 + accepted 仍为 accepted」「cancelled → apply」。
+- [x] `tripMessages.ts`：新增 `applyAreaTitle: '下一步'`、`applyMessageLabel: '一句申请说明'`、`applyMessageOptional: '让对方知道你为什么合适'`、`applyChatHint`、`applyDuplicate: '已申请，请等待回应'`、`applyFull: '人数已满'`、`applyEnded: '行程已结束'`、`applyUnavailable: '当前不可申请'`、`applyAcceptedNote`；`applySubmit` 改为「提交同行申请」，`applyCancel` 改为「撤回申请」，`applyCancelConfirm` 改为「撤回这条申请？」，`applyMessagePlaceholder` 改为原型示例「例如：这条线我走过一半，想补上日落那段，可以帮忙背装备。」；删除仅弹窗使用的 `applyDialogTitle`（若确认无引用）。
+- [x] 运行 `npm test`，确认新增单测由 red 转 green。
 
 **验证：** `cd RouteME/frontend; npm test`
 **覆盖：** E5、E6、E7、E8（状态与映射）；RV-6
 
 ### T3 [frontend] 详情页内联申请区与状态分支
 
-- [ ] `TripDetailPage.tsx`：删除申请 `Modal`、`applyOpen` 与弹窗触发器；用 `applicationEntryState` 派生状态。
-- [ ] 非发布者渲染 `section.detail-section.detail-application`（标题「下一步」）：
+- [x] `TripDetailPage.tsx`：删除申请 `Modal`、`applyOpen` 与弹窗触发器；用 `applicationEntryState` 派生状态。
+- [x] 非发布者渲染 `section.detail-section.detail-application`（标题「下一步」）：
   - apply：`label.field` + `Input.TextArea`（`rows={3}`、`maxLength={120}`、原型 placeholder、无 `showCount`）+「提交同行申请」（`type="primary" block`，`loading`）+ 聊天说明 `.hint`；
   - pending：等待提示（含 `trip.publisher.nickname`）+「撤回申请」（打开既有确认弹窗）；
-  - accepted：「你已在同行名单中…」+「和 TA 聊聊」+「退出同行」；
+  - accepted：「你已在同行名单中…」+「与 {发布者昵称} 沟通」+「退出同行」；
   - unavailable：`.action-note.warn` 展示人数已满 / 行程已结束 / 当前不可申请。
-- [ ] 删除原独立 `application-status` 区块与底部「申请同行」按钮 / 「当前不可申请」徽标；发布者的「标记为已结束」「查看同行的申请」「这是你发布的行程」保持可用。
-- [ ] 提交成功：写入返回的申请、清空输入、`reload()`；提交失败：用 `applicationErrorMessage` 映射 `actionError`，并同时刷新「我的申请」与行程（重复 → pending，满员 / 结束 → 原因）。
-- [ ] 撤回成功：用返回的已取消申请更新状态，表单立即恢复；不整页刷新。
-- [ ] 提交中禁用按钮，避免重复点击。
+- [x] 删除原独立 `application-status` 区块与底部「申请同行」按钮 / 「当前不可申请」徽标；发布者的「标记为已结束」「查看同行的申请」「这是你发布的行程」保持可用。
+- [x] 提交成功：写入返回的申请、清空输入、`reload()`。
+- [x] 提交失败：先重新拉取行程状态，再用 `applicationErrorMessage` 映射 `actionError`，并同时刷新「我的申请」与行程（重复 → pending，满员 / 结束 → 原因）。
+- [x] 撤回成功：用返回的已取消申请更新状态，表单立即恢复；不整页刷新。
+- [x] 提交中禁用按钮，避免重复点击。
 
 **验证：** `cd RouteME/frontend; npm run build; npm test`；E2E T1 用例
 **覆盖：** E1–E8、RV-3、RV-4、RV-6
 
 ### T4 [frontend] 申请区样式（按原型、只用令牌）
 
-- [ ] `styles.css` 新增 `.detail-application` 作用域样式：`.action-box`（grid，gap 11px）、`.action-note` / `.action-note.warn`（12.5px、`--surface-2`、左侧 3px `--lagoon` / `--warn`）、`.apply-form`（grid，gap 9px）。
-- [ ] `.apply-form .label` 覆盖筛选面板的大写样式（12px、`--ink-2`、flex + gap 6px）；`.apply-form .opt`（11px、`--ink-3`）；`.apply-form .hint`（11.5px、`--ink-3`、line-height 1.5）。
-- [ ] `.apply-form textarea.ant-input`：padding 10px 13px、圆角、`--surface` 背景、1.5px `--line` 边框、min-height 92px、focus 用 `--lagoon` + `--ring`；不写十六进制色值。
-- [ ] 1440 / 1024 / 768 / 390 逐屏对照原型：说明框与按钮整行宽度、无横向溢出；浅色 / 深色各看一遍。
-- [ ] 键盘 Tab 可依次到达说明框、提交按钮、撤回按钮；提示文本可被读屏读出。
+- [x] `styles.css` 新增 `.detail-application` 作用域样式：`.action-box`（grid，gap 11px）、`.action-note` / `.action-note.warn`（12.5px、`--surface-2`、左侧 3px `--lagoon` / `--warn`）、`.apply-form`（grid，gap 9px）。
+- [x] `.apply-form .label` 覆盖筛选面板的大写样式（12px、`--ink-2`、flex + gap 6px）；`.apply-form .opt`（11px、`--ink-3`）；`.apply-form .hint`（11.5px、`--ink-3`、line-height 1.5）。
+- [x] `.apply-form textarea.ant-input`：padding 10px 13px、圆角、`--surface` 背景、1.5px `--line` 边框、min-height 92px、focus 用 `--lagoon` + `--ring`；不写十六进制色值。
+- [x] 1440 / 1024 / 768 / 390 逐屏对照原型：说明框与按钮整行宽度、无横向溢出；浅色 / 深色各看一遍。
+- [x] 键盘 Tab 可依次到达说明框、提交按钮、撤回按钮；提示文本可被读屏读出。
 
 **验证：** `cd RouteME/frontend; npm run build`；手工对照 `docs/prototype/prototype.html` 详情页操作区
 **覆盖：** E1、E2、E6（可见性与布局）；RV-4
 
 ### T5 [verify] 全量回归与零 diff 核对
 
-- [ ] `cd RouteME/frontend; npm run build; npm test`。
-- [ ] `cd RouteME/backend; .\mvnw.cmd -B test`（无后端改动；重点 `ApplicationControllerTest` 的本人 / 重复 / 满员 / 结束 / 空说明 / 超长说明 / 取消用例）。
-- [ ] `cd RouteME/e2e; npx playwright test tests/companions.spec.ts`（6 项全绿）；再跑既有 `trips.spec.ts` / `experiences.spec.ts` / `auth.spec.ts` 确认无回归。
-- [ ] 手工 1440 / 1024 / 768 / 390、浅色 / 深色：本人 / 可申请 / 待处理 / 已匹配 / 满员 / 已结束六种状态；Tab 走查说明框、提交、撤回。
-- [ ] 确认 `RouteME/openapi.yaml`、`RouteME/backend/**`、`db/migration/**`、`docs/prototype/**` 无 diff；`openspec validate refine-trip-application --strict` 通过。
-- [ ] 把真实输出写入 `docs/ai4se-plugins/<timestamp>-local-verify-report.md`。
+- [x] `cd RouteME/frontend; npm run build; npm test`。
+- [x] `cd RouteME/backend; .\mvnw.cmd -B test`（无后端改动；重点 `ApplicationControllerTest` 的本人 / 重复 / 满员 / 结束 / 空说明 / 超长说明 / 取消用例）。
+- [x] `cd RouteME/e2e; npx playwright test tests/companions.spec.ts`（8 项全绿）；再跑既有 `trips.spec.ts` / `experiences.spec.ts` / `auth.spec.ts` 确认无回归。
+- [x] 手工 1440 / 1024 / 768 / 390、浅色 / 深色：本人 / 可申请 / 待处理 / 已匹配 / 满员 / 已结束六种状态；Tab 走查说明框、提交、撤回。
+- [x] 确认 `RouteME/openapi.yaml`、`RouteME/backend/**`、`db/migration/**`、`docs/prototype/**` 无 diff；`openspec validate refine-trip-application --strict` 通过。
+- [x] 把真实输出写入 `docs/ai4se-plugins/<timestamp>-local-verify-report.md`。
 
 **验证：** 上述命令全绿；真实输出写入 local-verify 报告
 **覆盖：** 全部场景 + RV-1–RV-6
@@ -104,4 +105,10 @@
 
 ## P4 执行记录
 
-> 待 P4 填写：T1 red 证据、T2–T4 实现、T5 回归输出与 local-verify 报告路径。
+- **T1（red）：** 新增的 inline / duplicate / fills / ends / withdraw 用例与改写的 `applies, gets accepted…` 在实现前均失败（仍为弹窗入口、无「提交同行申请」、无「已申请，请等待回应」）。为取得干净的 red，先用 `git stash push` 暂存 `TripDetailPage.tsx` / `tripMessages.ts` / `styles.css`，在隔离端口 5174 跑 `companions.spec.ts` 确认失败，再 `git stash pop` 恢复实现。
+- **T2：** `applicationEntry.ts` + `applicationEntry.test.ts` 先红后绿（13 项）；`tripMessages.ts` 新增 6 条文案、改 4 条、删除 `applyDialogTitle` 与 `chatEntry`。
+- **T3：** `TripDetailPage.tsx` 删除申请 Modal 与 `applyOpen`，改为 `applicationEntryState` 派生 + 内联「下一步」申请区（apply / pending / accepted / unavailable）；提交失败先 `loadTrip` 拉最新状态再映射，并刷新我的申请与行程；撤回用返回的已取消申请更新，表单立即恢复。
+- **T4：** `styles.css` 新增 `.detail-application` 作用域样式，数值对齐原型 `actionBox`，颜色全部使用 `--*` 令牌；1440 / 1024 / 768 / 390 与浅 / 深色对照无横向溢出。
+- **T5（回归）：** `npm run build` 通过（1523 modules，JS 900.08 kB）；`npm test` 10 文件 / 88 项通过；后端 `mvnw -B test` 156 项通过；`companions.spec.ts` 8/8；全套 `playwright test` 30/30；`openspec validate --strict` valid；`openapi.yaml` / `backend/**` / `db/migration/**` / `docs/prototype/**` 零 diff。报告：`docs/ai4se-plugins/20261116-141500-local-verify-report.md`（Overall Pass）。
+- **环境与偏差：** 共享 5173 / 8080 被另一会话占用，改用独立后端 8090 + 独立 SQLite + Vite 5174（临时配置验证后删除）；4 个 E2E spec 的 API 基址改为相对 `/api`，经 `baseURL` + Vite proxy，默认仍指向 8080。已匹配状态按用户裁决统一为原型口径（名单提示 + 沟通 + 退出），原「已匹配同行」Tag 区块移除。
+- **未执行：** T6 属 P5 / G3，本次未动 `openspec/specs/**` 与归档。

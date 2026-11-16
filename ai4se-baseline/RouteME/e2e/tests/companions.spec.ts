@@ -1,6 +1,8 @@
 import { expect, test, type Page } from '@playwright/test';
 
-const API = 'http://localhost:8080/api';
+const API = '/api';
+const APPLY_PLACEHOLDER = '例如：这条线我走过一半，想补上日落那段，可以帮忙背装备。';
+const PENDING_NOTE = '申请已提交，等待 陈屿 回应。处理前你可以随时撤回。';
 
 async function loginAs(page: Page, userId: number) {
   await page.addInitScript((id) => {
@@ -13,7 +15,7 @@ async function switchUser(page: Page, userId: number) {
   await page.reload();
 }
 
-async function createTripViaApi(page: Page, publisherId: number, title: string) {
+async function createTripViaApi(page: Page, publisherId: number, title: string, capacity = 3) {
   const response = await page.request.post(`${API}/trips`, {
     headers: { 'X-User-Id': String(publisherId), 'Content-Type': 'application/json' },
     data: {
@@ -23,11 +25,49 @@ async function createTripViaApi(page: Page, publisherId: number, title: string) 
       end_date: '2026-12-12',
       stops: ['香洲港集合', '情侣路骑行'],
       tags: ['摄影'],
-      capacity: 3,
+      capacity,
     },
   });
   expect(response.ok()).toBeTruthy();
   return (await response.json()) as { id: number };
+}
+
+async function applyViaApi(page: Page, userId: number, tripId: number, message: string | null = null) {
+  const response = await page.request.post(`${API}/trips/${tripId}/applications`, {
+    headers: { 'X-User-Id': String(userId), 'Content-Type': 'application/json' },
+    data: { message },
+  });
+  expect(response.ok()).toBeTruthy();
+  return (await response.json()) as { id: number };
+}
+
+async function acceptApplicationViaApi(page: Page, publisherId: number, tripId: number, applicantId: number) {
+  const listResponse = await page.request.get(`${API}/trips/${tripId}/applications`, {
+    headers: { 'X-User-Id': String(publisherId) },
+  });
+  expect(listResponse.ok()).toBeTruthy();
+  const applications = (await listResponse.json()) as { id: number; applicant: { id: number } }[];
+  const target = applications.find((application) => application.applicant.id === applicantId);
+  expect(target).toBeTruthy();
+  const response = await page.request.post(`${API}/applications/${target!.id}/accept`, {
+    headers: { 'X-User-Id': String(publisherId) },
+  });
+  expect(response.ok()).toBeTruthy();
+}
+
+async function completeTripViaApi(page: Page, publisherId: number, tripId: number) {
+  const response = await page.request.post(`${API}/trips/${tripId}/complete`, {
+    headers: { 'X-User-Id': String(publisherId) },
+  });
+  expect(response.ok()).toBeTruthy();
+}
+
+async function loadMyApplicationsViaApi(page: Page, userId: number) {
+  const response = await page.request.get(`${API}/me/applications`, {
+    headers: { 'X-User-Id': String(userId) },
+  });
+  expect(response.ok()).toBeTruthy();
+  return (await response.json()) as { trip_id: number; message: string | null; status: string }[];
 }
 
 test('shows match reasons and keeps match as the default sort', async ({ page }) => {
@@ -38,8 +78,8 @@ test('shows match reasons and keeps match as the default sort', async ({ page })
   await expect(page.locator('.view-seg')).toContainText('招募中的行程');
 
   const firstCard = page.locator('.trip-card').first();
-    await expect(firstCard.locator('.match-score')).toHaveText(/匹配度 \d+%/);
-    await expect(firstCard.locator('.match-reason-label')).toHaveText('匹配理由');
+  await expect(firstCard.locator('.match-score')).toHaveText(/匹配度 \d+%/);
+  await expect(firstCard.locator('.match-reason-label')).toHaveText('匹配理由');
   await expect(firstCard.locator('.match-reason')).not.toBeEmpty();
 
   const percentages = await page
@@ -48,13 +88,13 @@ test('shows match reasons and keeps match as the default sort', async ({ page })
   expect(percentages.length).toBeGreaterThan(1);
   expect(percentages).toEqual([...percentages].sort((left, right) => right - left));
 
-    const reasonsForUser1 = await page.locator('.trip-card .match-reason').allTextContents();
-    await switchUser(page, 2);
-    await expect(page.locator('.trip-card').first()).toBeVisible();
-    const reasonsForUser2 = await page.locator('.trip-card .match-reason').allTextContents();
-    expect(reasonsForUser2).not.toEqual(reasonsForUser1);
+  const reasonsForUser1 = await page.locator('.trip-card .match-reason').allTextContents();
+  await switchUser(page, 2);
+  await expect(page.locator('.trip-card').first()).toBeVisible();
+  const reasonsForUser2 = await page.locator('.trip-card .match-reason').allTextContents();
+  expect(reasonsForUser2).not.toEqual(reasonsForUser1);
 
-    await firstCard.click();
+  await firstCard.click();
   await expect(page.locator('.match-reason-list li').first()).toBeVisible();
   await expect(page.locator('.detail-meta').filter({ hasText: '匹配度' })).toBeVisible();
 });
@@ -65,10 +105,9 @@ test('applies, gets accepted, chats, reports and leaves', async ({ page }) => {
 
   await loginAs(page, 1);
   await page.goto(`/#/trips/${created.id}`);
-  await page.getByRole('button', { name: '申请同行' }).click();
-  await page.getByPlaceholder('说说你为什么想一起走，方便发布者判断。').fill('想一起拍日落。');
-  await page.getByRole('button', { name: '提交申请' }).click();
-  await expect(page.getByText('申请待处理')).toBeVisible();
+  await page.getByPlaceholder(APPLY_PLACEHOLDER).fill('想一起拍日落。');
+  await page.getByRole('button', { name: '提交同行申请' }).click();
+  await expect(page.getByText(PENDING_NOTE)).toBeVisible();
 
   await switchUser(page, 2);
   await page.goto(`/#/trips/${created.id}/applications`);
@@ -95,12 +134,121 @@ test('applies, gets accepted, chats, reports and leaves', async ({ page }) => {
   await page.getByRole('button', { name: '退出同行' }).click();
   await page.getByRole('dialog').getByRole('button', { name: '退出同行' }).click();
   await expect(page.getByText('已加入 1/3人')).toBeVisible();
-  await expect(page.getByRole('button', { name: '申请同行' })).toBeVisible();
+  await expect(page.getByPlaceholder(APPLY_PLACEHOLDER)).toBeVisible();
 
   await page.goto('/#/mine');
   await expect(page.getByRole('heading', { name: '我的旅行' })).toBeVisible();
   await expect(page.getByRole('tab', { name: /我申请的/ })).toBeVisible();
   await expect(page.getByRole('tab', { name: /已匹配/ })).toBeVisible();
+
+  await completeTripViaApi(page, 2, created.id);
+});
+
+test('applies inline and keeps the pending state after reload', async ({ page }) => {
+  const title = `E2E 内联申请 ${Date.now()}`;
+  const created = await createTripViaApi(page, 2, title);
+
+  await loginAs(page, 1);
+  await page.goto(`/#/trips/${created.id}`);
+
+  await expect(page.getByRole('dialog')).toHaveCount(0);
+  const textarea = page.getByPlaceholder(APPLY_PLACEHOLDER);
+  await expect(textarea).toBeVisible();
+  await textarea.fill('字'.repeat(130));
+  await expect(textarea).toHaveValue('字'.repeat(120));
+  await textarea.fill('想一起拍日落。');
+  await page.getByRole('button', { name: '提交同行申请' }).click();
+
+  await expect(page.getByText(PENDING_NOTE)).toBeVisible();
+  await expect(page.getByRole('button', { name: '撤回申请' })).toBeVisible();
+  await expect(textarea).toHaveCount(0);
+
+  await page.reload();
+  await expect(page.getByText(PENDING_NOTE)).toBeVisible();
+  await expect(page.getByPlaceholder(APPLY_PLACEHOLDER)).toHaveCount(0);
+
+  await completeTripViaApi(page, 2, created.id);
+});
+
+test('blocks a duplicate application submitted from a stale page', async ({ page }) => {
+  const title = `E2E 重复申请 ${Date.now()}`;
+  const created = await createTripViaApi(page, 2, title, 2);
+
+  await loginAs(page, 1);
+  await page.goto(`/#/trips/${created.id}`);
+  await expect(page.getByRole('button', { name: '提交同行申请' })).toBeVisible();
+
+  await applyViaApi(page, 1, created.id, '第一次申请');
+  await applyViaApi(page, 3, created.id, '第三人申请');
+  await acceptApplicationViaApi(page, 2, created.id, 3);
+
+  await page.getByRole('button', { name: '提交同行申请' }).click();
+  await expect(page.getByText('已申请，请等待回应')).toBeVisible();
+  await expect(page.getByText(PENDING_NOTE)).toBeVisible();
+  await expect(page.getByRole('button', { name: '提交同行申请' })).toHaveCount(0);
+
+  const mine = await loadMyApplicationsViaApi(page, 1);
+  expect(mine.filter((application) => application.trip_id === created.id)).toHaveLength(1);
+});
+
+test('rejects a submission after the trip fills and shows the reason', async ({ page }) => {
+  const title = `E2E 满员拒绝 ${Date.now()}`;
+  const created = await createTripViaApi(page, 2, title, 2);
+
+  await loginAs(page, 1);
+  await page.goto(`/#/trips/${created.id}`);
+  await expect(page.getByRole('button', { name: '提交同行申请' })).toBeVisible();
+
+  await applyViaApi(page, 3, created.id, '第三人申请');
+  await acceptApplicationViaApi(page, 2, created.id, 3);
+
+  await page.getByRole('button', { name: '提交同行申请' }).click();
+  await expect(page.locator('.ant-alert').filter({ hasText: '人数已满' })).toBeVisible();
+  await expect(page.getByPlaceholder(APPLY_PLACEHOLDER)).toHaveCount(0);
+  await expect(page.getByRole('button', { name: '提交同行申请' })).toHaveCount(0);
+  await expect(page.locator('.detail-application .action-note')).toHaveText('人数已满');
+});
+
+test('rejects a submission after the trip ends', async ({ page }) => {
+  const title = `E2E 结束拒绝 ${Date.now()}`;
+  const created = await createTripViaApi(page, 2, title);
+
+  await loginAs(page, 1);
+  await page.goto(`/#/trips/${created.id}`);
+  await expect(page.getByRole('button', { name: '提交同行申请' })).toBeVisible();
+
+  await completeTripViaApi(page, 2, created.id);
+
+  await page.getByRole('button', { name: '提交同行申请' }).click();
+  await expect(page.locator('.ant-alert').filter({ hasText: '行程已结束' })).toBeVisible();
+  await expect(page.getByPlaceholder(APPLY_PLACEHOLDER)).toHaveCount(0);
+  await expect(page.locator('.detail-application .action-note')).toHaveText('行程已结束');
+});
+
+test('withdraws a pending application and restores the inline form', async ({ page }) => {
+  const title = `E2E 撤回申请 ${Date.now()}`;
+  const created = await createTripViaApi(page, 2, title);
+
+  await loginAs(page, 1);
+  await page.goto(`/#/trips/${created.id}`);
+  await page.getByRole('button', { name: '提交同行申请' }).click();
+  await expect(page.getByText(PENDING_NOTE)).toBeVisible();
+
+  const mine = await loadMyApplicationsViaApi(page, 1);
+  const application = mine.find((item) => item.trip_id === created.id);
+  expect(application?.message).toBeNull();
+
+  await page.getByRole('button', { name: '撤回申请' }).click();
+  await page.getByRole('dialog').getByRole('button', { name: '撤回申请' }).click();
+  await expect(page.getByPlaceholder(APPLY_PLACEHOLDER)).toBeVisible();
+
+  const afterCancel = await loadMyApplicationsViaApi(page, 1);
+  expect(afterCancel.find((item) => item.trip_id === created.id)?.status).toBe('cancelled');
+
+  await page.reload();
+  await expect(page.getByPlaceholder(APPLY_PLACEHOLDER)).toBeVisible();
+
+  await completeTripViaApi(page, 2, created.id);
 });
 
 test('keeps companion entry points honest', async ({ page }) => {
@@ -109,8 +257,10 @@ test('keeps companion entry points honest', async ({ page }) => {
 
   await loginAs(page, 1);
   await page.goto(`/#/trips/${created.id}`);
-  await expect(page.getByRole('button', { name: '申请同行' })).toHaveCount(0);
+  await expect(page.getByRole('button', { name: '提交同行申请' })).toHaveCount(0);
+  await expect(page.getByPlaceholder(APPLY_PLACEHOLDER)).toHaveCount(0);
   await expect(page.getByRole('button', { name: /查看同行的申请/ })).toBeVisible();
+  await expect(page.getByRole('button', { name: '标记为已结束' })).toBeVisible();
 
   await page.goto('/#/chat/3/2');
   await expect(page.getByText('只有已匹配的同行者可以沟通。')).toBeVisible();

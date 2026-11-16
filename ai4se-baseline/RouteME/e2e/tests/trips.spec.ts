@@ -1,6 +1,6 @@
 import { expect, test, type Page } from '@playwright/test';
 
-const API = 'http://localhost:8080/api';
+const API = '/api';
 
 async function loginAs(page: Page, userId: number) {
   await page.addInitScript((id) => {
@@ -182,7 +182,7 @@ test('keeps out-of-scope actions off the screens', async ({ page }) => {
   await loginAs(page, 1);
   await page.goto('/#/trips/5');
 
-  await expect(page.getByRole('button', { name: '申请同行' })).toBeVisible();
+  await expect(page.getByRole('button', { name: '提交同行申请' })).toBeVisible();
   await expect(page.getByRole('button', { name: '标记为已结束' })).toHaveCount(0);
   await expect(page.getByRole('button', { name: /编辑|删除|取消行程/ })).toHaveCount(0);
 

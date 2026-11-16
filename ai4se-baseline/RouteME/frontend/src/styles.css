@@ -1857,6 +1857,84 @@ svg {
   gap: 8px;
 }
 
+/* ---------- 详情页申请区（原型 actionBox） ---------- */
+.detail-application .action-box {
+  display: grid;
+  gap: 11px;
+}
+
+.detail-application .action-note {
+  font-size: 12.5px;
+  line-height: 1.55;
+  color: var(--ink-2);
+  padding: 11px 13px;
+  border-radius: 11px;
+  background: var(--surface-2);
+  border-left: 3px solid var(--lagoon);
+}
+
+.detail-application .action-note.warn {
+  border-left-color: var(--warn);
+}
+
+.detail-application .apply-form {
+  display: grid;
+  gap: 9px;
+}
+
+.detail-application .apply-form .label {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: var(--ink-2);
+  text-transform: none;
+}
+
+.detail-application .apply-form .opt {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--ink-3);
+}
+
+.detail-application .apply-form .hint {
+  margin: 0;
+  font-size: 11.5px;
+  line-height: 1.5;
+  color: var(--ink-3);
+}
+
+.detail-application .apply-form textarea.ant-input {
+  width: 100%;
+  min-height: 92px;
+  padding: 10px 13px;
+  border: 1.5px solid var(--line);
+  border-radius: 11px;
+  background: var(--surface);
+  color: var(--ink);
+  font-size: 14px;
+  line-height: 1.62;
+  resize: vertical;
+  box-shadow: none;
+}
+
+.detail-application .apply-form textarea.ant-input::placeholder {
+  color: var(--ink-3);
+}
+
+.detail-application .apply-form textarea.ant-input:hover {
+  border-color: var(--line-2);
+}
+
+.detail-application .apply-form textarea.ant-input:focus {
+  outline: none;
+  border-color: var(--lagoon);
+  box-shadow: var(--ring);
+}
+
 .experience-list-head {
   display: flex;
   flex-wrap: wrap;
