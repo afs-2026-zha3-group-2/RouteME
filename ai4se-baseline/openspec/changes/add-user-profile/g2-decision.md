@@ -28,7 +28,7 @@
 | review | Skipped | 未运行独立评审工具；按 TDD + ATDD 覆盖 |
 | evidence | Pass | 本地验证报告 + 10 E2E + 95 前端 + 198 后端 + 迁移双路径 |
 | ci | Pass | 本地等价全绿；远端 `e54f273` 由 `build-e54f273` tag 推断 success，当前绿色 tip `9fd5764` 由 `build-9fd5764` 佐证（含本 change 的 `8de3351` / `db8211b`） |
-| cd | Pass | 发布 `build-e54f273`、`build-9fd5764`（中间 `build-022659c`） |
+| cd | Pass | 发布 `build-e54f273`、`build-9fd5764`、`build-a2d17fb`（中间 `build-022659c`） |
 
 ## Defect grades
 
@@ -82,5 +82,5 @@
 
 - VL 签署 Decision 后，P4 方可关闭；P5 归档按用户指示另行发起。
 - CI 证据：本地等价全绿 + 远端 `build-e54f273`（含 `a95254c`；中间 `build-022659c`）。
-- 侧栏 delta 的 tip `294f487` 尚无对应 `build-*` tag；签署前需按 tag 复核（或由 VL 接受 local-equivalent）。
+- 侧栏 delta 的 tip `a2d17fb`（含 `294f487`）已出现 `build-a2d17fb` tag，签署时可作为该 delta 的 CI 证据。
 - **不要**在 VL 签署前把本文件当作 Pass 证据引用。

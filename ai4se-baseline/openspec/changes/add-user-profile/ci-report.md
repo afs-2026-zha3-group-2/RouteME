@@ -33,6 +33,8 @@
 
 **Post-CI fix:** 「其他职业自填」随 `3c8355b` 推送；`refs/tags/build-3c8355b` 已出现（`cd.yml` 仅在 CI success 后发布），远端结论 success。生日 DatePicker（13/13 E2E、前端 133）在本提交后落地。`8de3351` 首次远端运行在 Frontend job 失败：`npm install` 生成的 lockfile 记录了公司 Artifactory 的 tarball URL（GitHub runner 不可解析，`ENOTFOUND`）；`9f11bde` 仅把该条 `resolved` 改回 `registry.npmjs.org`（integrity 不变），随后 `build-9fd5764` tag 出现，证明含 `8de3351` / `db8211b` 的 main 已通过 CI。本地另有后端 211、前端 15 文件 / 133。
 
+**Post-CI update（侧栏 delta）:** 侧栏分组 + 资料入口随 `294f487` 推送，G2 输入表随 `a2d17fb` 更新；`refs/tags/build-a2d17fb` 已出现（`cd.yml` 仅在 CI success 后发布），证明含 `294f487` 的 tip 通过 CI。本地同 tip 复核：`npm run typecheck` 通过、`npm test` 16 文件 / 137 项、`npm run build` 通过。
+
 ## Jobs / checks
 
 | Phase | Job/Stage | Status | Duration | URL | Failure reason |
