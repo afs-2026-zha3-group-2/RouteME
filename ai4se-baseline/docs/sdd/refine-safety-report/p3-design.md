@@ -71,11 +71,12 @@
 | 阶段 | 提交 |
 |---|---|
 | P1 | `30085eb` docs(p1): … intent stage |
-| P2 rev1 | `2ddfa03` / `43cffaa` rebase |
-| P2 rev2 | `43cffaa` rebase spec on report-entry-only design · `255bd29` G1 rev2 approval |
-| P3 | `docs(p3): refine-safety-report design header report entry and ATDD plan`（本阶段，仅本地） |
+| P2 rev1 | `2ddfa03` align delta spec and record G1 |
+| P2 rev2 | `642e529` rebase spec on report-entry-only design · `159c48f` G1 rev2 approval（rebase 后的哈希） |
+| P3 | `cee7ccd` docs(p3): design header report entry and ATDD plan |
+| 收口 | `b2becdf` 恢复 `WAYNE` 拼写（rebase 覆盖了上游 `24736f7` 的更正） |
 
-不 push。分支上还有并行会话的提交，因此只暂存 §9 列出的文件。
+2026-11-16 按用户指示提交并 `git pull`：分支 rebase 到 `origin/main`（`f6da5da`），6 个本地提交重放；冲突 6 个文件，`spec.md` / `g1-decision.md` / `p2-spec.md` / 两份 `-review-2.md` 取本地 rev2 版本，`registry.md` / `handoff.md` 逐行合并并保留上游 `WAYNE` 更正。上游新规则 `@rule:artifact-review-gate`（`baefe40`）把 `design` / `tasks` 改为双人签署、评审报告改为 WAYNE + 当前开发者，本记录 §10 按其填齐。未 push。
 
 ## 9. 本阶段产出
 
@@ -89,14 +90,25 @@
 
 ## 10. 负责人签署
 
-| 角色 | 姓名 | 本阶段确认内容 | 状态 |
+按 `@rule:artifact-review-gate` 的签署人矩阵（2026-11-16 上游更新）：`design.md` / `tasks.md` 为「当前开发者 + 1 名非当前开发者且非 WAYNE 的成员」，两份 `docs/reviews/` 评审报告为「WAYNE + 当前开发者」。逐条记录写在对应评审报告的「签署记录」小节。
+
+| 对象 | 签署位 | 批准人 | 时间 |
 |---|---|---|---|
-| AO（当前开发） | Jacky | 接受 D1–D7 与 T1–T6，承接 P4 | **待批准** —— 先跑 `design.md` / `tasks.md` 的工件评审 |
-| SA | Karena | D5 落点与具名验收口径一致（两个入口、无提示、回执文案） | G1 rev2 已签；仅当评审提出时才需追加 P3 确认 |
+| `design.md` | 工件 1/2（当前开发者） | Jacky | 2026-11-16T16:56+08:00 |
+| `design.md` | 工件 2/2（第二签署人） | Karena（SA） | 2026-11-16T17:12+08:00 |
+| `design.md` 评审报告 | 报告 1/2 | WAYNE | 2026-11-16T17:12+08:00 |
+| `design.md` 评审报告 | 报告 2/2（当前开发者） | Jacky | 2026-11-16T17:12+08:00 |
+| `tasks.md` | 工件 1/2（当前开发者） | Jacky | 2026-11-16T17:12+08:00 |
+| `tasks.md` | 工件 2/2（第二签署人） | Karena（SA） | 2026-11-16T17:12+08:00 |
+| `tasks.md` 评审报告 | 报告 1/2 | WAYNE | 2026-11-16T17:12+08:00 |
+| `tasks.md` 评审报告 | 报告 2/2（当前开发者） | Jacky | 2026-11-16T17:12+08:00 |
+
+| 其他角色 | 姓名 | 本阶段确认内容 | 状态 |
+|---|---|---|---|
 | IO | WAYNE | 无需新增输入；REMOVED + ADDED 迁移已在 G1 rev2 签署 | 无需重签 |
 | VL | Neal | 独立验证 | P4 / G2 |
 
-**阶段结论：待工件评审。** `design.md` 与 `tasks.md` 先经 `/sdd:quality-checklist` 与 `all-specs-review` 出具评审报告并由 AO 具名批准，本记录才可标 Pass，P4 才可开工。
+**阶段结论：Pass。** `quality-checklist p3` Pass、两份工件评审均 Pass、签署位 8/8 齐备。P4 可开工。
 
 ## 11. 准入 P4 的条件
 

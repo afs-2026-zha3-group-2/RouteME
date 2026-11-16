@@ -116,7 +116,7 @@
 
 | Story | Title | 角色 | Priority | Iteration | Points | Page | Parent REQ | Change | Status |
 |---|---|---|---|---|---|---|---|---|---|
-| S14 | 举报入口与回执 | 与陌生人同行的学生 | P0 | 3 | 1 | 详情页 / 聊天页 | REQ-012 | `refine-safety-report` | P1 rev2 drafted（2026-11-16） |
+| S14 | 举报入口与回执 | 与陌生人同行的学生 | P0 | 3 | 1 | 详情页 / 聊天页 | REQ-012 | `refine-safety-report` | P3 Pass（2026-11-16） |
 
 ## Traceability（REQ-012）
 
