@@ -3,18 +3,25 @@ import type { AuthRegisterRequest } from '../types';
 
 export type AuthMode = 'login' | 'register';
 
-/** 注册只收三字段；资料在完善页填写。 */
+/**
+ * 注册收用户名 / 密码 / 确认密码 / 昵称；资料在完善页填写。
+ * 确认密码只做前端比对，不进入请求体。
+ */
 export type AuthFormValues = {
   username: string;
   password: string;
+  passwordConfirm: string;
   nickname: string;
 };
 
-export type AuthFieldErrors = Partial<Record<'username' | 'password' | 'nickname', string>>;
+export type AuthFieldErrors = Partial<
+  Record<'username' | 'password' | 'passwordConfirm' | 'nickname', string>
+>;
 
 export const emptyAuthForm: AuthFormValues = {
   username: '',
   password: '',
+  passwordConfirm: '',
   nickname: '',
 };
 
@@ -42,6 +49,12 @@ export function validateAuthForm(mode: AuthMode, values: AuthFormValues): AuthFi
   }
 
   if (mode === 'register') {
+    if (values.passwordConfirm === '') {
+      errors.passwordConfirm = tripMessages.authErrorPasswordConfirmRequired;
+    } else if (values.passwordConfirm !== values.password) {
+      errors.passwordConfirm = tripMessages.authErrorPasswordMismatch;
+    }
+
     const nickname = values.nickname.trim();
     if (nickname === '' || nickname.length > MAX_NICKNAME) {
       errors.nickname = tripMessages.authErrorNickname;

@@ -154,16 +154,39 @@ test('registers and lands on the profile setup page', async ({ page }) => {
   await page.goto('/');
   await page.getByRole('tab', { name: '注册' }).click();
   await page.getByLabel('用户名').fill(username);
-  await page.getByLabel('密码').fill(PASSWORD);
+  await page.locator('#auth-password').fill(PASSWORD);
+  await page.locator('#auth-password-confirm').fill(PASSWORD);
   await page.getByLabel('昵称').fill(nickname);
   await page.getByRole('button', { name: '注册并进入' }).click();
 
   await expect(page).toHaveURL(/#\/profile\/setup$/);
   await expect(page.getByRole('heading', { name: '完善个人资料' })).toBeVisible();
   // 注册后无需再次输入用户名 / 密码；昵称已带入资料表单。
-  await expect(page.getByLabel('用户名')).toHaveCount(0);
-  await expect(page.getByLabel('密码')).toHaveCount(0);
+  await expect(page.locator('#auth-username')).toHaveCount(0);
+  await expect(page.locator('#auth-password')).toHaveCount(0);
+  await expect(page.locator('#auth-password-confirm')).toHaveCount(0);
   await expect(page.locator('#profile-nickname')).toHaveValue(nickname);
+});
+
+test('blocks registration when the two passwords differ', async ({ page }) => {
+  const registerRequests: string[] = [];
+  page.on('request', (request) => {
+    if (request.method() === 'POST' && request.url().includes('/api/auth/register')) {
+      registerRequests.push(request.url());
+    }
+  });
+
+  await page.goto('/');
+  await page.getByRole('tab', { name: '注册' }).click();
+  await page.getByLabel('用户名').fill(uniqueUsername('m'));
+  await page.locator('#auth-password').fill(PASSWORD);
+  await page.locator('#auth-password-confirm').fill(`${PASSWORD}-typo`);
+  await page.getByLabel('昵称').fill(uniqueNickname('新同学'));
+  await page.getByRole('button', { name: '注册并进入' }).click();
+
+  await expect(page.getByText('两次输入的密码不一致')).toBeVisible();
+  await expect(page).not.toHaveURL(/#\/profile\/setup$/);
+  expect(registerRequests).toEqual([]);
 });
 
 test('blocks the submit and names the missing required fields', async ({ page }) => {
