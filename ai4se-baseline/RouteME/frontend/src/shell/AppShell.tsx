@@ -9,10 +9,17 @@ import { BrandMark } from './BrandMark';
 
 type NavKey = 'discover' | 'create' | 'mine';
 
-const NAV_ITEMS: Array<{ key: NavKey; label: string; href: string }> = [
+type NavItem = { key: NavKey; label: string; href: string };
+
+const NAV_ITEMS: NavItem[] = [
   { key: 'discover', label: tripMessages.homeTitle, href: '#/' },
   { key: 'create', label: tripMessages.publish, href: '#/trips/new' },
   { key: 'mine', label: tripMessages.mineTitle, href: '#/mine' },
+];
+
+const NAV_GROUPS: Array<{ title: string; items: NavItem[] }> = [
+  { title: '浏览', items: NAV_ITEMS.filter((item) => item.key === 'discover') },
+  { title: '我的', items: NAV_ITEMS.filter((item) => item.key !== 'discover') },
 ];
 
 const LOOP_STEPS = ['旅行灵感', '发布行程', '发现同行者', '建立连接', '一起旅行', '分享体验'];
@@ -271,20 +278,42 @@ export function AppShell({
 
       <aside className="rail" aria-label="主导航">
         <nav className="rail-nav">
-          {NAV_ITEMS.map((item) => (
-            <a
-              key={item.key}
-              className={active === item.key ? 'rail-link active' : 'rail-link'}
-              href={item.href}
-              aria-current={active === item.key ? 'page' : undefined}
-            >
-              <NavIcon name={item.key} />
-              <span>{item.label}</span>
-            </a>
+          {NAV_GROUPS.map((group) => (
+            <div className="rail-group" key={group.title}>
+              <span className="rail-group-title">{group.title}</span>
+              {group.items.map((item) => (
+                <a
+                  key={item.key}
+                  className={active === item.key ? 'rail-link active' : 'rail-link'}
+                  href={item.href}
+                  aria-current={active === item.key ? 'page' : undefined}
+                >
+                  <NavIcon name={item.key} />
+                  <span>{item.label}</span>
+                </a>
+              ))}
+            </div>
           ))}
         </nav>
 
         <div className="rail-foot">
+          <a
+            className={route.name === 'profileSetup' ? 'rail-user on' : 'rail-user'}
+            href="#/profile/setup"
+            aria-current={route.name === 'profileSetup' ? 'page' : undefined}
+            aria-label={`编辑资料：${currentUser.nickname}`}
+            title="编辑资料"
+          >
+            <Avatar user={currentUser} size="sm" />
+            <span className="rail-user-text">
+              <b>{currentUser.nickname}</b>
+              <i>{publisherSummary(currentUser) || tripMessages.profileIncompleteShort}</i>
+            </span>
+            <svg className="rail-user-caret" viewBox="0 0 12 12" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round">
+              <path d="m4.5 3 3 3-3 3" />
+            </svg>
+          </a>
+
           <div className="rail-loop">
             <span className="rail-loop-title">价值闭环</span>
             <ol>

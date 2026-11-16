@@ -123,12 +123,23 @@
 **验证：** 上述命令全绿；迁移与手工结果写入 local-verify 报告
 **覆盖：** 全部 26 + 6 场景、RV-1–RV-7、G1 条件 2–8
 
+### T9 [frontend] 侧栏分组与资料入口（VL 追加）
+
+- [x] `shell/AppShell.tsx`：主导航按「浏览 / 我的」分组渲染；底部新增资料入口（头像 + 昵称 + `publisherSummary`，为空显示「资料未完善」）指向 `#/profile/setup`，停留该页时以选中态标识。
+- [x] `styles.css`：侧栏改为实色面，分组标题 / 分组分隔线与选中态改用 `--lagoon` 混合色（浅色与深色各取可读文字色）；资料入口沿用导航的悬停与选中样式；≤900px 仍整条收起、底部标签栏保留三个入口。
+- [x] `specs/design-system/spec.md`：MODIFIED「应用外壳与导航」，加入分组与资料入口场景，保留原四个场景。
+- [x] 视觉：浅 / 深色 × 1440 / 390 截图核对；`auth.spec.ts`「我的旅行」链接与 `profile.spec.ts` 全量不回归。
+
+**验证：** `cd RouteME/frontend; npm run typecheck; npm test; npm run build`；`cd RouteME/e2e; npx playwright test`
+**覆盖：** design-system「应用外壳与导航」5 个场景
+
 ## 对齐自检（Spec ↔ Design ↔ Tasks ↔ ATDD）
 
 | 检查 | Result | Evidence |
 |---|---|---|
 | `user-profile` 26 个 Scenario 均有 ATDD 行与任务 | Pass | E1–E26 见 `atdd-design.md` §1.2；D1–D12；T1–T8 |
 | `user-auth` 6 个 Scenario 有落点 | Pass | A1–A6；T1（测试）、T2（契约）、T5（实现） |
+| `design-system`「应用外壳与导航」5 个 Scenario 有落点 | Pass | T9；`specs/design-system/spec.md`（MODIFIED，保留原 4 个场景） |
 | 基线场景不丢 | Pass | MODIFIED 保留 4 个既有场景；T5 只收窄字段与校验，不删登录 / 重复 / 格式 / 密码用例 |
 | Non-goals 有反向验证 | Pass | RV-1–RV-7；T1（断言）、T8（复核） |
 | 无静默范围扩张 | Pass | 未加入裁剪、相册、可见性、演示编辑、兴趣词表统一、私信、改密码 |

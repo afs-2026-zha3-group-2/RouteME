@@ -637,28 +637,52 @@ svg {
   flex-direction: column;
   padding: 18px 14px;
   border-right: 1px solid var(--line);
-  background: color-mix(in srgb, var(--surface) 62%, transparent);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
+  background: var(--surface);
   overflow-y: auto;
+  --rail-active-bg: color-mix(in srgb, var(--lagoon) 18%, var(--surface));
+  --rail-active-ink: var(--tide);
+}
+
+[data-theme="dark"] .rail {
+  --rail-active-ink: var(--t-lagoon);
 }
 
 .rail-nav {
   display: grid;
-  gap: 4px;
+  gap: 2px;
+}
+
+.rail-group {
+  display: grid;
+  gap: 2px;
+}
+
+.rail-group + .rail-group {
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px solid var(--line);
+}
+
+.rail-group-title {
+  padding: 0 12px;
+  margin-bottom: 5px;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.16em;
+  color: var(--ink-3);
 }
 
 .rail-link {
   display: flex;
   align-items: center;
   gap: 11px;
-  padding: 11px 13px;
-  border-radius: 12px;
-  font-size: 14px;
+  padding: 10px 12px;
+  border-radius: 11px;
+  font-size: 13.5px;
   font-weight: 620;
   color: var(--ink-2);
   position: relative;
-  transition: background 0.16s, color 0.16s, transform 0.16s var(--ease);
+  transition: background 0.16s, color 0.16s;
 }
 
 .rail-link svg {
@@ -670,13 +694,78 @@ svg {
 .rail-link:hover {
   background: var(--surface-2);
   color: var(--ink);
-  transform: translateX(2px);
 }
 
 .rail-link.active {
-  background: var(--grad-shore);
-  color: #f2fffd;
-  box-shadow: 0 6px 18px -10px var(--tide);
+  background: var(--rail-active-bg);
+  color: var(--rail-active-ink);
+  font-weight: 700;
+}
+
+.rail-user {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 10px;
+  border-radius: 11px;
+  color: var(--ink-2);
+  transition: background 0.16s, color 0.16s;
+}
+
+.rail-user:hover {
+  background: var(--surface-2);
+  color: var(--ink);
+}
+
+.rail-user.on {
+  background: var(--rail-active-bg);
+  color: var(--rail-active-ink);
+}
+
+.rail-user-text {
+  flex: 1;
+  min-width: 0;
+  display: grid;
+  gap: 1px;
+}
+
+.rail-user-text b,
+.rail-user-text i {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.rail-user-text b {
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.rail-user-text i {
+  font-style: normal;
+  font-size: 11px;
+  color: var(--ink-3);
+}
+
+.rail-user.on .rail-user-text b {
+  color: var(--rail-active-ink);
+}
+
+.rail-user.on .rail-user-text i {
+  color: var(--rail-active-ink);
+  opacity: 0.78;
+}
+
+.rail-user-caret {
+  width: 13px;
+  height: 13px;
+  flex: none;
+  color: var(--ink-3);
+}
+
+.rail-user.on .rail-user-caret {
+  color: var(--rail-active-ink);
 }
 
 .rail-foot {
