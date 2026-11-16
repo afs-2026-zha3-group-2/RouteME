@@ -38,9 +38,10 @@ async function useIdentity(
   await page.reload();
 }
 
-async function openIdentityMenu(page: Page) {
-  await page.getByRole('button', { name: /切换身份：当前/ }).click();
-  const menu = page.getByRole('dialog', { name: '身份菜单' });
+async function openAccountMenu(page: Page) {
+  // 登录后不再提供身份切换，顶部入口只描述为「账号菜单」。
+  await page.getByRole('button', { name: /账号菜单：/ }).click();
+  const menu = page.getByRole('dialog', { name: '账号菜单' });
   await expect(menu).toBeVisible();
   return menu;
 }
@@ -57,9 +58,9 @@ test('hides the demo identity switch list from the identity menu', async ({ page
   await useIdentity(page, { userId: 1 });
   await page.goto('/');
 
-  const menu = await openIdentityMenu(page);
+  const menu = await openAccountMenu(page);
 
-  // 所有种子账号均已落库凭据，菜单不再提供切换身份的演示列表。
+  // 所有种子账号均已落库凭据，菜单不再提供任何身份切换入口。
   await expect(menu.getByRole('listbox')).toHaveCount(0);
   await expect(menu.getByRole('option')).toHaveCount(0);
   await expect(menu.getByRole('button', { name: '退出登录' })).toBeVisible();
@@ -73,7 +74,11 @@ test('shows the logout entry for a registered account', async ({ page }) => {
   await useIdentity(page, { userId: account.userId, token: account.token });
   await page.goto('/');
 
-  const menu = await openIdentityMenu(page);
+  // 登录后只能退出再登录，顶部入口不再叫「切换身份」。
+  await expect(page.locator('.id-switch-label')).toHaveText('已登录');
+  await expect(page.getByRole('button', { name: /切换身份/ })).toHaveCount(0);
+
+  const menu = await openAccountMenu(page);
 
   await expect(menu.getByText('已登录')).toBeVisible();
   await expect(menu.getByRole('button', { name: '退出登录' })).toBeVisible();
@@ -93,7 +98,7 @@ test('logs out a demo identity without calling the auth API', async ({ page }) =
   await useIdentity(page, { userId: 1 });
   await page.goto('/');
 
-  const menu = await openIdentityMenu(page);
+  const menu = await openAccountMenu(page);
   await menu.getByRole('button', { name: '退出登录' }).click();
 
   await expectIdentityGate(page);
@@ -109,7 +114,7 @@ test('logs out a registered account and rejects the old token', async ({ page })
   await useIdentity(page, { userId: account.userId, token: account.token });
   await page.goto('/');
 
-  const menu = await openIdentityMenu(page);
+  const menu = await openAccountMenu(page);
   await menu.getByRole('button', { name: '退出登录' }).click();
 
   await expectIdentityGate(page);
@@ -129,7 +134,7 @@ test('still logs out locally when session revocation fails', async ({ page }) =>
   await page.route('**/api/auth/logout', (route) => route.abort());
   await page.goto('/');
 
-  const menu = await openIdentityMenu(page);
+  const menu = await openAccountMenu(page);
   await menu.getByRole('button', { name: '退出登录' }).click();
 
   await expectIdentityGate(page);
@@ -147,7 +152,7 @@ test('stays on the identity gate after logout, refresh, and navigation', async (
   await page.getByRole('link', { name: '旅行灵感' }).click();
   await expect(page).toHaveURL(/#\/$/);
 
-  const menu = await openIdentityMenu(page);
+  const menu = await openAccountMenu(page);
   await menu.getByRole('button', { name: '退出登录' }).click();
   await expectIdentityGate(page);
 
@@ -163,7 +168,7 @@ test('re-enters with a seeded account after logout', async ({ page }) => {
   await useIdentity(page, { userId: 1 });
   await page.goto('/');
 
-  const menu = await openIdentityMenu(page);
+  const menu = await openAccountMenu(page);
   await menu.getByRole('button', { name: '退出登录' }).click();
   await expectIdentityGate(page);
 
@@ -173,5 +178,5 @@ test('re-enters with a seeded account after logout', async ({ page }) => {
   await page.getByRole('button', { name: /^登\s*录$/ }).click();
 
   await expect(page.locator('.id-switch-name')).toHaveText('周野');
-  await expect(page.getByRole('dialog', { name: '身份菜单' })).toHaveCount(0);
+  await expect(page.getByRole('dialog', { name: '账号菜单' })).toHaveCount(0);
 });

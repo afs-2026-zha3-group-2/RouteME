@@ -3,7 +3,7 @@ export const tripMessages = {
   homeTitle: '旅行灵感',
   publish: '发布行程',
   backHome: '返回灵感首页',
-  identitySwitch: '切换身份',
+  accountMenu: '账号菜单',
   loading: '正在加载',
   failedTitle: '加载失败',
   retry: '重试',

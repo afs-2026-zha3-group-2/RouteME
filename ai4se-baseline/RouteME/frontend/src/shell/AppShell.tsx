@@ -239,13 +239,15 @@ export function AppShell({
             className="id-switch-btn"
             aria-haspopup="dialog"
             aria-expanded={identityOpen}
-            aria-label={`${tripMessages.identitySwitch}：当前 ${currentUser.nickname}`}
+            aria-label={`${tripMessages.accountMenu}：${currentUser.nickname}`}
             onClick={() => setIdentityOpen((previous) => !previous)}
           >
             <Avatar user={currentUser} size="sm" />
             <span className="id-switch-text">
               <span className="id-switch-name">{currentUser.nickname}</span>
-              <span className="id-switch-label">{tripMessages.identitySwitch}</span>
+              {isAuthenticated && (
+                <span className="id-switch-label">{tripMessages.authLoggedIn}</span>
+              )}
             </span>
             <svg
               className="id-switch-caret"
@@ -261,7 +263,7 @@ export function AppShell({
           </button>
 
           {identityOpen && (
-            <div className="id-panel" role="dialog" aria-label="身份菜单">
+            <div className="id-panel" role="dialog" aria-label={tripMessages.accountMenu}>
               {isAuthenticated && (
                 <div className="id-current">
                   <Avatar user={currentUser} size="sm" />
