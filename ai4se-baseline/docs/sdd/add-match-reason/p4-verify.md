@@ -131,6 +131,7 @@
 | 样式 | 圆环文字改 `.ant-progress-indicator`（antd 6.7 类名）；卡片理由 11.5px、详情理由 13px；颜色走 `--warn` |
 | 前端验证 | `npm test` 137 通过；`typecheck` / `build` 通过 |
 | 端到端 | `companions.spec.ts` 8/8；全量 53/54（唯一失败为既有 `profiles.spec.ts:23` 数据断言） |
+| CI | run [#133](https://github.com/afs-2026-zha3-group-2/RouteME/actions/runs/43826642545)（`bde8024`）：Backend (Java 21) success、Frontend (Node 22) success |
 | 看板 | S07 仍显示 P3（token 无 `project` 写权限，需人工拖到 P4）；P5 暂缓、不归档 |
 
 | 角色 | 姓名 | 确认内容 | 日期 |

@@ -201,6 +201,7 @@
 | 组件 | 仍为 antd：`DatePicker` / `InputNumber` / `Tag.CheckableTag` / `Input`；未新增图标或 UI 依赖 |
 | 前端验证 | `npm test` 137 通过；`npm run typecheck` / `build` 通过 |
 | 端到端 | `trips.spec.ts` 11/11；全量 53/54（唯一失败为既有 `profiles.spec.ts:23` 数据断言） |
+| CI | run [#133](https://github.com/afs-2026-zha3-group-2/RouteME/actions/runs/43826642545)（`bde8024`）：Backend (Java 21) success、Frontend (Node 22) success |
 | 看板 | S06 保持 P4，不归档 |
 
 | 角色 | 姓名 | 确认内容 | 日期 |
