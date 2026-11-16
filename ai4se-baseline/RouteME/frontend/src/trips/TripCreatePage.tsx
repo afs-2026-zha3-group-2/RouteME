@@ -1,6 +1,7 @@
 import { useEffect, useState, type ReactNode } from 'react';
 import { Alert, Button, Card, Input, Space, Typography } from 'antd';
 import { createTrip, loadTrip } from '../api';
+import { AreaCascader } from '../area/AreaCascader';
 import { tripMessages } from '../i18n/tripMessages';
 import { PlacePicker } from '../map/PlacePicker';
 import type { DemoUser } from '../types';
@@ -45,7 +46,7 @@ export function TripCreatePage({ currentUser, fromTripId }: Props) {
         }
         setValues({
           ...emptyTripForm,
-          destination: source.destination,
+          destinationCode: source.destination_code,
           stops: source.stops.slice(0, MAX_STOPS),
           tags: source.tags.slice(0, MAX_TAGS),
           capacity: '',
@@ -121,16 +122,18 @@ export function TripCreatePage({ currentUser, fromTripId }: Props) {
                                 htmlFor="trip-destination"
                                 error={errors.destination}
                               >
-                                <PlacePicker
-                                  mode="single"
-                                  kinds={['city']}
-                                  inputId="trip-destination"
+                                <AreaCascader
+                                  id="trip-destination"
                                   ariaLabel={tripMessages.fieldDestination}
+                                  ariaDescribedBy={
+                                    errors.destination !== undefined
+                                      ? 'trip-destination-error'
+                                      : undefined
+                                  }
                                   invalid={errors.destination !== undefined}
-                                  value={values.destination === '' ? [] : [values.destination]}
-                                  onChange={(next) => update({ destination: next[0] ?? '' })}
-                                  placeholder="搜索城市名，或直接在地图上点选"
-                                  emptyHint="目的地按城市选择；输入城市名会即时匹配地图上的位置。"
+                                  value={values.destinationCode}
+                                  onChange={(code) => update({ destinationCode: code })}
+                                  placeholder="请选择省 / 市"
                                 />
                               </Field>
 

@@ -10,7 +10,7 @@ import {
 const validForm: TripFormValues = {
   ...emptyTripForm,
   title: '广州老城骑楼扫街半日',
-  destination: '广州',
+  destinationCode: '440100',
   startDate: '2026-11-20',
   endDate: '2026-11-20',
   stops: ['陈家祠地铁站集合', '永庆坊'],
@@ -87,7 +87,7 @@ describe('toCreateRequest', () => {
     const request = toCreateRequest(validForm);
     expect(request).toMatchObject({
       title: '广州老城骑楼扫街半日',
-      destination: '广州',
+      destination_code: '440100',
       start_date: '2026-11-20',
       end_date: '2026-11-20',
       stops: ['陈家祠地铁站集合', '永庆坊'],

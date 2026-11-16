@@ -15,9 +15,9 @@
 | D2 | 区划字典 | `element-china-area-data` v5（6 位码、含港澳台）；后端 JSON 资源 + 前端同一数据源；直辖市二级 label=省级名 |
 | D3 | 契约 | 0.7.0；删 `q`；`destination_code`；响应 code/province；体验日期 |
 | D4 | 后端领域/查询 | `TripPlan` 持 code + 名称；`TripQuery` 按 code；`TripMatch` 按 code；删 q |
-| D5 | 前端筛选/展示 | Cascader（仅选到市生效）；摘要/卡片/详情标准名；体验卡无日期 |
+| D5 | 前端筛选/展示 | 省市级联（自绘 AreaCascader，仅选到市生效；P4 实现修订）；摘要/卡片/详情标准名；体验卡无日期 |
 | D6 | 搜索移除 | 前端/后端/契约/测试全删；A 的场景改写、refine 的测试交 owner |
-| D7 | 迁移与外键 | V10 重建 + 16 城/别名映射 + 索引 + 外键处理；未知名称失败 |
+| D7 | 迁移与外键 | V10 加列 `NOT NULL DEFAULT ''` + 16 城/别名映射 + 索引；不重建表（H2 外键）；未知名称回填失败 |
 | D8 | 匹配口径 | code 比较，理由文案不变 |
 | D9 | 错误/边界 | 非法 code 400；只选省不筛选；无结果保留条件；不做 NFR |
 

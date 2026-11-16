@@ -83,11 +83,8 @@ export async function logoutAccount(token: string): Promise<void> {
 
 function tripQuery(filters: TripFilters, paging?: Paging): string {
   const params = new URLSearchParams();
-  if (filters.q) {
-    params.set('q', filters.q);
-  }
-  if (filters.destination) {
-    params.set('destination', filters.destination);
+  if (filters.destination_code) {
+    params.set('destination_code', filters.destination_code);
   }
   if (filters.date_from) {
     params.set('date_from', filters.date_from);
@@ -261,11 +258,14 @@ export async function loadExperiences(
   paging?: Paging,
 ): Promise<Page<Experience>> {
   const params = new URLSearchParams();
-  if (filters.q) {
-    params.set('q', filters.q);
+  if (filters.destination_code) {
+    params.set('destination_code', filters.destination_code);
   }
-  if (filters.destination) {
-    params.set('destination', filters.destination);
+  if (filters.date_from) {
+    params.set('date_from', filters.date_from);
+  }
+  if (filters.date_to) {
+    params.set('date_to', filters.date_to);
   }
   if (filters.tags && filters.tags.length > 0) {
     params.set('tags', filters.tags.join(','));

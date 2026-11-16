@@ -2,14 +2,20 @@
 <!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "https://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="routeme.mapper.TripExperienceMapper">
 
-    <!-- 游后体验的分页查询：目的地、兴趣标签与关键词都来自关联行程。 -->
+    <!-- 游后体验的分页查询：目的地代码、日期区间与兴趣标签都来自关联行程。 -->
     <select id="selectExperiencePage" resultType="routeme.entity.TripExperienceEntity">
         SELECT e.id, e.trip_id, e.author_id, e.content, e.intensity, e.advice, e.created_at, e.updated_at
           FROM trip_experiences e
           JOIN trip_plans t ON t.id = e.trip_id
         <where>
-            <if test="destination != null and destination != ''">
-                AND t.destination = #{destination}
+            <if test="destinationCode != null and destinationCode != ''">
+                AND t.destination_code = #{destinationCode}
+            </if>
+            <if test="dateFrom != null">
+                AND t.end_date &gt;= #{dateFrom}
+            </if>
+            <if test="dateTo != null">
+                AND t.start_date &lt;= #{dateTo}
             </if>
             <if test="tags != null and tags.size() > 0">
                 AND (
@@ -17,10 +23,6 @@
                     t.tags LIKE ('%"' || #{tag} || '"%')
                 </foreach>
                 )
-            </if>
-            <if test="q != null and q != ''">
-                AND LOWER(t.title || ' ' || t.destination || ' ' || e.content || ' ' || e.advice)
-                    LIKE ('%' || LOWER(#{q}) || '%')
             </if>
         </where>
          ORDER BY e.updated_at DESC, e.id DESC

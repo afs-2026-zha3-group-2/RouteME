@@ -37,9 +37,9 @@
 **In scope（本 change `add-destination-area-filters`）**
 
 - **数据底座**：目的地 6 位国标行政区划码为权威；`destination` 名称列保留并由后端按代码同步；新增 `province_code` + `province_name`（展示名）；`trip_experiences` 不新增目的地列。
-- **数据库迁移 V10**：重建 `trip_plans`，新增 `destination_code VARCHAR(6) NOT NULL`、索引；按地图城市库 16 城（含别名）与现有种子 5 城映射回填；`destination` 回填标准名。
-- **目的地筛选**：省市级联（antd Cascader），二级联动，**必须选到市**；全国数据**含港澳台**；不允许自由输入。
-- **目的地展示**：卡片显示市名；详情页与筛选摘要显示"省 / 市"；直辖市用省级名（"北京市"），不出现"市辖区"；港澳台显示"香港 · 香港岛"式"省级简称 · 二级名"。
+- **数据库迁移 V10**：`ALTER TABLE trip_plans ADD COLUMN destination_code VARCHAR(6) NOT NULL DEFAULT ''`；按地图城市库 16 城（含别名）与现有种子 5 城映射回填；`destination` 回填标准名；建索引。不重建表，兼容 SQLite/H2 与既有外键；应用层拒绝空串/未知代码。
+- **目的地筛选**：省市级联（自绘两列面板，P4 实现修订），二级联动，**必须选到市**；全国数据**含港澳台**；不允许自由输入。
+- **目的地展示**：卡片显示市名；详情页与筛选摘要显示"省 / 市"；直辖市用省级名（"北京市"），不出现"市辖区"；港澳台显示"香港 · 中西區"式"省级简称 · 二级名"（港澳二级沿用 v5 原文）。
 - **日期筛选**：保留"出发不早于 / 出发不晚于"，按行程日期区间求交集；单边可用；起止同日即"选某一天/某个周六"；起止倒置自动交换。
 - **兴趣筛选**：多选、命中任一即保留（回归验证，不降级）。
 - **摘要与空态**：已应用筛选摘要与一键清除；无结果提示"换个条件试试"且**不清空已选条件**。
@@ -63,7 +63,7 @@
 1. **选择城市后只保留该市行程** — Given 首页存在珠海市与其他城市行程，When 用户在目的地级联选择"广东省 / 珠海市"，Then 列表 SHALL 只保留 `destination_code = 440400` 的行程，并显示"已应用筛选：广东省 / 珠海市"与清除入口。
 2. **必须选到市** — Given 用户只展开或只选到"广东省"，When 未选到市，Then 系统 SHALL NOT 应用目的地筛选（列表保持全量），摘要中不出现目的地。
 3. **直辖市展示** — Given 用户选择"北京市 / 市辖区"，When 行程出现在卡片与详情页，Then 卡片与详情 SHALL 显示"北京市"，MUST NOT 出现"市辖区"。
-4. **港澳台展示** — Given 用户选择"香港特别行政区 / 香港岛"，When 查看卡片与筛选摘要，Then SHALL 显示"香港 · 香港岛"；详情页同样以"省级简称 · 二级名"展示。
+4. **港澳台展示** — Given 用户选择"香港特别行政区 / 中西區"，When 查看卡片与筛选摘要，Then SHALL 显示"香港 · 中西區"；详情页同样以"省级简称 · 二级名"展示。
 5. **省名由后端返回** — Given 任意一条行程详情/列表响应，When 前端渲染省名，Then 响应 SHALL 包含 `province_code` 与 `province_name`（展示名：普通省"广东省"，港澳台"香港"/"澳门"），前端 MUST NOT 自行截短。
 6. **存量迁移** — Given 数据库中存在旧名称（地图城市库 16 城及别名，含种子"珠海/清远/广州/深圳/佛山"），When V10 迁移执行，Then 每条行程 SHALL 获得对应 6 位代码并把名称回填为标准名，MUST NOT 留下未映射记录。
 7. **发布页必须选到市（A 承担）** — Given 用户处于发布行程页，When 未选目的地或只选到省就提交，Then 系统 SHALL 拒绝发布并提示必须选择到城市；When 选到市并提交，Then 后端 SHALL 按代码生成标准名称并保存。
@@ -87,7 +87,7 @@
 ## 5. Constraints（仅事实，不含技术方案）
 
 - 依赖 REQ-002 `trip-plans` 的行程实体、首页列表；依赖 REQ-004 `trip-experiences` 的体验列表与展示位；发布页目的地字段依赖 `add-trip-publish` 的目的地修订。
-- 目的地数据契约：**6 位国标行政区划码**、省市二级、**含港澳台**、二级必须可区分（香港→香港岛/九龙/新界；澳门→澳门半岛/离岛；台湾→台北市等）。
+- 目的地数据契约：**6 位国标行政区划码**、省市二级、**含港澳台**、二级必须可区分（香港→18 区；澳门→8 堂区；台湾→7 市，v5 真实数据）。
 - 名称契约：`destination` 名称由代码派生，用户不可编辑；统一字典标准名；直辖市用省级名；港澳台用"省级简称 · 二级名"；`province_name` 由后端返回展示名。
 - 筛选契约：目的地按代码等值匹配；日期按"行程区间 ∩ 所选区间 ≠ 空"；兴趣按 OR；三者可组合。
 - 搜索移除的跨 change 依赖：`add-trip-publish` 的"按标题搜索"场景与发布 E2E 已获授权由本 change 修改；`refine-inspiration-home` 的搜索相关测试由其 owner 更新；本 change 不改 `refine-inspiration-home` 的文件。
@@ -119,14 +119,14 @@
 | blocking | resolved | 是否允许只选省、是否允许自由输入？ | BA | 确认：必须选到市；全国数据含港澳台；不允许自由输入（D3/D4/D14）。 |
 | blocking | resolved | 体验视图是否要补日期筛选？ | BA | 确认：补齐，按关联行程日期区间交集（D1）。 |
 | blocking | resolved | 搜索框只去前端还是连后端一起删？ | BA/SA | 确认：前后端、契约、测试一并删除；A 的搜索场景由本 change 改写，refine 的搜索测试交 owner（D10/D21）。 |
-| blocking | resolved | 存量中文名怎么迁移？ | BA/SA | 确认：按地图城市库 16 城 + 别名 + 种子 5 城映射到 6 位代码，名称回填标准名；V10 重建表加 NOT NULL（D11/D12/D17）。 |
+| blocking | resolved | 存量中文名怎么迁移？ | BA/SA | 确认：按地图城市库 16 城 + 别名 + 种子 5 城映射到 6 位代码，名称回填标准名；V10 加列 NOT NULL + 回填（兼容 SQLite/H2，不重建表）（D11/D12/D17）。 |
 | blocking | resolved | 直辖市与港澳台显示什么名字？ | BA | 确认：直辖市用省级名；港澳台"省级简称 · 二级名"（D8/D9）。 |
 | blocking | resolved | 省名由接口返回还是前端解析？ | BA/SA | 确认：后端返回 `province_code` + `province_name`（展示名），前端不截短（D18）。 |
 | blocking | resolved | 体验卡是否显示日期？ | BA | 确认：不显示（D19）。 |
 | blocking | resolved | 发布页目的地字段归谁？ | BA/SA | 确认：归 `add-trip-publish` 目的地修订；本 change 不修改发布 requirement，只提供数据底座（D7/D13/D15/D23）。 |
 | blocking | resolved | 归档顺序与归属？ | BA/SA | 确认：`refine-inspiration-home` → 本 change → `add-trip-publish`；只归档本 change（D20）。 |
 | non-blocking | deferred | 区划数据包未来升级到更新年份？ | Dev | 后续解决：MVP 用 v5；升级不改代码契约。 |
-| non-blocking | deferred | SQLite 重建 `trip_plans` 时如何处理 `trip_experiences` 外键？ | Dev | 后续解决：迁移写法属设计；不得丢失体验数据。 |
+| non-blocking | deferred | SQLite/H2 迁移时如何处理 `trip_experiences` 外键？ | Dev | 已用 ADD COLUMN 方案避开外键；迁移测试覆盖 SQLite + H2，不得丢失体验数据。 |
 | non-blocking | deferred | 搜索未来是否恢复、何时恢复？ | BA | 后续解决：本迭代明确不做；恢复时另开 REQ。 |
 | non-blocking | deferred | `refine-inspiration-home` owner 何时更新搜索相关测试？ | AO/BA | 外部条件：本 change G1 记录依赖，不阻塞本 change 的 P1/P2 规格。 |
 

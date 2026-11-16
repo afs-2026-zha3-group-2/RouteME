@@ -1,3 +1,4 @@
+import { cityLabel } from '../area/areaOptions';
 import { tripMessages } from '../i18n/tripMessages';
 import { Avatar } from '../shell/Avatar';
 import { StatusBadge } from '../trips/StatusBadge';
@@ -22,7 +23,7 @@ export function ExperienceCard({ experience }: Props) {
         <span className="exp-author">
           <b>{experience.author.nickname}</b>
           <span>
-            {experience.trip.destination} · {experience.trip.start_date} → {experience.trip.end_date}
+            {cityLabel(experience.trip.destination_code) || experience.trip.destination}
           </span>
         </span>
         <span className={`badge ${INTENSITY_TONE[experience.intensity]}`}>

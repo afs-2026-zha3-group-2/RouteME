@@ -1,7 +1,9 @@
 package routeme.controller;
 
+import java.time.LocalDate;
 import java.util.List;
 
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -38,14 +40,17 @@ public class ExperienceController {
     @GetMapping("/experiences")
     public PageResponse<ExperienceResponse> list(
             @RequestHeader(value = "X-User-Id", required = false) Long userId,
-            @RequestParam(required = false) String q,
-            @RequestParam(required = false) String destination,
+            @RequestParam(name = "destination_code", required = false) String destinationCode,
+            @RequestParam(name = "date_from", required = false)
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate dateFrom,
+            @RequestParam(name = "date_to", required = false)
+            @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate dateTo,
             @RequestParam(required = false) String tags,
             @RequestParam(required = false) Integer page,
             @RequestParam(required = false) Integer size) {
         demoUserService.require(userId);
         return PageResponse.from(experienceService.listPage(
-                q, destination, TripQueryParam.parseTags(tags), PageParam.parse(page, size)));
+                destinationCode, dateFrom, dateTo, TripQueryParam.parseTags(tags), PageParam.parse(page, size)));
     }
 
     @GetMapping("/me/experiences")

@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { destinationLabel } from '../area/areaOptions';
 import {
   Alert,
   Button,
@@ -257,7 +258,7 @@ export function TripDetailPage({ currentUser, tripId }: Props) {
           <header className="detail-head">
             <div className="detail-badges">
               <Tag color={statusColor(trip.status)}>{statusLabel(trip.status)}</Tag>
-              <Tag>{trip.destination}</Tag>
+              <Tag>{destinationLabel(trip.destination_code) || trip.destination}</Tag>
             </div>
             <Typography.Title level={2} className="trip-title detail-title">
               {trip.title}

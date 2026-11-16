@@ -15,12 +15,18 @@ async function pickPlace(page: Page, field: string, name: string) {
   await expect(page.locator('.place-chip-name', { hasText: name }).first()).toBeVisible();
 }
 
+async function pickDestination(page: Page, province: string, city: string) {
+  await page.getByRole('button', { name: '目的地', exact: true }).click();
+  await page.locator('.area-option', { hasText: province }).first().click();
+  await page.locator('.area-option', { hasText: city }).first().click();
+}
+
 async function createTripViaApi(page: Page, title: string) {
   const response = await page.request.post(`${API}/trips`, {
     headers: { 'X-User-Id': '1', 'Content-Type': 'application/json' },
     data: {
       title,
-      destination: '珠海',
+      destination_code: '440400',
       start_date: '2026-12-01',
       end_date: '2026-12-01',
       stops: ['香洲港集合', '情侣路骑行'],
@@ -54,7 +60,7 @@ test('filters the list by interest tag and keeps the filters visible', async ({ 
   await loginAs(page, 1);
   await page.goto('/');
 
-  await page.getByRole('checkbox', { name: '摄影' }).click();
+  await page.getByRole('button', { name: '摄影', exact: true }).click();
 
   await expect(page.getByText('已应用筛选')).toBeVisible();
   await expect(page.locator('.trip-card', { hasText: '珠海情侣路日落机位二刷' })).toBeVisible();
@@ -65,13 +71,13 @@ test('filters the list by interest tag and keeps the filters visible', async ({ 
   await expect(page.locator('.trip-card', { hasText: '深圳大鹏半岛海岸线徒步' })).toBeVisible();
 });
 
-test('publishes a trip and finds it from the home search', async ({ page }) => {
+test('publishes a trip and finds it in the home list', async ({ page }) => {
   const title = `E2E 周末骑行 ${Date.now()}`;
   await loginAs(page, 1);
   await page.goto('/#/trips/new');
 
   await page.getByLabel('标题').fill(title);
-  await pickPlace(page, '目的地', '珠海');
+  await pickDestination(page, '广东省', '珠海市');
   await page.getByLabel('出发日期').fill('2026-12-05');
   await page.getByLabel('结束日期').fill('2026-12-05');
   await pickPlace(page, '途经点', '香洲港');
@@ -86,7 +92,6 @@ test('publishes a trip and finds it from the home search', async ({ page }) => {
   await expect(page.getByText('这是你发布的行程')).toBeVisible();
 
   await page.goto('/');
-  await page.getByPlaceholder('搜索路线、地点或发布者').fill(title);
   await expect(page.locator('.trip-card', { hasText: title })).toBeVisible();
 });
 
@@ -97,7 +102,9 @@ test('blocks publishing and flags every missing required field', async ({ page }
   await page.getByRole('button', { name: /^发\s*布$/ }).click();
 
   await expect(page).toHaveURL(/#\/trips\/new$/);
-  for (const label of ['标题', '目的地', '出发日期', '结束日期', '途经点']) {
+  await expect(page.getByLabel('标题')).toHaveAttribute('aria-invalid', 'true');
+  await expect(page.locator('#trip-destination')).toHaveAttribute('aria-invalid', 'true');
+  for (const label of ['出发日期', '结束日期', '途经点']) {
     await expect(page.getByLabel(label)).toHaveAttribute('aria-invalid', 'true');
   }
   await expect(page.getByText('给这条路线起个名字（40 字以内）')).toBeVisible();
@@ -134,7 +141,7 @@ test('defaults to the recruiting trips view with complete cards', async ({ page 
   const card = page.locator('.trip-card', { hasText: '珠海情侣路日落机位二刷' });
   await expect(card).toBeVisible();
   await expect(card.locator('.tc-title')).toHaveText('珠海情侣路日落机位二刷');
-  await expect(card.locator('.tc-dest')).toHaveText('珠海');
+  await expect(card.locator('.tc-dest')).toHaveText('珠海市');
   await expect(card.locator('.tc-meta')).toContainText('11月16日 → 11月16日');
   await expect(card.locator('.tc-meta')).toContainText('4 个途经点');
   await expect(card.locator('.tc-route')).toContainText('香洲港集合');
@@ -180,4 +187,20 @@ test('keeps out-of-scope actions off the screens', async ({ page }) => {
 
   await page.goto('/#/trips/9999');
   await expect(page.getByText('行程不存在')).toBeVisible();
+});
+
+test('filters by province and city without a search box', async ({ page }) => {
+  await loginAs(page, 1);
+  await page.goto('/');
+
+  await expect(page.getByPlaceholder('搜索路线、地点或发布者')).toHaveCount(0);
+  await pickDestination(page, '广东省', '珠海市');
+
+  await expect(page.getByText('已应用筛选')).toBeVisible();
+  await expect(page.locator('.active-summary')).toContainText('广东省 / 珠海市');
+  await expect(page.locator('.trip-card', { hasText: '珠海情侣路日落机位二刷' })).toBeVisible();
+  await expect(page.locator('.trip-card', { hasText: '广州老城骑楼扫街半日' })).toHaveCount(0);
+
+  await page.getByRole('button', { name: '清除全部条件' }).click();
+  await expect(page.locator('.trip-card', { hasText: '广州老城骑楼扫街半日' })).toBeVisible();
 });

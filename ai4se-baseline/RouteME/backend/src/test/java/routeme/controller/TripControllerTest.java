@@ -27,7 +27,7 @@ class TripControllerTest {
     private static final String VALID_TRIP = """
             {
               "title": "广州老城骑楼扫街半日",
-              "destination": "广州",
+              "destination_code": "440100",
               "start_date": "2026-11-20",
               "end_date": "2026-11-20",
               "stops": ["陈家祠地铁站集合", "永庆坊"],
@@ -54,14 +54,20 @@ class TripControllerTest {
                 .andExpect(jsonPath("$.publisher.id").value(1))
                 .andExpect(jsonPath("$.participants[0].id").value(1))
                 .andExpect(jsonPath("$.start_date").value("2026-11-20"))
+                .andExpect(jsonPath("$.destination").value("广州市"))
+                .andExpect(jsonPath("$.destination_code").value("440100"))
+                .andExpect(jsonPath("$.province_code").value("440000"))
+                .andExpect(jsonPath("$.province_name").value("广东省"))
                 .andExpect(jsonPath("$.budget_max_cents").value(15000));
     }
 
     @Test
-    void in_destinationOutsideLegacyCatalog_out_created() throws Exception {
-        String body = VALID_TRIP.replace("\"destination\": \"广州\"", "\"destination\": \"厦门\"");
+    void in_destinationCodeOutsideLegacyCatalog_out_created() throws Exception {
+        String body = VALID_TRIP.replace("\"destination_code\": \"440100\"", "\"destination_code\": \"350200\"");
         postTrip(body, "1").andExpect(status().isCreated())
-                .andExpect(jsonPath("$.destination").value("厦门"));
+                .andExpect(jsonPath("$.destination").value("厦门市"))
+                .andExpect(jsonPath("$.destination_code").value("350200"))
+                .andExpect(jsonPath("$.province_name").value("福建省"));
     }
 
     @Test
@@ -136,10 +142,12 @@ class TripControllerTest {
 
     @Test
     void in_filters_out_matchingTrips() throws Exception {
-        mockMvc.perform(get("/api/trips").header("X-User-Id", "1").param("destination", "珠海"))
+        mockMvc.perform(get("/api/trips").header("X-User-Id", "1").param("destination_code", "440400"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.total").value(1))
-                .andExpect(jsonPath("$.items[0].destination").value("珠海"));
+                .andExpect(jsonPath("$.items[0].destination").value("珠海市"))
+                .andExpect(jsonPath("$.items[0].destination_code").value("440400"))
+                .andExpect(jsonPath("$.items[0].province_name").value("广东省"));
 
         mockMvc.perform(get("/api/trips").header("X-User-Id", "1").param("tags", "历史"))
                 .andExpect(status().isOk())

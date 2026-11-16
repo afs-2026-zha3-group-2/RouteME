@@ -41,14 +41,24 @@ class ExperienceControllerTest {
 
     @Test
     void in_filters_out_matchingExperiences() throws Exception {
-        mockMvc.perform(get("/api/experiences").header("X-User-Id", "1").param("destination", "珠海"))
+        mockMvc.perform(get("/api/experiences").header("X-User-Id", "1").param("destination_code", "440400"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.total").value(1))
-                .andExpect(jsonPath("$.items[0].trip.id").value(1));
+                .andExpect(jsonPath("$.items[0].trip.id").value(1))
+                .andExpect(jsonPath("$.items[0].trip.destination_code").value("440400"))
+                .andExpect(jsonPath("$.items[0].trip.province_name").value("广东省"));
 
         mockMvc.perform(get("/api/experiences").header("X-User-Id", "1").param("tags", "露营"))
                 .andExpect(jsonPath("$.total").value(1))
                 .andExpect(jsonPath("$.items[0].trip.id").value(2));
+
+        mockMvc.perform(get("/api/experiences").header("X-User-Id", "1")
+                        .param("date_from", "2026-11-02").param("date_to", "2026-11-02"))
+                .andExpect(jsonPath("$.total").value(1))
+                .andExpect(jsonPath("$.items[0].trip.id").value(2));
+
+        mockMvc.perform(get("/api/experiences").header("X-User-Id", "1").param("q", "露营"))
+                .andExpect(jsonPath("$.total").value(2));
     }
 
     @Test

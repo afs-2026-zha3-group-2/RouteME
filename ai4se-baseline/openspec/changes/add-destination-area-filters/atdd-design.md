@@ -19,7 +19,7 @@
 
 | # | 场景（合并同类） | 层 | 用例/断言 |
 |---|---|---|---|
-| 1 | 字典覆盖范围、直辖市级联选项、港澳台名称 | E2E | 打开 Cascader，断言省/市选项、北京二级 label=北京市、香港→香港岛/九龙/新界 |
+| 1 | 字典覆盖范围、直辖市级联选项、港澳台名称 | E2E | 打开 Cascader，断言省/市选项、北京二级 label=北京市、香港→18 区（如中西區/沙田區） |
 | 2 | 二级节点代码唯一、字典/名称派生 | Defer UT | `AreaDictionaryTest`：code 唯一、前缀省 code、直辖市/港澳台展示名（P4） |
 | 3 | 响应返回代码与省名 | API | `TripControllerTest` / `ExperienceControllerTest` 断言 `destination_code`/`province_code`/`province_name` |
 | 4 | 存量行程迁移 | API + Defer UT | 迁移测试在临时 SQLite 跑 V1–V10；再 `GET /api/trips` 断言 6 条 seed 的 code/标准名；体验仍关联 |

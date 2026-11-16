@@ -26,7 +26,7 @@ async function createCompletedTrip(page: Page, title: string) {
     headers: { 'X-User-Id': '1', 'Content-Type': 'application/json' },
     data: {
       title,
-      destination: '珠海',
+      destination_code: '440400',
       start_date: '2026-12-20',
       end_date: '2026-12-20',
       stops: ['香洲港集合', '情侣路骑行'],
@@ -85,7 +85,7 @@ test('shares an experience and reuses it to publish a new plan', async ({ page }
   await expect(page.getByLabel('计划人数（含自己，2–12）')).toHaveValue('');
   await expect(page.getByLabel('标题')).toHaveValue('');
   await expect(page.getByLabel('途经点（每行一个，至少两个）')).toHaveValue(/香洲港集合/);
-  await expect(page.getByRole('checkbox', { name: '摄影' })).toBeChecked();
+  await expect(page.getByRole('button', { name: '摄影', exact: true })).toBeChecked();
 
   await page.locator('.form-card button.ant-btn-primary').click();
   await expect(page.getByText(/给这条路线起个名字|请选择出发日期|含你在内至少 2 人/).first()).toBeVisible();

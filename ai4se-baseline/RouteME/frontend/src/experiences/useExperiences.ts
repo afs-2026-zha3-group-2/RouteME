@@ -19,8 +19,9 @@ export type ExperiencesState =
 export function useExperiences(userId: number, filters: FilterState) {
   const [state, setState] = useState<ExperiencesState>({ status: 'loading' });
   const filterKey = JSON.stringify({
-    q: filters.q.trim(),
-    destination: filters.destination,
+    destinationCode: filters.destinationCode,
+    dateFrom: filters.dateFrom,
+    dateTo: filters.dateTo,
     tags: filters.tags,
   });
   const { page, size, setPage, setSize } = usePaging(filterKey);
@@ -30,8 +31,9 @@ export function useExperiences(userId: number, filters: FilterState) {
     loadExperiences(
       userId,
       {
-        q: filters.q.trim() === '' ? undefined : filters.q.trim(),
-        destination: filters.destination === '' ? undefined : filters.destination,
+        destination_code: filters.destinationCode === '' ? undefined : filters.destinationCode,
+        date_from: filters.dateFrom === '' ? undefined : filters.dateFrom,
+        date_to: filters.dateTo === '' ? undefined : filters.dateTo,
         tags: filters.tags.length === 0 ? undefined : filters.tags,
       },
       { page, size },

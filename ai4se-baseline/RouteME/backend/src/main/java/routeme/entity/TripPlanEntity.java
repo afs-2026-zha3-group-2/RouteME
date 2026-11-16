@@ -23,6 +23,8 @@ public class TripPlanEntity {
 
     private String title;
 
+    private String destinationCode;
+
     private String destination;
 
     private String startDate;
@@ -58,6 +60,7 @@ public class TripPlanEntity {
         entity.setId(trip.id());
         entity.setPublisherId(trip.publisherId());
         entity.setTitle(trip.title());
+        entity.setDestinationCode(trip.destinationCode());
         entity.setDestination(trip.destination());
         entity.setStartDate(trip.startDate().toString());
         entity.setEndDate(trip.endDate().toString());
@@ -80,6 +83,7 @@ public class TripPlanEntity {
                 id,
                 publisherId,
                 title,
+                destinationCode,
                 destination,
                 LocalDate.parse(startDate),
                 LocalDate.parse(endDate),
@@ -118,6 +122,14 @@ public class TripPlanEntity {
 
     public void setTitle(String title) {
         this.title = title;
+    }
+
+    public String getDestinationCode() {
+        return destinationCode;
+    }
+
+    public void setDestinationCode(String destinationCode) {
+        this.destinationCode = destinationCode;
     }
 
     public String getDestination() {

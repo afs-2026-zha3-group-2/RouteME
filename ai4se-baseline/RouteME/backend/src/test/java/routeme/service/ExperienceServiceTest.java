@@ -75,14 +75,14 @@ class ExperienceServiceTest {
     @Test
     void in_filters_out_matchingExperiences() {
         // When
-        List<ExperienceResponse> zhuhai = experienceService.listAll(null, "珠海", Set.of());
-        List<ExperienceResponse> camping = experienceService.listAll("露营", null, Set.of());
-        List<ExperienceResponse> tagged = experienceService.listAll(null, null, Set.of("露营"));
+        List<ExperienceResponse> zhuhai = experienceService.listAll("440400", Set.of());
+        List<ExperienceResponse> all = experienceService.listAll(null, Set.of());
+        List<ExperienceResponse> tagged = experienceService.listAll(null, Set.of("露营"));
 
         // Then
         assertAll(
                 () -> assertEquals(1, zhuhai.size(), "destination filter"),
-                () -> assertEquals(1, camping.size(), "keyword hits trip title/content"),
+                () -> assertEquals(2, all.size(), "no filter returns all"),
                 () -> assertEquals(1, tagged.size(), "tag filter"),
                 () -> assertEquals(2L, tagged.get(0).trip().id(), "tagged experience belongs to trip 2"));
     }
@@ -94,7 +94,7 @@ class ExperienceServiceTest {
                 "第二次走这条线，碎石段还是最累，但营地星空依旧值得。", "tiring", "鞋要抓地，水在山下买齐。"));
 
         // Then
-        List<ExperienceResponse> all = experienceService.listAll(null, null, Set.of());
+        List<ExperienceResponse> all = experienceService.listAll(null, Set.of());
         assertAll(
                 () -> assertEquals(2, all.size(), "two experiences"),
                 () -> assertEquals(2L, all.get(0).trip().id(), "recently updated first"));

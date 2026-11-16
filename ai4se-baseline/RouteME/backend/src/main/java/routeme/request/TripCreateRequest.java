@@ -8,7 +8,7 @@ import java.util.List;
  */
 public record TripCreateRequest(
         String title,
-        String destination,
+        String destinationCode,
         LocalDate startDate,
         LocalDate endDate,
         List<String> stops,

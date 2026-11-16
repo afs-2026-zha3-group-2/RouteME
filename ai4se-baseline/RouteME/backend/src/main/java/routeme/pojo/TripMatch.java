@@ -14,17 +14,17 @@ public record TripMatch(int score, int percentage, List<String> reasons, String 
     public static TripMatch of(
             TripPlan candidate,
             TripPlan reference,
-            String filterDestination,
+            String filterDestinationCode,
             LocalDate filterDate,
             List<String> interests) {
-        String destination = filterDestination != null && !filterDestination.isBlank()
-                ? filterDestination
-                : reference == null ? "" : reference.destination();
+        String destinationCode = filterDestinationCode != null && !filterDestinationCode.isBlank()
+                ? filterDestinationCode
+                : reference == null ? "" : reference.destinationCode();
         LocalDate date = filterDate != null ? filterDate : reference == null ? null : reference.startDate();
 
         int score = 0;
         List<String> reasons = new ArrayList<>();
-        if (!destination.isEmpty() && destination.equals(candidate.destination())) {
+        if (!destinationCode.isEmpty() && destinationCode.equals(candidate.destinationCode())) {
             score += 50;
             reasons.add("目的地相同");
         }

@@ -53,7 +53,7 @@ public class TripPlanServiceImpl extends AbstractServiceImpl<TripPlanMapper, Tri
         TripPlanDraft draft = new TripPlanDraft(
                 publisherId,
                 request.title(),
-                request.destination(),
+                request.destinationCode(),
                 request.startDate(),
                 request.endDate(),
                 request.stops(),
@@ -73,8 +73,7 @@ public class TripPlanServiceImpl extends AbstractServiceImpl<TripPlanMapper, Tri
     public PageResult<TripPlan> searchPage(TripQuery query, PageParam param) {
         IPage<TripPlanEntity> page = baseMapper.selectOpenPage(
                 new Page<>(param.page(), param.size()),
-                query.keyword(),
-                query.destination(),
+                query.destinationCode(),
                 query.dateFrom() == null ? null : query.dateFrom().toString(),
                 query.dateTo() == null ? null : query.dateTo().toString(),
                 List.copyOf(query.tags()),
@@ -89,8 +88,7 @@ public class TripPlanServiceImpl extends AbstractServiceImpl<TripPlanMapper, Tri
     @Override
     public List<TripPlan> findOpen(TripQuery query) {
         return baseMapper.selectOpenList(
-                        query.keyword(),
-                        query.destination(),
+                        query.destinationCode(),
                         query.dateFrom() == null ? null : query.dateFrom().toString(),
                         query.dateTo() == null ? null : query.dateTo().toString(),
                         List.copyOf(query.tags()),

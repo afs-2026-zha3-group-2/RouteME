@@ -1077,6 +1077,142 @@ svg {
   text-transform: uppercase;
 }
 
+/* ---------- 省市级联（自绘，不依赖浮层定位） ---------- */
+.area-picker {
+  position: relative;
+  width: 100%;
+}
+
+.area-trigger {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  width: 100%;
+  min-height: 38px;
+  padding: 0 11px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-sm);
+  background: var(--surface);
+  color: var(--ink);
+  font: inherit;
+  font-size: 13px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.area-trigger:hover {
+  border-color: var(--lagoon);
+}
+
+.area-trigger:focus-visible {
+  outline: none;
+  border-color: var(--lagoon);
+  box-shadow: var(--ring);
+}
+
+.area-trigger.invalid {
+  border-color: var(--danger);
+}
+
+.area-value {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.area-value.placeholder {
+  color: var(--ink-3);
+}
+
+.area-arrow {
+  flex: none;
+  color: var(--ink-3);
+  font-size: 11px;
+  line-height: 1;
+}
+
+.area-clear {
+  position: absolute;
+  top: 50%;
+  right: 26px;
+  transform: translateY(-50%);
+  display: grid;
+  place-items: center;
+  width: 18px;
+  height: 18px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--ink-3);
+  font-size: 14px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.area-clear:hover {
+  background: var(--surface-2);
+  color: var(--ink);
+}
+
+.area-panel {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  z-index: 50;
+  display: flex;
+  max-height: 272px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-sm);
+  background: var(--surface);
+  box-shadow: var(--sh-2);
+  overflow: hidden;
+}
+
+.area-column {
+  width: 158px;
+  max-height: 270px;
+  padding: 4px;
+  overflow-y: auto;
+}
+
+.area-column + .area-column {
+  border-left: 1px solid var(--line);
+}
+
+.area-empty {
+  margin: 0;
+  padding: 10px;
+  color: var(--ink-3);
+  font-size: 12px;
+}
+
+.area-option {
+  display: block;
+  width: 100%;
+  padding: 7px 10px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--ink);
+  font: inherit;
+  font-size: 13px;
+  text-align: left;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.area-option:hover {
+  background: var(--surface-2);
+}
+
+.area-option.active {
+  background: var(--lagoon-soft);
+  color: var(--lagoon);
+  font-weight: 600;
+}
+
 .filter-tags {
   display: flex;
   flex-wrap: wrap;

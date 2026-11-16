@@ -40,7 +40,7 @@
 
 - `refine-inspiration-home`（0/19 tasks）未归档，且同改两 requirement；本 change 的 delta 已保留其首页双视图场景，但归档顺序必须先它后本 change。
 - `add-trip-publish` 目的地修订未实现（5 条待完成任务），其 G1/G2 需重评；本 change 的数据底座是其前置。
-- V10 重建 `trip_plans` 的外键处理与匹配 code 比较回归，需在 P3 design/tasks 中落实。
+- V10 加列（不重建表）与外键兼容、匹配 code 比较回归，需在 P3 design/tasks 中落实。
 - 区划数据包 v5 数据约 2019/2020，MVP 接受；升级不改契约。
 
 ## Reviewer metadata

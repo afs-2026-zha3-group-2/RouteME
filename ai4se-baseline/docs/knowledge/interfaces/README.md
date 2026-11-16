@@ -7,16 +7,16 @@ API、事件与集成契约。字段一律 snake_case；时间字段为 RFC3339 
 
 ## RouteME 行程、同行与体验接口（2026-11-15，`trip-plans` + `trip-companions` + `trip-experiences`）
 
-契约源：`RouteME/openapi.yaml`（v0.4.0）。校验：`cd RouteME; npx @redocly/cli lint openapi.yaml`（配置见 `RouteME/redocly.yaml`），或 `cd RouteME/backend; .\mvnw.cmd -Dtest=OpenApiTest test`。
+契约源：`RouteME/openapi.yaml`（v0.7.0）。校验：`cd RouteME; npx @redocly/cli lint openapi.yaml`（配置见 `RouteME/redocly.yaml`），或 `cd RouteME/backend; .\mvnw.cmd -Dtest=OpenApiTest test`。
 
 | 方法 | 路径 | 说明 |
 |---|---|---|
 | GET | `/users` | 3 个演示账户（身份门） |
-| GET | `/trips` | 未结束行程分页列表；`q`、`destination`、`date_from`、`date_to`、`tags`（逗号分隔，任一命中）、`sort=date\|new`、`page`、`size` |
+| GET | `/trips` | 未结束行程分页列表；`destination_code`（6 位国标码等值）、`date_from`、`date_to`、`tags`（逗号分隔，任一命中）、`sort=date\|new`、`page`、`size` |
 | GET | `/trips/{id}` | 行程详情 + 发布者 + 当前同行者（发布者在前，其后为已接受同行者） |
 | POST | `/trips` | 发布行程（201） |
 | POST | `/trips/{id}/complete` | 发布者标记已结束 |
-| GET | `/matches` | 候选行程 + `match{score, percentage, reasons[], basis}`；`sort=match`（默认）\|`date`\|`new`；`page`、`size` |
+| GET | `/matches` | 候选行程 + `match{score, percentage, reasons[], basis}`；筛选同 `/trips`（`destination_code`/日期/标签）；`sort=match`（默认）\|`date`\|`new`；`page`、`size` |
 | GET | `/matches/{tripId}` | 单条行程相对我的匹配信息 |
 | POST | `/trips/{tripId}/applications` | 提交同行申请（`message` 选填 ≤120，201） |
 | GET | `/trips/{tripId}/applications` | 发布者查看该行程申请 |
@@ -30,7 +30,7 @@ API、事件与集成契约。字段一律 snake_case；时间字段为 RFC3339 
 | GET | `/me/chat-partners` | 聊天对象列表（含最后一条消息与条数） |
 | GET | `/me/trips` | 我的旅行四组（published/applied/matched/completed）+ `pending_application_count` |
 | POST | `/reports` | 举报行程或用户 `{target_type, target_id, reason, note?}`，返回 `{received: true}` |
-| GET | `/experiences` | 旅行体验分页列表；`q`、`destination`、`tags`、`page`、`size`，按最近保存时间倒序 |
+| GET | `/experiences` | 旅行体验分页列表；`destination_code`、`date_from`、`date_to`、`tags`、`page`、`size`，按最近保存时间倒序；按关联行程日期区间求交集 |
 | GET | `/me/experiences` | 我的体验（我的旅行「已完成」入口用） |
 | GET | `/trips/{tripId}/experiences` | 某行程的体验，按首次发布时间升序 |
 | POST | `/trips/{tripId}/experiences` | 发布或修改我的体验；首次 201、更新 200；`{content, intensity, advice}` |
