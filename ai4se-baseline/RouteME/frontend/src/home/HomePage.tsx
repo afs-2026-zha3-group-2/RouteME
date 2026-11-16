@@ -42,10 +42,6 @@ export function HomePage({ currentUser }: Props) {
   const openTripCount = state.status === 'ready' ? String(state.total) : '—';
   const experienceCount =
     experiences.state.status === 'ready' ? String(experiences.state.total) : '—';
-  const basis =
-    currentUser.interests.length > 0
-      ? `匹配对照你的旅行兴趣：${currentUser.interests.join('、')}`
-      : '先发布一条行程，匹配会更贴近你的偏好。';
   const summary = describeFilters(filters);
 
   const goPublish = () => {
@@ -66,10 +62,6 @@ export function HomePage({ currentUser }: Props) {
           <br />
           今天想走哪条路？
         </h1>
-        <p className="greet-sub">
-          这里展示其他同学公开的真实行程与游后体验。看到合适的路线可以直接申请同行，
-          也可以参考它发布自己的计划。
-        </p>
         <div className="hero-stats">
           <span className="hero-stat">
             <b>{openTripCount}</b>
@@ -80,7 +72,6 @@ export function HomePage({ currentUser }: Props) {
             <span>真实游后体验</span>
           </span>
         </div>
-        <p className="hero-basis">{basis}</p>
       </section>
 
       <div className="seg-row">
