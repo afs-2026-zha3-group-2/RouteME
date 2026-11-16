@@ -209,7 +209,7 @@ test('rejects a submission after the trip fills and shows the reason', async ({ 
   await acceptApplicationViaApi(page, 2, created.id, 3);
 
   await page.getByRole('button', { name: '提交同行申请' }).click();
-  await expect(page.locator('.ant-alert').filter({ hasText: '人数已满' })).toBeVisible();
+  await expect(page.locator('.ant-message').filter({ hasText: '人数已满' })).toBeVisible();
   await expect(page.getByPlaceholder(APPLY_PLACEHOLDER)).toHaveCount(0);
   await expect(page.getByRole('button', { name: '提交同行申请' })).toHaveCount(0);
   await expect(page.locator('.detail-application .action-note')).toHaveText('人数已满');
