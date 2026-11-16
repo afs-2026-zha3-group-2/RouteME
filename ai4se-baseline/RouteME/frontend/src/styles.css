@@ -523,21 +523,28 @@ svg {
 .brand-mark {
   width: 36px;
   height: 36px;
-  border-radius: 11px;
   display: grid;
   place-items: center;
-  background: var(--grad-tide);
-  color: var(--on-deep);
-  box-shadow: 0 4px 14px -6px var(--tide);
+  flex: none;
 }
 
-.brand-mark svg {
-  width: 24px;
-  height: 24px;
+.brand-mark img {
+  width: 100%;
+  height: 100%;
+  display: block;
 }
 
-.brand-mark svg circle {
-  fill: var(--on-deep-accent);
+/* the dark asset repaints the travellers' navy silhouette so it stays legible */
+.brand-mark .mark-dark {
+  display: none;
+}
+
+[data-theme="dark"] .brand-mark .mark-light {
+  display: none;
+}
+
+[data-theme="dark"] .brand-mark .mark-dark {
+  display: block;
 }
 
 .brand-text {

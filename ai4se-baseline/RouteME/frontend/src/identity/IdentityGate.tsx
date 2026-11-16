@@ -1,5 +1,6 @@
 import { tripMessages } from '../i18n/tripMessages';
 import { Avatar } from '../shell/Avatar';
+import { BrandMark } from '../shell/BrandMark';
 import type { AuthSession, DemoUser } from '../types';
 import { AuthPanel } from './AuthPanel';
 
@@ -16,18 +17,7 @@ export function IdentityGate({ users, onSelect, onAuthenticated }: Props) {
     <main className="gate">
       <div className="gate-inner">
         <div className="gate-brand">
-          <span className="brand-mark" aria-hidden="true">
-            <svg viewBox="0 0 32 32">
-              <path
-                d="M5 24c5-13 17-13 22 0"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="3"
-                strokeLinecap="round"
-              />
-              <circle cx="16" cy="10" r="3.4" fill="currentColor" />
-            </svg>
-          </span>
+          <BrandMark />
           <span className="brand-text">
             <b>RouteMe</b>
             <i>路觅</i>
