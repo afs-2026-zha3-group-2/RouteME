@@ -1,65 +1,15 @@
 import { expect, test, type Page } from '@playwright/test';
+import {
+  API,
+  acceptApplicationViaApi,
+  applyViaApi,
+  createTripViaApi,
+  loginAs,
+  switchUser,
+} from './support';
 
-const API = '/api';
 const APPLY_PLACEHOLDER = '例如：这条线我走过一半，想补上日落那段，可以帮忙背装备。';
 const PENDING_NOTE = '申请已提交，等待 陈屿 回应。处理前你可以随时撤回。';
-
-async function loginAs(page: Page, userId: number) {
-  await page.addInitScript((id) => {
-    window.localStorage.setItem('routeme.currentUserId', String(id));
-  }, userId);
-}
-
-async function switchUser(page: Page, userId: number) {
-  await loginAs(page, userId);
-  await page.reload();
-}
-
-function todayIso(): string {
-  const now = new Date();
-  const pad = (value: number) => String(value).padStart(2, '0');
-  return `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
-}
-
-async function createTripViaApi(page: Page, publisherId: number, title: string, capacity = 3) {
-  const response = await page.request.post(`${API}/trips`, {
-    headers: { 'X-User-Id': String(publisherId), 'Content-Type': 'application/json' },
-    data: {
-      title,
-      destination_code: '440400',
-      start_date: todayIso(),
-      end_date: todayIso(),
-      stops: ['香洲港集合', '情侣路骑行'],
-      tags: ['摄影'],
-      capacity,
-    },
-  });
-  expect(response.ok()).toBeTruthy();
-  return (await response.json()) as { id: number };
-}
-
-async function applyViaApi(page: Page, userId: number, tripId: number, message: string | null = null) {
-  const response = await page.request.post(`${API}/trips/${tripId}/applications`, {
-    headers: { 'X-User-Id': String(userId), 'Content-Type': 'application/json' },
-    data: { message },
-  });
-  expect(response.ok()).toBeTruthy();
-  return (await response.json()) as { id: number };
-}
-
-async function acceptApplicationViaApi(page: Page, publisherId: number, tripId: number, applicantId: number) {
-  const listResponse = await page.request.get(`${API}/trips/${tripId}/applications`, {
-    headers: { 'X-User-Id': String(publisherId) },
-  });
-  expect(listResponse.ok()).toBeTruthy();
-  const applications = (await listResponse.json()) as { id: number; applicant: { id: number } }[];
-  const target = applications.find((application) => application.applicant.id === applicantId);
-  expect(target).toBeTruthy();
-  const response = await page.request.post(`${API}/applications/${target!.id}/accept`, {
-    headers: { 'X-User-Id': String(publisherId) },
-  });
-  expect(response.ok()).toBeTruthy();
-}
 
 async function completeTripViaApi(page: Page, publisherId: number, tripId: number) {
   const response = await page.request.post(`${API}/trips/${tripId}/complete`, {
@@ -131,10 +81,14 @@ test('applies, gets accepted, chats, reports and leaves', async ({ page }) => {
   await page.getByRole('button', { name: '刷新消息' }).click();
   await expect(page.getByText('周六九点见。')).toBeVisible();
 
-  await page.getByRole('button', { name: /举\s*报/ }).click();
+  await page.getByRole('button', { name: '举报这位用户' }).click();
   await page.getByRole('button', { name: '提交举报' }).click();
-  await expect(page.getByText('举报已收到，我们会记录处理。')).toBeVisible();
-  await page.locator('.ant-modal-footer .ant-btn-primary').click();
+  await expect(page.getByText('已收到，我们会处理')).toBeVisible();
+  await page
+    .getByRole('dialog')
+    .locator('.ant-modal-footer')
+    .getByRole('button', { name: /^关\s*闭$/ })
+    .click();
 
   await page.goto(`/#/trips/${created.id}`);
   await page.getByRole('button', { name: '退出同行' }).click();

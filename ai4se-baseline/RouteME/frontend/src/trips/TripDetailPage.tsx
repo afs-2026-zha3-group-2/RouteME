@@ -27,7 +27,6 @@ import { tripMessages } from '../i18n/tripMessages';
 import { intensityLabel } from '../experiences/experienceForm';
 import { publisherSummary } from '../profile/profileDisplay';
 import { ReportModal } from '../safety/ReportModal';
-import { SafetyNote } from '../safety/SafetyNote';
 import { Avatar } from '../shell/Avatar';
 import type { DemoUser, Experience, MatchCandidate, TripApplication } from '../types';
 import { applicationEntryState, applicationErrorMessage } from './applicationEntry';
@@ -301,6 +300,16 @@ export function TripDetailPage({ currentUser, tripId }: Props) {
             <div className="detail-badges">
               <Tag color={statusColor(trip.status)}>{statusLabel(trip.status)}</Tag>
               <Tag>{destinationLabel(trip.destination_code) || trip.destination}</Tag>
+              {!isPublisher && (
+                <Button
+                  type="link"
+                  danger
+                  className="head-report"
+                  onClick={() => setReportOpen(true)}
+                >
+                  {tripMessages.reportEntryTrip}
+                </Button>
+              )}
             </div>
             <Typography.Title level={2} className="trip-title detail-title">
               {trip.title}
@@ -455,8 +464,6 @@ export function TripDetailPage({ currentUser, tripId }: Props) {
             />
           )}
 
-          <SafetyNote onReport={() => setReportOpen(true)} />
-
           {entry.kind !== 'publisher' && (
             <section className="detail-section detail-application">
               <h3 className="section-title">{tripMessages.applyAreaTitle}</h3>
@@ -555,6 +562,7 @@ export function TripDetailPage({ currentUser, tripId }: Props) {
         open={reportOpen}
         targetType="trip"
         targetId={tripId}
+        targetLabel={trip.title}
         onClose={() => setReportOpen(false)}
       />
     </main>

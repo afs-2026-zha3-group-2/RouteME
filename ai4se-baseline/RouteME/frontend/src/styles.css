@@ -2185,6 +2185,10 @@ svg {
   gap: 6px;
 }
 
+.detail-badges .head-report {
+  margin-left: auto;
+}
+
 .detail-title {
   font-size: clamp(1.4rem, 2.6vw, 1.9rem) !important;
   font-weight: 800 !important;
@@ -3395,6 +3399,7 @@ svg {
 /* ---------- 聊天参与者信息 ---------- */
 .chat-head {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: 12px;
   padding-bottom: 12px;
@@ -3403,6 +3408,12 @@ svg {
 
 .chat-head-text {
   min-width: 0;
+}
+
+.chat-report {
+  margin-left: auto;
+  align-self: flex-start;
+  flex: none;
 }
 
 .chat-head-text .chat-title {

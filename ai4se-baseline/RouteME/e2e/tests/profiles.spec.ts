@@ -120,6 +120,6 @@ test('keeps the existing trip report entry working', async ({ page }) => {
   await loginAs(page, 1);
   await page.goto('/#/trips/5');
 
-  await page.getByRole('button', { name: /^举\s*报$/ }).click();
-  await expect(page.getByText('举报行程或用户')).toBeVisible();
+  await page.locator('.detail-badges').getByRole('button', { name: '举报这条行程' }).click();
+  await expect(page.getByRole('dialog').getByText('举报这条行程')).toBeVisible();
 });

@@ -3,7 +3,6 @@ import { Alert, Button, Card, Input, Skeleton, Space, Typography, message } from
 import { loadMessages, loadTrip, loadUsers, sendMessage } from '../api';
 import { tripMessages } from '../i18n/tripMessages';
 import { ReportModal } from '../safety/ReportModal';
-import { SafetyNote } from '../safety/SafetyNote';
 import { Avatar } from '../shell/Avatar';
 import type { ChatMessage, DemoUser, TripDetail } from '../types';
 
@@ -137,9 +136,15 @@ export function ChatPage({ currentUser, tripId, otherUserId }: Props) {
                   </p>
                 )}
               </div>
+              <Button
+                type="link"
+                danger
+                className="chat-report"
+                onClick={() => setReportOpen(true)}
+              >
+                {tripMessages.reportEntryUser}
+              </Button>
             </div>
-
-            <SafetyNote onReport={() => setReportOpen(true)} />
 
             {completed && <Alert type="info" showIcon title={tripMessages.chatReadOnly} />}
 
@@ -202,6 +207,7 @@ export function ChatPage({ currentUser, tripId, otherUserId }: Props) {
         open={reportOpen}
         targetType="user"
         targetId={otherUserId}
+        targetLabel={otherUser?.nickname ?? '同行者'}
         onClose={() => setReportOpen(false)}
       />
     </main>
