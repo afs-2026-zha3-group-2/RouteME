@@ -99,8 +99,8 @@
 |---|---|
 | P1（意图 / 提案 / delta） | `30085eb` |
 | P2（Delta 复核 + lint + G1 rev2） | `2ddfa03`、`642e529`、`159c48f`（rev1 结论作废） |
-| P3（ATDD / design / tasks + 签署） | `cee7ccd`、`b2becdf`、`335a34c` |
-| P4（本记录 + 实现 + E2E） | 本提交：`feat(p4): refine-safety-report move the report entry to the headers`（本地，未 push） |
+| P3（ATDD / design / tasks + 签署） | `cee7ccd`、`b2becdf`、`5aaadca` |
+| P4（实现 + E2E + 本记录） | `434d937` `feat(p4): refine-safety-report move the report entry to the headers`（本地，未 push） |
 
 | 角色 | 姓名 | 本阶段确认内容 | 日期 |
 |---|---|---|---|
