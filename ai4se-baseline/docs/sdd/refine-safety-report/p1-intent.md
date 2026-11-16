@@ -47,16 +47,16 @@
 
 | 角色 | 姓名 | 确认内容 | 日期 |
 |---|---|---|---|
-| AO | Jacky | P1 工件评审批准（rev1 proposal / spec 均 Pass）与承接 P2–P4；rev2 待批准 | 2026-11-16 |
-| IO | 待确认 | 需求来源与跨能力影响确认（`trip-companions` REMOVED + ADDED，`trip-plans` 只读） | 待签署 |
-| SA | 待确认 | 举报口径、提示移除与回归范围确认（rev2） | 待签署 |
+| AO | Jacky | P1 工件评审批准（rev1 proposal / spec 均 Pass；rev2 两份复审亦于 2026-11-16T16:35 批准）与承接 P2–P4 | 2026-11-16 |
+| IO | Wanye | 需求来源与跨能力影响确认（`trip-companions` REMOVED + ADDED，`trip-plans` 只读） | 2026-11-16 |
+| SA | Karena | 举报口径、提示移除与回归范围确认（rev2） | 2026-11-16 |
 | SM | 待确认 | P1 范围与排期确认（单 change、1 点、迭代 3） | 待签署 |
 
-**阶段结论：rev1 Pass（required 4/4）；rev2 待复核。** 下一步按 `@rule:artifact-review-gate` 重审 proposal / spec，再走 G1 重签。
+**阶段结论：rev1 Pass（required 4/4）；rev2 Pass（复审已批准，G1 已具名重签）。** IO / SA 的签署日期为 G1 rev2 结论日（`g1-decision.md`「Revision 2」）；SM 的范围确认仍待签署。
 
 ## 6. 提交与偏离记录
 
 - **阶段提交：** 按 `docs/sdd/README.md` 使用 `docs(p1): refine-safety-report ...`；按用户当次指示**只本地提交、不 push**（本地 `main` 还包含并行会话未推送的提交 `294f487`，由该会话决定发布时机）。
 - **冲突处理：** `deep-dive.md` / `impact-brief.md` 在并行会话的 stash 恢复中曾进入 `UU` 冲突态；本次按「两边都保留」重建——S15（REQ-011）增补原样保留，本需求增补改名 REQ-012 后追加，校验为纯新增 diff。
 - **编号偏离：** D4 原定 REQ-011，因同日撞号改为 REQ-012，已在意图 / Ready 条目 / registry / handoff / stories / 提案中同步。
-- **范围偏离（rev2）：** 裁决 D5 撤回 rev1 的三条提示与聊天一行提示，S14 故事 AC 与 REQ-012 §1–§9 同步改写；Delta 由 MODIFIED 改为 REMOVED + ADDED。rev2 属实质性范围变更，需重新走工件评审与 G1 重签，不能复用 rev1 的 `Pass`。
+- **范围偏离（rev2）：** 裁决 D5 撤回 rev1 的三条提示与聊天一行提示，S14 故事 AC 与 REQ-012 §1–§9 同步改写；Delta 由 MODIFIED 改为 REMOVED + ADDED。rev2 属实质性范围变更，未复用 rev1 的 `Pass`：工件评审已另出 `-review-2`（2026-11-16T16:35 批准），G1 已由 IO Wanye / SA Karena 于 2026-11-16T16:38 具名重签。

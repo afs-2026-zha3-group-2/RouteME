@@ -746,7 +746,7 @@
 | 设计预览 | `openspec/changes/refine-safety-report/preview/safety-report.html` | A / B / C 三种入口位置 + 对照形态；用户选定 **B · 页头右上** |
 | 原型 | `docs/prototype/ui.js` `reportModal()` | 举报弹窗与身份保密 / 紧急求助说明；`safetyPanel()` / `chat-safety` 按 D5 不再落地 |
 | 前端 / E2E 测试 | `frontend/src/**/*.test.ts(x)`；`e2e/tests/companions.spec.ts`、`profiles.spec.ts` | companions L136 断言旧回执文案、L137 依赖 primary 按钮；profiles 断言弹窗标题与隐私词黑名单 |
-| 阶段记录 | `docs/sdd/README.md` | 阶段索引；`refine-safety-report` 行标注「G1 rev2 待重签」 |
+| 阶段记录 | `docs/sdd/README.md` | 阶段索引；`refine-safety-report` 行标注「待 P3（G1 rev2 Pass）」 |
 
 ### 15.3 As-is → proposed delta（逐资产）
 
@@ -779,7 +779,7 @@
 | Spec（change delta） | `openspec/changes/refine-safety-report/specs/trip-companions/spec.md`（REMOVED 1 Requirement / ADDED 1 Requirement，9 场景） |
 | Proposal | `openspec/changes/refine-safety-report/proposal.md`（rev2） |
 | Story | 不新增故事文件：原型 `stories.html` S14 rev2 已存在；本 change 以 proposal + delta 承接（与 REQ-010 同口径） |
-| Registry / handoff | REQ-012 行与 REQ-012 → `refine-safety-report` 映射（rev2 状态 `g1-pending`） |
+| Registry / handoff | REQ-012 行与 REQ-012 → `refine-safety-report` 映射（rev2 状态 `g1-pass`） |
 | Tests / 代码 / design / tasks | 不在 P1 范围；交 P3 / P4 起 |
 | Living Spec | 归档时先执行 REMOVED 删除旧块，再 ADDED「同行举报入口与回执」；「安全提示常驻」随之移除 |
 | 阶段记录 | `docs/sdd/refine-safety-report/p1-intent.md`、`p2-spec.md`（rev2）；`docs/sdd/README.md` 索引 |
