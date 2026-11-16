@@ -77,3 +77,29 @@
 - **归档顺序：** `refine-inspiration-home` → `add-destination-area-filters` → `add-trip-publish`；三者中只有本 change 属于 REQ-007。
 - **搜索测试：** A 的搜索/目的地场景由本 change 改写；`refine-inspiration-home` 的搜索空态测试交其 owner。
 - **原始故事点：** 2；本拆分为 S/M 相对规模，供排期参考，不改变原始故事点记录。
+
+---
+
+# Story list — REQ-011（S15 结束行程）
+
+- **来源：** 用户提供的 S15 故事、10 条业务规则与 12 条验收标准（2026-11-16）
+- **Change：** `add-trip-completion`（`trip-plans` MODIFIED + ADDED、`trip-companions` MODIFIED）
+- **拆分模式：** Workflow（四态与自动流转 → 结束操作与善后 → 申请/聊天/体验回归）
+- **口径：** 一条故事 = 一个状态机扩展 + 一次状态迁移（旅行中 → 已结束）
+
+| Story | Title | 角色 | Priority | Iteration | Points | Page | Parent REQ | Change | Status |
+|---|---|---|---|---|---|---|---|---|---|
+| S15 | 结束行程 | 行程发布者 | P0 | 3 | 1 | 我的旅行 / 行程详情 | REQ-011 | `add-trip-completion` | P2 G1 Pass（2026-11-16） |
+
+## Traceability（REQ-011）
+
+| Story | Requirement scenarios | Change spec | Story file |
+|---|---|---|---|
+| S15 | REQ-011 §4 S15-1 ~ S15-26 | `openspec/changes/add-trip-completion/specs/trip-plans/spec.md`、`specs/trip-companions/spec.md` | `requirement-workspace/stories/add-trip-completion.story.md` |
+
+## Notes（REQ-011）
+
+- 本故事只覆盖行程生命周期与结束善后；体验内容结构、统计接口形状、推送渠道不在本故事内。
+- 双 capability（`trip-plans` + `trip-companions`）按 REQ-005 / REQ-007 / REQ-008 先例，归档前需 SA 具名追认例外。
+- 与 `add-match-reason` 共享 `trip-companions`，同窗口归档需串行。
+- 原始故事点 1，不再拆分；四态与结束操作必须同批交付，否则验收无法闭环。

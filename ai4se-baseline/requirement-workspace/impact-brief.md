@@ -1,4 +1,4 @@
-﻿# Impact brief — REQ-002 / 003 / 004 / 005 / 006 / 007 / 008（MVP 业务能力集）
+# Impact brief — REQ-002 / 003 / 004 / 005 / 006 / 007 / 008（MVP 业务能力集）
 
 - **Workdir：** `requirement-workspace/`
 - **日期：** 2026-11-15 ｜ **触发：** `/sdd:pre-spec-req` 内嵌 impact-analysis（blocking OQ 与 DoR BLOCKER 均已清零）
@@ -609,3 +609,108 @@
 - **不并入 `add-user-profiles`：** 本 change 基于 `origin/main`，不依赖未合并的资料弹窗；避免两个 PR 相互堆叠。
 - **阶段：** 单阶段；依赖已归档的 `trip-companions`，无阻塞上游。
 - **质量自检（split-heuristics）：** 子目标一句话可说明 ✓；端到端可观察（打开详情 → 留一句话 → 提交 → 待处理 → 撤回）✓；可独立运行 ✓；capability 名真实 ✓；无依赖环 ✓。
+# Impact brief 增补 — REQ-011（S15 结束行程）
+
+- **日期：** 2026-11-16 ｜ **触发：** `/sdd:pre-spec-req` 内嵌 impact-analysis（blocking OQ = 0，DoR BLOCKER = 0）
+- **粒度：** 应用架构（能力 / 页面 / 集成边界），非代码设计
+
+## 1. Requirement set
+
+| id | 能力 | change（候选） | 条目路径 |
+|---|---|---|---|
+| REQ-011 | `trip-plans`（MODIFIED + ADDED）、`trip-companions`（MODIFIED） | `add-trip-completion` | `requirement-workspace/requirements/REQ-011-trip-completion.md` |
+
+意图捕获：`requirement-workspace/intents/REQ-011-trip-completion.md`。
+
+## 2. As-is asset inventory（evidence paths）
+
+| 资产 | 路径 | 现状 |
+|---|---|---|
+| Living Spec — 行程 | `openspec/specs/trip-plans/spec.md` | 「发布者结束自己的行程」只规定发布者可结束未结束行程；状态只有招募中/已满员/已结束；发布成功后状态为招募中；无日期驱动、无提醒 |
+| Living Spec — 同行 | `openspec/specs/trip-companions/spec.md` | 「提交与取消同行申请」限定招募中且未满员；「处理申请」未写满员后拒绝；「匹配后的一对一文字沟通」已定义已结束只读 |
+| Living Spec — 体验 | `openspec/specs/trip-experiences/spec.md` | 已结束 + 发布者/已接受同行者可发表体验；未参加拒绝 |
+| 后端状态模型 | `RouteME/backend/.../pojo/TripPlan.java`、`enums/TripStatusEnum.java` | 仅三态；`status()` 只看 `completedAt` 与人数，不看日期 |
+| 后端结束逻辑 | `RouteME/backend/.../service/impl/TripPlanServiceImpl.java` | 仅校验非 COMPLETED；未取消待处理申请 |
+| 后端申请逻辑 | `RouteME/backend/.../service/impl/ApplicationServiceImpl.java` | `apply` / `decide` 未覆盖 ONGOING；`decide` 未校验行程是否已结束；满员依赖 `addCompanion` 的 RECRUITING 校验间接拦截 |
+| 后端聚合 | `RouteME/backend/.../service/impl/MyTripsServiceImpl.java` | 已匹配与已完成分组按 `completedAt` 判断；无自动完成口径 |
+| 后端统计 | `RouteME/backend/.../service/impl/UserProfileStatsServiceImpl.java` | 已完成 = `completedAt != null` 计数 |
+| 后端聊天 | `RouteME/backend/.../service/impl/ChatServiceImpl.java` | 已结束发送抛 `CHAT_READ_ONLY` |
+| 后端体验 | `RouteME/backend/.../service/impl/ExperienceServiceImpl.java` | 已校验 COMPLETED + 参与者 |
+| 查询过滤 | `RouteME/backend/.../mapper/TripPlanMapper.xml` | `WHERE completed_at IS NULL`；日期已过仍出现在首页 |
+| 前端卡片 | `RouteME/frontend/src/trips/TripCard.tsx`、`tripStatus.ts`、`StatusBadge.tsx` | 三态徽标；无结束入口 |
+| 前端详情 | `RouteME/frontend/src/trips/TripDetailPage.tsx` | `isPublisher && !isCompleted` 显示「标记为已结束」+ 二次确认 Modal |
+| 前端我的旅行 | `RouteME/frontend/src/mine/MyTripsPage.tsx` | 四分组；无结束入口；已完成组只有体验入口 |
+| 前端聊天 | `RouteME/frontend/src/chat/ChatPage.tsx`、`i18n/tripMessages.ts` | 已只读提示「行程已结束，聊天只能查看历史消息。」 |
+| 契约 | `RouteME/openapi.yaml`（TripSummary.status / TripDetail.status / `/trips/{tripId}/complete`） | `enum: [recruiting, full, completed]`；complete 已声明 403/409 |
+| 测试 | `backend/.../TripPlanServicePersistenceTest.java`、`ChatControllerTest.java`、`OpenApiTest.java`；`e2e/tests/trips.spec.ts` | 现有断言基于三态；E2E 已有结束行程用例 |
+
+无缺失的权威树；未新造竞争性 authority root。
+
+## 3. As-is → proposed delta（逐资产）
+
+| 资产 | As-is | Proposed delta |
+|---|---|---|
+| `openspec/specs/`（Living Spec） | 三态行程 | change 归档后 `trip-plans` 为四态；`trip-companions` 扩展申请资格与自动取消；P1/P2 只产出 change delta |
+| `openspec/changes/add-trip-completion/` | 不存在 | 新建：`proposal.md` + `specs/trip-plans/spec.md`（MODIFIED + ADDED）+ `specs/trip-companions/spec.md`（MODIFIED） |
+| `trip-plans`（Living Spec） | 三态；结束限「未结束」；发布后招募中 | 四态与优先级；日期自动流转；结束限旅行中；发布校验今天；提醒；列表口径；我的旅行/统计口径 |
+| `trip-companions`（Living Spec） | 申请限招募中且未满员；处理未写满员分支 | 未结束且未满员可申请/接受（含旅行中）；满员后新申请拒绝、既有申请可拒绝不可接受；结束后待处理自动取消且处理关闭；聊天提示补「该行程已结束」 |
+| `trip-experiences` | 已结束 + 参加者可分享 | checked, no rule change —— 自动完成与手动结束同等适用（回归） |
+| `openapi.yaml` | 三态枚举 | `status` 新增 `ongoing`；`/trips/{tripId}/complete` 补充「仅 ongoing」描述；错误码不变（`TRIP_NOT_OPEN` 409 / `FORBIDDEN` 403）；契约版本递增 |
+| 后端状态与流转 | `TripPlan.status()` 只看完成时间与人数 | 引入日期推导（含自动完成口径）；结束校验改为仅 ONGOING；发布校验 `startDate >= today`；结束事务批量取消待处理申请 |
+| 后端聚合与统计 | 只认 `completedAt` | 已匹配/已完成分组与「已完成」统计改用统一的「已结束」判定（含自动完成） |
+| 后端查询 | `completed_at IS NULL` | 未结束列表排除到期自动完成；仍包含 ONGOING |
+| 后端申请 | `apply` / `decide` 未覆盖新四态 | 申请与接受改为「未结束且未满员」；满员后接受拒绝、拒绝允许；结束后全部关闭；结束触发批量取消 |
+| 前端状态展示 | 三态文案与颜色 | 新增「旅行中」文案与徽标色；满员的旅行中显示旅行中 |
+| 前端结束入口 | 仅详情页「标记为已结束」 | 我的旅行-我发布的 ONGOING 卡片 + 详情页；统一「结束行程」；二次确认文案补「申请关闭 / 待处理自动取消 / 不可恢复」 |
+| 前端提醒 | 无 | 我的旅行 + 详情页向发布者与已接受同行者展示「行程即将结束」（结束日期 21:00 起） |
+| 前端申请处理 | 申请页可接受/拒绝 | 已结束只读；满员时接受置灰、拒绝可用 |
+| 前端聊天 | 只读提示 | 文案对齐含「该行程已结束」 |
+| 前端我的旅行 | 已完成组 | 含自动完成；仍在旅行中的行程归入我发布的/已匹配，不归已完成 |
+| 测试 | 基于三态 | 四态推导（含边界 00:00/21:00）、结束权限、自动取消、列表口径、统计口径、E2E 结束入口与提醒 |
+| registry / handoff / stories / TODO | 无 REQ-011 | 补 REQ-011 登记与映射、故事 S15、业务清单 |
+
+## 4. Blast radius（应用架构）
+
+- **受影响能力：** `trip-plans`（状态机与结束）、`trip-companions`（申请资格/处理/聊天提示）、`trip-experiences`（资格回归）、`user-profiles`（统计口径）。
+- **受影响页面：** 旅行灵感首页（状态徽标/未结束列表）、行程详情页（结束入口/提醒/申请入口/体验入口）、我的旅行（结束入口/提醒/已完成分组）、同行申请页（满员与结束只读）、聊天页（只读提示）。
+- **跨能力集成边界：** `trip-plans` 拥有四态与自动流转；`trip-companions` 拥有申请状态机，接收 `trip-plans` 的「已结束」触发批量取消；`trip-experiences` 与 `user-profiles` 只读消费「已结束」。
+- **数据所有权不变：** 行程归 `trip-plans`；申请/聊天归 `trip-companions`；体验归 `trip-experiences`；统计为 `user-profiles` 请求时聚合。
+- **共享文件热点：** `TripPlan.java`、`TripPlanServiceImpl.java`、`ApplicationServiceImpl.java`、`MyTripsServiceImpl.java`、`TripPlanMapper.xml`、`TripDetailPage.tsx`、`MyTripsPage.tsx`、`tripMessages.ts`、`openapi.yaml`，排期时避免与其他 change 并行改同一文件。
+
+## 5. Artifact impact（specs / tests / docs）
+
+| 类型 | 影响 |
+|---|---|
+| Spec（change delta） | `specs/trip-plans/spec.md`（MODIFIED：浏览未结束/发布/详情状态/结束；ADDED：四态自动流转、即将结束提醒）；`specs/trip-companions/spec.md`（MODIFIED：提交与取消申请、处理申请、聊天只读提示） |
+| Proposal | `openspec/changes/add-trip-completion/proposal.md`（引用 REQ-011 与 S15；含 effort/size 与依赖顺序） |
+| 契约 | `openapi.yaml`：`status` 增加 `ongoing`，complete 描述收紧为仅 ongoing；Redocly lint 与 OpenApiTest 需通过 |
+| 后端 | 状态推导与日期边界、结束校验与批量取消、申请资格/处理分支、聚合与统计口径、列表过滤、发布日期校验；单元/控制器/迁移测试 |
+| 前端 | 状态文案与徽标、两处结束入口与二次确认、即将结束提醒、申请入口与处理禁用态、聊天提示文案、我的旅行已完成口径；组件测试 |
+| E2E | 添加旅行中结束用例、非 ONGOING 不可结束、二次确认取消/确认、结束后申请自动取消与处理关闭、聊天只读、体验入口、提醒窗口 |
+| 文档 | P1 仅本 brief 与需求条目；`docs/knowledge/domain` 与 `interfaces/README.md` 归档阶段回写四态与 `ongoing` |
+
+## 6. Dual-track notes（OpenSpec vs agile）
+
+- **OpenSpec 轨（主）：** 一个 change `add-trip-completion`，双 capability delta（`trip-plans` + `trip-companions`）；需 SA 追认双 capability 例外（参照 REQ-005 / REQ-007 / REQ-008 先例）。
+- **Agile 轨：** 单条故事 S15（故事点 1）。若需拆分，按 Happy-Sad 拆「四态与自动流转」「结束操作与善后」两条，但共用同一状态机，不建议拆前后端水平切片。
+- 两轨共用 REQ-011 与本节 impact。
+
+## 7. Risks & blockers
+
+| 级别 | 项 | 说明 / 缓解 |
+|---|---|---|
+| Risk | 自动完成依赖服务端时钟与时区 | 规格固定「结束日期次日 00:00 / 当日 21:00」，测试需注入固定 Clock；避免用前端时钟判定 |
+| Risk | 自动完成与待处理申请批量取消的触发时机 | 若纯推导不写入，申请状态不会自动变化；P3 需选定懒写入或读时投影，并保证一致性；MVP 数据量小可接受 |
+| Risk | 首页/匹配列表过滤条件变更影响既有分页与匹配排序 | 「未结束」改判为「非已结束」后需同步 `TripPlanMapper.xml` 与匹配候选；用回归用例覆盖 |
+| Risk | 满员后「可拒绝不可接受」与现有 `addCompanion` 的 RECRUITING 校验冲突 | ONGOING 满员会被误判为可接受；需把接受资格改为「未结束且未满员」而非仅 RECRUITING |
+| Risk | 结束入口同时落在我的旅行与详情页 | `MyTripsPage` 复用 `TripCard`，需避免卡片整体链接与按钮嵌套冲突；交互与可达性需 E2E 覆盖 |
+| Risk | 状态枚举新增 `ongoing` 破坏契约测试 | `openapi.yaml`、`OpenApiTest`、前端 `TripStatus` 类型与徽标需同批更新 |
+| Risk | 发布校验新增过去日期限制 | 可能使既有 E2E 使用固定过去日期的夹具失败；需改用相对日期 |
+| Blocker | 无 | blocking OQ = 0、DoR BLOCKER = 0；无使需求失效的未知依赖 |
+
+## 8. Suggested split boundaries（供 proposal-split / story-split）
+
+- **一 REQ 一 change：** `add-trip-completion` ← REQ-011（`trip-plans` MODIFIED+ADDED + `trip-companions` MODIFIED）。
+- **依赖 / 阶段排序：** 无上游新依赖；建议实施顺序 ① 状态推导与契约（四态 + 日期边界）→ ② 结束权限与批量取消 → ③ 申请资格/处理分支 → ④ 前端入口、提醒与文案 → ⑤ 列表/统计口径与回归。
+- **归档顺序：** 与 `add-match-reason`（`trip-companions`）共享 capability，若同窗口归档需串行；本 change 不依赖其它未归档 change。
+- **质量自检（split-heuristics）：** 垂直切片 ✓；端到端可观察 ✓（进入旅行中 → 结束 → 申请取消/聊天只读/体验入口）；可独立运行 ✓；capability 名真实 ✓；无依赖环 ✓。

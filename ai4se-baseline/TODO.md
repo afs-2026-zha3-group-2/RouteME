@@ -1,4 +1,4 @@
-﻿# TODO
+# TODO
 
 ## REQ-001: Hello World Home Page
 
@@ -161,3 +161,31 @@ RouteME 价值闭环的起点。验证核心假设：用户愿意发布可被他
 ### P1 产物
 
 `requirement-workspace/intents/REQ-007-destination-area-filters.md`、`requirements/REQ-007-destination-area-filters.md`、`stories.md` 的 REQ-007 段、`stories/REQ-007-destination-area-filters.story.md`、`openspec/changes/add-destination-area-filters/`（proposal + 两份 delta）。依赖 `refine-inspiration-home`（同改两 requirement，先归档）与 `add-trip-publish`（发布页目的地字段，后归档）；归档顺序 `refine-inspiration-home` → 本 change → `add-trip-publish`，三者中只有本 change 属于本需求。
+
+## REQ-011: S15 结束行程（旅行中 → 已结束）（capability `trip-plans` + `trip-companions`）
+
+### Background
+
+行程生命周期缺少「旅行中」：当前只有招募中 / 已满员 / 已结束三态，状态不看日期，发布者可以在旅行开始前就结束行程；结束后待处理申请会悬挂，首页仍会出现日期已过的行程。S15 要补完整生命周期，并让同行成员在结束后进入只读聊天与体验分享环节。
+
+### Requirement（业务）
+
+1. 四态：招募中 / 已满员 / 旅行中 / 已结束；优先级为已结束 > 旅行中 > 已满员 > 招募中。
+2. 自动流转：开始日期当天 00:00 起为旅行中；结束日期次日 00:00 起自动为已结束。
+3. 结束操作：仅发布者且仅旅行中可执行；二次确认；确认后旅行中 → 已结束；终态，不可撤销。
+4. 结束善后：待处理申请自动取消；申请处理全部关闭；同行者与聊天历史保留；聊天只读并提示「该行程已结束」；发布者与已接受同行者可发表旅行体验。
+5. 申请规则：旅行中仍可提交与接受；满员后状态仍为旅行中，新申请与接受关闭，既有待处理申请可拒绝不可接受；结束后全部关闭。
+6. 提醒：距结束不足 3 小时（结束日期 21:00 起），在我的旅行与行程详情提醒发布者与已接受同行者；无 push。
+7. 列表与统计：首页/匹配列表仍展示旅行中，排除已结束（含自动完成）；我的旅行与公开资料「已完成」采用同一口径。
+8. 发布校验：开始日期不得早于今天；等于今天时发布即旅行中。
+
+### Non-Goals
+
+- 撤销结束 / 恢复行程；结束后删除或归档清理数据。
+- 推送、短信、邮件、定时任务等外部通知渠道。
+- 行程取消、改期改线、签到与实时定位；结束后的评价、评分与信用体系。
+- 修改体验内容结构或统计接口形状。
+
+### P1 产物
+
+`requirement-workspace/intents/REQ-011-trip-completion.md`、`requirements/REQ-011-trip-completion.md`、`stories.md` 的 REQ-011 段、`stories/add-trip-completion.story.md`、`openspec/changes/add-trip-completion/`（proposal + 两份 delta）。与 `add-match-reason` 共享 `trip-companions`，同窗口归档需串行。
