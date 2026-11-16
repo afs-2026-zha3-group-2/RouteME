@@ -22,8 +22,10 @@ import {
 } from '../api';
 import { tripMessages } from '../i18n/tripMessages';
 import { intensityLabel } from '../experiences/experienceForm';
+import { publisherSummary } from '../profile/profileDisplay';
 import { ReportModal } from '../safety/ReportModal';
 import { SafetyNote } from '../safety/SafetyNote';
+import { Avatar } from '../shell/Avatar';
 import type { DemoUser, Experience, MatchCandidate, TripApplication } from '../types';
 import { statusColor, statusLabel } from './tripStatus';
 import { useTrip } from './useTrip';
@@ -302,22 +304,31 @@ export function TripDetailPage({ currentUser, tripId }: Props) {
 
           <section className="detail-section">
             <h3 className="section-title">{tripMessages.detailPublisher}</h3>
-            <div className="publisher-row">
-              <Tag className="publisher-initial">{trip.publisher.avatar_initial}</Tag>
+            <a
+              className="publisher-row"
+              href={`#/users/${trip.publisher.id}`}
+              aria-label={`查看 ${trip.publisher.nickname} 的个人主页`}
+            >
+              <Avatar user={trip.publisher} size="lg" />
               <div className="publisher-body">
                 <p className="publisher-name">
-                  {trip.publisher.nickname} · {trip.publisher.school}
+                  {trip.publisher.nickname}
+                  {publisherSummary(trip.publisher) !== '' && ` · ${publisherSummary(trip.publisher)}`}
                 </p>
-                <p className="publisher-bio">{trip.publisher.bio}</p>
-                <div className="publisher-tags">
-                  {trip.publisher.interests.map((interest) => (
-                    <span key={interest} className="tag">
-                      {interest}
-                    </span>
-                  ))}
-                </div>
+                {trip.publisher.bio !== '' && (
+                  <p className="publisher-bio">{trip.publisher.bio}</p>
+                )}
+                {trip.publisher.interests.length > 0 && (
+                  <div className="publisher-tags">
+                    {trip.publisher.interests.map((interest) => (
+                      <span key={interest} className="tag">
+                        {interest}
+                      </span>
+                    ))}
+                  </div>
+                )}
               </div>
-            </div>
+            </a>
           </section>
 
           <section className="detail-section">

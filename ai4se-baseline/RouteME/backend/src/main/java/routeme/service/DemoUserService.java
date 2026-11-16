@@ -51,23 +51,17 @@ public interface DemoUserService extends IService<UserEntity> {
     Optional<UserAccount> findByUsername(String username);
 
     /**
-     * 创建带凭据的账号。
+     * 创建带凭据的账号：只写用户名、散列、昵称与首字；资料列写入空值，等待完善页补全。
      *
      * @param username      小写规范化后的用户名
      * @param passwordHash  PBKDF2 散列
      * @param nickname      昵称
      * @param avatarInitial 头像首字
-     * @param school        学校与年级
-     * @param bio           简介
-     * @param interests     兴趣标签
      * @return 新建账号的公开资料
      */
     DemoUser createAccount(
             String username,
             String passwordHash,
             String nickname,
-            String avatarInitial,
-            String school,
-            String bio,
-            List<String> interests);
+            String avatarInitial);
 }

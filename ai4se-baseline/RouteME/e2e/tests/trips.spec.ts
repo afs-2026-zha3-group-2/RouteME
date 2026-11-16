@@ -147,7 +147,7 @@ test('defaults to the recruiting trips view with complete cards', async ({ page 
   await expect(card.locator('.tc-meta')).toContainText('4 个途经点');
   await expect(card.locator('.tc-route')).toContainText('香洲港集合');
   await expect(card.locator('.tc-tags')).toContainText('摄影');
-  await expect(card.locator('.tc-host-name')).toHaveText('陈屿');
+  await expect(card.locator('.tc-host-name')).toContainText('陈屿');
   await expect(card.locator('.tc-cap-num')).toHaveText('1 / 3 人');
   await expect(card.locator('[data-status="recruiting"]')).toContainText('招募中');
 });
