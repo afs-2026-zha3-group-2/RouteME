@@ -1846,23 +1846,34 @@ svg {
   text-shadow: 0 1px 6px rgba(6, 35, 43, 0.4);
 }
 
-/* ---------- 游后分享页 ---------- */
+/* ---------- 游后分享页（R2：对齐原型 share()） ---------- */
+.share-page .page-head {
+  margin-bottom: 16px;
+}
+
+.detail-back .share-icon {
+  width: 15px;
+  height: 15px;
+}
+
 .share-hero {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
   gap: 14px;
-  padding: 12px;
+  padding: 16px 18px;
   border: 1px solid var(--line);
-  border-radius: var(--r);
-  background: var(--surface-2);
+  border-radius: var(--r-lg);
+  background: var(--surface);
+  box-shadow: var(--sh-1);
+  margin-bottom: 16px;
 }
 
 .share-hero-cover {
   flex: none;
-  width: 96px;
-  height: 64px;
-  border-radius: var(--r);
+  width: 76px;
+  height: 60px;
+  border-radius: 12px;
 }
 
 .share-hero-body {
@@ -1886,23 +1897,142 @@ svg {
   margin-left: auto;
 }
 
-.share-note {
-  display: grid;
-  gap: 8px;
-  padding: 12px 14px;
-  border: 1px solid var(--line);
-  border-radius: var(--r);
-  background: var(--surface-2);
+.share-page .publish-main .panel + .panel,
+.share-page .publish-side .panel + .panel {
+  margin-top: 0;
 }
 
-.share-note-title {
-  margin: 0;
-  font-size: 12.5px;
-  font-weight: 800;
-  letter-spacing: 0.04em;
+.share-required {
+  margin-left: 3px;
+  color: var(--t-coral);
+}
+
+.share-counter {
+  float: right;
+  font-size: 11px;
+  font-weight: 650;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--ink-3);
+}
+
+.intensity-picker {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.int-card {
+  position: relative;
+  display: grid;
+  gap: 4px;
+  padding: 14px;
+  border: 1.5px solid var(--line);
+  border-radius: var(--r);
+  background: var(--surface-2);
+  text-align: left;
+  font: inherit;
+  cursor: pointer;
+  transition: transform 0.18s var(--ease-out), border-color 0.18s, background 0.18s;
+}
+
+.int-card:hover {
+  transform: translateY(-2px);
+  border-color: var(--lagoon);
+}
+
+.int-card:focus-within {
+  box-shadow: var(--ring);
+}
+
+.int-card b {
+  font-size: 14.5px;
+  font-weight: 730;
+}
+
+.int-card span {
+  font-size: 11.5px;
+  line-height: 1.45;
+  color: var(--ink-3);
+}
+
+.int-card.on.jade {
+  border-color: transparent;
+  background: color-mix(in srgb, var(--jade) 12%, var(--surface));
+  color: var(--t-jade);
+}
+
+.int-card.on.amber {
+  border-color: transparent;
+  background: color-mix(in srgb, var(--warn) 12%, var(--surface));
+  color: var(--t-warn);
+}
+
+.int-card.on.coral {
+  border-color: transparent;
+  background: color-mix(in srgb, var(--coral) 12%, var(--surface));
+  color: var(--t-coral);
+}
+
+.int-card.on span {
   color: var(--ink-2);
 }
 
+.int-radio {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.share-list {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.share-list li {
+  display: grid;
+  grid-template-columns: 17px minmax(0, 1fr);
+  gap: 9px;
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--ink-2);
+}
+
+.share-list .share-icon {
+  width: 15px;
+  height: 15px;
+  margin-top: 1px;
+  color: var(--t-lagoon);
+}
+
+.share-panel .panel-title .share-icon,
+.publish-main .panel-title .share-icon {
+  width: 15px;
+  height: 15px;
+  margin-right: 6px;
+  color: var(--ink-3);
+}
+
+.share-action-error {
+  margin-top: 12px;
+}
+
+.share-page .form-actions {
+  margin-top: 16px;
+}
+
+@media (max-width: 680px) {
+  .intensity-picker {
+    grid-template-columns: 1fr;
+  }
+}
 .exp-head {
   display: flex;
   align-items: center;

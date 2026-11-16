@@ -230,6 +230,8 @@ export const tripMessages = {
   experienceEmptyHint: '体验来自已结束的真实行程；完成一次旅行并分享后就会出现在这里。',
   experienceCount: '条体验',
   experienceContentLabel: '这次路线实际走下来怎么样',
+  experiencePanelContent: '真实感受',
+  experiencePanelAdvice: '给后来者的一条建议',
   experienceContentPlaceholder: '路况、强度、时间点、意料之外的情况……写具体的事，比“很好玩”有用得多。',
   experienceIntensityLabel: '路线强度',
   experienceIntensityHint: '按你真实的体感选，不要按“应该很轻松”选。',

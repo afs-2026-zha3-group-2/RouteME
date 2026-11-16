@@ -135,6 +135,64 @@ test('shares an experience and reuses it to publish a new plan', async ({ page }
   await expect(page.getByText(/给这条路线起个名字|请选择出发日期|含你在内至少 2 人/).first()).toBeVisible();
 });
 
+test('renders the share page with the prototype layout', async ({ page }) => {
+  const title = `E2E 分享布局 ${Date.now()}`;
+  const trip = await createCompletedTrip(page, title);
+
+  await loginAs(page, 1);
+  await page.setViewportSize({ width: 1440, height: 1000 });
+  await page.goto(`/#/share/${trip.id}`);
+
+  await expect(page.locator('.page-head .page-title')).toContainText('把这次旅行留给下一个人');
+  await expect(page.locator('.page-head .page-sub')).not.toBeEmpty();
+  await expect(page.locator('.detail-back')).toHaveAttribute('href', `#/trips/${trip.id}`);
+
+  const heroMeta = page.locator('.share-hero-body span').first();
+  await expect(heroMeta).toContainText(/\d+月\d+日/);
+  await expect(heroMeta).toContainText(/周[一二三四五六日]/);
+  await expect(heroMeta).toContainText('人同行');
+  const cover = await page.locator('.share-hero-cover').evaluate((node) => {
+    const style = window.getComputedStyle(node);
+    return { width: style.width, height: style.height };
+  });
+  expect(cover).toEqual({ width: '76px', height: '60px' });
+
+  const columns = async () =>
+    page.locator('.publish-grid').evaluate((node) =>
+      window.getComputedStyle(node).gridTemplateColumns.split(' ').filter(Boolean).length,
+    );
+
+  expect(await columns()).toBe(2);
+  await expect(page.locator('.publish-main .panel')).toHaveCount(3);
+  await expect(page.locator('.publish-side .panel')).toHaveCount(2);
+  await expect(page.locator('.publish-main .panel-title')).toContainText([
+    '真实感受',
+    '路线强度',
+    '给后来者的一条建议',
+  ]);
+
+  await expect(page.locator('.int-card')).toHaveCount(3);
+  await expect(page.getByRole('radio', { name: /适中/ })).toBeChecked();
+  await page.getByRole('radio', { name: /较累/ }).check();
+  await expect(page.locator('.int-card.coral')).toHaveClass(/on/);
+  await expect(page.locator('.int-card.on')).toHaveCount(1);
+
+  const sideLists = page.locator('.publish-side .share-list');
+  await expect(sideLists).toHaveCount(2);
+  await expect(sideLists.nth(0).locator('li')).toHaveCount(3);
+  await expect(sideLists.nth(0).locator('li svg')).toHaveCount(3);
+  await expect(sideLists.nth(1).locator('li')).toHaveCount(2);
+  await expect(sideLists.nth(1).locator('li svg')).toHaveCount(2);
+
+  await page.setViewportSize({ width: 880, height: 1000 });
+  await expect.poll(columns).toBe(1);
+  const overflow = await page.evaluate(() => ({
+    scroll: document.documentElement.scrollWidth,
+    client: document.documentElement.clientWidth,
+  }));
+  expect(overflow.scroll).toBeLessThanOrEqual(overflow.client);
+});
+
 test('updates the existing experience instead of adding another one', async ({ page }) => {
   const title = `E2E 修改体验 ${Date.now()}`;
   const trip = await createCompletedTrip(page, title);
@@ -188,7 +246,7 @@ test('marks completed trips as shared in my trips', async ({ page }) => {
 
   await loginAs(page, 1);
   await page.goto('/#/mine');
-  await page.getByRole('tab', { name: /已完成/ }).click();
+  await page.locator('.ant-segmented-item', { hasText: '已完成旅行' }).click();
   const row = page.locator('.mine-row', { hasText: title });
   await expect(row.getByRole('button', { name: '发表游后体验' })).toBeVisible();
 
@@ -199,7 +257,7 @@ test('marks completed trips as shared in my trips', async ({ page }) => {
   await page.getByRole('button', { name: '发布体验' }).click();
 
   await page.getByRole('link', { name: '我的旅行' }).first().click();
-  await page.getByRole('tab', { name: /已完成/ }).click();
+  await page.locator('.ant-segmented-item', { hasText: '已完成旅行' }).click();
   await expect(row.getByRole('button', { name: '修改我的体验' })).toBeVisible();
 });
 

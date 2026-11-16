@@ -7,23 +7,10 @@ import { Avatar } from '../shell/Avatar';
 import type { Match, TripSummary } from '../types';
 import { coverTone } from './coverTone';
 import { StatusBadge } from './StatusBadge';
-
-function formatDate(iso: string): string {
-  const [, month, day] = iso.split('-');
-  if (month === undefined || day === undefined) {
-    return iso;
-  }
-  return `${Number(month)}月${Number(day)}日`;
-}
-
-const WEEKDAYS = ['周日', '周一', '周二', '周三', '周四', '周五', '周六'];
+import { formatMonthDay, weekdayLabel } from './tripDateFormat';
 
 function dayLabel(iso: string): string {
-  if (iso === '') {
-    return '日期待定';
-  }
-  const date = new Date(`${iso}T00:00:00`);
-  return Number.isNaN(date.getTime()) ? '日期待定' : `${WEEKDAYS[date.getDay()]}出发`;
+  return iso === '' ? '日期待定' : `${weekdayLabel(iso)}出发`;
 }
 
 type Props = {
@@ -55,7 +42,7 @@ export function TripCard({ trip, match, preview = false }: Props) {
 
         <div className="tc-meta">
           <span>
-            {formatDate(trip.start_date)} → {formatDate(trip.end_date)}
+            {formatMonthDay(trip.start_date)} → {formatMonthDay(trip.end_date)}
           </span>
           <span>{dayLabel(trip.start_date)}</span>
         </div>

@@ -97,3 +97,13 @@ E2E 不在 CI 流水线内，仍以本地隔离运行为准（`experiences.spec.
 | P5 | — | 按要求不执行、不归档 |
 
 每次 push 前都执行 `git pull --rebase origin main`；分支为先推送的私有分支，rebase 后用 `--force-with-lease` 同步，不改写 `main`。
+## 9. R2 实现与验证（2026-11-16 21:25）
+
+- **任务：** T8–T13 全部完成（	asks.md「R2 任务」）。
+- **落点：** `trips/tripDateFormat.ts`（新，含单测）→ `TripCard` 改用共享日期函数；`experiences/shareIcons.tsx`（新，9 个原型图标）；`ShareExperiencePage` 重构为页头 + hero + `.publish-grid` 双栏 + 三分组面板 + 卡片式强度 + 侧栏两面板；`experienceForm` 的 `INTENSITY_OPTIONS` 增加 `tone`；`tripMessages` 增加 `experiencePanelContent` / `experiencePanelAdvice`；`styles.css` 重写分享页样式块（`.intensity-picker` / `.int-card` / `.int-radio` / `.share-list` / 调整后的 `.share-hero`）。
+- **实现偏差：** `.int-radio` 由 1px 隐藏改为绝对定位铺满卡片——1px 时 Playwright 与真实点击都被 `label` 拦截；铺满后点击区域即卡片，键盘与读屏语义不变。
+- **验证：** 前端 typecheck 通过 / 单测 198 / 后端 243 / `experiences.spec.ts` 9 全绿（隔离产物目录）；走查 1440·768·390 × 浅/深色与原型并排比对；报告 `docs/ai4se-plugins/20261116-212000-local-verify-report.md`。
+- **全量 E2E：** 64 passed / 9 failed，逐条归属并行 change 与共享库数据（见报告 §4），不属本 change。
+- **有意差异：** 原型分享页无安全提示，保留 P4 的 `SafetyNote`（用户 2026-11-16 裁决保留）。
+- **G2（R2）：** Pass，VL = Neal（`g2-decision-r2.md`）。
+- **阶段提交：** `feat(p4): refine-experience-share align the share page with the prototype`。
