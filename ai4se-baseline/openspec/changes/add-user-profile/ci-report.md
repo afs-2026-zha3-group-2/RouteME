@@ -13,7 +13,7 @@
 
 | Phase | Status | Conclusion | Upstream URL | Notes |
 |-------|--------|------------|--------------|-------|
-| ci（local equivalent） | Pass | success | n/a | `.\mvnw.cmd -B -ntp verify` → 211 tests / BUILD SUCCESS；`npm run build && npm test` → 120 tests |
+| ci（local equivalent） | Pass | success | n/a | `.\mvnw.cmd -B -ntp verify` → 211 tests / BUILD SUCCESS；`npm run build && npm test` → 133 tests（合并 main 后全量） |
 | ci（remote run） | Pass | success（tag 证据） | n/a | `e54f273` / `3c8355b` CI 通过；证据 `refs/tags/build-e54f273`、`build-3c8355b`（中间 tip `022659c` → `build-022659c`） |
 | cd（remote） | Pass | success | n/a | `cd.yml` 仅在 CI `conclusion == 'success'` 时发布 `build-${sha:0:7}` |
 | **Overall** | Partial | `Pass-by-tag-evidence` | — | job 级明细不可得（私有仓库 + 本机无 `gh`）；E2E 不在 CI 范围 |
