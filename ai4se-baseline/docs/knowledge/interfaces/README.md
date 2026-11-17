@@ -55,6 +55,26 @@ API、事件与集成契约。字段一律 snake_case；时间字段为 RFC3339 
 - 加 / 扣分明细、原因、历史与变更记录只在服务端账本（`credit_ledger`）留存，不对外返回；管理端能力尚未交付。
 - 详情（阈值、账本字段、越界裁断、零变化留痕）以 `openapi.yaml` 与 `openspec/specs/user-credit/spec.md`（归档后）为准。
 
+## RouteME 实时通知与未读计数（2026-11-17，`notifications` / REQ-023）
+
+契约源：`RouteME/openapi.yaml`（v0.18.0）。校验：`cd RouteME/backend; .\mvnw.cmd -Dtest=OpenApiTest test`。
+
+| 方法 | 路径 | 说明 |
+|---|---|---|
+| GET | `/notifications` | 最新 50 条通知 + 三项未读计数（同一快照） |
+| GET | `/notifications/stream?user_id={id}` | SSE 通道；事件名固定 `notification`，约 20 s 一次 `: ping` 心跳，不下发 `id:` |
+| POST | `/notifications/{notificationId}/read` | 单条标读；返回最新计数，重复标读幂等 |
+| POST | `/notifications/read` | `{scope:"all"}` 全部标读；`{scope:"conversation",trip_id,other_user_id}` 只清该会话 |
+
+- 四类事件：`application_received` / `application_accepted` / `application_rejected` / `message`；每条事件一行持久化记录，未读定义为 `read_at IS NULL`。
+- `Notification.text` 由后端统一生成，前端直接展示；`actor` 为动作人，申请类 `application_id`、消息类 `message_id` 按需非空。
+- 计数：`total` = 全部未读；`application` = 三类申请事件之和；`message` = 消息事件。列表按 `created_at` 倒序，最多 50 条，不含消息正文。
+- 权限：三个 REST 端点要求 `X-User-Id`；SSE 因 `EventSource` 无法带请求头，改用 `user_id` 查询参数（与 `X-User-Id` 同级的演示身份信任）。单条标读只允许本人记录，越权与不存在统一 404 `NOTIFICATION_NOT_FOUND`。
+- `scope=conversation` 缺 `trip_id` 或 `other_user_id`、`scope` 非法返回 400 `INVALID_INPUT`。
+- SSE 响应头固定 `Cache-Control: no-cache` 与 `X-Accel-Buffering: no`；重连正确性由客户端 REST 对账保证，不依赖 Last-Event-ID。
+- 通知写入与业务同事务，推送在 `afterCommit` 后发出；通知写入失败只记日志、不回滚申请 / 裁决 / 发消息。自消息不产生通知。
+- 前端徽标口径：顶栏铃铛 = `total`，侧栏 / 移动 tab 的聊天入口 = `message`，会话列表 = 按 `trip_id + actor.id` 分会话的未读消息数；数字为唯一信息载体，颜色只作强调。
+
 ## REST 面
 
 机器可读契约以 `openapi.yaml` 为准，`npm run lint:api` 必须通过。按能力分组：
