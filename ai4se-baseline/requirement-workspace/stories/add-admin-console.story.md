@@ -4,7 +4,7 @@
 - **Change：** `add-admin-console`
 - **Priority：** P0 ｜ **Iteration：** 管理后台迭代 1–3 ｜ **Points：** 22（3 + 3 + 3 + 5 + 3 + 5）
 - **Source：** 用户 2026-11-17 提供的 6 条 User Story（含 AC 与 Given/When/Then）
-- **Status：** P1 drafted（2026-11-17），待 P2
+- **Status：** P3 Pass（2026-11-17）；P4 待执行
 - **垂直切片口径：** 一条故事 = 一个页面 + 一份接口契约 + 一次核心操作（查询 / 状态迁移 / 状态创建）
 
 ---

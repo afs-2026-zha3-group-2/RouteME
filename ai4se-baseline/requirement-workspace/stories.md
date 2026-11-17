@@ -245,12 +245,12 @@
 
 | Story | Title | 角色 | Priority | Iteration | Points | Page | Parent REQ | Change | Status |
 |---|---|---|---|---|---|---|---|---|---|
-| S19 | 查看并查询平台所有注册用户 | 平台管理员 | P0 | 1 | 3 | 用户管理页 | REQ-018 | `add-admin-console` | P2 G1 Pass（2026-11-17） |
-| S20 | 暂停、封禁或恢复用户账号 | 平台管理员 | P0 | 1 | 3 | 用户详情页 | REQ-018 | `add-admin-console` | P2 G1 Pass（2026-11-17） |
-| S21 | 查看并筛选平台举报 | 平台管理员 | P0 | 2 | 3 | 举报管理页 | REQ-018 | `add-admin-console` | P2 G1 Pass（2026-11-17） |
-| S22 | 人工审核并处理举报 | 平台管理员 | P0 | 2 | 5 | 举报详情页 | REQ-018 | `add-admin-console` | P2 G1 Pass（2026-11-17） |
-| S23 | 联系人工客服 | 平台用户 | P0 | 3 | 3 | 帮助与反馈 / 客服会话页 | REQ-018 | `add-admin-console` | P2 G1 Pass（2026-11-17） |
-| S24 | 接入并回复用户会话 | 平台客服 | P0 | 3 | 5 | 客户服务页 | REQ-018 | `add-admin-console` | P2 G1 Pass（2026-11-17） |
+| S19 | 查看并查询平台所有注册用户 | 平台管理员 | P0 | 1 | 3 | 用户管理页 | REQ-018 | `add-admin-console` | P3 Pass（2026-11-17） |
+| S20 | 暂停、封禁或恢复用户账号 | 平台管理员 | P0 | 1 | 3 | 用户详情页 | REQ-018 | `add-admin-console` | P3 Pass（2026-11-17） |
+| S21 | 查看并筛选平台举报 | 平台管理员 | P0 | 2 | 3 | 举报管理页 | REQ-018 | `add-admin-console` | P3 Pass（2026-11-17） |
+| S22 | 人工审核并处理举报 | 平台管理员 | P0 | 2 | 5 | 举报详情页 | REQ-018 | `add-admin-console` | P3 Pass（2026-11-17） |
+| S23 | 联系人工客服 | 平台用户 | P0 | 3 | 3 | 帮助与反馈 / 客服会话页 | REQ-018 | `add-admin-console` | P3 Pass（2026-11-17） |
+| S24 | 接入并回复用户会话 | 平台客服 | P0 | 3 | 5 | 客户服务页 | REQ-018 | `add-admin-console` | P3 Pass（2026-11-17） |
 
 ## Traceability（REQ-018）
 

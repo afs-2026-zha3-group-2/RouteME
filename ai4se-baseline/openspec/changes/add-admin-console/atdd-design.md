@@ -29,8 +29,8 @@
 | A6 | 按昵称或邮箱搜索 | API | 昵称片段命中；邮箱片段忽略大小写命中 |
 | A7 | 按状态筛选与分页 | API + E2E | `status=BANNED&page=2` 只含 `BANNED`；`total` 与页数一致 |
 | A8 | 查看个人资料与账号状态 | API + E2E | 详情字段齐全；被处罚用户带理由 / 封禁信息 / 解封时间；三个关联列表各 ≤50 条且带总数 |
-| A9 | 查看旅行计划与旅行体验 | API + E2E | 两组列表按用户过滤；条目可跳到 `#/trips/{id}` / `#/share/{id}` |
-| A10 | 查看相关举报 | API | 举报人 / 被举报人两个方向均有 `direction` 标注且可跳转 |
+| A9 | 查看旅行计划与旅行体验 | API + E2E | 两组列表按用户过滤；`AdminUserTripRef` 跳 `#/trips/{id}`、`AdminUserExperienceRef` 跳 `#/share/{trip_id}`；各 ≤50 条 |
+| A10 | 查看相关举报 | API + E2E | `reports[].direction` 区分 `REPORTER` / `REPORTED`；`code` 与举报队列一致；可跳 `#/admin/reports/{id}` |
 | A11 | 暂停账号 | API + E2E | `action=SUSPEND` → `SUSPENDED`；记录原因 / 操作人 / 时间；行程数不变 |
 | A12 | 封禁账号 | API + E2E | `action=BAN` → `BANNED`；缺理由 / 缺原因 / 过期时间 / `OTHER` 无说明 → 400 `INVALID_INPUT` |
 | A13 | 恢复账号 | API + E2E | `SUSPENDED` + `RESTORE` → `ACTIVE`；四类写操作恢复 2xx |
@@ -40,8 +40,8 @@
 | A17 | SUSPENDED 用户四类写操作被拒绝 | API | 发布 / 申请 / 聊天 / 体验逐个 403 `ACCOUNT_SUSPENDED`；四张表无新行；GET 仍 200 |
 | A18 | BANNED 用户只读 | API + E2E | 登录 / 浏览 / 读自己数据 200；任意写（含举报、客服消息）403 `ACCOUNT_BANNED`；资料页展示封禁信息 |
 | A19 | 处罚不删除既有数据 | API + E2E | 处罚前后行程 / 体验 / 消息 / 举报计数一致；`openapi.yaml` 无删除端点 |
-| A20 | 用户资料页展示封禁信息 | API + E2E | 公开资料页显示理由与解封时间；不出现处理备注与举报人 |
-| A21 | 恢复后不再展示 | E2E | `RESTORE` 后资料页无封禁区块 |
+| A20 | 用户资料页展示封禁信息 | API + E2E | `GET /users/{id}/profile` 返回 `status=BANNED` + `ban_reason_code` + `ban_expires_at`；资料页提示条显示理由文案与解封时间；响应与页面都不出现 `status_reason` / `ban_reason_note` / 举报人 |
+| A21 | 恢复后不再展示 | E2E | `RESTORE` 后同一端点 `ban_*` 为 `null`，资料页无封禁区块 |
 | A22 | 新举报进入待处理队列 | API + E2E | 提交后列表出现 `R-{id}`、`PENDING`，字段齐全 |
 | A23 | 按状态筛选 | API | 四种状态各筛一次；「全部」返回全量 |
 | A24 | 举报对象与编号稳定 | API + E2E | 用户 / 行程 / 体验三类对象推导出正确被举报用户；`R-{id}` 在列表与详情一致 |

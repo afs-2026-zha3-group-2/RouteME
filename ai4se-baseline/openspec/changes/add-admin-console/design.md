@@ -144,6 +144,10 @@ Java 侧沿用现有风格（`ApplicationStatusEnum`）：`enum` + `code()` + `o
 | `AuthRegisterRequest` | 增可选 `email` |
 | `AdminUserSummary` | `id / nickname / avatar_initial / avatar_url / email / role / status / created_at` |
 | `AdminUserDetail` | summary + `school / city / major / job / bio / interests[] / status_reason / status_updated_at / status_updated_by{id,nickname} / ban_expires_at / ban_reason_code / ban_reason_note / trips[] / experiences[] / reports[] / trip_total / experience_total / report_total`；三个列表各取最近 50 条（`trip_total` 等为全量计数），超出时前端显示「仅显示最近 50 条」 |
+| `AdminUserTripRef` | `id / title / status / start_date`（跳 `#/trips/{id}`） |
+| `AdminUserExperienceRef` | `id / trip_id / trip_title / created_at`（跳 `#/share/{trip_id}`） |
+| `AdminUserReportRef` | `id / code / direction / status / reason / created_at`；`direction ∈ {REPORTER, REPORTED}`，表示该用户是举报人还是被举报人（跳 `#/admin/reports/{id}`） |
+| `UserProfile` | 增只读 `status`、`ban_reason_code`、`ban_expires_at`：`SUSPENDED` 只回 `status`；`BANNED` 时三项都有值；`ACTIVE` 时 `ban_*` 为 `null`。不含 `status_reason`、`ban_reason_note` 与任何举报信息 |
 | `AdminUserStatusRequest` | `action`（`SUSPEND` / `BAN` / `RESTORE`）、`reason`（`SUSPEND` / `BAN` 必填，`RESTORE` 可选，≤200）、`ban_reason_code`、`ban_reason_note`（`OTHER` 必填）、`ban_expires_at`（仅 `BAN` / `UPDATE_BAN` 必填，须晚于当前时间） |
 | `AdminReportSummary` | `id / code / target_type / target_id / target_label / reporter{id,nickname} / reported_user{id,nickname,status} / reason / created_at / status` |
 | `AdminReportDetail` | summary + `note / target{type,id,label,exists,content_excerpt} / processed_by{id,nickname} / processing_at / resolved_at / resolution_note / resolution_action` |
@@ -155,6 +159,8 @@ Java 侧沿用现有风格（`ApplicationStatusEnum`）：`enum` + `code()` + `o
 | `ServiceSessionPage` / `AdminUserPage` / `AdminReportPage` | 沿用 `PageResponse` 语义（`page` 从 1 起、`size` 默认 20 上限 50） |
 
 `target_label`：用户对象为该用户昵称；行程对象为行程标题；体验对象为体验标题。`target.content_excerpt` 给管理员判断「被举报内容」的上下文：行程取「标题 + 目的地 + 出发日期」摘要，体验取正文前 200 字，用户取简介前 200 字；`target.exists=false` 时 `content_excerpt` 为 `null`，前端显示「内容已不可用」且不提供跳转。详情页同时提供到 `#/users/{id}`、`#/trips/{id}`、`#/share/{id}` 的跳转。
+
+`UserProfile` 的封禁字段由既有 `GET /users/{userId}/profile` 与 `GET /users/me/profile` 原样返回，不新增端点；`status_reason` 与 `ban_reason_note` 属管理员内部信息，两个用户侧端点都不下发。
 
 ### 4.3 错误码（L-04 收口）
 
@@ -284,6 +290,8 @@ PENDING --start--> PROCESSING --resolve(RESOLVED)--> RESOLVED   [+ 同事务处�
 
 `reported_user` 推导（列表与详情共用一处）：`target_type=user → target_id`；`trip → trip_plans.publisher_id`；`experience → trip_experiences.author_id`。目标被删（当前无删除能力）时 `reported_user` 为 `null`、`target.exists=false`。
 
+**用户侧读取：** `HelpController` 调用 `ReportService.listMine(userId)`（新增只读方法），按 `created_at DESC` 取本人最近 50 条，映射为 `HelpReportSummary`，`total` 为本人举报总数；不返回 `resolution_note`、`processed_by`、`resolution_action` 与被举报人处罚字段。该方法与 `submit` 共用 `reports` 表，但不复用管理端查询（避免把管理端筛选参数带进用户侧）。
+
 ### 5.6 客服会话
 
 ```text
@@ -359,11 +367,16 @@ frontend/src/help/
   HelpPage.tsx            两个区块：联系人工客服 / 我的举报
   ServiceChat.tsx         用户侧会话（发起、发送、等待接入、已结束只读）
   helpStatus.ts           四态文案映射（与后台共用一份映射表）
+
+frontend/src/profile/
+  ProfilePage.tsx         既有文件：新增封禁提示条（理由文案 + 解封时间），
+                          仅当 status=BANNED 时渲染；恢复后接口不再返回 ban_* 即自动消失
 ```
 
 - 表格用 antd `Table`（`size="middle"`、`rowKey="id"`）；窄屏（`<768px`）切卡片列表（`.admin-card-list`），不出现横向滚动。
 - 状态徽标复用 `StatusBadge` 的配色令牌，不新增硬编码色值。
-- 全部文案进 `frontend/src/i18n/adminMessages.ts`（含 `#/help`），不散落中文字面量；纯逻辑文件不 import React，便于单测。
+- 全部文案进 `frontend/src/i18n/adminMessages.ts`（含 `#/help` 与资料页封禁条），不散落中文字面量；纯逻辑文件不 import React，便于单测。
+- 8 项封禁理由的展示文案只在 `adminMessages.ts` 导出 `banReasonLabel(code)` 一处定义，后台处罚弹窗与用户资料页共用，避免「封禁理由」出现两套措辞。
 
 ### 6.3 状态与轮询
 
@@ -507,7 +520,7 @@ frontend/src/help/
 | 用户详情与关联内容 | §4.2、§5.1、§6.2 |
 | 账号状态迁移与处罚 | §5.3、§4.3、D3 / D4 / D6 |
 | 受限账号的功能边界 | §5.4、D5 |
-| 封禁信息展示 | §5.3 字段保留策略、§6.2 状态卡 |
+| 封禁信息展示 | §4.2 `UserProfile` 封禁字段、§5.3 字段保留策略、§6.2 资料页提示条、D4 |
 | 举报队列与筛选 | §4.1、§5.5、D6 |
 | 举报详情与处理 | §5.5、§6.2、D6 |
 | 客服工作台 | §5.6、§6.2、D7 / D11 |
