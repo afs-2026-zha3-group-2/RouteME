@@ -170,11 +170,17 @@ describe('AmapService mapping', () => {
     expect(amapErrorMessage(new AmapApiError('UPSTREAM_UNAVAILABLE', 'forward'))).toContain('上游');
   });
 
-  it('explains a key-type mismatch (10009) with actionable copy', () => {
+  it('explains a platform mismatch (10009) with actionable copy', () => {
     const message = amapErrorMessage(new AmapApiError('AUTH', 'auth', '10009'));
     expect(message).toContain('10009');
-    expect(message).toContain('Web 服务');
-    expect(message).toContain('Web 端');
+    expect(message).toContain('Web端');
+    expect(message).toContain('s=rsv3');
+  });
+
+  it('explains an unpaired security code (10008)', () => {
+    const message = amapErrorMessage(new AmapApiError('AUTH', 'auth', '10008'));
+    expect(message).toContain('10008');
+    expect(message).toContain('security-js-code');
   });
 
   it('explains an unpaired security code', () => {

@@ -1170,9 +1170,12 @@ export function amapErrorMessage(error: unknown): string {
       case 'AUTH':
         if (error.infocode === '10009') {
           return (
-            '高德 Key 平台类型不匹配（10009）：JS API 要用「Web 端」Key，' +
-            '后端代理要用「Web 服务」Key，两者不能混用；请检查后端 web-service-key。'
+            '高德拒绝了这次请求（10009 平台不匹配）：Key 需为「Web端(JS API)」，' +
+            '且代理要带上 s=rsv3 与安全密钥；请检查后端 web-service-key / security-js-code。'
           );
+        }
+        if (error.infocode === '10008') {
+          return '高德安全密钥与 Key 不配对（10008）：请检查后端 security-js-code 是否属于同一个应用。';
         }
         if (error.infocode === '10001' || error.infocode === '10002') {
           return '高德 Key 无效或已过期：请检查前端 VITE_AMAP_JS_KEY 与后端 web-service-key。';
