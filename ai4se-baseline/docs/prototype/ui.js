@@ -147,6 +147,10 @@
     var m = D.APP_STATUS[a.status];
     return '<span class="badge ' + m.tone + '">' + m.label + '</span>';
   }
+  function cancelReasonLabel(value) {
+    var hit = D.CANCEL_REASONS.filter(function (r) { return r.value === value; })[0];
+    return hit ? hit.label : '';
+  }
   function tags(list, hits) {
     return (list || []).map(function (t) {
       var hit = hits && hits.indexOf(t) > -1;
@@ -395,6 +399,19 @@
     var g = S.canApply(t);
     var pend = S.pendingApps(id).length;
     var html = '<section class="panel"><h3 class="panel-title">' + icon('spark') + '下一步</h3><div class="action-box">';
+
+    if (t.status === 'CANCELLED') {
+      var canSeeCancel = S.isParticipant(id, S.state.currentUserId);
+      html += '<p class="action-note danger">' + icon('info') + ' 这条行程已取消，不再展示在灵感首页，也不再接受新的同行申请。</p>';
+      if (canSeeCancel && t.cancelReason) {
+        html += '<p class="action-note">取消原因：' + esc(cancelReasonLabel(t.cancelReason)) +
+          (t.cancelNote ? ' · ' + esc(t.cancelNote) : '') + '</p>';
+      }
+      if (!mine && myA && myA.status === 'ACCEPTED') {
+        html += '<a class="btn sea block" href="#/chat/' + id + '/' + t.creatorId + '">' + icon('chat') + '查看聊天记录</a>';
+      }
+      return html + '</div></section>';
+    }
 
     if (mine) {
       if (t.status === 'COMPLETED') {
@@ -701,6 +718,7 @@
           acts += '<button class="btn sm ' + (p ? 'primary' : 'ghost') + '" data-action="open-apps" data-id="' + t.id + '" type="button">' + icon('inbox') + '申请' + (p ? ' · ' + p : '') + '</button>';
           acts += '<a class="btn sm ghost" href="#/edit/' + t.id + '">' + icon('edit') + '编辑</a>';
           acts += '<button class="btn sm sea" data-action="complete-trip" data-id="' + t.id + '" type="button">' + icon('finish') + '结束</button>';
+          acts += '<button class="btn sm danger" data-action="cancel-trip" data-id="' + t.id + '" type="button">' + icon('x') + '取消</button>';
         }
         return mineRow(t, acts, note, i);
       }).join('') + '</div>'
@@ -1001,6 +1019,25 @@
       '<button class="btn ' + (cfg.danger ? 'danger' : 'primary') + '" data-action="confirm-yes" type="button">' + esc(cfg.ok || '确定') + '</button></div></div>';
   }
 
+  /* ---------------- 取消行程 ---------------- */
+  function cancelTripModal(t) {
+    var options = '<option value="">请选择原因</option>' + D.CANCEL_REASONS.map(function (r) {
+      return '<option value="' + r.value + '">' + esc(r.label) + '</option>';
+    }).join('');
+    return '<div class="modal" role="dialog" aria-modal="true" aria-label="取消行程" style="max-width:480px">' +
+      '<div class="modal-head"><h2 class="modal-title">取消这条行程？</h2>' +
+      '<button class="icon-btn" data-action="close-overlay" type="button" aria-label="关闭">' + icon('x') + '</button></div>' +
+      '<div class="modal-body">' +
+      '<p class="action-note danger" style="margin-bottom:14px">' + icon('alert') +
+      ' 取消后不可恢复：行程将从灵感首页下架，待处理的申请会被取消，已匹配的同行者会看到状态变化。</p>' +
+      '<label class="field"><span class="label">取消原因（必选）</span>' +
+      '<select class="input" data-cancel-reason>' + options + '</select></label>' +
+      '<label class="field"><span class="label">补充说明<span class="opt">选择「其他原因」时必填，1–100 字</span></span>' +
+      '<textarea class="textarea" data-cancel-note rows="3" maxlength="100" placeholder="说明具体情况（仅发布者与已接受同行者可见）"></textarea></label>' +
+      '</div><div class="modal-foot"><button class="btn ghost" data-action="close-overlay" type="button">再想想</button>' +
+      '<button class="btn danger" data-action="confirm-cancel-trip" type="button">' + icon('x') + '确认取消</button></div></div>';
+  }
+
   /* ---------------- 保存筛选 ---------------- */
   function saveViewModal(f) {
     var bits = [];
@@ -1056,6 +1093,7 @@
     mine: mine, chat: chat, share: share, profileModal: profileModal, appsDrawer: appsDrawer,
     meetingModal: meetingModal,
     switchUserModal: switchUserModal, reportModal: reportModal, confirmModal: confirmModal,
+    cancelTripModal: cancelTripModal,
     saveViewModal: saveViewModal, scriptDrawer: scriptDrawer
   };
 })(window);

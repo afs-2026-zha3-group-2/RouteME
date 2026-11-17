@@ -237,11 +237,15 @@
     return { ok: true, trip: t };
   }
 
-  function cancelTrip(id) {
+  function cancelTrip(id, reason, note) {
     var t = trip(id);
     if (!t || t.creatorId !== state.currentUserId) return false;
+    if (t.status !== 'RECRUITING' && t.status !== 'FULL') return false;
     snapshot('取消行程《' + t.title + '》');
     t.status = 'CANCELLED';
+    t.cancelledAt = Date.now();
+    t.cancelReason = reason || '';
+    t.cancelNote = note || '';
     appsOf(id).forEach(function (a) { if (a.status === 'PENDING') a.status = 'CANCELLED'; });
     commit();
     return true;

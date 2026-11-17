@@ -26,6 +26,17 @@
     CANCELLED: { label: '已取消', tone: 'muted' }
   };
 
+  var CANCEL_REASONS = [
+    { value: 'personal', label: '个人原因无法出行' },
+    { value: 'time_changed', label: '行程时间发生变化' },
+    { value: 'plan_changed', label: '行程计划发生变化' },
+    { value: 'not_enough_people', label: '同行人数不足' },
+    { value: 'weather', label: '天气或不可抗力原因' },
+    { value: 'illness', label: '突发疾病或受伤' },
+    { value: 'safety', label: '安全原因' },
+    { value: 'other', label: '其他原因' }
+  ];
+
   var TERRAIN = {
     coast: { label: '海岸线', hue: 190 },
     mountain: { label: '山野', hue: 152 },
@@ -438,6 +449,7 @@
     INTENSITY: INTENSITY,
     TRIP_STATUS: TRIP_STATUS,
     APP_STATUS: APP_STATUS,
+    CANCEL_REASONS: CANCEL_REASONS,
     TERRAIN: TERRAIN,
     AREAS: AREAS,
     MUNICIPALITIES: MUNICIPALITIES,

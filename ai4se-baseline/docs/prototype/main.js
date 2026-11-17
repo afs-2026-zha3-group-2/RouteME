@@ -371,6 +371,8 @@
       modalRoot.innerHTML = scrim + '<div class="modal-wrap">' + UI.saveViewModal(App.filters) + '</div>';
     } else if (o.kind === 'confirm') {
       modalRoot.innerHTML = scrim + '<div class="modal-wrap">' + UI.confirmModal(App.confirm) + '</div>';
+    } else if (o.kind === 'cancelTrip') {
+      modalRoot.innerHTML = scrim + '<div class="modal-wrap">' + UI.cancelTripModal(S.trip(o.id)) + '</div>';
     }
     /* 首次打开时把焦点送进浮层面板（不是遮罩），Esc 与键盘导航才可靠 */
     if (changed) {
@@ -503,6 +505,23 @@
         var fn = App.confirm && App.confirm.onYes;
         closeOverlay();
         if (fn) fn();
+        return;
+      }
+      case 'confirm-cancel-trip': {
+        var reasonEl = modalRoot.querySelector('[data-cancel-reason]');
+        var noteEl = modalRoot.querySelector('[data-cancel-note]');
+        var reason = reasonEl ? reasonEl.value : '';
+        var note = noteEl ? noteEl.value.trim() : '';
+        if (!reason) { toast('请选择取消原因', 'warn'); return; }
+        if (reason === 'other' && (note.length < 1 || note.length > 100)) { toast('请填写 1–100 字的取消说明', 'warn'); return; }
+        if (note.length > 100) { toast('取消说明不能超过 100 字', 'warn'); return; }
+        var tripId = App.overlay && App.overlay.id;
+        if (tripId && S.cancelTrip(tripId, reason, note)) {
+          closeOverlay();
+          go('#/mine/published');
+          render();
+          toast('行程已取消', 'ok');
+        }
         return;
       }
       case 'undo': {
@@ -644,9 +663,8 @@
         });
         return;
       case 'cancel-trip':
-        askConfirm({ title: '取消这条行程？', ok: '取消行程', danger: true, body: '行程将从灵感首页下架，待处理的申请会被取消。已匹配的同行者会看到状态变化。' }, function () {
-          if (S.cancelTrip(id)) { go('#/mine/published'); render(); toast('行程已取消', 'ok', true); }
-        });
+        App.overlay = { kind: 'cancelTrip', id: id };
+        renderOverlay();
         return;
       case 'delete-trip':
         askConfirm({ title: '永久删除这条行程？', ok: '删除', danger: true, body: '行程、相关申请、聊天记录与游后体验都会一并删除。删除后可以在提示条里撤销一次。' }, function () {
