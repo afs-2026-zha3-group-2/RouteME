@@ -85,3 +85,13 @@
 - `origin/main` 已将 **0.12.0 + V18** 给 `add-experience-photos`、**0.13.0 + V19** 给 `add-trip-cancel`，并在 registry 中标注本 change 顺延。
 - 本 change 实际使用：**契约 0.14.0 + 迁移 `V20__add_credit_account.sql`**；`CreditMigrationSqliteTest` 的「旧库升级」起点同步改为 **V19**。
 - 受影响工件已回写：`openapi.yaml` / `OpenApiTest` / `design.md` / `tasks.md` / `atdd-design.md` / `proposal.md` 风险表 / `registry.md` / `handoff.md`；P1–P2 的历史评审与决策文件作为过程快照保留当时的「在途」表述。
+
+## 9. 布局微调（2026-11-17，发起人验收反馈）
+
+- **反馈：** 详情页的信用行与发布者卡片「分离开」，要求并入同一个模块。
+- **调整：**
+  - 详情页：信用行从「按钮下方独立 `<p>`」移入 `.publisher-body`（昵称 / 简介 / 标签之后），整块仍是同一个可点击入口。
+  - 首页行程卡：信用行从「卡片底部单独一行」移入 `.tc-host`，排在头像与名字下方（`flex-wrap` + `flex-basis: 100%`）。
+  - 类名不变（`.profile-credit.is-compact` / `.publisher-credit` / `.tc-credit`），E2E 选择器零改动。
+- **验证：** `typecheck` 0 错误；前端 37 文件 / **281 tests**；`credit.spec.ts` **8/8**；浏览器验证：`.publisher-button.contains(.publisher-credit)` 与 `.tc-host.contains(.tc-credit)` 在 1440 / 390 均为 `true`，信用行在名字下方，无横向溢出；截图 `preview/publisher-1440.png` / `publisher-390.png` / `card-1440.png` / `card-390.png`。
+- **观察（非本 change）：** 行程详情页整页加载时控制台有 1 个 `Unexpected token ':'` 错误（首页与我的旅行均为 0），地图正常渲染、功能不受影响；疑为地图相关脚本，记为既有债务待单独排查。

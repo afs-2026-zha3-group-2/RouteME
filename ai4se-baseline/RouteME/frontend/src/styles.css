@@ -1788,8 +1788,11 @@ svg {
   position: relative;
   z-index: 2;
   display: flex;
+  flex: 1 1 auto;
+  flex-wrap: wrap;
   align-items: center;
   gap: 8px;
+  row-gap: 4px;
   min-width: 0;
 }
 
@@ -4524,9 +4527,16 @@ svg {
   font-size: 11px;
 }
 
-.tc-credit,
+/* 卡片：信用行并进发布者行，排在头像与名字下方 */
+.tc-host .tc-credit {
+  flex-basis: 100%;
+  width: fit-content;
+  margin: 0;
+}
+
+/* 详情页：信用行在发布者卡片内部，跟在标签之后 */
 .publisher-credit {
-  margin-top: 8px;
+  margin: 0;
 }
 
 .profile-chips {

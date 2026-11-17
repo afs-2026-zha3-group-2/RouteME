@@ -99,6 +99,11 @@ export function TripCard({ trip, match, credit, preview = false }: Props) {
                 {publisherSummary(trip.publisher) !== '' &&
                   ` · ${publisherSummary(trip.publisher)}`}
               </span>
+              {credit !== undefined && (
+                <span className={`profile-credit is-compact tc-credit ${creditTone(credit.credit_level)}`}>
+                  {creditLine(credit.credit_score, credit.credit_level)}
+                </span>
+              )}
             </button>
           )}
           <span className="tc-cap">
@@ -110,12 +115,6 @@ export function TripCard({ trip, match, credit, preview = false }: Props) {
             </span>
           </span>
         </div>
-
-        {credit !== undefined && (
-          <p className={`profile-credit is-compact tc-credit ${creditTone(credit.credit_level)}`}>
-            {creditLine(credit.credit_score, credit.credit_level)}
-          </p>
-        )}
       </div>
     </article>
   );

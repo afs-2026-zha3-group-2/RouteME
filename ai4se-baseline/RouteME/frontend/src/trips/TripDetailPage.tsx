@@ -517,20 +517,20 @@ export function TripDetailPage({ currentUser, tripId }: Props) {
                     ))}
                   </span>
                 )}
+                {publisherCredits[trip.publisher.id] !== undefined && (
+                  <span
+                    className={`profile-credit is-compact publisher-credit ${creditTone(
+                      publisherCredits[trip.publisher.id].credit_level,
+                    )}`}
+                  >
+                    {creditLine(
+                      publisherCredits[trip.publisher.id].credit_score,
+                      publisherCredits[trip.publisher.id].credit_level,
+                    )}
+                  </span>
+                )}
               </span>
             </button>
-            {publisherCredits[trip.publisher.id] !== undefined && (
-              <p
-                className={`profile-credit is-compact publisher-credit ${creditTone(
-                  publisherCredits[trip.publisher.id].credit_level,
-                )}`}
-              >
-                {creditLine(
-                  publisherCredits[trip.publisher.id].credit_score,
-                  publisherCredits[trip.publisher.id].credit_level,
-                )}
-              </p>
-            )}
           </section>
 
           <section className="detail-section">
