@@ -98,6 +98,7 @@
     eye: '<path d="M1.8 10S4.8 4.6 10 4.6 18.2 10 18.2 10 15.2 15.4 10 15.4 1.8 10 1.8 10Z"/><circle cx="10" cy="10" r="2.4"/>',
     inbox: '<path d="M2.8 11.4 5 4.2h10l2.2 7.2v3.2a1.6 1.6 0 0 1-1.6 1.6H4.4a1.6 1.6 0 0 1-1.6-1.6z"/><path d="M2.8 11.4h4l.8 1.8h4.8l.8-1.8h4"/>',
     finish: '<circle cx="10" cy="10" r="7.4"/><path d="m6.6 10.2 2.4 2.4 4.4-4.8"/>',
+    heart: '<path d="M10 16.6s-6.6-4-6.6-8.2a3.8 3.8 0 0 1 6.6-2.6 3.8 3.8 0 0 1 6.6 2.6c0 4.2-6.6 8.2-6.6 8.2Z"/>',
     camera: '<rect x="2.6" y="6" width="14.8" height="10.4" rx="2"/><path d="M7 6l1.4-2.4h3.2L13 6"/><circle cx="10" cy="11.2" r="3.2"/>'
   };
   function icon(name, cls) {
@@ -205,6 +206,15 @@
   }
 
   /* ---------------- 体验卡片 ---------------- */
+  /* 点赞按钮：未登录或自己的体验不渲染（与实现侧同一口径）。 */
+  function likeButton(e) {
+    var meId = S.state.currentUserId;
+    if (!meId || e.authorId === meId) return '';
+    var liked = (e.likedBy || []).indexOf(meId) > -1;
+    return '<button class="exp-like' + (liked ? ' is-liked' : '') + '" data-action="toggle-like" data-experience="' + e.id +
+      '" aria-pressed="' + (liked ? 'true' : 'false') + '" aria-label="点赞" type="button">' +
+      icon('heart') + '<b>' + (e.likeCount || 0) + '</b></button>';
+  }
   function expCard(e, i) {
     var t = S.trip(e.tripId);
     var a = S.user(e.authorId);
@@ -219,6 +229,7 @@
       '<div class="exp-foot"><span class="exp-origin">' + icon('route') + '来自 <b>' + esc(t.title) + '</b> · ' + esc(t.destination) + '</span>' +
       '<button class="btn sm ghost" data-action="open-trip" data-id="' + t.id + '" type="button">看原行程</button>' +
       '<button class="btn sm primary" data-action="copy-trip" data-id="' + t.id + '" type="button">' + icon('copy') + '参考发布</button>' +
+      likeButton(e) +
       '</div></article>';
   }
 
@@ -526,6 +537,7 @@
             '<span class="muted" style="font-size:11px;margin-left:auto">' + esc(relTime(e.createdAt)) + '</span></div>' +
             '<p class="exp-item-body">' + esc(e.content) + '</p>' +
             '<div class="exp-advice" style="margin-top:11px"><b>给后来者</b>' + esc(e.advice) + '</div>' +
+            '<div class="exp-item-foot">' + likeButton(e) + '</div>' +
             (e.photos && e.photos.length
               ? '<div class="experience-photos"><img src="' + esc(e.photos[0]) + '" alt="体验首图">' +
                 (e.photos.length > 1 ? '<button class="btn sm ghost experience-photos-more" data-action="photo-view" data-id="' + id + '" data-index="' + exps.indexOf(e) + '" type="button">' + icon('eye') + '查看全部 ' + e.photos.length + ' 张</button>' : '') +

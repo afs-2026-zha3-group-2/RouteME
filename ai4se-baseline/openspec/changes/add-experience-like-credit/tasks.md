@@ -12,119 +12,130 @@
 
 ### T0 [prototype] 原型先行：体验点赞交互
 
-- [ ] `docs/prototype/ui.js`：`expCard()` 增点赞按钮 + 赞数；详情 `.exp-item` 增同款按钮；自己的体验不显示、未登录禁用。
-- [ ] `docs/prototype/styles.css`：`.exp-like` 两态（已赞 / 未赞），只用令牌，浅 / 深色一致。
-- [ ] 走查 1440 / 1024 / 768 / 390 与两套主题，无横向溢出。
+- [x] `docs/prototype/ui.js`：`expCard()` 增点赞按钮 + 赞数；详情 `.exp-item` 增同款按钮；自己的体验不显示、未登录禁用。
+- [x] `docs/prototype/styles.css`：`.exp-like` 两态（已赞 / 未赞），只用令牌，浅 / 深色一致。
+- [x] 走查 1440 / 1024 / 768 / 390 与两套主题，无横向溢出。
 
 **验证：** 浏览器打开 `docs/prototype/prototype.html` 核对两处展示面与响应式
 **覆盖：** D15、`prototype-ui-alignment`
 
 ### T1 [contract] 契约 0.16.0
 
-- [ ] `openapi.yaml`：`info.version` → `0.16.0`；新增 `/experiences/{experienceId}/likes` 的 `post`（201/200 + `ExperienceLikeResponse`，401/403/404）与 `delete`（204，401/404）。
-- [ ] 新增 `ExperienceLikeResponse`（`experience_id` / `like_count` / `is_liked`，全 required）；`ExperienceResponse` 增 `like_count` / `is_liked` 并加入 `required`。
-- [ ] `Error.code` enum 增 `EXPERIENCE_NOT_FOUND`；新端点补成功 / 拒绝两组 examples。
-- [ ] `OpenApiTest`：断言版本、两个路径、新增 schema 与 `ExperienceResponse` 扩展、`required` 集合、错误码 enum。
+- [x] `openapi.yaml`：`info.version` → `0.16.0`；新增 `/experiences/{experienceId}/likes` 的 `post`（201/200 + `ExperienceLikeResponse`，401/403/404）与 `delete`（204，401/404）。
+- [x] 新增 `ExperienceLikeResponse`（`experience_id` / `like_count` / `is_liked`，全 required）；`ExperienceResponse` 增 `like_count` / `is_liked` 并加入 `required`。
+- [x] `Error.code` enum 增 `EXPERIENCE_NOT_FOUND`；新端点补成功 / 拒绝两组 examples。
+- [x] `OpenApiTest`：断言版本、两个路径、新增 schema 与 `ExperienceResponse` 扩展、`required` 集合、错误码 enum。
 
 **验证：** `cd RouteME/backend; .\mvnw.cmd -B -ntp -Dtest=OpenApiTest test`
 **覆盖：** D12、L-1~L-7、D-1、`@rule:api-contract`
 
 ### T2 [backend] 迁移 V22
 
-- [ ] 新增 `V22__add_experience_likes.sql`：`experience_likes`（`(experience_id, user_id)` 唯一 + `(experience_id)` 索引 + 双外键）。
-- [ ] 新增 `ExperienceLikeMigrationSqliteTest`（先 red）：全新库到 V22 建表；旧库（V21）升级后既有数据不变；重复 `(experience_id, user_id)` 插入被拒。
+- [x] 新增 `V22__add_experience_likes.sql`：`experience_likes`（`(experience_id, user_id)` 唯一 + `(experience_id)` 索引 + 双外键）。
+- [x] 新增 `ExperienceLikeMigrationSqliteTest`（先 red）：全新库到 V22 建表；旧库（V21）升级后既有数据不变；重复 `(experience_id, user_id)` 插入被拒。
 
 **验证：** `cd RouteME/backend; .\mvnw.cmd -B -ntp -Dtest=ExperienceLikeMigrationSqliteTest test`
 **覆盖：** D1、D13、`@rule:java-patterns`
 
 ### T3 [backend] 点赞数据访问
 
-- [ ] 新增 `entity/ExperienceLikeEntity`（`IdType.INPUT`）、`mapper/ExperienceLikeMapper`、`constant/ExperienceLikeConstant`（档位 / 月度上限 / 原因码 / 关联类型 / 幂等键模板）。
-- [ ] Mapper 方法：`countByExperience`、`exists(experienceId, userId)`、`selectStatsByExperienceIds(ids, viewerId)`（一次 GROUP BY 返回赞数与当前用户点赞态）、`selectMaxLikesOfTripAuthor(tripId, authorId)`（取最大单篇赞数，不求和）。
+- [x] 新增 `entity/ExperienceLikeEntity`（`IdType.INPUT`）、`mapper/ExperienceLikeMapper`、`constant/ExperienceLikeConstant`（档位 / 月度上限 / 原因码 / 关联类型 / 幂等键模板）。
+- [x] Mapper 方法：`countByExperience`、`exists(experienceId, userId)`、`selectStatsByExperienceIds(ids, viewerId)`（一次 GROUP BY 返回赞数与当前用户点赞态）、`selectMaxLikesOfTripAuthor(tripId, authorId)`（取最大单篇赞数，不求和）。
 
 **验证：** `cd RouteME/backend; .\mvnw.cmd -B -ntp test`
 **覆盖：** D1、D3、D8、D10
 
 ### T4 [backend] 点赞与取消点赞端点
 
-- [ ] 新增 `exception/ExperienceNotFoundException`（`EXPERIENCE_NOT_FOUND` + 404）与 `response/ExperienceLikeResponse`。
-- [ ] 新增 `service/ExperienceLikeService` + `impl`：`like`（404 → 403 → 插入，唯一冲突视为已赞）、`unlike`（0 行也 204）、`statsOf`。
-- [ ] `ExperienceController` 增两个端点；首次 201 / 重复 200 / DELETE 204。
-- [ ] 新增 `ExperienceLikeApiTest`（先 red）：L-1~L-8（含自赞 403、未登录 401、不存在 404 且无副作用、并发两线程）。
+- [x] 新增 `exception/ExperienceNotFoundException`（`EXPERIENCE_NOT_FOUND` + 404）与 `response/ExperienceLikeResponse`。
+- [x] 新增 `service/ExperienceLikeService` + `impl`：`like`（404 → 403 → 插入，唯一冲突视为已赞）、`unlike`（0 行也 204）、`statsOf`。
+- [x] `ExperienceController` 增两个端点；首次 201 / 重复 200 / DELETE 204。
+- [x] 新增 `ExperienceLikeApiTest`（先 red）：L-1~L-8（含自赞 403、未登录 401、不存在 404 且无副作用、并发两线程）。
 
 **验证：** `cd RouteME/backend; .\mvnw.cmd -B -ntp -Dtest=ExperienceLikeApiTest test`
 **覆盖：** L-1~L-8、D2、D5、D6
 
 ### T5 [backend] 读取侧赞数与点赞态
 
-- [ ] `ExperienceResponse` 增 `like_count` / `is_liked`；`from(...)` 收入赞数参数。
-- [ ] `ExperienceServiceImpl.describeAll` 一次批量取赞数（同 `photosOf` 模式）；无记录返回 0 / false。
-- [ ] `ExperienceService` 的 `listPage` / `listAll` / `listByTrip` 增加 `viewerId`；`mine` 的 viewer = `authorId`；Controller 传入解析后的用户 id。
-- [ ] 同步更新既有 `ExperienceServiceTest` / `ExperienceServicePersistenceTest` / `ExperienceControllerTest` 的调用签名。
-- [ ] 新增 `ExperienceLikeDisplayApiTest`（先 red）：D-1 三接口同源、`is_liked` 随视角变化。
+- [x] `ExperienceResponse` 增 `like_count` / `is_liked`；`from(...)` 收入赞数参数。
+- [x] `ExperienceServiceImpl.describeAll` 一次批量取赞数（同 `photosOf` 模式）；无记录返回 0 / false。
+- [x] `ExperienceService` 的 `listPage` / `listAll` / `listByTrip` 增加 `viewerId`；`mine` 的 viewer = `authorId`；Controller 传入解析后的用户 id。
+- [x] 同步更新既有 `ExperienceServiceTest` / `ExperienceServicePersistenceTest` / `ExperienceControllerTest` 的调用签名。
+- [x] 新增 `ExperienceLikeDisplayApiTest`（先 red）：D-1 三接口同源、`is_liked` 随视角变化。
 
 **验证：** `cd RouteME/backend; .\mvnw.cmd -B -ntp test`
 **覆盖：** D-1、D3、D4、D16
 
 ### T6 [backend] 获赞信用结算
 
-- [ ] 新增 `service/ExperienceLikeRewardService` + `impl`：档位判定（同行程同作者最大赞数）、已锁定档位读取、月度额度（Asia/Shanghai 月首、`SUM(applied_delta)`）、逐档 `CreditService.book` 调用、幂等键 `EXPERIENCE_LIKE:{tripId}:{authorId}:{tier}`、`related_type = TRIP`。
-- [ ] `ExperienceLikeServiceImpl.like` 在**新插入成功**后同事务调用 `award`；`unlike` 不触发。
-- [ ] 新增 `ExperienceLikeCreditApiTest`（先 red）：C-1~C-3、C-5~C-7、C-13、C-14。
-- [ ] 新增 `ExperienceLikeCreditMonthApiTest`（先 red）：C-8~C-12，含可调测试 Clock（`@TestConfiguration` + `@Primary`，只被本类 `@Import`）。
-- [ ] apply 层单测：档位推导边界（4/5/9/10/25/26）、月度窗口纯函数、C-4 多篇取 max 不求和（mapper 多行 mock）。
+- [x] 新增 `service/ExperienceLikeRewardService` + `impl`：档位判定（同行程同作者最大赞数）、已锁定档位读取、月度额度（Asia/Shanghai 月首、`SUM(applied_delta)`）、逐档 `CreditService.book` 调用、幂等键 `EXPERIENCE_LIKE:{tripId}:{authorId}:{tier}`、`related_type = TRIP`。
+- [x] `ExperienceLikeServiceImpl.like` 在**新插入成功**后同事务调用 `award`；`unlike` 不触发。
+- [x] 新增 `ExperienceLikeCreditApiTest`（先 red）：C-1~C-3、C-5~C-7、C-13、C-14。
+- [x] 新增 `ExperienceLikeCreditMonthApiTest`（先 red）：C-8~C-12，含可调测试 Clock（`@TestConfiguration` + `@Primary`，只被本类 `@Import`）。
+- [x] apply 层单测：档位推导边界（4/5/9/10/25/26）、月度窗口纯函数、C-4 多篇取 max 不求和（mapper 多行 mock）。
 
 **验证：** `cd RouteME/backend; .\mvnw.cmd -B -ntp -Dtest=ExperienceLikeCreditApiTest,ExperienceLikeCreditMonthApiTest test`
 **覆盖：** C-1~C-14、D7~D11
 
 ### T7 [frontend] 类型、请求与纯逻辑
 
-- [ ] `types.ts`：`Experience` 增 `like_count` / `is_liked`；新增 `ExperienceLikeResult`。
-- [ ] `api.ts`：`likeExperience` / `unlikeExperience`（带 `X-User-Id`）。
-- [ ] 新增 `experiences/experienceLikes.ts`：`applyLikeState`（乐观 +1 / -1，下限 0）、`canLike`（未登录 / 自己的体验不可赞）。
-- [ ] 新增 `experienceLikes.test.ts`：状态切换、0 赞取消、不可赞判定。
-- [ ] `tripMessages.ts`：点赞 / 已点赞 / 失败提示文案。
+- [x] `types.ts`：`Experience` 增 `like_count` / `is_liked`；新增 `ExperienceLikeResult`。
+- [x] `api.ts`：`likeExperience` / `unlikeExperience`（带 `X-User-Id`）。
+- [x] 新增 `experiences/experienceLikes.ts`：`applyLikeState`（乐观 +1 / -1，下限 0）、`canLike`（未登录 / 自己的体验不可赞）。
+- [x] 新增 `experienceLikes.test.ts`：状态切换、0 赞取消、不可赞判定。
+- [x] `tripMessages.ts`：点赞 / 已点赞 / 失败提示文案。
 
 **验证：** `cd RouteME/frontend; npm run typecheck && npm test`
 **覆盖：** D14、Defer UT（前端纯逻辑）
 
 ### T8 [frontend] 两个展示面接入
 
-- [ ] `ExperienceCard.tsx`：`.exp-foot` 渲染点赞按钮 + 赞数；`aria-pressed`；自己的体验不渲染、未登录禁用；失败回滚并提示。
-- [ ] `TripDetailPage.tsx` 体验区：每条体验同一按钮；状态同步与失败回滚。
-- [ ] `styles.css`：`.exp-like` 两态，只用 `:root` / `[data-theme="dark"]` 令牌。
-- [ ] 走查 1440 / 1024 / 768 / 390 × 浅 / 深色，对照 T0 原型。
+- [x] `ExperienceCard.tsx`：`.exp-foot` 渲染点赞按钮 + 赞数；`aria-pressed`；自己的体验不渲染、未登录禁用；失败回滚并提示。
+- [x] `TripDetailPage.tsx` 体验区：每条体验同一按钮；状态同步与失败回滚。
+- [x] `styles.css`：`.exp-like` 两态，只用 `:root` / `[data-theme="dark"]` 令牌。
+- [x] 走查 1440 / 1024 / 768 / 390 × 浅 / 深色，对照 T0 原型。
 
 **验证：** `cd RouteME/frontend; npm run typecheck && npm run build`
 **覆盖：** D-2~D-4、D14、`@rule:web-coding-style`
 
 ### T9 [tests] E2E 验收与反向用例
 
-- [ ] 新增 `e2e/tests/experience-likes.spec.ts`：D-2 首页点赞 / 取消（相对 ±1，末尾恢复）；D-3 详情点赞 → 刷新保持 → 取消；D-4 `page.route` 拦截 500 → 回滚 + 提示。
-- [ ] `credit.spec.ts` 追加 C-15：新作者 → 建行程 → 结束 → 发体验 → 5 个用户点赞 → 主页 81 且无「明细 / 历史」入口。
-- [ ] 反向用例：`GET /api/users/{id}/credit/ledger` → 404；`PUT/POST /api/users/me/credit` → 404（沿用既有口径）。
+- [x] 新增 `e2e/tests/experience-likes.spec.ts`：D-2 首页点赞 / 取消（相对 ±1，末尾恢复）；D-3 详情点赞 → 刷新保持 → 取消；D-4 `page.route` 拦截 500 → 回滚 + 提示。
+- [x] `credit.spec.ts` 追加 C-15：新作者 → 建行程 → 结束 → 发体验 → 5 个用户点赞 → 主页 81 且无「明细 / 历史」入口。
+- [x] 反向用例：`GET /api/users/{id}/credit/ledger` → 404；`PUT/POST /api/users/me/credit` → 404（沿用既有口径）。
 
 **验证：** `cd RouteME/e2e; npx playwright test tests/experience-likes.spec.ts tests/credit.spec.ts`
 **覆盖：** D-2~D-4、C-15、ATDD §5
 
 ### T10 [verify] 回归验证
 
-- [ ] 后端全量 `mvnw.cmd -B -ntp verify`。
-- [ ] 前端 `npm run typecheck && npm run build && npm test`。
-- [ ] E2E 受影响用例 + `openspec validate add-experience-like-credit --strict` + Redocly lint（本地）。
-- [ ] 在 P4 验证报告贴真实输出摘要；记录列表读取为批量查询的结构事实。
+- [x] 后端全量 `mvnw.cmd -B -ntp verify`。
+- [x] 前端 `npm run typecheck && npm run build && npm test`。
+- [x] E2E 受影响用例 + `openspec validate add-experience-like-credit --strict` + Redocly lint（本地）。
+- [x] 在 P4 验证报告贴真实输出摘要；记录列表读取为批量查询的结构事实。
 
 **验证：** 上述命令逐条执行
 **覆盖：** 全部 Scenario 的回归门禁
 
 ### T11 [docs] 文档收口
 
-- [ ] `docs/knowledge/interfaces/README.md`（若存在）：登记点赞端点与两个字段。
-- [ ] `docs/sdd/add-experience-like-credit/p3-design.md`（本轮）与 `p4-verify.md`（P4）。
-- [ ] `registry.md` 状态更新与 `docs/sdd/README.md` P3 列（P3 完成后）。
+- [x] `docs/knowledge/interfaces/README.md`（若存在）：登记点赞端点与两个字段。
+- [x] `docs/sdd/add-experience-like-credit/p3-design.md`（本轮）与 `p4-verify.md`（P4）。
+- [x] `registry.md` 状态更新与 `docs/sdd/README.md` P3 列（P3 完成后）。
 
 **验证：** 人工核对字段名与链接
 **覆盖：** `@rule:document-conventions`
+
+## 执行偏差记录（P4）
+
+| 项 | 计划 | 实际 | 原因 |
+|---|---|---|---|
+| C-4 取最大赞数 | Mapper `selectMaxLikesOfTripAuthor`（SQL MAX） | Mapper `selectLikeCountsOfTripAuthor` 返回每篇赞数，服务层取 max | 按 ATDD Defer UT 用 mapper 多行 mock 验证「取最大不求和」 |
+| 月度额度 | 账本 `SUM(applied_delta)` | 读取该用户 `EXPERIENCE_LIKE` 账本行，Java 按 Asia/Shanghai 窗口求和 | 规避 SQLite / H2 时间函数差异；行为与设计一致，纯函数另有单测 |
+| 并发插入 | 唯一冲突一律视为已赞 | 区分「同（体验, 用户）已存在 → 幂等」与「`nextId` 主键撞车 → 换 id 重试 ≤3 次」 | `max(id)+1` 在两线程下会撞主键；L-8 双用户并发需要两条记录 |
+| C-7 并发结算 | 两线程并发跨档 | 连续调用两次 `award` 验证幂等键唯一 | 避免 H2 多线程结算用例不稳定；并发由 L-8 + 唯一索引兜底 |
+| C-14 完成行程 | 直接结束行程 | `@Import(FixedClockTestConfig)` 后在当天结束 | 行程只有在「进行中」才可结束，与 `TripCompletionApiTest` 同口径 |
+| 前端按钮 | 两个展示面各自接入 | 新增共用 `ExperienceLikeButton` | 两处状态机 / 回滚 / 可访问性只写一份 |
 
 ## 层与顺序约束
 

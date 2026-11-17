@@ -45,6 +45,44 @@ class OpenApiTest {
     }
 
     @Test
+    void in_openApiFile_out_experienceLikeContractDeclared() throws IOException {
+        // Given
+        Map<String, Object> document = loadYaml(SPEC_PATH);
+        Map<String, Object> info = asMap(document.get("info"));
+
+        // When
+        Map<String, Object> likeExperience = operation(document, "/experiences/{experienceId}/likes", "post");
+        Map<String, Object> unlikeExperience = operation(document, "/experiences/{experienceId}/likes", "delete");
+        Map<String, Object> experience = schema(document, "Experience");
+        Map<String, Object> like = schema(document, "ExperienceLike");
+        Map<String, Object> errorSchema = schema(document, "Error");
+
+        // Then
+        assertAll(
+                () -> assertEquals("0.16.0", info.get("version"), "info.version"),
+                () -> assertTrue(responses(likeExperience).containsKey("201"), "first like returns 201"),
+                () -> assertTrue(responses(likeExperience).containsKey("200"), "duplicate like returns 200"),
+                () -> assertTrue(responses(likeExperience).containsKey("403"), "self like returns 403"),
+                () -> assertTrue(responses(likeExperience).containsKey("404"), "missing experience returns 404"),
+                () -> assertTrue(responses(unlikeExperience).containsKey("204"), "unlike returns 204"),
+                () -> assertTrue(responses(unlikeExperience).containsKey("404"), "unlike missing returns 404"),
+                () -> assertTrue(
+                        required(experience).containsAll(List.of("like_count", "is_liked")),
+                        "experience like fields are required"),
+                () -> assertEquals("integer", properties(experience).get("like_count").get("type"), "like_count type"),
+                () -> assertEquals(0, properties(experience).get("like_count").get("minimum"), "like_count minimum"),
+                () -> assertEquals(Boolean.TRUE, properties(experience).get("like_count").get("readOnly"), "like_count readOnly"),
+                () -> assertEquals("boolean", properties(experience).get("is_liked").get("type"), "is_liked type"),
+                () -> assertEquals(Boolean.TRUE, properties(experience).get("is_liked").get("readOnly"), "is_liked readOnly"),
+                () -> assertTrue(
+                        required(like).containsAll(List.of("experience_id", "like_count", "is_liked")),
+                        "like required fields"),
+                () -> assertTrue(
+                        enums(properties(errorSchema).get("code")).contains("EXPERIENCE_NOT_FOUND"),
+                        "error codes"));
+    }
+
+    @Test
     void in_openApiFile_out_userCreditContractDeclared() throws IOException {
         // Given
         Map<String, Object> document = loadYaml(SPEC_PATH);
@@ -92,7 +130,7 @@ class OpenApiTest {
 
         // Then
         assertAll(
-                () -> assertEquals("0.14.0", info.get("version"), "info.version"),
+                () -> assertEquals("0.16.0", info.get("version"), "info.version"),
                 () -> assertTrue(paths(document).containsKey("/users"), "/users declared"),
                 () -> assertTrue(paths(document).containsKey("/trips/{tripId}"), "detail path declared"),
                 () -> assertTrue(

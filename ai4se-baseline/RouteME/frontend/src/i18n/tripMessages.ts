@@ -289,6 +289,10 @@ export const tripMessages = {
   experienceEditEntry: '修改我的体验',
   experienceSectionTitle: '游后真实体验',
   experienceSectionEmpty: '还没有人写下这条行程的体验',
+  experienceLike: '点赞',
+  experienceLiked: '已点赞',
+  experienceLikeFailed: '点赞失败，请稍后重试',
+  experienceLikeCountUnit: '赞',
   experienceBoundaryTitle: '分享边界',
   experienceBoundaryItems: [
     '不要写入同行者的电话、学校班级或住宿地址。',

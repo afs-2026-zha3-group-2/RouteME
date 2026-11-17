@@ -2302,6 +2302,68 @@ svg {
   vertical-align: 1px;
 }
 
+/* 点赞：未赞中性描边，已赞珊瑚实底 + 填充心形；首页卡与详情体验区共用。 */
+.exp-like {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 11px 5px 9px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: var(--surface-2);
+  color: var(--ink-2);
+  font-size: 12px;
+  font-weight: 650;
+  font-family: inherit;
+  cursor: pointer;
+  transition: color 0.18s var(--ease-out), border-color 0.18s, background 0.18s;
+}
+
+.exp-like:hover {
+  border-color: color-mix(in srgb, var(--coral) 45%, var(--line));
+  color: var(--t-coral);
+}
+
+.exp-like:disabled {
+  opacity: 0.62;
+  cursor: default;
+}
+
+.exp-like:focus-visible {
+  outline: 2px solid var(--t-coral);
+  outline-offset: 2px;
+}
+
+.exp-like .ic {
+  width: 14px;
+  height: 14px;
+}
+
+.exp-like b {
+  font-family: var(--font-num);
+  font-weight: 750;
+}
+
+.exp-like.is-liked {
+  color: var(--t-coral);
+  border-color: color-mix(in srgb, var(--coral) 46%, transparent);
+  background: color-mix(in srgb, var(--coral) 12%, transparent);
+}
+
+.exp-like.is-liked .ic {
+  fill: currentColor;
+}
+
+.exp-item-foot {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 11px;
+}
+
+.exp-item-foot:empty {
+  display: none;
+}
+
 /* ---------- 空状态 / 提示 ---------- */
 .empty {
   display: grid;

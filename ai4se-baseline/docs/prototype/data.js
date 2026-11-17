@@ -428,14 +428,18 @@
           samplePhoto('野狸岛灯光', '#7a6ba8', '#2d3d63'),
           samplePhoto('情侣路骑行', '#9ec9b4', '#3d6b62')
         ],
-        createdAt: offsetTime(-8, 22, 10)
+        createdAt: offsetTime(-8, 22, 10),
+        likeCount: 12,
+        likedBy: []
       },
       {
         id: 'e_2', tripId: 't_qingyuan_1', authorId: 'u_su',
         content: '第一天八公里比想象中累，最后两公里全是碎石。但营地那晚的天完全值得。第二天日出要五点半起，观景台风大到站不稳。',
         intensity: 'TIRING',
         advice: '鞋一定要抓地，普通跑鞋会滑。水和补给在山下买齐，上面没有小卖部。膝盖不好的可以只走第一天。',
-        createdAt: offsetTime(-14, 20, 45)
+        createdAt: offsetTime(-14, 20, 45),
+        likeCount: 7,
+        likedBy: []
       }
     ];
 

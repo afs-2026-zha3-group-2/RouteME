@@ -4,6 +4,7 @@ import { Avatar } from '../shell/Avatar';
 import { coverTone } from '../trips/coverTone';
 import { StatusBadge } from '../trips/StatusBadge';
 import { intensityLabel } from './experienceForm';
+import { ExperienceLikeButton } from './ExperienceLikeButton';
 import type { Experience } from '../types';
 
 const INTENSITY_TONE: Record<Experience['intensity'], string> = {
@@ -14,9 +15,11 @@ const INTENSITY_TONE: Record<Experience['intensity'], string> = {
 
 type Props = {
   experience: Experience;
+  currentUserId: number;
+  onLikeChange: (experience: Experience) => void;
 };
 
-export function ExperienceCard({ experience }: Props) {
+export function ExperienceCard({ experience, currentUserId, onLikeChange }: Props) {
   const destination = cityLabel(experience.trip.destination_code) || experience.trip.destination;
 
   return (
@@ -55,6 +58,11 @@ export function ExperienceCard({ experience }: Props) {
           来自 <b>{experience.trip.title}</b>
           <StatusBadge status="completed" className="exp-origin-badge" />
         </span>
+        <ExperienceLikeButton
+          experience={experience}
+          currentUserId={currentUserId}
+          onChange={onLikeChange}
+        />
         <a className="btn sm ghost" href={`#/trips/${experience.trip.id}`}>
           {tripMessages.detailTitle}
         </a>

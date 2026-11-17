@@ -29,6 +29,7 @@ import {
 } from '../api';
 import { tripMessages } from '../i18n/tripMessages';
 import { intensityLabel } from '../experiences/experienceForm';
+import { ExperienceLikeButton } from '../experiences/ExperienceLikeButton';
 import { meetingAreaText, meetingTimeText } from '../chat/chatMeeting';
 import { AmapTripMap } from '../map/amap/AmapTripMap';
 import { AmapPlacePicker } from '../map/amap/AmapPlacePicker';
@@ -106,6 +107,12 @@ export function TripDetailPage({ currentUser, tripId }: Props) {
   const [reportOpen, setReportOpen] = useState(false);
   const [experiences, setExperiences] = useState<Experience[] | null>(null);
   const [previewExperienceId, setPreviewExperienceId] = useState<number | null>(null);
+
+  const updateExperience = (next: Experience) => {
+    setExperiences((previous) =>
+      previous === null ? previous : previous.map((item) => (item.id === next.id ? next : item)),
+    );
+  };
   const [previewIndex, setPreviewIndex] = useState(0);
   const [meetingOpen, setMeetingOpen] = useState(false);
   const [meetingForm, setMeetingForm] = useState<MeetingFormValues>(emptyMeetingForm());
@@ -614,6 +621,13 @@ export function TripDetailPage({ currentUser, tripId }: Props) {
                         )}
                       </div>
                     )}
+                    <div className="exp-item-foot">
+                      <ExperienceLikeButton
+                        experience={experience}
+                        currentUserId={currentUser.id}
+                        onChange={updateExperience}
+                      />
+                    </div>
                   </li>
                 ))}
               </ul>

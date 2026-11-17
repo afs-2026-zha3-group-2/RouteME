@@ -6,6 +6,7 @@ import type {
   DemoUser,
   Experience,
   ExperienceFilters,
+  ExperienceLikeResult,
   ExperiencePhoto,
   ExperienceWriteRequest,
   MatchCandidate,
@@ -394,6 +395,18 @@ export async function shareExperience(
     userId,
   );
   return (await response.json()) as Experience;
+}
+
+export async function likeExperience(
+  userId: number,
+  experienceId: number,
+): Promise<ExperienceLikeResult> {
+  const response = await request(`/experiences/${experienceId}/likes`, { method: 'POST' }, userId);
+  return (await response.json()) as ExperienceLikeResult;
+}
+
+export async function unlikeExperience(userId: number, experienceId: number): Promise<void> {
+  await request(`/experiences/${experienceId}/likes`, { method: 'DELETE' }, userId);
 }
 
 export async function uploadExperiencePhoto(

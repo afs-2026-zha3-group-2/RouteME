@@ -29,6 +29,7 @@ import routeme.mapper.TripExperienceMapper;
 import routeme.mapper.TripExperiencePhotoMapper;
 import routeme.param.PageParam;
 import routeme.pojo.DemoUser;
+import routeme.pojo.ExperienceLikeStat;
 import routeme.pojo.PageResult;
 import routeme.pojo.TripExperience;
 import routeme.pojo.TripPlan;
@@ -38,6 +39,7 @@ import routeme.response.ExperienceResponse;
 import routeme.response.ExperienceSaveResponse;
 import routeme.service.DemoUserService;
 import routeme.service.ExperienceEligibility;
+import routeme.service.ExperienceLikeService;
 import routeme.service.ExperiencePhotoService;
 import routeme.service.ExperienceService;
 import routeme.service.TripPlanService;
@@ -57,6 +59,7 @@ public class ExperienceServiceImpl
     private final TripExperiencePhotoMapper photoMapper;
     private final ExperiencePhotoStorage photoStorage;
     private final ExperienceEligibility eligibility;
+    private final ExperienceLikeService experienceLikeService;
     private final Clock clock;
 
     public ExperienceServiceImpl(
@@ -65,12 +68,14 @@ public class ExperienceServiceImpl
             TripExperiencePhotoMapper photoMapper,
             ExperiencePhotoStorage photoStorage,
             ExperienceEligibility eligibility,
+            ExperienceLikeService experienceLikeService,
             Clock clock) {
         this.tripPlanService = tripPlanService;
         this.demoUserService = demoUserService;
         this.photoMapper = photoMapper;
         this.photoStorage = photoStorage;
         this.eligibility = eligibility;
+        this.experienceLikeService = experienceLikeService;
         this.clock = clock;
     }
 
@@ -101,23 +106,24 @@ public class ExperienceServiceImpl
         }
         List<TripExperiencePhotoEntity> removed = bindPhotos(tripId, authorId, saved.id(), photoIds);
         deleteAfterCommit(removed);
-        return new ExperienceSaveResponse(describe(saved), created);
+        return new ExperienceSaveResponse(describe(saved, authorId), created);
     }
 
     @Override
-    public List<ExperienceResponse> listAll(String destinationCode, Set<String> tags) {
+    public List<ExperienceResponse> listAll(String destinationCode, Set<String> tags, Long viewerId) {
         List<TripExperience> experiences = list(Wrappers.<TripExperienceEntity>lambdaQuery()
                 .orderByDesc(TripExperienceEntity::getUpdatedAt)
                 .orderByDesc(TripExperienceEntity::getId)).stream()
                 .map(TripExperienceEntity::toExperience)
                 .filter(experience -> matches(experience, destinationCode, tags))
                 .toList();
-        return describeAll(experiences);
+        return describeAll(experiences, viewerId);
     }
 
     @Override
     public PageResult<ExperienceResponse> listPage(
-            String destinationCode, LocalDate dateFrom, LocalDate dateTo, Set<String> tags, PageParam param) {
+            String destinationCode, LocalDate dateFrom, LocalDate dateTo, Set<String> tags, PageParam param,
+            Long viewerId) {
         IPage<TripExperienceEntity> page = baseMapper.selectExperiencePage(
                 new Page<>(param.page(), param.size()),
                 destinationCode,
@@ -125,21 +131,21 @@ public class ExperienceServiceImpl
                 dateTo == null ? null : dateTo.toString(),
                 List.copyOf(tags == null ? Set.of() : tags));
         return new PageResult<>(
-                describeAll(page.getRecords().stream().map(TripExperienceEntity::toExperience).toList()),
+                describeAll(page.getRecords().stream().map(TripExperienceEntity::toExperience).toList(), viewerId),
                 param.page(),
                 param.size(),
                 page.getTotal());
     }
 
     @Override
-    public List<ExperienceResponse> listByTrip(long tripId) {
+    public List<ExperienceResponse> listByTrip(long tripId, Long viewerId) {
         tripPlanService.requireCurrent(tripId);
         return describeAll(list(Wrappers.<TripExperienceEntity>lambdaQuery()
                 .eq(TripExperienceEntity::getTripId, tripId)
                 .orderByAsc(TripExperienceEntity::getCreatedAt)
                 .orderByAsc(TripExperienceEntity::getId)).stream()
                 .map(TripExperienceEntity::toExperience)
-                .toList());
+                .toList(), viewerId);
     }
 
     @Override
@@ -149,7 +155,7 @@ public class ExperienceServiceImpl
                 .orderByDesc(TripExperienceEntity::getUpdatedAt)
                 .orderByDesc(TripExperienceEntity::getId)).stream()
                 .map(TripExperienceEntity::toExperience)
-                .toList());
+                .toList(), authorId);
     }
 
     private boolean matches(TripExperience experience, String destinationCode, Set<String> tags) {
@@ -245,10 +251,11 @@ public class ExperienceServiceImpl
         });
     }
 
-    private List<ExperienceResponse> describeAll(List<TripExperience> experiences) {
-        Map<Long, List<ExperiencePhotoResponse>> photos = photosOf(
-                experiences.stream().map(TripExperience::id).toList());
-        return experiences.stream().map(experience -> describe(experience, photos)).toList();
+    private List<ExperienceResponse> describeAll(List<TripExperience> experiences, Long viewerId) {
+        List<Long> experienceIds = experiences.stream().map(TripExperience::id).toList();
+        Map<Long, List<ExperiencePhotoResponse>> photos = photosOf(experienceIds);
+        Map<Long, ExperienceLikeStat> likes = experienceLikeService.statsOf(experienceIds, viewerId);
+        return experiences.stream().map(experience -> describe(experience, photos, likes)).toList();
     }
 
     private Map<Long, List<ExperiencePhotoResponse>> photosOf(List<Long> experienceIds) {
@@ -265,16 +272,23 @@ public class ExperienceServiceImpl
                                 Collectors.toList())));
     }
 
-    private ExperienceResponse describe(TripExperience experience) {
-        return describe(experience, photosOf(List.of(experience.id())));
+    private ExperienceResponse describe(TripExperience experience, Long viewerId) {
+        return describe(
+                experience,
+                photosOf(List.of(experience.id())),
+                experienceLikeService.statsOf(List.of(experience.id()), viewerId));
     }
 
     private ExperienceResponse describe(
-            TripExperience experience, Map<Long, List<ExperiencePhotoResponse>> photos) {
+            TripExperience experience,
+            Map<Long, List<ExperiencePhotoResponse>> photos,
+            Map<Long, ExperienceLikeStat> likes) {
         TripPlan trip = tripPlanService.requireCurrent(experience.tripId());
         DemoUser publisher = tripPlanService.publisherOf(trip);
         DemoUser author = demoUserService.require(experience.authorId());
+        ExperienceLikeStat like = likes.getOrDefault(
+                experience.id(), ExperienceLikeStat.empty(experience.id()));
         return ExperienceResponse.from(experience, trip, publisher, author, clock.instant(),
-                photos.getOrDefault(experience.id(), List.of()));
+                photos.getOrDefault(experience.id(), List.of()), like.likeCount(), like.liked());
     }
 }

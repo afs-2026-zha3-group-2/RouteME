@@ -104,6 +104,27 @@
     var t = trip(tripId);
     return !!t && t.status === 'COMPLETED' && isParticipant(tripId, userId || state.currentUserId);
   }
+  function canLike(experienceId, userId) {
+    var e = byId(state.experiences, experienceId);
+    var id = userId || state.currentUserId;
+    return !!e && !!id && e.authorId !== id;
+  }
+  function toggleLike(experienceId, userId) {
+    var e = byId(state.experiences, experienceId);
+    var id = userId || state.currentUserId;
+    if (!e || !id || e.authorId === id) return false;
+    var list = e.likedBy || (e.likedBy = []);
+    var i = list.indexOf(id);
+    if (i > -1) {
+      list.splice(i, 1);
+      e.likeCount = Math.max(0, (e.likeCount || 0) - 1);
+    } else {
+      list.push(id);
+      e.likeCount = (e.likeCount || 0) + 1;
+    }
+    commit();
+    return true;
+  }
 
   function dayDiff(a, b) {
     return Math.round((new Date(a + 'T00:00:00') - new Date(b + 'T00:00:00')) / 86400000);
@@ -513,13 +534,13 @@
     participants: participants, count: count,
     isCreator: isCreator, isParticipant: isParticipant, myApp: myApp,
     hostPendingCount: hostPendingCount, experiencesOf: experiencesOf, myExperience: myExperience,
-    canApply: canApply, canChat: canChat, canShare: canShare,
+    canApply: canApply, canChat: canChat, canShare: canShare, canLike: canLike,
     matchOf: matchOf, referenceTrip: referenceTrip, dayDiff: dayDiff,
     setUser: setUser, createTrip: createTrip, updateTrip: updateTrip, updateMeetingInfo: updateMeetingInfo,
     cancelTrip: cancelTrip, deleteTrip: deleteTrip, completeTrip: completeTrip,
     apply: apply, cancelApplication: cancelApplication, decide: decide, bulkDecide: bulkDecide,
     leaveTrip: leaveTrip, sendMessage: sendMessage, thread: thread, chatPartners: chatPartners,
-    saveExperience: saveExperience, addReport: addReport,
+    saveExperience: saveExperience, addReport: addReport, toggleLike: toggleLike,
     saveView: saveView, deleteView: deleteView,
     undo: undo, canUndo: canUndo, undoLabel: undoLabel, reset: reset,
     visibleTrips: visibleTrips, queryTrips: queryTrips, queryExperiences: queryExperiences, stats: stats

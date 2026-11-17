@@ -1,7 +1,7 @@
 openapi: 3.0.3
 info:
   title: RouteME API
-  version: 0.14.0
+  version: 0.16.0
   description: |
     RouteME 后端对外契约。本文件是前后端唯一事实源，字段名、类型、状态码与错误码只在这里定稿。
         当前包含：脚手架问候语、演示账户与账号认证（注册/登录/会话/退出）、旅行计划（浏览/筛选/发布/详情/结束），同行匹配、申请、退出、聊天、我的旅行与举报，以及游后体验分享与参考发布所需数据。
@@ -1432,6 +1432,86 @@ paths:
           $ref: '#/components/responses/DemoUserRequired'
         '500':
           $ref: '#/components/responses/Unexpected'
+  /experiences/{experienceId}/likes:
+    post:
+      operationId: likeExperience
+      summary: 点赞他人的旅行体验
+      description: |
+        已登录用户对他人体验点赞；首次创建返回 201，已点过赞幂等返回 200。
+        同一用户对同一体验至多一条点赞记录；自己的体验返回 403；体验不存在返回 404。
+        新点赞成功后同事务触发获赞信用结算，每个档位只结算一次。
+      parameters:
+        - $ref: '#/components/parameters/DemoUserId'
+        - name: experienceId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '201':
+          description: 首次点赞成功
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExperienceLike'
+              examples:
+                created:
+                  value:
+                    experience_id: 1
+                    like_count: 5
+                    is_liked: true
+        '200':
+          description: 已点过赞，幂等返回当前状态
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExperienceLike'
+        '401':
+          $ref: '#/components/responses/DemoUserRequired'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          description: 体验不存在
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                missing:
+                  value:
+                    code: EXPERIENCE_NOT_FOUND
+        '500':
+          $ref: '#/components/responses/Unexpected'
+    delete:
+      operationId: unlikeExperience
+      summary: 取消点赞
+      description: 删除当前用户对该体验的点赞记录；未点赞时同样返回 204（幂等）。
+      parameters:
+        - $ref: '#/components/parameters/DemoUserId'
+        - name: experienceId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '204':
+          description: 已取消（未点赞时同样视为成功）
+        '401':
+          $ref: '#/components/responses/DemoUserRequired'
+        '404':
+          description: 体验不存在
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                missing:
+                  value:
+                    code: EXPERIENCE_NOT_FOUND
+        '500':
+          $ref: '#/components/responses/Unexpected'
   /me/experiences:
     get:
       operationId: loadMyExperiences
@@ -2519,7 +2599,7 @@ components:
             format: int64
     Experience:
       type: object
-      required: [id, trip, author, content, intensity, advice, photos, created_at, updated_at]
+      required: [id, trip, author, content, intensity, advice, photos, like_count, is_liked, created_at, updated_at]
       properties:
         id:
           type: integer
@@ -2543,6 +2623,15 @@ components:
           description: 按提交顺序排列的图片；无图时为空数组
           items:
             $ref: '#/components/schemas/ExperiencePhoto'
+        like_count:
+          type: integer
+          minimum: 0
+          readOnly: true
+          description: 当前体验的点赞记录数；无记录时为 0
+        is_liked:
+          type: boolean
+          readOnly: true
+          description: 当前请求用户（X-User-Id）是否已点赞；自己的体验恒为 false
         created_at:
           type: string
           format: date-time
@@ -2575,6 +2664,23 @@ components:
         total_pages:
           type: integer
           minimum: 0
+    ExperienceLike:
+      type: object
+      required: [experience_id, like_count, is_liked]
+      properties:
+        experience_id:
+          type: integer
+          format: int64
+          readOnly: true
+        like_count:
+          type: integer
+          minimum: 0
+          readOnly: true
+          description: 该体验的点赞记录数
+        is_liked:
+          type: boolean
+          readOnly: true
+          description: 当前请求用户是否已点赞
     ReportRequest:
       type: object
       required: [target_type, target_id, reason]
@@ -2609,7 +2715,7 @@ components:
           enum:
             [GREETING_NOT_FOUND, INVALID_INPUT, DEMO_USER_REQUIRED, FORBIDDEN, USER_NOT_FOUND, TRIP_NOT_FOUND, TRIP_NOT_OPEN,
              APPLICATION_NOT_FOUND, APPLICATION_NOT_PENDING, DUPLICATE_APPLICATION, CHAT_NOT_ALLOWED, CHAT_READ_ONLY,
-             EXPERIENCE_NOT_ALLOWED, USERNAME_TAKEN, INVALID_CREDENTIALS, SESSION_INVALID, INTERNAL_ERROR]
+             EXPERIENCE_NOT_ALLOWED, EXPERIENCE_NOT_FOUND, USERNAME_TAKEN, INVALID_CREDENTIALS, SESSION_INVALID, INTERNAL_ERROR]
         fields:
           type: object
           description: |

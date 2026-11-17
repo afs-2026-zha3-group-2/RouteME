@@ -308,7 +308,7 @@
 
 | Story | Title | 角色 | Priority | Iteration | Points | Page | Parent REQ | Change | Status |
 |---|---|---|---|---|---|---|---|---|---|
-| 信用迭代2-S3 | 旅行体验获赞增加信用分 | 体验作者（受益）/ 已登录用户（点赞） | P0（标题）/ P1（正文） | 信用系统迭代 2 | 5 | 旅行体验（点赞）/ 信用记录（按 D2 不做可见明细） | REQ-022 | `add-experience-like-credit` | P3 Pass（2026-11-17；design + tasks 已签，契约 0.16.0 + V22；下一步 P4） |
+| 信用迭代2-S3 | 旅行体验获赞增加信用分 | 体验作者（受益）/ 已登录用户（点赞） | P0（标题）/ P1（正文） | 信用系统迭代 2 | 5 | 旅行体验（点赞）/ 信用记录（按 D2 不做可见明细） | REQ-022 | `add-experience-like-credit` | P4 Pass（2026-11-17；后端 342 / 前端 306 / 受影响 E2E 12 全绿，契约 0.16.0 + V22；下一步 local-verify-report / G2） |
 
 ## Traceability（REQ-022）
 
