@@ -175,3 +175,43 @@ P4 提交 `2e552fc` 后按发起人指令 `git pull --no-rebase --autostash --no
 
 - 9 冲突文件全解决 staged + V24 重命名 staged + openapi 9-1/9-2 修复 re-stage + 三报告 addendum staged；排除项延续（`.vscode/tasks.json` unstaged / t8-*.json untracked / preview 删除不动）。
 - `git commit --no-edit`（第二波 merge）→ push 前再 pull 核对 main 无新推进 → push。
+
+## 10. 第三波合并 addendum（第二波 merge 提交后 push 前再 pull，2026-11-17 19:xx）
+
+第二波 merge 提交 `49b4436` 后 push 前再 pull，main 又推进到 **`3db5b14`**（`add-experience-like-credit` REQ-023：体验点赞 + 阶梯信用，V24__add_experience_likes，契约也占 0.18.0）。仅 **1 文件冲突**（openapi.yaml Error 枚举），其余 auto-merge；沿用 standing ruling 解决。
+
+### 10.1 冲突解决与版本再演进
+
+- **openapi.yaml Error 枚举 union：** main 新增 `EXPERIENCE_NOT_FOUND` + 本 change AI 三码（AI_NOT_CONFIGURED/AI_UPSTREAM_ERROR/AI_INVALID_OUTPUT）并存；契约 **0.18.0 → 0.19.0**（main like-credit 也占 0.18.0）；`OpenApiTest` 3 处版本断言同步 0.19.0（auto-merge 后 13 个门禁方法完整：main 新增 experienceLike/userCredit + 本 change AI + admin 均保留）。
+- **迁移版本三碰撞：** main `V24__add_experience_likes` 占用 V24 → 本 change `V24__ai_itineraries.sql` 经 `git mv` 再重命名 **`V25__ai_itineraries.sql`**（fresh DB Flyway V1–V25 干净重建验证）。
+- **auto-merge 语义核对：** TripPlan/TripPlanEntity（travelMode + aiItineraryId 并存）、api.ts（Ai* + likeExperience/unlikeExperience）、styles.css/TripDetailPage/types.ts 均正确并集；ai-planner.spec.ts 合并零改动（git diff 空）。
+
+### 10.2 合并期发现与修复
+
+| # | 发现 | 修复 |
+|---|---|---|
+| 10-1 | **后端 verify 首跑「Found more than one migration with version 24」**：git mv 后 `target/classes/db/migration/` 残留旧 `V24__ai_itineraries.sql` 编译产物，与 main V24 及新 V25 并存 | 删除 target 陈旧产物后重跑 EXIT=0（构建卫生非代码缺陷；教训：迁移重命名后需清 target 残留） |
+| 10-2 | 真实天气 502（WEATHER_UPSTREAM_ERROR）：企业防火墙对 Open-Meteo 拦截窗口（G2 观察项延续） | 产品行为正确：失败即终止不伪造；E2E 用 weather stub 不受影响 |
+
+### 10.3 第三波合并后全量重验（fresh DB V1–V25，沙箱外后端）
+
+| 层 | 命令 | 结果 |
+|---|---|---|
+| 后端 | `.\mvnw.cmd verify`（清 SPRING_DATASOURCE_URL + 清 target 残留） | **495 tests / 0 failures / 0 errors** EXIT=0（main like/credit 测试并入，较第二波 464 增长） |
+| 前端单测 | `npm test` | **52 files / 401 tests passed** |
+| 前端类型/构建 | `npm run build`（含 tsc --noEmit） | 0 errors + 构建成功 |
+| E2E 全量 | `npx playwright test`（fresh `routeme-m3-final.db`） | **154 tests：123 passed / 31 failed**（15.7m，`e2e-m3.log`）；**ai-planner A1–A12 12/12**；main 新增 **experience-likes 3/3** + admin 5/5 + **credit 9/9** 全绿（第二波 credit 1 红已被 main like-credit 提交修复） |
+| E2E 隔离证污染 | `npx playwright test profiles.spec.ts`（fresh `routeme-m3-profiles.db`） | **8/8 passed（25.2s）** |
+| 契约门禁 | `openspec validate add-ai-itinerary --strict` / `redocly lint` | **valid** / **0 error / 21 warnings**（0.19.0） |
+
+### 10.4 31 红分类（无本 change 回归）
+
+- **map.spec 9 + trips.spec 9 = 18 例 refine-trip-map 偏差**（trips 8→9：trips:476 单集合点用例在第二波切点即存在（main travel-mode 提交 ad42fbf），失败点为 pickPlace 级联 helper `.place-chip-name` 同类 china-map 依赖；延续不修旧 spec 裁决）。
+- **auth.spec 7 + profile.spec 2 = 9 例 main UI refresh 既有 E2E 偏差**（延续 §9.4 git 证据：spec 字节相同而 main 删 DOM）。
+- **profiles.spec 4 例 = 债务 1 数据污染**（fresh DB 隔离 8/8 证实）。
+- **验收口径达成：** ai-planner 12/12 + experience-likes/admin/credit 全绿 + 非地图套件隔离全绿；31 红均非本 change 回归（18 refine-trip-map + 9 main E2E 债务 + 4 污染）。
+
+### 10.5 提交
+
+- openapi 冲突解决 + 0.19.0 + OpenApiTest 断言 + V25 重命名 staged；三报告 addendum staged；排除项延续。
+- `git commit --no-edit`（第三波 merge）→ push 前再 pull 核对 → push。

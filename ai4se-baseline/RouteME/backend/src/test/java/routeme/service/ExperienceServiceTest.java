@@ -40,7 +40,7 @@ class ExperienceServiceTest {
                 () -> assertEquals(1L, result.experience().trip().id(), "trip"),
                 () -> assertEquals(1L, result.experience().author().id(), "author is publisher"),
                 () -> assertEquals("moderate", result.experience().intensity(), "intensity wire value"),
-                () -> assertEquals(1, experienceService.listByTrip(1L).stream()
+                () -> assertEquals(1, experienceService.listByTrip(1L, 2L).stream()
                         .filter(item -> item.author().id() == 1L)
                         .count(), "one per author"));
     }
@@ -48,7 +48,7 @@ class ExperienceServiceTest {
     @Test
     void in_companionResubmits_out_updatedNotDuplicated() {
         // Given
-        long existingId = experienceService.listByTrip(1L).get(0).id();
+        long existingId = experienceService.listByTrip(1L, 2L).get(0).id();
 
         // When
         ExperienceSaveResponse result = experienceService.upsert(
@@ -59,7 +59,7 @@ class ExperienceServiceTest {
                 () -> assertFalse(result.created(), "second save updates"),
                 () -> assertEquals(existingId, result.experience().id(), "same experience id"),
                 () -> assertEquals("relaxed", result.experience().intensity(), "intensity updated"),
-                () -> assertEquals(1, experienceService.listByTrip(1L).size(), "no duplicate row"));
+                () -> assertEquals(1, experienceService.listByTrip(1L, 2L).size(), "no duplicate row"));
     }
 
     @Test
@@ -75,9 +75,9 @@ class ExperienceServiceTest {
     @Test
     void in_filters_out_matchingExperiences() {
         // When
-        List<ExperienceResponse> zhuhai = experienceService.listAll("440400", Set.of());
-        List<ExperienceResponse> all = experienceService.listAll(null, Set.of());
-        List<ExperienceResponse> tagged = experienceService.listAll(null, Set.of("露营"));
+        List<ExperienceResponse> zhuhai = experienceService.listAll("440400", Set.of(), 2L);
+        List<ExperienceResponse> all = experienceService.listAll(null, Set.of(), 2L);
+        List<ExperienceResponse> tagged = experienceService.listAll(null, Set.of("露营"), 2L);
 
         // Then
         assertAll(
@@ -94,7 +94,7 @@ class ExperienceServiceTest {
                 "第二次走这条线，碎石段还是最累，但营地星空依旧值得。", "tiring", "鞋要抓地，水在山下买齐。"));
 
         // Then
-        List<ExperienceResponse> all = experienceService.listAll(null, Set.of());
+        List<ExperienceResponse> all = experienceService.listAll(null, Set.of(), 2L);
         assertAll(
                 () -> assertEquals(2, all.size(), "two experiences"),
                 () -> assertEquals(2L, all.get(0).trip().id(), "recently updated first"));

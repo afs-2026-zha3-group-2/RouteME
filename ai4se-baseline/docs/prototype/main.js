@@ -541,6 +541,11 @@
       }
 
       /* --- 发现与筛选 --- */
+      case 'toggle-like': {
+        if (!S.state.currentUserId) { toast('先选择身份再点赞', 'warn'); return; }
+        if (S.toggleLike(trigger.getAttribute('data-experience'))) render();
+        return;
+      }
       case 'set-tab': App.filters.tab = trigger.getAttribute('data-tab'); render(); return;
       case 'toggle-tag': {
         var tag = trigger.getAttribute('data-tag');

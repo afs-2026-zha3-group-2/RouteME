@@ -32,6 +32,7 @@ import { aiMessages } from '../ai/aiMessages';
 import { centsToYuan, sumBudgetCents } from '../ai/budgetMath';
 import { tripMessages } from '../i18n/tripMessages';
 import { intensityLabel } from '../experiences/experienceForm';
+import { ExperienceLikeButton } from '../experiences/ExperienceLikeButton';
 import { ShareIcon } from '../experiences/shareIcons';
 import { meetingAreaText, meetingTimeText } from '../chat/chatMeeting';
 import { AmapTripMap } from '../map/amap/AmapTripMap';
@@ -110,6 +111,13 @@ export function TripDetailPage({ currentUser, tripId }: Props) {
   >(null);
   const [reportOpen, setReportOpen] = useState(false);
   const [experiences, setExperiences] = useState<Experience[] | null>(null);
+
+  const updateExperience = (next: Experience) => {
+    setExperiences((previous) =>
+      previous === null ? previous : previous.map((item) => (item.id === next.id ? next : item)),
+    );
+  };
+
   const [meetingOpen, setMeetingOpen] = useState(false);
   const [meetingForm, setMeetingForm] = useState<MeetingFormValues>(emptyMeetingForm());
   const [meetingErrors, setMeetingErrors] = useState<MeetingFieldErrors>({});
@@ -682,6 +690,13 @@ export function TripDetailPage({ currentUser, tripId }: Props) {
                         </Image.PreviewGroup>
                       </div>
                     )}
+                    <div className="exp-item-foot">
+                      <ExperienceLikeButton
+                        experience={experience}
+                        currentUserId={currentUser.id}
+                        onChange={updateExperience}
+                      />
+                    </div>
                   </li>
                 ))}
               </ul>

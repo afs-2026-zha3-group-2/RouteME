@@ -69,3 +69,12 @@ P4 提交 `2e552fc` 后 `git pull --no-rebase --autostash --no-edit origin main`
 - **合并期修复（main 既有客观缺陷，门禁阻断）：** ① openapi `loadAdminReportDetail` responses 重复映射键（main 自身即损坏，git 证据）修复为 AdminReportDetail 200 形状；② 6 处 admin schema `allOf:[$ref]+nullable` 无 type（redocly error，main 副本复现证实）补 `type: object` 保留 null 语义；③ 后端 verify 首跑失败为 shell 残留 SPRING_DATASOURCE_URL 覆盖 H2（环境非代码），清空后重跑绿。
 - **重验：** 后端 **464/464** EXIT=0；前端 **394/394** + build 绿；E2E 全量 **150：119/31**（**ai-planner 12/12** + **admin 5/5**；31 红 = map9+trips8 refine-trip-map 偏差 + auth7+profile2+credit1 main UI refresh/admin 既有 E2E 债务（git 证据 spec 字节相同而 main 删 DOM）+ profiles4 债务 1 污染，隔离 fresh DB **8/8** 证实）；门禁 openspec strict **valid** + redocly **0 error / 21 warnings**。
 - **验收口径达成，G2 结论维持 Pass with documented debts**（原签署不变，见 g2-decision.md Addendum 2）。提交：9 冲突 + V24 + openapi 修复 + 三报告 addendum staged → `git commit --no-edit` → push 前再 pull → push。
+
+## 8. 第三波合并 addendum（merge 提交 49b4436 后 push 前再 pull）
+
+第二波 merge 提交 `49b4436` 后 push 前再 pull，main 又推进到 `3db5b14`（add-experience-like-credit REQ-023：体验点赞 + 阶梯信用），仅 openapi.yaml Error 枚举 1 冲突，其余 auto-merge；沿用 standing ruling。明细见 verify report §10。
+
+- **版本再演进：** Error 枚举 union（EXPERIENCE_NOT_FOUND + AI 三码）；契约 **0.19.0**（OpenApiTest 3 处断言同步，13 门禁方法完整）；迁移 `V24__ai_itineraries` → **`V25__ai_itineraries`**（main V24 likes 占用，fresh DB Flyway V1–V25 验证）；ai-planner.spec 合并零改动。
+- **合并期修复：** target/classes 残留旧 V24 迁移产物致「more than one migration with version 24」，清陈旧产物后重跑绿（构建卫生）；真实天气 502 为 firewall 拦截窗口（G2 观察项，产品失败即终止不伪造）。
+- **重验：** 后端 **495/495** EXIT=0；前端 **401/401**（52 files）+ build 绿；E2E 全量 **154：123/31**（**ai-planner 12/12** + **experience-likes 3/3** + admin 5/5 + credit 9/9；31 红 = map9+trips9 refine-trip-map 偏差 + auth7+profile2 main UI refresh 债务 + profiles4 污染，隔离 fresh DB **8/8** 证实）；门禁 openspec strict **valid** + redocly **0 error / 21 warnings**。
+- **验收口径达成，G2 结论维持 Pass with documented debts**（原签署不变，见 g2-decision.md Addendum 3）。提交：openapi + OpenApiTest + V25 + 三报告 addendum staged → `git commit --no-edit` → push 前再 pull → push。

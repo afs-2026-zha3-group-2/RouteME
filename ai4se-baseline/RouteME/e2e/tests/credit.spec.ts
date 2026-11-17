@@ -78,7 +78,7 @@ test('does not expose credit details, admin surfaces or credits outside the list
   await expect(page.getByText('管理后台')).toHaveCount(0);
 
   const adminResponse = await page.request.get(`${API}/admin/users`);
-  expect(adminResponse.status()).toBe(404);
+  expect([401, 403]).toContain(adminResponse.status());
 
   await page.goto('/#/mine');
   await expect(page.locator('.profile-credit')).toHaveCount(0);
@@ -116,4 +116,47 @@ test('shows the applicant credit on the applications page', async ({ page }) => 
   await loginAs(page, 1);
   await page.goto(`/#/trips/${trip.id}/applications`);
   await expect(page.locator('.profile-credit').first()).toHaveText('信用分：80 / 100 · 信用良好');
+});
+
+test('awards credit for experience likes without exposing any history', async ({ page }) => {
+  const author = await registerViaApi(page);
+  const trip = await createTripViaApi(page, author.userId, `信用获赞行程 ${Date.now()}`);
+  const completed = await page.request.post(`${API}/trips/${trip.id}/complete`, {
+    headers: { 'X-User-Id': String(author.userId) },
+  });
+  expect(completed.ok()).toBeTruthy();
+
+  const shared = await page.request.post(`${API}/trips/${trip.id}/experiences`, {
+    headers: { 'X-User-Id': String(author.userId), 'Content-Type': 'application/json' },
+    data: {
+      content: `获赞信用验证：路线平缓，日落机位要早到。${Date.now()}`,
+      intensity: 'relaxed',
+      advice: '带一瓶水就够。',
+    },
+  });
+  expect(shared.ok()).toBeTruthy();
+  const experience = (await shared.json()) as { id: number };
+
+  for (let index = 0; index < 5; index += 1) {
+    const liker = await registerViaApi(page);
+    const liked = await page.request.post(`${API}/experiences/${experience.id}/likes`, {
+      headers: { 'X-User-Id': String(liker.userId) },
+    });
+    expect(liked.status()).toBe(201);
+  }
+
+  const profile = await page.request.get(`${API}/users/${author.userId}/profile`, {
+    headers: { 'X-User-Id': String(author.userId) },
+  });
+  expect(profile.ok()).toBeTruthy();
+  const body = (await profile.json()) as { credit_score: number; credit_level: string };
+  expect(body.credit_score).toBe(81);
+  expect(body.credit_level).toBe('good');
+
+  await useAccount(page, author);
+  await page.goto(`/#/users/${author.userId}`);
+  await expect(page.locator('.profile-credit')).toHaveText('信用分：81 / 100 · 信用良好');
+  await expect(page.getByText(/信用明细|加分记录|扣分记录|信用历史/)).toHaveCount(0);
+  await expect(page.getByRole('button', { name: /查看明细|查看历史/ })).toHaveCount(0);
+  await expect(page.getByText('管理后台')).toHaveCount(0);
 });

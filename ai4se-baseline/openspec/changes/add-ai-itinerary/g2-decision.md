@@ -60,3 +60,13 @@ P4 提交 `2e552fc` 后 pull 触发与 main（`0979e916`，0.16.0）28 文件冲
 - **重验证据：** 后端 **464/464** EXIT=0（首跑失败为 shell 残留 SPRING_DATASOURCE_URL 覆盖 H2，环境非代码，清空后绿）；前端 **394/394** + build 绿；E2E 全量 **150：119/31**，**ai-planner 12/12** + **admin 5/5**；profiles 隔离 fresh DB **8/8** 证污染；openspec strict **valid**。
 - **债务更新：** 偏差债务更新为「map 9 + trips 8 = 17 例 refine-trip-map」；新增「main UI refresh / admin console 既有 E2E 偏差 10 例（auth 7 + profile 2 + credit 1，git 证据：spec HEAD==main 字节相同而 main 删 `.id-switch-label`/`.mine-profile-card` DOM、admin 面 404→401；E2E 不在 CI，main 自身即红）」；债务 1/2 延续。31 红均非本 change 回归。
 - **G2 结论维持 Pass with documented debts**（原签署不变；不替代 G3，不执行 P5/不归档）。下一步：`git commit --no-edit`（第二波 merge）→ push 前再 pull 核对 → push。
+
+## Addendum 3：第三波合并（merge 提交 49b4436 后 push 前再 pull，2026-11-17 19:xx）
+
+第二波 merge 提交 `49b4436` 后 push 前再 pull，main 推进到 `3db5b14`（add-experience-like-credit REQ-023），仅 openapi Error 枚举 1 冲突沿用 standing ruling 解决。本 addendum 不改动上方原 G2 签署与 Addendum 1/2。明细见 verify report §10 / p4-verify §8。
+
+- **契约再演进：** main like-credit 也占 0.18.0 → 合并后 **0.19.0**（Error 枚举 union EXPERIENCE_NOT_FOUND + AI 三码；OpenApiTest 13 门禁方法完整、3 处版本断言同步）；迁移 `V24__ai_itineraries` → **`V25__ai_itineraries`**（main V24 likes 占用，fresh DB Flyway V1–V25 验证）；ai-planner.spec 合并零改动。技术边界不变。
+- **合并期修复：** target/classes 残留旧 V24 迁移产物致 Flyway 版本重复，清陈旧产物后重跑绿（构建卫生非代码缺陷）。
+- **重验证据：** 后端 **495/495** EXIT=0；前端 **401/401**（52 files）+ build 绿；E2E 全量 **154：123/31**，**ai-planner 12/12** + **experience-likes 3/3** + admin 5/5 + credit 9/9；profiles 隔离 fresh DB **8/8** 证污染；openspec strict **valid** + redocly **0 error / 21 warnings**。真实天气 502 为 firewall 拦截窗口（观察项延续，产品失败即终止不伪造）。
+- **债务更新：** 偏差债务更新为「map 9 + trips 9 = 18 例 refine-trip-map」（trips:476 单集合点用例第二波切点即存在，pickPlace 级联同类偏差）；main E2E 债务由 10 例降为 9 例（credit 1 红被 main like-credit 提交修复，余 auth 7 + profile 2）；债务 1/2 延续。31 红均非本 change 回归。
+- **G2 结论维持 Pass with documented debts**（原签署不变；不替代 G3，不执行 P5/不归档）。下一步：`git commit --no-edit`（第三波 merge）→ push 前再 pull 核对 → push。

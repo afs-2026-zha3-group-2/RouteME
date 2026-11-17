@@ -33,9 +33,10 @@ public interface ExperienceService extends IService<TripExperienceEntity> {
      *
      * @param destinationCode 目的地 6 位代码精确匹配，可为 null
      * @param tags            兴趣标签，命中任一即保留，可为空集
+     * @param viewerId        视角用户 id，用于 {@code is_liked}，可为 null
      * @return 按最近保存时间倒序的体验
      */
-    List<ExperienceResponse> listAll(String destinationCode, Set<String> tags);
+    List<ExperienceResponse> listAll(String destinationCode, Set<String> tags, Long viewerId);
 
     /**
      * 分页浏览体验：过滤、排序与分页都在数据库完成。
@@ -45,21 +46,24 @@ public interface ExperienceService extends IService<TripExperienceEntity> {
      * @param dateTo          出发不晚于，可为 null
      * @param tags            兴趣标签，可为空集
      * @param param           页码与每页条数（已校验）
+     * @param viewerId        视角用户 id，用于 {@code is_liked}，可为 null
      * @return 当前页体验与筛选后的命中总数
      */
     PageResult<ExperienceResponse> listPage(
-            String destinationCode, LocalDate dateFrom, LocalDate dateTo, Set<String> tags, PageParam param);
+            String destinationCode, LocalDate dateFrom, LocalDate dateTo, Set<String> tags, PageParam param,
+            Long viewerId);
 
     /**
      * 某条行程下的全部体验。
      *
      * @param tripId 行程 id，必须存在
+     * @param viewerId 视角用户 id，用于 {@code is_liked}，可为 null
      * @return 按首次发布时间升序的体验
      */
-    List<ExperienceResponse> listByTrip(long tripId);
+    List<ExperienceResponse> listByTrip(long tripId, Long viewerId);
 
     /**
-     * 我写过的体验。
+     * 我写过的体验；视角固定为作者本人，自己的体验恒为未赞。
      *
      * @param authorId 作者 id
      * @return 按最近保存时间倒序的体验
