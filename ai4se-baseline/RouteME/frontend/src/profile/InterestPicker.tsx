@@ -50,7 +50,7 @@ export function InterestPicker({ value, onChange, error, disabled = false }: Pro
   const addCustom = () => {
     const tag = draft.trim();
     if (tag === '') {
-      setDraftError(tripMessages.profileErrorInterests);
+      setDraftError(tripMessages.profileInterestEmpty);
       return;
     }
     if (value.includes(tag) || customTags.includes(tag)) {
@@ -69,6 +69,9 @@ export function InterestPicker({ value, onChange, error, disabled = false }: Pro
   };
 
   const options = [...PRESET_INTERESTS.map((option) => option.value), ...customTags];
+
+  /** 自定义输入的错误优先；否则显示表单级校验错误，保证只有一条提示。 */
+  const message = draftError ?? error;
 
   return (
     <div className={error === undefined ? 'profile-field wide' : 'profile-field wide invalid'}>
@@ -137,14 +140,9 @@ export function InterestPicker({ value, onChange, error, disabled = false }: Pro
       <Typography.Text type="secondary" className="auth-hint">
         {tripMessages.profileInterestHint}
       </Typography.Text>
-      {draftError !== null && (
+      {message !== undefined && (
         <Typography.Text type="danger" role="alert">
-          {draftError}
-        </Typography.Text>
-      )}
-      {error !== undefined && (
-        <Typography.Text type="danger" role="alert">
-          {error}
+          {message}
         </Typography.Text>
       )}
     </div>

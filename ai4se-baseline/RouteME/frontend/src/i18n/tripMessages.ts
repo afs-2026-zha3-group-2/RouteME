@@ -358,6 +358,7 @@ export const tripMessages = {
   profileBioHint: '选填 · 500 字以内',
   profileInterestHint: '点按卡片选择 3–5 个；也可以添加自己的兴趣（每个不超过 12 字）。',
   profileInterestPlaceholder: '自定义标签，例如：温泉',
+  profileInterestEmpty: '请输入一个兴趣标签',
   profileInterestAdd: '添加',
   profileInterestFull: '已选满 5 个',
   profileSave: '保存资料',
