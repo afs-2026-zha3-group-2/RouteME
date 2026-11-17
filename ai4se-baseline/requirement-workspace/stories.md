@@ -310,7 +310,7 @@
 
 | Story | Requirement scenarios | Change spec | Story file |
 |---|---|---|---|
-| S22 | REQ-022 §4 S22-1 ~ S22-16 | `openspec/changes/add-trip-weather/specs/trip-weather/spec.md`（ADDED：6 Requirement / 18 Scenario） | 无独立故事文件：以 proposal + Delta 承接（与 REQ-012 / REQ-014 / REQ-019 同口径） |
+| S22 | REQ-022 §4 S22-1 ~ S22-16 | `openspec/changes/add-trip-weather/specs/trip-weather/spec.md`（ADDED：6 Requirement / 28 Scenario） | 无独立故事文件：以 proposal + Delta 承接（与 REQ-012 / REQ-014 / REQ-019 同口径） |
 
 ## Notes（REQ-022）
 

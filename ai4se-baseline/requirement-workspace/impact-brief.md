@@ -1379,7 +1379,7 @@ REQ-010：聊天页按原型重构、聊天准入与退出语义调整、集合�
 
 | 层 | 变更 |
 |---|---|
-| 能力 | 新增 `trip-weather`（6 Requirement / 18 Scenario） |
+| 能力 | 新增 `trip-weather`（6 Requirement / 28 Scenario） |
 | 后端 | `GET /api/weather/forecast`（Open-Meteo 代理）+ 坐标解析缓存 + 提醒纯函数 + 上游错误归一 |
 | 前端 | 共享 `WeatherCard`（五态）+ 发布页侧栏 + 详情页信息区 |
 | 契约 | 0.16.0：新增天气路径与 3 个 schema |

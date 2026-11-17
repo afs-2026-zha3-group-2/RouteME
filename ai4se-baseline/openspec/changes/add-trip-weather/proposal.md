@@ -19,7 +19,7 @@
 
 ## What Changes
 
-- **`trip-weather`（ADDED，6 Requirement / 18 Scenario）：**
+- **`trip-weather`（ADDED，6 Requirement / 28 Scenario）：**
   1. 按目的地与日期获取真实天气（Open-Meteo 归一：天气状态、最高 / 最低温、降雨概率、降水量、风速、UV 可用时）。
   2. 目的地坐标解析与复用（优先请求携带的高德选点坐标；否则按区划码解析城市中心坐标并缓存；不要求用户输入城市）。
   3. 基于真实天气的出行提醒（降雨→雨具 / 户外提示；高温与 UV→防晒补水；低温与温差→外套；强风→防风安全；全部未命中→平稳提示）。
@@ -78,7 +78,7 @@
 
 | 位置 | 改动 |
 |---|---|
-| `openspec/specs/trip-weather/spec.md` | 归档时新增该能力（6 Requirement / 18 Scenario） |
+| `openspec/specs/trip-weather/spec.md` | 归档时新增该能力（6 Requirement / 28 Scenario） |
 | `openspec/specs/trip-plans/spec.md` | 不改写；发布与详情既有行为不变，只增天气区块 |
 | `RouteME/backend/.../config/WeatherProperties.java`、`WeatherConfig.java` | Open-Meteo 基础地址与带超时的 `RestClient` |
 | `RouteME/backend/.../controller/WeatherController.java` | `GET /api/weather/forecast` |

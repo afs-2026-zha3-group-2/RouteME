@@ -14,7 +14,7 @@
 |----------|-----------|--------|----------|
 | P1-1 | yes | Pass | 意图 / Ready 需求 / 故事 / deep-dive / 影响面齐备：`requirement-workspace/intents/REQ-022-trip-weather.md`、`requirements/REQ-022-trip-weather.md`（16 场景，OQ 0，DoR BLOCKER 0）、`stories.md` REQ-022 段、`deep-dive.md`「REQ-022 增补」、`impact-brief.md` §22 |
 | P1-2 | yes | Pass | `proposal.md` 写清 Why / What Changes / 问题 G-01~G-08 / In-Out scope / D1–D7 / 影响面 / 残余风险；14 条用户 AC 全部在 In scope 内 |
-| P1-3 | yes | Pass | Delta 草稿 `openspec/changes/add-trip-weather/specs/trip-weather/spec.md`（ADDED 6 Requirement / 18 Scenario）；`openspec validate add-trip-weather --strict` → valid；`deltaCount: 6` |
+| P1-3 | yes | Pass | Delta 草稿 `openspec/changes/add-trip-weather/specs/trip-weather/spec.md`（ADDED 6 Requirement / 28 Scenario）；`openspec validate add-trip-weather --strict` → valid；`deltaCount: 6` |
 | P1-4 | yes | Pass | 工件评审 `docs/reviews/20261117-add-trip-weather-proposal-review.md`：Pass，0 BLOCKER / 1 WARNING / 3 SUGGESTION；S-01~S-03 已当场收口 |
 | P1-5 | no | Pass | 提案与 REQ-022 的 14 条 AC 一一映射（评审 §4 映射表），无悬空验收 |
 | P1-6 | no | Skipped | 本 change 不涉及 agent / eval 资产，不适用 |

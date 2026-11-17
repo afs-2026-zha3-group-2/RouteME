@@ -18,7 +18,7 @@
 | Deep-dive | [`deep-dive.md`「REQ-022 增补」](../../../requirement-workspace/deep-dive.md) | ① 数据契约 / ② 边界归属 / ③ 跨 REQ 一致 / ④ 展示契约 + 探针 |
 | 影响面 | [`impact-brief.md` §22](../../../requirement-workspace/impact-brief.md) | as-is → delta、blast radius、风险、拆分边界 |
 | 提案 | [`proposal.md`](../../../openspec/changes/add-trip-weather/proposal.md) | Why / What Changes / 问题 / 范围 / 决策 / 影响面 / 风险 |
-| Delta 草稿 | [`specs/trip-weather/spec.md`](../../../openspec/changes/add-trip-weather/specs/trip-weather/spec.md) | ADDED 6 Requirement / 18 Scenario |
+| Delta 草稿 | [`specs/trip-weather/spec.md`](../../../openspec/changes/add-trip-weather/specs/trip-weather/spec.md) | ADDED 6 Requirement / 28 Scenario |
 | 提案评审 | [`20261117-add-trip-weather-proposal-review.md`](../../reviews/20261117-add-trip-weather-proposal-review.md) | Pass；0 BLOCKER / 1 WARNING / 3 SUGGESTION（S-01~S-03 当场收口） |
 | 质量报告 | [`20261117-201500-quality-checklist-report.md`](../../ai4se-plugins/20261117-201500-quality-checklist-report.md) | P1-1 ~ P1-4 Pass；P1-5 Pass；P1-6 Skipped；Overall Pass |
 
