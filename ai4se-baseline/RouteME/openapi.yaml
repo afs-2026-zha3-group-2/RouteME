@@ -1,7 +1,7 @@
 openapi: 3.0.3
 info:
   title: RouteME API
-  version: 0.17.0
+  version: 0.18.0
   description: |
     RouteME 后端对外契约。本文件是前后端唯一事实源，字段名、类型、状态码与错误码只在这里定稿。
         当前包含：脚手架问候语、演示账户与账号认证（注册/登录/会话/退出）、旅行计划（浏览/筛选/发布/详情/结束），同行匹配、申请、退出、聊天、我的旅行与举报，游后体验分享与参考发布所需数据，以及管理后台（用户管理 / 举报处置 / 人工客服）与用户侧帮助入口。
@@ -2190,6 +2190,126 @@ paths:
                 upstream:
                   value:
                     code: WEATHER_UPSTREAM_ERROR
+  /notifications:
+    get:
+      operationId: listNotifications
+      summary: 最新通知与未读计数
+      description: |
+        返回当前用户最新 50 条通知与三项未读计数（total / application / message）。
+        未读定义为 `read_at` 为空；列表按创建时间倒序。REST 列表不含消息正文。
+      parameters:
+        - $ref: '#/components/parameters/DemoUserId'
+      responses:
+        '200':
+          description: 最新通知与计数
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotificationList'
+        '401':
+          $ref: '#/components/responses/DemoUserRequired'
+        '500':
+          $ref: '#/components/responses/Unexpected'
+  /notifications/stream:
+    get:
+      operationId: streamNotifications
+      summary: 通知推送通道（SSE）
+      description: |
+        该用户的服务器推送通道，事件名固定 `notification`，`data` 为单行 `NotificationEvent` JSON。
+        连接期间约每 20 秒发送一次 `: ping` 心跳；不发送 `id:` 字段，重连正确性由客户端 REST 对账保证。
+      parameters:
+        - name: user_id
+          in: query
+          required: true
+          description: 接收推送的演示用户 id（app_users.id）；缺省或用户不存在返回 401
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: SSE 事件流
+          headers:
+            Cache-Control:
+              description: 固定 `no-cache`
+              schema:
+                type: string
+            X-Accel-Buffering:
+              description: 固定 `no`，禁止代理缓冲
+              schema:
+                type: string
+          content:
+            text/event-stream:
+              schema:
+                type: string
+              examples:
+                notification:
+                  value: |
+                    event: notification
+                    data: {"notification":{"id":7},"message":null}
+        '401':
+          $ref: '#/components/responses/DemoUserRequired'
+  /notifications/{notificationId}/read:
+    post:
+      operationId: readNotification
+      summary: 单条通知标读
+      description: 只把本人且未读的该条记录标记为已读；重复标读计数不变。返回最新三项计数。
+      parameters:
+        - $ref: '#/components/parameters/DemoUserId'
+        - name: notificationId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: 最新未读计数
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotificationCounts'
+        '401':
+          $ref: '#/components/responses/DemoUserRequired'
+        '404':
+          description: 通知不存在或不属于当前用户（不暴露他人通知存在性）
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                notFound:
+                  value:
+                    code: NOTIFICATION_NOT_FOUND
+        '500':
+          $ref: '#/components/responses/Unexpected'
+  /notifications/read:
+    post:
+      operationId: readNotifications
+      summary: 全部或单会话标读
+      description: |
+        `scope=all` 把本人全部未读标读并忽略定位字段；`scope=conversation` 需同时提供
+        `trip_id` 与 `other_user_id`，只清该会话的通知，缺一返回 400。返回最新三项计数。
+      parameters:
+        - $ref: '#/components/parameters/DemoUserId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NotificationReadRequest'
+      responses:
+        '200':
+          description: 最新未读计数
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotificationCounts'
+        '400':
+          $ref: '#/components/responses/InvalidInput'
+        '401':
+          $ref: '#/components/responses/DemoUserRequired'
+        '500':
+          $ref: '#/components/responses/Unexpected'
 components:
   parameters:
     DemoUserId:
@@ -3996,7 +4116,7 @@ components:
              EXPERIENCE_NOT_ALLOWED, USERNAME_TAKEN, INVALID_CREDENTIALS, SESSION_INVALID, WEATHER_UPSTREAM_ERROR,
              INTERNAL_ERROR, ADMIN_REQUIRED, ACCOUNT_SUSPENDED, ACCOUNT_BANNED, INVALID_STATUS_TRANSITION,
              CANNOT_TARGET_SELF, REPORT_NOT_FOUND, REPORT_NOT_PENDING, REPORT_NOT_PROCESSING, EMAIL_TAKEN,
-             SESSION_ALREADY_HANDLING, SESSION_NOT_HANDLING, SESSION_CLOSED]
+             SESSION_ALREADY_HANDLING, SESSION_NOT_HANDLING, SESSION_CLOSED, NOTIFICATION_NOT_FOUND]
         fields:
           type: object
           description: |
@@ -4006,3 +4126,102 @@ components:
             type: string
             enum:
               [REQUIRED, TOO_LONG, INVALID_DATE, OUT_OF_RANGE, TOO_FEW, TOO_MANY, DUPLICATE, INVALID_OPTION]
+    NotificationType:
+      type: string
+      description: 通知事件类型；wire 值固定，前端按原值分支
+      enum: [application_received, application_accepted, application_rejected, message]
+    Notification:
+      type: object
+      required: [id, type, actor, trip_id, trip_title, text, created_at, read]
+      properties:
+        id:
+          type: integer
+          format: int64
+          readOnly: true
+        type:
+          $ref: '#/components/schemas/NotificationType'
+        actor:
+          $ref: '#/components/schemas/DemoUser'
+        trip_id:
+          type: integer
+          format: int64
+          readOnly: true
+        trip_title:
+          type: string
+          readOnly: true
+        application_id:
+          type: integer
+          format: int64
+          nullable: true
+          readOnly: true
+        message_id:
+          type: integer
+          format: int64
+          nullable: true
+          readOnly: true
+        text:
+          type: string
+          readOnly: true
+          description: 后端生成的展示文案，唯一来源是后端通知文案函数
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        read:
+          type: boolean
+          readOnly: true
+    NotificationCounts:
+      type: object
+      required: [total, application, message]
+      properties:
+        total:
+          type: integer
+          minimum: 0
+          readOnly: true
+        application:
+          type: integer
+          minimum: 0
+          readOnly: true
+        message:
+          type: integer
+          minimum: 0
+          readOnly: true
+    NotificationList:
+      type: object
+      required: [items, counts]
+      properties:
+        items:
+          type: array
+          maxItems: 50
+          items:
+            $ref: '#/components/schemas/Notification'
+        counts:
+          $ref: '#/components/schemas/NotificationCounts'
+    NotificationReadRequest:
+      type: object
+      required: [scope]
+      properties:
+        scope:
+          type: string
+          enum: [all, conversation]
+        trip_id:
+          type: integer
+          format: int64
+          nullable: true
+          description: 仅 `scope=conversation` 使用；与 `other_user_id` 同时必填
+        other_user_id:
+          type: integer
+          format: int64
+          nullable: true
+          description: 仅 `scope=conversation` 使用；与 `trip_id` 同时必填
+    NotificationEvent:
+      type: object
+      required: [notification]
+      properties:
+        notification:
+          $ref: '#/components/schemas/Notification'
+        message:
+          allOf:
+            - $ref: '#/components/schemas/ChatMessage'
+          nullable: true
+          description: 仅 `type=message` 的推送出现，内容为刚保存的消息

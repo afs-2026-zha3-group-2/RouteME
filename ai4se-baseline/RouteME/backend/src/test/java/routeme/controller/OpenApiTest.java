@@ -111,7 +111,7 @@ class OpenApiTest {
 
         // Then
         assertAll(
-                () -> assertEquals("0.17.0", info.get("version"), "info.version"),
+                () -> assertEquals("0.18.0", info.get("version"), "info.version"),
                 () -> assertTrue(paths(document).containsKey("/users"), "/users declared"),
                 () -> assertTrue(paths(document).containsKey("/trips/{tripId}"), "detail path declared"),
                 () -> assertTrue(
@@ -566,7 +566,7 @@ class OpenApiTest {
 
         // Then
         assertAll(
-                () -> assertEquals("0.17.0", info.get("version"), "info.version"),
+                () -> assertEquals("0.18.0", info.get("version"), "info.version"),
                 () -> assertTrue(paths(document).keySet().containsAll(ADMIN_CONSOLE_PATHS), "admin console paths"),
                 () -> assertEquals(16L, adminOperations, "admin console operations"),
                 () -> assertTrue(
@@ -650,6 +650,79 @@ class OpenApiTest {
                                 "EMAIL_TAKEN", "SESSION_ALREADY_HANDLING", "SESSION_NOT_HANDLING",
                                 "SESSION_CLOSED")),
                         "admin console error codes")
+        );
+    }
+
+    @Test
+    void in_openApiFile_out_notificationContractDeclared() throws IOException {
+        // Given
+        Map<String, Object> document = loadYaml(SPEC_PATH);
+        Map<String, Object> info = asMap(document.get("info"));
+        Map<String, Object> notification = schema(document, "Notification");
+        Map<String, Object> counts = schema(document, "NotificationCounts");
+        Map<String, Object> list = schema(document, "NotificationList");
+        Map<String, Object> readRequest = schema(document, "NotificationReadRequest");
+        Map<String, Object> event = schema(document, "NotificationEvent");
+
+        // When
+        Map<String, Object> collection = operation(document, "/notifications", "get");
+        Map<String, Object> stream = operation(document, "/notifications/stream", "get");
+        Map<String, Object> readOne = operation(document, "/notifications/{notificationId}/read", "post");
+        Map<String, Object> readScoped = operation(document, "/notifications/read", "post");
+        Map<String, Object> items = asMap(properties(list).get("items"));
+
+        // Then
+        assertAll(
+                () -> assertEquals("0.18.0", info.get("version"), "info.version"),
+                () -> assertTrue(
+                        paths(document).containsKey("/notifications")
+                                && paths(document).containsKey("/notifications/stream")
+                                && paths(document).containsKey("/notifications/{notificationId}/read")
+                                && paths(document).containsKey("/notifications/read"),
+                        "notification paths declared"),
+                () -> assertEquals(
+                        List.of("application_received", "application_accepted",
+                                "application_rejected", "message"),
+                        enums(schema(document, "NotificationType")),
+                        "notification types"),
+                () -> assertTrue(
+                        required(notification).containsAll(List.of(
+                                "id", "type", "actor", "trip_id", "trip_title", "text", "created_at", "read")),
+                        "notification required fields"),
+                () -> assertTrue(
+                        required(counts).containsAll(List.of("total", "application", "message")),
+                        "notification counts required fields"),
+                () -> assertAll(
+                        () -> assertEquals(0, properties(counts).get("total").get("minimum"), "total minimum"),
+                        () -> assertEquals(0, properties(counts).get("application").get("minimum"), "application minimum"),
+                        () -> assertEquals(0, properties(counts).get("message").get("minimum"), "message minimum")),
+                () -> assertTrue(
+                        required(list).containsAll(List.of("items", "counts")),
+                        "notification list required fields"),
+                () -> assertEquals(50, items.get("maxItems"), "notification list maxItems"),
+                () -> assertEquals(
+                        List.of("all", "conversation"),
+                        enums(properties(readRequest).get("scope")),
+                        "read scopes"),
+                () -> assertTrue(required(event).contains("notification"), "notification event payload"),
+                () -> assertTrue(responses(collection).containsKey("200"), "collection returns 200"),
+                () -> assertTrue(responses(collection).containsKey("401"), "collection returns 401"),
+                () -> assertTrue(responses(stream).containsKey("200"), "stream returns 200"),
+                () -> assertTrue(responses(readOne).containsKey("404"), "single read returns 404"),
+                () -> assertTrue(responses(readScoped).containsKey("400"), "scoped read returns 400"),
+                () -> assertTrue(
+                        parameterNames(document, stream).contains("user_id"),
+                        "stream takes user_id"),
+                () -> assertTrue(
+                        parameterNames(document, collection).contains("X-User-Id"),
+                        "collection takes X-User-Id"),
+                () -> assertTrue(
+                        enums(properties(schema(document, "Error")).get("code"))
+                                .contains("NOTIFICATION_NOT_FOUND"),
+                        "notification error code"),
+                () -> assertEquals(
+                        Boolean.TRUE, properties(notification).get("read").get("readOnly"),
+                        "read is readOnly")
         );
     }
 

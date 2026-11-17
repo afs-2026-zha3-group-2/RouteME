@@ -32,6 +32,7 @@ import routeme.response.TripApplicationResponse;
 import routeme.service.ApplicationService;
 import routeme.service.AccountStatusService;
 import routeme.service.DemoUserService;
+import routeme.service.NotificationService;
 import routeme.service.TripCompletedEvent;
 import routeme.service.TripCancelledEvent;
 import routeme.service.TripPlanService;
@@ -51,16 +52,19 @@ public class ApplicationServiceImpl
     private final DemoUserService demoUserService;
     private final Clock clock;
     private final AccountStatusService accountStatusService;
+    private final NotificationService notificationService;
 
     public ApplicationServiceImpl(
             TripPlanService tripPlanService,
             DemoUserService demoUserService,
             Clock clock,
-            AccountStatusService accountStatusService) {
+            AccountStatusService accountStatusService,
+            NotificationService notificationService) {
         this.tripPlanService = tripPlanService;
         this.demoUserService = demoUserService;
         this.clock = clock;
         this.accountStatusService = accountStatusService;
+        this.notificationService = notificationService;
     }
 
     @Override
@@ -89,6 +93,8 @@ public class ApplicationServiceImpl
                 now,
                 null);
         save(TripApplicationEntity.from(created));
+        notificationService.notifyApplicationReceived(
+                trip.publisherId(), applicantId, trip.id(), created.id());
         return created;
     }
 
@@ -232,6 +238,13 @@ public class ApplicationServiceImpl
             tripPlanService.addCompanion(trip.id());
         }
         updateStatus(applicationId, next, now);
+        if (next == ApplicationStatusEnum.ACCEPTED) {
+            notificationService.notifyApplicationAccepted(
+                    application.applicantId(), publisherId, trip.id(), application.id());
+        } else {
+            notificationService.notifyApplicationRejected(
+                    application.applicantId(), publisherId, trip.id(), application.id());
+        }
         return application.withStatus(next, now);
     }
 

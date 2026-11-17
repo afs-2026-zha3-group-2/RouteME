@@ -30,6 +30,7 @@ import routeme.service.ApplicationService;
 import routeme.service.AccountStatusService;
 import routeme.service.ChatService;
 import routeme.service.DemoUserService;
+import routeme.service.NotificationService;
 import routeme.service.TripPlanService;
 
 /**
@@ -60,18 +61,21 @@ public class ChatServiceImpl extends AbstractServiceImpl<ChatMessageMapper, Chat
     private final DemoUserService demoUserService;
     private final Clock clock;
     private final AccountStatusService accountStatusService;
+    private final NotificationService notificationService;
 
     public ChatServiceImpl(
             TripPlanService tripPlanService,
             ApplicationService applicationService,
             DemoUserService demoUserService,
             Clock clock,
-            AccountStatusService accountStatusService) {
+            AccountStatusService accountStatusService,
+            NotificationService notificationService) {
         this.tripPlanService = tripPlanService;
         this.applicationService = applicationService;
         this.demoUserService = demoUserService;
         this.clock = clock;
         this.accountStatusService = accountStatusService;
+        this.notificationService = notificationService;
     }
 
     @Override
@@ -134,6 +138,7 @@ public class ChatServiceImpl extends AbstractServiceImpl<ChatMessageMapper, Chat
                 normalizeContent(request == null ? null : request.content()),
                 clock.instant());
         save(ChatMessageEntity.from(message));
+        notificationService.notifyMessage(receiverId, senderId, message);
         return message;
     }
 
