@@ -822,3 +822,65 @@ MVP 无推送；以下为参考发布路径的 UI 展示面契约。
 - `applications` 页面已存在且带接受 / 拒绝，提醒与行内入口直接跳该路由，无需新页面。
 - `Leave` / `cancel` / `complete` 接口均返回可判定结果（成功 / 409 / 404），页内动作后 `reload()` 即可同步。
 - `{TBD}`：无。非阻塞项（轮询间隔、编辑 / 删除入口、参考发布）已在 REQ-015 §5 / §3 标注。
+
+## REQ-019 增补 — 取消行程（issue #28）
+
+### ① 数据契约（Data contract）
+
+- **状态：** `TripStatus` 新增 `cancelled`（「已取消」），终态；判定优先级：`cancelledAt` 非空 → CANCELLED > `completedAt` 非空 / 到达结束时刻 → COMPLETED > 到达开始日期 → ONGOING > 人数满 → FULL > RECRUITING。
+- **取消字段（三列，均允许为空）：** 取消时间 `cancelled_at`、原因码 `cancel_reason`、说明 `cancel_note`。旧行程三列为空，读取与状态推导不受影响。
+- **原因码 8 值（wire）：** `personal` / `schedule` / `plan` / `companions` / `weather` / `illness` / `safety` / `other`；仅 `other` 时 `cancel_note` 必填 1–100 字，其余原因不写说明。
+- **取消端点：** `POST /api/trips/{tripId}/cancel`，请求体 `{ reason, note? }`，响应为取消后的行程详情；错误码：非发布者 403 `FORBIDDEN`；状态不可取消 409 `TRIP_NOT_OPEN`；原因非法 / 说明缺失或超长 400 `INVALID_INPUT`。
+- **响应字段：** 行程摘要与详情 `status` 可为 `cancelled`；详情新增 `cancelled_at` / `cancel_reason` / `cancel_note`，其中后两者仅对发布者与 ACCEPTED 同行者返回，其他请求人返回空。
+- **列表口径：** 灵感首页与匹配列表（`selectOpenPage` / `selectOpenList`）新增「`cancelled_at` 为空」条件；分页 `total` 同步排除取消行程。
+- **申请口径：** 取消事务内把该行程 PENDING 申请置为 CANCELLED；ACCEPTED 不变；新申请按 `TRIP_NOT_OPEN` 拒绝。
+- **聊天口径：** 取消后发送消息返回既有 `CHAT_READ_ONLY`；历史消息读取不变。
+- **统计口径：** 公开资料「发布行程」= 本人发布且未取消；「已完成」口径不变。
+- **版本：** 契约次版本递增（暂定 0.13.0）；迁移暂定 V19，按在途 `add-ai-itinerary`（V18 / 0.12.0）与并行 `add-experience-photos` 的落地顺序串行。
+
+### ② 边界归属（Boundary attribution）
+
+| 关注点 | 归属 | 说明 |
+|---|---|---|
+| 取消权限、可取消状态、原因字典、二次确认、终态 | `trip-cancellation`（ADDED） | 本需求新增；实现可落在 `TripPlanService`，规格归属新能力 |
+| 行程状态推导与列表查询 | `trip-plans` | 只增加「取消优先」与排除条件，不改既有 Requirement 块 |
+| 申请自动取消与新申请拒绝 | `trip-companions` | 复用申请状态机与 `TRIP_NOT_OPEN`，取消侧约束写在 `trip-cancellation` |
+| 聊天只读 | `trip-companions` | 复用 `CHAT_READ_ONLY`，新增「已取消」提示 |
+| 体验资格 | `trip-experiences` | 不改规则；取消天然不满足 `COMPLETED` |
+| 发布行程统计 | `user-profiles` | 只改聚合口径，不改接口形状 |
+| 我的旅行分组 | `trip-companions` | 四组不变，只补「已取消」文案与入口资格 |
+
+### ③ 跨 REQ 一致性（Cross-REQ consistency）
+
+- **与 REQ-002（浏览）：** `trip-plans` Living Spec 已要求「已结束与已取消行程 MUST NOT 出现在默认列表」；本需求让取消态可观测，不新增平行口径。
+- **与 REQ-003（申请/聊天）：** 取消触发的 PENDING 自动取消与聊天只读复用既有状态机与错误码，不新增申请状态。
+- **与 REQ-011（结束）：** 已结束与已取消互斥且均为终态；取消仅允许在招募中/已满员，结束仅允许在旅行中，不存在同一时刻两种操作都可用。
+- **与 REQ-015（我的旅行）：** 四组与待处理计数不变；取消行程留在「我发布的」/「已匹配同行」，不进入「已完成」。
+- **与 REQ-016（集合信息）：** 取消后不可编辑集合信息，复用 `TRIP_NOT_OPEN` 拒绝。
+- **与 REQ-009（公开资料统计）：** 「发布行程」排除取消，与 TODO.md:124 口径一致。
+- **与 REQ-004（体验）：** 取消不开放体验入口，后端按 `EXPERIENCE_NOT_ALLOWED` 拒绝。
+
+### ④ 通知 / 展示契约（Notification / display contract）
+
+| surface | recipient | content + display fields | channel | cardinality |
+|---|---|---|---|---|
+| 详情页状态徽标 | 所有可见者 | 「已取消」文字，不以颜色作为唯一表达 | 应用内文本 | 每页 1 处 |
+| 详情页取消原因 | 发布者 + ACCEPTED 同行者 | 原因标签；`other` 时追加说明 | 应用内文本 | 每页最多 1 处 |
+| 取消流程 | 发布者 | 8 项原因单选；选 `other` 时显示说明框（1–100 字） | 应用内表单 | 每次 1 处 |
+| 二次确认 | 发布者 | 「取消后不可恢复」+ 首页下架 / 申请关闭 / 同行者可见 | 应用内弹窗 | 每次 1 处 |
+| 我的旅行行 | 发布者 / ACCEPTED 同行者 | 「已取消」徽标；发布者行内保留「取消行程」仅在可取消时 | 应用内文本 / 按钮 | 每行最多 1 处 |
+| 聊天页 | 发布者 + ACCEPTED 同行者 | 「该行程已取消」；输入区只读 | 应用内提示 | 每会话 1 处 |
+
+无展示面缺 display-fields；A0 门 ⑪ 通过。
+
+### 探针记录（REQ-019 取消行程）
+
+- `TripPlan.status(now)` 当前只读 `completedAt` / 日期 / 人数；取消必须新增独立标记，否则无法与「旅行中」区分。
+- `TripPlanMapper.xml` 的开放列表与到期物化查询都只认 `completed_at`；取消行程若不排除，会同时出现在首页与「到期物化」扫描中。
+- `TripCompletedEvent` 监听器已能把 PENDING 申请批量置 CANCELLED；取消若复用同一事件，语义会误标为「已结束」，P3 需决定新增事件还是拆分原因。
+- `ChatServiceImpl` 只对 `COMPLETED` 抛 `CHAT_READ_ONLY`；取消需新增分支，但不能改变既有「该行程已结束」文案。
+- `MyTripsServiceImpl` 的 `published` 是「全部本人行程」、`matched` 是「非 COMPLETED 的 ACCEPTED」；取消行程会自然落入两组，前端只需按 `status` 显示「已取消」，无需改分组。
+- `UserProfileStatsServiceImpl` 的「发布行程」当前为 `publishedTrips.size()`；排除取消只改一行过滤，不改接口形状。
+- `ExperienceServiceImpl` 仅允许 `COMPLETED`；取消行程无需改资格规则，补回归断言防止未来放宽。
+- 原型 `store.js:240-248` 已定义「取消行程只取消 PENDING、ACCEPTED 保留」；与 REQ-019 的 D3 / D5 一致。
+- `{TBD}`：无。非阻塞项（原因码 wire 命名、事件复用、列类型）在 REQ-019 §8 OQ-10 / OQ-11 记为 Dev 后续。

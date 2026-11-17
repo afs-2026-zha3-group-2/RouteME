@@ -23,6 +23,35 @@
 
 ---
 
+# Story list — REQ-019（issue #28 取消行程）
+
+- **来源：** issue #28 `[P0] 取消行程`（迭代 2 / P0 / 3 点 / 落点页面：我的旅行 / 行程详情页）；原型 `docs/prototype/ui.js:410`、`main.js:646`、`store.js:240-248`
+- **Change：** `add-trip-cancel`（`trip-cancellation` ADDED）
+- **口径：** 一条故事 = 两个页面入口 + 一份取消契约 + 一次状态迁移（招募中/已满员 → 已取消）
+- **范围：** 只含取消行程主目标；#28 中的信用分、信用记录、免扣分申请与管理员审核属其他 story（用户裁决 D1），不在本表。
+- **更新时间：** 2026-11-17
+
+| Story | Title | 角色 | Priority | Iteration | Points | Page | Parent REQ | Change | Status |
+|---|---|---|---|---|---|---|---|---|---|
+| S19 | 取消行程（招募中/已满员 → 已取消） | 行程发布者 | P0 | 2 | 3 | 行程详情 / 我的旅行 | REQ-019 | `add-trip-cancel` | P1 drafted（2026-11-17） |
+
+## Traceability（REQ-019）
+
+| Story | Requirement scenarios | Change spec | Story file |
+|---|---|---|---|
+| S19 | REQ-019 §4 S19-1 ~ S19-20 | `openspec/changes/add-trip-cancel/specs/trip-cancellation/spec.md`（ADDED，5 条需求 / 20 场景） | `requirement-workspace/stories/add-trip-cancel.story.md` |
+
+## Notes（REQ-019）
+
+- 本故事只覆盖取消状态机与取消后的产品闭环；信用分、信用记录、扣分、免扣分申请与管理员审核不在本故事内（D1）。
+- 新能力 `trip-cancellation` 单 capability；不改写 `trip-plans` / `trip-companions` 既有 Requirement 块，避免与未归档的 `add-trip-completion` / `refine-trip-application` / `refine-trip-chat` 三方同时改同一块。
+- 用户裁决 D2–D5：入口在详情页 + 我的旅行；原因仅发布者与 ACCEPTED 同行者可见；「其他原因」说明必填 ≤100 字；我的旅行沿用四组并显示「已取消」。
+- 原型当前只有详情页入口；我的旅行入口与取消态样式需按 `prototype-ui-alignment` 先改原型再改实现。
+- 契约 `status` 新增 `cancelled`；迁移与契约版本与在途 `add-ai-itinerary`（V18 / 0.12.0）及并行 `add-experience-photos` 串行，暂定 V19 / 0.13.0。
+- 未接入外部 ALM；ALM Sync 状态记为 Pending。
+
+---
+
 # Story list — REQ-008（S18 完善个人资料并生成个人主页）
 
 - **来源：** 用户提供的故事与 16 条验收标准（2026-11-16）；扩展原型 S02「查看他人的昵称、简介与旅行兴趣」

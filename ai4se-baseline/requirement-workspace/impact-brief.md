@@ -1060,3 +1060,108 @@ REQ-010：聊天页按原型重构、聊天准入与退出语义调整、集合�
 - **不并入 `add-trip-experiences`：** 该 change 已归档；追加归档包会打乱历史边界。
 - **后续候选（均需另开需求）：** 独立体验详情页；集合区域改为发布必填；参考发布的来源统计。
 - **质量自检（split-heuristics）：** 子目标一句话可说明 ✓；端到端可观察（已结束行程 / 体验卡 → 发布页 → 预填 → 提交独立计划）✓；可独立运行 ✓；capability 名真实 ✓；无依赖环 ✓。
+
+## 19. REQ-019 变更影响 — 取消行程（issue #28）
+
+- **日期：** 2026-11-17 ｜ **触发：** `/sdd:p1`（issue #28；用户裁决 D1：信用分不在本 change）
+- **粒度：** 应用架构（状态 / 入口 / 契约 / 联动消费点），非代码设计
+- **基线：** `origin/main@c1c238a`（worktree `feature/add-trip-cancel`）
+
+### 19.1 Requirement set
+
+- `requirement-workspace/requirements/REQ-019-trip-cancel.md`（六字段 + 20 场景 + OQ + DoR）
+- `requirement-workspace/intents/REQ-019-trip-cancel.md`
+- `requirement-workspace/stories/add-trip-cancel.story.md`（S19）
+- 能力：`trip-cancellation`（ADDED）；`trip-plans` / `trip-companions` / `trip-experiences` / `user-profiles` 只读消费。
+- **Delta：** `openspec/changes/add-trip-cancel/specs/trip-cancellation/spec.md`（ADDED，5 Requirement / 20 Scenario）。
+
+### 19.2 As-is asset inventory（evidence paths）
+
+| 资产 | 路径 | 现状 |
+|---|---|---|
+| 状态枚举 | `RouteME/backend/src/main/java/routeme/enums/TripStatusEnum.java` | 四态，无 CANCELLED |
+| 状态推导 | `RouteME/backend/src/main/java/routeme/pojo/TripPlan.java:59-70` | 由 `completedAt` / 日期 / 人数推导 |
+| 行程实体 | `RouteME/backend/src/main/java/routeme/entity/TripPlanEntity.java` | 无取消字段 |
+| 开放列表 SQL | `RouteME/backend/src/main/resources/mapper/TripPlanMapper.xml:13-14` | 只排 `completed_at` |
+| 结束逻辑 | `RouteME/backend/src/main/java/routeme/service/impl/TripPlanServiceImpl.java:194-213` | 仅发布者 + 仅 ONGOING |
+| 申请联动 | `RouteME/backend/src/main/java/routeme/service/impl/ApplicationServiceImpl.java:235` | 结束事件批量取消 PENDING |
+| 聊天只读 | `RouteME/backend/src/main/java/routeme/service/impl/ChatServiceImpl.java:114` | 仅 COMPLETED |
+| 我的旅行 | `RouteME/backend/src/main/java/routeme/service/impl/MyTripsServiceImpl.java:50-61` | 四组，无取消文案 |
+| 统计 | `RouteME/backend/src/main/java/routeme/service/impl/UserProfileStatsServiceImpl.java:42-52` | 发布行程 = 全部 |
+| 体验资格 | `RouteME/backend/src/main/java/routeme/service/impl/ExperienceServiceImpl.java:149` | 仅 COMPLETED |
+| 契约 | `RouteME/openapi.yaml` v0.11.0 | 四态枚举；无取消端点 |
+| 前端类型 | `RouteME/frontend/src/types.ts` | `TripStatus` 四态 |
+| 详情页 | `RouteME/frontend/src/trips/TripDetailPage.tsx` | 无取消入口 |
+| 我的旅行页 | `RouteME/frontend/src/mine/MyTripsPage.tsx` | 无取消入口与取消态 |
+| 聊天页 | `RouteME/frontend/src/chat/ChatPage.tsx` | 仅「已结束」只读提示 |
+| 原型 | `docs/prototype/ui.js:410`、`main.js:646`、`store.js:240-248` | 详情页入口 + 确认文案 + 取消 PENDING |
+| 现有 E2E | `RouteME/e2e/tests/trips.spec.ts:351` | 非本人无取消按钮 |
+| 阶段记录 | `docs/sdd/README.md` | 已新增 `add-trip-cancel` 行 |
+
+### 19.3 As-is → proposed delta（逐资产）
+
+| 资产 | As-is | Proposed delta |
+|---|---|---|
+| 行程状态 | 四态推导 | 新增 `cancelled`，取消标记优先于日期与人数 |
+| 行程表 | 无取消列 | 新增取消时间 / 原因 / 说明三列（可空） |
+| 开放列表 | 只排已结束 | 同时排已取消；分页 total 同步 |
+| 取消操作 | 无 | 新增 `POST /api/trips/{id}/cancel` 与权限/状态/原因校验 |
+| 详情页 | 无取消入口 | 发布者 + 招募中/已满员时显示「取消行程」 |
+| 我的旅行 | 无取消入口 / 无取消态 | 我发布的行动态显示取消；两组行显示「已取消」 |
+| 申请 | 取消不影响 | PENDING 自动取消；新申请 `TRIP_NOT_OPEN`；处理关闭 |
+| 聊天 | 只对已结束只读 | 取消后同样只读，并提示「该行程已取消」 |
+| 体验 | 只认已结束 | 不改规则；补取消回归断言 |
+| 统计 | 发布行程 = 全部 | 排除已取消 |
+| 契约 | 0.11.0 四态 | 次版本递增；枚举 + 取消端点 + 取消字段（按人裁剪） |
+| 迁移 | head V17 | 新增 V19（V18 由在途 `add-ai-itinerary` 占用） |
+| 原型 | 详情页入口 | 新增我的旅行入口、原因选择、取消态样式（原型先行） |
+| 信用分 | 无 | **无**（D1，不在本 change） |
+
+### 19.4 Blast radius（应用架构）
+
+- **页面（3）：** 行程详情、我的旅行、聊天页（只读提示）。
+- **能力（1 新增 + 5 消费）：** `trip-cancellation`（ADDED）；`trip-plans`（状态与列表）、`trip-companions`（申请/聊天/我的旅行）、`trip-experiences`（资格只读）、`user-profiles`（统计）、`design-system`（样式令牌）。
+- **接口契约（1 端点 + 1 枚举 + 3 字段 + 1 次版本）：** `status` 增加 `cancelled`；`POST /api/trips/{id}/cancel`；详情新增取消三字段（后两者按请求人裁剪）。
+- **数据 / 迁移（1）：** `trip_plans` 新增三列；无新表；无索引强需求。
+- **测试触点（多层）：** 后端（状态推导、取消权限、申请自动取消、聊天只读、统计、迁移）、前端（入口资格、原因校验、取消态徽标、原因可见性、聊天提示）、E2E（详情与我的旅行两条取消主路径）。
+- **知识库：** P4 后回写行程生命周期 / 申请 / 聊天的取消语义。
+- **风险面：** 取消态与「旅行中」的优先级、可见性裁剪、迁移/契约号段冲突。
+
+### 19.5 Artifact impact（specs / tests / docs）
+
+| 类型 | 影响 |
+|---|---|
+| Spec（Delta） | `trip-cancellation` ADDED（5 Requirement / 20 Scenario）；不改 `trip-plans` / `trip-companions` 既有块 |
+| Proposal | `openspec/changes/add-trip-cancel/proposal.md`（D1–D6 + 影响面 + 残余风险） |
+| Story | `stories.md` 新增 REQ-019 / S19 段与追溯；新增 `stories/add-trip-cancel.story.md` |
+| Registry / handoff | 新增 REQ-019 行与 change 映射；记录编号顺延原因 |
+| Tests / 代码 | P4 实现：迁移 + 端点 + 状态推导 + 列表/申请/聊天/统计联动；前端入口与展示；E2E 新增取消主路径 |
+| Living Spec | 归档时新能力并入 `openspec/specs/trip-cancellation/`；既有 Living Spec 不改写 |
+| 阶段记录 | `docs/sdd/add-trip-cancel/p0-baseline.md`、`p1-intent.md`；`docs/sdd/README.md` 索引 |
+| 质量报告 | `docs/ai4se-plugins/<ts>-quality-checklist-report.md`（P1 DoV） |
+
+### 19.6 Dual-track notes（OpenSpec vs agile）
+
+- **OpenSpec 轨：** 新能力 `trip-cancellation` 单 capability，归档不替换任何既有 Requirement 块；不与未归档的 `add-trip-completion` / `refine-trip-application` / `refine-trip-chat` 争同一块。
+- **Agile 轨：** S19（迭代 2 / P0 / 3 点）；#28 的信用分相关 AC 拆到后续 story，不在本故事验收。
+- **契约 / 迁移串行：** 本 change 暂定 0.13.0 + V19；若 `add-ai-itinerary` 或 `add-experience-photos` 先落地，版本号顺延，不改验收语义。
+
+### 19.7 Risks & blockers
+
+| 级别 | 项 | 说明 / 缓解 |
+|---|---|---|
+| Risk | 取消原因按请求人裁剪 | 详情接口需读取请求人身份；缓存与摘要复用时要避免泄漏；P3 设计明确字段裁剪边界 |
+| Risk | 取消态与在途状态变更叠加 | `add-trip-completion` 未归档；新能力不改写其 Requirement 块，但代码需在同一状态推导中组合；P4 回归覆盖四态 + 取消 |
+| Risk | 契约 / 迁移编号冲突 | 0.12.0 + V18 由 `add-ai-itinerary` 计划占用；本 change 暂定 0.13.0 + V19，P3 前复核并串行 |
+| Risk | 我的旅行入口超出原型 | 按 `prototype-ui-alignment` 先改原型，再改实现；原型变更纳入 P3 / P4 证据 |
+| Risk | #28 信用分 AC 未交付被误判为漏做 | 在 proposal / registry / stories 中显式记录 D1（属其他 story），本 change 不主张相关 AC |
+| Risk | 取消行程仍出现在「到期物化」扫描 | 取消优先于日期推导；列表与物化查询都需排除取消，P4 用回归固定 |
+| Blocker | 无 | blocking OQ=0、DoR BLOCKER=0、A0 ⑨–⑫ 全过；无外部依赖 |
+
+### 19.8 Suggested split boundaries（供 proposal-split / story-split）
+
+- **不拆 change：** 取消状态机与取消善后必须同批交付，否则验收无法闭环。
+- **不拆故事：** S19 一条故事覆盖两个入口与一次状态迁移；拆开会造成同一状态被两条故事重复验收。
+- **后续候选（均需另开需求）：** 信用分与信用记录、免扣分申请与管理员审核、删除行程、恢复/重新开启、取消原因申诉。
+- **质量自检（split-heuristics）：** 子目标一句话可说明 ✓；端到端可观察（发布者取消 → 首页下架 / 申请关闭 / 聊天只读 / 我的旅行保留）✓；可独立运行 ✓；capability 名真实 ✓；无依赖环 ✓。
+
