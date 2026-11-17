@@ -1060,3 +1060,89 @@ REQ-010：聊天页按原型重构、聊天准入与退出语义调整、集合�
 - **不并入 `add-trip-experiences`：** 该 change 已归档；追加归档包会打乱历史边界。
 - **后续候选（均需另开需求）：** 独立体验详情页；集合区域改为发布必填；参考发布的来源统计。
 - **质量自检（split-heuristics）：** 子目标一句话可说明 ✓；端到端可观察（已结束行程 / 体验卡 → 发布页 → 预填 → 提交独立计划）✓；可独立运行 ✓；capability 名真实 ✓；无依赖环 ✓。
+
+## 18. REQ-018（S16 增强项）变更影响 — 游后体验图片上传
+
+### 18.1 Requirement set
+
+- REQ-018 游后体验图片上传（Ready：`requirements/REQ-018-experience-photos.md`；意图：`intents/REQ-018-experience-photos.md`）。
+- 裁决 D1–D4（2026-11-17）：两步上传 + 本地磁盘；≤6 张 / ≤5MB / 三种格式；首页卡片不变；仅体验、作者可管理。
+- 裁决 D5–D8（2026-11-17）：不生成服务端缩略图（原图 + `loading="lazy"`）；上传时全部剥离 EXIF；>24 小时未绑定图片懒清理；不做自动审核（沿用举报入口）。
+
+### 18.2 As-is asset inventory（evidence paths）
+
+| 层 | 资产 | 现状 | 证据 |
+|---|---|---|---|
+| 数据库 | `trip_experiences` | 三字段，无图片 | `V8__create_trip_experiences.sql:1-13` |
+| 契约 | `ExperienceWriteRequest` / `Experience` | 三字段，无图片 | `openapi.yaml:2180-2200` |
+| 后端 | `ExperienceController` / `ExperienceServiceImpl.upsert` | JSON upsert，无上传端点 | `ExperienceController.java:73-77`、`ExperienceServiceImpl.java:59-63` |
+| 前端 | `ShareExperiencePage` | 三面板，无上传位 | `ShareExperiencePage.tsx:178-234` |
+| 前端 | `ExperienceCard` | 内置封面 | `ExperienceCard.tsx:24-29` |
+| 详情 | `TripDetailPage` 体验列表 | 文字 + 作者 + 强度 | `TripDetailPage.tsx:524-535` |
+| 测试 | `experiences.spec.ts` | 9 例，含「无上传入口」反向断言 | `experiences.spec.ts:238` |
+| 原型 | 分享页 / 体验卡 | 无上传位，内置封面 | `ui.js:805-840`、`styles.css:942-950` |
+| 先例 | 头像上传 | multipart / 魔数 / ≤2MB / 本地落盘 / 公开读取 | `openapi.yaml:215-257`、`application.yaml:24-27`、`.gitignore:45-46` |
+| Living Spec | `trip-experiences` | 「纯文字 + 内置封面」展示口径 | `openspec/specs/trip-experiences/spec.md:45,59-63` |
+| 未归档 change | `refine-experience-share` | 同改 `trip-experiences`，图片上传在 Out of scope | `openspec/changes/refine-experience-share/proposal.md:45,131` |
+
+### 18.3 As-is → proposed delta（逐资产）
+
+| 资产 | As-is | Proposed delta | 风险 / 备注 |
+|---|---|---|---|
+| `trip_experiences` | 三字段 | 不改表；新增 `trip_experience_photos` 子表 | 迁移号与 `add-ai-itinerary`（计划 V18）串行 |
+| `openapi.yaml` | 0.11.0，体验三字段 | 新增 multipart 上传端点、图片读取端点、体验图片字段；版本在 P3 定 | 与在途 change 的 0.12.0 冲突需排号 |
+| 后端 | 无上传 / 存储 | 新增上传（魔数 + EXIF 剥离）、读取、归属校验、绑定与懒清理；`ExperienceServiceImpl.upsert` 扩展 | 复用头像模式；注意事务与文件清理顺序 |
+| 分享页 | 三面板 | 新增图片上传位（预览 / 删除 / 排序 / 失败重试） | 与 R2 双栏布局兼容；≤900px 单列 |
+| 详情页 | 文字列表 | 新增首图缩略图 + 查看全部 | 不改行程信息与申请入口 |
+| 首页卡片 | 内置封面 | **不变** | 反向验证：E2E 封面断言保持 |
+| 图片查看层 | 无 | 新增浮层（上一张 / 下一张 / 关闭） | 键盘与读屏语义 |
+| 原型 | 无上传位 | 先改 `prototype.html` / `ui.js` / `styles.css` | 规则要求原型先行 |
+| 测试 | 反向断言无上传 | 改正向；新增上传 / 编辑 / 展示 / 权限 / 兼容用例 | E2E 依赖真实文件与隔离目录 |
+| Living Spec | 纯文字 + 内置封面 | MODIFIED「游后体验的内容口径与纯文字降级」的展示口径（图片为可选增强） | 归档时与 `refine-experience-share` 串行 |
+
+### 18.4 Blast radius（应用架构）
+
+- 应用层：前端（分享页、详情页、图片查看层）+ 后端（体验 controller/service、文件存储、静态读取）+ 契约 + 数据库。
+- 不变：`trip-plans` 行程模型与发布校验、`trip-companions` 申请 / 聊天、`user-profile` 头像端点、首页体验卡。
+- 运行期：本地磁盘目录新增 `SqlLite/uploads/experience-photos/`；`uploads/` 已 gitignore，不需要新部署组件。
+- 跨边界：图片读取为公开只读端点，与头像读取同模式；上传需会话。
+
+### 18.5 Artifact impact（specs / tests / docs）
+
+| Artifact | Impact |
+|---|---|
+| Living Spec | `openspec/specs/trip-experiences/spec.md` MODIFIED（展示口径 + 图片字段 / 端点） |
+| Delta Spec | 新建 `openspec/changes/add-experience-photos/specs/trip-experiences/spec.md` |
+| 原型 | `docs/prototype/prototype.html` / `ui.js` / `styles.css` |
+| 契约 | `RouteME/openapi.yaml`（版本在 P3 定） |
+| 迁移 | `V18__...` 或顺延（P3 定） |
+| 前端 | `ShareExperiencePage`、`TripDetailPage`、`ExperienceCard`（不变）、`tripMessages`、`styles.css`、`types.ts`、`api.ts` |
+| 后端 | 上传 / 读取 controller、service、存储组件、`ExperienceWriteRequest` / `ExperienceResponse` |
+| 测试 | 后端上传校验与归属用例；前端表单 / 预览用例；E2E 上传、编辑、展示、权限、历史兼容 |
+| 文档 | registry / handoff / stories / deep-dive / impact brief / SDD P1–P4 记录 |
+
+### 18.6 Dual-track notes（OpenSpec vs agile）
+
+- OpenSpec：新 change `add-experience-photos`（`trip-experiences` MODIFIED）。
+- Agile：S16 增强项，不新开故事；原 S16 3 点不含图片，点数由 SM 在排期时确认。
+
+### 18.7 Risks & blockers
+
+| 级别 | 项 | 说明 / 缓解 |
+|---|---|---|
+| Blocker | 无 | blocking OQ=0、DoR BLOCKER=0、A0 ⑨–⑫ 全过 |
+| Risk | 契约 / 迁移号撞车 | `add-ai-itinerary` 计划 0.12.0 + V18；P3 统一排号 |
+| Risk | 与 `refine-experience-share` 同改 `trip-experiences` | 本 change 归档必须排在其后或与其串行 |
+| Risk | 本地磁盘容量与孤儿文件 | 上限 + 清理策略；E2E 用隔离目录 |
+| Risk | 图片 EXIF 含精确位置 | D6 已定上传时全部剥离；P4 用带 GPS 样本验证 |
+| Risk | 孤儿文件累积 | D7 懒清理 >24h 未绑定；E2E 用隔离目录 |
+| Risk | 无自动审核 | D8 不做；依赖现有举报入口与人工处理，记为残余风险 |
+| Risk | 首页信息密度 | D3 明确首页卡片不变，E2E 反向验证 |
+| Risk | E2E 与共享 `test-results/` | 沿用现有隔离产物目录策略 |
+
+### 18.8 Suggested split boundaries（供 proposal-split / story-split）
+
+- **单 change：** `add-experience-photos`（`trip-experiences` MODIFIED），不拆多个 capability。
+- **单故事：** S16 增强项；不新开故事，避免与原型故事列表双维护。
+- **切片建议（P3 任务顺序）：** 契约 + 迁移 → 后端上传（魔数 / EXIF）/ 读取 / 归属 / 懒清理 → 分享页上传与编辑 → 详情页展示 → 历史兼容与 E2E 回归 → 原型与文档。
+- **质量自检（split-heuristics）：** 子目标一句话可说清 ✓；端到端可观察（上传 → 保存 → 详情可见 → 编辑排序）✓；可独立运行 ✓；capability 名真实 ✓；无依赖环 ✓（仅依赖已完成的上传先例）。
