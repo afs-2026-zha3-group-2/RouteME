@@ -5898,14 +5898,37 @@ svg {
   bottom: 52px;
   z-index: 40;
   display: flex;
-  gap: 10px;
-  align-items: center;
-  max-width: min(360px, calc(100% - 24px));
+  flex-direction: column;
+  gap: 8px;
+  max-width: min(380px, calc(100% - 24px));
   padding: 10px 12px;
   border: 1px solid var(--line);
   border-radius: 12px;
   background: color-mix(in srgb, var(--surface) 96%, transparent);
   box-shadow: var(--sh-2);
+}
+
+/* 两行候选（精确点 / 最近景点）：左侧文本 + 右侧按钮。 */
+.amap-candidate-row {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.amap-candidate-row .ant-btn {
+  flex: none;
+}
+
+.amap-candidate-close {
+  position: absolute;
+  top: 2px;
+  right: 4px;
+  border: 0;
+  background: transparent;
+  color: var(--ink-3);
+  font-size: 14px;
+  line-height: 1;
+  cursor: pointer;
 }
 
 .amap-candidate.is-loading {
