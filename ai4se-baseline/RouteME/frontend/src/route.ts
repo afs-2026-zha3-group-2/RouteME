@@ -8,6 +8,7 @@ export type Route =
   | { name: 'share'; tripId: number }
   | { name: 'profileSetup' }
   | { name: 'userProfile'; userId: number }
+  | { name: 'map'; provinceCode?: string; cityCode?: string }
   | { name: 'notFound' };
 
 export function parseRoute(hash: string): Route {
@@ -26,6 +27,11 @@ export function parseRoute(hash: string): Route {
   }
   if (path === '/mine') {
     return { name: 'mine' };
+  }
+  // 三级旅行地图：#/map（中国）→ #/map/{省码} → #/map/{省码}/{市码}。
+  const map = /^\/map(?:\/(\d{6}))?(?:\/(\d{6}))?$/.exec(path);
+  if (map) {
+    return { name: 'map', provinceCode: map[1], cityCode: map[2] };
   }
   if (path === '/profile/setup') {
     return { name: 'profileSetup' };
@@ -82,6 +88,14 @@ export function routeToHash(route: Route): string {
   }
   if (route.name === 'userProfile') {
     return `#/users/${route.userId}`;
+  }
+  if (route.name === 'map') {
+    if (route.provinceCode === undefined) {
+      return '#/map';
+    }
+    return route.cityCode === undefined
+      ? `#/map/${route.provinceCode}`
+      : `#/map/${route.provinceCode}/${route.cityCode}`;
   }
   return '#/';
 }

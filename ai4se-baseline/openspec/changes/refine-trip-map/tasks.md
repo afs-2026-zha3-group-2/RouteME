@@ -50,18 +50,18 @@
 | T23 | e2e | map.spec E11–E18＋trips.spec 更新 | `e2e/tests/*` | `npx playwright test` |
 | T24 | verify | 全量验证＋走查＋报告＋G2-r2＋知识库/索引 | docs | 全链路 |
 
-- [ ] 13. T13 数据 types/china/index
-- [ ] 14. T14 registry＋城市模块
-- [ ] 15. T15 layers/hook/controls/breadcrumbs
-- [ ] 16. T16 ChinaMap/ProvinceMap
-- [ ] 17. T17 CityTravelMap/路线/stats/行程
-- [ ] 18. T18 匹配纯函数/面板/气泡/邀请
-- [ ] 19. T19 探索页/路由/导航
-- [ ] 20. T20 发布/详情/facade 接线
-- [ ] 21. T21 令牌/样式/退役
-- [ ] 22. T22 单测
-- [ ] 23. T23 e2e
-- [ ] 24. T24 验证收口（不归档）
+- [x] 13. T13 数据 types/china/index
+- [x] 14. T14 registry＋城市模块
+- [x] 15. T15 layers/hook/controls/breadcrumbs
+- [x] 16. T16 ChinaMap/ProvinceMap
+- [x] 17. T17 CityTravelMap/路线/stats/行程
+- [x] 18. T18 匹配纯函数/面板/气泡/邀请
+- [x] 19. T19 探索页/路由/导航
+- [x] 20. T20 发布/详情/facade 接线
+- [x] 21. T21 令牌/样式/退役
+- [x] 22. T22 单测
+- [x] 23. T23 e2e
+- [x] 24. T24 验证收口（不归档）
 
 ## 对齐自检
 

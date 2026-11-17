@@ -4738,3 +4738,592 @@ svg {
     min-width: 112px;
   }
 }
+
+/* ---------- refine-trip-map R2：三级旅行地图（参考图指定令牌 D19） ---------- */
+:root {
+  --map-bg: #f7f2e8;
+  --map-surface: #f8f6f0;
+  --map-road: #d8d2c5;
+  --map-road-casing: #c9c2b2;
+  --map-water: #bfe5f2;
+  --map-water-inner: #a5d8ec;
+  --map-park: #cfe5d2;
+  --map-park-tree: #8fc79a;
+  --map-poi: #f26b5e;
+  --map-route-from: #3b82f6;
+  --map-route-to: #7c5ce7;
+  --map-ink: #173f46;
+  /* 旧选择器兼容映射（route-strip / 详情按钮等仍引用）。 */
+  --map-pin: #f26b5e;
+  --map-pin-city: #3b82f6;
+  --map-route: #3b82f6;
+  --map-land-from: #f8f6f0;
+  --map-land-to: #f7f2e8;
+  --map-water-from: #bfe5f2;
+  --map-water-to: #a5d8ec;
+}
+
+[data-theme="dark"] {
+  --map-bg: #101d22;
+  --map-surface: #16262c;
+  --map-road: #2c444c;
+  --map-road-casing: #0d1a20;
+  --map-water: #12384a;
+  --map-water-inner: #1d4d63;
+  --map-park: #28513c;
+  --map-park-tree: #3f7a58;
+  --map-poi: #ff7a52;
+  --map-route-from: #6ea8ff;
+  --map-route-to: #a18bff;
+  --map-ink: #dcebee;
+  --map-pin: #ff7a52;
+  --map-pin-city: #6ea8ff;
+  --map-route: #6ea8ff;
+  --map-land-from: #16262c;
+  --map-land-to: #101d22;
+  --map-water-from: #12384a;
+  --map-water-to: #1d4d63;
+}
+
+.map-explorer-page .map-shell {
+  background: var(--map-bg);
+}
+
+.map-ground {
+  fill: var(--map-surface);
+}
+
+.map-breadcrumbs {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 2px;
+  padding: 10px 12px 4px;
+  font-size: 12.5px;
+  color: var(--ink-3);
+}
+
+.map-breadcrumb-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.map-breadcrumb-sep {
+  margin: 0 4px;
+  opacity: 0.6;
+}
+
+.map-breadcrumb-link {
+  border: 0;
+  background: transparent;
+  padding: 2px 4px;
+  border-radius: 6px;
+  color: var(--map-route-from);
+  font: inherit;
+  cursor: pointer;
+}
+
+.map-breadcrumb-link:hover {
+  background: color-mix(in srgb, var(--map-route-from) 12%, transparent);
+}
+
+.map-breadcrumb-current {
+  padding: 2px 4px;
+  font-weight: 750;
+  color: var(--map-ink);
+}
+
+[data-theme="dark"] .map-breadcrumb-current {
+  color: var(--ink);
+}
+
+.map-search {
+  position: relative;
+  padding: 6px 12px 8px;
+}
+
+.map-search .place-suggest {
+  position: absolute;
+  z-index: 8;
+  left: 12px;
+  right: 12px;
+  top: calc(100% - 4px);
+}
+
+.map-search-empty {
+  display: block;
+  padding: 4px 2px 0;
+  font-size: 11.5px;
+}
+
+.map-province-shape {
+  fill: color-mix(in srgb, var(--map-park) 26%, var(--map-surface));
+  stroke: color-mix(in srgb, var(--map-ink) 26%, transparent);
+  stroke-width: 0.4;
+  transition: fill 0.14s var(--ease);
+}
+
+.map-province {
+  cursor: pointer;
+  outline: none;
+}
+
+.map-province.hovered .map-province-shape,
+.map-province:focus-visible .map-province-shape {
+  fill: color-mix(in srgb, var(--map-route-from) 26%, var(--map-surface));
+  stroke: var(--map-route-from);
+}
+
+.map-province-label {
+  fill: var(--map-ink);
+  font-weight: 700;
+  pointer-events: none;
+  paint-order: stroke;
+  stroke: var(--map-surface);
+  stroke-width: 0.5;
+  stroke-linejoin: round;
+}
+
+[data-theme="dark"] .map-province-label {
+  fill: var(--ink);
+}
+
+.map-province-outline {
+  fill: color-mix(in srgb, var(--map-park) 20%, var(--map-surface));
+  stroke: color-mix(in srgb, var(--map-ink) 30%, transparent);
+  stroke-width: 0.5;
+}
+
+.map-city-node {
+  cursor: pointer;
+  outline: none;
+}
+
+.map-city-hit {
+  fill: transparent;
+}
+
+.map-city-dot {
+  fill: var(--map-pin-city);
+  stroke: var(--map-surface);
+  transition: transform 0.14s var(--ease);
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+.map-city-node.hovered .map-city-dot,
+.map-city-node:focus-visible .map-city-dot {
+  transform: scale(1.25);
+  stroke: var(--map-route-from);
+}
+
+.map-city-label {
+  fill: var(--map-ink);
+  font-weight: 700;
+  pointer-events: none;
+  paint-order: stroke;
+  stroke: var(--map-surface);
+  stroke-width: 0.8;
+  stroke-linejoin: round;
+}
+
+[data-theme="dark"] .map-city-label {
+  fill: var(--ink);
+}
+
+.map-road {
+  stroke: var(--map-road);
+  stroke-linecap: round;
+}
+
+.map-road.casing {
+  stroke: var(--map-road-casing);
+}
+
+.map-road.major {
+  stroke: color-mix(in srgb, var(--map-road) 78%, var(--map-surface));
+}
+
+.map-water-band {
+  stroke: var(--map-water);
+}
+
+.map-water-band.inner {
+  stroke: var(--map-water-inner);
+}
+
+.map-park-block {
+  fill: var(--map-park);
+  stroke: color-mix(in srgb, var(--map-park-tree) 45%, transparent);
+  stroke-width: 0.3;
+}
+
+.map-pin.poi .map-pin-dot {
+  fill: var(--map-poi);
+}
+
+.map-pin-teardrop {
+  fill: var(--map-poi);
+}
+
+.map-route-line {
+  stroke: var(--map-route-from);
+}
+
+.map-route-badge {
+  cursor: pointer;
+  outline: none;
+}
+
+.map-route-badge circle {
+  fill: var(--map-route-to);
+  stroke: #fff;
+}
+
+.map-route-badge text {
+  fill: #fff;
+  font-weight: 800;
+  pointer-events: none;
+}
+
+.legend-line {
+  background: linear-gradient(90deg, var(--map-route-from), var(--map-route-to));
+}
+
+.legend-poi {
+  background: var(--map-poi);
+}
+
+.legend-stop {
+  background: var(--map-route-to);
+}
+
+.legend-water {
+  background: var(--map-water);
+}
+
+.legend-park {
+  background: var(--map-park);
+}
+
+.legend-road {
+  background: var(--map-road);
+  border-color: var(--map-road-casing);
+}
+
+.city-map-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 280px;
+  gap: 0;
+}
+
+.city-map-side {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px;
+  border-left: 1px solid var(--line);
+  background: var(--surface);
+  max-height: 460px;
+  overflow-y: auto;
+}
+
+.route-actions {
+  display: grid;
+  gap: 6px;
+}
+
+.route-actions-hint {
+  font-size: 11.5px;
+}
+
+.route-stats {
+  display: grid;
+  gap: 8px;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--map-route-from) 6%, var(--surface));
+}
+
+.route-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+
+.route-stats-item {
+  display: grid;
+  gap: 2px;
+}
+
+.route-stats-value {
+  font-size: 14px;
+  font-weight: 800;
+  color: var(--map-ink);
+}
+
+[data-theme="dark"] .route-stats-value {
+  color: var(--ink);
+}
+
+.route-stats-label {
+  font-size: 10.5px;
+  color: var(--ink-3);
+}
+
+.route-stats-order {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+  margin: 0;
+  font-size: 11.5px;
+  font-weight: 650;
+}
+
+.route-stats-order-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.route-stats-order-item i {
+  font-style: normal;
+  color: var(--map-route-to);
+}
+
+.route-stats-note {
+  margin: 0;
+  font-size: 10.5px;
+  color: var(--ink-3);
+}
+
+.itinerary-list {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.itinerary-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface);
+}
+
+.itinerary-item.focused {
+  border-color: var(--map-route-from);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--map-route-from) 20%, transparent);
+}
+
+.itinerary-item-main {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 9px;
+  border: 0;
+  background: transparent;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.itinerary-index {
+  display: grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--map-route-from), var(--map-route-to));
+  color: #fff;
+  font-size: 11px;
+  font-weight: 800;
+  flex: none;
+}
+
+.itinerary-name {
+  font-size: 12.5px;
+  font-weight: 700;
+}
+
+.itinerary-remove {
+  border: 0;
+  background: transparent;
+  padding: 4px 8px;
+  color: var(--ink-3);
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.itinerary-remove:hover {
+  color: var(--map-poi);
+}
+
+.itinerary-empty {
+  margin: 0;
+  font-size: 11.5px;
+  color: var(--ink-3);
+}
+
+.traveler-bubble {
+  display: grid;
+  gap: 1px;
+  width: 100%;
+  height: 100%;
+  padding: 2px 6px;
+  border: 1px solid color-mix(in srgb, var(--map-route-to) 45%, var(--line));
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--surface) 95%, transparent);
+  box-shadow: var(--sh-1);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.traveler-bubble-faces {
+  font-size: 7px;
+  letter-spacing: -1px;
+}
+
+.traveler-bubble-match {
+  font-size: 8.5px;
+  font-weight: 800;
+  color: var(--map-route-to);
+}
+
+.traveler-bubble-count {
+  font-size: 6.5px;
+  color: var(--ink-2);
+}
+
+.traveler-bubble-cta {
+  font-size: 6.5px;
+  font-weight: 700;
+  color: var(--map-route-from);
+}
+
+.traveler-list {
+  display: grid;
+  gap: 12px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.traveler-card {
+  display: grid;
+  gap: 8px;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface);
+}
+
+.traveler-card-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.traveler-avatar {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--map-route-from), var(--map-route-to));
+  color: #fff;
+  font-weight: 800;
+  flex: none;
+}
+
+.traveler-id {
+  display: grid;
+  flex: 1;
+  min-width: 0;
+}
+
+.traveler-id b {
+  font-size: 13.5px;
+}
+
+.traveler-id span {
+  font-size: 11px;
+  color: var(--ink-3);
+}
+
+.traveler-match {
+  padding: 3px 8px;
+  border-radius: 99px;
+  background: color-mix(in srgb, var(--map-route-to) 14%, transparent);
+  color: var(--map-route-to);
+  font-size: 12px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.traveler-shared,
+.traveler-dates,
+.traveler-tags {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+  margin: 0;
+  font-size: 12px;
+}
+
+.traveler-field-label {
+  font-size: 10.5px;
+  font-weight: 700;
+  color: var(--ink-3);
+  margin-right: 2px;
+}
+
+.traveler-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.traveler-mock-note {
+  font-size: 10.5px;
+}
+
+.map-fallback {
+  display: grid;
+  place-items: center;
+  gap: 6px;
+  padding: 48px 16px;
+  text-align: center;
+}
+
+.map-fallback b {
+  font-size: 16px;
+}
+
+.map-fallback-hint {
+  font-size: 11.5px;
+}
+
+.map-callout-desc {
+  font-size: 11.5px;
+}
+
+@media (max-width: 900px) {
+  .city-map-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .city-map-side {
+    border-left: 0;
+    border-top: 1px solid var(--line);
+    max-height: none;
+  }
+}

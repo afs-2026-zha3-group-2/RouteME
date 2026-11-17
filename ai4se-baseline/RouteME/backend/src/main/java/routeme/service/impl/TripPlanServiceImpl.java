@@ -245,7 +245,7 @@ public class TripPlanServiceImpl extends AbstractServiceImpl<TripPlanMapper, Tri
         if (trip.publisherId() != publisherId) {
             throw new ForbiddenActionException("only the publisher can edit meeting info of trip " + tripId);
         }
-        if (trip.status() == TripStatusEnum.COMPLETED) {
+        if (trip.status(clock.instant()) == TripStatusEnum.COMPLETED) {
             throw new TripNotOpenException(tripId);
         }
         List<String> meetingAreas = TripPlan.cleanMeetingAreas(request == null ? null : request.meetingAreas());

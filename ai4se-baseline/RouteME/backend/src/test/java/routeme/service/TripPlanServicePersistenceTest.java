@@ -1,11 +1,10 @@
 package routeme.service;
 
+import java.util.List;
+
 import static org.junit.jupiter.api.Assertions.assertAll;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-
-import java.util.List;
-
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -37,7 +36,7 @@ class TripPlanServicePersistenceTest {
 
         // Then
         assertAll(
-                () -> assertTrue(unfinished.stream().noneMatch(trip -> trip.status() == TripStatusEnum.COMPLETED),
+                () -> assertTrue(unfinished.stream().noneMatch(trip -> trip.status(FixedClockTestConfig.NOW) == TripStatusEnum.COMPLETED),
                         "unfinished list excludes completed trips"),
                 () -> assertTrue(unfinished.stream().map(TripPlan::id).toList().containsAll(List.of(3L, 4L, 5L, 6L, 7L)),
                         "seeded unfinished trips are returned"),

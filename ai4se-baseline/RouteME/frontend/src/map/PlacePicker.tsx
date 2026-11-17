@@ -1,6 +1,11 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Input, Typography } from 'antd';
-import { PlaceMap } from './PlaceMap';
+import { ChinaMap } from './ChinaMap';
+import { ProvinceMap } from './ProvinceMap';
+import { CityTravelMap } from './CityTravelMap';
+import { cityIndexByName, type CityIndex } from './data/index';
+import type { Poi } from './data/types';
+import { findCity } from '../area/areaOptions';
 import {
   PLACES,
   resolvePlace,
@@ -27,6 +32,8 @@ type Props = {
     showMap?: boolean;
     /** Gazetteer city used to scope the map and its candidates. */
     city?: string;
+    /** R2 级联选目的地：未选城市时地图内点省→市后回写目的地代码。 */
+    onDestinationChange?: (cityCode: string) => void;
   };
 
 const KIND_LABEL: Record<PlaceKind, string> = { city: '城市', poi: '地点' };
@@ -48,11 +55,30 @@ export function PlacePicker({
     invalid = false,
     showMap = true,
     city,
+    onDestinationChange,
   }: Props) {
   const [query, setQuery] = useState('');
   const [message, setMessage] = useState<string | null>(null);
   const [focusIndex, setFocusIndex] = useState(-1);
   const [focusPlaceId, setFocusPlaceId] = useState<string | null>(null);
+  // R2 级联：未选目的地时在中国/省层内部导航；外部 city 变化时重置。
+  const [pickedProvince, setPickedProvince] = useState<string | null>(null);
+  const [pickedCity, setPickedCity] = useState<{ code: string; name: string } | null>(null);
+  // 面包屑回层后内部导航优先于外部 city，直到目的地变化或重新选市（design D18）。
+  const [internalNav, setInternalNav] = useState(false);
+
+  useEffect(() => {
+    setPickedProvince(null);
+    setPickedCity(null);
+    setInternalNav(false);
+  }, [city]);
+
+  const scopedCity: CityIndex | undefined =
+    city !== undefined && !internalNav
+      ? cityIndexByName(city)
+      : pickedCity !== null
+        ? cityIndexByName(pickedCity.name)
+        : undefined;
 
   const kindKey = kinds === undefined ? 'all' : kinds.join(',');
   const suggestions = useMemo(
@@ -60,8 +86,6 @@ export function PlacePicker({
     // kinds is a stable literal from callers; joining it avoids identity churn.
     [query, kindKey],
   );
-  const activePlaceId =
-    focusIndex >= 0 && focusIndex < suggestions.length ? suggestions[focusIndex].id : null;
 
   const add = (place: Place) => {
     if (value.includes(place.name)) {
@@ -193,14 +217,60 @@ export function PlacePicker({
         </div>
       )}
 
-      {showMap && (
-        <PlaceMap
-          selected={value}
-          onPick={add}
-          kinds={kinds}
-          activePlaceId={activePlaceId}
-          city={city}
-          focusPlaceId={focusPlaceId}
+      {showMap && scopedCity !== undefined && (
+        <CityTravelMap
+          cityCode={scopedCity.code}
+          cityName={findCity(scopedCity.code)?.cityDisplayName ?? scopedCity.name}
+          provinceName={findCity(scopedCity.code)?.provinceName ?? scopedCity.provinceName}
+          selected={value
+            .map((name) => scopedCity.pois.find((poi) => poi.name === name)?.id)
+            .filter((id): id is string => id !== undefined)}
+          onTogglePoi={(poi: Poi) => {
+            const place = PLACES.find((entry) => entry.id === poi.id);
+            if (place !== undefined) {
+              add(place);
+            }
+          }}
+          focusPoiId={focusPlaceId}
+          onFocusPoi={(poi) => setFocusPlaceId(poi.id)}
+          onNavigateChina={() => {
+            setPickedProvince(null);
+            setPickedCity(null);
+            setInternalNav(true);
+          }}
+          onNavigateProvince={() => {
+            // 面包屑回省：清市保留省（design D18）。
+            setPickedCity(null);
+            setPickedProvince(scopedCity.provinceCode);
+            setInternalNav(true);
+          }}
+        />
+      )}
+      {showMap && scopedCity === undefined && pickedProvince === null && (
+        <ChinaMap
+          onSelectProvince={(code) => {
+            setPickedProvince(code);
+            setInternalNav(true);
+          }}
+          onSelectCity={(cityEntry) => {
+            setPickedCity({ code: cityEntry.code, name: cityEntry.name });
+            setInternalNav(false);
+            onDestinationChange?.(cityEntry.code);
+          }}
+        />
+      )}
+      {showMap && scopedCity === undefined && pickedProvince !== null && (
+        <ProvinceMap
+          provinceCode={pickedProvince}
+          onSelectCity={(cityEntry) => {
+            setPickedCity(cityEntry);
+            setInternalNav(false);
+            onDestinationChange?.(cityEntry.code);
+          }}
+          onNavigateChina={() => {
+            setPickedProvince(null);
+            setInternalNav(true);
+          }}
         />
       )}
 

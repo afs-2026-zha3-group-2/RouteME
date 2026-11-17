@@ -1,5 +1,5 @@
-import type { Point } from './placeCatalog';
-import { MAP_BOUNDS } from './placeCatalog';
+import type { Point } from './data/index';
+import { MAP_BOUNDS } from './data/index';
 
 export type Viewport = { x: number; y: number; w: number; h: number };
 

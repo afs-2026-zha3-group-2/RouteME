@@ -84,7 +84,7 @@ RouteME/openapi.yaml   契约 SoT（info.version 0.6.0）
 ```
 
 - 根包 `routeme`：`@rule:package-structure` 的 `staffing` 根包是上一作业的领域名，RouteME 按产品名建包，层包与依赖方向不变；例外记录在 `openspec/changes/archive/2026-11-15-bootstrap-hello-world/design.md`。
-- 地图选点（2026-11-16）：`frontend/src/map/` 是离线地点能力，`placeCatalog`（广东城市与常见 POI 的固定地名库 + 投影/搜索/最近点）→ `PlaceMap`（SVG 示意地图，点击吸附最近地点）→ `PlacePicker`（搜索建议 + 地图点选 + 已选编号）。途经点与集合区域走这一层；目的地自 `add-destination-area-filters` 起改为省市级联（`frontend/src/area/` 的 `AreaCascader` + 区划字典），不再走 `PlacePicker`。手输必须命中地点库，否则提示“地图上搜不到”。后端 `TripPlan` 要求目的地为合法 6 位区划码。
+- 地图三级架构（2026-11-17，refine-trip-map R2）：`frontend/src/map/` 改为 ChinaMap（选省）→ ProvinceMap（选城市，无城市连线）→ CityTravelMap（六独立 SVG Layer：Road/Water/Park/Poi/Route/Traveler）三级独立组件切换，URL `/map(/省码(/市码))` 为层级唯一权威，Zoom 只负责当前层缩放。数据驱动：`map/data/index.ts` 轻量静态索引（名称/别名/坐标）＋`data/cities/registry.ts` 24 城动态 import 懒加载（广州手工数据完成度最高，其余 MVP 城字典 POI＋seed=cityCode 程序化底图，未登记城统一 fallback）；新增城市只加数据模块＋registry 登记。路线≥2 景点生成，蓝→紫渐变＋编号与行程同步；距离/时间步行 4.5 km/h 标「预计」；同行者重合度纯函数 round(shared/route.length×100)，Mock 存城市数据模块，邀请接真实 tripId 或演示提示。`provider.ts` MapProvider 接口为未来在线地图预留；旧 `PlaceMap` 已退役，`placeCatalog.ts` 为 facade re-export 保旧 API。发布页 PlacePicker 级联写目的地不写途经点（internalNav 支持面包屑回层）；详情页只读 CityTravelMap＋route-strip 保留。后端 `TripPlan` 仍要求目的地为合法 6 位区划码；手输必须命中地点库。
 
 ### RouteME 后端包结构（2026-11-15 定稿）
 

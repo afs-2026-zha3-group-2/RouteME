@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { destinationLabel } from '../area/areaOptions';
+import { destinationLabel, findCity } from '../area/areaOptions';
 import {
   Alert,
   Button,
@@ -29,7 +29,8 @@ import { tripMessages } from '../i18n/tripMessages';
 import { intensityLabel } from '../experiences/experienceForm';
 import { meetingAreaText, meetingTimeText } from '../chat/chatMeeting';
 import { gazetteerCityForCode } from '../areas/gazetteerCity';
-import { PlaceMap } from '../map/PlaceMap';
+import { CityTravelMap } from '../map/CityTravelMap';
+import { cityIndexByName } from '../map/data/index';
 import { findPlaceByName, projectPlace, type Place } from '../map/placeCatalog';
 import { distanceKm, formatKm } from '../map/mapView';
 import { shareEligibility } from '../experiences/shareEligibility';
@@ -384,11 +385,25 @@ export function TripDetailPage({ currentUser, tripId }: Props) {
             <h3 className="section-title">{tripMessages.detailStops}</h3>
             {showRouteMap && (
               <div className="detail-map-section" ref={mapSectionRef}>
-                <PlaceMap
+                <CityTravelMap
                   readOnly
-                  selected={resolvedStops.map((place) => place.name)}
-                  city={mapCity}
-                  focusPlaceId={focusStop}
+                  cityCode={cityIndexByName(mapCity)?.code ?? ''}
+                  cityName={`${mapCity}市`}
+                  provinceName={
+                    trip.province_name !== ''
+                      ? trip.province_name
+                      : (findCity(trip.destination_code)?.provinceName ?? '')
+                  }
+                  selected={resolvedStops.map((place) => place.id)}
+                  routeGenerated={resolvedStops.length >= 2}
+                  focusPoiId={focusStop}
+                  onFocusPoi={(poi) => setFocusStop(poi.id)}
+                  onNavigateChina={() => (window.location.hash = '#/map')}
+                  onNavigateProvince={() =>
+                    (window.location.hash = `#/map/${trip.province_code || findCity(trip.destination_code)?.provinceCode || ''}`)
+                  }
+                  onViewProfile={(userId) => openProfile(userId)}
+                  onInvite={(travelerTripId) => (window.location.hash = `#/trips/${travelerTripId}`)}
                 />
                 <ol className="route-strip">
                   {trip.stops.map((stop, index) => {

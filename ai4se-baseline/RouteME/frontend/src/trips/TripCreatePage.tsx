@@ -266,6 +266,7 @@ export function TripCreatePage({ currentUser, fromTripId }: Props) {
                 max={MAX_STOPS}
                 showMap={mapCity !== undefined || !hasDestination}
                 city={mapCity}
+                onDestinationChange={(code) => update({ destinationCode: code })}
                 placeholder="搜索地点名称，必须能在地图上搜到"
                 emptyHint="至少两个途经点。输错的名字不会被接受，请从候选里选或直接点地图。"
               />
@@ -358,6 +359,7 @@ export function TripCreatePage({ currentUser, fromTripId }: Props) {
                   emptyHint="可添加多个集合区域，选中后按顺序编号。"
                   showMap={mapCity !== undefined || !hasDestination}
                   city={mapCity}
+                  onDestinationChange={(code) => update({ destinationCode: code })}
                 />
               </Field>
 
