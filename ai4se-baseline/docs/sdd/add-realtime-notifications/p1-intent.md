@@ -52,11 +52,11 @@
 
 | 角色 | 姓名 | 确认内容 | 日期 |
 |---|---|---|---|
-| SM | 待确认 | P1 范围与排期确认（单 change、5 点、迭代 3） | 待签 |
-| IO | WAYNE | 需求来源与能力归属确认（`notifications` ADDED；不改 `trip-companions`） | 待签 |
+| SM | 待确认（Lewis） | P1 范围与排期确认（单 change、5 点、迭代 3） | 待签 |
+| IO | WAYNE | 需求来源与能力归属确认（`notifications` ADDED；不改 `trip-companions`） | 2026-11-17 |
 | AO | Karena | 承接 P2–P4 | 2026-11-17 |
 
-**阶段结论：待签署**（`proposal.md` 由 WAYNE 签；本评审报告由 WAYNE + Karena 签）。
+**阶段结论：Pass**（`proposal` 由 WAYNE 签，评审报告由 WAYNE + Karena 签，均已记录在 `docs/reviews/20261117-add-realtime-notifications-proposal-review.md` §6；SM 的排期确认不阻断工件门禁）。
 
 ## 6. 提交与偏离记录
 

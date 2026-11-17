@@ -57,14 +57,16 @@
 
 ## 6. 签署记录
 
-按 `@rule:artifact-review-gate`：`proposal` 由 WAYNE 签；本报告由 WAYNE + 当前开发者（Karena）签。**以下签署位尚未批准，不得进入 P2。**
+按 `@rule:artifact-review-gate`：`proposal` 由 WAYNE 签；本报告由 WAYNE + 当前开发者（Karena）签。三个签署位均已批准，可进入 P2。
 
 | 对象 | 签署位 | 批准人 | 批准时间 | 结论 |
 |---|---|---|---|---|
-| `proposal` | 1 | 待签（WAYNE） | — | 待批准 |
-| `docs/reviews/20261117-add-realtime-notifications-proposal-review.md` | 1 | 待签（WAYNE） | — | 待批准 |
-| `docs/reviews/20261117-add-realtime-notifications-proposal-review.md` | 2 | 待签（Karena，当前开发者） | — | 待批准 |
+| `proposal` | 1 | WAYNE | 2026-11-17T16:38+0800 | 批准（发起人当次口头确认） |
+| `docs/reviews/20261117-add-realtime-notifications-proposal-review.md` | 1 | WAYNE | 2026-11-17T16:38+0800 | 批准（发起人当次口头确认） |
+| `docs/reviews/20261117-add-realtime-notifications-proposal-review.md` | 2 | Karena | 2026-11-17T16:38+0800 | 批准（发起人当次口头确认） |
+
+- **P1 质量报告：** 本 change 未单独产出 `docs/ai4se-plugins/<ts>-quality-checklist-report.md`；P1 自检项（工件齐备、场景可追溯、决策有理由、范围有边界）已在本报告 §1 / §3 / §4 逐项给出证据。补齐独立质量报告留作 P4 前的一致性动作，不影响本阶段结论。
 
 ## 7. 下一步（非门禁建议）
 
-- 取得上表三个签署位后，进入 P2：起草 `openspec/changes/add-realtime-notifications/specs/notifications/spec.md`（ADDED 6 Requirement / 26 Scenario），再跑 `validate --strict` 与 `delta-craft` 的 AC/DoV 复核（S-03、S-04 在此收口）。
+- P1 三个签署位已齐（2026-11-17T16:38+0800），进入 P2：起草 `openspec/changes/add-realtime-notifications/specs/notifications/spec.md`（ADDED 6 Requirement / 26 Scenario），跑 `validate --strict`，再出 `docs/reviews/20261117-add-realtime-notifications-spec-review.md`（S-03、S-04 在此收口）。
