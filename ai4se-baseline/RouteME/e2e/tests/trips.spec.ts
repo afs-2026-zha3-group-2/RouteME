@@ -209,7 +209,7 @@ test('publishes with a meeting time and edits it from the detail page', async ({
   await dialog.getByRole('button', { name: '移除 香洲港客运站' }).click();
   await dialog.getByLabel('集合区域').fill('香洲港新码头');
   await dialog.getByLabel('集合区域').press('Enter');
-  await dialog.getByLabel('集合时间').fill(`${day}T09:00`);
+  await setMeetingTime(dialog, `${day} 09:00`);
   await dialog.getByRole('button', { name: /保\s*存/ }).click();
   await expect(page.getByText('集合信息已更新')).toBeVisible();
   await expect(page.locator('.detail-facts')).toContainText('香洲港新码头');
