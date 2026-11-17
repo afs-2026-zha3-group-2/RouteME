@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import {
   addMeetingArea,
   emptyMeetingForm,
+  isMeetingIncomplete,
   meetingFormFrom,
   toMeetingRequest,
   validateMeetingForm,
@@ -83,6 +84,24 @@ describe('meetingFormFrom', () => {
       meetingAreas: ['D 口'],
       meetingTime: '2026-11-20T08:30',
     });
+  });
+});
+
+describe('isMeetingIncomplete', () => {
+  it('treats a payload without meeting fields as incomplete', () => {
+    expect(isMeetingIncomplete({})).toBe(true);
+  });
+
+  it('treats null and empty values as incomplete', () => {
+    expect(isMeetingIncomplete({ meeting_areas: null, meeting_time: null })).toBe(true);
+    expect(isMeetingIncomplete({ meeting_areas: [], meeting_time: '2026-11-20T08:30' })).toBe(true);
+    expect(isMeetingIncomplete({ meeting_areas: ['D 口'], meeting_time: null })).toBe(true);
+  });
+
+  it('treats a filled pair as complete', () => {
+    expect(isMeetingIncomplete({ meeting_areas: ['D 口'], meeting_time: '2026-11-20T08:30' })).toBe(
+      false,
+    );
   });
 });
 

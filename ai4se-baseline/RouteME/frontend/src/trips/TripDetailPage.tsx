@@ -43,6 +43,7 @@ import {
   MAX_MEETING_AREA_LENGTH,
   addMeetingArea,
   emptyMeetingForm,
+  isMeetingIncomplete,
   meetingFormFrom,
   toMeetingRequest,
   validateMeetingForm,
@@ -485,12 +486,15 @@ export function TripDetailPage({ currentUser, tripId }: Props) {
                 </div>
               )}
             </dl>
-            {(trip.meeting_areas.length === 0 || trip.meeting_time === null) && (
+            {isMeetingIncomplete(trip) && (
               <p className="detail-meta">{tripMessages.meetingEmptyHint}</p>
             )}
             {isPublisher && !isCompleted && (
               <div className="detail-actions">
-                <Button size="small" onClick={() => openMeeting(trip.meeting_areas, trip.meeting_time)}>
+                <Button
+                  size="small"
+                  onClick={() => openMeeting(trip.meeting_areas ?? [], trip.meeting_time ?? null)}
+                >
                   {tripMessages.meetingEdit}
                 </Button>
               </div>

@@ -26,6 +26,18 @@ export function meetingFormFrom(trip: {
   };
 }
 
+/**
+ * Whether the meeting info still needs filling in. Both fields are optional so a payload
+ * from an older backend (no meeting_areas / meeting_time) reads as "empty" instead of
+ * throwing on `.length`.
+ */
+export function isMeetingIncomplete(trip: {
+  meeting_areas?: string[] | null;
+  meeting_time?: string | null;
+}): boolean {
+  return (trip.meeting_areas ?? []).length === 0 || (trip.meeting_time ?? null) === null;
+}
+
 /** 与后端 TripPlan.cleanMeetingAreas 同口径；仅为体验校验，服务端仍是权威。 */
 export function validateMeetingForm(values: MeetingFormValues, endDate: string): MeetingFieldErrors {
   const errors: MeetingFieldErrors = {};
