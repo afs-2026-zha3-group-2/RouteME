@@ -2,7 +2,7 @@
 
 - **来源：** 用户 2026-11-17 提供的 6 条 User Story（含优先级、迭代、故事点、落点页面、验收标准、Given/When/Then 场景与垂直切片口径）
 - **Change：** `add-admin-console`（单 change 覆盖迭代 1–3）
-- **状态：** P1 drafted（2026-11-17）｜ **Discovery Decision：** Go（light intake）
+- **状态：** P3 Pass（2026-11-17；P2 G1 Pass → P3 Pass，P4 待执行）｜ **Discovery Decision：** Go（light intake）
 - **基线：** `main@c948b1b`
 
 ## 1. 原始诉求

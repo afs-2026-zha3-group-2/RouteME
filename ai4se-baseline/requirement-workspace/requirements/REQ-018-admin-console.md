@@ -2,7 +2,8 @@
 
 - **能力：** `admin-console`（ADDED）、`customer-service`（ADDED）、`user-auth`（MODIFIED「注册账号」）
 - **对应 OpenSpec change：** `add-admin-console`
-- **草稿日期：** 2026-11-17 ｜ **状态：** P1 drafted（blocking OQ 0，DoR BLOCKER 0）
+- **草稿日期：** 2026-11-17 ｜ **状态：** P3 Pass（2026-11-17；blocking OQ 0，DoR BLOCKER 0；P4 待执行）
+- **阶段记录：** P2 G1 **Pass**（2026-11-17，`docs/sdd/add-admin-console/p2-spec.md`，IO=WAYNE / SA=Karena）→ P3 **Pass**（2026-11-17，`design.md` D1–D17 / `atdd-design.md` 61 场景 / `tasks.md` T1–T19；评审 `docs/reviews/20261117-add-admin-console-design-review-2.md`、`...-tasks-review.md`；质量报告 `docs/ai4se-plugins/20261117-164500-quality-checklist-report.md`）
 - **故事来源：** 用户 2026-11-17 提供的 6 条管理后台 User Story（含 AC、Given/When/Then、垂直切片口径）
 - **故事编号：** S19–S24（原型 `docs/prototype/stories.html` 现有最大编号为 S18，本需求顺延）
 - **证据：** `requirement-workspace/intents/REQ-018-admin-console.md`；`openspec/specs/user-auth/spec.md`；`openspec/specs/trip-companions/spec.md`；`RouteME/backend/.../entity/UserEntity.java`、`ReportEntity.java`；`RouteME/backend/.../controller/ReportController.java`；`RouteME/backend/.../db/migration/V7__create_reports.sql`、`V6__create_chat_messages.sql`；`RouteME/frontend/src/route.ts`、`App.tsx`、`chat/ChatPage.tsx`、`mine/MyTripsPage.tsx`；`RouteME/openapi.yaml` 0.11.0；`RouteME/SqlLite/routeme.db`（369 users / 110 trips / 13 reports / 6 experiences / 13 chat messages，2026-11-17）
