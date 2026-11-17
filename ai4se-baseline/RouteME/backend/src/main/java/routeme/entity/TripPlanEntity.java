@@ -40,6 +40,9 @@ public class TripPlanEntity {
 
     private String meetingTime;
 
+    /** V21 出行方式：driving / bicycling / transit；旧行为 null。 */
+    private String travelMode;
+
     private String note;
 
     private Integer budgetMinCents;
@@ -80,6 +83,7 @@ public class TripPlanEntity {
         entity.setStops(JsonListUtils.write(trip.stops()));
         entity.setMeetingAreas(JsonListUtils.write(trip.meetingAreas()));
         entity.setMeetingTime(trip.meetingTime());
+        entity.setTravelMode(trip.travelMode());
         entity.setNote(trip.note());
         entity.setBudgetMinCents(trip.budgetMinCents());
         entity.setBudgetMaxCents(trip.budgetMaxCents());
@@ -108,6 +112,7 @@ public class TripPlanEntity {
                 JsonListUtils.parse(stops),
                 meetingAreas == null ? List.of() : JsonListUtils.parse(meetingAreas),
                 meetingTime,
+                travelMode,
                 note,
                 budgetMinCents,
                 budgetMaxCents,
@@ -201,6 +206,14 @@ public class TripPlanEntity {
 
     public void setMeetingTime(String meetingTime) {
         this.meetingTime = meetingTime;
+    }
+
+    public String getTravelMode() {
+        return travelMode;
+    }
+
+    public void setTravelMode(String travelMode) {
+        this.travelMode = travelMode;
     }
 
     public String getNote() {

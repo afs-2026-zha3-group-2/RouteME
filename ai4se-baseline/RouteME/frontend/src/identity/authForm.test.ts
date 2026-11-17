@@ -61,15 +61,29 @@ describe('validateAuthForm', () => {
     expect(errors.passwordConfirm).toContain('不一致');
     expect(errors.password).toBeUndefined();
   });
+
+  it('treats the email as optional but validates its format', () => {
+    expect(validateAuthForm('register', validRegister).email).toBeUndefined();
+    expect(
+      validateAuthForm('register', { ...validRegister, email: 'not-an-email' }).email,
+    ).toContain('邮箱');
+  });
 });
 
 describe('toRegisterRequest', () => {
-  it('maps only the three registration fields', () => {
+  it('maps the registration fields and trims the username', () => {
     expect(toRegisterRequest({ ...validRegister, username: '  NewUser  ' })).toEqual({
       username: 'NewUser',
       password: 'routeme-demo',
       nickname: '新同学',
+      email: null,
     });
+  });
+
+  it('lowercases and trims an optional email', () => {
+    expect(toRegisterRequest({ ...validRegister, email: '  Lin@Example.COM ' }).email).toBe(
+      'lin@example.com',
+    );
   });
 });
 

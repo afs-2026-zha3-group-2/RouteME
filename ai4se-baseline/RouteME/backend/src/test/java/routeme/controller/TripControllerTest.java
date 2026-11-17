@@ -6,12 +6,14 @@ import static org.hamcrest.Matchers.hasItems;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.nullValue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
+import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -49,6 +51,9 @@ class TripControllerTest {
 
     @Autowired
     private MockMvc mockMvc;
+
+    @Autowired
+    private JdbcClient jdbcClient;
 
     @Test
     void in_validRequest_out_createdRecruitingTrip() throws Exception {
@@ -193,10 +198,10 @@ class TripControllerTest {
     }
 
     @Test
-    void in_moreThanThreeMeetingAreas_out_invalidInput() throws Exception {
+    void in_moreThanOneMeetingArea_out_invalidInput() throws Exception {
         String body = VALID_TRIP.replace(
                 "\"meeting_areas\": [\"陈家祠地铁站 D 口\"],",
-                "\"meeting_areas\": [\"a\", \"b\", \"c\", \"d\"],");
+                "\"meeting_areas\": [\"a\", \"b\"],");
         postTrip(body, "1").andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value("INVALID_INPUT"));
     }
@@ -214,11 +219,40 @@ class TripControllerTest {
     void in_duplicateMeetingAreas_out_trimmedAndDeduped() throws Exception {
         String body = VALID_TRIP.replace(
                 "\"meeting_areas\": [\"陈家祠地铁站 D 口\"],",
-                "\"meeting_areas\": [\"陈家祠\", \"　陈家祠　\", \"永庆坊\"],");
+                "\"meeting_areas\": [\"陈家祠\", \"　陈家祠　\"],");
         postTrip(body, "1").andExpect(status().isCreated())
-                .andExpect(jsonPath("$.meeting_areas.length()").value(2))
-                .andExpect(jsonPath("$.meeting_areas[0]").value("陈家祠"))
-                .andExpect(jsonPath("$.meeting_areas[1]").value("永庆坊"));
+                .andExpect(jsonPath("$.meeting_areas.length()").value(1))
+                .andExpect(jsonPath("$.meeting_areas[0]").value("陈家祠"));
+    }
+
+    @Test
+    void in_travelModeProvided_out_savedInDetailAndSummary() throws Exception {
+        String body = VALID_TRIP.replace(
+                "\"meeting_areas\": [\"陈家祠地铁站 D 口\"],",
+                "\"meeting_areas\": [\"陈家祠地铁站 D 口\"],\n  \"travel_mode\": \"bicycling\",");
+        postTrip(body, "1")
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.travel_mode").value("bicycling"));
+
+        mockMvc.perform(get("/api/me/trips").header("X-User-Id", "1"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.published[0].travel_mode").value("bicycling"));
+    }
+
+    @Test
+    void in_noTravelMode_out_null() throws Exception {
+        postTrip(VALID_TRIP, "1")
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.travel_mode").value(nullValue()));
+    }
+
+    @Test
+    void in_unknownTravelMode_out_invalidInput() throws Exception {
+        String body = VALID_TRIP.replace(
+                "\"meeting_areas\": [\"陈家祠地铁站 D 口\"],",
+                "\"meeting_areas\": [\"陈家祠地铁站 D 口\"],\n  \"travel_mode\": \"teleport\",");
+        postTrip(body, "1").andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("INVALID_INPUT"));
     }
 
     @Test
@@ -262,12 +296,15 @@ class TripControllerTest {
     }
 
     @Test
-    void in_demoUsersEndpoint_out_fourAccounts() throws Exception {
+    void in_demoUsersEndpoint_out_demoAccountsPlusSeededAdmin() throws Exception {
         mockMvc.perform(get("/api/users"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$", hasSize(4)))
+                .andExpect(jsonPath("$", hasSize(5)))
                 .andExpect(jsonPath("$[0].nickname").value("林见夏"))
-                .andExpect(jsonPath("$[0].avatar_initial").value("夏"));
+                .andExpect(jsonPath("$[0].avatar_initial").value("夏"))
+                .andExpect(jsonPath("$[0].role").value("USER"))
+                .andExpect(jsonPath("$[4].role").value("ADMIN"))
+                .andExpect(jsonPath("$[4].nickname").value("平台管理员"));
     }
 
     @Test
@@ -395,6 +432,22 @@ class TripControllerTest {
         mockMvc.perform(post("/api/trips/9999/complete").header("X-User-Id", "1"))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.code").value("TRIP_NOT_FOUND"));
+    }
+
+    @Test
+    void in_suspendedPublisher_out_accountSuspendedAndNoNewTrip() throws Exception {
+        jdbcClient.sql("UPDATE app_users SET status = 'SUSPENDED' WHERE id = 2").update();
+        Integer before = jdbcClient.sql("SELECT COUNT(*) FROM trip_plans")
+                .query(Integer.class)
+                .single();
+
+        postTrip(VALID_TRIP, "2").andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.code").value("ACCOUNT_SUSPENDED"));
+
+        Integer after = jdbcClient.sql("SELECT COUNT(*) FROM trip_plans")
+                .query(Integer.class)
+                .single();
+        assertEquals(before, after, "suspended publisher writes no trip row");
     }
 
     private ResultActions postTrip(String body, String userId) throws Exception {

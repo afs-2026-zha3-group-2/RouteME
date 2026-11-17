@@ -17,6 +17,7 @@ const validForm: TripFormValues = {
   endDate: '2026-11-20',
   stops: ['陈家祠地铁站集合', '永庆坊'],
   capacity: '4',
+  travelMode: 'bicycling',
   meetingAreas: ['陈家祠地铁站 D 口'],
   meetingTime: '2026-11-20T08:30',
   budgetMin: '80',
@@ -128,6 +129,7 @@ describe('toCreateRequest', () => {
       start_date: '2026-11-20',
       end_date: '2026-11-20',
       stops: ['陈家祠地铁站集合', '永庆坊'],
+      travel_mode: 'bicycling',
       meeting_areas: ['陈家祠地铁站 D 口'],
       meeting_time: '2026-11-20T08:30',
       budget_min_cents: 8000,
@@ -143,6 +145,11 @@ describe('toCreateRequest', () => {
     expect(request.meeting_time).toBeNull();
     expect(request.budget_min_cents).toBeNull();
     expect(request.note).toBeNull();
+  });
+
+  it('defaults the travel mode to public transport', () => {
+    expect(emptyTripForm.travelMode).toBe('transit');
+    expect(toCreateRequest(emptyTripForm).travel_mode).toBe('transit');
   });
 });
 

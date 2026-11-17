@@ -13,6 +13,7 @@ import org.springframework.transaction.annotation.Transactional;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 
 import routeme.enums.TripStatusEnum;
+import routeme.enums.WriteScopeEnum;
 import routeme.exception.ChatNotAllowedException;
 import routeme.exception.ChatReadOnlyException;
 import routeme.exception.InvalidInputException;
@@ -26,6 +27,7 @@ import routeme.pojo.TripPlan;
 import routeme.request.ChatMessageRequest;
 import routeme.response.ChatPartnerResponse;
 import routeme.service.ApplicationService;
+import routeme.service.AccountStatusService;
 import routeme.service.ChatService;
 import routeme.service.DemoUserService;
 import routeme.service.TripPlanService;
@@ -57,16 +59,19 @@ public class ChatServiceImpl extends AbstractServiceImpl<ChatMessageMapper, Chat
     private final ApplicationService applicationService;
     private final DemoUserService demoUserService;
     private final Clock clock;
+    private final AccountStatusService accountStatusService;
 
     public ChatServiceImpl(
             TripPlanService tripPlanService,
             ApplicationService applicationService,
             DemoUserService demoUserService,
-            Clock clock) {
+            Clock clock,
+            AccountStatusService accountStatusService) {
         this.tripPlanService = tripPlanService;
         this.applicationService = applicationService;
         this.demoUserService = demoUserService;
         this.clock = clock;
+        this.accountStatusService = accountStatusService;
     }
 
     @Override
@@ -74,6 +79,11 @@ public class ChatServiceImpl extends AbstractServiceImpl<ChatMessageMapper, Chat
         TripPlan trip = tripPlanService.requireCurrent(tripId);
         requireAccess(trip, userId, withUserId);
         return messages(tripId, userId, withUserId);
+    }
+
+    @Override
+    public List<ChatMessage> transcript(long tripId, long firstUserId, long secondUserId) {
+        return messages(tripId, firstUserId, secondUserId);
     }
 
     /**
@@ -108,6 +118,7 @@ public class ChatServiceImpl extends AbstractServiceImpl<ChatMessageMapper, Chat
     @Override
     @Transactional
     public ChatMessage send(long tripId, long senderId, ChatMessageRequest request) {
+        accountStatusService.assertCanWrite(senderId, WriteScopeEnum.BUSINESS);
         TripPlan trip = tripPlanService.requireCurrent(tripId);
         long receiverId = request == null ? 0 : request.receiverId();
         requireAccess(trip, senderId, receiverId);

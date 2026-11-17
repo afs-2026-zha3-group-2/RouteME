@@ -1,6 +1,6 @@
 import { findCity } from '../area/areaOptions';
 import { tripMessages } from '../i18n/tripMessages';
-import type { TripCreateRequest } from '../types';
+import type { TripCreateRequest, TripTravelMode } from '../types';
 import { validateMeetingForm } from './meetingForm';
 import { MAX_CAPACITY, MAX_TAGS, MAX_TITLE_LENGTH, MIN_CAPACITY, MIN_STOPS } from './tripOptions';
 
@@ -10,6 +10,7 @@ export type TripFormValues = {
   startDate: string;
   endDate: string;
   stops: string[];
+  travelMode: TripTravelMode;
   capacity: string;
   meetingAreas: string[];
   meetingTime: string;
@@ -28,6 +29,7 @@ export const emptyTripForm: TripFormValues = {
   startDate: '',
   endDate: '',
   stops: [],
+  travelMode: 'transit',
   capacity: '4',
   meetingAreas: [],
   meetingTime: '',
@@ -105,6 +107,7 @@ export function toCreateRequest(values: TripFormValues, aiItineraryId?: number):
     start_date: values.startDate,
     end_date: values.endDate,
     stops: values.stops.map((stop) => stop.trim()).filter((stop) => stop !== ''),
+    travel_mode: values.travelMode,
     meeting_areas: values.meetingAreas.length > 0 ? values.meetingAreas : null,
     meeting_time: blankToNull(values.meetingTime),
     note: blankToNull(values.note),

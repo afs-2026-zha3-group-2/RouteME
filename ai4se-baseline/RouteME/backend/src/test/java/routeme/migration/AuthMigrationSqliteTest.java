@@ -66,8 +66,8 @@ class AuthMigrationSqliteTest {
 
         // Then
         assertAll(
-                () -> assertEquals(4, users, "demo users stay seeded"),
-                () -> assertEquals(4, credentials, "all four seeded accounts carry login credentials"),
+                () -> assertEquals(5, users, "four demo users plus the seeded administrator"),
+                () -> assertEquals(5, credentials, "every seeded account carries login credentials"),
                 () -> assertEquals(0, sessions, "no sessions before login"),
                 () -> assertEquals(4, seededUsernames, "all four seeded accounts carry usernames"),
                 () -> assertTrue(PasswordUtils.matches("123456", linjianxiaHash), "linjianxia logs in with 123456"),

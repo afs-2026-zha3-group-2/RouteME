@@ -50,3 +50,13 @@ P4 提交 `2e552fc` 后 pull 触发与 main（`0979e916`，0.16.0）28 文件冲
 - **合并后重验证据：** 后端 verify **364/364** BUILD SUCCESS；前端 **363/363** + typecheck 0 + build 成功；E2E 全量 **143：121 passed / 22 failed**，**ai-planner 12/12**，main 新增 credit/detail-companions/experience-photos/weather/weather-walkthrough 全绿；**profiles.spec fresh DB 隔离 8/8** 证实全量 4 红为债务 1 污染（非回归）；map 9 + trips 9 = 18 红归 refine-trip-map（china-map 级联依赖）偏差（延续原裁决，不修旧 spec）；真实天气 200（Open-Meteo 嵌套）验证。明细见 verify report §8。
 - **债务更新：** 偏差债务由「map/trips 21 例」更新为「map 9 + trips 9 = 18 例」（main 合并更新 trips.spec 后红数下降）；新增「天气权威转移 add-trip-weather」契约偏离记录；债务 1（fresh DB）延续，profiles 污染为其最新表现（隔离复跑证实）。
 - **G2 结论维持 Pass with documented debts**（原签署 Jay/Neal/WAYNE 不变；本 addendum 为合并集成补充记录，不替代 G3，不执行 P5/不归档）。下一步：`git commit --no-edit`（merge）→ push（pull 已先做）。
+
+## Addendum 2：第二波合并（merge 提交 c5b4e93 后 push 前再 pull，2026-11-17 晚）
+
+第一波 merge 提交 `c5b4e93` 后 push 前再 pull，main 推进到 `b50e416`（add-admin-console / trip-publish-options / UI refresh / V22+），9 文件新冲突沿用 standing ruling 并集解决。本 addendum 不改动上方原 G2 签署与 Addendum 1。明细见 verify report §9 / p4-verify §7。
+
+- **契约再演进：** main admin console 也占 0.17.0 → 合并后 **0.18.0**（OpenApiTest 保留 AI + admin 两个完整门禁方法，版本断言同步）；行程链 `travelMode`（main）与 `aiItineraryId`（本 change）并存；迁移 `V21__ai_itineraries` → **`V24__ai_itineraries`**（main V21–V23 占用，fresh DB Flyway V1–V24 验证）。技术边界不变。
+- **合并期修复（main 既有客观缺陷，门禁阻断，最小修复不改语义）：** ① openapi `loadAdminReportDetail` responses 重复映射键（git 证实 main 自身即损坏）修复为 AdminReportDetail 200 形状；② 6 处 admin schema `allOf:[$ref]+nullable` 无 type（main 副本 lint 复现同样 6 error）补 `type: object` 保留 null 语义；修复后 redocly **0 error / 21 warnings**，OpenApiTest 复跑 EXIT=0。
+- **重验证据：** 后端 **464/464** EXIT=0（首跑失败为 shell 残留 SPRING_DATASOURCE_URL 覆盖 H2，环境非代码，清空后绿）；前端 **394/394** + build 绿；E2E 全量 **150：119/31**，**ai-planner 12/12** + **admin 5/5**；profiles 隔离 fresh DB **8/8** 证污染；openspec strict **valid**。
+- **债务更新：** 偏差债务更新为「map 9 + trips 8 = 17 例 refine-trip-map」；新增「main UI refresh / admin console 既有 E2E 偏差 10 例（auth 7 + profile 2 + credit 1，git 证据：spec HEAD==main 字节相同而 main 删 `.id-switch-label`/`.mine-profile-card` DOM、admin 面 404→401；E2E 不在 CI，main 自身即红）」；债务 1/2 延续。31 红均非本 change 回归。
+- **G2 结论维持 Pass with documented debts**（原签署不变；不替代 G3，不执行 P5/不归档）。下一步：`git commit --no-edit`（第二波 merge）→ push 前再 pull 核对 → push。

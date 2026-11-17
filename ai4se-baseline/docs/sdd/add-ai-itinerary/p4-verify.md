@@ -60,3 +60,12 @@ P4 提交 `2e552fc` 后 `git pull --no-rebase --autostash --no-edit origin main`
 - **合并后重验：** 后端 `mvnw verify` **364/364** BUILD SUCCESS；前端 **363/363**（45 files）+ typecheck 0 + build 成功；E2E 全量 **143：121 passed / 22 failed**（ai-planner **12/12**，main 新增 credit/detail-companions/experience-photos/weather/weather-walkthrough 全绿）；**profiles.spec fresh DB 隔离 8/8** 证实全量 4 红为债务 1 污染；map 9 + trips 9 = 18 红归 refine-trip-map（china-map 级联依赖）偏差。真实天气 200（Open-Meteo 嵌套）验证。
 - **验收口径达成：** ai-planner 12/12 + 非地图套件隔离全绿；22 红均非本 change 回归（18 refine-trip-map 偏差 + 4 债务 1 污染）。G2 结论维持 **Pass with documented debts**，新增契约偏离（天气权威转移 add-trip-weather）记录于 g2-decision.md addendum。
 - **提交：** 20 冲突文件全解决 staged + 4 后端 AI 文件补 staged + 2 E2E 修复文件（ai-planner.spec/rasterMap.ts）staged；排除 `.vscode/tasks.json`（unstaged）/ t8-*.json（untracked）；`git commit --no-edit`（merge）→ push（pull 已先做）。
+
+## 7. 第二波合并 addendum（merge 提交 c5b4e93 后 push 前再 pull）
+
+第一波 merge 提交 `c5b4e93` 后 push 前再 pull，main 已推进到 `b50e416`（add-admin-console / trip-publish-options / UI refresh / V22+），触发 9 文件新冲突；沿用 standing ruling 并集解决。明细见 verify report §9。
+
+- **并集要点：** TripPlan/TripCreateRequest/TripPlanServiceImpl/TripPlanStatusTest 同时携 `travelMode` + `aiItineraryId`；OpenApiTest 保留 AI + admin 两个完整门禁方法；api.ts/AppShell rail union；registry union；契约 **0.18.0**；迁移 `V21__ai_itineraries` → **`V24__ai_itineraries`**（main V21–V23 占用，fresh DB Flyway V1–V24 验证）。
+- **合并期修复（main 既有客观缺陷，门禁阻断）：** ① openapi `loadAdminReportDetail` responses 重复映射键（main 自身即损坏，git 证据）修复为 AdminReportDetail 200 形状；② 6 处 admin schema `allOf:[$ref]+nullable` 无 type（redocly error，main 副本复现证实）补 `type: object` 保留 null 语义；③ 后端 verify 首跑失败为 shell 残留 SPRING_DATASOURCE_URL 覆盖 H2（环境非代码），清空后重跑绿。
+- **重验：** 后端 **464/464** EXIT=0；前端 **394/394** + build 绿；E2E 全量 **150：119/31**（**ai-planner 12/12** + **admin 5/5**；31 红 = map9+trips8 refine-trip-map 偏差 + auth7+profile2+credit1 main UI refresh/admin 既有 E2E 债务（git 证据 spec 字节相同而 main 删 DOM）+ profiles4 债务 1 污染，隔离 fresh DB **8/8** 证实）；门禁 openspec strict **valid** + redocly **0 error / 21 warnings**。
+- **验收口径达成，G2 结论维持 Pass with documented debts**（原签署不变，见 g2-decision.md Addendum 2）。提交：9 冲突 + V24 + openapi 修复 + 三报告 addendum staged → `git commit --no-edit` → push 前再 pull → push。

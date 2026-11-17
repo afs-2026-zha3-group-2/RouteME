@@ -6,7 +6,8 @@ import java.util.List;
 import routeme.model.ProfileRules;
 
 /**
- * 账号行（含凭据）的领域视图：只在认证流程内使用，不直接对外返回。
+ * Credentials plus profile of a registered account. Only the auth flow reads this object; it is
+ * never serialised to API responses.
  */
 public record UserAccount(
         long id,
@@ -24,11 +25,16 @@ public record UserAccount(
         String major,
         String job,
         String mbti,
-        String travelStyle) {
+        String travelStyle,
+        String email,
+        String role,
+        String status) {
 
     public DemoUser toDemoUser() {
         return new DemoUser(
                 id, nickname, avatarInitial, avatarUrl, school, city, major, job, bio, interests,
-                ProfileRules.complete(nickname, birthday, gender, city, interests, travelStyle, Clock.systemUTC()));
+                ProfileRules.complete(nickname, birthday, gender, city, interests, travelStyle, Clock.systemUTC()),
+                role,
+                status);
     }
 }

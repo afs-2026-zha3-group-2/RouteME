@@ -1,13 +1,18 @@
 import { useEffect, useRef, useState, type KeyboardEvent as ReactKeyboardEvent, type ReactNode } from 'react';
+import { createPortal } from 'react-dom';
+import { loadUserProfile } from '../api';
+import { adminMessages } from '../i18n/adminMessages';
+import { GateScene } from '../identity/GateScene';
 import { tripMessages } from '../i18n/tripMessages';
+import { AccountStatusBanner } from '../profile/AccountStatusBanner';
 import { publisherSummary } from '../profile/profileDisplay';
 import type { Route } from '../route';
 import type { ColorMode } from '../theme';
-import type { DemoUser } from '../types';
+import type { DemoUser, UserProfile } from '../types';
 import { Avatar } from './Avatar';
 import { BrandMark } from './BrandMark';
 
-type NavKey = 'discover' | 'map' | 'create' | 'aiPlanner' | 'mine' | 'chat';
+type NavKey = 'discover' | 'map' | 'create' | 'aiPlanner' | 'mine' | 'chat' | 'help' | 'admin';
 
 type NavItem = { key: NavKey; label: string; href: string };
 
@@ -20,10 +25,16 @@ const NAV_ITEMS: NavItem[] = [
   { key: 'chat', label: tripMessages.chatNav, href: '#/chat' },
 ];
 
+// 侧栏比底部导航多一个入口：客服与举报在移动端仍可从账号菜单进入，避免底栏挤成 7 项。
+const RAIL_ITEMS: NavItem[] = [
+  ...NAV_ITEMS,
+  { key: 'help', label: adminMessages.helpTitle, href: '#/help' },
+];
+
 const NAV_GROUPS: Array<{ title: string; items: NavItem[] }> = [
-  { title: '浏览', items: NAV_ITEMS.filter((item) => item.key === 'discover' || item.key === 'map') },
-  { title: '规划', items: NAV_ITEMS.filter((item) => item.key === 'create' || item.key === 'aiPlanner') },
-  { title: '我的', items: NAV_ITEMS.filter((item) => item.key === 'mine' || item.key === 'chat') },
+  { title: '浏览', items: RAIL_ITEMS.filter((item) => item.key === 'discover' || item.key === 'map') },
+  { title: '规划', items: RAIL_ITEMS.filter((item) => item.key === 'create' || item.key === 'aiPlanner') },
+  { title: '我的', items: RAIL_ITEMS.filter((item) => item.key === 'mine' || item.key === 'chat' || item.key === 'help' || item.key === 'admin') },
 ];
 
 function activeKey(route: Route): NavKey | null {
@@ -44,6 +55,12 @@ function activeKey(route: Route): NavKey | null {
   }
   if (route.name === 'chat') {
     return 'chat';
+  }
+  if (route.name === 'help') {
+    return 'help';
+  }
+  if (route.name.startsWith('admin')) {
+    return 'admin';
   }
   return null;
 }
@@ -117,6 +134,38 @@ function NavIcon({ name }: { name: NavKey }) {
       </svg>
     );
   }
+  if (name === 'help') {
+    return (
+      <svg
+        viewBox="0 0 20 20"
+        aria-hidden="true"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.7"
+        strokeLinecap="round"
+      >
+        <circle cx="10" cy="10" r="7" />
+        <path d="M7.8 7.6a2.4 2.4 0 1 1 3.4 2.5c-.7.4-1.2.9-1.2 1.9" />
+        <circle cx="10" cy="14.4" r=".9" fill="currentColor" stroke="none" />
+      </svg>
+    );
+  }
+  if (name === 'admin') {
+    return (
+      <svg
+        viewBox="0 0 20 20"
+        aria-hidden="true"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.7"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      >
+        <path d="M10 2.8 16.4 5v5.1c0 3.4-2.5 5.8-6.4 7.1-3.9-1.3-6.4-3.7-6.4-7.1V5z" />
+        <path d="m7.3 10 1.9 1.9 3.6-3.8" />
+      </svg>
+    );
+  }
   return (
     <svg
       viewBox="0 0 20 20"
@@ -136,7 +185,6 @@ function NavIcon({ name }: { name: NavKey }) {
 
 type Props = {
   currentUser: DemoUser;
-  isAuthenticated: boolean;
   onLogout: () => void;
   route: Route;
   mode: ColorMode;
@@ -146,7 +194,6 @@ type Props = {
 
 export function AppShell({
   currentUser,
-  isAuthenticated,
   onLogout,
   route,
   mode,
@@ -154,35 +201,109 @@ export function AppShell({
   children,
 }: Props) {
   const active = activeKey(route);
-  const [identityOpen, setIdentityOpen] = useState(false);
-  const identityRef = useRef<HTMLDivElement>(null);
-  const identityTriggerRef = useRef<HTMLButtonElement>(null);
 
   const [accountOpen, setAccountOpen] = useState(false);
-  const [accountMenuAnchor, setAccountMenuAnchor] = useState<{ top: number; left: number } | null>(
-    null,
-  );
-  const accountTriggerRef = useRef<HTMLButtonElement>(null);
+  const [accountMenuAnchor, setAccountMenuAnchor] = useState<{
+    left: number;
+    bottom: number;
+    placement: 'rail' | 'tabbar';
+  } | null>(null);
+  const railAccountRef = useRef<HTMLButtonElement>(null);
+  const tabAccountRef = useRef<HTMLButtonElement>(null);
   const accountMenuRef = useRef<HTMLDivElement>(null);
+
+  /** 宽屏用侧栏底部入口，窄屏侧栏隐藏后改用底部导航入口，菜单跟随可见的那一个。 */
+  const visibleAccountTrigger = () => {
+    const railTrigger = railAccountRef.current;
+    if (railTrigger !== null && railTrigger.offsetParent !== null) {
+      return railTrigger;
+    }
+    return tabAccountRef.current;
+  };
+
+  /**
+   * 账号菜单固定浮在入口旁边：`.rail` 带 backdrop-filter，会成为 fixed 子元素的定位
+   * 容器，所以菜单用 portal 挂到 body，坐标按视口计算。窄屏的入口在底部导航里，
+   * 菜单位于导航上方并夹在视口内。
+   */
+  const placeAccountMenu = () => {
+    const trigger = visibleAccountTrigger();
+    if (trigger === null) {
+      return;
+    }
+    const rect = trigger.getBoundingClientRect();
+    if (trigger.closest('.tabbar') !== null) {
+      // 与 `.rail-menu` 的宽度和视口留白保持一致。
+      const menuWidth = 188;
+      const margin = 12;
+      setAccountMenuAnchor({
+        left: Math.min(
+          Math.max(margin, rect.left + rect.width / 2 - menuWidth / 2),
+          window.innerWidth - menuWidth - margin,
+        ),
+        bottom: window.innerHeight - rect.top + 10,
+        placement: 'tabbar',
+      });
+      return;
+    }
+    const railRight = trigger.closest('.rail')?.getBoundingClientRect().right ?? rect.right;
+    setAccountMenuAnchor({
+      left: railRight + 12,
+      bottom: Math.max(12, window.innerHeight - rect.bottom),
+      placement: 'rail',
+    });
+  };
+
+  const toggleAccountMenu = () => {
+    if (accountOpen) {
+      setAccountOpen(false);
+      return;
+    }
+    placeAccountMenu();
+    setAccountOpen(true);
+  };
+
+  // 受限账号（BANNED / SUSPENDED）在任意页面都要先看到处罚说明；理由与解封时间只在本人资料接口下发。
+  const [selfProfile, setSelfProfile] = useState<UserProfile | null>(null);
+
+  useEffect(() => {
+    if (currentUser.status !== 'BANNED' && currentUser.status !== 'SUSPENDED') {
+      setSelfProfile(null);
+      return;
+    }
+    let active = true;
+    loadUserProfile(currentUser.id, currentUser.id)
+      .then((profile) => {
+        if (active) {
+          setSelfProfile(profile);
+        }
+      })
+      .catch(() => {
+        // 读不到完整资料时仍按会话里的 status 给出提示，理由显示占位符。
+        if (active) {
+          setSelfProfile(null);
+        }
+      });
+    return () => {
+      active = false;
+    };
+  }, [currentUser.id, currentUser.status]);
 
   useEffect(() => {
     if (!accountOpen) {
       setAccountMenuAnchor(null);
       return;
     }
-    const placeMenu = () => {
-      const trigger = accountTriggerRef.current;
-      if (trigger === null) {
-        return;
-      }
-      const rect = trigger.getBoundingClientRect();
-      setAccountMenuAnchor({ top: rect.bottom, left: rect.right + 10 });
-    };
+    placeAccountMenu();
     accountMenuRef.current?.querySelector<HTMLElement>('[role="menuitem"]')?.focus();
 
     const closeOnOutside = (event: MouseEvent) => {
       const target = event.target as Node;
-      if (accountTriggerRef.current?.contains(target) || accountMenuRef.current?.contains(target)) {
+      if (
+        railAccountRef.current?.contains(target) ||
+        tabAccountRef.current?.contains(target) ||
+        accountMenuRef.current?.contains(target)
+      ) {
         return;
       }
       setAccountOpen(false);
@@ -190,18 +311,18 @@ export function AppShell({
     const closeOnEscape = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
         setAccountOpen(false);
-        accountTriggerRef.current?.focus();
+        visibleAccountTrigger()?.focus();
       }
     };
     document.addEventListener('mousedown', closeOnOutside);
     document.addEventListener('keydown', closeOnEscape);
-    window.addEventListener('resize', placeMenu);
-    document.addEventListener('scroll', placeMenu, true);
+    window.addEventListener('resize', placeAccountMenu);
+    document.addEventListener('scroll', placeAccountMenu, true);
     return () => {
       document.removeEventListener('mousedown', closeOnOutside);
       document.removeEventListener('keydown', closeOnEscape);
-      window.removeEventListener('resize', placeMenu);
-      document.removeEventListener('scroll', placeMenu, true);
+      window.removeEventListener('resize', placeAccountMenu);
+      document.removeEventListener('scroll', placeAccountMenu, true);
     };
   }, [accountOpen]);
 
@@ -221,31 +342,12 @@ export function AppShell({
     items[(current + offset + items.length) % items.length].focus();
   };
 
-  useEffect(() => {
-    if (!identityOpen) {
-      return;
-    }
-    const closeOnOutside = (event: MouseEvent) => {
-      if (identityRef.current !== null && !identityRef.current.contains(event.target as Node)) {
-        setIdentityOpen(false);
-      }
-    };
-    const closeOnEscape = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') {
-        setIdentityOpen(false);
-        identityTriggerRef.current?.focus();
-      }
-    };
-    document.addEventListener('mousedown', closeOnOutside);
-    document.addEventListener('keydown', closeOnEscape);
-    return () => {
-      document.removeEventListener('mousedown', closeOnOutside);
-      document.removeEventListener('keydown', closeOnEscape);
-    };
-  }, [identityOpen]);
-
   return (
     <div className="app-shell">
+      <div className="app-backdrop" aria-hidden="true">
+        <GateScene />
+      </div>
+
       <a className="skip-link" href="#main-content">
         跳到主要内容
       </a>
@@ -292,80 +394,6 @@ export function AppShell({
             </svg>
           )}
         </button>
-
-        <div className="id-switch" ref={identityRef}>
-          <button
-            ref={identityTriggerRef}
-            type="button"
-            className="id-switch-btn"
-            aria-haspopup="dialog"
-            aria-expanded={identityOpen}
-            aria-label={`${tripMessages.accountMenu}：${currentUser.nickname}`}
-            onClick={() => setIdentityOpen((previous) => !previous)}
-          >
-            <Avatar user={currentUser} size="sm" />
-            <span className="id-switch-text">
-              <span className="id-switch-name">{currentUser.nickname}</span>
-              {isAuthenticated && (
-                <span className="id-switch-label">{tripMessages.authLoggedIn}</span>
-              )}
-            </span>
-            <svg
-              className="id-switch-caret"
-              viewBox="0 0 12 12"
-              aria-hidden="true"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="1.6"
-              strokeLinecap="round"
-            >
-              <path d="m3 4.5 3 3 3-3" />
-            </svg>
-          </button>
-
-          {identityOpen && (
-            <div className="id-panel" role="dialog" aria-label={tripMessages.accountMenu}>
-              {isAuthenticated && (
-                <div className="id-current">
-                  <Avatar user={currentUser} size="sm" />
-                  <span className="id-option-text">
-                    <b>{currentUser.nickname}</b>
-                    <i>{publisherSummary(currentUser) || tripMessages.profileIncompleteShort}</i>
-                  </span>
-                  <span className="id-option-flag">{tripMessages.authLoggedIn}</span>
-                </div>
-              )}
-              <div className="id-divider" role="separator" />
-              <button
-                type="button"
-                className="id-logout"
-                onClick={() => {
-                  setIdentityOpen(false);
-                  onLogout();
-                }}
-              >
-                <svg
-                  viewBox="0 0 20 20"
-                  aria-hidden="true"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="1.7"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                >
-                  <path d="M8 4H5.5A1.5 1.5 0 0 0 4 5.5v9A1.5 1.5 0 0 0 5.5 16H8" />
-                  <path d="M12 6.5 15.5 10 12 13.5M8.5 10h7" />
-                </svg>
-                <span>{tripMessages.authLogout}</span>
-              </button>
-              <p className="id-panel-note">
-                {isAuthenticated
-                  ? '退出登录会结束本机会话并回到登录页。'
-                  : '退出登录会清除本机身份并回到登录页。'}
-              </p>
-            </div>
-          )}
-        </div>
       </header>
 
       <aside className="rail" aria-label="主导航">
@@ -386,28 +414,31 @@ export function AppShell({
               ))}
             </div>
           ))}
+          {currentUser.role === 'ADMIN' && (
+            <div className="rail-group">
+              <span className="rail-group-title">管理</span>
+              <a
+                className={active === 'admin' ? 'rail-link active' : 'rail-link'}
+                href="#/admin/users"
+                aria-current={active === 'admin' ? 'page' : undefined}
+              >
+                <NavIcon name="admin" />
+                <span>{adminMessages.title}</span>
+              </a>
+            </div>
+          )}
         </nav>
 
         <div className="rail-foot">
           <button
-            ref={accountTriggerRef}
+            ref={railAccountRef}
             type="button"
             className="rail-user"
             aria-haspopup="menu"
             aria-expanded={accountOpen}
             aria-label={`账号：${currentUser.nickname}`}
             title="账号"
-            onClick={() => {
-              if (accountOpen) {
-                setAccountOpen(false);
-                return;
-              }
-              const rect = accountTriggerRef.current?.getBoundingClientRect();
-              if (rect !== undefined) {
-                setAccountMenuAnchor({ top: rect.bottom, left: rect.right + 10 });
-              }
-              setAccountOpen(true);
-            }}
+            onClick={toggleAccountMenu}
           >
             <Avatar user={currentUser} size="sm" />
             <span className="rail-user-text">
@@ -419,49 +450,62 @@ export function AppShell({
             </svg>
           </button>
 
-          {accountOpen && accountMenuAnchor !== null && (
-            <div
-              ref={accountMenuRef}
-              className="rail-menu"
-              role="menu"
-              aria-label="账号菜单"
-              style={{ top: accountMenuAnchor.top, left: accountMenuAnchor.left }}
-              onKeyDown={moveAccountMenuFocus}
-            >
-              <a
-                className="rail-menu-item"
-                role="menuitem"
-                href="#/profile/setup"
-                onClick={() => setAccountOpen(false)}
+          {accountOpen &&
+            accountMenuAnchor !== null &&
+            createPortal(
+              <div
+                ref={accountMenuRef}
+                className={
+                  accountMenuAnchor.placement === 'tabbar'
+                    ? 'rail-menu tabbar-menu'
+                    : 'rail-menu'
+                }
+                role="menu"
+                aria-label="账号菜单"
+                style={{ left: accountMenuAnchor.left, bottom: accountMenuAnchor.bottom }}
+                onKeyDown={moveAccountMenuFocus}
               >
-                <svg viewBox="0 0 20 20" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M13.4 3.6a1.6 1.6 0 0 1 2.3 0l.7.7a1.6 1.6 0 0 1 0 2.3l-8 8-3.4.7.7-3.4z" />
-                  <path d="M11.6 5.4 14 7.8" />
-                </svg>
-                <span>编辑我的资料</span>
-              </a>
-              <div className="rail-menu-sep" role="separator" />
-              <button
-                type="button"
-                className="rail-menu-item danger"
-                role="menuitem"
-                onClick={() => {
-                  setAccountOpen(false);
-                  onLogout();
-                }}
-              >
-                <svg viewBox="0 0 20 20" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M13.5 3.5H15a1.5 1.5 0 0 1 1.5 1.5v10a1.5 1.5 0 0 1-1.5 1.5h-1.5" />
-                  <path d="M9 6.5 12.5 10 9 13.5M12 10H3.5" />
-                </svg>
-                <span>{tripMessages.authLogout}</span>
-              </button>
-            </div>
-          )}
+                <a
+                  className="rail-menu-item"
+                  role="menuitem"
+                  href="#/profile/setup"
+                  onClick={() => setAccountOpen(false)}
+                >
+                  <svg viewBox="0 0 20 20" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M13.4 3.6a1.6 1.6 0 0 1 2.3 0l.7.7a1.6 1.6 0 0 1 0 2.3l-8 8-3.4.7.7-3.4z" />
+                    <path d="M11.6 5.4 14 7.8" />
+                  </svg>
+                  <span>编辑我的资料</span>
+                </a>
+                <div className="rail-menu-sep" role="separator" />
+                <button
+                  type="button"
+                  className="rail-menu-item danger"
+                  role="menuitem"
+                  onClick={() => {
+                    setAccountOpen(false);
+                    onLogout();
+                  }}
+                >
+                  <svg viewBox="0 0 20 20" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M13.5 3.5H15a1.5 1.5 0 0 1 1.5 1.5v10a1.5 1.5 0 0 1-1.5 1.5h-1.5" />
+                    <path d="M9 6.5 12.5 10 9 13.5M12 10H3.5" />
+                  </svg>
+                  <span>{tripMessages.authLogout}</span>
+                </button>
+              </div>,
+              document.body,
+            )}
         </div>
       </aside>
 
       <div className="view" id="main-content" tabIndex={-1}>
+        <AccountStatusBanner
+          status={selfProfile?.status ?? currentUser.status}
+          banReasonCode={selfProfile?.ban_reason_code}
+          banExpiresAt={selfProfile?.ban_expires_at}
+          className="view-status-notice"
+        />
         {children}
       </div>
 
@@ -477,6 +521,29 @@ export function AppShell({
             <span>{item.label}</span>
           </a>
         ))}
+        {currentUser.role === 'ADMIN' && (
+          <a
+            className={active === 'admin' ? 'tab-link active' : 'tab-link'}
+            href="#/admin/users"
+            aria-current={active === 'admin' ? 'page' : undefined}
+          >
+            <NavIcon name="admin" />
+            <span>{adminMessages.title}</span>
+          </a>
+        )}
+        <button
+          ref={tabAccountRef}
+          type="button"
+          className="tab-link tab-account"
+          aria-haspopup="menu"
+          aria-expanded={accountOpen}
+          aria-label={`账号：${currentUser.nickname}`}
+          title="账号"
+          onClick={toggleAccountMenu}
+        >
+          <Avatar user={currentUser} size="sm" />
+          <span>账号</span>
+        </button>
       </nav>
     </div>
   );

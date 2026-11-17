@@ -18,7 +18,9 @@ public record DemoUserResponse(
         String job,
         String bio,
         List<String> interests,
-        boolean profileComplete) {
+        boolean profileComplete,
+        String role,
+        String status) {
 
     public static DemoUserResponse from(DemoUser user) {
         return new DemoUserResponse(
@@ -32,6 +34,8 @@ public record DemoUserResponse(
                 user.job(),
                 user.bio(),
                 user.interests(),
-                user.profileComplete());
+                user.profileComplete(),
+                user.role(),
+                user.status());
     }
 }

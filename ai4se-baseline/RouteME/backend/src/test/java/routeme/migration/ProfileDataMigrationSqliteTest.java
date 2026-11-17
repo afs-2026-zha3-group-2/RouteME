@@ -67,7 +67,7 @@ class ProfileDataMigrationSqliteTest {
 
         // Then
         assertAll(
-                () -> assertEquals(4, users, "four demo users"),
+                () -> assertEquals(5, users, "four demo users plus the seeded administrator"),
                 () -> assertEquals(7, trips, "seeded trips"),
                 () -> assertEquals("周野", nickname, "profile viewer nickname"),
                 () -> assertEquals("", school, "identity lives in job / mbti, not school"),

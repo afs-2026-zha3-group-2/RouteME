@@ -14,6 +14,20 @@ export type Paging = {
   size: number;
 };
 
+export type AccountRole = 'USER' | 'ADMIN';
+
+export type AccountStatus = 'ACTIVE' | 'SUSPENDED' | 'BANNED';
+
+export type BanReasonCode =
+  | 'HARASSMENT'
+  | 'FAKE_TRIP'
+  | 'FRAUD_RISK'
+  | 'ILLEGAL_CONTENT'
+  | 'IMPERSONATION'
+  | 'NO_SHOW_DISRUPTION'
+  | 'PRIVACY_LEAK'
+  | 'OTHER';
+
 /** 信用等级：由后端按分数实时派生，前端只负责文案与配色映射。 */
 export type CreditLevel = 'excellent' | 'good' | 'fair' | 'low' | 'risk';
 
@@ -27,6 +41,7 @@ export type UserCreditEntry = {
 /**
  * 用户摘要：身份门、行程发布者、体验作者与会话用户共用。
  * 资料未完善时 city / major / job 缺省，学校可为空串。
+ * `role` / `status` 只读，用于后台入口可见性与只读态；`email` 不下发。
  */
 export type DemoUser = {
   id: number;
@@ -40,6 +55,8 @@ export type DemoUser = {
   major?: string | null;
   job?: string | null;
   profile_complete: boolean;
+  role?: AccountRole | null;
+  status?: AccountStatus | null;
 };
 
 /** 公开资料弹窗的四项旅行统计。 */
@@ -77,6 +94,10 @@ export type UserProfile = {
   credit_level: CreditLevel;
   joined_at?: string | null;
   stats?: ProfileStats;
+  /** 账号状态：SUSPENDED 只回 status；BANNED 同时回理由与解封时间。 */
+  status?: AccountStatus | null;
+  ban_reason_code?: BanReasonCode | null;
+  ban_expires_at?: string | null;
 };
 
 /** 保存资料（`PUT /api/users/me/profile`）：六项必填，其余可留空。 */
@@ -104,9 +125,13 @@ export type AuthRegisterRequest = {
   username: string;
   password: string;
   nickname: string;
+  email?: string | null;
 };
 
 export type TripStatus = 'recruiting' | 'full' | 'ongoing' | 'completed' | 'cancelled';
+
+/** 发布时可选的出行方式：自驾 / 骑行 / 公共交通（契约 0.15.0 起）。 */
+export type TripTravelMode = 'driving' | 'bicycling' | 'transit';
 
 export type TripSummary = {
   id: number;
@@ -120,6 +145,8 @@ export type TripSummary = {
   stops: string[];
   meeting_areas: string[];
   meeting_time: string | null;
+  /** 出行方式；0.15.0 之前发布的行程为 null（视为未填写）。 */
+  travel_mode: TripTravelMode | null;
   tags: string[];
   capacity: number;
   joined_count: number;
@@ -167,6 +194,7 @@ export type TripCreateRequest = {
   stops: string[];
   meeting_areas?: string[] | null;
   meeting_time?: string | null;
+  travel_mode?: TripTravelMode | null;
   note?: string | null;
   budget_min_cents?: number | null;
   budget_max_cents?: number | null;
@@ -248,11 +276,15 @@ export type PendingApplicationCount = {
 
 export type ReportReason = 'harassment' | 'fake' | 'safety' | 'other';
 
+export type ReportTargetType = 'trip' | 'user' | 'experience';
+
 export type ReportRequest = {
-  target_type: 'trip' | 'user';
+  target_type: ReportTargetType;
   target_id: number;
   reason: ReportReason;
   note?: string | null;
+  /** 从行程聊天页提交用户举报时的会话所属行程；其他入口省略。 */
+  trip_id?: number | null;
 };
 
 export type ExperienceIntensity = 'relaxed' | 'moderate' | 'tiring';
@@ -286,6 +318,213 @@ export type ExperienceFilters = {
   date_from?: string;
   date_to?: string;
   tags?: string[];
+};
+
+export type ReportStatus = 'PENDING' | 'PROCESSING' | 'RESOLVED' | 'REJECTED';
+
+export type ReportResolutionAction = 'SUSPEND' | 'BAN' | 'KEEP' | 'UPDATE_BAN' | 'REJECT';
+
+export type ServiceSessionStatus = 'WAITING' | 'HANDLING' | 'CLOSED';
+
+export type AdminStatusAction = 'SUSPEND' | 'BAN' | 'RESTORE';
+
+export type AdminUserRef = {
+  id: number;
+  nickname: string;
+};
+
+export type AdminUserTripRef = {
+  id: number;
+  title: string;
+  status: TripStatus;
+  start_date: string;
+};
+
+export type AdminUserExperienceRef = {
+  id: number;
+  trip_id: number;
+  trip_title: string;
+  created_at: string;
+};
+
+export type AdminUserReportRef = {
+  id: number;
+  code: string;
+  direction: 'REPORTER' | 'REPORTED';
+  status: ReportStatus;
+  reason: ReportReason;
+  created_at: string;
+};
+
+/** 管理端用户列表行（`GET /admin/users`）。 */
+export type AdminUserSummary = {
+  id: number;
+  nickname: string;
+  avatar_initial: string;
+  avatar_url?: string | null;
+  email?: string | null;
+  role: AccountRole;
+  status: AccountStatus;
+  created_at: string;
+};
+
+/** 管理端用户详情（`GET /admin/users/{id}`）：资料 + 处罚 + 三类关联内容。 */
+export type AdminUserDetail = AdminUserSummary & {
+  school?: string | null;
+  city?: string | null;
+  major?: string | null;
+  job?: string | null;
+  bio?: string | null;
+  interests: string[];
+  status_reason?: string | null;
+  status_updated_at?: string | null;
+  status_updated_by?: AdminUserRef | null;
+  ban_expires_at?: string | null;
+  ban_reason_code?: BanReasonCode | null;
+  ban_reason_note?: string | null;
+  trips: AdminUserTripRef[];
+  experiences: AdminUserExperienceRef[];
+  reports: AdminUserReportRef[];
+  trip_total: number;
+  experience_total: number;
+  report_total: number;
+};
+
+export type AdminUserStatusRequest = {
+  action: AdminStatusAction;
+  reason?: string | null;
+  ban_reason_code?: BanReasonCode | null;
+  ban_reason_note?: string | null;
+  ban_expires_at?: string | null;
+};
+
+export type ReportedUser = {
+  id: number;
+  nickname: string;
+  status: AccountStatus;
+};
+
+/** 举报队列行（`GET /admin/reports`）。 */
+export type AdminReportSummary = {
+  id: number;
+  code: string;
+  target_type: ReportTargetType;
+  target_id: number;
+  target_label: string;
+  reporter: AdminUserRef;
+  reported_user?: ReportedUser | null;
+  reason: ReportReason;
+  created_at: string;
+  status: ReportStatus;
+};
+
+export type AdminReportTarget = {
+  type: ReportTargetType;
+  id: number;
+  label: string;
+  exists: boolean;
+  content_excerpt?: string | null;
+};
+
+export type AdminReportContextOrigin = 'chat' | 'trip';
+
+/** 举报关联行程摘要：聊天举报显示会话所属行程，行程举报显示被举报行程。 */
+export type AdminReportTripContext = {
+  id: number;
+  title?: string | null;
+  destination?: string | null;
+  start_date?: string | null;
+  end_date?: string | null;
+  status: TripStatus;
+  publisher?: AdminUserRef | null;
+};
+
+export type AdminReportMessage = {
+  id: number;
+  sender: AdminUserRef;
+  receiver: AdminUserRef;
+  content: string;
+  sent_at: string;
+};
+
+/** 举报来源：`chat` 回放双方会话，`trip` 只给行程概要。 */
+export type AdminReportContext = {
+  origin: AdminReportContextOrigin;
+  trip?: AdminReportTripContext | null;
+  messages: AdminReportMessage[];
+};
+
+/** 举报详情（`GET /admin/reports/{id}`）：上下文 + 处置历史。 */
+export type AdminReportDetail = AdminReportSummary & {
+  note?: string | null;
+  target: AdminReportTarget;
+  context?: AdminReportContext | null;
+  processed_by?: AdminUserRef | null;
+  processing_at?: string | null;
+  resolved_at?: string | null;
+  resolution_note?: string | null;
+  resolution_action?: ReportResolutionAction | null;
+};
+
+export type AdminReportResolveRequest = {
+  outcome: 'RESOLVED' | 'REJECTED';
+  note: string;
+  action?: Exclude<ReportResolutionAction, 'REJECT'> | null;
+  ban_reason_code?: BanReasonCode | null;
+  ban_reason_note?: string | null;
+  ban_expires_at?: string | null;
+};
+
+export type ServiceUser = {
+  id: number;
+  nickname: string;
+  avatar_initial: string;
+  email?: string | null;
+  status: AccountStatus;
+  created_at: string;
+};
+
+export type ServiceSessionSummary = {
+  id: number;
+  user: ServiceUser;
+  status: ServiceSessionStatus;
+  created_at: string;
+  joined_at?: string | null;
+  closed_at?: string | null;
+  last_message_at?: string | null;
+  message_count: number;
+};
+
+export type ServiceMessage = {
+  id: number;
+  session_id: number;
+  sender_type: 'USER' | 'ADMIN';
+  sender_id: number;
+  sender_nickname: string;
+  content: string;
+  created_at: string;
+};
+
+export type ServiceSessionDetail = ServiceSessionSummary & {
+  messages: ServiceMessage[];
+  reports?: AdminUserReportRef[];
+};
+
+/** 用户侧「我的举报」行：不含备注、处理人与处罚信息。 */
+export type HelpReportSummary = {
+  id: number;
+  code: string;
+  target_type: ReportTargetType;
+  target_id: number;
+  target_label: string;
+  reason: ReportReason;
+  created_at: string;
+  status: ReportStatus;
+};
+
+export type HelpReports = {
+  items: HelpReportSummary[];
+  total: number;
 };
 
 /** Open-Meteo 单日天气；上游缺省的字段为 null，页面不展示对应项。 */

@@ -131,3 +131,47 @@ P4 提交 `2e552fc` 后按发起人指令 `git pull --no-rebase --autostash --no
 - 合并重验用 fresh DB（`routeme-merge-final.db` 全量 / `routeme-merge-profiles.db` 隔离），均 gitignore 不入库；旧 `routeme-merge-e2e.db`（污染）保留本地。后端日志 `backend-merge-*.log` / E2E `e2e-merge-final.log` 为本地证据不入库。
 - 排除项延续：工作区根 `.vscode/tasks.json`（本地 IDE 微调，unstaged 不入合并提交）、`t8-*.json` 冒烟证据（untracked 不入库）、preview 图片删除（并行会话未触碰）。
 - 合并提交：`git commit --no-edit`（merge，保留默认 merge message）→ push（pull 已先做）。
+
+## 9. 第二波合并 addendum（第一波 merge 提交后 push 前再 pull，2026-11-17 晚）
+
+第一波 merge 提交 `c5b4e93` 落库后，按发起人指令 push 前先 `git pull --no-rebase --no-edit origin main`，发现 main 已推进到 **`b50e416`**（新增 `add-admin-console` / `trip-publish-options`（travel-mode + 单集合点）/ UI refresh / destination covers / experience thumbnails / help sidebar / map raster fix / V22+ 迁移），触发 **9 文件新冲突**。沿用第一波 standing ruling（main 共享功能权威 + AI 特定并集 + 全量重验 + 提交推送）自主解决。
+
+### 9.1 冲突解决（9 文件并集）
+
+- **后端行程链：** `TripPlan.java`（4 冲突 union：record 组件同时含 `travelMode` + `aiItineraryId`，withId/withMeetingInfo/create 构造调用并集）、`TripCreateRequest.java`（javadoc union）、`TripPlanServiceImpl.java`（构造器 5 参 union：demoUserService/aiItineraryService/clock/events/accountStatusService；create 内 main `assertCanWrite` + 本 change `requireOwnedSnapshot` 并存）、`TripPlanStatusTest.java`（4 处构造调用 union）。
+- **契约门禁：** `OpenApiTest.java` 重构保留**两个完整 @Test 方法**（`in_openApiFile_out_aiItineraryContractDeclared` + `in_openApiFile_out_adminConsoleContractDeclared`），版本断言 0.17.0 → **0.18.0**（main admin console 也占了 0.17.0）。
+- **openapi.yaml：** main 0.17.0 基 + AI 接口并集 → **0.18.0**（info.version + description + Error 枚举 union）。
+- **前端：** `api.ts` import union（Admin* 6 类型 + Ai* 4 类型）；`AppShell.tsx` NavKey/NAV_GROUPS union（main UI refresh + admin/help rail + 本 change AI rail）。
+- **registry.md：** REQ 条目 union（main admin/travel-mode 行 + 本 change REQ-017 p4-pass 行）。
+- **迁移版本再碰撞：** main V21(admin_console)/V22(report_context_trip)/V23(add_travel_mode) 占用 → 本 change `V21__ai_itineraries.sql` 经 `git mv` 再重命名 **`V24__ai_itineraries.sql`**（fresh DB Flyway V1–V24 干净重建验证，2.4s 启动）。
+
+### 9.2 合并期发现与修复（main 既有客观缺陷，门禁阻断，最小修复）
+
+| # | 发现 | 证据与修复 |
+|---|---|---|
+| 9-1 | **openapi.yaml 重复映射键（parse 失败）**：`/admin/reports/{reportId}` GET 的 responses 被体验图片响应片段穿插，`description` 与 `'404'` 各重复一次（redocly duplicated mapping key @1785；SnakeYAML 容忍故 OpenApiTest 曾通过） | `git show MERGE_HEAD:...openapi.yaml` 证实 **main b50e416 自身即有此损坏**（HEAD 无 admin paths，auto-merge 原样取 main 块）。修复为正确的 AdminReportDetail 200 形状（application/json $ref），与第一波 MAPPER 修复同口径（合并期最小修复，不改语义） |
+| 9-2 | **6 处 `nullable-type-sibling` error**：main admin schemas（status_updated_by / trip / publisher / reported_user / context / processed_by）用 `allOf:[$ref] + nullable:true` 无 `type`，OAS 3.0 下 nullable 被忽略，redocly recommended 报 error | 对 main 自身副本（修 9-1 后）lint 复现同样 6 error，证实既有债务。最小样例实证规则要求 nullable 必须伴随 type；修复为 `type: object + nullable: true + allOf:[$ref]`（保留 null 语义，OpenApiTest 仅断言键存在/required/enums 不受影响）。复跑 OpenApiTest EXIT=0 |
+| 9-3 | **后端 verify 首跑 EXIT=1（环境非代码）**：复用 shell 残留 `SPRING_DATASOURCE_URL=jdbc:sqlite:...`（E2E 后端启动注入）经 Spring relaxed binding 覆盖测试 H2 数据源（`org.h2.Driver claims to not accept jdbcUrl`） | 显式清空环境变量后重跑 `mvnw verify` EXIT=0；教训：测试命令前须清 `SPRING_DATASOURCE_URL` |
+
+### 9.3 第二波合并后全量重验（fresh DB V1–V24，沙箱外后端）
+
+| 层 | 命令 | 结果 |
+|---|---|---|
+| 后端 | `.\mvnw.cmd verify`（清 SPRING_DATASOURCE_URL） | **464 tests / 0 failures / 0 errors** EXIT=0（main admin/travel-mode 测试 + 本 change AI 测试并集，较第一波 364 增长） |
+| 前端单测 | `npm test` | **394/394 passed** |
+| 前端类型/构建 | `npm run build`（含 tsc --noEmit） | 0 errors + 构建成功 |
+| E2E 全量 | `npx playwright test`（fresh DB + 8080/5173） | **150 tests：119 passed / 31 failed**；**ai-planner A1–A12 12/12**；main 新增 **admin.spec 5/5** 及其余新 spec 全绿 |
+| E2E 隔离证污染 | `npx playwright test profiles.spec.ts`（再 fresh DB） | **8/8 passed** |
+| 契约门禁 | `openspec validate add-ai-itinerary --strict` / `redocly lint` | **valid** / **0 error / 21 warnings**（修复 9-1/9-2 后；warnings 为 main 既有口径） |
+
+### 9.4 31 红分类（无本 change 回归）
+
+- **map.spec 9 + trips.spec 8 = 17 例 refine-trip-map 偏差**（延续原裁决：china-map 级联依赖 + 旧地图 spec，不修旧 spec；trips 红数 9→8 因 main 再更新 trips.spec）。
+- **auth.spec 7 + profile.spec 2 + credit.spec 1 = 10 例 main UI refresh / admin console 既有 E2E 偏差（git 证据）：** auth.spec/profile.spec 在 HEAD==main **字节相同**，但 main UI refresh 删除了 `AppShell` 的 `.id-switch-label`/`账号菜单：` 触发器（HEAD 有、main 无）与 `mine/MyTripsPage.tsx` 的 `.mine-profile-card`（HEAD 有、main 无），spec 未同步；credit.spec 期望 admin 面 404 而 main 已落 admin console（404→401）。E2E 不在 CI（债务 2），main 自身即红，非本 change 回归。
+- **profiles.spec 4 例 = 债务 1 数据污染**（fresh DB 隔离 8/8 证实，延续第一波口径）。
+- **验收口径达成：** ai-planner 12/12 + admin 5/5 + 非地图套件隔离全绿；31 红均非本 change 回归（17 refine-trip-map + 10 main E2E 债务 + 4 污染）。
+
+### 9.5 提交
+
+- 9 冲突文件全解决 staged + V24 重命名 staged + openapi 9-1/9-2 修复 re-stage + 三报告 addendum staged；排除项延续（`.vscode/tasks.json` unstaged / t8-*.json untracked / preview 删除不动）。
+- `git commit --no-edit`（第二波 merge）→ push 前再 pull 核对 main 无新推进 → push。

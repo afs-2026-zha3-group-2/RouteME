@@ -527,9 +527,11 @@
             '<p class="exp-item-body">' + esc(e.content) + '</p>' +
             '<div class="exp-advice" style="margin-top:11px"><b>给后来者</b>' + esc(e.advice) + '</div>' +
             (e.photos && e.photos.length
-              ? '<div class="experience-photos"><img src="' + esc(e.photos[0]) + '" alt="体验首图">' +
-                (e.photos.length > 1 ? '<button class="btn sm ghost experience-photos-more" data-action="photo-view" data-id="' + id + '" data-index="' + exps.indexOf(e) + '" type="button">' + icon('eye') + '查看全部 ' + e.photos.length + ' 张</button>' : '') +
-                '</div>'
+              ? '<div class="experience-photos">' + e.photos.map(function (src, i) {
+                  return '<button class="experience-photo" data-action="photo-view" data-id="' + id + '" data-index="' + exps.indexOf(e) + '" type="button" aria-label="查看体验照片 ' + (i + 1) + '">' +
+                    '<img src="' + esc(src) + '" alt="体验照片 ' + (i + 1) + '">' +
+                    '</button>';
+                }).join('') + '</div>'
               : '') + '</article>';
         }).join('') + '</div></section>';
     } else if (t.status === 'COMPLETED') {

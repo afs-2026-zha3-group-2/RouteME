@@ -15,6 +15,7 @@ public record TripPlanDraft(
         List<String> stops,
         List<String> meetingAreas,
         String meetingTime,
+        String travelMode,
         String note,
         Integer budgetMinCents,
         Integer budgetMaxCents,

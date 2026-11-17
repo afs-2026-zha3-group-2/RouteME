@@ -6,6 +6,7 @@ import { publisherSummary } from '../profile/profileDisplay';
 import { creditLine, creditTone } from '../profile/creditDisplay';
 import { Avatar } from '../shell/Avatar';
 import type { Match, TripSummary, UserCreditEntry } from '../types';
+import { cityPhoto } from './cityPhotos';
 import { coverTone } from './coverTone';
 import { StatusBadge } from './StatusBadge';
 import { formatMonthDay, weekdayLabel } from './tripDateFormat';
@@ -27,32 +28,28 @@ export function TripCard({ trip, match, credit, preview = false }: Props) {
   const { openProfile } = useProfile();
   const joinedRate = trip.capacity === 0 ? 0 : Math.round((trip.joined_count / trip.capacity) * 100);
   const width = Math.min(100, Math.max(0, joinedRate));
+  const isFull = trip.status === 'full' || (trip.capacity > 0 && trip.joined_count >= trip.capacity);
+  const destination = cityLabel(trip.destination_code) || trip.destination;
+  const photo = cityPhoto(destination, trip.destination);
 
   return (
-    <article className="trip-card">
+    <article className={isFull ? 'trip-card is-full' : 'trip-card'}>
       {preview ? (
         <span className="tc-overlay" aria-hidden="true" />
       ) : (
         <a className="tc-overlay" href={`#/trips/${trip.id}`} aria-label={trip.title} />
       )}
       <div className={`tc-cover cover-${coverTone(trip.destination_code)}`}>
-        <span className="tc-dest">{cityLabel(trip.destination_code) || trip.destination}</span>
+        {photo !== null && (
+          <img className="tc-photo" src={photo} alt={`${destination}城市照片`} loading="lazy" />
+        )}
+        <span className="tc-cover-shade" aria-hidden="true" />
         <StatusBadge status={trip.status} />
+        <span className="tc-dest">{destination}</span>
       </div>
 
       <div className="tc-body">
         <h3 className="tc-title">{trip.title}</h3>
-
-        <div className="tc-meta">
-          <span>
-            {formatMonthDay(trip.start_date)} → {formatMonthDay(trip.end_date)}
-          </span>
-          <span>{dayLabel(trip.start_date)}</span>
-        </div>
-
-        <p className="tc-route">
-          <b>路线</b> {trip.stops.join(' → ')}
-        </p>
 
         {trip.tags.length > 0 && (
           <div className="tc-tags">
@@ -63,6 +60,18 @@ export function TripCard({ trip, match, credit, preview = false }: Props) {
             ))}
           </div>
         )}
+
+        <div className="tc-meta">
+          <span className="tc-date">
+            {formatMonthDay(trip.start_date)} <span aria-hidden="true">→</span>{' '}
+            {formatMonthDay(trip.end_date)}
+          </span>
+          <span className="tc-day">{dayLabel(trip.start_date)}</span>
+        </div>
+
+        <p className="tc-route">
+          <b>路线</b> {trip.stops.join(' → ')}
+        </p>
 
         {match !== undefined && (
           <div className="tc-match">
@@ -110,7 +119,7 @@ export function TripCard({ trip, match, credit, preview = false }: Props) {
             <span className="tc-cap-num">
               {trip.joined_count} / {trip.capacity} {tripMessages.peopleUnit}
             </span>
-            <span className={width >= 100 ? 'tc-meter is-full' : 'tc-meter'}>
+            <span className={isFull ? 'tc-meter is-full' : 'tc-meter'}>
               <Progress percent={width} size="small" showInfo={false} />
             </span>
           </span>

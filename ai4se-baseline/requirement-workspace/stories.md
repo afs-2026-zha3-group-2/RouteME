@@ -267,6 +267,44 @@
 - 原型中的「编辑 / 删除 / 参考发布」不在本迭代落地：前两者无路由与接口，后者属 S17。
 - 未接入外部 ALM；本表为仓库内权威故事清单，ALM Sync 状态记为 Pending。
 
+---
+
+# Story list — REQ-018（S19–S24 管理后台）
+
+- **来源：** 用户 2026-11-17 提供的 6 条管理后台 User Story（含优先级、迭代、故事点、落点页面、AC 与 Given/When/Then）
+- **口径：** 一条故事 = 一个页面 + 一份接口契约 + 一次核心操作；6 条故事共享账号状态、举报记录与客服会话数据，合并为一个 change
+- **更新时间：** 2026-11-17
+
+| Story | Title | 角色 | Priority | Iteration | Points | Page | Parent REQ | Change | Status |
+|---|---|---|---|---|---|---|---|---|---|
+| S19 | 查看并查询平台所有注册用户 | 平台管理员 | P0 | 1 | 3 | 用户管理页 | REQ-018 | `add-admin-console` | P3 Pass（2026-11-17） |
+| S20 | 暂停、封禁或恢复用户账号 | 平台管理员 | P0 | 1 | 3 | 用户详情页 | REQ-018 | `add-admin-console` | P3 Pass（2026-11-17） |
+| S21 | 查看并筛选平台举报 | 平台管理员 | P0 | 2 | 3 | 举报管理页 | REQ-018 | `add-admin-console` | P3 Pass（2026-11-17） |
+| S22 | 人工审核并处理举报 | 平台管理员 | P0 | 2 | 5 | 举报详情页 | REQ-018 | `add-admin-console` | P3 Pass（2026-11-17） |
+| S23 | 联系人工客服 | 平台用户 | P0 | 3 | 3 | 帮助与反馈 / 客服会话页 | REQ-018 | `add-admin-console` | P3 Pass（2026-11-17） |
+| S24 | 接入并回复用户会话 | 平台客服 | P0 | 3 | 5 | 客户服务页 | REQ-018 | `add-admin-console` | P3 Pass（2026-11-17） |
+
+## Traceability（REQ-018）
+
+| Story | Requirement scenarios | Change spec | Story file |
+|---|---|---|---|
+| S19 | REQ-018 §4 S19-1 ~ S19-12 | `openspec/changes/add-admin-console/specs/admin-console/spec.md` | `requirement-workspace/stories/add-admin-console.story.md` |
+| S20 | REQ-018 §4 S20-1 ~ S20-10 | 同上 | 同上 |
+| S21 | REQ-018 §4 S21-1 ~ S21-5 | 同上 | 同上 |
+| S22 | REQ-018 §4 S22-1 ~ S22-6 | 同上 | 同上 |
+| S23 | REQ-018 §4 S23-1 ~ S23-7 | `openspec/changes/add-admin-console/specs/customer-service/spec.md` | 同上 |
+| S24 | REQ-018 §4 S24-1 ~ S24-8 | 同上 | 同上 |
+| 全部 | 注册邮箱 / 角色服务端固定 | `openspec/changes/add-admin-console/specs/user-auth/spec.md` | 同上 |
+
+## Notes（REQ-018）
+
+- 6 条故事属于同一后台闭环，合并为一个 change；P3 `tasks.md` 按迭代 1 / 2 / 3 分组，允许分三次交付。
+- S1 给出的「7 类具体封禁理由 + 其他原因」在记录中展开为 8 项；举报原因仍为现有四类，二者不是同一枚举。
+- 「暂停发布行程」按 S20 口径归入 `SUSPENDED`，不单设处罚类型。
+- MVP 不提供永久删除账号或内容；处罚只改状态，既有行程、体验、聊天、举报保留。
+
+---
+
 # Story list — REQ-019（信用分账户与等级展示）
 
 - **来源：** 用户当次会话提供的 P0 故事「信用分账户与等级展示」（信用系统迭代 1 / Story 1 / 2 点 / 落点页面：用户个人主页 + 管理后台用户详情页）

@@ -57,7 +57,10 @@ export function validateMeetingForm(values: MeetingFormValues, endDate: string):
   return errors;
 }
 
-/** 手动添加一个集合区域：trim（含全角空格）、去重保序、上限 3。 */
+/**
+ * 集合地点只保留一个：手输的地点 trim 后直接替换已选地点；
+ * 与已选地点完全相同时提示重复，不重复写入。
+ */
 export function addMeetingArea(
   areas: string[],
   raw: string,
@@ -66,16 +69,13 @@ export function addMeetingArea(
   if (trimmed === '') {
     return { next: areas, error: null };
   }
-  if (areas.includes(trimmed)) {
-    return { next: areas, error: '这个集合区域已经添加过了' };
-  }
-  if (areas.length >= MAX_MEETING_AREAS) {
-    return { next: areas, error: tripMessages.errorMeetingAreasLimit };
-  }
   if (trimmed.length > MAX_MEETING_AREA_LENGTH) {
     return { next: areas, error: tripMessages.errorMeetingAreaTooLong };
   }
-  return { next: [...areas, trimmed], error: null };
+  if (areas.length === 1 && areas[0] === trimmed) {
+    return { next: areas, error: '这个集合地点已经添加过了' };
+  }
+  return { next: [trimmed], error: null };
 }
 
 /** 两个字段整体替换：空值传 null 表示清空。 */

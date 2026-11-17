@@ -44,7 +44,7 @@ class TripPlanServicePersistenceTest {
                 () -> assertEquals(TripStatusEnum.COMPLETED, completed.status(FixedClockTestConfig.NOW), "completed_at wins"),
                 () -> assertTrue(full.tags().contains("历史"), "tags parsed from json"),
                 () -> assertEquals(2, full.joinedCount(), "joined count"),
-                () -> assertEquals(4, demoUserService.findAll().size(), "demo users")
+                () -> assertEquals(5, demoUserService.findAll().size(), "four demo users plus the seeded administrator")
         );
     }
 }

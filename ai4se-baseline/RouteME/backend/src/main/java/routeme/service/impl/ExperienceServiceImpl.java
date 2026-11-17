@@ -25,6 +25,9 @@ import routeme.entity.TripExperienceEntity;
 import routeme.entity.TripExperiencePhotoEntity;
 import routeme.exception.ForbiddenActionException;
 import routeme.exception.InvalidInputException;
+import routeme.enums.TripStatusEnum;
+import routeme.enums.WriteScopeEnum;
+import routeme.exception.ExperienceNotAllowedException;
 import routeme.mapper.TripExperienceMapper;
 import routeme.mapper.TripExperiencePhotoMapper;
 import routeme.param.PageParam;
@@ -36,6 +39,8 @@ import routeme.request.ExperienceWriteRequest;
 import routeme.response.ExperiencePhotoResponse;
 import routeme.response.ExperienceResponse;
 import routeme.response.ExperienceSaveResponse;
+import routeme.service.ApplicationService;
+import routeme.service.AccountStatusService;
 import routeme.service.DemoUserService;
 import routeme.service.ExperienceEligibility;
 import routeme.service.ExperiencePhotoService;
@@ -58,6 +63,7 @@ public class ExperienceServiceImpl
     private final ExperiencePhotoStorage photoStorage;
     private final ExperienceEligibility eligibility;
     private final Clock clock;
+    private final AccountStatusService accountStatusService;
 
     public ExperienceServiceImpl(
             TripPlanService tripPlanService,
@@ -65,18 +71,21 @@ public class ExperienceServiceImpl
             TripExperiencePhotoMapper photoMapper,
             ExperiencePhotoStorage photoStorage,
             ExperienceEligibility eligibility,
-            Clock clock) {
+            Clock clock,
+            AccountStatusService accountStatusService) {
         this.tripPlanService = tripPlanService;
         this.demoUserService = demoUserService;
         this.photoMapper = photoMapper;
         this.photoStorage = photoStorage;
         this.eligibility = eligibility;
         this.clock = clock;
+        this.accountStatusService = accountStatusService;
     }
 
     @Override
     @Transactional
     public ExperienceSaveResponse upsert(long tripId, long authorId, ExperienceWriteRequest request) {
+        accountStatusService.assertCanWrite(authorId, WriteScopeEnum.BUSINESS);
         TripPlan trip = tripPlanService.requireCurrent(tripId);
         eligibility.requireCanShare(trip, authorId);
         List<Long> photoIds = normalizePhotoIds(request.photoIdsOrDefault());

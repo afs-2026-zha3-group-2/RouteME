@@ -13,7 +13,7 @@ describe('validateMeetingForm', () => {
     expect(validateMeetingForm(emptyMeetingForm(), '2026-11-20')).toEqual({});
     expect(
       validateMeetingForm(
-        { meetingAreas: ['陈家祠地铁站 D 口', '永庆坊'], meetingTime: '2026-11-20T08:30' },
+        { meetingAreas: ['陈家祠地铁站 D 口'], meetingTime: '2026-11-20T08:30' },
         '2026-11-20',
       ),
     ).toEqual({});
@@ -24,9 +24,9 @@ describe('validateMeetingForm', () => {
     expect(errors.meetingArea).toBeDefined();
   });
 
-  it('rejects more than three areas', () => {
+  it('rejects more than one meeting point', () => {
     const errors = validateMeetingForm(
-      { meetingAreas: ['a', 'b', 'c', 'd'], meetingTime: '' },
+      { meetingAreas: ['a', 'b'], meetingTime: '' },
       '2026-11-20',
     );
     expect(errors.meetingArea).toBeDefined();
@@ -48,22 +48,20 @@ describe('validateMeetingForm', () => {
 });
 
 describe('addMeetingArea', () => {
-  it('trims full-width spaces and keeps order', () => {
+  it('trims full-width spaces into a single point', () => {
     const first = addMeetingArea([], '　陈家祠　');
     expect(first.next).toEqual(['陈家祠']);
-    const second = addMeetingArea(first.next, '永庆坊');
-    expect(second.next).toEqual(['陈家祠', '永庆坊']);
   });
 
-  it('dedupes after trim', () => {
+  it('replaces the existing point instead of appending', () => {
+    const result = addMeetingArea(['陈家祠'], '永庆坊');
+    expect(result.next).toEqual(['永庆坊']);
+    expect(result.error).toBeNull();
+  });
+
+  it('reports a duplicate after trim without duplicating', () => {
     const result = addMeetingArea(['陈家祠'], ' 陈家祠 ');
     expect(result.next).toEqual(['陈家祠']);
-    expect(result.error).not.toBeNull();
-  });
-
-  it('enforces the three-area limit', () => {
-    const result = addMeetingArea(['a', 'b', 'c'], 'd');
-    expect(result.next).toEqual(['a', 'b', 'c']);
     expect(result.error).not.toBeNull();
   });
 

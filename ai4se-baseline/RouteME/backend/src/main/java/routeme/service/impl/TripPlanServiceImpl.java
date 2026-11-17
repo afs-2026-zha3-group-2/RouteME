@@ -20,6 +20,7 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import routeme.constant.TripTimeZoneConstant;
 import routeme.enums.TripCancelReasonEnum;
 import routeme.enums.TripStatusEnum;
+import routeme.enums.WriteScopeEnum;
 import routeme.exception.ForbiddenActionException;
 import routeme.exception.InvalidInputException;
 import routeme.exception.TripNotFoundException;
@@ -39,6 +40,7 @@ import routeme.request.TripQuery;
 import routeme.service.AiItineraryService;
 import routeme.service.DemoUserService;
 import routeme.service.TripCancelledEvent;
+import routeme.service.AccountStatusService;
 import routeme.service.TripCompletedEvent;
 import routeme.service.TripPlanService;
 
@@ -56,21 +58,25 @@ public class TripPlanServiceImpl extends AbstractServiceImpl<TripPlanMapper, Tri
     private final AiItineraryService aiItineraryService;
     private final Clock clock;
     private final ApplicationEventPublisher events;
+    private final AccountStatusService accountStatusService;
 
     public TripPlanServiceImpl(
             DemoUserService demoUserService,
             AiItineraryService aiItineraryService,
             Clock clock,
-            ApplicationEventPublisher events) {
+            ApplicationEventPublisher events,
+            AccountStatusService accountStatusService) {
         this.demoUserService = demoUserService;
         this.aiItineraryService = aiItineraryService;
         this.clock = clock;
         this.events = events;
+        this.accountStatusService = accountStatusService;
     }
 
     @Override
     @Transactional
     public TripPlan create(TripCreateRequest request, long publisherId) {
+        accountStatusService.assertCanWrite(publisherId, WriteScopeEnum.BUSINESS);
         Instant now = clock.instant();
         // AI 链接校验：快照必须存在且归属发布人，否则 INVALID_INPUT（B9 / B10）。
         if (request.aiItineraryId() != null) {
@@ -85,6 +91,7 @@ public class TripPlanServiceImpl extends AbstractServiceImpl<TripPlanMapper, Tri
                 request.stops(),
                 request.meetingAreas(),
                 request.meetingTime(),
+                request.travelMode(),
                 request.note(),
                 request.budgetMinCents(),
                 request.budgetMaxCents(),
