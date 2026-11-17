@@ -3,7 +3,7 @@ import { cityLabel } from '../area/areaOptions';
 import { tripMessages } from '../i18n/tripMessages';
 import { useProfile } from '../profiles/ProfileContext';
 import { publisherSummary } from '../profile/profileDisplay';
-import { creditLine, creditTone } from '../profile/creditDisplay';
+import { creditLine, creditRestrictedBadge, creditTone } from '../profile/creditDisplay';
 import { Avatar } from '../shell/Avatar';
 import type { Match, TripSummary, UserCreditEntry } from '../types';
 import { cityPhoto } from './cityPhotos';
@@ -111,6 +111,11 @@ export function TripCard({ trip, match, credit, preview = false }: Props) {
               {credit !== undefined && (
                 <span className={`profile-credit is-compact tc-credit ${creditTone(credit.credit_level)}`}>
                   {creditLine(credit.credit_score, credit.credit_level)}
+                  {credit.credit_restricted && (
+                    <span className="badge danger credit-restricted-badge">
+                      {creditRestrictedBadge(credit.credit_restricted)}
+                    </span>
+                  )}
                 </span>
               )}
             </button>

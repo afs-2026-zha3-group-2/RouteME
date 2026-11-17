@@ -4,6 +4,8 @@ import zhCN from 'antd/es/locale/zh_CN';
 import dayjs from 'dayjs';
 import 'dayjs/locale/zh-cn';
 import { createTrip, loadTrip } from '../api';
+import { CreditRestrictedNotice } from '../credit/CreditRestrictedNotice';
+import { useMyCredit } from '../credit/CreditContext';
 import { AreaCascader } from '../area/AreaCascader';
 import { cityLabel } from '../area/areaOptions';
 import { tripMessages } from '../i18n/tripMessages';
@@ -47,6 +49,7 @@ type Props = {
 };
 
 export function TripCreatePage({ currentUser, fromTripId }: Props) {
+  const { restricted } = useMyCredit();
   const [values, setValues] = useState<TripFormValues>(() =>
     fromTripId === undefined ? initialTripForm() : emptyTripForm,
   );
@@ -496,6 +499,8 @@ export function TripCreatePage({ currentUser, fromTripId }: Props) {
               />
             </Field>
 
+            {restricted && <CreditRestrictedNotice />}
+
             {submitError !== null && (
               <Alert
                 type="error"
@@ -506,7 +511,7 @@ export function TripCreatePage({ currentUser, fromTripId }: Props) {
             )}
 
             <div className="form-actions">
-              <Button type="primary" loading={submitting} onClick={submit}>
+              <Button type="primary" loading={submitting} disabled={restricted} onClick={submit}>
                 {tripMessages.createSubmit}
               </Button>
               <Button onClick={() => (window.location.hash = '#/')}>

@@ -1,0 +1,237 @@
+<!doctype html>
+<html lang="zh-CN" data-theme="light">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>退出同行信用影响 · UI 预览</title>
+  <style>
+    :root {
+      --bg: #f6f7f4;
+      --surface: #ffffff;
+      --surface-2: #eef1ec;
+      --ink-1: #1f2a26;
+      --ink-2: #4b5a54;
+      --ink-3: #7b8a83;
+      --line: #dfe5de;
+      --lagoon: #2f7f7a;
+      --jade: #3e8b63;
+      --amber: #b07a2a;
+      --coral: #c25f4a;
+      --danger: #b54343;
+      --shadow: 0 18px 50px rgba(31, 42, 38, .12);
+      --radius: 18px;
+    }
+    html[data-theme="dark"] {
+      --bg: #121816;
+      --surface: #1a211e;
+      --surface-2: #232c28;
+      --ink-1: #eef3ef;
+      --ink-2: #c3cec8;
+      --ink-3: #93a29b;
+      --line: #2f3a35;
+      --danger: #e07a7a;
+      --shadow: 0 18px 50px rgba(0, 0, 0, .35);
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+      background: var(--bg);
+      color: var(--ink-1);
+      line-height: 1.55;
+    }
+    .page { max-width: 1180px; margin: 0 auto; padding: 36px 24px 72px; }
+    .top { display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; margin-bottom: 26px; }
+    .eyebrow { font-size: 12px; letter-spacing: .12em; text-transform: uppercase; color: var(--ink-3); }
+    h1 { margin: 4px 0 6px; font-size: 28px; letter-spacing: -.02em; }
+    .sub { margin: 0; color: var(--ink-3); font-size: 13.5px; max-width: 62ch; }
+    .theme {
+      border: 1px solid var(--line); background: var(--surface); color: var(--ink-2);
+      border-radius: 999px; padding: 8px 14px; font-size: 12.5px; cursor: pointer;
+    }
+    .grid { display: grid; grid-template-columns: repeat(12, 1fr); gap: 18px; }
+    .card {
+      background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius);
+      padding: 20px; box-shadow: var(--shadow);
+    }
+    .span-7 { grid-column: span 7; }
+    .span-5 { grid-column: span 5; }
+    .span-6 { grid-column: span 6; }
+    .span-12 { grid-column: span 12; }
+    .label { font-size: 11.5px; letter-spacing: .08em; text-transform: uppercase; color: var(--ink-3); }
+    h2 { margin: 6px 0 12px; font-size: 18px; }
+    h3 { margin: 0 0 8px; font-size: 14px; }
+    p { margin: 0 0 10px; }
+    .muted { color: var(--ink-3); font-size: 12.5px; }
+    .modal-mock {
+      border: 1px solid var(--line); border-radius: 16px; background: var(--surface);
+      padding: 18px; max-width: 520px;
+    }
+    .modal-title { display: flex; align-items: center; justify-content: space-between; font-weight: 700; font-size: 16px; margin-bottom: 12px; }
+    .field { display: block; margin: 12px 0; }
+    .field > span { display: block; font-size: 12px; color: var(--ink-2); margin-bottom: 6px; }
+    select, .input {
+      width: 100%; padding: 10px 12px; border-radius: 11px; border: 1px solid var(--line);
+      background: var(--surface); color: var(--ink-1); font: inherit;
+    }
+    .leave-preview {
+      display: flex; flex-direction: column; gap: 4px; margin: 14px 0;
+      padding: 12px 14px; border: 1px solid color-mix(in srgb, var(--amber) 34%, transparent);
+      border-radius: 14px; background: color-mix(in srgb, var(--amber) 8%, transparent);
+    }
+    .leave-preview .preview-label { font-size: 11.5px; color: var(--ink-3); letter-spacing: .04em; }
+    .leave-preview b { font-size: 16px; }
+    .leave-preview .hint { font-size: 11.5px; color: var(--ink-3); }
+    .modal-foot { display: flex; justify-content: flex-end; gap: 10px; margin-top: 16px; }
+    .btn {
+      border: 1px solid var(--line); background: var(--surface); color: var(--ink-1);
+      border-radius: 11px; padding: 9px 14px; font: inherit; cursor: default;
+    }
+    .btn.danger { border-color: color-mix(in srgb, var(--danger) 40%, transparent); color: var(--danger); }
+    .btn.ghost { background: transparent; }
+    .profile-hero { display: flex; gap: 16px; align-items: flex-start; }
+    .avatar {
+      width: 64px; height: 64px; border-radius: 20px; display: grid; place-items: center;
+      font-size: 22px; font-weight: 700; color: #fff; background: linear-gradient(135deg, #5aa39b, #2f7f7a);
+      flex: none;
+    }
+    .name { font-size: 20px; font-weight: 700; margin-bottom: 4px; }
+    .credit-line { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: 8px 0; }
+    .credit-pill {
+      display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 999px;
+      font-size: 12px; border: 1px solid color-mix(in srgb, var(--coral) 30%, transparent);
+      background: color-mix(in srgb, var(--coral) 8%, transparent); color: var(--coral);
+    }
+    .badge-danger {
+      display: inline-flex; align-items: center; padding: 2px 8px; border-radius: 999px;
+      font-size: 11.5px; border: 1px solid color-mix(in srgb, var(--danger) 30%, transparent);
+      background: color-mix(in srgb, var(--danger) 8%, transparent); color: var(--danger);
+    }
+    .restriction-note {
+      display: flex; gap: 8px; align-items: flex-start; margin-top: 10px; padding: 10px 12px;
+      border-radius: 12px; border: 1px solid color-mix(in srgb, var(--amber) 30%, transparent);
+      background: color-mix(in srgb, var(--amber) 7%, transparent); font-size: 12.5px; color: var(--ink-2);
+    }
+    .blocked {
+      display: flex; gap: 10px; align-items: flex-start; padding: 14px 16px; border-radius: 14px;
+      border: 1px solid color-mix(in srgb, var(--danger) 26%, transparent);
+      background: color-mix(in srgb, var(--danger) 6%, transparent); font-size: 13px;
+    }
+    .chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+    .chip { font-size: 11.5px; padding: 3px 9px; border-radius: 999px; background: var(--surface-2); color: var(--ink-2); }
+    .divider { height: 1px; background: var(--line); margin: 16px 0; }
+    .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+    .small { font-size: 12px; color: var(--ink-3); }
+    @media (max-width: 900px) {
+      .span-7, .span-5, .span-6 { grid-column: span 12; }
+      .two-col { grid-template-columns: 1fr; }
+      h1 { font-size: 22px; }
+      .page { padding: 24px 16px 52px; }
+      .top { align-items: flex-start; flex-direction: column; }
+    }
+  </style>
+</head>
+<body>
+<main class="page">
+  <header class="top">
+    <div>
+      <div class="eyebrow">RouteME · REQ-022 · P3 Preview</div>
+      <h1>退出同行 · 信用影响与低信用限制</h1>
+      <p class="sub">静态预览：退出原因与预计影响、待核实、本人限制原因、他人限制徽标、被拦截操作、系统取消原因。以下按钮均为展示，不触发真实接口。</p>
+    </div>
+    <button class="theme" id="theme">切换深色</button>
+  </header>
+
+  <div class="grid">
+    <section class="card span-7">
+      <div class="label">Story 4 · 退出弹窗</div>
+      <h2>先看清影响，再退出</h2>
+      <div class="modal-mock">
+        <div class="modal-title"><span>退出这次同行？</span><span class="muted">×</span></div>
+        <p class="muted">退出后名额会释放；已匹配关系解除，聊天记录保留。请先确认本次信用影响。</p>
+        <label class="field">
+          <span>退出原因（必选）</span>
+          <select>
+            <option>个人原因</option>
+            <option>不可抗力</option>
+            <option>安全原因（退出后可举报）</option>
+          </select>
+        </label>
+        <div class="leave-preview">
+          <span class="preview-label">本次预计信用影响</span>
+          <b>出发前 24–72 小时 -5</b>
+          <span class="hint">退出后信用分 80 → 75；当月第 1 次，不翻倍。</span>
+        </div>
+        <p class="small">选择不可抗力或安全原因时暂不扣分，记录待核实；管理员核实不在本 change 范围内。</p>
+        <div class="modal-foot"><button class="btn ghost">再想想</button><button class="btn danger">确认退出</button></div>
+      </div>
+      <div class="divider"></div>
+      <h3>不可抗力 / 安全原因</h3>
+      <div class="leave-preview">
+        <span class="preview-label">本次预计信用影响</span>
+        <b>暂不扣分，待核实</b>
+        <span class="hint">退出成功；不计入当月退出次数；核实前一直不扣分。</span>
+      </div>
+    </section>
+
+    <section class="card span-5">
+      <div class="label">Story 5 · 本人主页</div>
+      <h2>受限用户看到什么</h2>
+      <div class="profile-hero">
+        <div class="avatar">岚</div>
+        <div>
+          <div class="name">林岚</div>
+          <div class="muted">信用较低 · 55 / 100</div>
+          <div class="credit-line"><span class="credit-pill">信用分：55 / 100 · 信用较低</span><span class="badge-danger">限制中</span></div>
+          <div class="restriction-note">信用分低于 60，当前账号仅可查看；分数回到 60 分及以上自动解除。原因：CREDIT_SCORE_BELOW_60。</div>
+        </div>
+      </div>
+      <div class="chips"><span class="chip">查看历史行程</span><span class="chip">查看信用状态</span><span class="chip">举报 / 安全</span></div>
+    </section>
+
+    <section class="card span-6">
+      <div class="label">他人视角 · 五个展示面</div>
+      <h2>只看到「限制中」徽标</h2>
+      <div class="credit-line"><span class="credit-pill">信用分：55 / 100 · 信用较低</span><span class="badge-danger">限制中</span></div>
+      <p class="muted">个人主页 / 资料弹窗 / 详情发布者行 / 行程卡发布者行 / 申请者行同口径；不展示限制原因，不展示加扣分明细。</p>
+      <div class="divider"></div>
+      <div class="credit-line"><span class="credit-pill">信用分：80 / 100 · 信用良好</span></div>
+      <p class="small">正常用户不显示徽标。</p>
+    </section>
+
+    <section class="card span-6">
+      <div class="label">被拦截操作</div>
+      <h2>只读账号的提示</h2>
+      <div class="blocked"><span>⚠</span><span><b>账号受限，暂不能发布新的旅行计划。</b><br />信用分低于 60，当前账号仅可查看；分数回到 60 分及以上自动解除。</span></div>
+      <p class="small">发布行程 / 申请加入 / 发布体验 / 编辑行程或体验 / 发送聊天消息 / 编辑资料头像均被服务端以 403 CREDIT_RESTRICTED 拒绝；举报与安全入口保留。</p>
+    </section>
+
+    <section class="card span-12">
+      <div class="label">系统取消</div>
+      <h2>受限用户已发布的行程</h2>
+      <div class="two-col">
+        <div>
+          <div class="credit-line"><span class="badge-danger">已取消</span></div>
+          <p><b>取消原因：</b>信用分低于 60，账号受限</p>
+          <p class="small">发布者与已接受同行者可见；其他用户只看到「已取消」。</p>
+        </div>
+        <div>
+          <div class="blocked"><span>ℹ</span><span>该行程已取消，聊天记录保留但不再发送新消息。待处理申请已取消，已接受同行者保留历史。</span></div>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <p class="small" style="margin-top: 22px;">文件：docs/sdd/add-credit-exit-restriction/preview/exit-credit.html · 静态设计预览，不是生产页面。</p>
+</main>
+<script>
+  const root = document.documentElement;
+  const button = document.getElementById('theme');
+  button.addEventListener('click', () => {
+    const dark = root.dataset.theme === 'dark';
+    root.dataset.theme = dark ? 'light' : 'dark';
+    button.textContent = dark ? '切换深色' : '切换浅色';
+  });
+</script>
+</body>
+</html>

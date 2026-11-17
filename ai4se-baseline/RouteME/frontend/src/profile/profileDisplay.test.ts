@@ -53,6 +53,7 @@ describe('hasPublicContent', () => {
     profile_complete: false,
     credit_score: 80,
     credit_level: 'good',
+    credit_restricted: false,
   };
 
   it('is false when only the nickname exists', () => {
@@ -86,6 +87,7 @@ describe('profileToUser', () => {
       profile_complete: true,
       credit_score: 80,
       credit_level: 'good',
+      credit_restricted: false,
     });
     expect(user.avatar_initial).toBe('林');
     expect(user.avatar_url).toBeNull();

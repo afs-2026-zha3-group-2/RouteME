@@ -2,7 +2,9 @@ import { useCallback, useEffect, useState } from 'react';
 import { Alert, Button, Card, Skeleton, Space, Tag, Typography, message } from 'antd';
 import { acceptApplication, loadTrip, loadTripApplications, rejectApplication } from '../api';
 import { tripMessages } from '../i18n/tripMessages';
-import { creditLine, creditTone } from '../profile/creditDisplay';
+import { CreditRestrictedNotice } from '../credit/CreditRestrictedNotice';
+import { useMyCredit } from '../credit/CreditContext';
+import { creditLine, creditRestrictedBadge, creditTone } from '../profile/creditDisplay';
 import { useUserCredits } from '../profiles/useUserCredits';
 import type { DemoUser, TripApplication, TripDetail } from '../types';
 import { applicationLabel } from './applicationStatus';
@@ -14,6 +16,7 @@ type Props = {
 };
 
 export function ApplicationsPage({ currentUser, tripId }: Props) {
+  const { restricted } = useMyCredit();
   const [applications, setApplications] = useState<TripApplication[] | null>(null);
   const [trip, setTrip] = useState<TripDetail | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -108,6 +111,8 @@ export function ApplicationsPage({ currentUser, tripId }: Props) {
               <Alert type="info" showIcon title={tripMessages.applicationsClosed} />
             )}
 
+            {restricted && <CreditRestrictedNotice />}
+
             {applications === null && <Skeleton active paragraph={{ rows: 4 }} />}
 
             {applications !== null && applications.length === 0 && (
@@ -134,6 +139,13 @@ export function ApplicationsPage({ currentUser, tripId }: Props) {
                               credits[application.applicant.id].credit_score,
                               credits[application.applicant.id].credit_level,
                             )}
+                            {credits[application.applicant.id].credit_restricted && (
+                              <span className="badge danger credit-restricted-badge">
+                                {creditRestrictedBadge(
+                                  credits[application.applicant.id].credit_restricted,
+                                )}
+                              </span>
+                            )}
                           </span>
                         )}
                         <Tag>{applicationLabel(application.status)}</Tag>
@@ -146,7 +158,10 @@ export function ApplicationsPage({ currentUser, tripId }: Props) {
                           <Button
                             type="primary"
                             size="small"
-                            disabled={trip !== null && (trip.status === 'full' || trip.joined_count >= trip.capacity)}
+                            disabled={
+                              restricted ||
+                              (trip !== null && (trip.status === 'full' || trip.joined_count >= trip.capacity))
+                            }
                             loading={busyId === application.id}
                             onClick={() => decide(application, true)}
                           >
@@ -154,6 +169,7 @@ export function ApplicationsPage({ currentUser, tripId }: Props) {
                           </Button>
                           <Button
                             size="small"
+                            disabled={restricted}
                             loading={busyId === application.id}
                             onClick={() => decide(application, false)}
                           >

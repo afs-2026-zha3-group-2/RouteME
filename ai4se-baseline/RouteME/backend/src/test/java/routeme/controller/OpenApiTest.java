@@ -78,7 +78,7 @@ class OpenApiTest {
 
         // Then
         assertAll(
-                () -> assertEquals("0.18.0", info.get("version"), "info.version"),
+                () -> assertEquals("0.19.0", info.get("version"), "info.version"),
                 () -> assertTrue(responses(likeExperience).containsKey("201"), "first like returns 201"),
                 () -> assertTrue(responses(likeExperience).containsKey("200"), "duplicate like returns 200"),
                 () -> assertTrue(responses(likeExperience).containsKey("403"), "self like returns 403"),
@@ -117,9 +117,15 @@ class OpenApiTest {
                 () -> assertTrue(
                         required(userProfile).containsAll(List.of("credit_score", "credit_level")),
                         "credit fields are required"),
+                () -> assertTrue(
+                        properties(userProfile).containsKey("credit_restricted"),
+                        "profile credit_restricted declared"),
+                () -> assertTrue(
+                        properties(userProfile).containsKey("credit_restriction_reason"),
+                        "profile credit_restriction_reason declared"),
                 () -> assertTrue(paths(document).containsKey("/users/credits"), "batch credit path declared"),
                 () -> assertTrue(
-                        required(creditEntry).containsAll(List.of("user_id", "credit_score", "credit_level")),
+                        required(creditEntry).containsAll(List.of("user_id", "credit_score", "credit_level", "credit_restricted")),
                         "batch credit entry fields"),
                 () -> assertEquals("integer", creditScore.get("type"), "credit_score type"),
                 () -> assertEquals(0, creditScore.get("minimum"), "credit_score minimum"),
@@ -149,7 +155,7 @@ class OpenApiTest {
 
         // Then
         assertAll(
-                () -> assertEquals("0.18.0", info.get("version"), "info.version"),
+                () -> assertEquals("0.19.0", info.get("version"), "info.version"),
                 () -> assertTrue(paths(document).containsKey("/users"), "/users declared"),
                 () -> assertTrue(paths(document).containsKey("/trips/{tripId}"), "detail path declared"),
                 () -> assertTrue(
@@ -238,6 +244,38 @@ class OpenApiTest {
                 () -> assertTrue(
                         enums(properties(errorSchema).get("code")).contains("WEATHER_UPSTREAM_ERROR"),
                         "weather upstream error code"));
+    }
+
+    @Test
+    void in_openApiFile_out_creditExitContractDeclared() throws IOException {
+        // Given
+        Map<String, Object> document = loadYaml(SPEC_PATH);
+        Map<String, Object> preview = operation(document, "/trips/{tripId}/leave-preview", "get");
+        Map<String, Object> leave = operation(document, "/trips/{tripId}/leave", "post");
+        Map<String, Object> previewSchema = schema(document, "LeavePreview");
+        Map<String, Object> leaveResult = schema(document, "LeaveResult");
+        Map<String, Map<String, Object>> tripDetailProps = allOfProperties(document, "TripDetail");
+
+        // Then
+        assertAll(
+                () -> assertTrue(responses(preview).containsKey("200"), "preview 200"),
+                () -> assertTrue(responses(preview).containsKey("400"), "preview 400"),
+                () -> assertTrue(responses(preview).containsKey("403"), "preview 403"),
+                () -> assertTrue(responses(leave).containsKey("200"), "leave 200"),
+                () -> assertTrue(responses(leave).containsKey("409"), "leave 409"),
+                () -> assertTrue(
+                        required(previewSchema).containsAll(List.of(
+                                "reason", "departure_at", "penalty_tier", "applied_delta",
+                                "monthly_ordinal", "resulting_score", "message_code")),
+                        "preview required fields"),
+                () -> assertTrue(
+                        required(leaveResult).containsAll(List.of(
+                                "credit_score", "credit_level", "credit_restricted",
+                                "applied_delta", "review_status", "message_code")),
+                        "leave result required fields"),
+                () -> assertTrue(
+                        enums(tripDetailProps.get("cancel_reason")).contains("credit_restricted"),
+                        "TripDetail cancel_reason system enum"));
     }
 
     @Test
@@ -604,7 +642,7 @@ class OpenApiTest {
 
         // Then
         assertAll(
-                () -> assertEquals("0.18.0", info.get("version"), "info.version"),
+                () -> assertEquals("0.19.0", info.get("version"), "info.version"),
                 () -> assertTrue(paths(document).keySet().containsAll(ADMIN_CONSOLE_PATHS), "admin console paths"),
                 () -> assertEquals(16L, adminOperations, "admin console operations"),
                 () -> assertTrue(

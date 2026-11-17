@@ -115,6 +115,16 @@ public interface TripPlanService extends IService<TripPlanEntity> {
      */
     TripPlan cancel(long tripId, long publisherId, TripCancelRequest request);
 
+    /**
+     * 系统因信用限制取消行程：允许招募中 / 已满员 / 旅行中；已完成 / 已取消 no-op。
+     */
+    TripPlan cancelByCreditRestriction(long tripId, java.time.Instant now);
+
+    /**
+     * 系统因信用限制取消某发布者全部未结束行程（含旅行中）。
+     */
+    void cancelUnfinishedByPublisher(long publisherId, java.time.Instant now);
+
     /** 发布者把自己的行程标记为已结束（写 completed_at）。
      *
      * @param tripId 行程 id

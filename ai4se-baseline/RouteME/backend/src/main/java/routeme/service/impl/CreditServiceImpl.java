@@ -3,6 +3,7 @@ package routeme.service.impl;
 import java.time.Clock;
 import java.util.List;
 
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -16,6 +17,7 @@ import routeme.mapper.CreditLedgerMapper;
 import routeme.mapper.UserCreditAccountMapper;
 import routeme.pojo.CreditBooking;
 import routeme.pojo.UserCredit;
+import routeme.service.CreditChangedEvent;
 import routeme.service.CreditService;
 
 /**
@@ -27,10 +29,13 @@ public class CreditServiceImpl extends AbstractServiceImpl<CreditLedgerMapper, C
         implements CreditService {
 
     private final UserCreditAccountMapper accountMapper;
+    private final ApplicationEventPublisher events;
     private final Clock clock;
 
-    public CreditServiceImpl(UserCreditAccountMapper accountMapper, Clock clock) {
+    public CreditServiceImpl(
+            UserCreditAccountMapper accountMapper, ApplicationEventPublisher events, Clock clock) {
         this.accountMapper = accountMapper;
+        this.events = events;
         this.clock = clock;
     }
 
@@ -112,6 +117,8 @@ public class CreditServiceImpl extends AbstractServiceImpl<CreditLedgerMapper, C
             account.setScore(after);
             account.setUpdatedAt(clock.instant().toString());
             accountMapper.updateById(account);
+            events.publishEvent(new CreditChangedEvent(
+                    booking.userId(), before, after, ledger.getId(), booking.reasonCode(), clock.instant()));
         }
         return UserCredit.of(booking.userId(), after);
     }

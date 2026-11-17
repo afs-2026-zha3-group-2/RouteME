@@ -1,7 +1,7 @@
 openapi: 3.0.3
 info:
   title: RouteME API
-  version: 0.18.0
+  version: 0.19.0
   description: |
     RouteME 后端对外契约。本文件是前后端唯一事实源，字段名、类型、状态码与错误码只在这里定稿。
         当前包含：脚手架问候语、演示账户与账号认证（注册/登录/会话/退出）、旅行计划（浏览/筛选/发布/详情/结束），同行匹配、申请、退出、聊天、我的旅行与举报，游后体验分享与参考发布所需数据，以及管理后台（用户管理 / 举报处置 / 人工客服）与用户侧帮助入口。
@@ -1211,10 +1211,10 @@ paths:
           $ref: '#/components/responses/NotFound'
         '409':
           $ref: '#/components/responses/Conflict'
-  /trips/{tripId}/leave:
-    post:
-      operationId: leaveTrip
-      summary: 已接受的同行者退出
+  /trips/{tripId}/leave-preview:
+    get:
+      operationId: previewLeaveTrip
+      summary: 预览退出同行的信用影响
       parameters:
         - $ref: '#/components/parameters/DemoUserId'
         - name: tripId
@@ -1223,9 +1223,98 @@ paths:
           schema:
             type: integer
             format: int64
+        - name: reason
+          in: query
+          required: true
+          schema:
+            type: string
+            enum: [personal, force_majeure, safety]
       responses:
-        '204':
-          description: 已退出
+        '200':
+          description: 预计信用影响
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LeavePreview'
+              examples:
+                penalty:
+                  value:
+                    reason: personal
+                    departure_at: '2026-11-19T08:30:00Z'
+                    penalty_tier: h24to72
+                    theoretical_delta: -5
+                    applied_delta: -5
+                    monthly_ordinal: 1
+                    monthly_doubled: false
+                    counted: true
+                    review_status: not_required
+                    resulting_score: 75
+                    message_code: penalty
+                pending:
+                  value:
+                    reason: force_majeure
+                    departure_at: '2026-11-19T08:30:00Z'
+                    penalty_tier: h24to72
+                    theoretical_delta: 0
+                    applied_delta: 0
+                    monthly_ordinal: 0
+                    monthly_doubled: false
+                    counted: false
+                    review_status: pending
+                    resulting_score: 80
+                    message_code: pending_review
+        '400':
+          $ref: '#/components/responses/InvalidInput'
+        '401':
+          $ref: '#/components/responses/DemoUserRequired'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+  /trips/{tripId}/leave:
+    post:
+      operationId: leaveTrip
+      summary: 已接受的同行者退出并结算信用影响
+      parameters:
+        - $ref: '#/components/parameters/DemoUserId'
+        - name: tripId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LeaveRequest'
+            examples:
+              personal:
+                value:
+                  reason: personal
+      responses:
+        '200':
+          description: 退出成功与实际信用结果
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LeaveResult'
+              examples:
+                penalty:
+                  value:
+                    credit_score: 75
+                    credit_level: good
+                    credit_restricted: false
+                    theoretical_delta: -5
+                    applied_delta: -5
+                    monthly_ordinal: 1
+                    review_status: not_required
+                    message_code: penalty
+        '400':
+          $ref: '#/components/responses/InvalidInput'
         '401':
           $ref: '#/components/responses/DemoUserRequired'
         '403':
@@ -2457,7 +2546,7 @@ components:
           $ref: '#/components/schemas/AccountStatus'
     UserProfile:
       type: object
-      required: [id, nickname, avatar_initial, interests, profile_complete, credit_score, credit_level]
+      required: [id, nickname, avatar_initial, interests, profile_complete, credit_score, credit_level, credit_restricted]
       properties:
         id:
           type: integer
@@ -2551,6 +2640,16 @@ components:
           readOnly: true
           enum: [excellent, good, fair, low, risk]
           description: 由信用分实时派生：excellent 90–100 / good 80–89 / fair 60–79 / low 30–59 / risk 0–29
+        credit_restricted:
+          type: boolean
+          readOnly: true
+          description: 当前信用分低于 60 时为 true；五个信用展示面据此显示「限制中」徽标
+        credit_restriction_reason:
+          type: string
+          nullable: true
+          readOnly: true
+          enum: [CREDIT_SCORE_BELOW_60]
+          description: 限制原因；仅本人在个人主页读取时返回，他人响应省略
         joined_at:
           type: string
           format: date-time
@@ -2574,7 +2673,7 @@ components:
           $ref: '#/components/schemas/ProfileStats'
     UserCreditEntry:
       type: object
-      required: [user_id, credit_score, credit_level]
+      required: [user_id, credit_score, credit_level, credit_restricted]
       properties:
         user_id:
           type: integer
@@ -2591,6 +2690,10 @@ components:
           readOnly: true
           enum: [excellent, good, fair, low, risk]
           description: 由信用分实时派生：excellent 90–100 / good 80–89 / fair 60–79 / low 30–59 / risk 0–29
+        credit_restricted:
+          type: boolean
+          readOnly: true
+          description: 当前信用分低于 60 时为 true；列表展示「限制中」徽标
     ProfileStats:
       type: object
       required: [published, completed, joined, shared]
@@ -2870,8 +2973,8 @@ components:
               type: string
               nullable: true
               readOnly: true
-              enum: [personal, time_changed, plan_changed, not_enough_people, weather, illness, safety, other]
-              description: 取消原因；仅发布者与已接受同行者可见，其他请求为 null
+              enum: [personal, time_changed, plan_changed, not_enough_people, weather, illness, safety, other, credit_restricted]
+              description: 取消原因；credit_restricted 为系统原因（信用分低于 60，账号受限）；仅发布者与已接受同行者可见，其他请求为 null
             cancel_note:
               type: string
               nullable: true
@@ -2967,6 +3070,93 @@ components:
           nullable: true
           maxLength: 100
           description: 补充说明；选择 other 时必填，1–100 字
+    LeaveReason:
+      type: string
+      enum: [personal, force_majeure, safety]
+      description: 退出原因：个人原因 / 不可抗力 / 安全原因
+    LeaveRequest:
+      type: object
+      required: [reason]
+      properties:
+        reason:
+          $ref: '#/components/schemas/LeaveReason'
+    LeavePreview:
+      type: object
+      required: [reason, departure_at, penalty_tier, theoretical_delta, applied_delta, monthly_ordinal, monthly_doubled, counted, review_status, resulting_score, message_code]
+      properties:
+        reason:
+          $ref: '#/components/schemas/LeaveReason'
+        departure_at:
+          type: string
+          format: date-time
+          description: 出发基准（UTC）；集合时间优先，否则开始日期 00:00 Asia/Shanghai
+        penalty_tier:
+          type: string
+          enum: [ge7d, d3to7d, h24to72, h12to24, lt12h, during]
+          description: 扣分档位；左闭右开
+        theoretical_delta:
+          type: integer
+          description: 理论变化量，包含月度翻倍与旅行中 -15
+        applied_delta:
+          type: integer
+          description: 经 0–100 裁断后的实际变化量；待核实为 0
+        monthly_ordinal:
+          type: integer
+          minimum: 0
+          description: 当月出发前退出序号；0 表示不计入
+        monthly_doubled:
+          type: boolean
+          description: 是否为第 2 次及之后的翻倍
+        counted:
+          type: boolean
+          description: 是否计入当月退出次数
+        review_status:
+          type: string
+          enum: [not_required, pending]
+          description: not_required 为已结算；pending 为不可抗力/安全原因待核实
+        resulting_score:
+          type: integer
+          minimum: 0
+          maximum: 100
+          description: 本次退出后的预计信用分
+        message_code:
+          type: string
+          enum: [penalty, penalty_doubled, no_penalty, during_trip, pending_review, at_floor]
+          description: 展示用结果码
+    LeaveResult:
+      type: object
+      required: [credit_score, credit_level, credit_restricted, theoretical_delta, applied_delta, monthly_ordinal, review_status, message_code]
+      properties:
+        credit_score:
+          type: integer
+          minimum: 0
+          maximum: 100
+          description: 退出后的实际信用分
+        credit_level:
+          type: string
+          enum: [excellent, good, fair, low, risk]
+          description: 退出后的信用等级
+        credit_restricted:
+          type: boolean
+          description: 退出后是否处于信用限制
+        theoretical_delta:
+          type: integer
+          description: 理论变化量
+        applied_delta:
+          type: integer
+          description: 实际变化量
+        monthly_ordinal:
+          type: integer
+          minimum: 0
+          description: 当月出发前退出序号；0 表示不计入
+        review_status:
+          type: string
+          enum: [not_required, pending]
+          description: not_required 为已结算；pending 为待核实
+        message_code:
+          type: string
+          enum: [penalty, penalty_doubled, no_penalty, during_trip, pending_review, at_floor]
+          description: 展示用结果码
     Match:
       type: object
       required: [score, percentage, reasons, basis]
@@ -3528,6 +3718,7 @@ components:
         status_updated_by:
           allOf:
             - $ref: '#/components/schemas/AdminUserRef'
+          type: object
           nullable: true
         ban_expires_at:
           type: string
@@ -3636,6 +3827,7 @@ components:
         trip:
           allOf:
             - $ref: '#/components/schemas/AdminReportTripContext'
+          type: object
           nullable: true
         messages:
           type: array
@@ -3674,6 +3866,7 @@ components:
         publisher:
           allOf:
             - $ref: '#/components/schemas/AdminUserRef'
+          type: object
           nullable: true
     AdminReportMessage:
       type: object
@@ -3720,6 +3913,7 @@ components:
         reported_user:
           allOf:
             - $ref: '#/components/schemas/ReportedUser'
+          type: object
           nullable: true
         reason:
           type: string
@@ -3744,11 +3938,13 @@ components:
             context:
               allOf:
                 - $ref: '#/components/schemas/AdminReportContext'
+              type: object
               nullable: true
               description: 举报来源上下文；聊天举报回放会话，行程举报给出行程概要，早期用户举报省略。
             processed_by:
               allOf:
                 - $ref: '#/components/schemas/AdminUserRef'
+              type: object
               nullable: true
             processing_at:
               type: string
