@@ -51,6 +51,7 @@ export const aiMessages = {
   tipsEmpty: '生成行程后展示 AI 出行建议',
   errorHint: '可以补充条件后重试，或换一个目的地。',
   intentDestination: (name: string) => `已把目的地识别为「${name}」，正在按你的要求规划。`,
+  intentOriginDefault: (name: string) => `没有填写出发地，先用「${name}」市中心作为出发地，可在「规划条件」里修改。`,
   intentDestinationMissing: (name: string) =>
     `没有在高德地图找到「${name}」，请在「规划条件」里手动选择目的地。`,
   intentBudget: (yuan: string) => `预算 ${yuan} 元`,
@@ -60,7 +61,9 @@ export const aiMessages = {
     return list.join(' · ');
   },
   chatNeedForm: '我还需要出发地、目的地和日期才能规划路线，先在上面的「规划条件」里补齐吧。',
-  chatNeedFormWith: (summary: string) => `收到：${summary}。还缺出发地、目的地或日期，补齐后我就开始规划。`,
+  /** 只点名真正缺的字段，避免把已识别到的目的地也算作缺失。 */
+  chatMissing: (fields: string) =>
+    `还缺${fields}，在上面的「规划条件」里补齐后我就开始规划。`,
 
   aiNotConfigured: 'AI 服务尚未配置：请联系管理员配置 AI 服务后重试。',
   aiFailed: 'AI 生成失败，请重试。',

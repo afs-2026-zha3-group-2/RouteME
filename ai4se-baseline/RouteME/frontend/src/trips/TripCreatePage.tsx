@@ -327,7 +327,7 @@ export function TripCreatePage({ currentUser, fromTripId, aiItineraryId }: Props
                 1
               </span>
               {tripMessages.sectionBasics}
-              <span className="panel-hint">{tripMessages.createSubtitle}</span>
+              <span className="panel-hint">{tripMessages.basicsHint}</span>
             </h3>
             <div className="form-stack">
               <Field
@@ -438,7 +438,7 @@ export function TripCreatePage({ currentUser, fromTripId, aiItineraryId }: Props
                 2
               </span>
               {tripMessages.sectionRoute}
-              <span className="panel-hint">{tripMessages.hintStops}</span>
+              <span className="panel-hint">{tripMessages.routeSectionHint}</span>
               <Button
                 size="small"
                 className="panel-action"
@@ -767,7 +767,7 @@ export function TripCreatePage({ currentUser, fromTripId, aiItineraryId }: Props
                 disabled={restricted}
                 onClick={submit}
               >
-                {tripMessages.createSubmit} →
+                {tripMessages.createSubmit}
               </Button>
             </div>
             <Button type="link" onClick={() => (window.location.hash = '#/')}>

@@ -51,11 +51,13 @@ import { RouteLayer } from '../map/amap/RouteLayer';
 import {
   amapErrorMessage,
   aroundPlaces,
+  catalogPlaceResult,
   formatDistance,
   formatDuration,
   geocodePlace,
   planRoute,
   reverseGeocode,
+  searchPlaces,
 } from '../map/amap/AmapService';
 import type { AmapMap, LngLat } from '../map/amap/types';
 import type {
@@ -118,6 +120,30 @@ function clockNow(): string {
   return `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
 }
 
+/**
+ * 城市名 → 真实坐标：地理编码优先，其次地点搜索，最后离线地名库。
+ * 离线坐标是示意位置，仅用于让 AI 请求可发出；用户仍可在条件里改成更精确的点。
+ */
+async function resolveCityPlace(name: string): Promise<PlaceResult | null> {
+  try {
+    const geocoded = await geocodePlace(name);
+    if (geocoded !== null) {
+      return geocoded;
+    }
+  } catch {
+    // 继续尝试搜索口径。
+  }
+  try {
+    const results = await searchPlaces(name);
+    if (results.length > 0) {
+      return results[0];
+    }
+  } catch {
+    // 继续尝试离线地名库。
+  }
+  return catalogPlaceResult(name);
+}
+
 let messageSeq = 0;
 
 export function AiPlannerPage({ currentUser }: Props) {
@@ -141,6 +167,8 @@ export function AiPlannerPage({ currentUser }: Props) {
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [map, setMap] = useState<AmapMap | null>(null);
+  const [locating, setLocating] = useState(false);
+  const [locateFailed, setLocateFailed] = useState(false);
   const [composer, setComposer] = useState('');
   const [sending, setSending] = useState(false);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -150,8 +178,12 @@ export function AiPlannerPage({ currentUser }: Props) {
   const threadEndRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
+    // 首屏不滚动（欢迎语已可见），只在有新消息 / 生成中时把最新一条带进视野。
+    if (messages.length === 0 && !generating) {
+      return;
+    }
     threadEndRef.current?.scrollIntoView({ block: 'nearest' });
-  }, [messages, generating]);
+  }, [messages.length, generating]);
 
   const update = (patch: Partial<PlannerFormValues>) => {
     setForm((previous) => ({ ...previous, ...patch }));
@@ -199,6 +231,42 @@ export function AiPlannerPage({ currentUser }: Props) {
   const pickCandidate = (place: PlaceResult) => {
     pickPlace(pickTarget)(place);
     setCandidates(null);
+  };
+
+  /** 定位出发地：浏览器坐标 → 高德反查附近地点；拒绝授权时只给内联错误，不阻塞表单。 */
+  const locateOrigin = () => {
+    if (!('geolocation' in navigator)) {
+      setLocateFailed(true);
+      return;
+    }
+    setLocating(true);
+    setLocateFailed(false);
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        const lng = position.coords.longitude;
+        const lat = position.coords.latitude;
+        reverseGeocode(lng, lat)
+          .then((place) => {
+            update({ origin: { name: place.name, lng: place.lng, lat: place.lat } });
+          })
+          .catch(() => {
+            // 反查失败不退化成虚构地名：直接用坐标作为出发地。
+            update({
+              origin: {
+                name: aiMessages.currentLocation,
+                lng: Number(lng.toFixed(6)),
+                lat: Number(lat.toFixed(6)),
+              },
+            });
+          })
+          .finally(() => setLocating(false));
+      },
+      () => {
+        setLocating(false);
+        setLocateFailed(true);
+      },
+      { timeout: 8000 },
+    );
   };
 
   /* ---------- 天气：预览（目的地 + 日期）→ generate 权威切换（L-02） ---------- */
@@ -345,12 +413,7 @@ export function AiPlannerPage({ currentUser }: Props) {
       const intent = parsePlanIntent(text);
       let nextForm = form;
       if (intent.destinationName !== null) {
-        let place: PlaceResult | null = null;
-        try {
-          place = await geocodePlace(intent.destinationName);
-        } catch {
-          place = null;
-        }
+        const place = await resolveCityPlace(intent.destinationName);
         if (place !== null) {
           nextForm = {
             ...nextForm,
@@ -361,6 +424,18 @@ export function AiPlannerPage({ currentUser }: Props) {
             tone: 'default',
             text: aiMessages.intentDestination(place.name),
           });
+          // 自然语言只给了城市：没填出发地时用同城中心起步，用户可再改。
+          if (nextForm.origin === null) {
+            nextForm = {
+              ...nextForm,
+              origin: { name: place.name, lng: place.lng, lat: place.lat },
+            };
+            pushMessage({
+              role: 'assistant',
+              tone: 'default',
+              text: aiMessages.intentOriginDefault(place.name),
+            });
+          }
         } else {
           pushMessage({
             role: 'assistant',
@@ -378,10 +453,15 @@ export function AiPlannerPage({ currentUser }: Props) {
         intent.interests.length === 0 ? null : intent.interests.join('、'),
       ]);
       if (!canGenerate(nextForm)) {
+        const missing = [
+          nextForm.origin === null ? '出发地' : null,
+          nextForm.destination === null ? '目的地' : null,
+          nextForm.date === '' ? '日期' : null,
+        ].filter((item): item is string => item !== null);
         pushMessage({
           role: 'assistant',
           tone: 'default',
-          text: summary === '' ? aiMessages.chatNeedForm : aiMessages.chatNeedFormWith(summary),
+          text: aiMessages.chatMissing(missing.join('、')),
         });
         return;
       }
@@ -565,6 +645,16 @@ export function AiPlannerPage({ currentUser }: Props) {
                   placeholder={aiMessages.placeSearchPlaceholder}
                   onPick={pickPlace('origin')}
                 />
+                <div className="ai-origin-tools">
+                  <Button size="small" type="text" loading={locating} onClick={locateOrigin}>
+                    {locating ? aiMessages.locateLoading : aiMessages.useCurrentLocation}
+                  </Button>
+                  {locateFailed && (
+                    <span className="ai-inline-error" role="alert">
+                      {aiMessages.locateFailed}
+                    </span>
+                  )}
+                </div>
                 {form.origin !== null && (
                   <div className="ai-selected-place">
                     <span className="ai-place-chip" data-testid="ai-origin-name">

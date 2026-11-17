@@ -8768,6 +8768,20 @@ svg {
   margin-top: 12px;
 }
 
+.ai-origin-tools {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 4px;
+}
+
+.ai-origin-tools .ant-btn {
+  padding: 0 4px;
+  height: 22px;
+  font-size: 11.5px;
+}
+
 /* ---------- 对话线程 ---------- */
 .ai-thread {
   display: flex;
@@ -9025,6 +9039,12 @@ svg {
   padding: 14px;
 }
 
+/* 预览列的路线地图只做上下文定位，不抢行程时间轴的视觉重心 */
+.ai-map-card .ai-map-container {
+  min-height: 300px;
+  height: clamp(300px, 34vh, 380px);
+}
+
 .ai-map-head {
   display: flex;
   align-items: baseline;
@@ -9035,6 +9055,21 @@ svg {
 
 .ai-map-head .panel-title {
   margin: 0;
+}
+
+/* 预览列只有一列宽，编辑动作改为一行胶囊，避免把时间轴撑高 */
+.ai-preview-col .ai-stop-actions {
+  flex-direction: row;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0 2px;
+  grid-column: 2 / -1;
+}
+
+.ai-preview-col .ai-stop-actions .ant-btn {
+  height: 22px;
+  padding: 0 6px;
+  font-size: 11px;
 }
 
 /* ---------- 左栏：地点与条件 ---------- */
