@@ -109,7 +109,7 @@
 | P3（ATDD / design / tasks + 签署） | `cee7ccd`、`b2becdf`、`5aaadca` |
 | P4（实现 + E2E + 本记录） | `434d937` `feat(p4): refine-safety-report move the report entry to the headers` |
 | 合并 `origin/main`（第一次） | `77284d8` `Merge origin/main into main (refine-safety-report P4)`（解决 `ChatPage.tsx` / `companions.spec.ts` / `registry.md` 三处冲突） |
-| 合并 `origin/main`（第二次） | `MERGE2_PENDING` `Merge origin/main into main (refine-safety-report P4)`（解决 `companions.spec.ts` / `registry.md` 两处冲突；`support.ts` 改发 `meeting_areas`） |
+| 合并 `origin/main`（第二次） | `a13e697` `Merge origin/main into main (refine-safety-report P4)`（解决 `companions.spec.ts` / `registry.md` 两处冲突；`support.ts` 改发 `meeting_areas`） |
 
 | 角色 | 姓名 | 本阶段确认内容 | 日期 |
 |---|---|---|---|
