@@ -1,4 +1,4 @@
-import { expect, test, type Page } from '@playwright/test';
+import { expect, test, type Locator, type Page } from '@playwright/test';
 
 const API = '/api';
 
@@ -33,6 +33,14 @@ async function setDate(page: Page, label: string, iso: string) {
   await input.press('Enter');
 }
 
+
+/** 集合时间：antd DatePicker（showTime），填 `YYYY-MM-DD HH:mm` 后回车确认。 */
+async function setMeetingTime(scope: Page | Locator, value: string) {
+  const input = scope.getByLabel(/集合时间/);
+  await input.click();
+  await input.fill(value);
+  await input.press('Enter');
+}
 
 /** 前序用例会创建行程，切到每页 45 条避免 seed 卡片被挤到第二页。 */
 async function expandPageSize(page: Page) {
@@ -189,7 +197,7 @@ test('publishes with a meeting time and edits it from the detail page', async ({
   await page.getByLabel(/集合区域/).fill('香洲港客运站');
   await page.getByLabel(/集合区域/).press('Enter');
   await expect(page.locator('.place-chip-name', { hasText: '香洲港客运站' })).toBeVisible();
-  await page.getByLabel(/集合时间/).fill(`${day}T08:30`);
+  await setMeetingTime(page, `${day} 08:30`);
   await page.getByRole('button', { name: /^发\s*布$/ }).click();
 
   await expect(page.getByRole('heading', { name: title })).toBeVisible();
@@ -220,7 +228,7 @@ test('rejects a meeting time after the end date on the publish form', async ({ p
   await setDate(page, '结束日期', day);
   await pickPlace(page, '途经点', '香洲港');
   await pickPlace(page, '途经点', '情侣路');
-  await page.getByLabel(/集合时间/).fill(`${laterDay}T08:30`);
+  await setMeetingTime(page, `${laterDay} 08:30`);
   await page.getByRole('button', { name: /^发\s*布$/ }).click();
 
   await expect(page.getByText('集合时间不能晚于结束日期')).toBeVisible();

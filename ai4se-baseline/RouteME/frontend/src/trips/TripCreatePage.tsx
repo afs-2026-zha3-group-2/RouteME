@@ -10,8 +10,13 @@ import { gazetteerCityForCode } from '../areas/gazetteerCity';
 import { tripMessages } from '../i18n/tripMessages';
 import { PlacePicker } from '../map/PlacePicker';
 import type { DemoUser, TripSummary } from '../types';
-import { appDatePickerProps } from '../utils/datePickerProps';
-import { dayjsToIso, isoToDayjs } from '../utils/dates';
+import { appDatePickerProps, appDateTimePickerProps } from '../utils/datePickerProps';
+import {
+  dayjsToIso,
+  dayjsToLocalDateTime,
+  isoToDayjs,
+  localDateTimeToDayjs,
+} from '../utils/dates';
 import {
   addTag,
   emptyTripForm,
@@ -369,11 +374,14 @@ export function TripCreatePage({ currentUser, fromTripId }: Props) {
                 error={errors.meetingTime}
                 optional
               >
-                <Input
+                <DatePicker
+                  {...appDateTimePickerProps}
                   {...fieldProps('trip-meeting-time', errors.meetingTime)}
-                  type="datetime-local"
-                  value={values.meetingTime}
-                  onChange={(event) => update({ meetingTime: event.target.value })}
+                  className="trip-meeting-time"
+                  placeholder="选择日期与时间"
+                  value={localDateTimeToDayjs(values.meetingTime)}
+                  onChange={(value) => update({ meetingTime: dayjsToLocalDateTime(value) })}
+                  status={errors.meetingTime === undefined ? undefined : 'error'}
                 />
               </Field>
 

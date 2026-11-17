@@ -1180,6 +1180,12 @@ svg {
   width: 100%;
 }
 
+/* 集合时间同样是 antd 日期时间控件，与同表单的输入框同宽 */
+.form-field .ant-picker.trip-meeting-time,
+.form-field .ant-picker.meeting-time {
+  width: 100%;
+}
+
 .trip-date-anchor {
   position: relative;
 }

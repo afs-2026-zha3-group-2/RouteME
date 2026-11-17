@@ -4,6 +4,7 @@ import {
   Alert,
   Button,
   Card,
+  DatePicker,
   Input,
   Modal,
   Progress,
@@ -54,6 +55,8 @@ import { PlacePicker } from '../map/PlacePicker';
 import { statusColor, statusLabel } from './tripStatus';
 import { useTrip } from './useTrip';
 import { useProfile } from '../profiles/ProfileContext';
+import { appDateTimePickerProps } from '../utils/datePickerProps';
+import { dayjsToLocalDateTime, localDateTimeToDayjs } from '../utils/dates';
 
 const MAX_MESSAGE_LENGTH = 120;
 
@@ -791,13 +794,19 @@ export function TripDetailPage({ currentUser, tripId }: Props) {
           </div>
           <div className="form-field">
             <label htmlFor="meeting-time">{tripMessages.meetingTimeLabel}</label>
-            <Input
+            <DatePicker
+              {...appDateTimePickerProps}
               id="meeting-time"
-              type="datetime-local"
-              value={meetingForm.meetingTime}
-              onChange={(event) =>
-                setMeetingForm((current) => ({ ...current, meetingTime: event.target.value }))
+              className="meeting-time"
+              placeholder="选择日期与时间"
+              value={localDateTimeToDayjs(meetingForm.meetingTime)}
+              onChange={(value) =>
+                setMeetingForm((current) => ({
+                  ...current,
+                  meetingTime: dayjsToLocalDateTime(value),
+                }))
               }
+              status={meetingErrors.meetingTime === undefined ? undefined : 'error'}
             />
             {meetingErrors.meetingTime !== undefined && (
               <Typography.Text type="danger">{meetingErrors.meetingTime}</Typography.Text>
