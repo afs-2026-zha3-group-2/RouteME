@@ -26,7 +26,6 @@ import { profileToUser } from './profile/profileDisplay';
 import { ProfileSetupPage } from './profile/ProfileSetupPage';
 import { parseRoute, routeToHash, type Route } from './route';
 import { AppShell } from './shell/AppShell';
-import { useColorMode } from './shell/useColorMode';
 import { buildTheme } from './theme';
 import { TripCreatePage } from './trips/TripCreatePage';
 import { TripDetailPage } from './trips/TripDetailPage';
@@ -35,6 +34,7 @@ import type { AuthSession, DemoUser, UserProfile } from './types';
 
 const CURRENT_USER_KEY = 'routeme.currentUserId';
 const AUTH_TOKEN_KEY = 'routeme.authToken';
+const APP_THEME = buildTheme();
 
 function readStoredUserId(): number | null {
   const raw = window.localStorage.getItem(CURRENT_USER_KEY);
@@ -59,7 +59,6 @@ export function App() {
   const [authToken, setAuthToken] = useState<string | null>(readStoredToken);
   const [restoring, setRestoring] = useState<boolean>(() => readStoredToken() !== null);
   const [route, setRoute] = useState<Route>(() => parseRoute(window.location.hash));
-  const { mode, toggleMode } = useColorMode();
 
   useEffect(() => {
     loadUsers()
@@ -179,13 +178,7 @@ export function App() {
     return (
       <ProfileProvider currentUser={currentUser}>
         <CreditProvider currentUser={currentUser}>
-          <AppShell
-            currentUser={currentUser}
-            onLogout={logout}
-            route={route}
-            mode={mode}
-            onToggleMode={toggleMode}
-          >
+          <AppShell currentUser={currentUser} onLogout={logout} route={route}>
             {route.name === 'home' && <HomePage currentUser={currentUser} />}
             {route.name === 'create' && (
               <TripCreatePage
@@ -287,7 +280,7 @@ export function App() {
   };
 
   return (
-    <ConfigProvider theme={buildTheme(mode)} locale={zhCN}>
+    <ConfigProvider theme={APP_THEME} locale={zhCN}>
       {renderContent()}
     </ConfigProvider>
   );

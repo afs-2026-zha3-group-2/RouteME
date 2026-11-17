@@ -158,7 +158,7 @@ test('shows the chat entry to the publisher and companions but not to outsiders'
   await expect(page.locator('.detail-companions .companion-chat')).toHaveCount(0);
 });
 
-test('keeps companion cards inside the viewport in both themes', async ({ page }) => {
+test('keeps companion cards inside the viewport at every breakpoint', async ({ page }) => {
   const created = await createTripViaApi(page, 2, `E2E 同行者响应式 ${Date.now()}`, { capacity: 4 });
   await joinCompanions(page, created.id, [1, 4]);
 
@@ -168,17 +168,10 @@ test('keeps companion cards inside the viewport in both themes', async ({ page }
 
   for (const width of [1440, 1024, 768, 390]) {
     await page.setViewportSize({ width, height: 900 });
-    for (const scheme of ['light', 'dark']) {
-      await page.evaluate((mode) => {
-        window.localStorage.setItem('routeme.colorMode', mode);
-      }, scheme);
-      await page.reload();
-      await expect(page.locator('html')).toHaveAttribute('data-theme', scheme);
-      const overflow = await page.evaluate(
-        () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
-      );
-      expect(overflow).toBeLessThanOrEqual(1);
-      await expect(page.locator('.detail-companions .companion-chat').first()).toBeVisible();
-    }
+    const overflow = await page.evaluate(
+      () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
+    );
+    expect(overflow).toBeLessThanOrEqual(1);
+    await expect(page.locator('.detail-companions .companion-chat').first()).toBeVisible();
   }
 });

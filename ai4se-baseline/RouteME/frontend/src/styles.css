@@ -654,10 +654,6 @@ svg {
   flex: 1;
 }
 
-.theme-toggle {
-  flex: none;
-}
-
 .user-switch {
   min-width: 116px;
 }

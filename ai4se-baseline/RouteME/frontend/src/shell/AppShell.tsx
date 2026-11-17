@@ -9,7 +9,6 @@ import { AccountStatusBanner } from '../profile/AccountStatusBanner';
 import { creditRestrictedActionMessage } from '../profile/creditDisplay';
 import { publisherSummary } from '../profile/profileDisplay';
 import type { Route } from '../route';
-import type { ColorMode } from '../theme';
 import type { DemoUser, UserProfile } from '../types';
 import { Avatar } from './Avatar';
 import { BrandMark } from './BrandMark';
@@ -189,19 +188,10 @@ type Props = {
   currentUser: DemoUser;
   onLogout: () => void;
   route: Route;
-  mode: ColorMode;
-  onToggleMode: () => void;
   children: ReactNode;
 };
 
-export function AppShell({
-  currentUser,
-  onLogout,
-  route,
-  mode,
-  onToggleMode,
-  children,
-}: Props) {
+export function AppShell({ currentUser, onLogout, route, children }: Props) {
   const active = activeKey(route);
   const { restricted } = useMyCredit();
   const navBlockedTitle = (item: NavItem) =>
@@ -370,36 +360,6 @@ export function AppShell({
         </a>
 
         <span className="topbar-spacer" />
-
-        <button
-          type="button"
-          className="icon-btn theme-toggle"
-          onClick={onToggleMode}
-          aria-label={mode === 'dark' ? '切换到浅色模式' : '切换到深色模式'}
-          aria-pressed={mode === 'dark'}
-          title={mode === 'dark' ? '切换到浅色模式' : '切换到深色模式'}
-        >
-          {mode === 'dark' ? (
-            <svg viewBox="0 0 20 20" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.7">
-              <circle cx="10" cy="10" r="4" />
-              <path
-                d="M10 1.6v2.2M10 16.2v2.2M1.6 10h2.2M16.2 10h2.2M4.1 4.1l1.6 1.6M14.3 14.3l1.6 1.6M15.9 4.1l-1.6 1.6M5.7 14.3l-1.6 1.6"
-                strokeLinecap="round"
-              />
-            </svg>
-          ) : (
-            <svg
-              viewBox="0 0 20 20"
-              aria-hidden="true"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="1.7"
-              strokeLinejoin="round"
-            >
-              <path d="M16 12.4A6.8 6.8 0 0 1 7.6 4a6.9 6.9 0 1 0 8.4 8.4Z" />
-            </svg>
-          )}
-        </button>
       </header>
 
       <aside className="rail" aria-label="主导航">
