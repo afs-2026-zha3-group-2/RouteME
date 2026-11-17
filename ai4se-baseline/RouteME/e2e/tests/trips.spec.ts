@@ -9,7 +9,8 @@ async function loginAs(page: Page, userId: number) {
 }
 
 async function pickPlace(page: Page, field: string, name: string) {
-  const input = page.getByLabel(field);
+  // 高德地图区域也带 aria-label（如「选择途经点的地图」），按 textbox 角色收窄到输入框。
+  const input = page.getByRole('textbox', { name: new RegExp(field) });
   await input.fill(name);
   await input.press('Enter');
   await expect(page.locator('.place-chip-name', { hasText: name }).first()).toBeVisible();
@@ -260,7 +261,7 @@ test('blocks publishing and flags every missing required field', async ({ page }
   await expect(page).toHaveURL(/#\/trips\/new$/);
   await expect(page.getByLabel('标题')).toHaveAttribute('aria-invalid', 'true');
   await expect(page.locator('#trip-destination')).toHaveAttribute('aria-invalid', 'true');
-  await expect(page.getByLabel('途经点')).toHaveAttribute('aria-invalid', 'true');
+  await expect(page.getByRole('textbox', { name: /途经点/ })).toHaveAttribute('aria-invalid', 'true');
   await expect(page.getByText('给这条路线起个名字（40 字以内）')).toBeVisible();
   await expect(page.getByText('请选择目的地')).toBeVisible();
   await expect(page.getByText('至少写出两个途经点，别人才看得懂路线')).toBeVisible();
@@ -440,7 +441,7 @@ test('map pins add multiple stops and enforce the eight-stop limit', async ({ pa
   await expect(page.locator('.place-chip-name')).toHaveCount(8);
 
   // 第 9 个被拒绝并给出上限提示。
-  const input = page.getByLabel('途经点');
+  const input = page.getByRole('textbox', { name: /途经点/ });
   await input.fill('珠海');
   await input.press('Enter');
   await expect(page.locator('.place-message')).toContainText('最多选择 8 个地点');
