@@ -23,7 +23,7 @@
 | T9 挂载 | `TripCreatePage`（侧栏）、`TripDetailPage`（信息区） | 两页共用同一组件；改目的地 / 日期自动刷新 |
 | T10 E2E | `e2e/tests/weather.spec.ts` | 7/7 通过（`page.route` 注入） |
 | T11 文档 | `docs/knowledge/interfaces/README.md`、`_LOG.md`、`architecture/README.md`、`RouteME/README.md` | 接口表、变更日志、控制器计数、冒烟接口 |
-| T12 回归与走查 | 后端全量、前端 build + 单测、天气 E2E、走查 | 334 / 307 / 8 / 6 图（合并 `main` 后复验） |
+| T12 回归与走查 | 后端全量、前端 build + 单测、天气 E2E、走查 | 334 / 313 / 8 / 6 图（合并 `main@64b38da` 后复验） |
 
 ## 3. 验证证据
 
@@ -32,7 +32,7 @@
 | 后端全量 | `.\mvnw.cmd -B -o test` | 334 passed |
 | 后端天气 | `-Dtest=WeatherControllerTest,WeatherReminderRulesTest,WeatherTextUtilsTest` | 22 passed |
 | 契约 | `-Dtest=OpenApiTest`；`npx @redocly/cli lint openapi.yaml` | 9 passed；0 error / 15 warning |
-| 前端 | `npm run build`；`npm test` | 构建通过；307 passed |
+| 前端 | `npm run build`；`npm test` | 构建通过；313 passed |
 | E2E | `npx playwright test tests/weather.spec.ts` | 7/7 |
 | 走查 | `npx playwright test tests/weather-walkthrough.spec.ts` | 1/1；`docs/preview/weather-create-{1440,768,390}-{light,dark}.png` |
 | 规格 | `openspec validate add-trip-weather --strict` | valid |

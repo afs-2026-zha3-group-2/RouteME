@@ -7043,3 +7043,40 @@ svg {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
+
+/* ---------- 详情页同行者资料卡 ---------- */
+.detail-companions {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.companion-card {
+  display: grid;
+  gap: 6px;
+  padding: 10px;
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+  background: var(--surface-2);
+}
+
+.companion-card .publisher-button {
+  padding: 0;
+}
+
+.companion-card .publisher-button:hover {
+  background: color-mix(in srgb, var(--lagoon) 8%, transparent);
+}
+
+.companion-chat {
+  justify-self: end;
+  font-size: 12.5px;
+}
+
+.detail-companions-empty {
+  margin: 0;
+  font-size: 13px;
+  color: var(--ink-3);
+}

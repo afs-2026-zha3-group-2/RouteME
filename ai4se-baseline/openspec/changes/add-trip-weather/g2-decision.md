@@ -13,7 +13,7 @@
 | 后端测试 | `WeatherControllerTest`（11）、`WeatherReminderRulesTest`（9）、`WeatherTextUtilsTest`（2）、`OpenApiTest`（9，含天气契约） | 全绿 |
 | 后端全量 | `.\mvnw.cmd -B -o test` | 334 passed / 0 failed |
 | 前端构建 | `npm run build` | tsc + vite 通过 |
-| 前端单测 | `npm test` | 39 文件 / 307 项通过 |
+| 前端单测 | `npm test` | 40 文件 / 313 项通过 |
 | E2E（天气） | `npx playwright test tests/weather.spec.ts` | 7/7 通过 |
 | E2E（走查） | `npx playwright test tests/weather-walkthrough.spec.ts` | 1/1 通过；1440 / 768 / 390 × 浅 / 深 6 张截图写入 `docs/preview/` |
 | 契约 lint | `npx @redocly/cli lint openapi.yaml` | 0 error / 15 warning（与基线同数） |

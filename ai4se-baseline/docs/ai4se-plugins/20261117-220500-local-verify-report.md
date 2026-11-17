@@ -21,11 +21,11 @@
 
 | 层 | 命令 | 结果 |
 |---|---|---|
-| 后端单测 + API | `cd RouteME/backend; .\mvnw.cmd -B -o test` | **334 passed / 0 failed / 0 errors**（合并 `origin/main@ec360dc` 后复验） |
+| 后端单测 + API | `cd RouteME/backend; .\mvnw.cmd -B -o test` | **334 passed / 0 failed / 0 errors**（合并 `origin/main@64b38da` 后复验） |
 | 新增后端用例 | `-Dtest=WeatherControllerTest,WeatherReminderRulesTest,WeatherTextUtilsTest` | 11 + 9 + 2 = **22 passed** |
 | 契约测试 | `-Dtest=OpenApiTest` | **9 passed**（含天气路径、三个 schema、`WEATHER_UPSTREAM_ERROR`） |
 | 前端构建 | `cd RouteME/frontend; npm run build` | **Pass**（tsc + vite；仅有既有 chunk-size 提示） |
-| 前端单测 | `npm test` | **39 文件 / 307 项通过**（新增 `weather.test.ts` 15 项；合并 `main` 后含信用分用例） |
+| 前端单测 | `npm test` | **40 文件 / 313 项通过**（新增 `weather.test.ts` 15 项；合并 `main` 后含信用分与同行者卡片用例） |
 | E2E 天气 | `cd RouteME/e2e; npx playwright test tests/weather.spec.ts` | **7/7 passed**（合并 `main` 后复跑仍 7/7） |
 | E2E 走查 | `npx playwright test tests/weather-walkthrough.spec.ts` | **1/1 passed**；6 张截图写入 `ai4se-baseline/docs/preview/` |
 | 契约 lint | `npx @redocly/cli lint openapi.yaml` | **0 error / 15 warning**（与基线同数） |
@@ -58,7 +58,7 @@
 
 ## 5. 偏差 / 测试修复
 
-**合并 `origin/main@ec360dc` 后复验（2026-11-17）：** rebase 时仅在 `openapi.yaml` 与 `OpenApiTest` 的契约版本行冲突（main 为 0.14.0，本 change 取 0.16.0，保留本 change）；`docs/knowledge/interfaces/README.md` 自动合并后把天气行与体验行拼成一行，已手工拆行并补登记 `WEATHER_UPSTREAM_ERROR`。复验结果：后端 334、前端 307、天气 E2E + 走查 8/8。
+**合并 `origin/main@64b38da` 后复验（2026-11-17）：** 首次 rebase 在 `openapi.yaml` 与 `OpenApiTest` 的契约版本行冲突（main 为 0.14.0，本 change 取 0.16.0，保留本 change）；改为合并后再处理 `styles.css`（天气块与详情页同行者卡片块并存）与 `registry.md`（保留 REQ-020 与 REQ-022 两行），另修正 `docs/knowledge/interfaces/README.md` 自动合并拼行并补登记 `WEATHER_UPSTREAM_ERROR`。复验结果：后端 334、前端 313、天气 E2E + 走查 8/8。
 | 项 | 说明 |
 |---|---|
 | 前端依赖 | 新 worktree 无 `node_modules`，先执行 `npm ci`（115 包）。属环境准备，未改代码。 |
@@ -79,4 +79,4 @@
 
 ## 7. Overall
 
-**Overall: Pass（change scope）。** 后端 334、前端 307、天气 E2E 7/7、走查 6 图、契约 0 error、OpenSpec valid；无本 change 引入的失败。
+**Overall: Pass（change scope）。** 后端 334、前端 313、天气 E2E 7/7、走查 6 图、契约 0 error、OpenSpec valid；无本 change 引入的失败。

@@ -985,6 +985,87 @@ MVP 无推送、无通知；以下为信用状态的 UI 展示面契约。
 - `{TBD}`：无。非阻塞项（管理端形态、契约 / 迁移号、规则说明页）已在 REQ-019 §8 标 deferred；等级契约形态与零变化留痕已由 D10 / D11 裁定。
 - A0 门 ⑨–⑫：全部通过。
 
+## REQ-020 增补 — 灵感详情页同行者卡片化
+
+### ① 数据契约（Data contract）
+
+| # | 概念 | grain（粒度） | 字段清单 | 状态迁移 | 来源 |
+|---|---|---|---|---|---|
+| A | **同行者资料卡**（展示派生，不落库） | 每行程 × 每位已接受同行者 1 张卡 | 展示字段全部来自既有 `DemoUser`：`id`、`nickname`、`avatar_initial`、`avatar_url`、`school`、`major`、`job`、`city`、`bio`、`interests`；不新增存储字段 | 申请被接受 → 进入 `participants` → 出现卡片；退出 / 取消（不再 accepted）→ 从 `participants` 消失 → 卡片消失；发布者永不进入卡片列表 | `TripDetailResponse.participants`；`ApplicationServiceImpl.participants` |
+| B | **发布者资料卡**（既有，不变） | 每行程 1 张 | `trip.publisher` 的同一 `DemoUser` 字段 | 不随本需求变化 | `TripDetailResponse.publisher` |
+| C | **已加入人数**（既有，不变） | 每行程 1 个整数 | `joined_count`（含发布者）/ `capacity` | 接受 / 退出时由后端维护；本需求只读 | `TripDetailResponse.joinedCount` / `capacity` |
+
+- **唯一真相：** 同行者集合仍以 `participants` 为唯一真相；前端只做「过滤发布者 + 渲染卡片」，不复制、不缓存、不重排。
+- **无新字段：** 不新增资料字段、不新增同行者专用 DTO；卡片直接消费 `DemoUser`。
+- **人数口径：** `joined_count` 仍包含发布者；「当前同行者」列表排除发布者后，卡片数量 = `participants.length - 1`，与区标题的人数口径不要求相等（标题沿用「当前同行者 n/capacity」现状）。
+
+### ② 边界归属（Boundary attribution）
+
+| 规则 | 分支 | in / out | 理由 |
+|---|---|---|---|
+| 发布者过滤 | `participants` 中含发布者 | in | D1：发布者只在自己的资料卡出现；前端按 `trip.publisher.id` 过滤 |
+| 发布者过滤 | 只有发布者、无其他同行者 | in | 展示空态提示；不展示空列表或发布者姓名 |
+| 发布者过滤 | 发布者 id 与同行者 id 重复（脏数据） | in | 过滤后去重，不重复渲染同一 id |
+| 字段回退 | 有学校 + 专业 | in | 昵称后展示「学校 · 专业」（既有 `publisherSummary` 规则） |
+| 字段回退 | 无学校 / 专业、有职业 | in | 昵称后展示职业 |
+| 字段回退 | 无学校 / 专业 / 职业、有城市 | in | 昵称后展示城市 |
+| 字段回退 | 四者都为空 | in | 只展示头像与昵称；不出现悬空分隔符 |
+| 字段回退 | 无简介 / 无兴趣 | in | 对应节点不渲染；不出现空占位或 `undefined / null` |
+| 资料入口 | 点击卡片主体 | in | 调用 `openProfile(member.id)`；不跳转、不打开聊天 |
+| 资料入口 | 资料未完善用户 | in | 沿用 `ProfileModal` 的未完善展示；卡片仍可打开 |
+| 聊天入口 | 查看者为发布者 | in | 其他同行者卡片显示聊天入口 |
+| 聊天入口 | 查看者为已接受同行者 | in | 其他同行者卡片显示聊天入口（沿用现状） |
+| 聊天入口 | 查看者为本人 | out | 自己卡片不显示自我聊天 |
+| 聊天入口 | 查看者未申请 / 待处理 / 已拒绝 / 已取消 | out | 沿用现状，不显示聊天入口 |
+| 聊天入口 | 查看者已退出同行 | out（本需求不扩大） | 沿用「退出后仅与发布者保留会话」口径；不因卡片化新增入口 |
+| 排序 | 后端返回顺序 | in | 发布者在最前，其余按申请时间；前端仅过滤发布者，不重排 |
+| 人数 | 页头 `joined_count / capacity` | in | 保持包含发布者的现状口径 |
+| 接口 | 新增端点 / 字段 / 迁移 | out（禁止） | 纯展示层；`participants` 字段与顺序不变 |
+| 响应式 | 1440 / 1024 / 768 / 390 × 浅 / 深色 | in | 卡片换行 / 堆叠，不横向溢出 |
+
+### ③ 跨 REQ 一致性（Cross-REQ consistency）
+
+| 能力 | 各 REQ 的 grain + 字段 | aligned? | anchor REQ |
+|---|---|---|---|
+| `trip-plans`（Living） | Living Spec 要求详情页展示「当前同行者」，且「当前同行者至少包含发布者本人」；本需求 MODIFIED 展示口径为「发布者资料卡 + 同行者资料卡（不含发布者）」，人数统计不变 | ✓ aligned（以 Delta MODIFIED 替换该 Requirement 块） | `openspec/specs/trip-plans/spec.md:191-199` |
+| `trip-companions`（Living） | 接受申请后申请人进入 `participants`；退出后移出；本需求只读消费，不改状态机与人数 | ✓ aligned | `openspec/specs/trip-companions/spec.md:69-83` |
+| `user-profile`（REQ-008，未归档） | 资料字段与「学校 · 专业」派生规则；本需求复用 `publisherSummary`，不改字段与规则 | ✓ aligned | REQ-008 / `add-user-profile` |
+| `user-profiles`（REQ-009，未归档） | `GET /api/users/{userId}/profile` 与 `ProfileModal`；本需求只读复用 `openProfile`，不改端点 | ✓ aligned | REQ-009 / `add-user-profiles` |
+| `trip-experiences`（Living） | 体验作者也使用 `DemoUser` 摘要；本需求不触碰体验区与首页体验卡 | ✓ aligned | `openspec/specs/trip-experiences/spec.md` |
+| `design-system` | 卡片沿用现有 `avatar` / `publisher-row` / `tag` 令牌，不新增色板语义 | ✓ aligned | `openspec/specs/design-system/spec.md` |
+
+无未收敛的 ✗；A0 门 ⑪ 通过。
+
+### ④ 通知 / 展示契约（Notification / display contract）
+
+MVP 无推送、无通知；以下为详情页同行者展示面的 UI 契约。
+
+| trigger / surface（展示面） | recipient role | content + display fields | channel | cardinality | source |
+|---|---|---|---|---|---|
+| 行程详情 —「当前同行者」区 | 所有已登录用户 | 每位非发布者同行者 1 张资料卡：`Avatar lg` + 昵称 + `publisherSummary`（学校 · 专业 / 职业 / 城市）+ 简介（非空）+ 兴趣标签（非空）；卡片主体可打开资料弹窗 | 应用内页面 | 每位同行者 1 张 | `C-1` ~ `C-4`；`TripDetailResponse.participants` |
+| 行程详情 —「当前同行者」空态 | 所有已登录用户 | 可读提示「还没有其他同行者」；不展示空列表 / 发布者姓名 / 破损卡片 | 应用内空态 | 每行程 1 处（无其他同行者时） | `C-6`；D1 |
+| 行程详情 — 同行者卡片聊天入口 | 发布者 / 已接受同行者 | 文本「聊天」，点击进入 `#/chat/{tripId}/{memberId}`；本人卡片不显示 | 应用内链接 | 每位可见同行者 1 处 | `C-5`；既有聊天准入 |
+| 行程详情 — 发布者资料卡 | 所有已登录用户 | **不变**：头像 + 昵称 + 摘要 + 简介 + 兴趣，整卡打开资料弹窗 | 应用内页面 | 每行程 1 处 | 既有实现 |
+| 行程详情 — 页头人数 | 所有已登录用户 | **不变**：`joined_count / capacity`（含发布者） | 应用内文本 | 每页 1 处 | `C-7`；既有实现 |
+
+无展示面缺 display-fields；A0 门 ⑫ 通过。
+
+### 探针记录（REQ-020 同行者卡片）
+
+- **发布者重复来源：** `ApplicationServiceImpl.participants` 显式先加入 `publisherOf(trip)`（`ApplicationServiceImpl.java:193-202`），因此前端必须按 `trip.publisher.id` 过滤；不要在后端改 `participants` 语义。
+- **字段完整：** `DemoUserResponse` 已返回 `school` / `city` / `major` / `job` / `bio` / `interests` / `avatarUrl` / `profileComplete`（`DemoUserResponse.java:10-36`），卡片无需新增请求。
+- **摘要复用：** `publisherSummary` 的入参是 `PublisherFields`，对同行者同样适用（`profileDisplay.ts:26-28`）；它是「学校 · 专业 → 职业 → 城市 → 空串」的纯函数，可直接复用，无需改名即可满足语义。
+- **资料弹窗：** `ProfileProvider` 全应用共用 `openProfile(userId)`（`ProfileContext.tsx:27-41`）；`ProfileModal` 已处理未完善资料与加载失败态。
+- **可交互元素嵌套：** 发布者卡片是 `<button>`；同行者卡片若需要同时承载「整卡开资料」与「聊天链接」，必须拆成并列的 `<button>`（卡片主体）与 `<a>`（聊天），不能把链接嵌进按钮。
+- **E2E 依赖：** 仅 `chat-entry.spec.ts:78-84` 使用 `.detail-participants` 选择器；改动后必须同步更新，避免测试悬空。
+- **单测现状：** `frontend/src/trips` 下没有 `TripDetailPage` 的组件级测试；本需求至少用 E2E 覆盖卡片、资料弹窗、空态与聊天入口，是否补组件单测由 P3 决定。
+- **样式冲突风险：** `frontend/src/styles.css` 有两处 `.detail-participants` 规则（`1265-1268`、`2691-2707`），且该文件是多人并行修改热点；实现时删除 / 收敛旧规则，新增样式追加到文件末段，避免 merge 时整块丢失（见历史事故：chat 样式在 merge 中丢失）。
+- **原型现状：** `docs/prototype/ui.js:509-520` 的 `compPanel` 当前包含发布者并渲染紧凑 `.companion` 行；按 D1 / D2 需改为「过滤发布者 + 资料卡 + 空态」，并同步 `docs/prototype/styles.css:712-725`。
+- **响应式：** 详情页容器为 `.form-page` / `.detail-stack`；同行者卡片在 390 宽度下应单列堆叠，聊天入口不遮挡资料区。
+- **零后端：** 不新增端点、字段、迁移、契约版本；`openapi.yaml` 的 `participants` 描述保持现状。
+- `{TBD}`：无。非阻塞项（组件单测、故事点）已在 REQ-020 §8 标 deferred。
+- A0 门 ⑨–⑫：全部通过。
+
 ## REQ-021 增补 — 取消行程（issue #28）
 
 > 编号说明：REQ-019 由 `add-credit-account` 占用、REQ-020 由并行 `refine-detail-companions` 预留；本需求顺延为 REQ-021，故事 S21。

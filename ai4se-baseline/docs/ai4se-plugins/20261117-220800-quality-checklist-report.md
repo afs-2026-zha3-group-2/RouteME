@@ -12,7 +12,7 @@
 
 | Check id | Required? | Status | Evidence |
 |----------|-----------|--------|----------|
-| P4-1 | yes | Pass | `docs/ai4se-plugins/20261117-220500-local-verify-report.md`：后端 334、前端 307、天气 E2E 7/7、走查 6 图、Redocly 0 error / 15 warning、OpenSpec valid（合并 `main@ec360dc` 后复验） |
+| P4-1 | yes | Pass | `docs/ai4se-plugins/20261117-220500-local-verify-report.md`：后端 334、前端 313、天气 E2E 7/7、走查 6 图、Redocly 0 error / 15 warning、OpenSpec valid（合并 `main@64b38da` 后复验） |
 | P4-2 | yes | Pass | 本地验证 Overall **Pass（change scope）**；无阻断失败、无需 Waiver |
 | P4-3 | yes | Skipped | 未开 PR / 未跑远端 CI（按用户要求直接合并 `main` 后推送）；合并后核对 CI 结果 |
 | P4-4 | yes* | Skipped | 未部署，CD 未执行 |

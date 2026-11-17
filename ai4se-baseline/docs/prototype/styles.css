@@ -308,7 +308,7 @@ img, svg { display: block; max-width: 100%; }
 .panel-title::after { content: ""; flex: 1; height: 1px; background: linear-gradient(90deg, var(--line), transparent); }
 .divider { height: 1px; background: var(--line); margin: 16px 0; border: 0; }
 
-.meter { height: 6px; border-radius: 99px; background: var(--surface-3); overflow: hidden; }
+.meter { display: block; height: 6px; border-radius: 99px; background: var(--surface-3); overflow: hidden; }
 .meter i { display: block; height: 100%; border-radius: 99px; background: var(--grad-shore); transition: width .5s var(--ease-out); }
 .meter.full i { background: var(--grad-sunset); }
 
@@ -723,6 +723,9 @@ img, svg { display: block; max-width: 100%; }
 .companion-role { font-size: 10.5px; color: var(--ink-3); }
 .companion .btn { margin-left: auto; }
 .companions-empty { font-size: 12.5px; color: var(--ink-3); padding: 10px 0; }
+.companion-card { display: grid; gap: 6px; padding: 10px; border-radius: 12px; background: var(--surface-2); border: 1px solid var(--line); }
+.companion-card .host-card { padding: 0; }
+.companion-chat { justify-self: end; }
 
 .action-box { display: grid; gap: 11px; }
 .action-note { font-size: 12.5px; color: var(--ink-2); line-height: 1.55; padding: 11px 13px; border-radius: 11px; background: var(--surface-2); border-left: 3px solid var(--lagoon); }

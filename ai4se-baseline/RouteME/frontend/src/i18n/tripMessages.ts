@@ -85,6 +85,7 @@ export const tripMessages = {
   detailNote: '补充说明',
   detailPublisher: '发布者',
   detailParticipants: '当前同行者',
+  detailParticipantsEmpty: '还没有其他同行者。',
   detailParticipantsPending: '同行者信息将在同行能力上线后展示',
   applyEntry: '申请同行',
   applyEntryDisabled: '当前不可申请',
