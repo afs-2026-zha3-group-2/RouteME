@@ -12,7 +12,7 @@ import type { DemoUser, UserProfile } from '../types';
 import { Avatar } from './Avatar';
 import { BrandMark } from './BrandMark';
 
-type NavKey = 'discover' | 'map' | 'create' | 'mine' | 'chat' | 'admin';
+type NavKey = 'discover' | 'map' | 'create' | 'mine' | 'chat' | 'help' | 'admin';
 
 type NavItem = { key: NavKey; label: string; href: string };
 
@@ -24,9 +24,15 @@ const NAV_ITEMS: NavItem[] = [
   { key: 'chat', label: tripMessages.chatNav, href: '#/chat' },
 ];
 
+// 侧栏比底部导航多一个入口：客服与举报在移动端仍可从账号菜单进入，避免底栏挤成 7 项。
+const RAIL_ITEMS: NavItem[] = [
+  ...NAV_ITEMS,
+  { key: 'help', label: adminMessages.helpTitle, href: '#/help' },
+];
+
 const NAV_GROUPS: Array<{ title: string; items: NavItem[] }> = [
-  { title: '浏览', items: NAV_ITEMS.filter((item) => item.key === 'discover' || item.key === 'map') },
-  { title: '我的', items: NAV_ITEMS.filter((item) => item.key !== 'discover' && item.key !== 'map') },
+  { title: '浏览', items: RAIL_ITEMS.filter((item) => item.key === 'discover' || item.key === 'map') },
+  { title: '我的', items: RAIL_ITEMS.filter((item) => item.key !== 'discover' && item.key !== 'map') },
 ];
 
 function activeKey(route: Route): NavKey | null {
@@ -44,6 +50,9 @@ function activeKey(route: Route): NavKey | null {
   }
   if (route.name === 'chat') {
     return 'chat';
+  }
+  if (route.name === 'help') {
+    return 'help';
   }
   if (route.name.startsWith('admin')) {
     return 'admin';
@@ -101,6 +110,22 @@ function NavIcon({ name }: { name: NavKey }) {
         strokeLinejoin="round"
       >
         <path d="M17 11.4a2 2 0 0 1-2 2H7l-3.4 2.6V5a2 2 0 0 1 2-2h9.4a2 2 0 0 1 2 2z" />
+      </svg>
+    );
+  }
+  if (name === 'help') {
+    return (
+      <svg
+        viewBox="0 0 20 20"
+        aria-hidden="true"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.7"
+        strokeLinecap="round"
+      >
+        <circle cx="10" cy="10" r="7" />
+        <path d="M7.8 7.6a2.4 2.4 0 1 1 3.4 2.5c-.7.4-1.2.9-1.2 1.9" />
+        <circle cx="10" cy="14.4" r=".9" fill="currentColor" stroke="none" />
       </svg>
     );
   }
