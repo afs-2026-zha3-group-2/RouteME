@@ -759,17 +759,34 @@ svg {
   text-align: left;
   color: var(--ink-2);
   cursor: pointer;
-  transition: background 0.16s, color 0.16s;
+  transition: background 0.16s, color 0.16s, box-shadow 0.18s, transform 0.18s;
 }
 
 .rail-user:hover {
   background: var(--rail-hover);
   color: var(--ink);
+  box-shadow: inset 0 0 0 1px var(--line-2);
+  transform: translateY(-1px);
+}
+
+.rail-user:hover .rail-user-caret {
+  color: var(--ink);
+  transform: translateX(2px);
+}
+
+.rail-user:active {
+  transform: translateY(0);
+}
+
+.rail-user:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--lagoon) 26%, transparent);
 }
 
 .rail-user[aria-expanded="true"] {
   background: var(--rail-hover);
   color: var(--ink);
+  box-shadow: inset 0 0 0 1px var(--line-2);
 }
 
 .rail-user-text {
@@ -825,7 +842,38 @@ svg {
   border-radius: 12px;
   background: var(--surface);
   box-shadow: var(--sh-3);
-  transform: translateY(-100%);
+  transform-origin: left bottom;
+  animation: rail-menu-in 0.16s var(--ease-out) both;
+}
+
+@keyframes rail-menu-in {
+  from {
+    opacity: 0;
+    transform: translateX(-8px) scale(0.98);
+  }
+
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* 底部导航里的账号菜单：从下往上展开，水平居中于入口 */
+.rail-menu.tabbar-menu {
+  transform-origin: center bottom;
+  animation-name: tabbar-menu-in;
+}
+
+@keyframes tabbar-menu-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.98);
+  }
+
+  to {
+    opacity: 1;
+    transform: none;
+  }
 }
 
 [data-theme="dark"] .rail-menu {
@@ -3549,6 +3597,23 @@ svg {
   }
 
   .tab-link.active {
+    color: var(--t-lagoon);
+    background: var(--lagoon-soft);
+  }
+
+  /* 账号入口：宽屏在侧栏底部，窄屏收进底部导航，头像与图标同高 */
+  .tab-account {
+    border: 0;
+    background: transparent;
+    font-family: inherit;
+    cursor: pointer;
+  }
+
+  .tab-account .avatar.sm {
+    --sz: 20px;
+  }
+
+  .tab-account[aria-expanded="true"] {
     color: var(--t-lagoon);
     background: var(--lagoon-soft);
   }
