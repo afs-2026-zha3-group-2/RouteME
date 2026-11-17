@@ -381,8 +381,8 @@ test('opens a publisher profile from a trip card', async ({ page }) => {
   const viewer = await registerViaApi(page, { prefix: 'view' });
   await useAccount(page, viewer);
   // 首页用目的地/日期筛选，已无搜索框；切到「最新发布」使新行程排在最前。
-  await page.locator('.ant-select', { has: page.locator('#filter-sort') }).click();
-  await page.locator('.ant-select-item-option', { hasText: '按最新发布' }).click();
+  await page.locator('#filter-sort').click();
+  await page.locator('.soft-select-option', { hasText: '按最新发布' }).click();
 
   const card = page.locator('.trip-card', { hasText: title });
   await expect(card).toBeVisible();

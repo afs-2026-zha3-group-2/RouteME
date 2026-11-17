@@ -1,9 +1,10 @@
 import { useRef, useState } from 'react';
-import { Alert, Button, DatePicker, Segmented, Select, Skeleton, Tag } from 'antd';
+import { Alert, Button, DatePicker, Segmented, Skeleton, Tag } from 'antd';
 import { ExperienceCard } from '../experiences/ExperienceCard';
 import { useExperiences } from '../experiences/useExperiences';
 import { tripMessages } from '../i18n/tripMessages';
 import { EmptyState } from '../shell/EmptyState';
+import { SoftSelect } from '../shell/SoftSelect';
 import { Pager } from '../shell/Pager';
 import { TripCard } from '../trips/TripCard';
 import {
@@ -135,16 +136,16 @@ export function HomePage({ currentUser }: Props) {
               <label className="label" htmlFor="filter-sort">
                 {tripMessages.sortLabel}
               </label>
-              <Select
+              <SoftSelect
                 id="filter-sort"
-                style={{ width: '100%' }}
+                ariaLabel={tripMessages.sortLabel}
                 value={filters.sort}
                 options={[
                   { value: 'match', label: tripMessages.sortMatch },
                   { value: 'date', label: tripMessages.sortDate },
                   { value: 'new', label: tripMessages.sortNew },
                 ]}
-                onChange={(value: FilterState['sort']) => update({ sort: value })}
+                onChange={(value) => update({ sort: value as FilterState['sort'] })}
               />
             </div>
           )}
