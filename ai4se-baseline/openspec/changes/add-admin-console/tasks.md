@@ -1,6 +1,6 @@
 # 任务：add-admin-console
 
-- **依据：** [`specs/admin-console/spec.md`](specs/admin-console/spec.md)（9 Requirement / 38 Scenario）、[`specs/customer-service/spec.md`](specs/customer-service/spec.md)（4 / 13）、[`specs/user-auth/spec.md`](specs/user-auth/spec.md)（MODIFIED 1 / 10）、[`design.md`](design.md)、[`atdd-design.md`](atdd-design.md)
+- **依据：** [`specs/admin-console/spec.md`](specs/admin-console/spec.md)（9 Requirement / 41 Scenario）、[`specs/customer-service/spec.md`](specs/customer-service/spec.md)（4 / 13）、[`specs/user-auth/spec.md`](specs/user-auth/spec.md)（MODIFIED 1 / 10）、[`design.md`](design.md)、[`atdd-design.md`](atdd-design.md)
 - **Owner：** Jacky（AO，当前开发）｜ **协助：** Neal（VL）在 P4 独立验证；WAYNE（IO）在 G2 前复核 Living Spec 收口
 - **顺序：** 契约（T1）与迁移（T2）先行 → 迭代 1（T3–T10）→ 迭代 2（T11–T13）→ 迭代 3（T14–T18）→ 收口（T19）；每片先写失败验收（red）再实现
 - **契约：** `openapi.yaml` **0.13.0**（16 个端点、13 个错误码）；迁移 **`V19__admin_console.sql`**；`OpenApiTest` 与各 `*ControllerTest` 是门禁
@@ -130,6 +130,7 @@
 
 - [x] 举报列表：编号 `R-{id}`、举报人、被举报用户、对象、类型、时间、状态 + 状态筛选 + 分页。
 - [x] 举报详情：上下文（含 `content_excerpt`）+ 跳转 + 「开始处理」+ 成立 / 不成立 + 备注必填 + 处罚选择。
+- [x] 举报来源（T20）：聊天举报回放双方会话，行程举报显示行程概要；无 `context` 的旧举报不渲染该面板。
 - [x] `reportActionForm.ts`（备注必填、成立时动作必填）与 `helpStatus.ts`（`reporterStatusLabel` / `adminStatusLabel` / `statusTone`）单测锁定四态文案。
 
 **验证：** `cd RouteME/frontend && npx vitest run src/admin/reports/reportActionForm.test.ts src/help/helpStatus.test.ts && npm run typecheck`
@@ -199,10 +200,30 @@
 - [ ] E2E 全量 `npx playwright test`；重点确认 `auth` / `safety-report` / `trips` 三套既有用例全绿，且 `profile.spec.ts` 的并行会话 WIP 未被本 change 触碰。
   - 2026-11-17 实测：全量 **80 passed / 25 failed**（105 条）。`auth`、`safety-report` 全绿；`trips.spec.ts` 的 12 条失败来自并行地图重写（8 条旧选择器）与共享库分页（4 条种子卡不在第 1 页），非本 change 引入，故本项不勾选。逐条归因见 [`docs/sdd/add-admin-console/p4-verify.md`](../../../docs/sdd/add-admin-console/p4-verify.md) §6。
 - [x] 3 档视口（1440 / 768 / 390）× 2 主题人工走查，截图与结论记 `docs/sdd/add-admin-console/p4-verify.md`；同文件登记 `admin` 初始凭据与「仅本地演示」提示。
-- [x] PR / 交付说明贴契约 diff（0.11.0 → 0.13.0）与 61 条场景覆盖表。
+- [x] PR / 交付说明贴契约 diff（0.11.0 → 0.13.0）与 64 条场景覆盖表。
 
 **验证：** 上述四条命令全绿 + 走查截图齐全（E2E 一项因并行地图 / 共享库环境失败保留未勾选，见上方说明）
-**覆盖：** U1–U7（既有注册回归）、A19（处罚前后计数）、全部 61 条场景的最终验收
+**覆盖：** U1–U7（既有注册回归）、A19（处罚前后计数）、全部 64 条场景的最终验收
+
+### T20 [p4-refine] 举报来源上下文（聊天会话 / 行程概要）
+
+- [x] 契约：`ReportRequest` 增可选 `trip_id`；`AdminReportDetail` 增 `context{origin,trip,messages[]}`；`OpenApiTest` 断言新 schema 与枚举。
+- [x] 迁移 `V22__report_context_trip.sql`：`reports.context_trip_id`；`AdminConsoleMigrationSqliteTest` 断言列与历史版本。
+- [x] 后端：`ReportService.submit` 校验 `trip_id` 属于举报人与被举报人的共享会话；`AdminReportService.detail` 回放会话 / 行程概要；新增 4 条 `ReportControllerTest` 与 2 条 `AdminReportControllerTest`。
+- [x] 前端：`ReportModal` 从聊天页带上 `tripId`；`AdminReportDetailPage` 新增「举报来源」面板（会话记录 / 行程概要）。
+
+**验证：** `\.\mvnw.cmd -B -ntp -Dtest=OpenApiTest,ReportControllerTest,AdminReportControllerTest,AdminConsoleMigrationSqliteTest test`；前端 `npm test && npm run typecheck && npm run build`
+**覆盖：** A39–A40
+
+### T21 [p4-refine] 受限账号全站提示条（封禁理由 / 解封时间）
+
+- [x] 抽出 `AccountStatusBanner` + 纯函数 `accountStatusNoticeModel`：`BANNED` 展示理由与解封时间，`SUSPENDED` 只说明限制范围，`ACTIVE` 返回空。
+- [x] `AppShell` 在 `.view` 顶部渲染提示条；仅当 `status` 为 `BANNED` / `SUSPENDED` 时读取本人资料（`GET /users/{id}/profile`），读不到时降级用会话 `status`。
+- [x] `ProfilePage` 本人受限时不再重复渲染同一条提示；他人查看受限资料时仍展示。
+- [x] 单测 `accountStatusNoticeModel.test.ts` 覆盖 `ACTIVE` / `BANNED`（含理由缺失）/ `SUSPENDED` 四类。
+
+**验证：** 前端 `npm test && npm run typecheck && npm run build`；浏览器实测受限账号在首页与资料页各只出现一条提示
+**覆盖：** A20–A21、A41
 
 ## 估算
 
@@ -232,7 +253,7 @@
 | 受限账号的功能边界 | T3 / T5 / T10 | A17–A19 |
 | 封禁信息展示 | T1 / T6 / T9 / T10 | A20–A21 |
 | 举报队列与筛选 | T2 / T11 / T12 / T13 | A22–A24 |
-| 举报详情与处理 | T11 / T12 / T13 | A25–A32 |
+| 举报详情与处理 | T11 / T12 / T13 / T20 | A25–A32、A39–A40 |
 | 客服工作台 | T15 / T17 / T18 | A33–A38 |
 | `customer-service` 帮助与反馈入口与我的举报状态 | T14 / T16 / T18 | C1–C2 |
 | 人工客服会话生命周期 | T14 / T15 / T16 / T18 | C3–C7 |
@@ -244,10 +265,10 @@
 
 | Delta | 场景 | 任务落点 | 计数 |
 |---|---|---|---|
-| `admin-console` | A1–A38 | T6–T18 | 38 / 38 |
+| `admin-console` | A1–A41 | T6–T18、T20、T21 | 41 / 41 |
 | `customer-service` | C1–C13 | T14–T18 | 13 / 13 |
 | `user-auth` | U1–U10 | T4（U8–U10）、T19（U1–U7 回归） | 10 / 10 |
-| **合计** | 61 | — | **61 / 61** |
+| **合计** | 64 | — | **64 / 64** |
 
 > U1–U7 是既有回归，不新写用例；T19 以 `auth.spec.ts` + `AuthControllerTest` 全绿作为验收。
 
@@ -264,8 +285,8 @@
 
 ### 4. 范围与约束核对
 
-- 无超范围任务：19 条任务全部指向三份 Delta 的 Requirement；`design.md` 的 D1–D17、`atdd-design.md` 的 A/C/U 映射均有用例落点。
-- 无孤儿场景：61 条全部在 §1 或 §2 有任务；无孤儿 Requirement（14/14 命中）。
+- 无超范围任务：21 条任务全部指向三份 Delta 的 Requirement；`design.md` 的 D1–D17、`atdd-design.md` 的 A/C/U 映射均有用例落点。
+- 无孤儿场景：64 条全部在 §1 或 §2 有任务；无孤儿 Requirement（14/14 命中）。
 - 任务可执行：每条有小标题、勾选项、**验证命令**与**覆盖场景**；单条估算 ≤2h（含同批测试）。
 - 门禁一致：本地命令与 `atdd-design.md` §4 完全相同，不引入第二套 CI 语义。
 - 不触碰并行 WIP：任务清单不含 `profile.spec.ts`（底部 hunk）、`tripMessages.ts`、`ProfileSetupPage.tsx`、`AppShell.tsx` 的未提交改动与未跟踪的 `V16__normalize_demo_user_profiles.sql`；T9 只改 `ProfilePage.tsx`（未在 WIP 列表内）。

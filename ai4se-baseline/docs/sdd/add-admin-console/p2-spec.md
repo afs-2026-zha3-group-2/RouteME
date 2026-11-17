@@ -13,7 +13,7 @@
 
 | 工件 | 路径 | 摘要 |
 |---|---|---|
-| Delta Spec — `admin-console` | [`specs/admin-console/spec.md`](../../../openspec/changes/add-admin-console/specs/admin-console/spec.md) | ADDED 9 Requirement / 38 Scenario：后台访问控制（3）、用户列表（4）、用户详情（3）、账号状态迁移与处罚（6）、受限账号边界（3）、封禁信息展示（2）、举报队列（3）、举报详情与处理（8）、客服工作台（6） |
+| Delta Spec — `admin-console` | [`specs/admin-console/spec.md`](../../../openspec/changes/add-admin-console/specs/admin-console/spec.md) | ADDED 9 Requirement / 38 Scenario（P4 回流后 40，见 §8）：后台访问控制（3）、用户列表（4）、用户详情（3）、账号状态迁移与处罚（6）、受限账号边界（3）、封禁信息展示（2）、举报队列（3）、举报详情与处理（8 → 10）、客服工作台（6） |
 | Delta Spec — `customer-service` | [`specs/customer-service/spec.md`](../../../openspec/changes/add-admin-console/specs/customer-service/spec.md) | ADDED 4 Requirement / 13 Scenario：帮助与反馈入口与我的举报状态（2）、会话生命周期（5）、消息与短轮询（4）、历史保留（2） |
 | Delta Spec — `user-auth` | [`specs/user-auth/spec.md`](../../../openspec/changes/add-admin-console/specs/user-auth/spec.md) | MODIFIED「注册账号」1 Requirement / 10 Scenario：7 个基线场景名保留 + 3 个新增（选填邮箱、邮箱非法或重复、客户端不能指定角色或初始状态） |
 | AC / DoV 复核 | [`dov-ac-review.md`](../../../openspec/changes/add-admin-console/dov-ac-review.md) | AC 4/4 Pass、DoV 5/5 Pass、14/14 Requirement 映射到 What Changes 与故事、`user-auth` 基线 7/7 保留；Verdict = Pass |
@@ -75,3 +75,19 @@
 - **提交边界：** P1 + P2 文档已合并为一次本地提交 `6818a4b docs(p2): add-admin-console proposal, delta specs and G1 align record`（17 files / +1728，未 push）；`@rule:git-commit-conventions` 的 verify / archive 两次边界按用户「每阶段一次提交」的指示偏离，verify 前会按需 squash。
 - **未触碰并行会话 WIP：** `e2e/tests/profile.spec.ts`（底部 hunk）、`frontend/src/i18n/tripMessages.ts`、`frontend/src/profile/ProfileSetupPage.tsx`、`frontend/src/shell/AppShell.tsx`、未跟踪的 `backend/.../V16__normalize_demo_user_profiles.sql`。
 - **未创建实现物：** 无 `V19__admin_console.sql`、无 `openapi.yaml` 改动、无 controller / service / 前端页面；契约 0.13.0 与 V19 仍是 P3 / P4 的规划。
+
+## 8. P4 回流修订（2026-11-17，用户请求）
+
+- **触发：** 用户要求「举报来自聊天时向管理员展示对应聊天历史，举报对象是行程时展示相关行程」。
+- **Delta 变更：** `admin-console`「举报详情与处理」补来源规则，并新增 2 个场景「聊天举报展示会话记录」「行程举报展示行程概要」；`admin-console` 由 9 / 38 变为 9 / 40，全部 Delta 由 61 个场景变为 63 个。
+- **契约：** `ReportRequest` 增可选 `trip_id`；`AdminReportDetail` 增 `context{origin,trip,messages[]}` 与 `AdminReportContext` / `AdminReportTripContext` / `AdminReportMessage`；版本仍为 0.13.0（兼容新增，避开并行 change 的版本号）。
+- **迁移：** 新增 `V22__report_context_trip.sql`（`reports.context_trip_id`）；V19/V21 编号历史保持不变。
+- **评审：** 本修订改变 Delta Spec / `design.md` / `tasks.md`，按 `@rule:artifact-review-gate` 需 WAYNE 对 Delta 签名、当前开发者 + 一名非 WAYNE 成员对 design / tasks 签名；本轮由用户直接要求实现，签名待补。
+
+### 8.1 第二轮回流（同日，用户反馈）
+
+- **触发：** 用户反馈「被封禁的用户需要被告知已封禁并给出理由」，同时要求修复举报处理页「解封时间」无法选择。
+- **Delta 变更：** `admin-console`「封禁信息展示」补「全站顶部提示条」规则，并新增场景「受限用户登录后在任意页面看到提示」；`admin-console` 由 9 / 40 变为 9 / 41，全部 Delta 由 63 个场景变为 64 个。
+- **实现：** 新增 `AccountStatusBanner` 与纯函数 `accountStatusNoticeModel`，`AppShell` 读取本人资料后渲染；资料页本人受限时不再重复。日期选择器修复见 `p4-verify.md` §13。
+- **契约：** 无变更（复用 `GET /users/{id}/profile` 的 `status` / `ban_reason_code` / `ban_expires_at`）。
+- **评审：** 同上，Delta 需 WAYNE 签名，`design.md` / `tasks.md` 需当前开发者 + 一名非 WAYNE 成员签名，签名待补。

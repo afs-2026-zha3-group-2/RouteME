@@ -59,6 +59,9 @@
 | A36 | 查看用户资料与相关举报 | API + E2E | 会话详情含用户基础信息 / 状态 / 相关举报 / 完整消息 |
 | A37 | 结束会话 | API + E2E | `close` → `CLOSED`；双方输入框禁用 |
 | A38 | 结束后可查看历史 | API + E2E | `CLOSED` 会话消息仍可读；发送 → 409 `SESSION_CLOSED` |
+| A39 | 聊天举报展示会话记录 | API + E2E | 详情 `context.origin=chat`、行程概要齐全；`messages` 只含举报人与被举报人且按时间升序；`trip_id` 不属于双方 → 400 |
+| A40 | 行程举报展示行程概要 | API + E2E | 详情 `context.origin=trip`、行程字段与发布者齐全；`messages` 为空数组 |
+| A41 | 受限用户登录后看到提示 | E2E | 首页与任意页面顶部出现「账号已被封禁」+ 理由 + 解封时间（`SUSPENDED` 为暂停提示）；本人资料页不重复；恢复后消失 |
 
 ### 2.2 `customer-service`
 
@@ -100,7 +103,7 @@
 按 `@rule:api-contract` 的顺序，**契约先改，再写失败验收**：
 
 1. **契约：** `openapi.yaml` 升 0.13.0（16 个端点、13 个错误码、§4.2 的 schema 增量、`DemoUser.role/status`、`AuthRegisterRequest.email`）；`OpenApiTest` 先加失败断言（版本、路径、必填、错误码枚举）。
-2. **失败 API 验收：** 新增 `AdminUserControllerTest`、`AdminReportControllerTest`、`AdminServiceControllerTest`、`ServiceControllerTest`、`HelpControllerTest`，先按上表 A1–A38 / C2–C13 / U8–U10 写红；`AuthControllerTest` 补邮箱三例。
+2. **失败 API 验收：** 新增 `AdminUserControllerTest`、`AdminReportControllerTest`、`AdminServiceControllerTest`、`ServiceControllerTest`、`HelpControllerTest`，先按上表 A1–A40 / C2–C13 / U8–U10 写红；`AuthControllerTest` 补邮箱三例。
 3. **失败 E2E：** 新增 `e2e/tests/admin.spec.ts`（A1/A2/A4/A7/A8/A11/A12/A13/A18–A24/A27/A30–A32/A33/A35–A38）与 `e2e/tests/customer-service.spec.ts`（C1–C10/C12/C13）先跑红；`auth.spec.ts` 只加邮箱一例。
 4. **Defer UT：** `adminStatus.test.ts`（有效状态、可执行动作）、`helpStatus.test.ts`（四态文案）、`userActionForm.test.ts` / `reportActionForm.test.ts`（理由、`OTHER`、时间、备注）、`route.test.ts`（7 条新路由往返）——随实现同批 red→green。
 

@@ -81,6 +81,8 @@
 
 ## 4. 61 条场景覆盖
 
+> P4 回流新增 A39–A41（举报来源上下文、受限账号全站提示），`admin-console` 的当前计数为 41 / 41、全量为 64 / 64，证据见 §12–§14。本节表格保留首次 P4 验证时的 61 条口径。
+
 ### 4.1 `admin-console`（A1–A38，38 / 38）
 
 | # | 场景 | API 证据 | E2E / UT 证据 |
@@ -267,3 +269,72 @@
 | IO | WAYNE | 已知悉残余风险（E2E 不在 CI、共享数据库、演示凭据、G2 未签） | 待确认 |
 
 **阶段结论：P4 完成（工作区，未 push）。** 后端 339 项与前端 289 项全绿，契约 0.13.0 由 `OpenApiTest` 锁定，7 条新 E2E（5 + 2）与 61 条场景均有落点；全套 E2E 为 80 passed / 25 failed，失败全部外部归因（§6），`trips` 一套因此未在 `tasks.md` 勾选。三档视口 × 两主题无横向溢出，对比度达到 AA。G2 待 VL Neal 签署，归档留在 P5。
+
+## 11. 合入上游后的界面修复（P4 追加）
+
+上游 `main` 合入带来行程取消、体验照片与 V19 / V20 迁移；本 change 的迁移在同一次合并中顺延为 `V21__admin_console.sql`。合并后按走查反馈修复两处界面问题：
+
+| 问题 | 根因 | 修复 | 验证 |
+|---|---|---|---|
+| 后台用户详情、举报详情、客服详情的返回箭头被放大到 709×709 | 这三个页面的内联 SVG 只有 `viewBox`，全局 `svg { display: block; max-width: 100% }` 在 flex / grid 容器里把它拉满整行 | `styles.css` 新增 `.detail-back svg { width: 14px; height: 14px; flex: 0 0 auto }`；`.detail-back` 加 `justify-self: start`，让返回链接的点击区回到文字宽度 | 浏览器实测 `svg` 14×14、链接 72×21 |
+| 举报详情只有对象摘要，处理人无法判断是否封禁 | 契约 `AdminReportDetail` 只回 `target.content_excerpt`（用户目标即 bio ≤200），管理端也没有读取会话记录的入口 | 新增「判定依据」面板：复用 `GET /admin/users/{id}` 展示被举报人的账号状态、资料、简介、近期行程 / 体验、历史举报，并提供用户详情入口；`experience` 目标补上 `#/share/{id}` 链接（`reportTargetHref`） | 前端 41 文件 / 299 项通过（新增 `adminFormat.test.ts` 4 项）、`npm run build` 通过；`e2e/tests/admin.spec.ts` 5/5 通过 |
+
+> 同行消息缺口已在 §12 的「举报来源」上下文补齐：管理端不再新增独立消息接口，而是由 `GET /admin/reports/{id}` 的 `context.messages` 返回该举报涉及的双方会话。
+
+## 12. 举报来源上下文（P4 追加，2026-11-17 用户请求）
+
+用户要求「举报来自聊天时展示对应聊天历史，举报对象是行程时展示相关行程」。本轮同时改 Delta Spec、契约、迁移、后端与前端：
+
+| 层 | 改动 |
+|---|---|
+| Delta Spec | `admin-console`「举报详情与处理」补来源规则；新增「聊天举报展示会话记录」「行程举报展示行程概要」2 个场景（9 / 38 → 9 / 40） |
+| 契约 | `ReportRequest` 增可选 `trip_id`（仅用户对象）；`AdminReportDetail` 增 `context{origin, trip, messages[]}`，新增 `AdminReportContext` / `AdminReportTripContext` / `AdminReportMessage` |
+| 迁移 | `V22__report_context_trip.sql`：`reports.context_trip_id` |
+| 后端 | `ReportService.submit` 用 `ChatService.conversation` 校验举报人与被举报人共享该行程会话；`AdminReportService.detail` 用 `ChatService.transcript` 回放双方消息，行程目标回行程概要 |
+| 前端 | `ReportModal` 从聊天页带 `tripId`；`AdminReportDetailPage` 新增「举报来源」面板：聊天举报显示行程概要 + 会话记录，行程举报显示行程概要；无 `context` 的旧举报不渲染 |
+| i18n / 样式 | `adminMessages.reportOrigin*`；`styles.css` 新增 `.admin-transcript*` |
+
+**验证：**
+
+- 后端定向 41 项通过：`.\mvnw -B -ntp -o "-Dtest=OpenApiTest,ReportControllerTest,AdminReportControllerTest,AdminConsoleMigrationSqliteTest" test`（新增 4 条举报提交校验、2 条管理端上下文、1 条迁移断言）。
+- 前端 `npm test && npm run typecheck && npm run build` 全绿。
+- 浏览器实测：聊天页提交举报后，管理员详情页显示「举报来源 · 聊天举报」、行程概要（标题 / 目的地 / 起止日期 / 状态 / 发布者）与 4 条会话记录；行程详情页提交的举报显示「举报来源 · 行程举报」且无会话记录。
+
+## 13. 解封时间日历无法选择（P4 追加，2026-11-17 用户反馈）
+
+**现象：** 举报处理的「解封时间」字段点击后没有可见日历，看起来无法选择。
+
+**根因：** 管理端两个 `DatePicker`（举报处理、用户状态弹窗）没有使用首页 / 发布页已有的 `appDatePickerProps`。在 `prefers-reduced-motion: reduce` 下，antd 6.7 会把挂到 `document.body` 的日期弹层定位到视口外（`inset: -8860px auto auto -8170px`），字段本身却仍有焦点。项目已在 `utils/datePickerProps.ts` 记录该问题并用「弹层挂到字段容器 + `.app-date-popup` 定位修补」解决，管理端是遗漏。
+
+**修复：**
+
+- 举报处理与用户状态弹窗的「解封时间」改用新增的 `appDatePickerUpProps`：沿用 `appDatePickerProps` 的 `getPopupContainer`，并把弹层标记为 `app-date-popup-up`；
+- 两个字段包进 `position: relative` 的 `.form-field`，让弹层相对字段定位；
+- `styles.css` 在减少动态效果媒体查询内为 `.app-date-popup-up` 增加向上展开（`bottom: calc(100% + 4px)`），因为这两个字段靠近页面 / 弹窗底部，向下展开时日历与「确定」会落在视口外且页面已无滚动余量。
+
+**验证：**
+
+- 浏览器实测：举报处理页字段位于页面底部（`scrollY` 已达最大值），日历完整可见（`y=99.6`，`bottom=498.1`，视口 886），选 `2026-11-25` 后输入框显示 `2026-11-25 00:00`，「确定」可点击；
+- 用户详情「封禁账号」弹窗的同一字段同样向上展开且完整可见；
+- 控制台无新增错误；前端 `npm test`（41 文件 / 299 项）、`npm run typecheck`、`npm run build` 通过。
+
+## 14. 受限账号全站提示（P4 追加，2026-11-17 用户反馈）
+
+**需求：** 被封禁的用户需要被明确告知「已封禁」以及封禁理由，而不是只在个人资料页或写操作失败时才知道。
+
+**缺口：** 封禁提示原本只出现在 `#/users/{id}` 资料页；受限用户登录后停在首页或其它页面时没有任何说明，只有发起写操作才会看到 403。
+
+**实现：**
+
+| 层 | 改动 |
+|---|---|
+| 纯逻辑 | 新增 `frontend/src/profile/accountStatusNoticeModel.ts`：`BANNED` → 错误色提示（标题 + 限制范围 + `banReasonLabel` + 解封时间），`SUSPENDED` → 警告色提示，`ACTIVE` → `null` |
+| 组件 | 新增 `AccountStatusBanner`，顶栏与资料页共用；资料页在「本人受限」时不再重复渲染 |
+| 外壳 | `AppShell` 在 `.view` 顶部渲染提示条；仅当会话 `status` 为 `BANNED` / `SUSPENDED` 时读取 `GET /users/{id}/profile` 补理由与解封时间，读取失败降级为会话 `status`（理由显示 `—`） |
+| 文案 | 复用 `adminMessages.profileBan*` / `profileSuspended*`；处理原因 `status_reason` 与管理员备注 `ban_reason_note` 仍不下发用户侧 |
+
+**验证：**
+
+- 浏览器实测（`sunian` / `123456`，状态 `BANNED`）：首页顶部即出现「账号已被封禁 / 封禁期间只能浏览内容… / 理由：违法违规内容 / 解封时间：2026-12-18 06:07」；
+- 本人资料页只出现 1 条相同提示（顶栏承担，资料页不再重复）；`ACTIVE` 用户查看被封禁用户资料时，提示仍出现在资料页且无全站提示条；
+- 前端 `npm test`（42 文件 / 303 项，含新增 4 条 `accountStatusNoticeModel` 用例）、`npm run typecheck`、`npm run build` 通过；控制台无新增错误。
