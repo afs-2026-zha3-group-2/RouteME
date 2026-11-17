@@ -1,7 +1,11 @@
 package routeme.service.impl;
 
 import java.time.Clock;
+import java.time.Instant;
+import java.util.Comparator;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -15,6 +19,7 @@ import routeme.exception.InvalidInputException;
 import routeme.mapper.ChatMessageMapper;
 import routeme.pojo.ChatMessage;
 import routeme.entity.ChatMessageEntity;
+import routeme.pojo.ChatCounterpart;
 import routeme.pojo.ChatThread;
 import routeme.entity.ChatThreadEntity;
 import routeme.pojo.TripPlan;
@@ -26,7 +31,8 @@ import routeme.service.DemoUserService;
 import routeme.service.TripPlanService;
 
 /**
- * 同行聊天的业务实现：会话读写与「已匹配」权限判定。
+ * 同行聊天的业务实现：会话读写与聊天权限判定。
+ * 准入 = 发布者本人，或该行程申请状态为 accepted / left。
  * 方法契约以 {@link routeme.service.ChatService} 为准。
  */
 @Service
@@ -34,6 +40,18 @@ public class ChatServiceImpl extends AbstractServiceImpl<ChatMessageMapper, Chat
         implements ChatService {
 
     private static final int MAX_CONTENT_LENGTH = 500;
+
+    /**
+     * 会话排序：有消息的在前（按最后一条发送时间倒序），无消息的排末尾；
+     * 同序按 tripId / otherUserId 倒序，保证结果稳定。
+     */
+    private static final Comparator<ChatThread> THREAD_ORDER = Comparator
+            .comparing((ChatThread thread) -> thread.lastMessage() == null)
+            .thenComparing(
+                    thread -> thread.lastMessage() == null ? Instant.EPOCH : thread.lastMessage().sentAt(),
+                    Comparator.reverseOrder())
+            .thenComparing(ChatThread::tripId, Comparator.reverseOrder())
+            .thenComparing(ChatThread::otherUserId, Comparator.reverseOrder());
 
     private final TripPlanService tripPlanService;
     private final ApplicationService applicationService;
@@ -54,7 +72,7 @@ public class ChatServiceImpl extends AbstractServiceImpl<ChatMessageMapper, Chat
     @Override
     public List<ChatMessage> conversation(long tripId, long userId, long withUserId) {
         TripPlan trip = tripPlanService.requireCurrent(tripId);
-        requireMatched(trip, userId, withUserId);
+        requireAccess(trip, userId, withUserId);
         return messages(tripId, userId, withUserId);
     }
 
@@ -92,7 +110,7 @@ public class ChatServiceImpl extends AbstractServiceImpl<ChatMessageMapper, Chat
     public ChatMessage send(long tripId, long senderId, ChatMessageRequest request) {
         TripPlan trip = tripPlanService.requireCurrent(tripId);
         long receiverId = request == null ? 0 : request.receiverId();
-        requireMatched(trip, senderId, receiverId);
+        requireAccess(trip, senderId, receiverId);
         if (trip.status(clock.instant()) == TripStatusEnum.COMPLETED) {
             throw new ChatReadOnlyException(tripId);
         }
@@ -109,14 +127,25 @@ public class ChatServiceImpl extends AbstractServiceImpl<ChatMessageMapper, Chat
 
     @Override
     public List<ChatPartnerResponse> partners(long userId) {
-        List<ChatThreadEntity> threads = baseMapper.selectThreads(userId);
-        return threads.stream()
-                .map(row -> {
-                    ChatThread thread = new ChatThread(
-                            row.getTripId(),
-                            row.getOtherId(),
-                            lastMessage(row.getTripId(), userId, row.getOtherId()),
-                            row.getMessageCount());
+        Map<ChatCounterpart, ChatThread> threads = new LinkedHashMap<>();
+        for (ChatCounterpart counterpart : applicationService.chatCounterparts(userId)) {
+            threads.putIfAbsent(
+                    counterpart,
+                    new ChatThread(counterpart.tripId(), counterpart.otherUserId(), null, 0));
+        }
+        for (ChatThreadEntity row : baseMapper.selectThreads(userId)) {
+            ChatCounterpart pair = new ChatCounterpart(row.getTripId(), row.getOtherId());
+            threads.put(
+                    pair,
+                    new ChatThread(
+                            pair.tripId(),
+                            pair.otherUserId(),
+                            lastMessage(pair.tripId(), userId, pair.otherUserId()),
+                            row.getMessageCount()));
+        }
+        return threads.values().stream()
+                .sorted(THREAD_ORDER)
+                .map(thread -> {
                     TripPlan trip = tripPlanService.requireCurrent(thread.tripId());
                     return ChatPartnerResponse.from(
                             thread,
@@ -133,14 +162,14 @@ public class ChatServiceImpl extends AbstractServiceImpl<ChatMessageMapper, Chat
         return conversation.isEmpty() ? null : conversation.getLast();
     }
 
-    private void requireMatched(TripPlan trip, long userId, long withUserId) {
+    private void requireAccess(TripPlan trip, long userId, long withUserId) {
         if (userId != withUserId) {
             boolean userIsPublisher = trip.publisherId() == userId;
             boolean partnerIsPublisher = trip.publisherId() == withUserId;
-            if (userIsPublisher && applicationService.isAccepted(trip.id(), withUserId)) {
+            if (userIsPublisher && applicationService.isChatPartner(trip.id(), withUserId)) {
                 return;
             }
-            if (partnerIsPublisher && applicationService.isAccepted(trip.id(), userId)) {
+            if (partnerIsPublisher && applicationService.isChatPartner(trip.id(), userId)) {
                 return;
             }
         }

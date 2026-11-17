@@ -1,7 +1,7 @@
 openapi: 3.0.3
 info:
   title: RouteME API
-  version: 0.9.0
+  version: 0.11.0
   description: |
     RouteME 后端对外契约。本文件是前后端唯一事实源，字段名、类型、状态码与错误码只在这里定稿。
         当前包含：脚手架问候语、演示账户与账号认证（注册/登录/会话/退出）、旅行计划（浏览/筛选/发布/详情/结束），同行匹配、申请、退出、聊天、我的旅行与举报，以及游后体验分享与参考发布所需数据。
@@ -52,9 +52,9 @@ paths:
                     code: INTERNAL_ERROR
   /users:
     get:
-      operationId: loadUsers
-      summary: 读取全部账户
-      description: 返回种子账户与注册账号（按 id 升序）；注册账号只落库，不会出现在首页。
+      operationId: loadDemoUsers
+      summary: 读取演示账户
+      description: 身份门使用。演示环境固定 3 个账户，不做注册与鉴权。
       responses:
         '200':
           description: 演示账户列表
@@ -73,6 +73,30 @@ paths:
                       school: 大三 · 视觉传达
                       bio: 拍照比走路多。
                       interests: [摄影, 海边, 美食]
+        '500':
+          description: 未预期异常，响应不携带堆栈
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                unexpected:
+                  value:
+                    code: INTERNAL_ERROR
+  /users/demo:
+    get:
+      operationId: loadDemoOnlyUsers
+      summary: 读取演示账户
+      description: 身份门使用。只返回没有用户名凭据的 3 个预设账户，注册账号不会出现在这里。
+      responses:
+        '200':
+          description: 演示账户列表
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/DemoUser'
         '500':
           description: 未预期异常，响应不携带堆栈
           content:
@@ -515,7 +539,7 @@ paths:
                   start_date: '2026-11-16'
                   end_date: '2026-11-16'
                   stops: [陈家祠地铁站集合, 恩宁路骑楼, 永庆坊]
-                  meeting_area: 陈家祠地铁站 D 口
+                  meeting_areas: [陈家祠地铁站 D 口]
                   budget_min_cents: 8000
                   budget_max_cents: 15000
                   tags: [摄影, 历史, 美食]
@@ -650,6 +674,110 @@ paths:
                     code: DEMO_USER_REQUIRED
         '403':
           description: 非发布者不能结束行程
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                forbidden:
+                  value:
+                    code: FORBIDDEN
+        '404':
+          description: 行程不存在
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                notFound:
+                  value:
+                    code: TRIP_NOT_FOUND
+        '409':
+          description: 行程已结束
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                alreadyCompleted:
+                  value:
+                    code: TRIP_NOT_OPEN
+        '500':
+          description: 未预期异常，响应不携带堆栈
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                unexpected:
+                  value:
+                    code: INTERNAL_ERROR
+  /trips/{tripId}/meeting:
+    put:
+      operationId: saveTripMeeting
+      summary: 维护集合区域与集合时间
+      description: |
+        仅行程发布者可调用，且只在招募中与已满员时可用。
+        两个字段整体替换：未传或传 null 视为清空，重复提交结果一致。
+        集合时间使用本地墙上时间（无时区），日期部分不得晚于结束日期。
+      parameters:
+        - $ref: '#/components/parameters/DemoUserId'
+        - name: tripId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TripMeetingRequest'
+            examples:
+              success:
+                value:
+                  meeting_areas: [陈家祠地铁站 D 口]
+                  meeting_time: '2026-11-20T08:30'
+              clear:
+                value:
+                  meeting_areas: []
+                  meeting_time: null
+              invalidTime:
+                value:
+                  meeting_areas: [陈家祠地铁站 D 口]
+                  meeting_time: '2026-12-01T08:30'
+      responses:
+        '200':
+          description: 更新后的行程详情
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TripDetail'
+        '400':
+          description: 字段校验失败（集合区域超长、集合时间格式非法或晚于结束日期）
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                invalidTime:
+                  value:
+                    code: INVALID_INPUT
+                    fields:
+                      meeting_time: INVALID_DATE
+        '401':
+          description: 缺少或未知的演示身份
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                missingUser:
+                  value:
+                    code: DEMO_USER_REQUIRED
+        '403':
+          description: 非发布者不能编辑集合信息
           content:
             application/json:
               schema:
@@ -1688,6 +1816,20 @@ components:
           minimum: 2
           maximum: 12
           description: 计划人数，含发布者
+        meeting_areas:
+          type: array
+          maxItems: 3
+          items:
+            type: string
+            maxLength: 100
+          nullable: true
+          description: 集合区域，选填，最多 3 个、每个 ≤100 字；未填写时为空数组
+        meeting_time:
+          type: string
+          nullable: true
+          pattern: '^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$'
+          description: 集合时间，本地墙上时间（无时区），选填；未填写时为 null
+          example: '2026-11-20T08:30'
         joined_count:
           type: integer
           minimum: 1
@@ -1717,10 +1859,20 @@ components:
         - type: object
           required: [participants]
           properties:
-            meeting_area:
+            meeting_areas:
+              type: array
+              maxItems: 3
+              items:
+                type: string
+                maxLength: 100
+              nullable: true
+              description: 集合区域，选填，最多 3 个
+            meeting_time:
               type: string
               nullable: true
-              description: 集合区域，选填
+              pattern: '^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$'
+              description: 集合时间，本地墙上时间（无时区），选填；未填写时为 null
+              example: '2026-11-20T08:30'
             note:
               type: string
               nullable: true
@@ -1769,9 +1921,20 @@ components:
           minItems: 2
           items:
             type: string
-        meeting_area:
+        meeting_areas:
+          type: array
+          maxItems: 3
+          items:
+            type: string
+            maxLength: 100
+          nullable: true
+          description: 集合区域，选填，最多 3 个、每个 ≤100 字；null 或空数组视为未填写
+        meeting_time:
           type: string
-          maxLength: 100
+          nullable: true
+          pattern: '^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$'
+          description: 集合时间，本地墙上时间（无时区），选填；日期部分不得晚于结束日期
+          example: '2026-11-20T08:30'
         budget_min_cents:
           type: integer
           minimum: 0
@@ -1790,6 +1953,23 @@ components:
         note:
           type: string
           maxLength: 500
+    TripMeetingRequest:
+      type: object
+      properties:
+        meeting_areas:
+          type: array
+          maxItems: 3
+          items:
+            type: string
+            maxLength: 100
+          nullable: true
+          description: 集合区域，最多 3 个；未传或传 null 视为清空
+        meeting_time:
+          type: string
+          nullable: true
+          pattern: '^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$'
+          description: 集合时间，本地墙上时间（无时区），日期部分不得晚于结束日期；未传或传 null 视为清空
+          example: '2026-11-20T08:30'
     Match:
       type: object
       required: [score, percentage, reasons, basis]
@@ -1895,7 +2075,8 @@ components:
           nullable: true
         status:
           type: string
-          enum: [pending, accepted, rejected, cancelled]
+          enum: [pending, accepted, rejected, cancelled, left]
+          description: cancelled 仅表示申请人在待处理阶段撤销；left 表示已接受后退出同行
           readOnly: true
         created_at:
           type: string
@@ -1981,6 +2162,21 @@ components:
         pending_application_count:
           type: integer
           minimum: 0
+        pending_applications:
+          type: array
+          description: 按行程聚合的待处理申请数，只包含数量大于 0 的已发布行程；无待处理时为空数组
+          items:
+            $ref: '#/components/schemas/PendingApplicationCount'
+    PendingApplicationCount:
+      type: object
+      required: [trip_id, count]
+      properties:
+        trip_id:
+          type: integer
+          format: int64
+        count:
+          type: integer
+          minimum: 1
     ExperienceWriteRequest:
       type: object
       required: [content, intensity, advice]

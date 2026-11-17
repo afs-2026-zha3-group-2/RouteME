@@ -19,7 +19,7 @@
 
 ## 3. G1 结论与条件
 
-**Conditional**；IO=WANYE、SA=JACKY/KARENA、AO=JAY、VL=NEAL、SM=LEWIS。
+**Conditional**；IO=WAYNE、SA=JACKY/KARENA、AO=JAY、VL=NEAL、SM=LEWIS。
 
 | # | 条件 | Owner |
 |---|---|---|

@@ -17,7 +17,8 @@ const validForm: TripFormValues = {
   endDate: '2026-11-20',
   stops: ['陈家祠地铁站集合', '永庆坊'],
   capacity: '4',
-  meetingArea: '陈家祠地铁站 D 口',
+  meetingAreas: ['陈家祠地铁站 D 口'],
+  meetingTime: '2026-11-20T08:30',
   budgetMin: '80',
   budgetMax: '150',
   tags: ['摄影', '历史'],
@@ -88,6 +89,21 @@ describe('validateTripForm', () => {
     const errors = validateTripForm({ ...validForm, tags: ['摄影', '美食', '海边', '徒步', '露营', '历史'] });
     expect(errors.tags).toBeDefined();
   });
+
+  it('rejects a meeting time after the end date', () => {
+    const errors = validateTripForm({ ...validForm, meetingTime: '2026-11-21T08:30' });
+    expect(errors.meetingTime).toBeDefined();
+  });
+
+  it('rejects an unparsable meeting time', () => {
+    const errors = validateTripForm({ ...validForm, meetingTime: '2026-11-20 08:30' });
+    expect(errors.meetingTime).toBeDefined();
+  });
+
+  it('rejects an area over 100 characters', () => {
+    const errors = validateTripForm({ ...validForm, meetingAreas: ['区'.repeat(101)] });
+    expect(errors.meetingArea).toBeDefined();
+  });
 });
 
 describe('initialTripForm', () => {
@@ -112,7 +128,8 @@ describe('toCreateRequest', () => {
       start_date: '2026-11-20',
       end_date: '2026-11-20',
       stops: ['陈家祠地铁站集合', '永庆坊'],
-      meeting_area: '陈家祠地铁站 D 口',
+      meeting_areas: ['陈家祠地铁站 D 口'],
+      meeting_time: '2026-11-20T08:30',
       budget_min_cents: 8000,
       budget_max_cents: 15000,
       tags: ['摄影', '历史'],
@@ -121,8 +138,9 @@ describe('toCreateRequest', () => {
   });
 
   it('maps blank optionals to null', () => {
-    const request = toCreateRequest({ ...emptyTripForm, meetingArea: '  ', budgetMin: '', note: '' });
-    expect(request.meeting_area).toBeNull();
+    const request = toCreateRequest({ ...emptyTripForm, meetingAreas: [], meetingTime: '  ', budgetMin: '', note: '' });
+    expect(request.meeting_areas).toBeNull();
+    expect(request.meeting_time).toBeNull();
     expect(request.budget_min_cents).toBeNull();
     expect(request.note).toBeNull();
   });

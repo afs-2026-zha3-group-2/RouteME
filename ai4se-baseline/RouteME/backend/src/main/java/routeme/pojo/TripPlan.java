@@ -1,13 +1,5 @@
 package routeme.pojo;
 
-import static routeme.constant.TripCatalogConstant.MAX_CAPACITY;
-import static routeme.constant.TripCatalogConstant.MAX_MEETING_AREA_LENGTH;
-import static routeme.constant.TripCatalogConstant.MAX_NOTE_LENGTH;
-import static routeme.constant.TripCatalogConstant.MAX_TAGS;
-import static routeme.constant.TripCatalogConstant.MAX_TITLE_LENGTH;
-import static routeme.constant.TripCatalogConstant.MIN_CAPACITY;
-import static routeme.constant.TripCatalogConstant.MIN_STOPS;
-
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
@@ -16,6 +8,14 @@ import java.util.LinkedHashSet;
 import java.util.List;
 
 import routeme.area.AreaNames;
+import static routeme.constant.TripCatalogConstant.MAX_CAPACITY;
+import static routeme.constant.TripCatalogConstant.MAX_MEETING_AREAS;
+import static routeme.constant.TripCatalogConstant.MAX_MEETING_AREA_LENGTH;
+import static routeme.constant.TripCatalogConstant.MAX_NOTE_LENGTH;
+import static routeme.constant.TripCatalogConstant.MAX_TAGS;
+import static routeme.constant.TripCatalogConstant.MAX_TITLE_LENGTH;
+import static routeme.constant.TripCatalogConstant.MIN_CAPACITY;
+import static routeme.constant.TripCatalogConstant.MIN_STOPS;
 import routeme.constant.TripTimeZoneConstant;
 import routeme.enums.TripStatusEnum;
 import routeme.exception.InvalidInputException;
@@ -32,7 +32,8 @@ public record TripPlan(
         LocalDate startDate,
         LocalDate endDate,
         List<String> stops,
-        String meetingArea,
+        List<String> meetingAreas,
+        String meetingTime,
         String note,
         Integer budgetMinCents,
         Integer budgetMaxCents,
@@ -81,8 +82,17 @@ public record TripPlan(
     }
 
     public TripPlan withId(long newId) {
-        return new TripPlan(newId, publisherId, title, destinationCode, destination, startDate, endDate, stops, meetingArea, note,
-                budgetMinCents, budgetMaxCents, tags, capacity, joinedCount, completedAt, createdAt, updatedAt);
+        return new TripPlan(newId, publisherId, title, destinationCode, destination, startDate, endDate, stops, meetingAreas,
+                meetingTime, note, budgetMinCents, budgetMaxCents, tags, capacity, joinedCount, completedAt, createdAt, updatedAt);
+    }
+
+    /**
+     * 只替换集合区域与集合时间，并刷新更新时间。
+     */
+    public TripPlan withMeetingInfo(List<String> newMeetingAreas, String newMeetingTime, Instant now) {
+        return new TripPlan(id, publisherId, title, destinationCode, destination, startDate, endDate, stops,
+                newMeetingAreas, newMeetingTime, note, budgetMinCents, budgetMaxCents, tags, capacity, joinedCount,
+                completedAt, createdAt, now);
     }
 
     public static TripPlan create(TripPlanDraft draft, Instant now) {
@@ -131,16 +141,15 @@ public record TripPlan(
         if (tags.size() > MAX_TAGS) {
             throw new InvalidInputException("at most " + MAX_TAGS + " tags are allowed");
         }
-        String meetingArea = trimToNull(draft.meetingArea());
-        if (meetingArea != null && meetingArea.length() > MAX_MEETING_AREA_LENGTH) {
-            throw new InvalidInputException("meeting area is too long");
-        }
+        List<String> meetingAreas = cleanMeetingAreas(draft.meetingAreas());
+        String meetingTime = TripMeetingRules.normalize(draft.meetingTime());
+        TripMeetingRules.requireWithinEndDate(draft.endDate(), meetingTime);
         String note = trimToNull(draft.note());
         if (note != null && note.length() > MAX_NOTE_LENGTH) {
             throw new InvalidInputException("note is too long");
         }
         return new TripPlan(0, draft.publisherId(), title, destinationCode, destination, draft.startDate(), draft.endDate(),
-                stops, meetingArea, note, budgetMin, budgetMax, tags, capacity, 1, null, now, now);
+                stops, meetingAreas, meetingTime, note, budgetMin, budgetMax, tags, capacity, 1, null, now, now);
     }
 
     private static String requireText(String value, String field) {
@@ -162,8 +171,23 @@ public record TripPlan(
         if (value == null) {
             return null;
         }
-        String trimmed = value.trim();
+        // strip 覆盖全角空格 U+3000，与前端 JS trim 同口径（spec F-3）。
+        String trimmed = value.strip();
         return trimmed.isEmpty() ? null : trimmed;
+    }
+
+    /** 集合区域：trim 去重保序，≤3 个、每个 ≤100 字。 */
+    public static List<String> cleanMeetingAreas(List<String> values) {
+        List<String> cleaned = cleanList(values);
+        if (cleaned.size() > MAX_MEETING_AREAS) {
+            throw new InvalidInputException("at most " + MAX_MEETING_AREAS + " meeting areas are allowed");
+        }
+        for (String area : cleaned) {
+            if (area.length() > MAX_MEETING_AREA_LENGTH) {
+                throw new InvalidInputException("meeting area is too long");
+            }
+        }
+        return cleaned;
     }
 
     private static List<String> cleanList(List<String> values) {

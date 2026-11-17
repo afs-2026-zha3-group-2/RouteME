@@ -1000,6 +1000,7 @@ svg {
 }
 
 .form-field {
+  position: relative;
   display: flex;
   flex-direction: column;
   gap: 5px;
@@ -1189,6 +1190,20 @@ svg {
   border-top: 0;
 }
 
+/* Date fields reuse the shared picker helper: full width, anchored to the field. */
+.publish-page .trip-date {
+  width: 100%;
+}
+
+/* 集合时间同样是 antd 日期时间控件，与同表单的输入框同宽 */
+.form-field .ant-picker.trip-meeting-time,
+.form-field .ant-picker.meeting-time {
+  width: 100%;
+}
+
+.trip-date-anchor {
+  position: relative;
+}
 @media (max-width: 900px) {
   .publish-grid {
     grid-template-columns: 1fr;
@@ -1343,9 +1358,31 @@ svg {
 }
 
 .field {
+  position: relative;
   display: grid;
   gap: 6px;
   min-width: 0;
+}
+
+/*
+ * antd 6.7 keeps the picker popup at inset -1000vw when the OS asks for reduced motion
+ * (the alignment effect depends on the appear motion). Anchor the popup to the field instead.
+ */
+@media (prefers-reduced-motion: reduce) {
+  .app-date-popup {
+    left: 0 !important;
+    right: auto !important;
+    top: calc(100% + 4px) !important;
+    bottom: auto !important;
+  }
+
+  .app-date-popup.ant-slide-up-appear-prepare,
+  .app-date-popup.ant-slide-up-enter-prepare,
+  .app-date-popup.ant-slide-up-appear,
+  .app-date-popup.ant-slide-up-enter {
+    opacity: 1 !important;
+    transform: none !important;
+  }
 }
 
 .label {
@@ -1817,6 +1854,206 @@ svg {
   box-shadow: var(--sh-3);
 }
 
+.exp-cover {
+  display: flex;
+  align-items: flex-end;
+  height: 64px;
+  padding: 10px 14px;
+  border-radius: var(--r);
+  font-size: 12.5px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  color: #fff;
+  text-shadow: 0 1px 6px rgba(20, 51, 95, 0.45);
+}
+
+/* ---------- 游后分享页（R2：对齐原型 share()） ---------- */
+.share-page .page-head {
+  margin-bottom: 16px;
+}
+
+.detail-back .share-icon {
+  width: 15px;
+  height: 15px;
+}
+
+.share-hero {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 14px;
+  padding: 16px 18px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+  background: var(--surface);
+  box-shadow: var(--sh-1);
+  margin-bottom: 16px;
+}
+
+.share-hero-cover {
+  flex: none;
+  width: 76px;
+  height: 60px;
+  border-radius: 12px;
+}
+
+.share-hero-body {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+  flex: 1 1 200px;
+}
+
+.share-hero-body b {
+  font-size: 15.5px;
+  line-height: 1.35;
+}
+
+.share-hero-body span {
+  font-size: 12.5px;
+  color: var(--ink-3);
+}
+
+.share-hero .badge {
+  margin-left: auto;
+}
+
+.share-page .publish-main .panel + .panel,
+.share-page .publish-side .panel + .panel {
+  margin-top: 0;
+}
+
+.share-required {
+  margin-left: 3px;
+  color: var(--t-coral);
+}
+
+.share-counter {
+  float: right;
+  font-size: 11px;
+  font-weight: 650;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--ink-3);
+}
+
+.intensity-picker {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.int-card {
+  position: relative;
+  display: grid;
+  gap: 4px;
+  padding: 14px;
+  border: 1.5px solid var(--line);
+  border-radius: var(--r);
+  background: var(--surface-2);
+  text-align: left;
+  font: inherit;
+  cursor: pointer;
+  transition: transform 0.18s var(--ease-out), border-color 0.18s, background 0.18s;
+}
+
+.int-card:hover {
+  transform: translateY(-2px);
+  border-color: var(--lagoon);
+}
+
+.int-card:focus-within {
+  box-shadow: var(--ring);
+}
+
+.int-card b {
+  font-size: 14.5px;
+  font-weight: 730;
+}
+
+.int-card span {
+  font-size: 11.5px;
+  line-height: 1.45;
+  color: var(--ink-3);
+}
+
+.int-card.on.jade {
+  border-color: transparent;
+  background: color-mix(in srgb, var(--jade) 12%, var(--surface));
+  color: var(--t-jade);
+}
+
+.int-card.on.amber {
+  border-color: transparent;
+  background: color-mix(in srgb, var(--warn) 12%, var(--surface));
+  color: var(--t-warn);
+}
+
+.int-card.on.coral {
+  border-color: transparent;
+  background: color-mix(in srgb, var(--coral) 12%, var(--surface));
+  color: var(--t-coral);
+}
+
+.int-card.on span {
+  color: var(--ink-2);
+}
+
+.int-radio {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.share-list {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.share-list li {
+  display: grid;
+  grid-template-columns: 17px minmax(0, 1fr);
+  gap: 9px;
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--ink-2);
+}
+
+.share-list .share-icon {
+  width: 15px;
+  height: 15px;
+  margin-top: 1px;
+  color: var(--t-lagoon);
+}
+
+.share-panel .panel-title .share-icon,
+.publish-main .panel-title .share-icon {
+  width: 15px;
+  height: 15px;
+  margin-right: 6px;
+  color: var(--ink-3);
+}
+
+.share-action-error {
+  margin-top: 12px;
+}
+
+.share-page .form-actions {
+  margin-top: 16px;
+}
+
+@media (max-width: 680px) {
+  .intensity-picker {
+    grid-template-columns: 1fr;
+  }
+}
 .exp-head {
   display: flex;
   align-items: center;
@@ -2061,91 +2298,129 @@ svg {
   margin-top: 4px;
 }
 
+/* 我的旅行：原型行式列表（84px 封面 / 主列 / 动作列） */
 .mine-row {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
-  gap: 14px;
+  grid-template-columns: 84px minmax(0, 1fr) auto;
+  gap: 16px;
   align-items: center;
-}
-
-.mine-row > .trip-card {
-  min-width: 0;
-}
-
-.mine-row-link {
-  padding: 14px 16px;
+  padding: 14px;
   border-radius: var(--r-lg);
   background: var(--surface);
   border: 1px solid var(--line);
   box-shadow: var(--sh-1);
-  transition: transform 0.2s var(--ease-out), box-shadow 0.2s, border-color 0.2s;
+  transition:
+    transform 0.2s var(--ease-out),
+    box-shadow 0.2s,
+    border-color 0.2s;
 }
 
-.mine-row-link:hover {
+.mine-row:hover {
   transform: translateY(-2px);
   box-shadow: var(--sh-2);
   border-color: var(--lagoon);
 }
 
-.mine-row-main {
+.mr-cover {
+  display: flex;
+  align-items: flex-end;
+  height: 66px;
+  padding: 8px;
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.mr-cover-dest {
+  position: relative;
+  z-index: 1;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1.2;
+  color: #fff;
+  text-shadow: 0 1px 6px rgba(20, 51, 95, 0.45);
+}
+
+.mr-main {
   display: grid;
-  gap: 3px;
+  gap: 6px;
   min-width: 0;
 }
 
-.mine-row-title {
-  font-size: 14.5px;
+.mr-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin: 0;
+  font-size: 15.5px;
   font-weight: 700;
-  color: var(--ink);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
-.mine-row-meta {
+.mr-title a {
+  color: var(--ink);
+  text-decoration: none;
+}
+
+.mr-title a:hover {
+  color: var(--lagoon);
+}
+
+.mr-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
   font-size: 12px;
   color: var(--ink-3);
 }
 
-.mine-row-actions {
+.mr-note {
+  margin: 0;
+  padding: 7px 11px;
+  border-radius: 9px;
+  border-left: 2px solid var(--line-2);
+  background: var(--surface-2);
+  font-size: 12.5px;
+  color: var(--ink-2);
+}
+
+.mr-actions {
   display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  gap: 8px;
-  flex: none;
+  gap: 7px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  max-width: 280px;
 }
 
-/* 紧凑行程卡：封面缩成窄条，用于我的旅行等行式列表 */
-.trip-card.compact {
-  display: grid;
-  grid-template-columns: 104px minmax(0, 1fr);
-  align-items: stretch;
+.mine-seg {
+  align-self: flex-start;
 }
 
-.trip-card.compact .tc-cover {
-  height: auto;
-  min-height: 112px;
-  flex-direction: column;
-  align-items: flex-start;
-  justify-content: flex-start;
-  gap: 6px;
-  border-bottom: 0;
-  border-right: 1px solid var(--line);
-}
-
-.trip-card.compact .tc-body {
-  padding: 13px 16px;
+.mine-tab-label {
+  display: inline-flex;
+  align-items: center;
   gap: 7px;
 }
 
-.trip-card.compact .tc-title {
-  font-size: 15px;
+.seg-count {
+  padding: 1px 7px;
+  border-radius: 99px;
+  background: var(--surface-3);
+  color: var(--ink-3);
+  font-family: var(--font-num);
+  font-size: 11px;
+  font-weight: 700;
 }
 
-.trip-card.compact .tc-foot {
-  padding-top: 9px;
+.ant-segmented-item-selected .seg-count {
+  background: var(--tide);
+  color: #fff;
 }
 
+.page-head-cta {
+  margin-left: auto;
+}
+
+/* 紧凑行程卡：封面缩成窄条，用于我的旅行等行式列表 */
 /* ---------- 详情页分区 ---------- */
 .detail-head {
   display: grid;
@@ -2156,6 +2431,10 @@ svg {
   display: flex;
   flex-wrap: wrap;
   gap: 6px;
+}
+
+.detail-badges .head-report {
+  margin-left: auto;
 }
 
 .detail-title {
@@ -2740,43 +3019,35 @@ svg {
     max-width: 100%;
   }
 
-  /* 行式列表在窄屏改为上下排布，操作区不遮挡卡片 */
+  /* 行式列表在窄屏改为上下排布，封面与动作区不遮挡内容 */
   .mine-row {
-    grid-template-columns: minmax(0, 1fr);
-    gap: 10px;
-  }
-
-  .mine-row-actions {
-    flex-direction: row;
-    align-items: center;
-    justify-content: flex-start;
-    flex-wrap: wrap;
-  }
-
-  .trip-card.compact {
     grid-template-columns: 84px minmax(0, 1fr);
+    gap: 12px;
   }
 
-  .trip-card.compact .tc-cover {
-    min-height: 96px;
+  .mr-actions {
+    grid-column: 1 / -1;
+    justify-content: flex-start;
+    max-width: none;
+  }
+
+  /* 四段标题在 390 宽不会全部排下：保留可横向滚动的单行，标题不被裁成不可读 */
+  .mine-seg {
+    max-width: 100%;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+
+  .mine-seg::-webkit-scrollbar {
+    display: none;
+  }
+
+  .mine-seg .ant-segmented-group {
+    flex-wrap: nowrap;
   }
 
   .profile-stats {
     grid-template-columns: repeat(2, 1fr);
-  }
-
-  /* 窄屏选项卡换行展示，避免第四项被裁切或藏进不可点开的「更多」 */
-  .mine-tabs .ant-tabs-nav-wrap {
-    overflow: visible;
-  }
-
-  .mine-tabs .ant-tabs-nav-list {
-    flex-wrap: wrap;
-    row-gap: 2px;
-  }
-
-  .mine-tabs .ant-tabs-nav-operations {
-    display: none;
   }
 
   .pager {
@@ -3253,11 +3524,69 @@ svg {
   font-size: 12px;
 }
 
+/* ---------- 离线导航地图 ---------- */
 .map-shell {
+  display: flex;
+  flex-direction: column;
   overflow: hidden;
   border: 1px solid var(--line);
   border-radius: var(--r);
-  background: var(--surface-2);
+  background: var(--surface);
+  box-shadow: var(--sh-1);
+}
+
+.map-shell.is-fullscreen {
+  position: fixed;
+  inset: 0;
+  z-index: 1200;
+  border: 0;
+  border-radius: 0;
+}
+
+.map-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--line);
+  background: var(--surface);
+}
+
+.map-scope {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+
+.map-scope b {
+  font-size: 12.5px;
+  font-weight: 750;
+}
+
+.map-scope span {
+  font-size: 10.5px;
+  color: var(--ink-3);
+}
+
+.map-toolbar .ant-btn {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+}
+
+.map-glyph {
+  width: 15px;
+  height: 15px;
+}
+
+.map-viewport {
+  position: relative;
+  overflow: hidden;
+  background: var(--map-land-to);
 }
 
 .map-canvas {
@@ -3265,32 +3594,113 @@ svg {
   width: 100%;
   height: auto;
   aspect-ratio: 16 / 10;
-  max-height: 260px;
-  cursor: crosshair;
+  max-height: 360px;
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+}
+
+.map-canvas:active {
+  cursor: grabbing;
+}
+
+.map-shell.is-fullscreen .map-viewport {
+  flex: 1;
+  min-height: 0;
+}
+
+.map-shell.is-fullscreen .map-canvas {
+  height: 100%;
+  max-height: none;
+  aspect-ratio: auto;
+}
+
+.map-water-band {
+  fill: none;
+  stroke: var(--map-water-from);
+  stroke-width: 9;
+  stroke-linecap: round;
+  opacity: 0.9;
+}
+
+.map-water-band.river {
+  stroke-width: 4;
+  stroke: var(--map-water-to);
+  opacity: 0.55;
 }
 
 .map-land-shape {
-  stroke: var(--line-2);
+  stroke: color-mix(in srgb, var(--line-2) 80%, transparent);
   stroke-width: 0.5;
 }
 
-.map-grid line {
-  stroke: var(--line-2);
-  stroke-width: 0.25;
-  opacity: 0.35;
-}
-
 .map-island {
-  fill: var(--map-land-to);
-  stroke: var(--line-2);
+  fill: var(--map-land-from);
+  stroke: color-mix(in srgb, var(--line-2) 70%, transparent);
   stroke-width: 0.35;
 }
 
 .map-sea-label {
   fill: var(--ink-3);
   font-size: 2.6px;
-  letter-spacing: 0.6px;
-  opacity: 0.5;
+  letter-spacing: 0.7px;
+  opacity: 0.45;
+}
+
+.map-parks rect {
+  fill: color-mix(in srgb, var(--jade) 22%, var(--map-land-from));
+  stroke: color-mix(in srgb, var(--jade) 32%, transparent);
+  stroke-width: 0.3;
+}
+
+
+.map-highways line {
+  stroke: color-mix(in srgb, var(--amber) 55%, var(--line-2));
+  stroke-width: 0.9;
+  opacity: 0.6;
+  stroke-dasharray: 2 1.4;
+}
+
+.map-streets line {
+  stroke: var(--surface);
+  stroke-width: 0.9;
+  opacity: 0.92;
+}
+
+.map-streets line.major {
+  stroke-width: 1.8;
+  stroke: color-mix(in srgb, var(--surface) 75%, var(--amber) 25%);
+}
+
+.map-streets line.arterial {
+  stroke-width: 1.5;
+  stroke: color-mix(in srgb, var(--surface) 62%, var(--amber) 38%);
+  opacity: 0.65;
+}
+
+.map-district {
+  fill: var(--ink-3);
+  font-size: 2.2px;
+  font-weight: 700;
+  letter-spacing: 1.2px;
+  opacity: 0.35;
+}
+
+.map-route-casing,
+.map-route-line {
+  fill: none;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.map-route-casing {
+  stroke: var(--surface);
+  stroke-width: 2.6;
+}
+
+.map-route-line {
+  stroke: var(--lagoon);
+  stroke-width: 1.4;
 }
 
 .map-pin {
@@ -3317,42 +3727,157 @@ svg {
 
 .map-pin:hover .map-pin-dot,
 .map-pin.active .map-pin-dot {
-  transform: scale(1.5);
+  transform: scale(1.45);
 }
 
 .map-pin:focus-visible .map-pin-hit {
-  fill: var(--lagoon-soft);
+  fill: color-mix(in srgb, var(--lagoon) 18%, transparent);
 }
 
 .map-pin-label {
   fill: var(--ink-2);
   font-size: 2.5px;
   font-weight: 650;
+  paint-order: stroke;
+  stroke: var(--map-land-from);
+  stroke-width: 0.9;
+  stroke-linejoin: round;
   pointer-events: none;
-}
-
-.map-selected-halo {
-  fill: var(--tide);
-  opacity: 0.18;
 }
 
 .map-focus-ring {
   fill: none;
   stroke: var(--lagoon);
-  stroke-width: 0.6;
-  opacity: 0.35;
+  stroke-width: 0.5;
+  stroke-dasharray: 1.6 1.4;
+  opacity: 0.4;
+}
+
+.map-selected-halo {
+  fill: var(--lagoon);
+  opacity: 0.16;
 }
 
 .map-selected-dot {
-  fill: var(--tide);
+  fill: var(--lagoon);
   stroke: var(--surface);
-  stroke-width: 0.5;
+  stroke-width: 0.6;
 }
 
 .map-selected-index {
   fill: #fff;
   font-size: 2.2px;
   font-weight: 800;
+}
+
+.map-callout {
+  position: absolute;
+  z-index: 5;
+  display: grid;
+  gap: 4px;
+  width: 216px;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface);
+  box-shadow: var(--sh-2);
+}
+
+.map-callout-close {
+  position: absolute;
+  top: 4px;
+  right: 6px;
+  border: 0;
+  background: transparent;
+  color: var(--ink-3);
+  font-size: 15px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.map-callout-kind {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--t-warn);
+}
+
+.map-callout-name {
+  font-size: 14px;
+  font-weight: 750;
+}
+
+.map-callout .ant-btn {
+  justify-self: start;
+  margin-top: 2px;
+}
+
+.map-empty {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  text-align: center;
+  background: color-mix(in srgb, var(--surface) 78%, transparent);
+}
+
+.map-legend,
+.map-scale {
+  position: absolute;
+  z-index: 4;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--surface) 92%, transparent);
+  box-shadow: var(--sh-1);
+}
+
+.map-legend {
+  bottom: 10px;
+  left: 10px;
+  display: grid;
+  gap: 5px;
+  padding: 8px 10px;
+  font-size: 10.5px;
+  color: var(--ink-2);
+}
+
+.map-legend span {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.map-legend i {
+  display: inline-block;
+  width: 14px;
+  height: 3px;
+  border-radius: 99px;
+}
+
+.legend-line { background: var(--lagoon); }
+.legend-stop { width: 7px; height: 7px; border-radius: 50%; background: var(--lagoon); }
+.legend-park { background: color-mix(in srgb, var(--jade) 45%, transparent); }
+.legend-water { background: var(--map-water-from); }
+
+.map-scale {
+  right: 10px;
+  bottom: 10px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 8px;
+  font-size: 10px;
+  color: var(--ink-3);
+}
+
+.map-scale i {
+  display: block;
+  width: 34px;
+  height: 5px;
+  border: 1px solid var(--ink-3);
+  border-top: 0;
 }
 
 .map-hint {
@@ -3363,6 +3888,21 @@ svg {
   font-size: 11.5px;
   line-height: 1.5;
   color: var(--ink-3);
+}
+
+@media (max-width: 700px) {
+  .map-legend {
+    display: none;
+  }
+
+  /* 小屏比例尺会遮住右下角 pin 标签，隐藏之。 */
+  .map-scale {
+    display: none;
+  }
+
+  .map-canvas {
+    aspect-ratio: 4 / 3;
+  }
 }
 
 /* ---------- 聊天参与者信息 ---------- */
@@ -3413,15 +3953,21 @@ svg {
 :root {
   --map-sea-from: #d7ecf7;
   --map-sea-to: #b9dcee;
+  --map-water-from: #c4e2f4;
+  --map-water-to: #a3d2ec;
   --map-land-from: #e9f4ec;
   --map-land-to: #d5e8da;
+  --map-park-dot: #8fcbaa;
 }
 
 [data-theme="dark"] {
   --map-sea-from: #0c2136;
   --map-sea-to: #081a2b;
+  --map-water-from: #123a4c;
+  --map-water-to: #0e2e3d;
   --map-land-from: #14333c;
   --map-land-to: #102a33;
+  --map-park-dot: #2f6b4b;
 }
 
 /* ---------- 减少动效 ---------- */
@@ -3881,5 +4427,928 @@ svg {
   .mine-profile-actions {
     width: 100%;
     margin-left: 0;
+  }
+}
+
+/* ---------- refine-trip-map：导航风地图（方案1 SVG，参考图口径） ---------- */
+:root {
+  --map-land-from: #eef6ef;
+  --map-land-to: #dcead9;
+  --map-park: #cde8d2;
+  --map-park-tree: #7fbf9a;
+  --map-water-from: #c4e2f4;
+  --map-water-to: #a3d2ec;
+  --map-road: #ffffff;
+  --map-road-casing: #d8e4ea;
+  --map-route: #2f9fe0;
+  --map-pin: #f0503c;
+  --map-pin-city: #1b5a8a;
+}
+
+[data-theme="dark"] {
+  --map-land-from: #142e36;
+  --map-land-to: #10262e;
+  --map-park: #235140;
+  --map-park-tree: #3f7a5c;
+  --map-water-from: #123a4c;
+  --map-water-to: #0e2e3d;
+  --map-road: #223a44;
+  --map-road-casing: #0c1a22;
+  --map-route: #56b8f0;
+  --map-pin: #ff8a5c;
+  --map-pin-city: #56b8f0;
+}
+
+.map-shell {
+  border-radius: 14px;
+}
+
+.map-viewport {
+  background: var(--map-land-to);
+}
+
+.map-scope-card {
+  position: absolute;
+  z-index: 4;
+  top: 10px;
+  left: 10px;
+  display: grid;
+  gap: 1px;
+  padding: 8px 12px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--surface) 94%, transparent);
+  box-shadow: var(--sh-1);
+}
+
+.map-scope-card b {
+  font-size: 13px;
+  font-weight: 750;
+}
+
+.map-scope-card span {
+  font-size: 10.5px;
+  color: var(--ink-3);
+}
+
+.map-controls {
+  position: absolute;
+  z-index: 4;
+  top: 10px;
+  right: 10px;
+}
+
+.map-controls .ant-btn {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface);
+  box-shadow: var(--sh-1);
+}
+
+.map-parks rect {
+  fill: var(--map-park);
+  stroke: color-mix(in srgb, var(--map-park-tree) 45%, transparent);
+  stroke-width: 0.3;
+}
+
+.map-tree circle {
+  fill: var(--map-park-tree);
+}
+
+.map-tree line {
+  stroke: var(--map-park-tree);
+}
+
+.map-water-band {
+  fill: none;
+  stroke: var(--map-water-from);
+  stroke-linecap: round;
+  opacity: 0.95;
+}
+
+.map-water-band.inner {
+  stroke: var(--map-water-to);
+  opacity: 0.7;
+}
+
+.map-highways line {
+  stroke: var(--map-road);
+  stroke-width: 0.8;
+  opacity: 0.75;
+  stroke-dasharray: none;
+}
+
+.map-streets line {
+  stroke: var(--map-road);
+  opacity: 0.95;
+}
+
+.map-streets line.casing {
+  stroke: var(--map-road-casing);
+  opacity: 1;
+}
+
+.map-streets line.major {
+  stroke: var(--map-road);
+}
+
+.map-streets line.arterial {
+  stroke: color-mix(in srgb, var(--map-road) 70%, var(--amber) 30%);
+  opacity: 0.9;
+}
+
+.map-route-casing {
+  fill: none;
+  stroke: var(--map-road);
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.map-route-line {
+  fill: none;
+  stroke: var(--map-route);
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.map-pin-dot {
+  fill: var(--map-pin);
+  stroke: var(--surface);
+}
+
+.map-pin.city .map-pin-dot {
+  fill: var(--map-pin-city);
+}
+
+.map-pin-teardrop {
+  fill: var(--map-pin);
+  stroke: #fff;
+  stroke-width: 0.5;
+}
+
+.map-selected-anchor {
+  fill: var(--map-pin-city);
+  stroke: #fff;
+  stroke-width: 0.3;
+}
+
+.map-selected-index {
+  fill: #fff;
+  font-size: 2.4px;
+  font-weight: 800;
+}
+
+.map-pin.selected .map-pin-label {
+  font-weight: 800;
+}
+
+.map-callout {
+  width: 232px;
+  border-radius: 14px;
+  box-shadow: var(--sh-2);
+}
+
+.map-callout-cover {
+  display: grid;
+  place-items: center;
+  height: 64px;
+  border-radius: 10px;
+  color: #fff;
+}
+
+.map-callout-cover .map-glyph {
+  width: 26px;
+  height: 26px;
+}
+
+.map-callout-list {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.map-callout-list li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.map-callout-candidate-name {
+  font-size: 12.5px;
+  font-weight: 650;
+}
+
+.legend-poi {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--map-pin);
+}
+
+.legend-road {
+  background: var(--map-road);
+  border: 1px solid var(--map-road-casing);
+}
+
+.legend-stop {
+  background: var(--map-pin);
+}
+
+.legend-line {
+  background: var(--map-route);
+}
+
+.detail-map-section {
+  display: grid;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.route-strip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.route-strip-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.route-strip-card {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 132px;
+  padding: 8px 10px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface);
+  box-shadow: var(--sh-1);
+  cursor: pointer;
+  text-align: left;
+}
+
+.route-strip-card.off {
+  cursor: default;
+  opacity: 0.7;
+}
+
+.route-strip-card:not(.off):hover {
+  border-color: var(--map-route);
+}
+
+.route-strip-index {
+  display: grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  color: #fff;
+  font-size: 11px;
+  font-weight: 800;
+  flex: none;
+}
+
+.route-strip-index.tone-0 { background: #f0503c; }
+.route-strip-index.tone-1 { background: #2f9fe0; }
+.route-strip-index.tone-2 { background: #1b5a8a; }
+.route-strip-index.tone-3 { background: #0e8074; }
+
+.route-strip-name {
+  font-size: 12.5px;
+  font-weight: 700;
+}
+
+.route-strip-off {
+  font-size: 10px;
+  color: var(--ink-3);
+}
+
+.route-strip-leg {
+  font-size: 10.5px;
+  color: var(--ink-3);
+  white-space: nowrap;
+}
+
+.detail-stop-button {
+  border: 0;
+  background: transparent;
+  padding: 0;
+  color: var(--map-route);
+  font: inherit;
+  cursor: pointer;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+@media (max-width: 700px) {
+  .map-legend {
+    display: none;
+  }
+
+  .route-strip-card {
+    min-width: 112px;
+  }
+}
+
+/* ---------- refine-trip-map R2：三级旅行地图（参考图指定令牌 D19） ---------- */
+:root {
+  --map-bg: #f0f6fa;
+  --map-surface: #f5f8fb;
+  --map-road: #d5e2ec;
+  --map-road-casing: #c2d4e2;
+  --map-water: #c4e2f4;
+  --map-water-inner: #a3d2ec;
+  --map-park: #cde8d2;
+  --map-park-tree: #7fbf9a;
+  --map-poi: #f0503c;
+  --map-route-from: #2f9fe0;
+  --map-route-to: #0e8074;
+  --map-ink: #16324f;
+  /* 旧选择器兼容映射（route-strip / 详情按钮等仍引用）。 */
+  --map-pin: #f0503c;
+  --map-pin-city: #1b5a8a;
+  --map-route: #2f9fe0;
+  --map-land-from: #f5f8fb;
+  --map-land-to: #eef4f9;
+  --map-water-from: #c4e2f4;
+  --map-water-to: #a3d2ec;
+}
+
+[data-theme="dark"] {
+  --map-bg: #0d1b2a;
+  --map-surface: #14283f;
+  --map-road: #2a4763;
+  --map-road-casing: #0c1a22;
+  --map-water: #123a4c;
+  --map-water-inner: #1c4a60;
+  --map-park: #235140;
+  --map-park-tree: #3f7a5c;
+  --map-poi: #ff8a5c;
+  --map-route-from: #56b8f0;
+  --map-route-to: #2fc9a8;
+  --map-ink: #e8f1f8;
+  --map-pin: #ff8a5c;
+  --map-pin-city: #56b8f0;
+  --map-route: #56b8f0;
+  --map-land-from: #14283f;
+  --map-land-to: #0d1b2a;
+  --map-water-from: #123a4c;
+  --map-water-to: #1c4a60;
+}
+
+.map-explorer-page .map-shell {
+  background: var(--map-bg);
+}
+
+.map-ground {
+  fill: var(--map-surface);
+}
+
+.map-breadcrumbs {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 2px;
+  padding: 10px 12px 4px;
+  font-size: 12.5px;
+  color: var(--ink-3);
+}
+
+.map-breadcrumb-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.map-breadcrumb-sep {
+  margin: 0 4px;
+  opacity: 0.6;
+}
+
+.map-breadcrumb-link {
+  border: 0;
+  background: transparent;
+  padding: 2px 4px;
+  border-radius: 6px;
+  color: var(--map-route-from);
+  font: inherit;
+  cursor: pointer;
+}
+
+.map-breadcrumb-link:hover {
+  background: color-mix(in srgb, var(--map-route-from) 12%, transparent);
+}
+
+.map-breadcrumb-current {
+  padding: 2px 4px;
+  font-weight: 750;
+  color: var(--map-ink);
+}
+
+[data-theme="dark"] .map-breadcrumb-current {
+  color: var(--ink);
+}
+
+.map-search {
+  position: relative;
+  padding: 6px 12px 8px;
+}
+
+.map-search .place-suggest {
+  position: absolute;
+  z-index: 8;
+  left: 12px;
+  right: 12px;
+  top: calc(100% - 4px);
+}
+
+.map-search-empty {
+  display: block;
+  padding: 4px 2px 0;
+  font-size: 11.5px;
+}
+
+.map-province-shape {
+  fill: color-mix(in srgb, var(--map-park) 26%, var(--map-surface));
+  stroke: color-mix(in srgb, var(--map-ink) 26%, transparent);
+  stroke-width: 0.4;
+  transition: fill 0.14s var(--ease);
+}
+
+.map-province {
+  cursor: pointer;
+  outline: none;
+}
+
+.map-province.hovered .map-province-shape,
+.map-province:focus-visible .map-province-shape {
+  fill: color-mix(in srgb, var(--map-route-from) 26%, var(--map-surface));
+  stroke: var(--map-route-from);
+}
+
+.map-province-label {
+  fill: var(--map-ink);
+  font-weight: 700;
+  pointer-events: none;
+  paint-order: stroke;
+  stroke: var(--map-surface);
+  stroke-width: 0.5;
+  stroke-linejoin: round;
+}
+
+[data-theme="dark"] .map-province-label {
+  fill: var(--ink);
+}
+
+.map-province-outline {
+  fill: color-mix(in srgb, var(--map-park) 20%, var(--map-surface));
+  stroke: color-mix(in srgb, var(--map-ink) 30%, transparent);
+  stroke-width: 0.5;
+}
+
+.map-city-node {
+  cursor: pointer;
+  outline: none;
+}
+
+.map-city-hit {
+  fill: transparent;
+}
+
+.map-city-dot {
+  fill: var(--map-pin-city);
+  stroke: var(--map-surface);
+  transition: transform 0.14s var(--ease);
+  transform-box: fill-box;
+  transform-origin: center;
+}
+
+.map-city-node.hovered .map-city-dot,
+.map-city-node:focus-visible .map-city-dot {
+  transform: scale(1.25);
+  stroke: var(--map-route-from);
+}
+
+.map-city-label {
+  fill: var(--map-ink);
+  font-weight: 700;
+  pointer-events: none;
+  paint-order: stroke;
+  stroke: var(--map-surface);
+  stroke-width: 0.8;
+  stroke-linejoin: round;
+}
+
+[data-theme="dark"] .map-city-label {
+  fill: var(--ink);
+}
+
+.map-road {
+  stroke: var(--map-road);
+  stroke-linecap: round;
+}
+
+.map-road.casing {
+  stroke: var(--map-road-casing);
+}
+
+.map-road.major {
+  stroke: color-mix(in srgb, var(--map-road) 78%, var(--map-surface));
+}
+
+.map-water-band {
+  stroke: var(--map-water);
+}
+
+.map-water-band.inner {
+  stroke: var(--map-water-inner);
+}
+
+.map-park-block {
+  fill: var(--map-park);
+  stroke: color-mix(in srgb, var(--map-park-tree) 45%, transparent);
+  stroke-width: 0.3;
+}
+
+.map-pin.poi .map-pin-dot {
+  fill: var(--map-poi);
+}
+
+.map-pin-teardrop {
+  fill: var(--map-poi);
+}
+
+.map-route-line {
+  stroke: var(--map-route-from);
+}
+
+.map-route-badge {
+  cursor: pointer;
+  outline: none;
+}
+
+.map-route-badge circle {
+  fill: var(--map-route-to);
+  stroke: #fff;
+}
+
+.map-route-badge text {
+  fill: #fff;
+  font-weight: 800;
+  pointer-events: none;
+}
+
+.legend-line {
+  background: linear-gradient(90deg, var(--map-route-from), var(--map-route-to));
+}
+
+.legend-poi {
+  background: var(--map-poi);
+}
+
+.legend-stop {
+  background: var(--map-route-to);
+}
+
+.legend-water {
+  background: var(--map-water);
+}
+
+.legend-park {
+  background: var(--map-park);
+}
+
+.legend-road {
+  background: var(--map-road);
+  border-color: var(--map-road-casing);
+}
+
+.city-map-layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 280px;
+  gap: 0;
+}
+
+.city-map-side {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px;
+  border-left: 1px solid var(--line);
+  background: var(--surface);
+  max-height: 460px;
+  overflow-y: auto;
+}
+
+.route-actions {
+  display: grid;
+  gap: 6px;
+}
+
+.route-actions-hint {
+  font-size: 11.5px;
+}
+
+.route-stats {
+  display: grid;
+  gap: 8px;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--map-route-from) 6%, var(--surface));
+}
+
+.route-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+
+.route-stats-item {
+  display: grid;
+  gap: 2px;
+}
+
+.route-stats-value {
+  font-size: 14px;
+  font-weight: 800;
+  color: var(--map-ink);
+}
+
+[data-theme="dark"] .route-stats-value {
+  color: var(--ink);
+}
+
+.route-stats-label {
+  font-size: 10.5px;
+  color: var(--ink-3);
+}
+
+.route-stats-order {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+  margin: 0;
+  font-size: 11.5px;
+  font-weight: 650;
+}
+
+.route-stats-order-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.route-stats-order-item i {
+  font-style: normal;
+  color: var(--map-route-to);
+}
+
+.route-stats-note {
+  margin: 0;
+  font-size: 10.5px;
+  color: var(--ink-3);
+}
+
+.itinerary-list {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.itinerary-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface);
+}
+
+.itinerary-item.focused {
+  border-color: var(--map-route-from);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--map-route-from) 20%, transparent);
+}
+
+.itinerary-item-main {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 9px;
+  border: 0;
+  background: transparent;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.itinerary-index {
+  display: grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--map-route-from), var(--map-route-to));
+  color: #fff;
+  font-size: 11px;
+  font-weight: 800;
+  flex: none;
+}
+
+.itinerary-name {
+  font-size: 12.5px;
+  font-weight: 700;
+}
+
+.itinerary-remove {
+  border: 0;
+  background: transparent;
+  padding: 4px 8px;
+  color: var(--ink-3);
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.itinerary-remove:hover {
+  color: var(--map-poi);
+}
+
+.itinerary-empty {
+  margin: 0;
+  font-size: 11.5px;
+  color: var(--ink-3);
+}
+
+.traveler-bubble {
+  display: grid;
+  gap: 1px;
+  width: 100%;
+  height: 100%;
+  padding: 2px 6px;
+  border: 1px solid color-mix(in srgb, var(--map-route-to) 45%, var(--line));
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--surface) 95%, transparent);
+  box-shadow: var(--sh-1);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.traveler-bubble-faces {
+  font-size: 7px;
+  letter-spacing: -1px;
+}
+
+.traveler-bubble-match {
+  font-size: 8.5px;
+  font-weight: 800;
+  color: var(--map-route-to);
+}
+
+.traveler-bubble-count {
+  font-size: 6.5px;
+  color: var(--ink-2);
+}
+
+.traveler-bubble-cta {
+  font-size: 6.5px;
+  font-weight: 700;
+  color: var(--map-route-from);
+}
+
+.traveler-list {
+  display: grid;
+  gap: 12px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.traveler-card {
+  display: grid;
+  gap: 8px;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface);
+}
+
+.traveler-card-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.traveler-avatar {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--map-route-from), var(--map-route-to));
+  color: #fff;
+  font-weight: 800;
+  flex: none;
+}
+
+.traveler-id {
+  display: grid;
+  flex: 1;
+  min-width: 0;
+}
+
+.traveler-id b {
+  font-size: 13.5px;
+}
+
+.traveler-id span {
+  font-size: 11px;
+  color: var(--ink-3);
+}
+
+.traveler-match {
+  padding: 3px 8px;
+  border-radius: 99px;
+  background: color-mix(in srgb, var(--map-route-to) 14%, transparent);
+  color: var(--map-route-to);
+  font-size: 12px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.traveler-shared,
+.traveler-dates,
+.traveler-tags {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px;
+  margin: 0;
+  font-size: 12px;
+}
+
+.traveler-field-label {
+  font-size: 10.5px;
+  font-weight: 700;
+  color: var(--ink-3);
+  margin-right: 2px;
+}
+
+.traveler-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.traveler-mock-note {
+  font-size: 10.5px;
+}
+
+.map-fallback {
+  display: grid;
+  place-items: center;
+  gap: 6px;
+  padding: 48px 16px;
+  text-align: center;
+}
+
+.map-fallback b {
+  font-size: 16px;
+}
+
+.map-fallback-hint {
+  font-size: 11.5px;
+}
+
+.map-callout-desc {
+  font-size: 11.5px;
+}
+
+@media (max-width: 900px) {
+  .city-map-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .city-map-side {
+    border-left: 0;
+    border-top: 1px solid var(--line);
+    max-height: none;
   }
 }

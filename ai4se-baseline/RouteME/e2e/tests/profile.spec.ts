@@ -1,6 +1,6 @@
 import { expect, test, type Page } from '@playwright/test';
 
-const API = 'http://localhost:8080/api';
+const API = `${process.env.ROUTEME_E2E_API_BASE ?? 'http://localhost:8080'}/api`;
 const PASSWORD = 'profile-pass-123';
 
 type Account = {

@@ -1,6 +1,8 @@
 import { useEffect, useState, type ReactNode } from 'react';
 import { Alert, Button, Card, DatePicker, Input, InputNumber, Space, Tag, Typography } from 'antd';
+import zhCN from 'antd/es/locale/zh_CN';
 import dayjs from 'dayjs';
+import 'dayjs/locale/zh-cn';
 import { createTrip, loadTrip } from '../api';
 import { AreaCascader } from '../area/AreaCascader';
 import { cityLabel } from '../area/areaOptions';
@@ -8,7 +10,13 @@ import { gazetteerCityForCode } from '../areas/gazetteerCity';
 import { tripMessages } from '../i18n/tripMessages';
 import { PlacePicker } from '../map/PlacePicker';
 import type { DemoUser, TripSummary } from '../types';
-import { dayjsToIso, isoToDayjs } from '../utils/dates';
+import { appDatePickerProps, appDateTimePickerProps } from '../utils/datePickerProps';
+import {
+  dayjsToIso,
+  dayjsToLocalDateTime,
+  isoToDayjs,
+  localDateTimeToDayjs,
+} from '../utils/dates';
 import {
   addTag,
   emptyTripForm,
@@ -18,14 +26,19 @@ import {
   type TripFieldErrors,
   type TripFormValues,
 } from './tripForm';
+import { addMeetingArea } from './meetingForm';
 import {
   INTEREST_TAGS,
+  MAX_MEETING_AREAS,
   MAX_STOPS,
   MAX_TAGS,
   MAX_TAG_LENGTH,
   MAX_TITLE_LENGTH,
 } from './tripOptions';
 import { TripCard } from './TripCard';
+
+// The publish form is Chinese-only; keep the picker panel month names Chinese too.
+dayjs.locale('zh-cn');
 
 type Props = {
   currentUser: DemoUser;
@@ -41,7 +54,8 @@ export function TripCreatePage({ currentUser, fromTripId }: Props) {
   const [submitting, setSubmitting] = useState(false);
   const [tagDraft, setTagDraft] = useState('');
   const [tagError, setTagError] = useState<string | null>(null);
-  const [meetingMapOpen, setMeetingMapOpen] = useState(false);
+  const [meetingDraft, setMeetingDraft] = useState('');
+  const [meetingDraftError, setMeetingDraftError] = useState<string | null>(null);
 
   useEffect(() => {
     if (fromTripId === undefined) {
@@ -84,6 +98,8 @@ export function TripCreatePage({ currentUser, fromTripId }: Props) {
     start_date: values.startDate,
     end_date: values.endDate === '' ? values.startDate : values.endDate,
     stops: values.stops.length > 0 ? values.stops : ['至少写出两个途经点'],
+    meeting_areas: values.meetingAreas,
+    meeting_time: values.meetingTime.trim() === '' ? null : values.meetingTime,
     tags: values.tags,
     capacity: Number(values.capacity) || 2,
     joined_count: 1,
@@ -197,16 +213,22 @@ export function TripCreatePage({ currentUser, fromTripId }: Props) {
                 error={errors.startDate}
                 required
               >
-                <DatePicker
-                  {...fieldProps('trip-start-date', errors.startDate)}
-                  format="YYYY-MM-DD"
-                  placeholder="选择日期"
-                  style={{ width: '100%' }}
-                  disabledDate={(current) => current.isBefore(dayjs(), 'day')}
-                  value={isoToDayjs(values.startDate)}
-                  onChange={(value) => update({ startDate: dayjsToIso(value) })}
-                  status={errors.startDate === undefined ? undefined : 'error'}
-                />
+<div className="trip-date-anchor">
+                  <DatePicker
+                    {...appDatePickerProps}
+                    {...fieldProps('trip-start-date', errors.startDate)}
+                    className="trip-date"
+                    format="YYYY-MM-DD"
+                    placeholder="选择日期"
+                    locale={zhCN.DatePicker}
+                    needConfirm
+                    allowClear={false}
+                    minDate={dayjs()}
+                    value={isoToDayjs(values.startDate)}
+                    onChange={(value) => update({ startDate: dayjsToIso(value) })}
+                    status={errors.startDate === undefined ? undefined : 'error'}
+                  />
+                </div>
               </Field>
               <Field
                 label={tripMessages.fieldEndDate}
@@ -214,16 +236,22 @@ export function TripCreatePage({ currentUser, fromTripId }: Props) {
                 error={errors.endDate}
                 required
               >
-                <DatePicker
-                  {...fieldProps('trip-end-date', errors.endDate)}
-                  format="YYYY-MM-DD"
-                  placeholder="选择日期"
-                  style={{ width: '100%' }}
-                  disabledDate={(current) => current.isBefore(dayjs(), 'day')}
-                  value={isoToDayjs(values.endDate)}
-                  onChange={(value) => update({ endDate: dayjsToIso(value) })}
-                  status={errors.endDate === undefined ? undefined : 'error'}
-                />
+<div className="trip-date-anchor">
+                  <DatePicker
+                    {...appDatePickerProps}
+                    {...fieldProps('trip-end-date', errors.endDate)}
+                    className="trip-date"
+                    format="YYYY-MM-DD"
+                    placeholder="选择日期"
+                    locale={zhCN.DatePicker}
+                    needConfirm
+                    allowClear={false}
+                    minDate={dayjs()}
+                    value={isoToDayjs(values.endDate)}
+                    onChange={(value) => update({ endDate: dayjsToIso(value) })}
+                    status={errors.endDate === undefined ? undefined : 'error'}
+                  />
+                </div>
               </Field>
             </div>
             </div>
@@ -241,8 +269,9 @@ export function TripCreatePage({ currentUser, fromTripId }: Props) {
                 value={values.stops}
                 onChange={(stops) => update({ stops })}
                 max={MAX_STOPS}
-                showMap={mapCity !== undefined}
+                showMap={mapCity !== undefined || !hasDestination}
                 city={mapCity}
+                onDestinationChange={(code) => update({ destinationCode: code })}
                 placeholder="搜索地点名称，必须能在地图上搜到"
                 emptyHint="至少两个途经点。输错的名字不会被接受，请从候选里选或直接点地图。"
               />
@@ -284,28 +313,76 @@ export function TripCreatePage({ currentUser, fromTripId }: Props) {
                 htmlFor="trip-meeting-area"
                 optional
                 hint={tripMessages.hintMeeting}
+                error={errors.meetingArea}
               >
                 <Space.Compact style={{ width: '100%' }}>
                   <Input
                     id="trip-meeting-area"
-                    value={values.meetingArea}
-                    placeholder="可以直接输入集合地点，或在地图上选"
-                    onChange={(event) => update({ meetingArea: event.target.value })}
+                    value={meetingDraft}
+                    placeholder="手输集合地点，或从下方地图多选（最多 3 个）"
+                    onChange={(event) => {
+                      setMeetingDraft(event.target.value);
+                      setMeetingDraftError(null);
+                    }}
+                    onPressEnter={() => {
+                      const result = addMeetingArea(values.meetingAreas, meetingDraft);
+                      if (result.error !== null) {
+                        setMeetingDraftError(result.error);
+                        return;
+                      }
+                      update({ meetingAreas: result.next });
+                      setMeetingDraft('');
+                      setMeetingDraftError(null);
+                    }}
                   />
-                  <Button onClick={() => setMeetingMapOpen((previous) => !previous)}>
-                    {meetingMapOpen ? '收起地图' : '地图选点'}
+                  <Button
+                    onClick={() => {
+                      const result = addMeetingArea(values.meetingAreas, meetingDraft);
+                      if (result.error !== null) {
+                        setMeetingDraftError(result.error);
+                        return;
+                      }
+                      update({ meetingAreas: result.next });
+                      setMeetingDraft('');
+                      setMeetingDraftError(null);
+                    }}
+                    disabled={meetingDraft.trim() === ''}
+                  >
+                    添加
                   </Button>
                 </Space.Compact>
-                {meetingMapOpen && (
-                  <PlacePicker
-                    mode="single"
-                    ariaLabel="集合地点"
-                    value={values.meetingArea === '' ? [] : [values.meetingArea]}
-                    onChange={(next) => update({ meetingArea: next[0] ?? '' })}
-                    placeholder="搜索集合地点"
-                    emptyHint="选中后会把地点名写进集合区域。"
-                  />
+                {meetingDraftError !== null && (
+                  <Typography.Text type="warning">{meetingDraftError}</Typography.Text>
                 )}
+                <PlacePicker
+                  mode="multi"
+                  max={MAX_MEETING_AREAS}
+                  ariaLabel="集合地点"
+                  value={values.meetingAreas}
+                  onChange={(next) => update({ meetingAreas: next })}
+                  placeholder="搜索集合地点"
+                  emptyHint="可添加多个集合区域，选中后按顺序编号。"
+                  showMap={mapCity !== undefined || !hasDestination}
+                  city={mapCity}
+                  onDestinationChange={(code) => update({ destinationCode: code })}
+                />
+              </Field>
+
+              <Field
+                label={tripMessages.fieldMeetingTime}
+                htmlFor="trip-meeting-time"
+                error={errors.meetingTime}
+                optional
+              >
+                <DatePicker
+                  {...appDateTimePickerProps}
+                  {...fieldProps('trip-meeting-time', errors.meetingTime)}
+                  className="trip-meeting-time"
+                  placeholder="选择日期与时间"
+                  value={localDateTimeToDayjs(values.meetingTime)}
+                  onChange={(value) => update({ meetingTime: dayjsToLocalDateTime(value) })}
+                  status={errors.meetingTime === undefined ? undefined : 'error'}
+                />
               </Field>
 
               <div className="form-row">

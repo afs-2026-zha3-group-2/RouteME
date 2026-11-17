@@ -34,7 +34,10 @@ class MyTripsControllerTest {
                 .andExpect(jsonPath("$.matched[0].id").value(6))
                 .andExpect(jsonPath("$.completed.length()").value(2))
                                 .andExpect(jsonPath("$.completed[0].id").value(1))
-                .andExpect(jsonPath("$.pending_application_count").value(2));
+                .andExpect(jsonPath("$.pending_application_count").value(2))
+                .andExpect(jsonPath("$.pending_applications.length()").value(2))
+                .andExpect(jsonPath("$.pending_applications[0].trip_id").isNumber())
+                .andExpect(jsonPath("$.pending_applications[0].count").value(1));
     }
 
     @Test
@@ -46,7 +49,9 @@ class MyTripsControllerTest {
                 .andExpect(jsonPath("$.matched.length()").value(0))
                 .andExpect(jsonPath("$.completed.length()").value(1))
                 .andExpect(jsonPath("$.completed[0].id").value(2))
-                .andExpect(jsonPath("$.pending_application_count").value(0));
+                .andExpect(jsonPath("$.pending_application_count").value(0))
+                .andExpect(jsonPath("$.pending_applications").isArray())
+                .andExpect(jsonPath("$.pending_applications").isEmpty());
     }
 
     @Test
@@ -58,7 +63,9 @@ class MyTripsControllerTest {
                 .andExpect(jsonPath("$.matched.length()").value(1))
                 .andExpect(jsonPath("$.matched[0].id").value(4))
                                 .andExpect(jsonPath("$.completed.length()").value(2))
-                .andExpect(jsonPath("$.pending_application_count").value(0));
+                .andExpect(jsonPath("$.pending_application_count").value(0))
+                .andExpect(jsonPath("$.pending_applications").isArray())
+                .andExpect(jsonPath("$.pending_applications").isEmpty());
     }
 
     @Test
@@ -69,7 +76,10 @@ class MyTripsControllerTest {
             mockMvc.perform(get("/api/me/trips").header("X-User-Id", "1"))
                     .andExpect(jsonPath("$.matched.length()").value(2))
                     .andExpect(jsonPath("$.applied[0].id").value(4))
-                    .andExpect(jsonPath("$.applied[0].status").value("accepted"));
+                    .andExpect(jsonPath("$.applied[0].status").value("accepted"))
+                    .andExpect(jsonPath("$.pending_application_count").value(0))
+                    .andExpect(jsonPath("$.pending_applications").isArray())
+                    .andExpect(jsonPath("$.pending_applications").isEmpty());
         }
 
         @Test
@@ -77,5 +87,17 @@ class MyTripsControllerTest {
         mockMvc.perform(get("/api/me/trips"))
                 .andExpect(status().isUnauthorized())
                 .andExpect(jsonPath("$.code").value("DEMO_USER_REQUIRED"));
+    }
+
+    @Test
+    void in_afterAcceptAsPublisher_out_pendingPerTripDrops() throws Exception {
+        mockMvc.perform(post("/api/applications/4/accept").header("X-User-Id", "2"))
+                .andExpect(status().isOk());
+
+        mockMvc.perform(get("/api/me/trips").header("X-User-Id", "2"))
+                .andExpect(jsonPath("$.pending_application_count").value(1))
+                .andExpect(jsonPath("$.pending_applications.length()").value(1))
+                .andExpect(jsonPath("$.pending_applications[0].trip_id").value(5))
+                .andExpect(jsonPath("$.pending_applications[0].count").value(1));
     }
 }

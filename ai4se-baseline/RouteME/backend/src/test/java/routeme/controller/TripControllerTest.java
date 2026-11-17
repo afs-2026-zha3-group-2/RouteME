@@ -5,11 +5,7 @@ import static org.hamcrest.Matchers.hasItem;
 import static org.hamcrest.Matchers.hasItems;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.not;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
-
+import static org.hamcrest.Matchers.nullValue;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -18,6 +14,11 @@ import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 import org.springframework.transaction.annotation.Transactional;
 
 import routeme.config.FixedClockTestConfig;
@@ -35,7 +36,7 @@ class TripControllerTest {
               "start_date": "2026-11-20",
               "end_date": "2026-11-20",
               "stops": ["陈家祠地铁站集合", "永庆坊"],
-              "meeting_area": "陈家祠地铁站 D 口",
+              "meeting_areas": ["陈家祠地铁站 D 口"],
               "budget_min_cents": 8000,
               "budget_max_cents": 15000,
               "tags": ["摄影", "历史"],
@@ -100,6 +101,122 @@ class TripControllerTest {
         String body = VALID_TRIP.replace("\"广州老城骑楼扫街半日\"", "\"  \"");
         postTrip(body, "1").andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value("INVALID_INPUT"));
+    }
+
+    @Test
+    void in_meetingTimeProvided_out_savedInDetailAndSummary() throws Exception {
+        String body = withMeetingTime("2026-11-20T08:30");
+        postTrip(body, "1")
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.meeting_areas[0]").value("陈家祠地铁站 D 口"))
+                .andExpect(jsonPath("$.meeting_time").value("2026-11-20T08:30"));
+
+        mockMvc.perform(get("/api/me/trips").header("X-User-Id", "1"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.published[0].meeting_areas[0]").value("陈家祠地铁站 D 口"))
+                .andExpect(jsonPath("$.published[0].meeting_time").value("2026-11-20T08:30"));
+    }
+
+    @Test
+    void in_meetingTimeAfterEndDate_out_invalidInput() throws Exception {
+        postTrip(withMeetingTime("2026-11-21T08:30"), "1")
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("INVALID_INPUT"));
+    }
+
+    @Test
+    void in_meetingTimeUnparsable_out_invalidInput() throws Exception {
+        postTrip(withMeetingTime("2026-11-20 08:30"), "1")
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("INVALID_INPUT"));
+    }
+
+    @Test
+    void in_publisherUpdatesMeeting_out_updated() throws Exception {
+        mockMvc.perform(put("/api/trips/3/meeting")
+                        .header("X-User-Id", "2")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"meeting_areas\":[\"珠海渔女雕像\"],\"meeting_time\":\"2026-11-16T17:30\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.meeting_areas[0]").value("珠海渔女雕像"))
+                .andExpect(jsonPath("$.meeting_time").value("2026-11-16T17:30"))
+                .andExpect(jsonPath("$.title").value("珠海情侣路日落机位二刷"));
+    }
+
+    @Test
+    void in_clearMeeting_out_nullFields() throws Exception {
+        mockMvc.perform(put("/api/trips/3/meeting")
+                        .header("X-User-Id", "2")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.meeting_areas.length()").value(0))
+                .andExpect(jsonPath("$.meeting_time").value(nullValue()));
+    }
+
+    @Test
+    void in_nonPublisherUpdatesMeeting_out_forbidden() throws Exception {
+        mockMvc.perform(put("/api/trips/3/meeting")
+                        .header("X-User-Id", "1")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"meeting_areas\":[\"冒充\"]}"))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.code").value("FORBIDDEN"));
+    }
+
+    @Test
+    void in_completedTripUpdatesMeeting_out_notOpen() throws Exception {
+        mockMvc.perform(put("/api/trips/1/meeting")
+                        .header("X-User-Id", "1")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"meeting_areas\":[\"改不了\"]}"))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.code").value("TRIP_NOT_OPEN"));
+    }
+
+    @Test
+    void in_meetingTimeAfterEndDateOnUpdate_out_invalidInput() throws Exception {
+        mockMvc.perform(put("/api/trips/3/meeting")
+                        .header("X-User-Id", "2")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"meeting_time\":\"2026-11-17T08:00\"}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("INVALID_INPUT"));
+    }
+
+    private String withMeetingTime(String meetingTime) {
+        return VALID_TRIP.replace(
+                "\"meeting_areas\": [\"陈家祠地铁站 D 口\"],",
+                "\"meeting_areas\": [\"陈家祠地铁站 D 口\"],\n  \"meeting_time\": \"" + meetingTime + "\",");
+    }
+
+    @Test
+    void in_moreThanThreeMeetingAreas_out_invalidInput() throws Exception {
+        String body = VALID_TRIP.replace(
+                "\"meeting_areas\": [\"陈家祠地铁站 D 口\"],",
+                "\"meeting_areas\": [\"a\", \"b\", \"c\", \"d\"],");
+        postTrip(body, "1").andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("INVALID_INPUT"));
+    }
+
+    @Test
+    void in_meetingAreaTooLong_out_invalidInput() throws Exception {
+        String body = VALID_TRIP.replace(
+                "\"meeting_areas\": [\"陈家祠地铁站 D 口\"],",
+                "\"meeting_areas\": [\"" + "长".repeat(101) + "\"],");
+        postTrip(body, "1").andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("INVALID_INPUT"));
+    }
+
+    @Test
+    void in_duplicateMeetingAreas_out_trimmedAndDeduped() throws Exception {
+        String body = VALID_TRIP.replace(
+                "\"meeting_areas\": [\"陈家祠地铁站 D 口\"],",
+                "\"meeting_areas\": [\"陈家祠\", \"　陈家祠　\", \"永庆坊\"],");
+        postTrip(body, "1").andExpect(status().isCreated())
+                .andExpect(jsonPath("$.meeting_areas.length()").value(2))
+                .andExpect(jsonPath("$.meeting_areas[0]").value("陈家祠"))
+                .andExpect(jsonPath("$.meeting_areas[1]").value("永庆坊"));
     }
 
     @Test

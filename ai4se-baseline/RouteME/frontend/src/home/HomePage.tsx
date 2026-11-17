@@ -16,6 +16,7 @@ import {
 import { AreaCascader } from '../area/AreaCascader';
 import { INTEREST_TAGS } from '../trips/tripOptions';
 import { useMatches } from '../trips/useMatches';
+import { appDatePickerProps } from '../utils/datePickerProps';
 import { dayjsToIso, isoToDayjs } from '../utils/dates';
 import { greetingForHour } from './greeting';
 import type { DemoUser } from '../types';
@@ -104,6 +105,7 @@ export function HomePage({ currentUser }: Props) {
               {tripMessages.dateFromLabel}
             </label>
             <DatePicker
+              {...appDatePickerProps}
               id="filter-date-from"
               format="YYYY-MM-DD"
               placeholder="不限"
@@ -118,6 +120,7 @@ export function HomePage({ currentUser }: Props) {
               {tripMessages.dateToLabel}
             </label>
             <DatePicker
+              {...appDatePickerProps}
               id="filter-date-to"
               format="YYYY-MM-DD"
               placeholder="不限"

@@ -1,13 +1,15 @@
-import { useEffect, useState } from 'react';
-import { destinationLabel } from '../area/areaOptions';
+import { useEffect, useRef, useState } from 'react';
+import { destinationLabel, findCity } from '../area/areaOptions';
 import {
   Alert,
   Button,
   Card,
+  DatePicker,
   Input,
   Modal,
   Progress,
   Skeleton,
+  Space,
   Tag,
   Typography,
   message,
@@ -22,18 +24,39 @@ import {
   loadTrip,
   loadTripApplications,
   loadTripExperiences,
+  saveTripMeeting,
 } from '../api';
 import { tripMessages } from '../i18n/tripMessages';
 import { intensityLabel } from '../experiences/experienceForm';
+import { meetingAreaText, meetingTimeText } from '../chat/chatMeeting';
+import { gazetteerCityForCode } from '../areas/gazetteerCity';
+import { CityTravelMap } from '../map/CityTravelMap';
+import { cityIndexByName } from '../map/data/index';
+import { findPlaceByName, projectPlace, type Place } from '../map/placeCatalog';
+import { distanceKm, formatKm } from '../map/mapView';
+import { shareEligibility } from '../experiences/shareEligibility';
 import { publisherSummary } from '../profile/profileDisplay';
 import { ReportModal } from '../safety/ReportModal';
-import { SafetyNote } from '../safety/SafetyNote';
 import { Avatar } from '../shell/Avatar';
 import type { DemoUser, Experience, MatchCandidate, TripApplication } from '../types';
 import { applicationEntryState, applicationErrorMessage } from './applicationEntry';
+import {
+  MAX_MEETING_AREA_LENGTH,
+  addMeetingArea,
+  emptyMeetingForm,
+  meetingFormFrom,
+  toMeetingRequest,
+  validateMeetingForm,
+  type MeetingFieldErrors,
+  type MeetingFormValues,
+} from './meetingForm';
+import { MAX_MEETING_AREAS } from './tripOptions';
+import { PlacePicker } from '../map/PlacePicker';
 import { statusColor, statusLabel } from './tripStatus';
 import { useTrip } from './useTrip';
 import { useProfile } from '../profiles/ProfileContext';
+import { appDateTimePickerProps } from '../utils/datePickerProps';
+import { dayjsToLocalDateTime, localDateTimeToDayjs } from '../utils/dates';
 
 const MAX_MESSAGE_LENGTH = 120;
 
@@ -76,6 +99,14 @@ export function TripDetailPage({ currentUser, tripId }: Props) {
   >(null);
   const [reportOpen, setReportOpen] = useState(false);
   const [experiences, setExperiences] = useState<Experience[] | null>(null);
+  const [meetingOpen, setMeetingOpen] = useState(false);
+  const [meetingForm, setMeetingForm] = useState<MeetingFormValues>(emptyMeetingForm());
+  const [meetingErrors, setMeetingErrors] = useState<MeetingFieldErrors>({});
+  const [meetingSaving, setMeetingSaving] = useState(false);
+  const [meetingDraft, setMeetingDraft] = useState('');
+  const [meetingDraftError, setMeetingDraftError] = useState<string | null>(null);
+  const [focusStop, setFocusStop] = useState<string | null>(null);
+  const mapSectionRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     let active = true;
@@ -132,19 +163,14 @@ export function TripDetailPage({ currentUser, tripId }: Props) {
     setFeedback(null);
     try {
       await completeTrip(currentUser.id, tripId);
-      message.success(tripMessages.detailEndedToast);
       reload();
     } catch (error: unknown) {
       const code = error instanceof Error ? error.message : 'UNKNOWN_ERROR';
-      if (code === 'TRIP_NOT_OPEN') {
-        message.info(tripMessages.applyEnded);
-      } else {
-        setFeedback({
-          tone: 'error',
-          title: code === 'FORBIDDEN' ? tripMessages.detailForbidden : tripMessages.detailCompleteFailed,
-          detail: code,
-        });
-      }
+      setFeedback({
+        tone: 'error',
+        title: code === 'FORBIDDEN' ? tripMessages.detailForbidden : tripMessages.detailCompleteFailed,
+        detail: code,
+      });
       reload();
     } finally {
       setCompleting(false);
@@ -172,12 +198,40 @@ export function TripDetailPage({ currentUser, tripId }: Props) {
     setFeedback(null);
     try {
       await leaveTrip(currentUser.id, tripId);
-      setMyApplication(null);
+      setMyApplication((current) => (current === null ? null : { ...current, status: 'left' }));
       reload();
     } catch (error: unknown) {
       showActionError(error);
     } finally {
       setLeaving(false);
+    }
+  };
+
+  const openMeeting = (meetingAreas: string[] | null, meetingTime: string | null) => {
+    setMeetingForm(meetingFormFrom({ meeting_areas: meetingAreas, meeting_time: meetingTime }));
+    setMeetingErrors({});
+    setMeetingDraft('');
+    setMeetingDraftError(null);
+    setMeetingOpen(true);
+  };
+
+  const submitMeeting = async (endDate: string) => {
+    const errors = validateMeetingForm(meetingForm, endDate);
+    setMeetingErrors(errors);
+    if (Object.keys(errors).length > 0) {
+      return;
+    }
+    setMeetingSaving(true);
+    setFeedback(null);
+    try {
+      await saveTripMeeting(currentUser.id, tripId, toMeetingRequest(meetingForm));
+      setMeetingOpen(false);
+      message.success(tripMessages.meetingSaved);
+      reload();
+    } catch (error: unknown) {
+      showActionError(error);
+    } finally {
+      setMeetingSaving(false);
     }
   };
 
@@ -212,12 +266,22 @@ export function TripDetailPage({ currentUser, tripId }: Props) {
   const isPublisher = entry.kind === 'publisher';
   const isCompleted = trip.status === 'completed';
   const participant = trip.participants.some((member) => member.id === currentUser.id);
-  const canShare = isCompleted && participant;
+  const canShare = shareEligibility(trip, currentUser.id).kind === 'ready';
   const hasShared = experiences?.some((experience) => experience.author.id === currentUser.id) ?? false;
   const budget =
     trip.budget_min_cents === null
       ? null
       : `${trip.budget_min_cents / 100}${trip.budget_max_cents === null ? '' : ` – ${trip.budget_max_cents / 100}`} 元`;
+
+  const mapCity = gazetteerCityForCode(trip.destination_code);
+  const resolvedStops = trip.stops
+    .map((stop) => findPlaceByName(stop))
+    .filter((place): place is Place => place !== undefined);
+  const showRouteMap = mapCity !== undefined && resolvedStops.length > 0;
+  const focusPlace = (place: Place) => {
+    setFocusStop(place.id);
+    mapSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+  };
 
   const confirmTitle =
     confirmAction === 'complete'
@@ -238,7 +302,7 @@ export function TripDetailPage({ currentUser, tripId }: Props) {
       ? tripMessages.detailCompleteHint
       : confirmAction === 'cancelApply'
         ? '撤回后可以再次申请，但需要发布者重新处理。'
-        : '退出后这条行程的聊天会关闭。';
+        : '退出后这条行程的聊天会保留，仍可继续和发布者沟通。';
 
   const submitApplication = async () => {
     if (submitting) {
@@ -266,10 +330,11 @@ export function TripDetailPage({ currentUser, tripId }: Props) {
       const mapped = applicationErrorMessage(code, currentTrip);
       if (mapped === null) {
         showActionError(error);
-      } else if (code === 'DUPLICATE_APPLICATION') {
-        setFeedback({ tone: 'warning', title: mapped });
       } else {
-        message.info(mapped);
+        setFeedback({
+          tone: code === 'DUPLICATE_APPLICATION' ? 'warning' : 'error',
+          title: mapped,
+        });
       }
       await refreshMyApplication().catch(() => undefined);
       reload();
@@ -301,6 +366,16 @@ export function TripDetailPage({ currentUser, tripId }: Props) {
             <div className="detail-badges">
               <Tag color={statusColor(trip.status)}>{statusLabel(trip.status)}</Tag>
               <Tag>{destinationLabel(trip.destination_code) || trip.destination}</Tag>
+              {!isPublisher && (
+                <Button
+                  type="link"
+                  danger
+                  className="head-report"
+                  onClick={() => setReportOpen(true)}
+                >
+                  {tripMessages.reportEntryTrip}
+                </Button>
+              )}
             </div>
             <Typography.Title level={2} className="trip-title detail-title">
               {trip.title}
@@ -320,18 +395,86 @@ export function TripDetailPage({ currentUser, tripId }: Props) {
 
           <section className="detail-section">
             <h3 className="section-title">{tripMessages.detailStops}</h3>
+            {showRouteMap && (
+              <div className="detail-map-section" ref={mapSectionRef}>
+                <CityTravelMap
+                  readOnly
+                  cityCode={cityIndexByName(mapCity)?.code ?? ''}
+                  cityName={`${mapCity}市`}
+                  provinceName={
+                    trip.province_name !== ''
+                      ? trip.province_name
+                      : (findCity(trip.destination_code)?.provinceName ?? '')
+                  }
+                  selected={resolvedStops.map((place) => place.id)}
+                  routeGenerated={resolvedStops.length >= 2}
+                  focusPoiId={focusStop}
+                  onFocusPoi={(poi) => setFocusStop(poi.id)}
+                  onNavigateChina={() => (window.location.hash = '#/map')}
+                  onNavigateProvince={() =>
+                    (window.location.hash = `#/map/${trip.province_code || findCity(trip.destination_code)?.provinceCode || ''}`)
+                  }
+                  onViewProfile={(userId) => openProfile(userId)}
+                  onInvite={(travelerTripId) => (window.location.hash = `#/trips/${travelerTripId}`)}
+                />
+                <ol className="route-strip">
+                  {trip.stops.map((stop, index) => {
+                    const place = findPlaceByName(stop);
+                    const nextPlace =
+                      index < trip.stops.length - 1 ? findPlaceByName(trip.stops[index + 1]) : undefined;
+                    const leg =
+                      place !== undefined && nextPlace !== undefined
+                        ? distanceKm(projectPlace(place), projectPlace(nextPlace))
+                        : null;
+                    return (
+                      <li key={`${stop}-${index}`} className="route-strip-item">
+                        <button
+                          type="button"
+                          className={place === undefined ? 'route-strip-card off' : 'route-strip-card'}
+                          disabled={place === undefined}
+                          onClick={() => place !== undefined && focusPlace(place)}
+                        >
+                          <span className={`route-strip-index tone-${index % 4}`}>{index + 1}</span>
+                          <span className="route-strip-name">{stop}</span>
+                          {place === undefined && <span className="route-strip-off">不在地图</span>}
+                        </button>
+                        {leg !== null && <span className="route-strip-leg">步行 约 {formatKm(leg)} km</span>}
+                      </li>
+                    );
+                  })}
+                </ol>
+              </div>
+            )}
+            {!showRouteMap && (
+              <p className="form-hint">
+                {mapCity === undefined ? tripMessages.detailMapNoCity : tripMessages.detailMapNoStops}
+              </p>
+            )}
             <ol className="detail-stops">
-              {trip.stops.map((stop) => (
-                <li key={stop}>{stop}</li>
-              ))}
+              {trip.stops.map((stop) => {
+                const place = findPlaceByName(stop);
+                return (
+                  <li key={stop}>
+                    {place !== undefined && showRouteMap ? (
+                      <button type="button" className="detail-stop-button" onClick={() => focusPlace(place)}>
+                        {stop}
+                      </button>
+                    ) : (
+                      stop
+                    )}
+                  </li>
+                );
+              })}
             </ol>
             <dl className="detail-facts">
-              {trip.meeting_area !== null && (
-                <div>
-                  <dt>{tripMessages.detailMeetingArea}</dt>
-                  <dd>{trip.meeting_area}</dd>
-                </div>
-              )}
+              <div>
+                <dt>{tripMessages.detailMeetingArea}</dt>
+                <dd>{meetingAreaText(trip.meeting_areas)}</dd>
+              </div>
+              <div>
+                <dt>{tripMessages.detailMeetingTime}</dt>
+                <dd>{meetingTimeText(trip.meeting_time)}</dd>
+              </div>
               {budget !== null && (
                 <div>
                   <dt>{tripMessages.detailBudget}</dt>
@@ -345,6 +488,16 @@ export function TripDetailPage({ currentUser, tripId }: Props) {
                 </div>
               )}
             </dl>
+            {(trip.meeting_areas.length === 0 || trip.meeting_time === null) && (
+              <p className="detail-meta">{tripMessages.meetingEmptyHint}</p>
+            )}
+            {isPublisher && !isCompleted && (
+              <div className="detail-actions">
+                <Button size="small" onClick={() => openMeeting(trip.meeting_areas, trip.meeting_time)}>
+                  {tripMessages.meetingEdit}
+                </Button>
+              </div>
+            )}
           </section>
 
           <section className="detail-section">
@@ -380,9 +533,24 @@ export function TripDetailPage({ currentUser, tripId }: Props) {
           <section className="detail-section">
             <h3 className="section-title">{tripMessages.detailParticipants}</h3>
             <ul className="detail-participants">
-              {trip.participants.map((member) => (
-                <li key={member.id}>{member.nickname}</li>
-              ))}
+              {trip.participants.map((member) => {
+                const canChat =
+                  member.id !== currentUser.id &&
+                  (isPublisher || entry.kind === 'accepted');
+                return (
+                  <li key={member.id}>
+                    <span>{member.nickname}</span>
+                    {canChat && (
+                      <a
+                        className="ghost-link detail-participant-chat"
+                        href={`#/chat/${trip.id}/${member.id}`}
+                      >
+                        {tripMessages.mineChatEntry}
+                      </a>
+                    )}
+                  </li>
+                );
+              })}
             </ul>
           </section>
 
@@ -455,8 +623,6 @@ export function TripDetailPage({ currentUser, tripId }: Props) {
             />
           )}
 
-          <SafetyNote onReport={() => setReportOpen(true)} />
-
           {entry.kind !== 'publisher' && (
             <section className="detail-section detail-application">
               <h3 className="section-title">{tripMessages.applyAreaTitle}</h3>
@@ -490,6 +656,17 @@ export function TripDetailPage({ currentUser, tripId }: Props) {
                         {tripMessages.leaveTrip}
                       </Button>
                     )}
+                  </>
+                )}
+                {myApplication?.status === 'left' && (
+                  <>
+                    <p className="action-note">{tripMessages.leaveRetainedNote}</p>
+                    <Button
+                      block
+                      onClick={() => (window.location.hash = `#/chat/${trip.id}/${trip.publisher.id}`)}
+                    >
+                      {tripMessages.chatEntry}
+                    </Button>
                   </>
                 )}
 
@@ -550,11 +727,101 @@ export function TripDetailPage({ currentUser, tripId }: Props) {
       >
         <Typography.Paragraph>{confirmHint}</Typography.Paragraph>
       </Modal>
+      <Modal
+        open={meetingOpen}
+        title={tripMessages.meetingEditTitle}
+        okText={tripMessages.meetingSave}
+        cancelText={tripMessages.meetingCancel}
+        confirmLoading={meetingSaving}
+        onOk={() => submitMeeting(trip.end_date)}
+        onCancel={() => setMeetingOpen(false)}
+      >
+        <Space orientation="vertical" size="small" className="home-stack">
+          <Typography.Text type="secondary">{tripMessages.meetingEditHint}</Typography.Text>
+          <div className="form-field">
+            <label htmlFor="meeting-area">{tripMessages.meetingAreaLabel}</label>
+            <Space.Compact style={{ width: '100%' }}>
+              <Input
+                id="meeting-area"
+                value={meetingDraft}
+                maxLength={MAX_MEETING_AREA_LENGTH + 10}
+                placeholder="手输集合地点，回车添加"
+                onChange={(event) => {
+                  setMeetingDraft(event.target.value);
+                  setMeetingDraftError(null);
+                }}
+                onPressEnter={() => {
+                  const result = addMeetingArea(meetingForm.meetingAreas, meetingDraft);
+                  if (result.error !== null) {
+                    setMeetingDraftError(result.error);
+                    return;
+                  }
+                  setMeetingForm((current) => ({ ...current, meetingAreas: result.next }));
+                  setMeetingDraft('');
+                }}
+              />
+              <Button
+                disabled={meetingDraft.trim() === ''}
+                onClick={() => {
+                  const result = addMeetingArea(meetingForm.meetingAreas, meetingDraft);
+                  if (result.error !== null) {
+                    setMeetingDraftError(result.error);
+                    return;
+                  }
+                  setMeetingForm((current) => ({ ...current, meetingAreas: result.next }));
+                  setMeetingDraft('');
+                }}
+              >
+                添加
+              </Button>
+            </Space.Compact>
+            {meetingDraftError !== null && (
+              <Typography.Text type="warning">{meetingDraftError}</Typography.Text>
+            )}
+            <PlacePicker
+              mode="multi"
+              max={MAX_MEETING_AREAS}
+              ariaLabel="集合地点"
+              value={meetingForm.meetingAreas}
+              onChange={(next) => setMeetingForm((current) => ({ ...current, meetingAreas: next }))}
+              placeholder="搜索集合地点"
+              showMap={false}
+              city={mapCity}
+            />
+            {meetingErrors.meetingArea !== undefined && (
+              <Typography.Text type="danger">{meetingErrors.meetingArea}</Typography.Text>
+            )}
+          </div>
+          <div className="form-field">
+            <label htmlFor="meeting-time">{tripMessages.meetingTimeLabel}</label>
+            <DatePicker
+              {...appDateTimePickerProps}
+              id="meeting-time"
+              className="meeting-time"
+              placeholder="选择日期与时间"
+              value={localDateTimeToDayjs(meetingForm.meetingTime)}
+              onChange={(value) =>
+                setMeetingForm((current) => ({
+                  ...current,
+                  meetingTime: dayjsToLocalDateTime(value),
+                }))
+              }
+              status={meetingErrors.meetingTime === undefined ? undefined : 'error'}
+            />
+            {meetingErrors.meetingTime !== undefined && (
+              <Typography.Text type="danger">{meetingErrors.meetingTime}</Typography.Text>
+            )}
+          </div>
+        </Space>
+      </Modal>
+
+
       <ReportModal
         userId={currentUser.id}
         open={reportOpen}
         targetType="trip"
         targetId={tripId}
+        targetLabel={trip.title}
         onClose={() => setReportOpen(false)}
       />
     </main>

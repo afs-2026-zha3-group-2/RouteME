@@ -806,4 +806,257 @@
 - **不并入 `add-trip-companions`：** 该 change 已归档；本需求只是展示与反馈增量，追加归档包会打乱历史边界。
 - **不并入 `refine-trip-application`：** 两者都改 `trip-companions` 的不同 Requirement 块，且该 change 已进入 G2 阶段；并行会互相拖慢归档。
 - **阶段：** 单阶段；依赖已归档的 `trip-companions`，无阻塞上游。
-- **质量自检（split-heuristics）：** 子目标一句话可说明 ✓；端到端可观察（打开详情 / 聊天 → 读三条提示 → 举报 → 拿到回执）✓；可独立运行 ✓；capability 名真实 ✓；无依赖环 ✓。
+- **质量自检（split-heuristics）：** 子目标一句话可说明 ✓；端到端可观察（打开他人详情 / 聊天 → 页头找到举报 → 提交 → 拿到回执）✓；可独立运行 ✓；capability 名真实 ✓；无依赖环 ✓。
+
+## 13. REQ-010 增量影响 — 同行消息与集合确认（2026-11-16）
+
+### 16.1 Requirement set
+
+REQ-010：聊天页按原型重构、聊天准入与退出语义调整、集合时间字段与三处展示、发布者维护集合信息。能力：`trip-companions`（MODIFIED）+ `trip-plans`（MODIFIED）。
+
+### 16.2 As-is asset inventory（evidence paths）
+
+| 资产 | 路径 | 现状 |
+|---|---|---|
+| 活规格聊天 | `openspec/specs/trip-companions/spec.md`「匹配后的一对一文字沟通」「退出同行」 | 仅已匹配可进入；退出即关闭聊天 |
+| 活规格行程 | `openspec/specs/trip-plans/spec.md`「发布可被他人理解的旅行计划」「查看行程详情与清晰的状态」 | 集合区域选填已有；无集合时间；无集合维护 |
+| 聊天后端 | `ChatController`、`ChatServiceImpl`、`ChatMessageMapper.xml` | 升序、500 字、已结束只读；`partners()` 按消息历史聚合并保留退出后的会话 |
+| 退出实现 | `ApplicationServiceImpl#leave` | 申请置 `CANCELLED` 并减少人数 |
+| 行程写入 | `TripController#create`、`TripPlanServiceImpl`、`TripPlan`、`TripPlanMapper.xml` | 仅创建与结束，无更新 |
+| 集合区域 | `V4__seed_demo_trips.sql`、`TripCreatePage`、`TripDetailPage`、`openapi.yaml` | 已存在并在发布页与详情展示 |
+| 聊天前端 | `frontend/src/chat/ChatPage.tsx`、`route.ts` | 单栏 antd；5 秒轮询；无会话列表与头部动作 |
+| 我的旅行 | `MyTripsPage.tsx` | 已匹配只给聊天按钮；无集合备注 |
+| 原型 | `docs/prototype/ui.js` `chat()`、`mine()`、`tripDetail()`、`tripForm()`；`styles.css` `.chat-*` | 两栏、头部动作、集合安全条、3 秒轮询；无集合时间与集合编辑入口 |
+| 契约 | `openapi.yaml` `0.8.0` | `meeting_area` 已有；无 `meeting_time` 与集合更新端点；申请状态四值 |
+| 测试 | `ChatControllerTest`、`e2e/tests/companions.spec.ts` | 聊天单测与 E2E 基础用例；无退出后聊天断言 |
+
+### 16.3 As-is → proposed delta（逐资产）
+
+| 资产 | 变更 |
+|---|---|
+| `trip-companions` 聊天需求 | 补会话列表、头部动作、拒绝说明、输入交互、短轮询、只读；准入改为「发布者或曾接受（含已退出）」 |
+| `trip-companions` 退出需求 | 退出记录可追溯状态；不再关闭聊天；列表与统计口径不变 |
+| `trip-plans` 发布需求 | 新增集合时间（选填、日期部分 ≤ 结束日期） |
+| `trip-plans` 详情需求 | 补集合区域与集合时间展示，空值「待确认」 |
+| `trip-plans` 新增需求 | 发布者维护集合信息（仅两字段、仅招募中/已满员） |
+| 契约 | `meeting_time`、集合更新端点、申请状态 `left`；版本 `0.9.0` |
+| 迁移 | `V13` 新增 `meeting_time`（可空） |
+| 后端 | 准入口径、会话列表补齐（含无消息的已匹配配对）、退出状态、集合字段与更新端点、响应字段透传 |
+| 前端 | 聊天两栏、我的旅行备注、详情展示与编辑入口、发布页集合时间、类型与文案 |
+| 测试 | 新增/改写聊天、退出、集合字段与编辑用例 |
+
+### 16.4 Blast radius（应用架构）
+
+- 影响 `trip-companions` 与 `trip-plans` 两个能力，边界为「聊天只读行程、集合由行程单一写入」。
+- 退出状态变化会影响：申请列表展示、`MyTripsResponse` 分组、参与同行统计、重新申请资格。确认口径：matched 与 joined 仍只认 `ACCEPTED`（`LEFT` 不计入）；`existsActive` 只拦 `PENDING`/`ACCEPTED`，`LEFT` 仍可重新申请；详情页同行者列表不含 `LEFT`；「我申请的」新增「已退出」标签。
+- 聊天左栏不能只靠 `selectThreads`（只聚合消息历史）：新接受但无消息的配对不会出现，需在 `ChatServiceImpl#partners` 层合并「可沟通配对」与「历史消息会话」后去重排序。
+- 聊天前端重构会复用 `ProfileModal` / `ReportModal` / `leaveTrip`，不新增权限模型。
+- 集合时间进入发布链路，会触及 `TripCreateRequest` / `TripDetailResponse` / `TripPlan` / 实体与前端表单校验。
+
+### 16.5 Artifact impact（specs / tests / docs）
+
+- Delta Spec：`specs/trip-companions/spec.md`（MODIFIED ×2）、`specs/trip-plans/spec.md`（MODIFIED ×2 + ADDED ×1）。
+- 原型：`docs/prototype/` 需先补集合时间与集合编辑入口。
+- 测试：`ChatControllerTest`、新增集合字段与编辑端点 API 测试、`e2e/tests/companions.spec.ts` 扩用例；`leave` 相关断言改写。
+- 文档：`docs/sdd/refine-trip-chat/` P0–P4 记录、评审报告、质量报告。
+
+### 16.6 Dual-track notes（OpenSpec vs agile）
+
+- OpenSpec 轨（主）：一个 change `refine-trip-chat` 改两个 capability，归档前需 SA 具名追认双 capability 例外。
+- Agile 轨（可选）：按 4 条故事（S12-1～S12-4）排期，但共用同一改动集与同一验收链路，不建议拆成两个 PR。
+
+### 16.7 Risks & blockers
+
+| 级别 | 项 | 说明 / 缓解 |
+|---|---|---|
+| Risk | 退出语义与活规格冲突 | 已由用户裁决并记录（`@rule:rule-precedence`）；P2 以 MODIFIED 覆盖两条需求，归档时需 SA 追认 |
+| Risk | 申请状态新增 `left` 影响既有消费方 | 契约同步、前端文案与分组同步；统计口径显式不变 |
+| Risk | 集合时间引入时区歧义 | 明确为本地日期时间、无时区，服务端只校验日期部分 |
+| Risk | 原型缺集合时间与编辑入口 | 先改原型再改实现（`@rule:prototype-ui-alignment`）；P3 先出预览 |
+| Risk | 聊天页重构回归面大 | 保留现有后端契约不变（除准入与状态），E2E 覆盖发送→重进→可见主链路 |
+| Blocker | 无 | blocking OQ = 0、DoR BLOCKER = 0 |
+
+### 16.8 Suggested split boundaries（供 story-split）
+
+| 故事 | 切片 | 依赖 |
+|---|---|---|
+| S12-1 | 聊天页重构 + 准入拒绝说明 | 无（复用既有端点） |
+| S12-2 | 退出语义与状态 | 与 S12-1 共用权限判定，建议同批 |
+| S12-3 | 集合时间字段与三处展示 | 契约与迁移先行 |
+| S12-4 | 发布者维护集合信息 | 依赖 S12-3 的字段 |
+
+- **契约优先：** 先冻结 `meeting_time`、集合更新端点与申请状态 `left`，再并行后端与前端。
+- **共享文件冲突：** `TripDetailPage.tsx`、`styles.css`、`tripMessages.ts` 同时被 S12-1/S12-3/S12-4 触及，排期时避免多分支并行改同一文件。
+
+## 16. REQ-015 变更影响 — 我的旅行四组聚合（S11）
+
+### 16.1 Requirement set
+
+- REQ-015（S11，issue #13，P0 / 迭代 2 / 2 点）：四组聚合视图 + 待处理提醒定位 + 已交付动作入口 + 重新可见时同步。
+- 复用既有需求：REQ-003（四组与申请规则）、REQ-010（撤回申请）、REQ-011（结束行程）、REQ-004（体验分享入口）、REQ-008（资料卡）。
+
+### 16.2 As-is asset inventory（evidence paths）
+
+| 资产 | 路径 | 现状 |
+|---|---|---|
+| 聚合接口 | `RouteME/backend/src/main/java/routeme/controller/MyTripsController.java`、`service/impl/MyTripsServiceImpl.java` | 四组 + 总待处理数；无按行程计数 |
+| 响应 | `RouteME/backend/src/main/java/routeme/response/MyTripsResponse.java` | 5 字段 record |
+| 契约 | `RouteME/openapi.yaml` `MyTrips` | required 5 字段 |
+| 页面 | `RouteME/frontend/src/mine/MyTripsPage.tsx` | 裸标题 + 资料卡 + `Tabs` + `TripCard compact` |
+| 样式 | `RouteME/frontend/src/styles.css` `.page-head` / `.page-sub` / `.view-seg` / `.mine-*` | 已有原型令牌与胶囊分段样式 |
+| 动作 API | `RouteME/frontend/src/api.ts` | `cancelApplication` / `leaveTrip` / `completeTrip` / `loadMyExperiences` 已存在 |
+| 处理申请页 | `RouteME/frontend/src/trips/ApplicationsPage.tsx` | `#/trips/{id}/applications` |
+| 测试 | `MyTripsControllerTest.java`；`e2e/tests/companions.spec.ts`、`experiences.spec.ts` | 分组回归 + 页面锚点 |
+
+### 16.3 As-is → proposed delta（逐资产）
+
+| 资产 | 变化 |
+|---|---|
+| `MyTripsResponse` / `MyTripsServiceImpl` | 新增 `pendingApplications: List<PendingApplicationCount>`（`tripId`, `count`），与总数同源计算 |
+| `openapi.yaml` / `OpenApiTest` | `MyTrips.pending_applications` 数组 schema；断言新增字段与结构 |
+| `MyTripsPage.tsx` | 重排：`page-head` + `Segmented`（带计数）+ `.mine-row` 行式列表 + 分组空态 + 提醒定位 + 动作列 + 可见性同步 |
+| `mine/mineTrips.ts`（新增） | 纯逻辑：分组计数、提醒目标、行动作可用性、日期区间 / 出发日标签；node 环境可测 |
+| `i18n/tripMessages.ts` | 新增副标题、提醒、动作、空态文案；移除被替代的 `mineEmpty` 等死文案 |
+| `styles.css` | `.mine-row` 改为 84px 封面 + 主列 + 动作列；`.mr-cover` / `.mr-meta` / `.mr-note`；≤640px 动作换行 |
+| `e2e/tests/mine.spec.ts`（新增） | 四组与计数、提醒跳转、行内动作、重新可见同步；`companions.spec.ts` / `experiences.spec.ts` 的角色断言同批更新 |
+| 文档 | `docs/knowledge/interfaces/README.md` 的 `GET /me/trips` 行补新字段 |
+
+### 16.4 Blast radius（应用架构）
+
+- **后端：** 只改聚合响应与服务的一处收集；不动 mapper / 表 / 状态机 / 权限校验。
+- **前端：** 单页重排 + 一个纯逻辑模块 + 文案与样式；`TripCard` 的 `compact` 形态不再被本页使用（保留给其他调用点，若无调用再单独清理）。
+- **契约：** 只增字段，`required` 不变；前端类型 `MyTrips` 增字段。
+- **测试：** 新增 `mineTrips.test.ts`（node）与 `e2e/tests/mine.spec.ts`；更新两处既有 E2E 的角色断言。
+- **不影响：** 首页、详情、聊天、体验页、资料页。
+
+### 16.5 Artifact impact（specs / tests / docs）
+
+| 工件 | 影响 |
+|---|---|
+| OpenSpec Delta | `trip-companions` MODIFIED「我的旅行聚合与最低安全能力」，保留 4 条基线场景名并新增 8 条 |
+| 长期规格 | 归档时整块替换该 Requirement |
+| 契约 | `openapi.yaml` 次版本 + `OpenApiTest` |
+| 单测 | `mineTrips.test.ts`（node）、`MyTripsControllerTest` 增 `pending_applications` 断言 |
+| E2E | 新增 `mine.spec.ts`；`companions.spec.ts` / `experiences.spec.ts` 角色断言更新 |
+| 知识库 | `interfaces/README.md` 一行 |
+| 阶段记录 | `docs/sdd/refine-my-trips/p0..p4`；`docs/sdd/README.md` 索引 |
+
+### 16.6 Dual-track notes（OpenSpec vs agile）
+
+- **OpenSpec 轨：** 单 change `refine-my-trips`，一份 `trip-companions` delta；不拆内部 change。
+- **Agile 轨：** 原型故事 S11（迭代 2 / 2 点）即业务口径；不另建故事文件，避免双维护。
+
+### 16.7 Risks & blockers
+
+| 级别 | 项 | 说明 / 缓解 |
+|---|---|---|
+| Risk | 分段控件角色变化破坏既有 E2E | `Segmented` 角色为 `radio`；同批更新 `companions.spec.ts` 的两处 `tab` 断言 |
+| Risk | 行式列表重排丢失 `.mine-row` 锚点 | 保留 `.mine-row` 类名与行内标题文本；`experiences.spec.ts` 依赖它 |
+| Risk | 待处理提醒定位错误 | 由后端返回的 `pending_applications` 选目标；无数据时退回「不渲染入口」 |
+| Risk | 重新可见时重复请求 | 只在 `document.visibilityState === 'visible'` 或 `focus` 且页面挂载时触发；分组切换不请求 |
+| Risk | 原型动作 > 已交付能力 | 设计明确只落地已交付动作；编辑 / 删除 / 参考发布记为 out of scope |
+| Blocker | 无 | blocking OQ=0、DoR BLOCKER=0、A0 门 ⑨–⑫ 通过 |
+
+### 16.8 Suggested split boundaries（供 proposal-split / story-split）
+
+- **一个 change：** `refine-my-trips` ← REQ-015（S11，页面级垂直切片）。
+- **不并入 `add-trip-companions`：** 已归档；本需求是展示与入口增量。
+- **不并入 `refine-experience-share`：** 该 change 正在 P4 收尾，共用同一页面但改动面不同；并行会互相拖慢归档。
+- **阶段：** 单阶段；依赖已归档的 `trip-companions`、`trip-plans`、`trip-experiences`、`user-profile`。
+- **质量自检（split-heuristics）：** 子目标一句话可说明 ✓；端到端可观察（进入我的旅行 → 四段切换 → 行内动作 → 提醒跳转）✓；可独立运行 ✓；capability 名真实 ✓；无依赖环 ✓。
+
+## 17. REQ-014 变更影响 — 参考此行程发布（S17）
+
+- **日期：** 2026-11-16 ｜ **触发：** `/sdd:p1`（用户裁决 D1：按「已验证交付」收口，不新建 change）
+- **粒度：** 应用架构（入口 / 发布页预填 / 归属边界），非代码设计
+- **基线：** `main@78c782f`
+
+### 17.1 Requirement set
+
+- `requirement-workspace/requirements/REQ-014-reference-publish.md`（六字段 + 6 场景 + OQ + DoR）
+- `requirement-workspace/intents/REQ-014-reference-publish.md`
+- 能力：`trip-experiences`（已交付，只读引用）；`trip-plans`（发布页字段与校验，只读消费）。
+- **Delta：无。** 本需求不新建 OpenSpec change，能力口径以 REQ-004 的 Living Spec 为权威。
+
+### 17.2 As-is asset inventory（evidence paths）
+
+| 资产 | 路径 | 现状 |
+|---|---|---|
+| 需求条目 | `requirement-workspace/requirements/REQ-014-reference-publish.md` | 本变更新增；6 场景；用户裁决 D1–D3；DoR / A0 全过 |
+| Living Spec | `openspec/specs/trip-experiences/spec.md:133-148` | 「参考此行程发布以产生新灵感」+ 2 场景（预填 / 必填不沿用） |
+| Living Spec（发布规则） | `openspec/specs/trip-plans/spec.md:151-167` | 标题 / 日期 / 人数 / 途经点必填；集合区域 / 预算 / 标签 / 说明选填 |
+| 已归档 change | `openspec/changes/archive/2026-11-15-add-trip-experiences/` | 参考发布入口、预填与验收的原始实现 |
+| 详情页入口 | `RouteME/frontend/src/trips/TripDetailPage.tsx:409-421` | `isCompleted` 时渲染「参考此行程发布」 |
+| 体验卡入口 | `RouteME/frontend/src/experiences/ExperienceCard.tsx:53-55` | 链接到 `#/trips/new?from=<tripId>` |
+| 发布页预填 | `RouteME/frontend/src/trips/TripCreatePage.tsx:50-68,145-152` | 读源行程 → 覆盖 `emptyTripForm` 的 3 字段 + `capacity: ''`；展示提示条 |
+| 表单模型 | `RouteME/frontend/src/trips/tripForm.ts:23-35,70-72,88-99` | `emptyTripForm` 全空（除 capacity 默认 4）；校验人数 2–12；提交不携带来源 |
+| 路由 | `RouteME/frontend/src/route.ts:21-25` | `/trips/new?from=<id>` → `{ name: 'create', fromTripId }` |
+| 契约 | `RouteME/frontend/src/types.ts:131-143`；`RouteME/openapi.yaml:1774+` | `TripCreateRequest` 无 source / parent / origin |
+| 提示文案 | `RouteME/frontend/src/i18n/tripMessages.ts:190-192` | `referencePublish` / `referenceHint` |
+| 前端测试 | `RouteME/frontend/src/route.test.ts:25-28` | 保留 `from` 参数 |
+| E2E | `RouteME/e2e/tests/experiences.spec.ts:63,88-100` | 入口可见；点击 → 预填 → 必填为空 → 拦截提交 |
+| 原型 | `docs/prototype/stories.html:646-659,718` | S17 故事与「接口可削减为前端预填」的边界 |
+| 阶段记录 | `docs/sdd/README.md` | 阶段索引；尚无 REQ-014 行 |
+
+### 17.3 As-is → proposed delta（逐资产）
+
+| 资产 | As-is | Proposed delta |
+|---|---|---|
+| 详情页入口 | 已结束行程显示「参考此行程发布」 | **无**（满足 S17 AC #1） |
+| 体验卡入口 | 体验卡提供同名链接 | **无**（满足 S17 AC #1；「体验详情」按体验卡解释） |
+| 发布页预填 | 目的地 / 途经点 / 兴趣标签带入 | **无**（满足 S17 AC #2） |
+| 必填字段 | 标题 / 日期 / 人数 / 集合区域为空；未补齐不可提交 | **无**（满足 S17 AC #3；集合区域沿用选填口径） |
+| 归属关系 | 请求体与模型无来源字段，新计划独立 | **无**（满足 S17 AC #4） |
+| 后端 / 契约 / 迁移 | 参考发布为纯前端预填，无专用接口 | **无** |
+| Living Spec | 已含「参考此行程发布以产生新灵感」 | **无**（不回写、不改写） |
+| E2E / 单测 | 已覆盖入口、预填、拦截与路由 | **无**（作为验证证据引用） |
+| 文档 | registry / handoff / stories / SDD 索引未登记 REQ-014 | **新增登记与 P1 记录**（仅文档） |
+
+结论：**行为、契约、数据、测试均无 delta；唯一产出是把已验证能力登记为 REQ-014。**
+
+### 17.4 Blast radius（应用架构）
+
+- **页面（1）：** 发布行程页（只读取证，不改）；入口页面「行程详情 / 灵感首页体验视图」不改。
+- **能力（2，均不变）：** `trip-experiences`（交付方）、`trip-plans`（发布校验消费方）。
+- **接口契约（0）：** 无新增端点 / 字段 / 错误码 / 版本变更。
+- **数据 / 迁移（0）：** 无新表、无迁移、无列变更。
+- **测试触点（0 改动）：** 现有 `route.test.ts`、`experiences.spec.ts` 作为证据引用，不需要新增或修改。
+- **知识库：** P1 不改 `docs/knowledge/`。
+- **风险面：** 仅文档登记；不存在运行时回归风险。
+
+### 17.5 Artifact impact（specs / tests / docs）
+
+| 类型 | 影响 |
+|---|---|
+| Spec（Delta） | **无**（不新建 change） |
+| Proposal | **无** |
+| Story | `stories.md` 新增 REQ-014 / S17 行与追溯；无独立故事文件（原型 S17 已提供 AC） |
+| Registry / handoff | 新增 REQ-014 行与「无 change / 复用 `add-trip-experiences`」映射 |
+| Tests / 代码 / design / tasks | **无** |
+| Living Spec | **无** |
+| 阶段记录 | `docs/sdd/REQ-014-reference-publish/p1-intent.md`；`docs/sdd/README.md` 索引 |
+| 质量报告 | `docs/ai4se-plugins/<ts>-quality-checklist-report.md`（P1-1..P1-4 Pass；P1-5/P1-6 Skipped） |
+
+### 17.6 Dual-track notes（OpenSpec vs agile）
+
+- **OpenSpec 轨：** 不新建 change。REQ-014 指向已归档的 `add-trip-experiences`，Living Spec 是唯一权威。
+- **Agile 轨：** 原型故事 S17（迭代 3 / 2 点）即业务口径；不另建故事文件，避免与原型双维护。
+- **为什么不用 `refine-*` change：** 若只为措辞建 change，会产生「无行为变更的 Delta」，并与已归档能力重复；P1 允许以「已验证交付 + 证据」收口。
+
+### 17.7 Risks & blockers
+
+| 级别 | 项 | 说明 / 缓解 |
+|---|---|---|
+| Risk | 故事「体验详情」被误读为缺失页面 | 在 REQ-014 §4.1 与 P1 记录中明确「体验卡即落点」，以 Living Spec 为准；如确需详情页另开需求 |
+| Risk | 故事「集合地点必须填写」与 `trip-plans` 选填冲突 | 明确验收口径为「不得沿用原行程取值」；集合区域仍选填，不以本需求改校验 |
+| Risk | 被误认为「未开工」而重复实现 | registry / handoff / stories / SDD 索引均登记 REQ-014 → REQ-004 的映射与证据锚点 |
+| Risk | Living Spec 与代码漂移 | 现有 E2E 与单测已覆盖关键路径；若后续改动破坏预填，回归会失败 |
+| Blocker | 无 | blocking OQ=0、DoR BLOCKER=0、A0 ⑨–⑫ 全过；无外部依赖 |
+
+### 17.8 Suggested split boundaries（供 proposal-split / story-split）
+
+- **不拆 change：** 无行为变更，不产生 `openspec/changes/<id>/`。
+- **不拆故事：** 原型 S17 已提供 AC；再拆会与原型故事列表双维护。
+- **不并入 `add-trip-experiences`：** 该 change 已归档；追加归档包会打乱历史边界。
+- **后续候选（均需另开需求）：** 独立体验详情页；集合区域改为发布必填；参考发布的来源统计。
+- **质量自检（split-heuristics）：** 子目标一句话可说明 ✓；端到端可观察（已结束行程 / 体验卡 → 发布页 → 预填 → 提交独立计划）✓；可独立运行 ✓；capability 名真实 ✓；无依赖环 ✓。

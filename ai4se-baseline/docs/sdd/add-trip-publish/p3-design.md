@@ -128,3 +128,41 @@ ATDD：`atdd-design.md` §9 场景 24–26。任务：`tasks.md` §10 T19–T21�
 | AO | Jay | 承担布局重排与验证 | 2026-11-16 |
 | SA | Jacky、Karena | 待确认 D11–D15 | 待签 |
 | SM | Lewis | 待确认是否准入 P5（P5 仍暂缓） | 待签 |
+
+## 13. R6 设计（日期弹层在减少动态效果下可用，2026-11-16）
+
+根因：antd 6.7 在系统开启「减少动态效果」（`prefers-reduced-motion: reduce`）时，日期弹层停留在视口外；用户看到的是「点击日期没有反应」。`ProfileSetupPage` 已有同源修复，R6 把它抽成共享约定。
+
+| 编号 | 取舍 | 结论 |
+|---|---|---|
+| D16 | 弹层挂载 | 新增 `utils/datePickerProps.ts`：`getPopupContainer` 挂到字段容器，popup 根类 `app-date-popup`；字段容器 `position: relative` |
+| D17 | reduced motion 定位 | `@media (prefers-reduced-motion: reduce)` 下把 `.app-date-popup` 固定到字段下方（`left: 0` / `top: calc(100% + 4px)`） |
+| D18 | 覆盖范围 | 发布页起止日期、首页「出发不早于 / 不晚于」统一使用；生日字段保留自身同类修复，后续可并入 |
+
+ATDD：`atdd-design.md` §10 场景 27。任务：`tasks.md` §12 T22–T23。
+
+| 角色 | 姓名 | 确认内容 | 日期 |
+|---|---|---|---|
+| AO | Jay | 承担修复与验证 | 2026-11-16 |
+| SA | Jacky、Karena | 待确认 D16–D18 | 待签 |
+| SM | Lewis | 待确认是否准入 P5（P5 仍暂缓） | 待签 |
+
+## 14. R7 设计（导航风格交互地图，2026-11-16）
+
+参考 `docs/prototype` 的地图占位与用户提供的导航地图参考图；不引入在线瓦片，保持离线可演示。
+
+| 编号 | 取舍 | 结论 |
+|---|---|---|
+| D19 | 交互 | 拖拽平移、滚轮与按钮缩放、回到当前范围、全屏（Esc 退出）；点击坐标用 `getScreenCTM().inverse()` 反算，修复 SVG 留白导致的点击偏移 |
+| D20 | 选择反馈 | 点击点位直接加入；点击空白弹出最近候选浮层（antd `Button` / `Typography`），不再出现「点了没反应」 |
+| D21 | 视觉 | 省级视图只显示城市点与高速连线；城市视图显示道路网、河流、公园、分区标签、编号途经点与路线；控件全部用 antd `Button` / `Tooltip` / `Space` |
+| D22 | 显示时机 | 未选目的地显示全省；选定城市自动聚焦；未覆盖城市隐藏地图并提示；集合地点去掉「地图选点」开关，直接显示地图 |
+| D23 | 依赖 | 不引入地图服务或瓦片；新增 `map/mapView.ts` 纯函数（视口、缩放、平移、坐标反算）并附单测 |
+
+ATDD：`atdd-design.md` §11 场景 28–30。任务：`tasks.md` §13 T24–T27。
+
+| 角色 | 姓名 | 确认内容 | 日期 |
+|---|---|---|---|
+| AO | Jay | 承担地图重做与验证 | 2026-11-16 |
+| SA | Jacky、Karena | 待确认 D19–D23 | 待签 |
+| SM | Lewis | 待确认是否准入 P5（P5 仍暂缓） | 待签 |

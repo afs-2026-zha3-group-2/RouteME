@@ -1,17 +1,17 @@
 package routeme.controller;
 
-import static org.junit.jupiter.api.Assertions.assertAll;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
+import static org.junit.jupiter.api.Assertions.assertAll;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import org.junit.jupiter.api.Test;
 import org.yaml.snakeyaml.Yaml;
 
@@ -60,7 +60,7 @@ class OpenApiTest {
 
         // Then
         assertAll(
-                () -> assertEquals("0.9.0", info.get("version"), "info.version"),
+                () -> assertEquals("0.11.0", info.get("version"), "info.version"),
                 () -> assertTrue(paths(document).containsKey("/users"), "/users declared"),
                 () -> assertTrue(paths(document).containsKey("/trips/{tripId}"), "detail path declared"),
                 () -> assertTrue(
@@ -219,6 +219,7 @@ class OpenApiTest {
         Map<String, Object> application = schema(document, "TripApplication");
         Map<String, Object> match = schema(document, "Match");
         Map<String, Object> myTrips = schema(document, "MyTrips");
+        Map<String, Object> pendingApplicationCount = schema(document, "PendingApplicationCount");
         Map<String, Object> reportRequest = schema(document, "ReportRequest");
         Map<String, Object> errorSchema = schema(document, "Error");
 
@@ -246,13 +247,26 @@ class OpenApiTest {
                         "match required fields"),
                 () -> assertTrue(
                         enums(properties(application).get("status"))
-                                .containsAll(List.of("pending", "accepted", "rejected", "cancelled")),
+                                .containsAll(List.of("pending", "accepted", "rejected", "cancelled", "left")),
                         "application status enum"),
                 () -> assertTrue(
                         required(myTrips)
                                 .containsAll(List.of(
                                         "published", "applied", "matched", "completed", "pending_application_count")),
                         "my trips groups"),
+                () -> assertTrue(
+                        properties(myTrips).containsKey("pending_applications"),
+                        "my trips per-trip pending counts"),
+                () -> assertFalse(
+                        required(myTrips).contains("pending_applications"),
+                        "pending_applications stays optional"),
+                () -> assertTrue(
+                        required(pendingApplicationCount).containsAll(List.of("trip_id", "count")),
+                        "pending application count fields"),
+                () -> assertEquals(
+                        Integer.valueOf(1),
+                        properties(pendingApplicationCount).get("count").get("minimum"),
+                        "pending count minimum"),
                 () -> assertTrue(
                         enums(properties(reportRequest).get("reason"))
                                 .containsAll(List.of("harassment", "fake", "safety", "other")),
@@ -308,6 +322,38 @@ class OpenApiTest {
                 () -> assertTrue(
                         enums(properties(errorSchema).get("code")).contains("EXPERIENCE_NOT_ALLOWED"),
                         "experience error code")
+        );
+    }
+
+    @Test
+    void in_openApiFile_out_tripMeetingContractDeclared() throws IOException {
+        // Given
+        Map<String, Object> document = loadYaml(SPEC_PATH);
+
+        // When
+        Map<String, Object> putMeeting = operation(document, "/trips/{tripId}/meeting", "put");
+        Map<String, Object> meetingRequest = schema(document, "TripMeetingRequest");
+        Map<String, Map<String, Object>> tripPlanProperties = properties(schema(document, "TripPlan"));
+        Map<String, Map<String, Object>> tripDetailProperties = allOfProperties(document, "TripDetail");
+        Map<String, Map<String, Object>> createProperties = properties(schema(document, "TripCreateRequest"));
+
+        // Then
+        assertAll(
+                () -> assertTrue(responses(putMeeting).containsKey("200"), "meeting update returns 200"),
+                () -> assertTrue(responses(putMeeting).containsKey("400"), "meeting update returns 400"),
+                () -> assertTrue(responses(putMeeting).containsKey("403"), "meeting update returns 403"),
+                () -> assertTrue(responses(putMeeting).containsKey("409"), "meeting update returns 409"),
+                () -> assertTrue(
+                        properties(meetingRequest).keySet().containsAll(List.of("meeting_areas", "meeting_time")),
+                        "meeting request fields"),
+                () -> assertTrue(tripPlanProperties.containsKey("meeting_areas"), "trip plan meeting_areas"),
+                () -> assertTrue(!tripPlanProperties.containsKey("meeting_area"), "trip plan meeting_area removed"),
+                () -> assertEquals(3, tripPlanProperties.get("meeting_areas").get("maxItems"), "meeting_areas maxItems"),
+                () -> assertTrue(tripPlanProperties.containsKey("meeting_time"), "trip plan meeting_time"),
+                () -> assertTrue(tripDetailProperties.containsKey("meeting_areas"), "trip detail meeting_areas"),
+                () -> assertTrue(tripDetailProperties.containsKey("meeting_time"), "trip detail meeting_time"),
+                () -> assertTrue(createProperties.containsKey("meeting_areas"), "create request meeting_areas"),
+                () -> assertTrue(createProperties.containsKey("meeting_time"), "create request meeting_time")
         );
     }
 
@@ -372,6 +418,24 @@ class OpenApiTest {
             names.add((String) ((Map<String, Object>) shared.get(key)).get("name"));
         }
         return names;
+    }
+
+    @SuppressWarnings("unchecked")
+    private Map<String, Map<String, Object>> allOfProperties(Map<String, Object> document, String schemaName) {
+        Map<String, Object> composed = schema(document, schemaName);
+        Map<String, Map<String, Object>> merged = new LinkedHashMap<>();
+        for (Object part : (List<Object>) composed.get("allOf")) {
+            Map<String, Object> item = (Map<String, Object>) part;
+            Object reference = item.get("$ref");
+            Map<String, Object> target = reference == null
+                    ? item
+                    : schema(document, ((String) reference).substring(((String) reference).lastIndexOf('/') + 1));
+            Object declared = target.get("properties");
+            if (declared != null) {
+                merged.putAll((Map<String, Map<String, Object>>) declared);
+            }
+        }
+        return merged;
     }
 
     @SuppressWarnings("unchecked")

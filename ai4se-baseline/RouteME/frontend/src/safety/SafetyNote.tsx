@@ -1,11 +1,7 @@
-import { Alert, Button } from 'antd';
+import { Alert } from 'antd';
 import { tripMessages } from '../i18n/tripMessages';
 
-type Props = {
-  onReport?: () => void;
-};
-
-export function SafetyNote({ onReport }: Props) {
+export function SafetyNote() {
   return (
     <Alert
       className="safety-note"
@@ -13,13 +9,6 @@ export function SafetyNote({ onReport }: Props) {
       showIcon
       title={tripMessages.safetyTitle}
       description={tripMessages.safetyBody}
-      action={
-        onReport === undefined ? undefined : (
-          <Button size="small" onClick={onReport}>
-            {tripMessages.reportEntry}
-          </Button>
-        )
-      }
     />
   );
 }

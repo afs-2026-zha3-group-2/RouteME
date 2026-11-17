@@ -158,7 +158,7 @@ class TripCompletionApiTest {
         jdbcClient.sql("""
                         INSERT INTO trip_plans
                             (id, publisher_id, title, destination, destination_code, start_date, end_date,
-                             stops, meeting_area, note, budget_min_cents, budget_max_cents, tags,
+                             stops, meeting_areas, note, budget_min_cents, budget_max_cents, tags,
                              capacity, joined_count, completed_at, created_at, updated_at)
                         VALUES
                             (:id, 1, :title, '珠海市', '440400', :start, :end,

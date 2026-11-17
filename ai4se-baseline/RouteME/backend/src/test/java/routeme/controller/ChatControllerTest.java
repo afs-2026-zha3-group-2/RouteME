@@ -1,21 +1,25 @@
 package routeme.controller;
 
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
-
+import static org.hamcrest.Matchers.nullValue;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
+import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 import org.springframework.transaction.annotation.Transactional;
+
+import routeme.config.FixedClockTestConfig;
 
 @SpringBootTest
 @AutoConfigureMockMvc
 @Transactional
+@Import(FixedClockTestConfig.class)
 class ChatControllerTest {
 
     @Autowired
@@ -36,6 +40,27 @@ class ChatControllerTest {
         mockMvc.perform(get("/api/trips/3/messages").header("X-User-Id", "1").param("with", "2"))
                 .andExpect(status().isForbidden())
                 .andExpect(jsonPath("$.code").value("CHAT_NOT_ALLOWED"));
+    }
+
+    @Test
+    void in_leftCompanion_out_canStillReadAndSend() throws Exception {
+        mockMvc.perform(post("/api/trips/4/leave").header("X-User-Id", "1"))
+                .andExpect(status().isNoContent());
+
+        mockMvc.perform(get("/api/trips/4/messages").header("X-User-Id", "1").param("with", "3"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(4));
+
+        mockMvc.perform(get("/api/trips/4/messages").header("X-User-Id", "3").param("with", "1"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(4));
+
+        mockMvc.perform(post("/api/trips/4/messages")
+                        .header("X-User-Id", "1")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"receiver_id\":3,\"content\":\"退出后还能继续聊。\"}"))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.content").value("退出后还能继续聊。"));
     }
 
     @Test
@@ -99,14 +124,47 @@ class ChatControllerTest {
     }
 
     @Test
-    void in_chatPartners_out_lastMessageAndCount() throws Exception {
+    void in_chatPartnersAsApplicant_out_matchedAndHistoryWithOrder() throws Exception {
         mockMvc.perform(get("/api/me/chat-partners").header("X-User-Id", "1"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.length()").value(1))
+                .andExpect(jsonPath("$.length()").value(3))
                 .andExpect(jsonPath("$[0].trip.id").value(4))
                 .andExpect(jsonPath("$[0].other.id").value(3))
                 .andExpect(jsonPath("$[0].last_message.id").value(4))
-                .andExpect(jsonPath("$[0].message_count").value(4));
+                .andExpect(jsonPath("$[0].message_count").value(4))
+                .andExpect(jsonPath("$[1].trip.id").value(2))
+                .andExpect(jsonPath("$[1].other.id").value(2))
+                .andExpect(jsonPath("$[1].last_message").value(nullValue()))
+                .andExpect(jsonPath("$[1].message_count").value(0))
+                .andExpect(jsonPath("$[2].trip.id").value(1))
+                .andExpect(jsonPath("$[2].other.id").value(2))
+                .andExpect(jsonPath("$[2].last_message").value(nullValue()));
+    }
+
+    @Test
+    void in_chatPartnersAsPublisher_out_pairsWithAcceptedApplicants() throws Exception {
+        mockMvc.perform(get("/api/me/chat-partners").header("X-User-Id", "3"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(3))
+                .andExpect(jsonPath("$[0].trip.id").value(4))
+                .andExpect(jsonPath("$[0].other.id").value(1))
+                .andExpect(jsonPath("$[0].last_message.id").value(4))
+                .andExpect(jsonPath("$[1].trip.id").value(6))
+                .andExpect(jsonPath("$[1].other.id").value(2))
+                .andExpect(jsonPath("$[2].trip.id").value(2))
+                .andExpect(jsonPath("$[2].other.id").value(2));
+    }
+
+    @Test
+    void in_leftCompanion_out_partnerStillListed() throws Exception {
+        mockMvc.perform(post("/api/trips/4/leave").header("X-User-Id", "1"))
+                .andExpect(status().isNoContent());
+
+        mockMvc.perform(get("/api/me/chat-partners").header("X-User-Id", "1"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(3))
+                .andExpect(jsonPath("$[0].trip.id").value(4))
+                .andExpect(jsonPath("$[0].other.id").value(3));
     }
 
     @Test

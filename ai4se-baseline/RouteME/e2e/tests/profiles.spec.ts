@@ -20,8 +20,6 @@ test('opens the publisher profile from a trip card without entering the detail p
   await expect(modal).toBeVisible();
   await expect(page).not.toHaveURL(/#\/trips\//);
   await expect(modal.getByText('周野', { exact: true })).toBeVisible();
-  // V13 将周野的 school（旧「上班族 · 互联网行业 · INFP」）拆分为结构化字段，
-  // school 置空、job=产品经理、mbti=INFP，资料弹窗副标题按 [school,major,job,mbti] 拼接。
   await expect(modal.getByText('产品经理 · INFP')).toBeVisible();
   await expect(modal.getByText(/加入于/)).toBeVisible();
   await expect(modal.locator('.tag', { hasText: '城市漫步' }).first()).toBeVisible();
@@ -32,7 +30,6 @@ test('opens the publisher profile from a trip card without entering the detail p
   await expect(modal.locator('.profile-stat', { hasText: '游后分享' })).toContainText('0');
   await expect(modal.locator('.privacy-note')).toContainText('电话、证件、精确住址和实时位置');
 
-  // 弹窗右上角的图标按钮与页脚按钮同为「关闭」，这里只点页脚主按钮。
   await modal.locator('.ant-modal-footer').getByRole('button', { name: /^关\s*闭$/ }).click();
   await expect(modal).toBeHidden();
 });
@@ -120,6 +117,6 @@ test('keeps the existing trip report entry working', async ({ page }) => {
   await loginAs(page, 1);
   await page.goto('/#/trips/5');
 
-  await page.getByRole('button', { name: /^举\s*报$/ }).click();
-  await expect(page.getByText('举报行程或用户')).toBeVisible();
+  await page.locator('.detail-badges').getByRole('button', { name: '举报这条行程' }).click();
+  await expect(page.getByRole('dialog').getByText('举报这条行程')).toBeVisible();
 });

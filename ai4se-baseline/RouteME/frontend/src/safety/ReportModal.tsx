@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Alert, Input, Modal, Select, Space, Typography } from 'antd';
+import { Alert, Button, Input, Modal, Select, Space, Typography } from 'antd';
 import { submitReport } from '../api';
 import { tripMessages } from '../i18n/tripMessages';
 import type { ReportReason } from '../types';
@@ -9,6 +9,7 @@ type Props = {
   open: boolean;
   targetType: 'trip' | 'user';
   targetId: number;
+  targetLabel: string;
   onClose: () => void;
 };
 
@@ -21,7 +22,14 @@ const REASON_OPTIONS: { value: ReportReason; label: string }[] = [
 
 const MAX_NOTE_LENGTH = 200;
 
-export function ReportModal({ userId, open, targetType, targetId, onClose }: Props) {
+export function ReportModal({
+  userId,
+  open,
+  targetType,
+  targetId,
+  targetLabel,
+  onClose,
+}: Props) {
   const [reason, setReason] = useState<ReportReason>('safety');
   const [note, setNote] = useState('');
   const [submitting, setSubmitting] = useState(false);
@@ -45,7 +53,10 @@ export function ReportModal({ userId, open, targetType, targetId, onClose }: Pro
         reason,
         note: note.trim() === '' ? null : note.trim(),
       });
-      setReceived(receipt.received);
+      if (!receipt.received) {
+        throw new Error('REPORT_NOT_RECEIVED');
+      }
+      setReceived(true);
     } catch (caught: unknown) {
       setError(caught instanceof Error ? caught.message : 'UNKNOWN_ERROR');
     } finally {
@@ -56,19 +67,33 @@ export function ReportModal({ userId, open, targetType, targetId, onClose }: Pro
   return (
     <Modal
       open={open}
-      title={tripMessages.reportTitle}
-      okText={received ? tripMessages.createCancel : tripMessages.reportSubmit}
+      title={targetType === 'trip' ? tripMessages.reportEntryTrip : tripMessages.reportEntryUser}
+      okText={tripMessages.reportSubmit}
       cancelText={tripMessages.createCancel}
       confirmLoading={submitting}
-      onOk={received ? close : submit}
+      onOk={submit}
       onCancel={close}
+      footer={
+        received ? (
+          <Button type="primary" onClick={close}>
+            {tripMessages.reportClose}
+          </Button>
+        ) : undefined
+      }
     >
       <Space orientation="vertical" size="small" className="home-stack">
         <Typography.Text type="secondary">
-          {targetType === 'trip' ? tripMessages.reportTargetTrip : tripMessages.reportTargetUser}
+          {`${tripMessages.reportTargetPrefix}${targetLabel}。`}
         </Typography.Text>
+        <Typography.Text type="secondary">{tripMessages.reportPrivacyNote}</Typography.Text>
+        <Typography.Text type="secondary">{tripMessages.reportEmergencyNote}</Typography.Text>
         {received ? (
-          <Alert type="success" showIcon title={tripMessages.reportSuccess} />
+          <Alert
+            type="success"
+            showIcon
+            title={tripMessages.reportSuccess}
+            description={tripMessages.reportReceiptHint}
+          />
         ) : (
           <>
             <Typography.Text>{tripMessages.reportReasonLabel}</Typography.Text>

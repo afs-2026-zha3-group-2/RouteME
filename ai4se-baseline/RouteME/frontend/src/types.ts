@@ -105,6 +105,8 @@ export type TripSummary = {
   start_date: string;
   end_date: string;
   stops: string[];
+  meeting_areas: string[];
+  meeting_time: string | null;
   tags: string[];
   capacity: number;
   joined_count: number;
@@ -115,7 +117,6 @@ export type TripSummary = {
 };
 
 export type TripDetail = TripSummary & {
-  meeting_area: string | null;
   note: string | null;
   budget_min_cents: number | null;
   budget_max_cents: number | null;
@@ -129,12 +130,18 @@ export type TripCreateRequest = {
   start_date: string;
   end_date: string;
   stops: string[];
-  meeting_area?: string | null;
+  meeting_areas?: string[] | null;
+  meeting_time?: string | null;
   note?: string | null;
   budget_min_cents?: number | null;
   budget_max_cents?: number | null;
   tags: string[];
   capacity: number;
+};
+
+export type TripMeetingRequest = {
+  meeting_areas?: string[] | null;
+  meeting_time?: string | null;
 };
 
 export type TripFilters = {
@@ -157,7 +164,7 @@ export type MatchCandidate = {
   match: Match;
 };
 
-export type ApplicationStatus = 'pending' | 'accepted' | 'rejected' | 'cancelled';
+export type ApplicationStatus = 'pending' | 'accepted' | 'rejected' | 'cancelled' | 'left';
 
 export type TripApplication = {
   id: number;
@@ -192,6 +199,14 @@ export type MyTrips = {
   matched: TripSummary[];
   completed: TripSummary[];
   pending_application_count: number;
+  /** 按行程聚合的待处理申请数；旧后端可能缺省，前端按空数组处理。 */
+  pending_applications?: PendingApplicationCount[];
+};
+
+/** 「我的旅行」中每条已发布行程的待处理申请数。 */
+export type PendingApplicationCount = {
+  trip_id: number;
+  count: number;
 };
 
 export type ReportReason = 'harassment' | 'fake' | 'safety' | 'other';

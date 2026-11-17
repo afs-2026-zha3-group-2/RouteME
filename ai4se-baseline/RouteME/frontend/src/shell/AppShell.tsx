@@ -7,30 +7,38 @@ import type { DemoUser } from '../types';
 import { Avatar } from './Avatar';
 import { BrandMark } from './BrandMark';
 
-type NavKey = 'discover' | 'create' | 'mine';
+type NavKey = 'discover' | 'map' | 'create' | 'mine' | 'chat';
 
 type NavItem = { key: NavKey; label: string; href: string };
 
 const NAV_ITEMS: NavItem[] = [
   { key: 'discover', label: tripMessages.homeTitle, href: '#/' },
+  { key: 'map', label: '旅行地图', href: '#/map' },
   { key: 'create', label: tripMessages.publish, href: '#/trips/new' },
   { key: 'mine', label: tripMessages.mineTitle, href: '#/mine' },
+  { key: 'chat', label: tripMessages.chatNav, href: '#/chat' },
 ];
 
 const NAV_GROUPS: Array<{ title: string; items: NavItem[] }> = [
-  { title: '浏览', items: NAV_ITEMS.filter((item) => item.key === 'discover') },
-  { title: '我的', items: NAV_ITEMS.filter((item) => item.key !== 'discover') },
+  { title: '浏览', items: NAV_ITEMS.filter((item) => item.key === 'discover' || item.key === 'map') },
+  { title: '我的', items: NAV_ITEMS.filter((item) => item.key !== 'discover' && item.key !== 'map') },
 ];
 
 function activeKey(route: Route): NavKey | null {
   if (route.name === 'home') {
     return 'discover';
   }
+  if (route.name === 'map') {
+    return 'map';
+  }
   if (route.name === 'create' || route.name === 'share') {
     return 'create';
   }
   if (route.name === 'mine') {
     return 'mine';
+  }
+  if (route.name === 'chat') {
+    return 'chat';
   }
   return null;
 }
@@ -41,6 +49,22 @@ function NavIcon({ name }: { name: NavKey }) {
       <svg viewBox="0 0 20 20" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.7">
         <circle cx="10" cy="10" r="7" />
         <path d="m12.8 7.2-1.5 4.1-4.1 1.5 1.5-4.1z" strokeLinejoin="round" />
+      </svg>
+    );
+  }
+  if (name === 'map') {
+    return (
+      <svg
+        viewBox="0 0 20 20"
+        aria-hidden="true"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.7"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      >
+        <path d="M3 5.5 7.5 4l5 1.5L17 4v10.5L12.5 16l-5-1.5L3 16Z" />
+        <path d="M7.5 4v10.5M12.5 5.5V16" />
       </svg>
     );
   }
@@ -55,6 +79,20 @@ function NavIcon({ name }: { name: NavKey }) {
         strokeLinecap="round"
       >
         <path d="M10 4.5v11M4.5 10h11" />
+      </svg>
+    );
+  }
+  if (name === 'chat') {
+    return (
+      <svg
+        viewBox="0 0 20 20"
+        aria-hidden="true"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.7"
+        strokeLinejoin="round"
+      >
+        <path d="M17 11.4a2 2 0 0 1-2 2H7l-3.4 2.6V5a2 2 0 0 1 2-2h9.4a2 2 0 0 1 2 2z" />
       </svg>
     );
   }

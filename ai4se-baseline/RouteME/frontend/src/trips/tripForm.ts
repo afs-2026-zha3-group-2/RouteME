@@ -1,6 +1,7 @@
 import { findCity } from '../area/areaOptions';
 import { tripMessages } from '../i18n/tripMessages';
 import type { TripCreateRequest } from '../types';
+import { validateMeetingForm } from './meetingForm';
 import { MAX_CAPACITY, MAX_TAGS, MAX_TITLE_LENGTH, MIN_CAPACITY, MIN_STOPS } from './tripOptions';
 
 export type TripFormValues = {
@@ -10,7 +11,8 @@ export type TripFormValues = {
   endDate: string;
   stops: string[];
   capacity: string;
-  meetingArea: string;
+  meetingAreas: string[];
+  meetingTime: string;
   budgetMin: string;
   budgetMax: string;
   tags: string[];
@@ -18,7 +20,7 @@ export type TripFormValues = {
 };
 
 export type TripFieldErrors = Partial<Record<'title' | 'destination' | 'startDate' | 'endDate' | 'stops'
-  | 'capacity' | 'budget' | 'tags', string>>;
+  | 'capacity' | 'budget' | 'tags' | 'meetingArea' | 'meetingTime', string>>;
 
 export const emptyTripForm: TripFormValues = {
   title: '',
@@ -27,7 +29,8 @@ export const emptyTripForm: TripFormValues = {
   endDate: '',
   stops: [],
   capacity: '4',
-  meetingArea: '',
+  meetingAreas: [],
+  meetingTime: '',
   budgetMin: '',
   budgetMax: '',
   tags: [],
@@ -81,6 +84,16 @@ export function validateTripForm(values: TripFormValues): TripFieldErrors {
   if (values.tags.length > MAX_TAGS) {
     errors.tags = tripMessages.errorTagsLimit;
   }
+  const meetingErrors = validateMeetingForm(
+    { meetingAreas: values.meetingAreas, meetingTime: values.meetingTime },
+    values.endDate,
+  );
+  if (meetingErrors.meetingArea !== undefined) {
+    errors.meetingArea = meetingErrors.meetingArea;
+  }
+  if (meetingErrors.meetingTime !== undefined) {
+    errors.meetingTime = meetingErrors.meetingTime;
+  }
   return errors;
 }
 
@@ -91,7 +104,8 @@ export function toCreateRequest(values: TripFormValues): TripCreateRequest {
     start_date: values.startDate,
     end_date: values.endDate,
     stops: values.stops.map((stop) => stop.trim()).filter((stop) => stop !== ''),
-    meeting_area: blankToNull(values.meetingArea),
+    meeting_areas: values.meetingAreas.length > 0 ? values.meetingAreas : null,
+    meeting_time: blankToNull(values.meetingTime),
     note: blankToNull(values.note),
     budget_min_cents: toCents(values.budgetMin),
     budget_max_cents: toCents(values.budgetMax),

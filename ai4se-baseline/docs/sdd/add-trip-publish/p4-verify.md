@@ -209,3 +209,44 @@
 | AO | Jay | 交付原型布局重排与回归结果 | 2026-11-16 |
 | VL | Neal | 待复核 R5 证据（G2 追加） | 待签 |
 | SM | Lewis | 待确认 R5 范围；P5 仍暂缓 | 待签 |
+
+## 15. R6 实施结果（日期弹层在减少动态效果下可用，2026-11-16）
+
+| 项 | 结果 |
+|---|---|
+| 实现提交 | `fix(p4): add-trip-publish make date pickers usable with reduced motion` |
+| 根因 | antd 6.7 在 `prefers-reduced-motion: reduce` 下把 `DatePicker` 弹层留在视口外，表现为点击日期没有反应 |
+| 修复 | 新增 `utils/datePickerProps.ts`；发布页两处与首页两处 `DatePicker` 统一使用；`.form-field` / `.field` 设 `position: relative`，`.app-date-popup` 在 reduced motion 下固定到字段下方 |
+| 上游协作 | `main` 已给发布页加 `trip-date-anchor` / `needConfirm` / `minDate`；R6 统一到共享 helper，保留这些行为并移除重复的 `trip-date-popup` CSS |
+| 回归用例 | `trips.spec.ts` 新增 reduced-motion 用例：点开面板、面板在视口内、点「今天」后关闭并回填；发布页 `allowClear=false` 后删除「清空日期」断言，保留标题 / 目的地 / 途经点必填校验 |
+| 前端验证 | `npm test` 185 通过（main 基线）；`npm run typecheck` / `build` 通过 |
+| 端到端 | 干净种子库：`trips.spec.ts` 13/14（唯一失败为既有身份门用例：`main` 已改为账号登录，测试未更新）；`companions.spec.ts` 10/10 |
+| 看板 | S06 保持 P4，不归档 |
+
+| 角色 | 姓名 | 确认内容 | 日期 |
+|---|---|---|---|
+| AO | Jay | 交付日期弹层修复与回归结果 | 2026-11-16 |
+| VL | Neal | 待复核 R6 证据（G2 追加） | 待签 |
+| SM | Lewis | 待确认 R6 范围；P5 仍暂缓 | 待签 |
+
+## 16. R7 实施结果（导航风格交互地图，2026-11-16）
+
+| 项 | 结果 |
+|---|---|
+| 实现提交 | `feat(p4): add-trip-publish replace the schematic map with a navigation-style picker` |
+| 根因 | 旧 SVG 用容器矩形比例换算 viewBox，`preserveAspectRatio="meet"` 的留白会让点击偏移；且没有缩放 / 拖拽 / 全屏，点位密集时看起来「点了没反应」 |
+| 交互 | 拖拽平移、滚轮与按钮缩放、回到当前范围、全屏（Esc 退出）；`getScreenCTM().inverse()` 反算点击坐标 |
+| 选择反馈 | 点击点位直接加入；点击空白显示最近候选浮层 +「加入路线」按钮；选中点按顺序编号并用蓝色路线连接 |
+| 视觉 | 省级：城市点 + 高速连线 + 六个主城市标签；城市级：道路网、河流、公园、分区标签、POI 与编号路线；颜色全部走现有 token |
+| 显示时机 | 未选目的地显示全省；选城市自动聚焦；未覆盖城市隐藏地图；集合地点去掉「地图选点」开关，直接显示地图 |
+| 前端验证 | `npm test` 198 通过（新增 `mapView.test.ts` 5 项）；`npm run typecheck` / `build` 通过 |
+| 端到端 | 新增 `map supports zoom, fullscreen and click-to-add` 通过；发布 / reduced-motion 用例通过；`trips.spec.ts` 13/15（既有身份门用例未更新 + 本地种子数据分页） |
+| 视觉证据 | `map-province.png` / `map-zhuhai.png` / `map-callout.png`（会话 files 目录） |
+| CI | run [#162](https://github.com/afs-2026-zha3-group-2/RouteME/actions/runs/43875683960)（`6f03261`）：Backend (Java 21) success、Frontend (Node 22) success |
+| 看板 | S06 保持 P4，不归档 |
+
+| 角色 | 姓名 | 确认内容 | 日期 |
+|---|---|---|---|
+| AO | Jay | 交付地图重做与回归结果 | 2026-11-16 |
+| VL | Neal | 待复核 R7 证据（G2 追加） | 待签 |
+| SM | Lewis | 待确认 R7 范围；P5 仍暂缓 | 待签 |
