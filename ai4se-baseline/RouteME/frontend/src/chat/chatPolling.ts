@@ -3,9 +3,9 @@ export const CHAT_POLL_INTERVAL_MS = 3000;
 
 import type { TripStatus } from '../types';
 
-/** 已结束行程只读，不再轮询。 */
+/** 已结束或已取消行程只读，不再轮询。 */
 export function shouldPoll(status: TripStatus | null | undefined): boolean {
-  return status !== null && status !== undefined && status !== 'completed';
+  return status !== null && status !== undefined && status !== 'completed' && status !== 'cancelled';
 }
 
 /**

@@ -23,6 +23,37 @@
 
 ---
 
+# Story list — REQ-021（issue #28 取消行程）
+
+> 编号说明：REQ-019 / S19 由 `add-credit-account` 占用、REQ-020 由并行 `refine-detail-companions` 预留；本故事顺延为 REQ-021 / S21。
+
+- **来源：** issue #28 `[P0] 取消行程`（迭代 2 / P0 / 3 点 / 落点页面：我的旅行 / 行程详情页）；原型 `docs/prototype/ui.js:410`、`main.js:646`、`store.js:240-248`
+- **Change：** `add-trip-cancel`（`trip-cancellation` ADDED）
+- **口径：** 一条故事 = 两个页面入口 + 一份取消契约 + 一次状态迁移（招募中/已满员 → 已取消）
+- **范围：** 只含取消行程主目标；#28 中的信用分、信用记录、免扣分申请与管理员审核属其他 story（用户裁决 D1），不在本表。
+- **更新时间：** 2026-11-17
+
+| Story | Title | 角色 | Priority | Iteration | Points | Page | Parent REQ | Change | Status |
+|---|---|---|---|---|---|---|---|---|---|
+| S21 | 取消行程（招募中/已满员 → 已取消） | 行程发布者 | P0 | 2 | 3 | 行程详情 / 我的旅行 | REQ-021 | `add-trip-cancel` | P4 passed（2026-11-17） |
+
+## Traceability（REQ-021）
+
+| Story | Requirement scenarios | Change spec | Story file |
+|---|---|---|---|
+| S21 | REQ-021 §4 S21-1 ~ S21-20 | `openspec/changes/add-trip-cancel/specs/trip-cancellation/spec.md`（ADDED，5 条需求 / 20 场景） | `requirement-workspace/stories/add-trip-cancel.story.md` |
+
+## Notes（REQ-021）
+
+- 本故事只覆盖取消状态机与取消后的产品闭环；信用分、信用记录、扣分、免扣分申请与管理员审核不在本故事内（D1）。
+- 新能力 `trip-cancellation` 单 capability；不改写 `trip-plans` / `trip-companions` 既有 Requirement 块，避免与未归档的 `add-trip-completion` / `refine-trip-application` / `refine-trip-chat` 三方同时改同一块。
+- 用户裁决 D2–D5：入口在详情页 + 我的旅行；原因仅发布者与 ACCEPTED 同行者可见；「其他原因」说明必填 ≤100 字；我的旅行沿用四组并显示「已取消」。
+- 原型已在 P3 补齐详情页 + 我的旅行入口与取消态样式（`@rule:prototype-ui-alignment`）。
+- 契约 `status` 新增 `cancelled`；契约 0.13.0 + 迁移 V19（V18 由在途 `add-credit-account` / `add-ai-itinerary` 占用，按合并顺序串行）。
+- 未接入外部 ALM；ALM Sync 状态记为 Pending。
+
+---
+
 # Story list — REQ-008（S18 完善个人资料并生成个人主页）
 
 - **来源：** 用户提供的故事与 16 条验收标准（2026-11-16）；扩展原型 S02「查看他人的昵称、简介与旅行兴趣」
@@ -100,6 +131,7 @@
 
 - 主干能力（资格校验、两处展示、重复提交即修改、纯文字 + 三档强度 + 一条建议）已由 `add-trip-experiences` 归档交付；本故事 R2 只收敛展示口径：分享页 hero、「你的体验会去哪里」三条、「分享边界」两条、体验卡内置封面、两种不可用提示。
 - 图片上传按 AC 记为增强项，本迭代不做；E2E 继续断言分享页没有上传入口。
+- 图片上传增强项于 2026-11-17 单独立项为 REQ-018 / change `add-experience-photos`（P1，待 split）：两步上传 + 本地磁盘，≤6 张 / 单张 ≤5MB，首页体验卡保持内置封面，仅详情页与分享页展示图片；「本迭代不做」的口径只适用于 `refine-experience-share`。
 - 「同一行程重复发布」按 AC 取更简单的一条：同一用户对同一行程只有一条体验，再次提交即修改（`upsert`），体验条数不变。
 - 不可用原因在前端区分（未结束 / 未参加），服务端仍以 `EXPERIENCE_NOT_ALLOWED`（403）拒绝；不升 `openapi.yaml`、不改数据库迁移。
 
@@ -270,4 +302,32 @@
 - S1 给出的「7 类具体封禁理由 + 其他原因」在记录中展开为 8 项；举报原因仍为现有四类，二者不是同一枚举。
 - 「暂停发布行程」按 S20 口径归入 `SUSPENDED`，不单设处罚类型。
 - MVP 不提供永久删除账号或内容；处罚只改状态，既有行程、体验、聊天、举报保留。
+
+---
+
+# Story list — REQ-019（信用分账户与等级展示）
+
+- **来源：** 用户当次会话提供的 P0 故事「信用分账户与等级展示」（信用系统迭代 1 / Story 1 / 2 点 / 落点页面：用户个人主页 + 管理后台用户详情页）
+- **Change：** `add-credit-account`（`user-credit` ADDED：7 Requirement / 22 Scenario）
+- **口径：** 一条故事 = 一个展示面（个人主页）+ 一份只读契约扩展 + 一次状态迁移（无信用账户 → 初始 80 分账户）
+- **编号说明：** 本故事不在 `docs/prototype/stories.html` 的 S01–S18 内（原型把「信用体系」列为 MVP 之外），按延续序列记为 **S19** 以便与既有故事表并列。
+- **需求编号说明：** P1 起草时原为 REQ-018；合并 `origin/main`（2026-11-17，`77ab02b`）后该号由 `add-experience-photos`（游后体验图片上传）占用，按项目「后到者顺延」惯例改为 **REQ-019**。
+- **更新时间：** 2026-11-17
+
+| Story | Title | 角色 | Priority | Iteration | Points | Page | Parent REQ | Change | Status |
+|---|---|---|---|---|---|---|---|---|---|
+| S19 | 信用分账户与等级展示 | 平台用户 | P0 | 信用系统迭代 1 | 2 | 个人主页 | REQ-019 | `add-credit-account` | P1 drafted（2026-11-17） |
+
+## Traceability（REQ-019）
+
+| Story | Requirement scenarios | Change spec | Story file |
+|---|---|---|---|
+| S19 | REQ-019 §4 C-1 ~ C-16 | `openspec/changes/add-credit-account/specs/user-credit/spec.md`（ADDED：7 Requirement / 22 Scenario） | 无独立故事文件：以 proposal + Delta 承接（与 REQ-012 / REQ-014 同口径） |
+
+## Notes（REQ-019）
+
+- **不拆子故事：** 「用户创建 → 初始化账户 → 展示信用状态」是同一垂直切片；拆开只会得到「只有接口没有展示」的不可验收半成品。
+- **管理端 AC 推迟：** 故事 AC3 / AC4 与 AC6 的管理端一半按裁决 D2 推迟，另开故事；本故事不覆盖，Delta 中以「管理后台信用分视图与计分明细的边界」显式约束。
+- **不含计分事件：** 体验获赞加分、退出扣分、举报核实扣分、月度上限与封禁均属后续故事；本故事只交付账户与展示底座。
+- **依赖：** `user-profile` / `user-profiles` 尚未归档；本故事只追加只读字段，不改其 Requirement 语义。
 - 未接入外部 ALM；本表为仓库内权威故事清单，ALM Sync 状态记为 Pending。

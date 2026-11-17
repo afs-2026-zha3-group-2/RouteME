@@ -18,13 +18,16 @@ spring:
     locations: classpath:db/migration
   servlet:
     multipart:
-      # 业务上限 2 MB；Spring 默认 1 MB 会先于业务校验拒绝请求。
-      max-file-size: 2MB
-      max-request-size: 3MB
+      # 业务上限：头像 2 MB、体验图片单张 5 MB；Spring 上限取两者较大值，避免先于业务校验拒绝。
+      max-file-size: 5MB
+      max-request-size: 6MB
 routeme:
   profile:
     # 头像落盘目录；从 backend 目录启动时指向 RouteME/SqlLite/uploads/avatars。
     avatar-dir: ${ROUTEME_AVATAR_DIR:../SqlLite/uploads/avatars}
+  experience:
+    # 游后体验图片落盘目录；uploads/ 已 gitignore。
+    photo-dir: ${ROUTEME_EXPERIENCE_PHOTO_DIR:../SqlLite/uploads/experience-photos}
   amap:
     # 高德 Web 服务 Key：只允许后端代理使用，不下发到浏览器。
     web-service-key: ${AMAP_WEB_SERVICE_KEY:}

@@ -93,7 +93,7 @@ export type AuthRegisterRequest = {
   nickname: string;
 };
 
-export type TripStatus = 'recruiting' | 'full' | 'ongoing' | 'completed';
+export type TripStatus = 'recruiting' | 'full' | 'ongoing' | 'completed' | 'cancelled';
 
 export type TripSummary = {
   id: number;
@@ -122,6 +122,26 @@ export type TripDetail = TripSummary & {
   budget_max_cents: number | null;
   participants: DemoUser[];
   completed_at: string | null;
+  cancelled_at: string | null;
+  /** 仅发布者与已接受同行者可见；其他请求为 null。 */
+  cancel_reason: TripCancelReason | null;
+  /** 仅「其他原因」必填；仅发布者与已接受同行者可见。 */
+  cancel_note: string | null;
+};
+
+export type TripCancelReason =
+  | 'personal'
+  | 'time_changed'
+  | 'plan_changed'
+  | 'not_enough_people'
+  | 'weather'
+  | 'illness'
+  | 'safety'
+  | 'other';
+
+export type TripCancelRequest = {
+  reason: TripCancelReason;
+  note?: string | null;
 };
 
 export type TripCreateRequest = {
@@ -220,6 +240,11 @@ export type ReportRequest = {
 
 export type ExperienceIntensity = 'relaxed' | 'moderate' | 'tiring';
 
+export type ExperiencePhoto = {
+  id: number;
+  url: string;
+};
+
 export type Experience = {
   id: number;
   trip: TripSummary;
@@ -227,6 +252,7 @@ export type Experience = {
   content: string;
   intensity: ExperienceIntensity;
   advice: string;
+  photos: ExperiencePhoto[];
   created_at: string;
   updated_at: string;
 };
@@ -235,6 +261,7 @@ export type ExperienceWriteRequest = {
   content: string;
   intensity: ExperienceIntensity;
   advice: string;
+  photo_ids?: number[];
 };
 
 export type ExperienceFilters = {

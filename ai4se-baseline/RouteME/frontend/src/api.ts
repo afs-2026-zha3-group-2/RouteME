@@ -6,6 +6,7 @@ import type {
   DemoUser,
   Experience,
   ExperienceFilters,
+  ExperiencePhoto,
   ExperienceWriteRequest,
   MatchCandidate,
   MyTrips,
@@ -13,6 +14,7 @@ import type {
   Paging,
   ReportRequest,
   TripApplication,
+  TripCancelRequest,
   TripCreateRequest,
   TripDetail,
   TripFilters,
@@ -195,6 +197,23 @@ export async function completeTrip(userId: number, tripId: number): Promise<Trip
   return (await response.json()) as TripDetail;
 }
 
+export async function cancelTrip(
+  userId: number,
+  tripId: number,
+  body: TripCancelRequest,
+): Promise<TripDetail> {
+  const response = await request(
+    `/trips/${tripId}/cancel`,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    },
+    userId,
+  );
+  return (await response.json()) as TripDetail;
+}
+
 export async function saveTripMeeting(
   userId: number,
   tripId: number,
@@ -364,4 +383,19 @@ export async function shareExperience(
     userId,
   );
   return (await response.json()) as Experience;
+}
+
+export async function uploadExperiencePhoto(
+  userId: number,
+  tripId: number,
+  file: File,
+): Promise<ExperiencePhoto> {
+  const form = new FormData();
+  form.append('file', file);
+  const response = await request(
+    `/trips/${tripId}/experiences/photos`,
+    { method: 'POST', body: form },
+    userId,
+  );
+  return (await response.json()) as ExperiencePhoto;
 }

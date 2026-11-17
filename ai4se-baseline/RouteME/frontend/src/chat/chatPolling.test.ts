@@ -29,10 +29,11 @@ describe('chatPolling', () => {
     expect(reload).toHaveBeenCalledTimes(1);
   });
 
-  it('does not poll a completed trip', () => {
+  it('does not poll a completed or cancelled trip', () => {
     expect(shouldPoll('recruiting')).toBe(true);
     expect(shouldPoll('full')).toBe(true);
     expect(shouldPoll('completed')).toBe(false);
+    expect(shouldPoll('cancelled')).toBe(false);
     expect(shouldPoll(undefined)).toBe(false);
   });
 });

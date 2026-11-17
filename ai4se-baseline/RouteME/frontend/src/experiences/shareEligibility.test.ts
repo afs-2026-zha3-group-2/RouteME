@@ -28,6 +28,13 @@ describe('shareEligibility', () => {
     });
   });
 
+  it('rejects a cancelled trip with its status', () => {
+    expect(shareEligibility(trip('cancelled', [1]), 1)).toEqual({
+      kind: 'notCompleted',
+      status: 'cancelled',
+    });
+  });
+
   it('rejects a completed trip the user did not join', () => {
     expect(shareEligibility(trip('completed', [2]), 1)).toEqual({ kind: 'notParticipant' });
   });

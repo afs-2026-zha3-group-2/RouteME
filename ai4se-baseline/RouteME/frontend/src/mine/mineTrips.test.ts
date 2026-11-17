@@ -111,13 +111,23 @@ describe('pending application helpers', () => {
 });
 
 describe('actionsFor', () => {
-  it('offers view and applications for published trips, plus complete while ongoing', () => {
-    expect(actionsFor({ group: 'published', trip: trip(1) })).toEqual(['view', 'applications']);
+  it('offers view and applications for published trips, plus cancel while recruiting or full', () => {
+    expect(actionsFor({ group: 'published', trip: trip(1) })).toEqual([
+      'view',
+      'applications',
+      'cancelTrip',
+    ]);
+    expect(actionsFor({ group: 'published', trip: trip(1, { status: 'full' }) })).toEqual([
+      'view',
+      'applications',
+      'cancelTrip',
+    ]);
     expect(actionsFor({ group: 'published', trip: trip(1, { status: 'ongoing' }) })).toEqual([
       'view',
       'applications',
       'complete',
     ]);
+    expect(actionsFor({ group: 'published', trip: trip(1, { status: 'cancelled' }) })).toEqual(['view']);
   });
 
   it('offers cancel only for pending applications', () => {
@@ -145,6 +155,10 @@ describe('actionsFor', () => {
 
   it('offers chat, view and leave for matched trips', () => {
     expect(actionsFor({ group: 'matched', trip: trip(4) })).toEqual(['chat', 'view', 'leave']);
+    expect(actionsFor({ group: 'matched', trip: trip(4, { status: 'cancelled' }) })).toEqual([
+      'chat',
+      'view',
+    ]);
   });
 
   it('offers share and view for completed trips', () => {

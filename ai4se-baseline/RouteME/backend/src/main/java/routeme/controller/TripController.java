@@ -18,6 +18,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import routeme.request.TripCreateRequest;
+import routeme.request.TripCancelRequest;
 import routeme.request.TripMeetingRequest;
 import routeme.response.PageResponse;
 import routeme.response.TripDetailResponse;
@@ -78,8 +79,10 @@ public class TripController {
         demoUserService.require(userId);
         TripPlan trip = tripPlanService.requireCurrent(tripId);
         DemoUser publisher = tripPlanService.publisherOf(trip);
+        boolean includeCancelDetail = trip.publisherId() == userId
+                || applicationService.isAccepted(tripId, userId);
         return TripDetailResponse.from(
-                trip, publisher, applicationService.participants(tripId), clock.instant());
+                trip, publisher, applicationService.participants(tripId), clock.instant(), includeCancelDetail);
     }
 
     @PostMapping
@@ -89,7 +92,18 @@ public class TripController {
         DemoUser publisher = demoUserService.require(userId);
         TripPlan saved = tripPlanService.create(request, publisher.id());
         return ResponseEntity.status(HttpStatus.CREATED)
-                .body(TripDetailResponse.from(saved, publisher, List.of(publisher), clock.instant()));
+                .body(TripDetailResponse.from(saved, publisher, List.of(publisher), clock.instant(), true));
+    }
+
+    @PostMapping("/{tripId}/cancel")
+    public TripDetailResponse cancel(
+            @RequestHeader(value = "X-User-Id", required = false) Long userId,
+            @PathVariable long tripId,
+            @RequestBody TripCancelRequest request) {
+        DemoUser publisher = demoUserService.require(userId);
+        TripPlan cancelled = tripPlanService.cancel(tripId, publisher.id(), request);
+        return TripDetailResponse.from(
+                cancelled, publisher, applicationService.participants(tripId), clock.instant(), true);
     }
 
     @PostMapping("/{tripId}/complete")
@@ -99,7 +113,7 @@ public class TripController {
         DemoUser publisher = demoUserService.require(userId);
         TripPlan completed = tripPlanService.complete(tripId, publisher.id());
         return TripDetailResponse.from(
-                completed, publisher, applicationService.participants(tripId), clock.instant());
+                completed, publisher, applicationService.participants(tripId), clock.instant(), true);
     }
 
     @PutMapping("/{tripId}/meeting")
@@ -110,6 +124,6 @@ public class TripController {
         DemoUser publisher = demoUserService.require(userId);
         TripPlan updated = tripPlanService.updateMeeting(tripId, publisher.id(), request);
         return TripDetailResponse.from(
-                updated, publisher, applicationService.participants(tripId), clock.instant());
+                updated, publisher, applicationService.participants(tripId), clock.instant(), true);
     }
 }
