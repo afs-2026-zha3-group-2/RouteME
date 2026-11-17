@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Alert, Button, Card, Input, Skeleton, Space, Typography, message } from 'antd';
+import { Alert, Button, Card, Input, Radio, Skeleton, Space, Typography, message } from 'antd';
 import { loadTrip, loadTripExperiences, shareExperience } from '../api';
 import { tripMessages } from '../i18n/tripMessages';
 import { SafetyNote } from '../safety/SafetyNote';
@@ -210,32 +210,25 @@ export function ShareExperiencePage({ currentUser, tripId }: Props) {
               {tripMessages.experienceIntensityLabel}
             </h3>
             <div className="field">
-              <div
-                className="intensity-picker"
-                role="radiogroup"
-                aria-label={tripMessages.experienceIntensityLabel}
-              >
-                {INTENSITY_OPTIONS.map((option) => {
-                  const selected = draft.intensity === option.value;
-                  return (
-                    <label
-                      key={option.value}
-                      className={`int-card ${option.tone}${selected ? ' on' : ''}`}
-                    >
-                      <input
-                        className="int-radio"
-                        type="radio"
-                        name="experience-intensity"
-                        value={option.value}
-                        checked={selected}
-                        onChange={() => update({ intensity: option.value })}
-                      />
-                      <b>{option.label}</b>
-                      <span>{option.description}</span>
-                    </label>
-                  );
-                })}
-              </div>
+              <Radio.Group
+              className="intensity-picker"
+              aria-label={tripMessages.experienceIntensityLabel}
+              value={draft.intensity}
+              onChange={(event) =>
+                update({ intensity: event.target.value as ExperienceDraft['intensity'] })
+              }
+            >
+              {INTENSITY_OPTIONS.map((option) => (
+                <Radio
+                  key={option.value}
+                  value={option.value}
+                  className={`int-card ${option.tone}${draft.intensity === option.value ? ' on' : ''}`}
+                >
+                  <b>{option.label}</b>
+                  <span>{option.description}</span>
+                </Radio>
+              ))}
+            </Radio.Group>
               <Typography.Text type="secondary">{tripMessages.experienceIntensityHint}</Typography.Text>
             </div>
           </Card>

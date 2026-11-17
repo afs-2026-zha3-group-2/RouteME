@@ -1945,8 +1945,10 @@ svg {
 
 .int-card {
   position: relative;
-  display: grid;
+  display: flex;
+  flex-direction: column;
   gap: 4px;
+  margin: 0;
   padding: 14px;
   border: 1.5px solid var(--line);
   border-radius: var(--r);
@@ -1955,6 +1957,21 @@ svg {
   font: inherit;
   cursor: pointer;
   transition: transform 0.18s var(--ease-out), border-color 0.18s, background 0.18s;
+}
+
+/* 卡片本身就是选项：把 antd 圆点铺满卡片并透明化，保留键盘与读屏可用的原生 radio */
+.int-card > .ant-radio {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  opacity: 0;
+}
+
+.int-card > span:not(.ant-radio) {
+  display: grid;
+  gap: 4px;
 }
 
 .int-card:hover {
@@ -1971,7 +1988,7 @@ svg {
   font-weight: 730;
 }
 
-.int-card span {
+.int-card > span:not(.ant-radio) > span {
   font-size: 11.5px;
   line-height: 1.45;
   color: var(--ink-3);
@@ -1995,18 +2012,8 @@ svg {
   color: var(--t-coral);
 }
 
-.int-card.on span {
+.int-card.on > span:not(.ant-radio) > span {
   color: var(--ink-2);
-}
-
-.int-radio {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  margin: 0;
-  opacity: 0;
-  cursor: pointer;
 }
 
 .share-list {
