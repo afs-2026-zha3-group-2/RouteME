@@ -9908,6 +9908,35 @@ a.admin-metric-card:focus-visible {
   flex-wrap: wrap;
   gap: 4px;
 }
+.recommendation-breakdown {
+  font-size: 12.5px;
+  color: var(--ink-2);
+}
+
+.recommendation-breakdown summary {
+  width: fit-content;
+  color: var(--brand-ink);
+  cursor: pointer;
+}
+
+.recommendation-breakdown-list {
+  display: grid;
+  gap: 2px;
+  margin: 6px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.recommendation-breakdown-list li {
+  display: block;
+  line-height: 1.6;
+}
+
+.recommendation-breakdown-points {
+  font-family: var(--font-num);
+  font-variant-numeric: tabular-nums;
+  color: var(--t-warn);
+}
 
 @media (max-width: 900px) {
   .recommendation-row {

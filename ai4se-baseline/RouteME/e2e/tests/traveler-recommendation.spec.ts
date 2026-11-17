@@ -109,10 +109,52 @@ test('展示推荐人、总分与分项明细', async ({ page }) => {
 
   await expect(page.getByTestId('recommendation-list')).toBeVisible();
   await expect(page.getByTestId('recommendation-row')).toHaveCount(1);
-  await expect(page.getByTestId('recommendation-row').first()).toContainText('90 分');
-  await expect(page.getByTestId('recommendation-row').first()).toContainText('目的地相同 +50');
-  await expect(page.getByTestId('recommendation-row').first()).toContainText('共同兴趣摄影 +10');
+  await expect(page.getByTestId('recommendation-row').first()).toContainText('匹配度 90%');
+  await expect(page.getByTestId('recommendation-row').first()).toContainText(
+    '目的地和日期相同，并且都喜欢摄影',
+  );
   await expect(page.getByTestId('recommendation-row').first()).toContainText('小林');
+
+  const breakdown = page.getByTestId('recommendation-breakdown');
+  await expect(breakdown).toBeVisible();
+  await breakdown.getByText('查看匹配明细').click();
+  await expect(breakdown).toContainText('目的地相同 +50');
+  await expect(breakdown).toContainText('共同兴趣摄影 +10');
+});
+
+test('日期相差一天时使用准确文案且没有共同兴趣就不显示兴趣原因', async ({ page }) => {
+  await loginAs(page, 1);
+  const created = await createTripViaApi(page, 1, '推荐日期差一天行程');
+  await stubRecommendations(page, (tripId) => ({
+    body: {
+      reference: {
+        trip_id: Number(tripId),
+        destination: '广州',
+        start_date: '2026-11-20',
+        interests: ['摄影'],
+      },
+      items: [
+        {
+          user: user(102, '阿岚'),
+          trip: trip(502, '差一天出发'),
+          score: 70,
+          reasons: ['目的地相同 +50', '旅行日期相差 1 天 +20'],
+          breakdown: [
+            { dimension: 'destination', label: '目的地相同', points: 50 },
+            { dimension: 'date', label: '旅行日期相差 1 天', points: 20 },
+          ],
+          shared_interests: [],
+        },
+      ],
+    },
+  }));
+
+  await page.goto(`/#/trips/${created.id}`);
+
+  const row = page.getByTestId('recommendation-row').first();
+  await expect(row).toContainText('匹配度 70%');
+  await expect(row).toContainText('目的地相同，旅行日期相差 1 天');
+  await expect(row).not.toContainText('共同兴趣');
 });
 
 test('没有候选时显示明确空状态', async ({ page }) => {
@@ -177,7 +219,7 @@ test('推荐失败可重试且不影响行程信息', async ({ page }) => {
   await page.getByTestId('recommendation-retry').click();
 
   await expect(page.getByTestId('recommendation-list')).toBeVisible();
-  await expect(page.getByTestId('recommendation-row').first()).toContainText('90 分');
+  await expect(page.getByTestId('recommendation-row').first()).toContainText('匹配度 90%');
 });
 
 test('分值完全来自后端而不是前端常量', async ({ page }) => {
@@ -187,8 +229,8 @@ test('分值完全来自后端而不是前端常量', async ({ page }) => {
 
   await page.goto(`/#/trips/${created.id}`);
 
-  await expect(page.getByTestId('recommendation-row').first()).toContainText('42 分');
-  await expect(page.getByTestId('recommendation-row').first()).not.toContainText('90 分');
+  await expect(page.getByTestId('recommendation-row').first()).toContainText('匹配度 42%');
+  await expect(page.getByTestId('recommendation-row').first()).not.toContainText('匹配度 90%');
 });
 
 test('切换行程后重新请求推荐', async ({ page }) => {

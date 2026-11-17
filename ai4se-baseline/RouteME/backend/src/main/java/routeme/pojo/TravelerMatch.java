@@ -60,7 +60,7 @@ public record TravelerMatch(
                         RecommendationDimensionEnum.DATE, "出发日期相同", SAME_DATE_POINTS));
             } else if (days == 1) {
                 breakdown.add(new RecommendationBreakdown(
-                        RecommendationDimensionEnum.DATE, "出发日期相差一天", ONE_DAY_APART_POINTS));
+                        RecommendationDimensionEnum.DATE, "旅行日期相差 1 天", ONE_DAY_APART_POINTS));
             }
         }
 
