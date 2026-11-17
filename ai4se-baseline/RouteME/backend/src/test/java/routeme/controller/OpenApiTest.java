@@ -92,7 +92,7 @@ class OpenApiTest {
 
         // Then
         assertAll(
-                () -> assertEquals("0.14.0", info.get("version"), "info.version"),
+                () -> assertEquals("0.15.0", info.get("version"), "info.version"),
                 () -> assertTrue(paths(document).containsKey("/users"), "/users declared"),
                 () -> assertTrue(paths(document).containsKey("/trips/{tripId}"), "detail path declared"),
                 () -> assertTrue(
@@ -126,7 +126,21 @@ class OpenApiTest {
                 () -> assertEquals(Boolean.TRUE, properties(tripPlan).get("status").get("readOnly"), "status readOnly"),
                 () -> assertTrue(properties(tripPlan).containsKey("destination_code"), "destination_code declared"),
                 () -> assertTrue(properties(tripPlan).containsKey("province_code"), "province_code declared"),
-                () -> assertTrue(properties(tripPlan).containsKey("province_name"), "province_name declared")
+                () -> assertTrue(properties(tripPlan).containsKey("province_name"), "province_name declared"),
+                () -> assertTrue(properties(tripPlan).containsKey("travel_mode"), "travel_mode declared"),
+                () -> assertEquals(
+                        List.of("driving", "bicycling", "transit"),
+                        enums(properties(tripPlan).get("travel_mode")),
+                        "travel_mode enum"),
+                () -> assertTrue(properties(createRequest).containsKey("travel_mode"), "create travel_mode declared"),
+                () -> assertEquals(
+                        1,
+                        asMap(properties(createRequest).get("meeting_areas")).get("maxItems"),
+                        "create accepts a single meeting area"),
+                () -> assertEquals(
+                        1,
+                        asMap(properties(schema(document, "TripMeetingRequest")).get("meeting_areas")).get("maxItems"),
+                        "meeting update accepts a single meeting area")
         );
     }
 

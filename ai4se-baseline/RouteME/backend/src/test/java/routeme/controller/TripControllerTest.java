@@ -191,10 +191,10 @@ class TripControllerTest {
     }
 
     @Test
-    void in_moreThanThreeMeetingAreas_out_invalidInput() throws Exception {
+    void in_moreThanOneMeetingArea_out_invalidInput() throws Exception {
         String body = VALID_TRIP.replace(
                 "\"meeting_areas\": [\"陈家祠地铁站 D 口\"],",
-                "\"meeting_areas\": [\"a\", \"b\", \"c\", \"d\"],");
+                "\"meeting_areas\": [\"a\", \"b\"],");
         postTrip(body, "1").andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value("INVALID_INPUT"));
     }
@@ -212,11 +212,40 @@ class TripControllerTest {
     void in_duplicateMeetingAreas_out_trimmedAndDeduped() throws Exception {
         String body = VALID_TRIP.replace(
                 "\"meeting_areas\": [\"陈家祠地铁站 D 口\"],",
-                "\"meeting_areas\": [\"陈家祠\", \"　陈家祠　\", \"永庆坊\"],");
+                "\"meeting_areas\": [\"陈家祠\", \"　陈家祠　\"],");
         postTrip(body, "1").andExpect(status().isCreated())
-                .andExpect(jsonPath("$.meeting_areas.length()").value(2))
-                .andExpect(jsonPath("$.meeting_areas[0]").value("陈家祠"))
-                .andExpect(jsonPath("$.meeting_areas[1]").value("永庆坊"));
+                .andExpect(jsonPath("$.meeting_areas.length()").value(1))
+                .andExpect(jsonPath("$.meeting_areas[0]").value("陈家祠"));
+    }
+
+    @Test
+    void in_travelModeProvided_out_savedInDetailAndSummary() throws Exception {
+        String body = VALID_TRIP.replace(
+                "\"meeting_areas\": [\"陈家祠地铁站 D 口\"],",
+                "\"meeting_areas\": [\"陈家祠地铁站 D 口\"],\n  \"travel_mode\": \"bicycling\",");
+        postTrip(body, "1")
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.travel_mode").value("bicycling"));
+
+        mockMvc.perform(get("/api/me/trips").header("X-User-Id", "1"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.published[0].travel_mode").value("bicycling"));
+    }
+
+    @Test
+    void in_noTravelMode_out_null() throws Exception {
+        postTrip(VALID_TRIP, "1")
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.travel_mode").value(nullValue()));
+    }
+
+    @Test
+    void in_unknownTravelMode_out_invalidInput() throws Exception {
+        String body = VALID_TRIP.replace(
+                "\"meeting_areas\": [\"陈家祠地铁站 D 口\"],",
+                "\"meeting_areas\": [\"陈家祠地铁站 D 口\"],\n  \"travel_mode\": \"teleport\",");
+        postTrip(body, "1").andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("INVALID_INPUT"));
     }
 
     @Test

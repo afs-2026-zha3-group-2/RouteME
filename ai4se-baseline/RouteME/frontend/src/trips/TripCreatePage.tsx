@@ -1,5 +1,5 @@
 import { useEffect, useState, type ReactNode } from 'react';
-import { Alert, Button, Card, DatePicker, Input, InputNumber, Space, Tag, Typography } from 'antd';
+import { Alert, Button, Card, DatePicker, Input, InputNumber, Segmented, Space, Tag, Typography } from 'antd';
 import zhCN from 'antd/es/locale/zh_CN';
 import dayjs from 'dayjs';
 import 'dayjs/locale/zh-cn';
@@ -8,7 +8,7 @@ import { AreaCascader } from '../area/AreaCascader';
 import { cityLabel } from '../area/areaOptions';
 import { tripMessages } from '../i18n/tripMessages';
 import { AmapPlacePicker } from '../map/amap/AmapPlacePicker';
-import type { DemoUser, TripSummary } from '../types';
+import type { DemoUser, TripSummary, TripTravelMode } from '../types';
 import { appDatePickerProps, appDateTimePickerProps } from '../utils/datePickerProps';
 import {
   dayjsToIso,
@@ -28,11 +28,12 @@ import {
 import { addMeetingArea } from './meetingForm';
 import {
   INTEREST_TAGS,
-  MAX_MEETING_AREAS,
   MAX_STOPS,
   MAX_TAGS,
   MAX_TAG_LENGTH,
   MAX_TITLE_LENGTH,
+  TRIP_TRAVEL_MODE_LABELS,
+  TRIP_TRAVEL_MODES,
 } from './tripOptions';
 import { TripCard } from './TripCard';
 
@@ -100,6 +101,7 @@ export function TripCreatePage({ currentUser, fromTripId }: Props) {
     start_date: values.startDate,
     end_date: values.endDate === '' ? values.startDate : values.endDate,
     stops: values.stops.length > 0 ? values.stops : ['至少写出两个途经点'],
+    travel_mode: values.travelMode,
     meeting_areas: values.meetingAreas,
     meeting_time: values.meetingTime.trim() === '' ? null : values.meetingTime,
     tags: values.tags,
@@ -280,6 +282,20 @@ export function TripCreatePage({ currentUser, fromTripId }: Props) {
             {!hasDestination && (
               <p className="form-hint">{tripMessages.waypointNeedsDestination}</p>
             )}
+            <div className="form-field" role="group" aria-label={tripMessages.fieldTravelMode}>
+              <span className="form-label">{tripMessages.fieldTravelMode}</span>
+              <Segmented
+                block
+                aria-label={tripMessages.fieldTravelMode}
+                value={values.travelMode}
+                onChange={(value) => update({ travelMode: value as TripTravelMode })}
+                options={TRIP_TRAVEL_MODES.map((mode) => ({
+                  label: TRIP_TRAVEL_MODE_LABELS[mode],
+                  value: mode,
+                }))}
+              />
+              <span className="form-hint">{tripMessages.hintTravelMode}</span>
+            </div>
           </div>
           </Card>
 
@@ -316,7 +332,7 @@ export function TripCreatePage({ currentUser, fromTripId }: Props) {
                   <Input
                     id="trip-meeting-area"
                     value={meetingDraft}
-                    placeholder="手输集合地点，或从下方地图多选（最多 3 个）"
+                    placeholder="手输集合地点，或从下方地图选择"
                     onChange={(event) => {
                       setMeetingDraft(event.target.value);
                       setMeetingDraftError(null);
@@ -352,13 +368,12 @@ export function TripCreatePage({ currentUser, fromTripId }: Props) {
                   <Typography.Text type="warning">{meetingDraftError}</Typography.Text>
                 )}
                 <AmapPlacePicker
-                  mode="multi"
-                  max={MAX_MEETING_AREAS}
+                  mode="single"
                   ariaLabel="集合地点"
                   value={values.meetingAreas}
                   onChange={(next) => update({ meetingAreas: next })}
                   placeholder="搜索集合地点"
-                  emptyHint="可添加多个集合区域，选中后按顺序编号。"
+                  emptyHint="只填一个集合地点；再选或再输入会替换原来的地点。"
                   showMap
                   city={cityForSearch}
                 />

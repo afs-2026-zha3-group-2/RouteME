@@ -75,6 +75,7 @@ public class TripPlanServiceImpl extends AbstractServiceImpl<TripPlanMapper, Tri
                 request.stops(),
                 request.meetingAreas(),
                 request.meetingTime(),
+                request.travelMode(),
                 request.note(),
                 request.budgetMinCents(),
                 request.budgetMaxCents(),

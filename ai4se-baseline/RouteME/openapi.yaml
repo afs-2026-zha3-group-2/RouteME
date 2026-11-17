@@ -1,7 +1,7 @@
 openapi: 3.0.3
 info:
   title: RouteME API
-  version: 0.14.0
+  version: 0.15.0
   description: |
     RouteME 后端对外契约。本文件是前后端唯一事实源，字段名、类型、状态码与错误码只在这里定稿。
         当前包含：脚手架问候语、演示账户与账号认证（注册/登录/会话/退出）、旅行计划（浏览/筛选/发布/详情/结束），同行匹配、申请、退出、聊天、我的旅行与举报，以及游后体验分享与参考发布所需数据。
@@ -2091,13 +2091,20 @@ components:
             type: string
             maxLength: 100
           nullable: true
-          description: 集合区域，选填，最多 3 个、每个 ≤100 字；未填写时为空数组
+          description: 集合地点，选填，每个 ≤100 字；新发布只保留 1 个，历史行程可能仍有 2–3 个；未填写时为空数组
         meeting_time:
           type: string
           nullable: true
           pattern: '^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$'
           description: 集合时间，本地墙上时间（无时区），选填；未填写时为 null
           example: '2026-11-20T08:30'
+        travel_mode:
+          type: string
+          nullable: true
+          enum: [driving, bicycling, transit]
+          description: |
+            出行方式：自驾 / 骑行 / 公共交通。0.15.0 起发布时可选；
+            本次上线前的行程为 null（前端按「未填写」展示，地图回退步行）。
         joined_count:
           type: integer
           minimum: 1
@@ -2135,7 +2142,7 @@ components:
                 type: string
                 maxLength: 100
               nullable: true
-              description: 集合区域，选填，最多 3 个
+              description: 集合地点，选填；新发布只保留 1 个，历史行程可能仍有 2–3 个
             meeting_time:
               type: string
               nullable: true
@@ -2210,18 +2217,23 @@ components:
             type: string
         meeting_areas:
           type: array
-          maxItems: 3
+          maxItems: 1
           items:
             type: string
             maxLength: 100
           nullable: true
-          description: 集合区域，选填，最多 3 个、每个 ≤100 字；null 或空数组视为未填写
+          description: 集合地点，选填，只接受 1 个、每个 ≤100 字；null 或空数组视为未填写
         meeting_time:
           type: string
           nullable: true
           pattern: '^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$'
           description: 集合时间，本地墙上时间（无时区），选填；日期部分不得晚于结束日期
           example: '2026-11-20T08:30'
+        travel_mode:
+          type: string
+          nullable: true
+          enum: [driving, bicycling, transit]
+          description: 出行方式：自驾 / 骑行 / 公共交通；选填，未填为 null
         budget_min_cents:
           type: integer
           minimum: 0
@@ -2245,12 +2257,12 @@ components:
       properties:
         meeting_areas:
           type: array
-          maxItems: 3
+          maxItems: 1
           items:
             type: string
             maxLength: 100
           nullable: true
-          description: 集合区域，最多 3 个；未传或传 null 视为清空
+          description: 集合地点，只接受 1 个；未传或传 null 视为清空
         meeting_time:
           type: string
           nullable: true

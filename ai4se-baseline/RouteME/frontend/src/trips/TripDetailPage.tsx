@@ -53,7 +53,7 @@ import {
   type MeetingFieldErrors,
   type MeetingFormValues,
 } from './meetingForm';
-import { MAX_MEETING_AREAS } from './tripOptions';
+import { TRIP_TRAVEL_MODE_LABELS } from './tripOptions';
 import { statusColor, statusLabel } from './tripStatus';
 import { TripCancelModal } from './TripCancelModal';
 import { cancelReasonLabel } from './tripCancel';
@@ -287,6 +287,9 @@ export function TripDetailPage({ currentUser, tripId }: Props) {
   const mapCity = findCity(trip.destination_code)?.cityDisplayName.replace(/市$/, '') ?? trip.destination;
   const cityForSearch = mapCity.replace(/市$/, '');
   const hasStops = trip.stops.length > 0;
+  // 高德路线封装在本基线只支持步行 / 驾车 / 骑行：公共交通与未填写按步行折线示意。
+  const mapTravelMode =
+    trip.travel_mode === 'driving' || trip.travel_mode === 'bicycling' ? trip.travel_mode : 'walking';
   const focusPlace = (name: string) => {
     setFocusStop(name);
     mapSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
@@ -424,6 +427,7 @@ export function TripDetailPage({ currentUser, tripId }: Props) {
                 <AmapTripMap
                   city={cityForSearch}
                   stops={trip.stops}
+                  mode={mapTravelMode}
                   focusStop={focusStop}
                   onFocusStop={setFocusStop}
                 />
@@ -466,6 +470,12 @@ export function TripDetailPage({ currentUser, tripId }: Props) {
                 <dt>{tripMessages.detailMeetingTime}</dt>
                 <dd>{meetingTimeText(trip.meeting_time)}</dd>
               </div>
+              {trip.travel_mode !== null && (
+                <div>
+                  <dt>{tripMessages.detailTravelMode}</dt>
+                  <dd>{TRIP_TRAVEL_MODE_LABELS[trip.travel_mode]}</dd>
+                </div>
+              )}
               {budget !== null && (
                 <div>
                   <dt>{tripMessages.detailBudget}</dt>
@@ -839,8 +849,7 @@ export function TripDetailPage({ currentUser, tripId }: Props) {
               <Typography.Text type="warning">{meetingDraftError}</Typography.Text>
             )}
             <AmapPlacePicker
-              mode="multi"
-              max={MAX_MEETING_AREAS}
+              mode="single"
               ariaLabel="集合地点"
               value={meetingForm.meetingAreas}
               onChange={(next) => setMeetingForm((current) => ({ ...current, meetingAreas: next }))}
