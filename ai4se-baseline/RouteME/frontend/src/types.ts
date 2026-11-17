@@ -563,3 +563,47 @@ export type WeatherForecast = {
   reminders: WeatherReminder[];
   source: 'open-meteo';
 };
+/** 通知类型 wire 值；未知值按防御性回退处理，不抛异常。 */
+export type NotificationType =
+  | 'application_received'
+  | 'application_accepted'
+  | 'application_rejected'
+  | 'message';
+
+/** 未读计数：总数与按类型拆分。 */
+export type NotificationCounts = {
+  total: number;
+  application: number;
+  message: number;
+};
+
+/** 一条通知；	ext 由后端生成，前端直接展示。 */
+export type AppNotification = {
+  id: number;
+  type: NotificationType | string;
+  actor: DemoUser;
+  trip_id: number;
+  trip_title: string;
+  application_id: number | null;
+  message_id: number | null;
+  text: string;
+  created_at: string;
+  read: boolean;
+};
+
+/** GET /api/notifications：最新 50 条与计数同一快照返回。 */
+export type NotificationList = {
+  items: AppNotification[];
+  counts: NotificationCounts;
+};
+
+/** SSE 推送载荷；message 只在消息类事件出现。 */
+export type NotificationEvent = {
+  notification: AppNotification;
+  message: ChatMessage | null;
+};
+
+/** 标读请求：全部，或按「行程 + 对方」定位单个会话。 */
+export type NotificationReadRequest =
+  | { scope: 'all' }
+  | { scope: 'conversation'; trip_id: number; other_user_id: number };

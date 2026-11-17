@@ -5,7 +5,7 @@ import { Avatar } from '../shell/Avatar';
 import type { ChatMessage, DemoUser, TripDetail } from '../types';
 import { canSendMessage, MAX_CHAT_LENGTH, shouldSendOnEnter } from './chatComposer';
 import { chatSafetyText } from './chatMeeting';
-import { formatChatTime } from './chatTime';
+import { formatChatTime } from '../utils/chatTime';
 
 type Props = {
   currentUser: DemoUser;

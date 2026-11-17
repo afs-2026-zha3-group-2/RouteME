@@ -9,6 +9,10 @@ import { publisherSummary } from '../profile/profileDisplay';
 import type { Route } from '../route';
 import type { ColorMode } from '../theme';
 import type { DemoUser, UserProfile } from '../types';
+import { NotificationBadge } from '../notifications/NotificationBadge';
+import { NotificationBell } from '../notifications/NotificationBell';
+import { useNotifications } from '../notifications/NotificationContext';
+import { notificationMessages } from '../i18n/notificationMessages';
 import { Avatar } from './Avatar';
 import { BrandMark } from './BrandMark';
 
@@ -155,6 +159,7 @@ export function AppShell({
   children,
 }: Props) {
   const active = activeKey(route);
+  const { counts } = useNotifications();
 
   const [accountOpen, setAccountOpen] = useState(false);
   const [accountMenuAnchor, setAccountMenuAnchor] = useState<{
@@ -319,6 +324,8 @@ export function AppShell({
 
         <span className="topbar-spacer" />
 
+        <NotificationBell />
+
         <button
           type="button"
           className="icon-btn theme-toggle"
@@ -361,9 +368,17 @@ export function AppShell({
                   className={active === item.key ? 'rail-link active' : 'rail-link'}
                   href={item.href}
                   aria-current={active === item.key ? 'page' : undefined}
+                  aria-label={
+                    item.key === 'chat' && counts.message > 0
+                      ? notificationMessages.chatUnreadLabel(counts.message)
+                      : undefined
+                  }
                 >
                   <NavIcon name={item.key} />
                   <span>{item.label}</span>
+                  {item.key === 'chat' ? (
+                    <NotificationBadge count={counts.message} testId="rail-chat-badge" />
+                  ) : null}
                 </a>
               ))}
             </div>
@@ -470,9 +485,17 @@ export function AppShell({
             className={active === item.key ? 'tab-link active' : 'tab-link'}
             href={item.href}
             aria-current={active === item.key ? 'page' : undefined}
+            aria-label={
+              item.key === 'chat' && counts.message > 0
+                ? notificationMessages.chatUnreadLabel(counts.message)
+                : undefined
+            }
           >
             <NavIcon name={item.key} />
             <span>{item.label}</span>
+            {item.key === 'chat' ? (
+              <NotificationBadge count={counts.message} testId="tab-chat-badge" />
+            ) : null}
           </a>
         ))}
         {currentUser.role === 'ADMIN' && (

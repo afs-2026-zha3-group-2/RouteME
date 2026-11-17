@@ -17,6 +17,9 @@ import type {
   HelpReports,
   MatchCandidate,
   MyTrips,
+  NotificationCounts,
+  NotificationList,
+  NotificationReadRequest,
   Page,
   Paging,
   ReportRequest,
@@ -341,6 +344,46 @@ export async function sendMessage(
     userId,
   );
   return (await response.json()) as ChatMessage;
+}
+
+/** 最新 50 条通知与三项未读计数（同一快照）。 */
+export async function loadNotifications(userId: number): Promise<NotificationList> {
+  const response = await request('/notifications', undefined, userId);
+  return (await response.json()) as NotificationList;
+}
+
+/** 单条通知标读；返回最新计数。 */
+export async function readNotification(
+  userId: number,
+  notificationId: number,
+): Promise<NotificationCounts> {
+  const response = await request(`/notifications/${notificationId}/read`, { method: 'POST' }, userId);
+  return (await response.json()) as NotificationCounts;
+}
+
+/** 全部标读或单会话标读；返回最新计数。 */
+export async function readNotifications(
+  userId: number,
+  body: NotificationReadRequest,
+): Promise<NotificationCounts> {
+  const response = await request(
+    '/notifications/read',
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    },
+    userId,
+  );
+  return (await response.json()) as NotificationCounts;
+}
+
+/**
+ * SSE 通道地址。`EventSource` 不能带请求头，因此按契约用 `user_id` 查询参数；
+ * 与既有 `X-User-Id` 同级的演示身份信任（design R-3 / D11）。
+ */
+export function notificationStreamUrl(userId: number): string {
+  return `/api/notifications/stream?user_id=${userId}`;
 }
 
 export async function submitReport(

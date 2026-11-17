@@ -947,6 +947,167 @@ svg {
   display: none;
 }
 
+/* ---------- 通知（顶栏铃铛 / 面板 / 数字徽标） ---------- */
+.count-badge {
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 999px;
+  background: var(--danger);
+  color: var(--on-deep);
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 18px;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+  box-shadow: 0 0 0 2px var(--surface);
+}
+
+.rail-link .count-badge {
+  margin-left: auto;
+}
+
+.notification-bell {
+  position: relative;
+}
+
+.notification-bell .count-badge {
+  position: absolute;
+  top: 1px;
+  right: 1px;
+  pointer-events: none;
+}
+
+.tab-link {
+  position: relative;
+}
+
+.tab-link .count-badge {
+  position: absolute;
+  top: -2px;
+  right: calc(50% - 22px);
+}
+
+.notification-panel {
+  /* 360px 面板 + 弹层容器的 24px 内边距，在窄屏会超出可视宽度。 */
+  width: min(360px, calc(100vw - 56px));
+  max-height: min(70vh, 520px);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* 窄屏：弹层右对齐到铃铛（右侧还留着主题按钮），360px 面板会被顶出屏幕左侧；
+   改为左右各留 8px 的整行弹层。antd 用 inline left/top 定位，只能 !important 覆盖。 */
+@media (max-width: 680px) {
+  .ant-popover:has(.notification-panel) {
+    right: auto !important;
+    left: 8px !important;
+    width: calc(100vw - 16px) !important;
+  }
+
+  .ant-popover:has(.notification-panel) .ant-popover-container {
+    width: 100%;
+  }
+
+  .notification-panel {
+    width: 100%;
+  }
+}
+
+.notification-panel-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.notification-panel-title {
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.notification-mark-all {
+  padding: 2px 6px;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 650;
+  color: var(--t-lagoon);
+  cursor: pointer;
+}
+
+.notification-mark-all:hover:not(:disabled) {
+  background: var(--surface-2);
+}
+
+.notification-mark-all:disabled {
+  color: var(--ink-3);
+  cursor: default;
+}
+
+.notification-panel-list {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  overflow-y: auto;
+}
+
+.notification-item {
+  display: grid;
+  gap: 3px;
+  width: 100%;
+  padding: 9px 10px;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  background: transparent;
+  font-family: inherit;
+  font-size: 12.5px;
+  line-height: 1.5;
+  text-align: left;
+  color: var(--ink-2);
+  cursor: pointer;
+}
+
+.notification-item:hover {
+  background: var(--surface-2);
+  border-color: var(--line);
+}
+
+.notification-item.is-unread {
+  background: color-mix(in srgb, var(--t-lagoon) 8%, transparent);
+  border-color: color-mix(in srgb, var(--t-lagoon) 24%, transparent);
+}
+
+.notification-item-text {
+  color: var(--ink);
+}
+
+.notification-item-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11.5px;
+  color: var(--ink-3);
+}
+
+.notification-unread-flag {
+  color: var(--danger);
+  font-weight: 700;
+}
+
+.notification-empty,
+.notification-error {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 14px 10px;
+  font-size: 12.5px;
+  color: var(--ink-3);
+}
 /* ---------- 身份进入页 ---------- */
 .gate {
   position: relative;
