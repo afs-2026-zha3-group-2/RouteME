@@ -46,7 +46,7 @@ export const tripMessages = {
   sectionRoute: '简单路线',
   sectionExtras: '同行与预算',
   sectionTags: '兴趣标签',
-  waypointNeedsDestination: '未选目的地时可在地图上逐级选择：中国 → 省 → 城市；选定后自动聚焦该城。',
+  waypointNeedsDestination: '先选择目的地城市，搜索与地图会优先定位到该城；也可以直接搜索全国景点。',
   waypointCityUncovered: '该城市暂无离线景点；仍可手输途经点，或在地图上重新选择目的地。',
   createSubmit: '发布',
   createCancel: '取消',
