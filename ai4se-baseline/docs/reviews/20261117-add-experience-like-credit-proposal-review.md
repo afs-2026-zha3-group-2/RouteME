@@ -4,9 +4,9 @@
 - **Scope:** focus=proposal（`@rule:artifact-review-gate` 的 P1 工件评审）；root=`ai4se-baseline`；timestamp=2026-11-17
 - **Artifact under review:** [`proposal.md`](../../openspec/changes/add-experience-like-credit/proposal.md)
 - **Supporting inputs:**
-  - [`requirements/REQ-022-experience-like-credit.md`](../../requirement-workspace/requirements/REQ-022-experience-like-credit.md)（24 场景 L / T / D / E 四组，blocking OQ 0，DoR BLOCKER 0）
-  - [`intents/REQ-022-experience-like-credit.md`](../../requirement-workspace/intents/REQ-022-experience-like-credit.md)（证据锚点 + 用户裁决 D1–D4）
-  - [`deep-dive.md`](../../requirement-workspace/deep-dive.md)「REQ-022 增补」（①–④ 四表 + 探针记录）
+  - [`requirements/REQ-023-experience-like-credit.md`](../../requirement-workspace/requirements/REQ-023-experience-like-credit.md)（24 场景 L / T / D / E 四组，blocking OQ 0，DoR BLOCKER 0）
+  - [`intents/REQ-023-experience-like-credit.md`](../../requirement-workspace/intents/REQ-023-experience-like-credit.md)（证据锚点 + 用户裁决 D1–D4）
+  - [`deep-dive.md`](../../requirement-workspace/deep-dive.md)「REQ-023 增补」（①–④ 四表 + 探针记录）
   - [`impact-brief.md`](../../requirement-workspace/impact-brief.md) §22
   - P1 Delta 同批产出：[`specs/trip-experiences/spec.md`](../../openspec/changes/add-experience-like-credit/specs/trip-experiences/spec.md)、[`specs/user-credit/spec.md`](../../openspec/changes/add-experience-like-credit/specs/user-credit/spec.md)
 - **Evidence:**
@@ -39,7 +39,7 @@
 | D Security | Pass | 自赞与未登录由服务端拒绝；无客户端写分端点；不加 PII；点赞身份走既有 `X-User-Id` 校验 |
 | E Process | Pass | proposal 与 Delta 同批；独立 worktree 基于 `origin/main@64b38da`；`validate --strict` valid；未触碰业务代码 |
 | F Documentation | Pass（含治理漂移 SUGGESTION） | 正文中文、标识符英文；无绝对路径；`@rule:` 引用均指向存在锚点（原型规则改用路径） |
-| G Traceability | Pass | 提案引用 REQ-022 / intent / deep-dive / impact；场景按 L / T / D / E 四组与 Delta 一一对应 |
+| G Traceability | Pass | 提案引用 REQ-023 / intent / deep-dive / impact；场景按 L / T / D / E 四组与 Delta 一一对应 |
 
 ## Residual risks
 

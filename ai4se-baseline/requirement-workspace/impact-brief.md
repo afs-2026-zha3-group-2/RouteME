@@ -1462,22 +1462,75 @@ REQ-010：聊天页按原型重构、聊天准入与退出语义调整、集合�
 - **不拆 change：** 取消状态机与取消善后必须同批交付，否则验收无法闭环。
 - **不拆故事：** S21 一条故事覆盖两个入口与一次状态迁移；拆开会造成同一状态被两条故事重复验收。
 - **后续候选（均需另开需求）：** 信用分与信用记录、免扣分申请与管理员审核、删除行程、恢复/重新开启、取消原因申诉。
+
+## 22. REQ-022 变更影响 — 目的地天气与出行提醒（迭代 2 / P1）
+
+### 22.1 as-is 盘点
+
+| 位置 | 现状 |
+|---|---|
+| 后端天气 | 无 Open-Meteo 调用、无天气配置、无天气端点（全仓 grep 仅命中「天气或不可抗力原因」文案） |
+| 前端发布页 | `TripCreatePage` 侧栏只有预览卡与安全提示 |
+| 前端详情页 | `TripDetailPage` 只有标题 / 状态 / 日期 / 路线 / 集合 / 同行 |
+| 行程数据 | 只有 `destination_code` / `destination`，无坐标；支持 375 城市 |
+| 地图底座 | 高德 JS API 选点（途经点 / 集合点）+ 后端 `/_AMapService` 代理（白名单含 `v3/geocode/geo`） |
+| 契约 / 迁移 | `openapi.yaml` 0.13.0；迁移最新 V19（V20 / V21 已被在途 change 预约） |
+
+### 22.2 delta
+
+| 层 | 变更 |
+|---|---|
+| 能力 | 新增 `trip-weather`（6 Requirement / 28 Scenario） |
+| 后端 | `GET /api/weather/forecast`（Open-Meteo 代理）+ 坐标解析缓存 + 提醒纯函数 + 上游错误归一 |
+| 前端 | 共享 `WeatherCard`（五态）+ 发布页侧栏 + 详情页信息区 |
+| 契约 | 0.16.0：新增天气路径与 3 个 schema |
+| 数据 | 无迁移 |
+| 文案 | 天气字段标签、五态提示、四类提醒与平稳提示 |
+
+### 22.3 blast radius
+
+| 受影响 | 影响方式 |
+|---|---|
+| `TripCreatePage` | 侧栏新增卡片；表单校验与提交逻辑不变 |
+| `TripDetailPage` | 信息区新增区块；既有地图 / 路线 / 同行区块不变 |
+| `api.ts` / `types.ts` | 新增函数与类型，不改既有函数签名 |
+| `openapi.yaml` / `OpenApiTest` | 新增路径与 schema；版本递增 |
+| `application.yaml` | 新增 `routeme.weather.base-url`（默认正式环境，可被环境变量覆盖） |
+| E2E | 新增 `weather.spec.ts`；用 `page.route` 拦截，不影响其它用例 |
+
+### 22.4 风险
+
+| 类型 | 说明 | 缓解 |
+|---|---|---|
+| Risk | 与在途 `add-ai-itinerary` 的天气代理重复 | D1 定本 change 为权威；合并时 AI 侧改为复用；PR 描述显式记录 |
+| Risk | 城市中心坐标对山区 / 海岛精度不足 | 只承诺城市级判断；Delta 不承诺点位级 |
+| Risk | 上游网络不稳定 / 额度限制 | 失败不阻断业务；前端可重试；CI 不依赖真实上游 |
+| Risk | 日期越界被误当作错误 | 200 + `available:false` + `reason`，前端单独提示 |
+| Risk | 契约号段冲突（0.14.0 / 0.15.0 已被预约） | 取 0.16.0；P4 定稿前复核 |
+| Blocker | 无 | blocking OQ=0、DoR BLOCKER=0 |
+
+### 22.5 Suggested split boundaries
+
+- **不拆 change：** 后端天气 + 提醒规则 + 两页展示必须同批交付，否则「有数据没展示」或「有展示没数据」都不可验收。
+- **不拆故事：** S22 覆盖「选目的地与日期 → 看天气 → 看提醒」一条闭环。
+- **后续候选（另开需求）：** 多日逐天 / 逐小时预报、天气参与 AI 推荐、天气预警推送、精确到点位的天气。
+- **质量自检（split-heuristics）：** 子目标一句话可说明 ✓；端到端可观察（选目的地 → 看到真实天气与具体提醒）✓；可独立运行 ✓；capability 名真实 ✓；无依赖环 ✓。
 - **质量自检（split-heuristics）：** 子目标一句话可说明 ✓；端到端可观察（发布者取消 → 首页下架 / 申请关闭 / 聊天只读 / 我的旅行保留）✓；可独立运行 ✓；capability 名真实 ✓；无依赖环 ✓。
 
-## 22. REQ-022 变更影响 — 旅行体验获赞增加信用分（issue #30）
+## 23. REQ-023 变更影响 — 旅行体验获赞增加信用分（issue #30）
 
 - **日期：** 2026-11-17 ｜ **触发：** `/sdd:p1`（GitHub issue #30 + 用户裁决 D1–D4）
 - **粒度：** 应用架构（点赞数据所有权 / 体验读取路径 / 信用结算集成点 / 两个展示面），非代码设计
-- **基线：** `origin/main@64b38da`（独立 worktree `.worktrees/add-experience-like-credit`，分支 `feature/add-experience-like-credit`）
+- **基线：** `origin/main@64b38da`（独立 worktree `.worktrees/add-experience-like-credit`，分支 `feature/add-experience-like-credit`）；2026-11-17 同步 `origin/main@b50e416`，编号顺延为 REQ-023 / 契约 0.18.0 / 迁移 V24
 
-### 22.1 Requirement set
+### 23.1 Requirement set
 
-- `requirement-workspace/requirements/REQ-022-experience-like-credit.md`（Ready 条目，24 场景 L-1 ~ L-8 / T-1 ~ T-10 / D-1 ~ D-3 / E-1 ~ E-3，blocking OQ 0，DoR BLOCKER 0）
-- `requirement-workspace/intents/REQ-022-experience-like-credit.md`（意图捕获 + 证据锚点 + D1–D4）
+- `requirement-workspace/requirements/REQ-023-experience-like-credit.md`（Ready 条目，24 场景 L-1 ~ L-8 / T-1 ~ T-10 / D-1 ~ D-3 / E-1 ~ E-3，blocking OQ 0，DoR BLOCKER 0）
+- `requirement-workspace/intents/REQ-023-experience-like-credit.md`（意图捕获 + 证据锚点 + D1–D4）
 - 能力：`trip-experiences`（点赞，ADDED）+ `user-credit`（获赞结算，ADDED）；复用 REQ-019 记账服务与五个信用展示面
 - 用户裁决：D1 包含点赞全链路 / D2 不做信用明细可见面 / D3 月度按 Asia/Shanghai / D4 月度额度按实发消耗
 
-### 22.2 As-is asset inventory（evidence paths）
+### 23.2 As-is asset inventory（evidence paths）
 
 | 资产 | 路径 | 现状 |
 |---|---|---|
@@ -1497,7 +1550,7 @@ REQ-010：聊天页按原型重构、聊天准入与退出语义调整、集合�
 | 未归档相关 change | `add-credit-account`（`user-credit` ADDED）；`add-experience-photos` / `refine-experience-share` / `refine-inspiration-home`（`trip-experiences`） | 本 change 只追加 ADDED 块；归档需排在其后 |
 | 在途契约 / 迁移占用 | `add-ai-itinerary`（0.15.0 + V21 计划） | 本 change 版本号与迁移号 P3 排他确认 |
 
-### 22.3 As-is → proposed delta（逐资产）
+### 23.3 As-is → proposed delta（逐资产）
 
 | 资产 | As-is | Proposed delta |
 |---|---|---|
@@ -1516,7 +1569,7 @@ REQ-010：聊天页按原型重构、聊天准入与退出语义调整、集合�
 | Living Spec | `trip-experiences` 无点赞；`user-credit` Living Spec 尚未生成 | `trip-experiences` 追加「体验点赞」Requirement；`user-credit` 追加「体验获赞阶梯加分」Requirement（均为 ADDED；归档顺序受在途 change 约束） |
 | 原型 | 无点赞交互 | 体验卡与详情体验区补点赞按钮 / 赞数 / 点赞态，样式复用既有令牌 |
 
-### 22.4 Blast radius（应用架构）
+### 23.4 Blast radius（应用架构）
 
 - **后端（2 个能力 + 1 处集成）：** 新增点赞实体 / mapper / service / 端点；`ExperienceServiceImpl` 读取路径追加批量聚合；新增 `user-credit` 结算服务（调用既有 `book`）；点赞事务内触发结算。
 - **数据（1 表 + 1 迁移）：** `experience_likes`；不加赞数冗余列；不改账本结构。
@@ -1527,7 +1580,7 @@ REQ-010：聊天页按原型重构、聊天准入与退出语义调整、集合�
 - **不影响：** 行程发布 / 匹配 / 申请 / 聊天 / 举报 / 取消；体验发布 / 图片 / 分页筛选；注册与资料。
 - **运行时风险面：** 点赞事务多一次信用写入（同库同事务）；列表多两次批量查询；无新外部依赖。
 
-### 22.5 Artifact impact（specs / tests / docs）
+### 23.5 Artifact impact（specs / tests / docs）
 
 | 工件 | 影响 |
 |---|---|
@@ -1541,13 +1594,13 @@ REQ-010：聊天页按原型重构、聊天准入与退出语义调整、集合�
 | 阶段记录 | `docs/sdd/add-experience-like-credit/p1..p4`；`docs/sdd/README.md` 索引 |
 | 评审 | `docs/reviews/20261117-add-experience-like-credit-proposal-review.md`、`-spec-review.md` |
 
-### 22.6 Dual-track notes（OpenSpec vs agile）
+### 23.6 Dual-track notes（OpenSpec vs agile）
 
 - **OpenSpec 轨：** 单 change `add-experience-like-credit`，两个能力 ADDED（`trip-experiences` 点赞块 + `user-credit` 获赞结算块）；不改写任何既有 Requirement 块，避免与 4 个在途 change 争同一块。
 - **Agile 轨：** issue #30 即业务口径（信用系统迭代 2 / Story 3 / 5 点）；不拆故事——点赞与结算必须同批交付才能端到端验收（用户裁决 D1）。
 - **并列轨道：** 举报扣分（#29）、退出同行扣分（#31）、安全学习恢复（#32）分属其他故事；本 change 不预留其空壳。
 
-### 22.7 Risks & blockers
+### 23.7 Risks & blockers
 
 | 级别 | 项 | 说明 / 缓解 |
 |---|---|---|
@@ -1563,9 +1616,9 @@ REQ-010：聊天页按原型重构、聊天准入与退出语义调整、集合�
 | Risk | 分数变化不可见误解 | 用户裁决 D2 明确不做明细；分数变化在既有五面可见；proposal / stories / registry 显式记录 |
 | Blocker | 无 | blocking OQ = 0；DoR BLOCKER = 0；A0 ⑨–⑫ 全过；无外部依赖 |
 
-### 22.8 Suggested split boundaries（供 proposal-split / story-split）
+### 23.8 Suggested split boundaries（供 proposal-split / story-split ）
 
-- **一个 change：** `add-experience-like-credit` ← REQ-022（信用系统迭代 2 / Story 3）。
+- **一个 change：** `add-experience-like-credit` ← REQ-023（信用系统迭代 2 / Story 3）。
 - **不拆点赞与结算：** 只有点赞没有结算，issue 的 T 组场景无法验收；只有结算没有点赞，没有触发源（用户裁决 D1）。
 - **不并入扣分故事：** #29 / #31 / #32 属信用系统迭代 2 的其他 Story，各有独立事件与规则，另开 change。
 - **不并入信用明细 / 管理后台：** 用户裁决 D2 与 REQ-019 D2 均明确不做；另开需求。

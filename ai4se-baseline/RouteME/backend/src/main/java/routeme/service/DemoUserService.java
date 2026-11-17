@@ -44,6 +44,14 @@ public interface DemoUserService extends IService<UserEntity> {
     Optional<UserAccount> findByUsername(String username);
 
     /**
+     * Checks whether an email is already registered.
+     *
+     * @param email lower-cased email
+     * @return true when another account already owns the email
+     */
+    boolean emailExists(String email);
+
+    /**
      * 创建带凭据的账号：只写用户名、散列、昵称与首字；资料列写入空值，等待完善页补全。
      *
      * @param username      小写规范化后的用户名
@@ -56,5 +64,6 @@ public interface DemoUserService extends IService<UserEntity> {
             String username,
             String passwordHash,
             String nickname,
-            String avatarInitial);
+            String avatarInitial,
+            String email);
 }

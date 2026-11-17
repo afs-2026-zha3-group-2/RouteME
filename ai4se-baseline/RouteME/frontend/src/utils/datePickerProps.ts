@@ -8,6 +8,15 @@ export const appDatePickerProps = {
 };
 
 /**
+ * 靠近页面底部、下面没有滚动余量的字段：弹层向上展开（减少动态效果时生效），
+ * 避免日历与「确定」按钮被固定底栏或视口裁掉。
+ */
+export const appDatePickerUpProps = {
+  ...appDatePickerProps,
+  classNames: { popup: { root: 'app-date-popup app-date-popup-up' } },
+};
+
+/**
  * 日期 + 时间控件（如「集合时间」）的共用参数：与日期控件同一套弹层修补，
  * 显示格式固定为 `YYYY-MM-DD HH:mm`，契约值仍是 `yyyy-MM-ddTHH:mm`。
  */

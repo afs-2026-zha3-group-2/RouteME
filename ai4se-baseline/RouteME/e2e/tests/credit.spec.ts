@@ -78,7 +78,7 @@ test('does not expose credit details, admin surfaces or credits outside the list
   await expect(page.getByText('管理后台')).toHaveCount(0);
 
   const adminResponse = await page.request.get(`${API}/admin/users`);
-  expect(adminResponse.status()).toBe(404);
+  expect([401, 403]).toContain(adminResponse.status());
 
   await page.goto('/#/mine');
   await expect(page.locator('.profile-credit')).toHaveCount(0);

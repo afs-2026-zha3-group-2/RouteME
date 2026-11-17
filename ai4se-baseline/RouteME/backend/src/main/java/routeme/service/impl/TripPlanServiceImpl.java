@@ -20,6 +20,7 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import routeme.constant.TripTimeZoneConstant;
 import routeme.enums.TripCancelReasonEnum;
 import routeme.enums.TripStatusEnum;
+import routeme.enums.WriteScopeEnum;
 import routeme.exception.ForbiddenActionException;
 import routeme.exception.InvalidInputException;
 import routeme.exception.TripNotFoundException;
@@ -38,6 +39,7 @@ import routeme.request.TripMeetingRequest;
 import routeme.request.TripQuery;
 import routeme.service.DemoUserService;
 import routeme.service.TripCancelledEvent;
+import routeme.service.AccountStatusService;
 import routeme.service.TripCompletedEvent;
 import routeme.service.TripPlanService;
 
@@ -54,17 +56,23 @@ public class TripPlanServiceImpl extends AbstractServiceImpl<TripPlanMapper, Tri
     private final DemoUserService demoUserService;
     private final Clock clock;
     private final ApplicationEventPublisher events;
+    private final AccountStatusService accountStatusService;
 
     public TripPlanServiceImpl(
-            DemoUserService demoUserService, Clock clock, ApplicationEventPublisher events) {
+            DemoUserService demoUserService,
+            Clock clock,
+            ApplicationEventPublisher events,
+            AccountStatusService accountStatusService) {
         this.demoUserService = demoUserService;
         this.clock = clock;
         this.events = events;
+        this.accountStatusService = accountStatusService;
     }
 
     @Override
     @Transactional
     public TripPlan create(TripCreateRequest request, long publisherId) {
+        accountStatusService.assertCanWrite(publisherId, WriteScopeEnum.BUSINESS);
         Instant now = clock.instant();
         TripPlanDraft draft = new TripPlanDraft(
                 publisherId,
@@ -75,6 +83,7 @@ public class TripPlanServiceImpl extends AbstractServiceImpl<TripPlanMapper, Tri
                 request.stops(),
                 request.meetingAreas(),
                 request.meetingTime(),
+                request.travelMode(),
                 request.note(),
                 request.budgetMinCents(),
                 request.budgetMaxCents(),

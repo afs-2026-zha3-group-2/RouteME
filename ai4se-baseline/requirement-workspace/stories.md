@@ -267,6 +267,44 @@
 - 原型中的「编辑 / 删除 / 参考发布」不在本迭代落地：前两者无路由与接口，后者属 S17。
 - 未接入外部 ALM；本表为仓库内权威故事清单，ALM Sync 状态记为 Pending。
 
+---
+
+# Story list — REQ-018（S19–S24 管理后台）
+
+- **来源：** 用户 2026-11-17 提供的 6 条管理后台 User Story（含优先级、迭代、故事点、落点页面、AC 与 Given/When/Then）
+- **口径：** 一条故事 = 一个页面 + 一份接口契约 + 一次核心操作；6 条故事共享账号状态、举报记录与客服会话数据，合并为一个 change
+- **更新时间：** 2026-11-17
+
+| Story | Title | 角色 | Priority | Iteration | Points | Page | Parent REQ | Change | Status |
+|---|---|---|---|---|---|---|---|---|---|
+| S19 | 查看并查询平台所有注册用户 | 平台管理员 | P0 | 1 | 3 | 用户管理页 | REQ-018 | `add-admin-console` | P3 Pass（2026-11-17） |
+| S20 | 暂停、封禁或恢复用户账号 | 平台管理员 | P0 | 1 | 3 | 用户详情页 | REQ-018 | `add-admin-console` | P3 Pass（2026-11-17） |
+| S21 | 查看并筛选平台举报 | 平台管理员 | P0 | 2 | 3 | 举报管理页 | REQ-018 | `add-admin-console` | P3 Pass（2026-11-17） |
+| S22 | 人工审核并处理举报 | 平台管理员 | P0 | 2 | 5 | 举报详情页 | REQ-018 | `add-admin-console` | P3 Pass（2026-11-17） |
+| S23 | 联系人工客服 | 平台用户 | P0 | 3 | 3 | 帮助与反馈 / 客服会话页 | REQ-018 | `add-admin-console` | P3 Pass（2026-11-17） |
+| S24 | 接入并回复用户会话 | 平台客服 | P0 | 3 | 5 | 客户服务页 | REQ-018 | `add-admin-console` | P3 Pass（2026-11-17） |
+
+## Traceability（REQ-018）
+
+| Story | Requirement scenarios | Change spec | Story file |
+|---|---|---|---|
+| S19 | REQ-018 §4 S19-1 ~ S19-12 | `openspec/changes/add-admin-console/specs/admin-console/spec.md` | `requirement-workspace/stories/add-admin-console.story.md` |
+| S20 | REQ-018 §4 S20-1 ~ S20-10 | 同上 | 同上 |
+| S21 | REQ-018 §4 S21-1 ~ S21-5 | 同上 | 同上 |
+| S22 | REQ-018 §4 S22-1 ~ S22-6 | 同上 | 同上 |
+| S23 | REQ-018 §4 S23-1 ~ S23-7 | `openspec/changes/add-admin-console/specs/customer-service/spec.md` | 同上 |
+| S24 | REQ-018 §4 S24-1 ~ S24-8 | 同上 | 同上 |
+| 全部 | 注册邮箱 / 角色服务端固定 | `openspec/changes/add-admin-console/specs/user-auth/spec.md` | 同上 |
+
+## Notes（REQ-018）
+
+- 6 条故事属于同一后台闭环，合并为一个 change；P3 `tasks.md` 按迭代 1 / 2 / 3 分组，允许分三次交付。
+- S1 给出的「7 类具体封禁理由 + 其他原因」在记录中展开为 8 项；举报原因仍为现有四类，二者不是同一枚举。
+- 「暂停发布行程」按 S20 口径归入 `SUSPENDED`，不单设处罚类型。
+- MVP 不提供永久删除账号或内容；处罚只改状态，既有行程、体验、聊天、举报保留。
+
+---
+
 # Story list — REQ-019（信用分账户与等级展示）
 
 - **来源：** 用户当次会话提供的 P0 故事「信用分账户与等级展示」（信用系统迭代 1 / Story 1 / 2 点 / 落点页面：用户个人主页 + 管理后台用户详情页）
@@ -296,27 +334,26 @@
 
 ---
 
-# Story list — REQ-022（issue #30 旅行体验获赞增加信用分）
+# Story list — REQ-023（原 REQ-022；issue #30 旅行体验获赞增加信用分）
 
 - **来源：** GitHub issue #30 `[P0] 旅行体验获赞增加信用分`（正文：优先级 P1 / 信用系统迭代 2 / Story 3 / 5 点 / 落点页面：旅行体验 / 信用记录）
 - **Change：** `add-experience-like-credit`（`trip-experiences` ADDED：体验点赞；`user-credit` ADDED：体验获赞阶梯加分）
 - **口径：** 一条故事 = 两个点赞展示面（首页体验卡 / 详情游后体验区）+ 两份能力增量（点赞数据与接口 + 获赞信用结算）+ 一次可观察的分数变化
 - **编号说明：** 本故事来自信用系统迭代 2 的 Story 3（issue #30），不属于原型 S01–S17；为避免与 issue #22「S22 AI 推荐路线」等既有编号冲突，本表不新造 S 编号，使用「信用迭代2-S3」。
 - **优先级说明：** issue 标题为 `[P0]`，正文写「优先级 P1」；本表并列记录两者，不单方面改写 issue。
-- **需求编号说明：** P1 起草时 `origin/main@64b38da` 最新为 REQ-021，本需求登记为 **REQ-022**。
-- **更新时间：** 2026-11-17
+- **需求编号说明：** P1 起草时登记为 REQ-022；合并 main 时该号已被 `add-trip-weather` 占用，按「后到者顺延」改为 **REQ-023**（2026-11-17）。
 
 | Story | Title | 角色 | Priority | Iteration | Points | Page | Parent REQ | Change | Status |
 |---|---|---|---|---|---|---|---|---|---|
-| 信用迭代2-S3 | 旅行体验获赞增加信用分 | 体验作者（受益）/ 已登录用户（点赞） | P0（标题）/ P1（正文） | 信用系统迭代 2 | 5 | 旅行体验（点赞）/ 信用记录（按 D2 不做可见明细） | REQ-022 | `add-experience-like-credit` | P4 Pass（2026-11-17；后端 342 / 前端 306 / 受影响 E2E 12 全绿，契约 0.16.0 + V22；下一步 local-verify-report / G2） |
+| 信用迭代2-S3 | 旅行体验获赞增加信用分 | 体验作者（受益）/ 已登录用户（点赞） | P0（标题）/ P1（正文） | 信用系统迭代 2 | 5 | 旅行体验（点赞）/ 信用记录（按 D2 不做可见明细） | REQ-023 | `add-experience-like-credit` | P4 Pass（2026-11-17；后端 342 / 前端 306 / 受影响 E2E 12 全绿；合并 main 后顺延契约 0.18.0 + V24；本地验证 Pass，G2 待 Neal） |
 
-## Traceability（REQ-022）
+## Traceability（REQ-023）
 
 | Story | Requirement scenarios | Change spec | Story file |
 |---|---|---|---|
-| 信用迭代2-S3 | REQ-022 §4 L-1 ~ L-8 / T-1 ~ T-10 / D-1 ~ D-3 / E-1 ~ E-3 | `openspec/changes/add-experience-like-credit/specs/trip-experiences/spec.md`、`specs/user-credit/spec.md`（均为 ADDED） | 无独立故事文件：以 proposal + Delta 承接（与 REQ-012 / REQ-014 同口径） |
+| 信用迭代2-S3 | REQ-023 §4 L-1 ~ L-8 / T-1 ~ T-10 / D-1 ~ D-3 / E-1 ~ E-3 | `openspec/changes/add-experience-like-credit/specs/trip-experiences/spec.md`、`specs/user-credit/spec.md`（均为 ADDED） | 无独立故事文件：以 proposal + Delta 承接（与 REQ-012 / REQ-014 同口径） |
 
-## Notes（REQ-022）
+## Notes（REQ-023）
 
 - **不拆子故事：** 点赞与结算必须同批交付；只有点赞无法验收 T 组场景，只有结算没有触发源（用户裁决 D1）。
 - **信用记录落点：** issue 写「旅行体验 / 信用记录」；按用户裁决 D2，信用加分明细不做可见面，分数变化在既有五个信用展示面体现。
@@ -324,3 +361,31 @@
 - **月度口径：** Asia/Shanghai 自然月（D3），按实发消耗（D4），截断不结转。
 - **归档顺序：** `user-credit` 与 `trip-experiences` 的 Living Spec 尚未包含 `add-credit-account` / `add-experience-photos` 等在途 delta；本故事归档需排在其后。
 - 未接入外部 ALM；本表为仓库内权威故事清单，ALM Sync 状态记为 Pending。
+
+---
+
+# Story list — REQ-022 — 目的地天气与出行提醒（迭代 2 / P1）
+
+- **故事：** S22 目的地天气与出行提醒（发起人 2026-11-17 用户故事；优先级 P1；迭代 2；3 点；落点页面：路线创建页 / 行程详情页）
+- **需求编号说明：** `main` 已占用 REQ-001 ~ REQ-021（REQ-020 由并行 `refine-detail-companions` 占用），本需求按「后到者顺延」登记为 **REQ-022**。
+- **垂直切片：** 只负责「目的地 + 日期 → 获取天气 → 展示天气 → 给出基础出行提醒」；「天气 + 预算 + 兴趣 → AI 自动生成 / 调整旅行方案」属 `add-ai-itinerary`，不在本故事。
+- **技术边界：** Open-Meteo 提供真实天气；RouteMe 只做归一与固定规则提醒；高德负责地图真相；AI 不参与本故事。
+- **更新时间：** 2026-11-17
+
+| Story | Title | 角色 | Priority | Iteration | Points | Page | Parent REQ | Change | Status |
+|---|---|---|---|---|---|---|---|---|---|
+| S22 | 目的地天气与出行提醒 | 规划旅行的用户 | P1 | 迭代 2 | 3 | 路线创建页 / 行程详情页 | REQ-022 | `add-trip-weather` | P1 drafted（2026-11-17） |
+
+## Traceability（REQ-022）
+
+| Story | Requirement scenarios | Change spec | Story file |
+|---|---|---|---|
+| S22 | REQ-022 §4 S22-1 ~ S22-16 | `openspec/changes/add-trip-weather/specs/trip-weather/spec.md`（ADDED：6 Requirement / 28 Scenario） | 无独立故事文件：以 proposal + Delta 承接（与 REQ-012 / REQ-014 / REQ-019 同口径） |
+
+## Notes（REQ-022）
+
+- **不拆故事：** 「选目的地与日期 → 看天气 → 看提醒」是同一垂直切片；拆开只会在发布页得到「有天气没提醒」或反之的不完整验收。
+- **两处落点共享一个组件：** 发布页与详情页使用同一张天气卡与同一后端口径，避免两页给出不同结论。
+- **不做 AI 联动：** 天气参与推荐属 `add-ai-itinerary`；本故事只沉淀天气能力与固定提醒规则，后续 AI 推荐直接复用同一端点与提醒函数。
+- **多日行程：** 只展示旅行首日并标注日期；逐天预报另开需求。
+- **依赖：** 无外部依赖；`add-ai-itinerary` 的天气代理（未提交）在本 change 落地后应改为复用，P4 合并时核对。

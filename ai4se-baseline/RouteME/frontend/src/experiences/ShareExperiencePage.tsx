@@ -3,6 +3,7 @@ import { Alert, Button, Card, Input, Radio, Skeleton, Space, Typography, message
 import { loadTrip, loadTripExperiences, shareExperience, uploadExperiencePhoto } from '../api';
 import { tripMessages } from '../i18n/tripMessages';
 import { SafetyNote } from '../safety/SafetyNote';
+import { cityPhoto } from '../trips/cityPhotos';
 import { coverTone } from '../trips/coverTone';
 import { StatusBadge } from '../trips/StatusBadge';
 import { formatMonthDay, weekdayLabel } from '../trips/tripDateFormat';
@@ -227,6 +228,7 @@ export function ShareExperiencePage({ currentUser, tripId }: Props) {
   const dates = sameDay
     ? `${formatMonthDay(trip.start_date)} · ${weekdayLabel(trip.start_date)}`
     : `${formatMonthDay(trip.start_date)} → ${formatMonthDay(trip.end_date)} · ${weekdayLabel(trip.start_date)}`;
+  const coverPhoto = cityPhoto(trip.destination);
 
   return (
     <main className="form-page share-page">
@@ -248,7 +250,11 @@ export function ShareExperiencePage({ currentUser, tripId }: Props) {
         <span
           className={`share-hero-cover cover-${coverTone(trip.destination_code)}`}
           aria-hidden="true"
-        />
+        >
+          {coverPhoto !== null && (
+            <img className="share-hero-photo" src={coverPhoto} alt="" loading="lazy" />
+          )}
+        </span>
         <span className="share-hero-body">
           <b>{trip.title}</b>
           <span>

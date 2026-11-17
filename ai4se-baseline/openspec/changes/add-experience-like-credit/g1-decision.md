@@ -1,7 +1,7 @@
 # G1 decision — add-experience-like-credit
 
 - **Gate:** G1（Align）
-- **Change:** `add-experience-like-credit`（`trip-experiences` ADDED + `user-credit` ADDED，REQ-022 / issue #30）
+- **Change:** `add-experience-like-credit`（`trip-experiences` ADDED + `user-credit` ADDED，REQ-023 / issue #30）
 - **Timestamp:** 2026-11-17T15:25+0800
 - **Recorded by:** Qoder（AI agent）；G1 结论与签署由发起人 2026-11-17 具名确认（IO=Wanye / SA=Jacky），模型不代替人工批准
 - **计数更正（2026-11-17，P3 前）：** `user-credit` Delta 实为 15 Scenario（7 + 5 + 3），合计 27；原记 12 / 24 系计数笔误，不影响 G1 结论与签署
@@ -19,10 +19,10 @@
 | P2 quality report | `docs/ai4se-plugins/20261117-151904-quality-checklist-report.md` | P2 Overall Pass（P2-1 / P2-2 / P2-4 Pass；P2-3 按 G1 未主张 Skipped） |
 | Proposal review | `docs/reviews/20261117-add-experience-like-credit-proposal-review.md` | Partial（0 BLOCKER / 1 WARNING 双 capability 偏离 / 4 SUGGESTION），WAYNE + Lewis Liu 签 |
 | Spec review | `docs/reviews/20261117-add-experience-like-credit-spec-review.md` | Pass（0 BLOCKER / 0 WARNING / 4 SUGGESTION），WAYNE + Lewis Liu 签 |
-| Requirements | `requirement-workspace/requirements/REQ-022-experience-like-credit.md` | 24 场景；blocking OQ = 0；DoR BLOCKER = 0 |
-| Intent | `requirement-workspace/intents/REQ-022-experience-like-credit.md` | Discovery Decision `Go`；D1–D4 |
+| Requirements | `requirement-workspace/requirements/REQ-023-experience-like-credit.md` | 24 场景；blocking OQ = 0；DoR BLOCKER = 0 |
+| Intent | `requirement-workspace/intents/REQ-023-experience-like-credit.md` | Discovery Decision `Go`；D1–D4 |
 | Impact brief | `requirement-workspace/impact-brief.md` §22 | as-is 盘点、delta、blast radius、风险与拆分边界 |
-| Deep-dive | `requirement-workspace/deep-dive.md`「REQ-022 增补」 | ①–④ 四表；A0 ⑨–⑫ 通过 |
+| Deep-dive | `requirement-workspace/deep-dive.md`「REQ-023 增补」 | ①–④ 四表；A0 ⑨–⑫ 通过 |
 | Issue | GitHub #30「[P0] 旅行体验获赞增加信用分」 | 用户故事、档位表、执行规则、月度上限、场景与垂直切片口径 |
 | Implementation evidence | `CreditService` / `CreditServiceImpl`（记账无调用方）；`ExperienceResponse`（无赞数字段）；`ExperienceController`（无点赞端点）；`V8__create_trip_experiences.sql`（每作者每行程唯一）；`openapi.yaml` 0.14.0（`Error.code` 闭集）；`db/migration` V20 | 现状差距逐项核对 |
 | Prototype evidence | `docs/prototype/ui.js` `expCard()` 与详情 `.exp-item`；`styles.css` 令牌 | 无点赞交互，需原型先行 |
@@ -32,10 +32,10 @@
 
 | 维度 | 结论 | 证据 |
 |---|---|---|
-| Scope | 与 REQ-022 一致：体验点赞 / 取消点赞、赞数与点赞态展示、获赞阶梯加分、月度上限、计分边界；不做信用明细、通知、管理端、回收、结转 | `proposal.md` 范围；`dov-ac-review.md` DoV-1 |
+| Scope | 与 REQ-023 一致：体验点赞 / 取消点赞、赞数与点赞态展示、获赞阶梯加分、月度上限、计分边界；不做信用明细、通知、管理端、回收、结转 | `proposal.md` 范围；`dov-ac-review.md` DoV-1 |
 | Ambiguity | 无未决阻塞歧义：端点形态 / 错误码 / 字段名属 P3 契约定稿；月度截断按通用公式（每次跨档应发恒为 +1）；多篇体验规则以多行数据单测覆盖 | `dov-ac-review.md` DoV-2；`consistency-lint.md` L-03 / L-04 |
 | Conflict | 单 change 跨 `trip-experiences` / `user-credit` 与 `@rule:sdd-artifacts` one-capability 习惯存在偏离；**SA 在 G1 明确接受该打包**（理由：点赞与结算拆开后无法独立验收 issue 场景，且仓库有 `refine-inspiration-home` / `add-trip-completion` 先例） | `docs/reviews/20261117-add-experience-like-credit-proposal-review.md` F-1；本记录 Decision |
-| Traceability | REQ-022 24 个 Ready 场景均有 Delta 落点（两个 Delta 共 27 Scenario）；proposal In scope 5 项均有 Requirement 覆盖 | `dov-ac-review.md` DoV-5 |
+| Traceability | REQ-023 24 个 Ready 场景均有 Delta 落点（两个 Delta 共 27 Scenario）；proposal In scope 5 项均有 Requirement 覆盖 | `dov-ac-review.md` DoV-5 |
 | Residual risk | 归档顺序、契约 / 迁移号、月度并发严格性、多篇体验不可 E2E、原型先行、E2E 选择器漂移 | `dov-ac-review.md` 残余风险；`consistency-lint.md` 残余风险 |
 
 ## Decision

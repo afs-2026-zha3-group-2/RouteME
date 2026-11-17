@@ -2,7 +2,7 @@
 
 - **Verdict: Pass**
 - **Scope:** focus=design（`@rule:artifact-review-gate` 的 P3 设计评审）；root=`ai4se-baseline`；timestamp=2026-11-17
-- **变更摘要（2026-11-17，签署后）：** 契约 / 迁移号由 `0.15.0` + `V21` 改为 `0.16.0` + `V22`（`0.15.0` + `V21` 已由 `add-ai-itinerary` 在 registry 台账声明，用户裁决顺延）；结论与签署不变。
+- **变更摘要（2026-11-17，签署后）：** 契约 / 迁移号由 `0.15.0` + `V21` 改为 `0.18.0` + `V24`（`0.15.0` + `V21` 已由 `add-ai-itinerary` 在 registry 台账声明，用户裁决顺延）；结论与签署不变。
 - **Artifacts under review:**
   - [`design.md`](../../openspec/changes/add-experience-like-credit/design.md)（D1–D16 + 数据库 / 后端结构 / 契约 / 前端 / 测试 / 残余风险）
   - [`atdd-design.md`](../../openspec/changes/add-experience-like-credit/atdd-design.md)（作为 design 的输入一并核对）
@@ -45,7 +45,7 @@
 
 - 月度并发严格性依赖 SQLite 单写者；迁移多写者数据库需补行锁（已在 design §6 登记）。
 - `ExperienceService` 读取签名变化会触及既有测试，P4 必须同步更新并在验证报告说明。
-- 契约 `0.16.0` / `V22` 若被其他 change 越过，需整体顺延并同步 `OpenApiTest`。
+- 契约 `0.18.0` / `V24` 若被其他 change 越过，需整体顺延并同步 `OpenApiTest`。
 - 多篇体验规则只能以单测覆盖（V8 唯一约束），E2E / API 不做假数据。
 - E2E 不在 CI，属既有残余风险。
 

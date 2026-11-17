@@ -1,10 +1,10 @@
 # ATDD 设计 — add-experience-like-credit
 
-- **Change：** `add-experience-like-credit`（REQ-022 / issue #30 旅行体验获赞增加信用分）
+- **Change：** `add-experience-like-credit`（REQ-023 / issue #30 旅行体验获赞增加信用分）
 - **输入：** [`specs/trip-experiences/spec.md`](specs/trip-experiences/spec.md)（ADDED 2 Requirement / 12 Scenario）、[`specs/user-credit/spec.md`](specs/user-credit/spec.md)（ADDED 3 Requirement / 15 Scenario）、[`g1-decision.md`](g1-decision.md)（Pass）
 - **日期：** 2026-11-17 ｜ **作者：** Lewis Liu（当前开发者）
 - **原型：** `docs/prototype/ui.js` `expCard()` + 详情 `.exp-item`（P4 先改原型再加实现）
-- **P3 契约裁决（2026-11-17 用户确认）：** 端点用 REST 资源风格 `POST` / `DELETE /api/experiences/{experienceId}/likes`；「体验不存在」新增 `EXPERIENCE_NOT_FOUND`（404）；契约 `0.16.0` + 迁移 `V22`（`0.15.0` + `V21` 已由 `add-ai-itinerary` 台账声明，本 change 顺延）；NFR 测试不纳入。
+- **P3 契约裁决（2026-11-17 用户确认）：** 端点用 REST 资源风格 `POST` / `DELETE /api/experiences/{experienceId}/likes`；「体验不存在」新增 `EXPERIENCE_NOT_FOUND`（404）；契约 `0.18.0` + 迁移 `V24`（P3 原定 `0.16.0` + `V22`；合并 `origin/main@b50e416` 后顺延；`0.15.0` + `V21` 已由 `add-ai-itinerary` 台账声明）；NFR 测试不纳入。
 
 ## 1. ATDD 层次划分（API / E2E；UT 仅登记）
 
@@ -56,8 +56,8 @@
    - `ExperienceLikeDisplayApiTest`：D-1。同一体验在 `GET /api/experiences`、`GET /api/trips/{tripId}/experiences`、`GET /api/me/experiences` 返回相同 `like_count`；`is_liked` 对已赞 / 未赞视角分别为 true / false。
    - `ExperienceLikeCreditApiTest`：C-1~C-3、C-5~C-7、C-13、C-14。账本断言 `reason_code = EXPERIENCE_LIKE`、`related_type = TRIP`、`related_id = 行程 id`、`applied_delta` / `score_before` / `score_after` / `occurred_at`；封顶与回落不新增档位记录；点赞者与结束行程均无账本行。
    - `ExperienceLikeCreditMonthApiTest`：C-8~C-12。夹具写本月 `EXPERIENCE_LIKE` 账本（含一条 `-5` 其他原因账本构造账户 95 / 月度 20 的组合）；可调 Clock 跨北京时间月首；断言月内实发合计 ≤ 20、截断不结转。
-   - `ExperienceLikeMigrationSqliteTest`：`V22` 建 `experience_likes`（`(experience_id, user_id)` 唯一）与账本幂等键唯一；旧库（V21）升级后既有数据不变。
-   - `OpenApiTest` 同步：`info.version = 0.16.0`、两个新路径、`ExperienceResponse.like_count` / `is_liked`、`Error.code` 枚举含 `EXPERIENCE_NOT_FOUND`。
+   - `ExperienceLikeMigrationSqliteTest`：`V24` 建 `experience_likes`（`(experience_id, user_id)` 唯一）与账本幂等键唯一；旧库（V21）升级后既有数据不变。
+   - `OpenApiTest` 同步：`info.version = 0.18.0`、两个新路径、`ExperienceResponse.like_count` / `is_liked`、`Error.code` 枚举含 `EXPERIENCE_NOT_FOUND`。
 2. **E2E（先红）**
    - `e2e/tests/experience-likes.spec.ts`：D-2 首页旅行体验视图点赞再取消（相对断言 ±1，收尾恢复未赞）；D-3 种子行程详情体验区点赞 → 刷新保持 → 取消；D-4 `page.route` 拦截点赞端点返回 500，断言赞数回滚与失败提示可见。
    - `e2e/tests/credit.spec.ts` 追加：C-15。新建作者 → 建行程 → 结束 → 发布体验 → 5 个用户点赞 → 作者主页显示 81 且页面无「明细 / 历史」入口。

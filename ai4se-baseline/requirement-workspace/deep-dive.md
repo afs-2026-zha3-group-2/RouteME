@@ -1130,9 +1130,9 @@ MVP 无推送、无通知；以下为详情页同行者展示面的 UI 契约。
 - 原型 `store.js:240-248` 已定义「取消行程只取消 PENDING、ACCEPTED 保留」；与 REQ-021 的 D3 / D5 一致。
 - `{TBD}`：无。非阻塞项（原因码 wire 命名、事件复用、列类型）在 REQ-021 §8 OQ-10 / OQ-11 记为 Dev 后续。
 
-## REQ-022 增补 — 旅行体验获赞增加信用分（issue #30 / 信用系统迭代 2）
+## REQ-023 增补 — 旅行体验获赞增加信用分（issue #30 / 信用系统迭代 2）
 
-> 编号说明：REQ-022（`origin/main@64b38da` 最新为 REQ-021）；change `add-experience-like-credit`；能力 `trip-experiences`（点赞，ADDED）+ `user-credit`（获赞结算，ADDED）。
+> 编号说明：REQ-023（P1 原登记 REQ-022；合并 `origin/main@b50e416` 时该号已被 `add-trip-weather` 占用，按先合并者优先顺延）；change `add-experience-like-credit`；能力 `trip-experiences`（点赞，ADDED）+ `user-credit`（获赞结算，ADDED）。
 
 ### ① 数据契约（Data contract）
 
@@ -1180,10 +1180,10 @@ MVP 无推送、无通知；以下为详情页同行者展示面的 UI 契约。
 
 | 能力 | 各 REQ 的 grain + 字段 | aligned? | anchor REQ |
 |---|---|---|---|
-| `trip-experiences`（REQ-004 / R2 在途 change） | 既有 Requirement 定义发布资格、内容口径、详情页 / 首页展示、分页与参考发布；REQ-022 只以 ADDED 追加「点赞」块（点赞行、赞数与点赞态、两个展示面），不改写任何既有 Requirement | ✓ aligned | REQ-004 / `add-trip-experiences`（已归档） |
-| `trip-experiences`（REQ-018 图片） | 图片能力为 `photos` 字段与上传端点；REQ-022 只在 `ExperienceResponse` 追加 `like_count` / `liked_by_me`，不触碰图片字段 | ✓ aligned | REQ-018 / `add-experience-photos`（未归档） |
-| `user-credit`（REQ-019，未归档） | REQ-019 定义账户、等级、账本、记账服务与零变化留痕；REQ-022 以 ADDED 追加「体验获赞阶梯加分」：复用 `book` 的裁断 / 快照 / 幂等语义，分数与等级口径不变 | ✓ aligned | REQ-019 / `add-credit-account`（未归档） |
-| `user-profiles` / `user-profile`（REQ-009 / REQ-008） | 信用分只读字段已由 REQ-019 扩展至五个展示面；REQ-022 不新增展示面、不改接口形状 | ✓ aligned | REQ-009 / REQ-008 |
+| `trip-experiences`（REQ-004 / R2 在途 change） | 既有 Requirement 定义发布资格、内容口径、详情页 / 首页展示、分页与参考发布；REQ-023 只以 ADDED 追加「点赞」块（点赞行、赞数与点赞态、两个展示面），不改写任何既有 Requirement | ✓ aligned | REQ-004 / `add-trip-experiences`（已归档） |
+| `trip-experiences`（REQ-018 图片） | 图片能力为 `photos` 字段与上传端点；REQ-023 只在 `ExperienceResponse` 追加 `like_count` / `liked_by_me`，不触碰图片字段 | ✓ aligned | REQ-018 / `add-experience-photos`（未归档） |
+| `user-credit`（REQ-019，未归档） | REQ-019 定义账户、等级、账本、记账服务与零变化留痕；REQ-023 以 ADDED 追加「体验获赞阶梯加分」：复用 `book` 的裁断 / 快照 / 幂等语义，分数与等级口径不变 | ✓ aligned | REQ-019 / `add-credit-account`（未归档） |
+| `user-profiles` / `user-profile`（REQ-009 / REQ-008） | 信用分只读字段已由 REQ-019 扩展至五个展示面；REQ-023 不新增展示面、不改接口形状 | ✓ aligned | REQ-009 / REQ-008 |
 | `trip-cancellation`（REQ-021） | 取消行程为终态且不可从 `COMPLETED` 进入；体验仅存在于 `COMPLETED` 行程，点赞不触碰行程状态机 | ✓ aligned | REQ-021 / `add-trip-cancel` |
 | `design-system` | 点赞按钮复用既有 `btn` / `badge` / 图标与色板令牌，不新增语义 | ✓ aligned | `openspec/specs/design-system/spec.md` |
 
@@ -1203,7 +1203,7 @@ MVP 无推送、无通知；以下为点赞与信用状态的展示面契约。
 
 无展示面缺 display-fields；A0 门 ⑫ 通过。
 
-### 探针记录（REQ-022 体验获赞信用）
+### 探针记录（REQ-023 体验获赞信用）
 
 - **点赞基线为零：** openapi / backend / frontend / Living Spec / 原型交互均无点赞；本 change 需从数据、接口到 UI 全链路新建。
 - **记账服务可直接复用：** `CreditServiceImpl.book` 已在同事务内完成裁断、`applied_delta`、前后快照与幂等键唯一兜底；本 change 只需在调用前做「档位判定 + 月度剩余裁断」，不得绕过 `book` 直接改账户表。
@@ -1217,5 +1217,46 @@ MVP 无推送、无通知；以下为点赞与信用状态的展示面契约。
 - **E2E 选择器风险：** 既有 `experiences.spec.ts` / `inspiration-home` 相关用例依赖 `.exp-foot` / `.exp-item` 结构；新增点赞按钮可能影响严格定位（如 `getByRole('button')` 计数），P4 需同步检查。
 - **原型先行：** 原型 `ui.js` `expCard()` 与详情 `.exp-item` 用字符串模板；点赞态需在 `store.js` 增演示数据（或使用本地状态），并在 `prototype.html` / `styles.css` 增样式类，避免与实现类名漂移。
 - **归档顺序：** `user-credit` 与 `trip-experiences` 的 Living Spec 均未包含在途 change 的 delta；本 change 归档必须排在其后（P5）。
-- **`{TBD}`：** 无。非阻塞项（端点形态、错误码、契约 / 迁移号、月度聚合方式、并发保障）在 REQ-022 §8 记为 Dev 后续。
+- **`{TBD}`：** 无。非阻塞项（端点形态、错误码、契约 / 迁移号、月度聚合方式、并发保障）在 REQ-023 §8 记为 Dev 后续。
 - A0 门 ⑨–⑫：全部通过。
+## REQ-022 增补 — 目的地天气与出行提醒
+
+### ① 数据契约
+
+| 事实 | 证据 | 约束 |
+|---|---|---|
+| 行程只有目的地**区划码**与名称，没有经纬度 | `TripPlan.java`、`TripCreateRequest.java`、`TripDetailResponse.java`、`V11__add_destination_area_code.sql` | 天气必须先把区划码解析成坐标，或使用调用方给的坐标 |
+| 支持 375 个城市 | `backend/src/main/resources/area/area-codes.json`（34 省级 / 375 城市） | 不能靠手工静态坐标表；必须解析 + 缓存 |
+| 目的地是省市级联，不是地图选点 | `TripCreatePage` 的 `AreaCascader`；`AmapPlacePicker` 只用于途经点与集合点 | 途经点坐标不能挪用为目的地坐标（地点会错位） |
+| Open-Meteo daily 变量与窗口 | 官方 `v1/forecast` 文档：`temperature_2m_max` / `temperature_2m_min` / `precipitation_probability_max` / `precipitation_sum` / `weather_code` / `wind_speed_10m_max` / `uv_index_max`；`timezone` 必填；`forecast_days` 0–16 | 窗口取「今天 ~ 今天 + 15」；UV 可空，不得补 0 |
+| 上游错误形态 | Open-Meteo 错误返回 HTTP 400 + `{"error":true,"reason":…}` | 上游失败统一归一为天气不可用，不向用户暴露原始 reason |
+
+### ② 边界归属
+
+| 关注点 | 归属 | 说明 |
+|---|---|---|
+| 天气数据 | Open-Meteo | 唯一数据源，RouteMe 不做估算 |
+| 坐标 | 高德选点结果优先 / 区划解析兜底 | 不做第三方地理编码，不做离线估算 |
+| 提醒 | RouteMe 后端固定规则 | 阈值可判定、可单测；不引入 AI |
+| 地图与路线 | 高德 | 本故事不改地图行为 |
+| AI 推荐 | `add-ai-itinerary` | 后续复用本故事的天气端点与提醒函数 |
+
+### ③ 跨 REQ 一致性
+
+| 相关 REQ | 关系 |
+|---|---|
+| REQ-017（AI 推荐） | 该 change 的天气代理在本 change 落地后应改为复用；提示词里的天气摘要口径与本 change 一致（真实数据 + `source` 标注） |
+| REQ-002 / REQ-006 / REQ-007（发布与浏览） | 发布页新增天气仅展示，不改变表单校验、发布契约与列表筛选 |
+| REQ-016（地图导航风） | 详情页新增天气区块不得破坏既有地图与路线区块布局 |
+| REQ-021（取消行程） | 不新增按状态隐藏天气的分支：日期已过自然落到「暂无该日期天气预报」；未发生的取消行程仍展示事实天气，不额外判断 |
+
+### ④ 展示契约 + 探针
+
+| 展示 | 口径 |
+|---|---|
+| 天气卡标题 | 「目的地天气」，副标注数据来源与日期 |
+| 必展示字段 | 天气状态、最高 / 最低温、降雨概率、降水量、风速 |
+| 条件字段 | UV（上游返回时展示） |
+| 提醒 | 每条一句，前置类别标签（雨 / 热 / 冷 / 风 / 平稳） |
+| 状态 | 未就绪（缺目的地或日期）、加载中、成功、暂无该日期天气预报、失败 + 重试 |
+| 探针 | `data-testid="weather-card"`、`weather-loading`、`weather-error`、`weather-retry`、`weather-reminder`、`weather-out-of-range` |

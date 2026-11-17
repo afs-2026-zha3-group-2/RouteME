@@ -4,10 +4,9 @@ import { cityLabel } from '../area/areaOptions';
 import { cancelApplication, completeTrip, leaveTrip, loadMyExperiences, loadMyTrips } from '../api';
 import { mineMeetingNote } from '../chat/chatMeeting';
 import { tripMessages } from '../i18n/tripMessages';
-import { publisherSummary } from '../profile/profileDisplay';
-import { Avatar } from '../shell/Avatar';
 import { EmptyState } from '../shell/EmptyState';
 import { applicationLabel } from '../trips/applicationStatus';
+import { cityPhoto } from '../trips/cityPhotos';
 import { coverTone } from '../trips/coverTone';
 import { StatusBadge } from '../trips/StatusBadge';
 import { TripCancelModal } from '../trips/TripCancelModal';
@@ -25,7 +24,6 @@ import {
 
 type Props = {
   currentUser: DemoUser;
-  isAuthenticated: boolean;
 };
 
 type ConfirmAction = { kind: 'complete' | 'leave'; trip: TripSummary };
@@ -36,7 +34,7 @@ function pendingHint(count: number): string {
     : tripMessages.minePendingNone;
 }
 
-export function MyTripsPage({ currentUser, isAuthenticated }: Props) {
+export function MyTripsPage({ currentUser }: Props) {
   const [data, setData] = useState<MyTrips | null>(null);
   const [experiences, setExperiences] = useState<Experience[]>([]);
   const [tab, setTab] = useState<MineTab>('published');
@@ -219,37 +217,46 @@ export function MyTripsPage({ currentUser, isAuthenticated }: Props) {
       );
     });
 
-  const renderRow = (trip: TripSummary, note: string | null, application?: TripApplication) => (
-    <article className="mine-row" key={`${tab}-${trip.id}`} data-group={tab}>
-      <span className={`mr-cover cover-${coverTone(trip.destination_code)}`} aria-hidden="true">
-        <span className="mr-cover-dest">{cityLabel(trip.destination_code) || trip.destination}</span>
-      </span>
-      <div className="mr-main">
-        <h3 className="mr-title">
-          <a href={`#/trips/${trip.id}`}>{trip.title}</a>
-          <StatusBadge status={trip.status} />
-          {tab === 'published' && trip.ending_soon && (
-            <span className="badge amber">{tripMessages.detailEndingSoon}</span>
+  const renderRow = (trip: TripSummary, note: string | null, application?: TripApplication) => {
+    const destination = cityLabel(trip.destination_code) || trip.destination;
+    const photo = cityPhoto(destination, trip.destination);
+
+    return (
+      <article className="mine-row" key={`${tab}-${trip.id}`} data-group={tab}>
+        <span className={`mr-cover cover-${coverTone(trip.destination_code)}`} aria-hidden="true">
+          {photo !== null && (
+            <img className="mr-photo" src={photo} alt="" loading="lazy" />
           )}
-        </h3>
-        <div className="mr-meta">
-          <span>{trip.destination}</span>
-          <span>{formatDateRange(trip.start_date, trip.end_date)}</span>
-          <span>
-            {trip.joined_count} / {trip.capacity} {tripMessages.peopleUnit}
-          </span>
-          <span>{dayLabel(trip.start_date)}</span>
+          <span className="mr-cover-shade" aria-hidden="true" />
+          <span className="mr-cover-dest">{destination}</span>
+        </span>
+        <div className="mr-main">
+          <h3 className="mr-title">
+            <a href={`#/trips/${trip.id}`}>{trip.title}</a>
+            <StatusBadge status={trip.status} />
+            {tab === 'published' && trip.ending_soon && (
+              <span className="badge amber">{tripMessages.detailEndingSoon}</span>
+            )}
+          </h3>
+          <div className="mr-meta">
+            <span>{trip.destination}</span>
+            <span>{formatDateRange(trip.start_date, trip.end_date)}</span>
+            <span>
+              {trip.joined_count} / {trip.capacity} {tripMessages.peopleUnit}
+            </span>
+            <span>{dayLabel(trip.start_date)}</span>
+          </div>
+          {note !== null && note !== '' && <p className="mr-note">{note}</p>}
+          {application !== undefined && (
+            <p className="mr-note">
+              <span className="badge muted">{applicationLabel(application.status)}</span>
+            </p>
+          )}
         </div>
-        {note !== null && note !== '' && <p className="mr-note">{note}</p>}
-        {application !== undefined && (
-          <p className="mr-note">
-            <span className="badge muted">{applicationLabel(application.status)}</span>
-          </p>
-        )}
-      </div>
-      <div className="mr-actions">{renderActions(trip, application)}</div>
-    </article>
-  );
+        <div className="mr-actions">{renderActions(trip, application)}</div>
+      </article>
+    );
+  };
 
   const renderEmpty = (group: MineTab) => {
     if (group === 'published') {
@@ -403,32 +410,6 @@ export function MyTripsPage({ currentUser, isAuthenticated }: Props) {
           <a className="btn primary page-head-cta" href="#/trips/new">
             {tripMessages.publish}
           </a>
-        </section>
-
-        <section className="mine-profile-card" aria-label={tripMessages.mineProfileLabel}>
-          <Avatar user={currentUser} size="lg" />
-          <div className="mine-profile-text">
-            <b>{currentUser.nickname}</b>
-            <span>{publisherSummary(currentUser) || tripMessages.mineProfileIncomplete}</span>
-          </div>
-          {isAuthenticated && (
-            <div className="mine-profile-actions">
-              {currentUser.profile_complete ? (
-                <>
-                  <a className="btn sm ghost" href={`#/users/${currentUser.id}`}>
-                    {tripMessages.profileViewEntry}
-                  </a>
-                  <a className="btn sm ghost" href="#/profile/setup">
-                    {tripMessages.profileEditEntry}
-                  </a>
-                </>
-              ) : (
-                <a className="btn sm primary" href="#/profile/setup">
-                  {tripMessages.profileCompleteEntry}
-                </a>
-              )}
-            </div>
-          )}
         </section>
 
         {data !== null && pendingTotal > 0 && targetTripId !== null && (

@@ -2,7 +2,7 @@
 
 - **Verdict: Pass**
 - **Scope:** focus=tasks（`@rule:artifact-review-gate` 的 P3 任务评审）；root=`ai4se-baseline`；timestamp=2026-11-17
-- **变更摘要（2026-11-17，签署后）：** T1 / T2 的契约 / 迁移号由 `0.15.0` + `V21` 改为 `0.16.0` + `V22`（`0.15.0` + `V21` 已由 `add-ai-itinerary` 台账声明，用户裁决顺延）；结论与签署不变。
+- **变更摘要（2026-11-17，签署后）：** T1 / T2 的契约 / 迁移号由 `0.15.0` + `V21` 改为 `0.18.0` + `V24`（`0.15.0` + `V21` 已由 `add-ai-itinerary` 台账声明，用户裁决顺延）；结论与签署不变。
 - **Artifacts under review:**
   - [`tasks.md`](../../openspec/changes/add-experience-like-credit/tasks.md)（T0–T11 + 层与顺序约束 + 对齐自检）
 - **Supporting inputs:**

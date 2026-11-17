@@ -23,6 +23,25 @@ class OpenApiTest {
 
     private static final Path SPEC_PATH = Path.of("..", "openapi.yaml");
 
+    private static final List<String> HTTP_METHODS = List.of("get", "post", "put", "patch", "delete");
+
+    private static final List<String> ADMIN_CONSOLE_PATHS = List.of(
+            "/admin/users",
+            "/admin/users/{userId}",
+            "/admin/users/{userId}/status",
+            "/admin/reports",
+            "/admin/reports/{reportId}",
+            "/admin/reports/{reportId}/start",
+            "/admin/reports/{reportId}/resolve",
+            "/admin/service/sessions",
+            "/admin/service/sessions/{sessionId}",
+            "/admin/service/sessions/{sessionId}/join",
+            "/admin/service/sessions/{sessionId}/close",
+            "/help/reports",
+            "/service/sessions/current",
+            "/service/sessions",
+            "/service/sessions/{sessionId}/messages");
+
     @Test
     void in_openApiFile_out_greetingContractDeclared() throws IOException {
         // Given
@@ -59,7 +78,7 @@ class OpenApiTest {
 
         // Then
         assertAll(
-                () -> assertEquals("0.16.0", info.get("version"), "info.version"),
+                () -> assertEquals("0.18.0", info.get("version"), "info.version"),
                 () -> assertTrue(responses(likeExperience).containsKey("201"), "first like returns 201"),
                 () -> assertTrue(responses(likeExperience).containsKey("200"), "duplicate like returns 200"),
                 () -> assertTrue(responses(likeExperience).containsKey("403"), "self like returns 403"),
@@ -130,7 +149,7 @@ class OpenApiTest {
 
         // Then
         assertAll(
-                () -> assertEquals("0.16.0", info.get("version"), "info.version"),
+                () -> assertEquals("0.18.0", info.get("version"), "info.version"),
                 () -> assertTrue(paths(document).containsKey("/users"), "/users declared"),
                 () -> assertTrue(paths(document).containsKey("/trips/{tripId}"), "detail path declared"),
                 () -> assertTrue(
@@ -164,8 +183,61 @@ class OpenApiTest {
                 () -> assertEquals(Boolean.TRUE, properties(tripPlan).get("status").get("readOnly"), "status readOnly"),
                 () -> assertTrue(properties(tripPlan).containsKey("destination_code"), "destination_code declared"),
                 () -> assertTrue(properties(tripPlan).containsKey("province_code"), "province_code declared"),
-                () -> assertTrue(properties(tripPlan).containsKey("province_name"), "province_name declared")
+                () -> assertTrue(properties(tripPlan).containsKey("province_name"), "province_name declared"),
+                () -> assertTrue(properties(tripPlan).containsKey("travel_mode"), "travel_mode declared"),
+                () -> assertEquals(
+                        List.of("driving", "bicycling", "transit"),
+                        enums(properties(tripPlan).get("travel_mode")),
+                        "travel_mode enum"),
+                () -> assertTrue(properties(createRequest).containsKey("travel_mode"), "create travel_mode declared"),
+                () -> assertEquals(
+                        1,
+                        asMap(properties(createRequest).get("meeting_areas")).get("maxItems"),
+                        "create accepts a single meeting area"),
+                () -> assertEquals(
+                        1,
+                        asMap(properties(schema(document, "TripMeetingRequest")).get("meeting_areas")).get("maxItems"),
+                        "meeting update accepts a single meeting area")
         );
+    }
+
+    @Test
+    void in_openApiFile_out_weatherContractDeclared() throws IOException {
+        // Given
+        Map<String, Object> document = loadYaml(SPEC_PATH);
+
+        // When
+        Map<String, Object> forecast = operation(document, "/weather/forecast", "get");
+        Map<String, Object> forecastSchema = schema(document, "WeatherForecast");
+        Map<String, Object> dailySchema = schema(document, "WeatherDaily");
+        Map<String, Object> reminderSchema = schema(document, "WeatherReminder");
+        Map<String, Object> errorSchema = schema(document, "Error");
+
+        // Then
+        assertAll(
+                () -> assertTrue(paths(document).containsKey("/weather/forecast"), "weather path declared"),
+                () -> assertTrue(
+                        parameterNames(document, forecast).containsAll(List.of("destination_code", "date", "lng", "lat")),
+                        "weather query parameters"),
+                () -> assertTrue(responses(forecast).containsKey("200"), "weather returns 200"),
+                () -> assertTrue(responses(forecast).containsKey("400"), "weather returns 400"),
+                () -> assertTrue(responses(forecast).containsKey("502"), "weather returns 502"),
+                () -> assertTrue(
+                        required(forecastSchema).containsAll(List.of("date", "available", "reminders", "source")),
+                        "weather required fields"),
+                () -> assertTrue(
+                        enums(properties(forecastSchema).get("source")).contains("open-meteo"), "weather source enum"),
+                () -> assertTrue(
+                        required(dailySchema).containsAll(List.of("weather_text", "temp_max_c", "temp_min_c")),
+                        "daily required fields"),
+                () -> assertTrue(properties(dailySchema).containsKey("uv_index"), "daily uv_index declared"),
+                () -> assertTrue(
+                        enums(properties(reminderSchema).get("code"))
+                                .containsAll(List.of("rain", "heat", "uv", "cold", "temperature_gap", "wind", "calm")),
+                        "reminder code enum"),
+                () -> assertTrue(
+                        enums(properties(errorSchema).get("code")).contains("WEATHER_UPSTREAM_ERROR"),
+                        "weather upstream error code"));
     }
 
     @Test
@@ -186,6 +258,9 @@ class OpenApiTest {
                 () -> assertTrue(
                         required(register).containsAll(List.of("username", "password", "nickname")),
                         "register required fields"),
+                () -> assertTrue(
+                        properties(register).containsKey("email"),
+                        "register accepts optional email"),
                 () -> assertTrue(
                         required(register).stream()
                                 .noneMatch(List.of("school", "bio", "interests", "avatar_initial")::contains),
@@ -220,11 +295,20 @@ class OpenApiTest {
                 () -> assertTrue(paths(document).containsKey("/users/{userId}/avatar"), "avatar read declared"),
                 () -> assertTrue(
                         required(demoUser).containsAll(
-                                List.of("id", "nickname", "avatar_initial", "bio", "interests", "profile_complete")),
+                                List.of("id", "nickname", "avatar_initial", "bio", "interests", "profile_complete",
+                                        "role", "status")),
                         "demo user required fields"),
                 () -> assertTrue(
                         properties(demoUser).keySet().containsAll(List.of("avatar_url", "city", "major", "job")),
                         "demo user summary fields"),
+                () -> assertTrue(
+                        properties(profile).keySet().containsAll(List.of(
+                                "status", "ban_reason_code", "ban_expires_at")),
+                        "profile exposes account status and ban fields"),
+                () -> assertTrue(
+                        properties(profile).keySet().stream().noneMatch(
+                                List.of("status_reason", "ban_reason_note")::contains),
+                        "profile hides admin-only penalty notes"),
                 () -> assertTrue(
                         properties(demoUser).keySet().contains("school")
                                 && required(demoUser).stream().noneMatch("school"::equals),
@@ -341,6 +425,10 @@ class OpenApiTest {
                         enums(properties(reportRequest).get("reason"))
                                 .containsAll(List.of("harassment", "fake", "safety", "other")),
                         "report reasons"),
+                () -> assertTrue(
+                        enums(properties(reportRequest).get("target_type"))
+                                .containsAll(List.of("trip", "user", "experience")),
+                        "report target types"),
                 () -> assertTrue(
                         enums(properties(errorSchema).get("code"))
                                 .containsAll(List.of(
@@ -490,6 +578,116 @@ class OpenApiTest {
                 () -> assertEquals(
                         Boolean.TRUE, tripDetailProperties.get("cancel_reason").get("readOnly"),
                         "cancel_reason readOnly")
+        );
+    }
+
+    @Test
+    void in_openApiFile_out_adminConsoleContractDeclared() throws IOException {
+        // Given
+        Map<String, Object> document = loadYaml(SPEC_PATH);
+
+        // When
+        Map<String, Object> info = asMap(document.get("info"));
+        Map<String, Object> errorSchema = schema(document, "Error");
+        Map<String, Object> demoUser = schema(document, "DemoUser");
+        Map<String, Object> adminUserDetail = schema(document, "AdminUserDetail");
+        Map<String, Object> adminReportSummary = schema(document, "AdminReportSummary");
+        Map<String, Object> adminReportContext = schema(document, "AdminReportContext");
+        Map<String, Object> adminReportMessage = schema(document, "AdminReportMessage");
+        Map<String, Object> reportRequest = schema(document, "ReportRequest");
+        Map<String, Object> serviceSessionSummary = schema(document, "ServiceSessionSummary");
+        Map<String, Map<String, Object>> adminReportDetail = allOfProperties(document, "AdminReportDetail");
+        long adminOperations = ADMIN_CONSOLE_PATHS.stream()
+                .map(path -> asMap(paths(document).get(path)))
+                .mapToLong(item -> item.keySet().stream().filter(HTTP_METHODS::contains).count())
+                .sum();
+
+        // Then
+        assertAll(
+                () -> assertEquals("0.18.0", info.get("version"), "info.version"),
+                () -> assertTrue(paths(document).keySet().containsAll(ADMIN_CONSOLE_PATHS), "admin console paths"),
+                () -> assertEquals(16L, adminOperations, "admin console operations"),
+                () -> assertTrue(
+                        ADMIN_CONSOLE_PATHS.stream()
+                                .map(path -> asMap(paths(document).get(path)))
+                                .noneMatch(item -> item.containsKey("delete")),
+                        "no DELETE operations in admin console paths"),
+                () -> assertTrue(
+                        parameterNames(document, operation(document, "/admin/users", "get"))
+                                .contains("Authorization"),
+                        "admin endpoints require bearer"),
+                () -> assertTrue(
+                        parameterNames(document, operation(document, "/help/reports", "get"))
+                                .contains("Authorization"),
+                        "help endpoints use bearer"),
+                () -> assertTrue(
+                        parameterNames(document, operation(document, "/service/sessions", "post"))
+                                .contains("Authorization"),
+                        "service endpoints use bearer"),
+                () -> assertEquals(List.of("USER", "ADMIN"), enums(schema(document, "AccountRole")), "account roles"),
+                () -> assertEquals(
+                        List.of("ACTIVE", "SUSPENDED", "BANNED"),
+                        enums(schema(document, "AccountStatus")),
+                        "account statuses"),
+                () -> assertEquals(
+                        List.of("HARASSMENT", "FAKE_TRIP", "FRAUD_RISK", "ILLEGAL_CONTENT",
+                                "IMPERSONATION", "NO_SHOW_DISRUPTION", "PRIVACY_LEAK", "OTHER"),
+                        enums(schema(document, "BanReason")),
+                        "ban reasons"),
+                () -> assertEquals(
+                        List.of("PENDING", "PROCESSING", "RESOLVED", "REJECTED"),
+                        enums(schema(document, "ReportStatus")),
+                        "report statuses"),
+                () -> assertEquals(
+                        List.of("SUSPEND", "BAN", "KEEP", "UPDATE_BAN", "REJECT"),
+                        enums(schema(document, "ReportResolutionAction")),
+                        "resolution actions"),
+                () -> assertEquals(
+                        List.of("WAITING", "HANDLING", "CLOSED"),
+                        enums(schema(document, "ServiceSessionStatus")),
+                        "service session statuses"),
+                () -> assertTrue(
+                        required(adminUserDetail).containsAll(List.of(
+                                "id", "nickname", "avatar_initial", "role", "status", "created_at",
+                                "trips", "experiences", "reports",
+                                "trip_total", "experience_total", "report_total")),
+                        "admin user detail required fields"),
+                () -> assertTrue(
+                        required(adminReportSummary).containsAll(List.of(
+                                "id", "code", "target_type", "target_id", "reason", "created_at", "status")),
+                        "admin report summary required fields"),
+                () -> assertTrue(adminReportDetail.containsKey("target"), "admin report detail target"),
+                () -> assertTrue(
+                        adminReportDetail.containsKey("context")
+                                && required(adminReportContext).containsAll(List.of("origin", "messages"))
+                                && required(adminReportMessage).containsAll(
+                                        List.of("id", "sender", "receiver", "content", "sent_at"))
+                                && enums(properties(adminReportContext).get("origin"))
+                                        .containsAll(List.of("chat", "trip")),
+                        "admin report detail origin context"),
+                () -> assertTrue(
+                        properties(reportRequest).containsKey("trip_id")
+                                && !required(reportRequest).contains("trip_id"),
+                        "report request carries optional chat trip id"),
+                () -> assertTrue(
+                        adminReportDetail.containsKey("resolution_note")
+                                && adminReportDetail.containsKey("resolution_action"),
+                        "admin report detail resolution"),
+                () -> assertTrue(
+                        required(serviceSessionSummary).containsAll(
+                                List.of("id", "user", "status", "created_at", "message_count")),
+                        "service session summary required fields"),
+                () -> assertTrue(
+                        required(demoUser).containsAll(List.of("role", "status")),
+                        "demo user carries role and status"),
+                () -> assertTrue(
+                        enums(properties(errorSchema).get("code")).containsAll(List.of(
+                                "ADMIN_REQUIRED", "ACCOUNT_SUSPENDED", "ACCOUNT_BANNED",
+                                "INVALID_STATUS_TRANSITION", "CANNOT_TARGET_SELF", "USER_NOT_FOUND",
+                                "REPORT_NOT_FOUND", "REPORT_NOT_PENDING", "REPORT_NOT_PROCESSING",
+                                "EMAIL_TAKEN", "SESSION_ALREADY_HANDLING", "SESSION_NOT_HANDLING",
+                                "SESSION_CLOSED")),
+                        "admin console error codes")
         );
     }
 

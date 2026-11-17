@@ -3,8 +3,8 @@
 - **依据：** [`specs/trip-experiences/spec.md`](specs/trip-experiences/spec.md)、[`specs/user-credit/spec.md`](specs/user-credit/spec.md)、[`atdd-design.md`](atdd-design.md)、[`design.md`](design.md)
 - **Owner：** Lewis Liu（当前开发者）｜ **协助：** Neal（VL，design / tasks 第二签署；P4 独立验证）
 - **顺序：** T0 → T1 → T2 → T3 → T4 → T5 → T6 → T7 → T8 → T9 → T10；T11 在 T10 之后。
-- **契约：** `0.16.0`；新增 `POST` / `DELETE /api/experiences/{experienceId}/likes`、`ExperienceLikeResponse`、`ExperienceResponse` 的 `like_count` / `is_liked`、`Error.code` 增 `EXPERIENCE_NOT_FOUND`。
-- **迁移：** `V22__add_experience_likes.sql`（当前 main 最大 0.14.0 / V20；`0.15.0` + `V21` 已由 `add-ai-itinerary` 台账声明，本 change 顺延）；开工前复核未被越过。
+- **契约：** `0.18.0`；新增 `POST` / `DELETE /api/experiences/{experienceId}/likes`、`ExperienceLikeResponse`、`ExperienceResponse` 的 `like_count` / `is_liked`、`Error.code` 增 `EXPERIENCE_NOT_FOUND`。
+- **迁移：** `V24__add_experience_likes.sql`（P3 原定 `V22`；合并 `origin/main@b50e416` 后 main 已至 `V23`，按先合并者优先顺延为 `V24`）；开工前复核未被越过。
 - **视觉基准：** `docs/prototype/ui.js` `expCard()` + 详情 `.exp-item`、`docs/prototype/styles.css`（T0 先改）；不改原型其他区域。
 - **NFR：** 不纳入（用户裁决 2026-11-17）。
 
@@ -19,9 +19,9 @@
 **验证：** 浏览器打开 `docs/prototype/prototype.html` 核对两处展示面与响应式
 **覆盖：** D15、`prototype-ui-alignment`
 
-### T1 [contract] 契约 0.16.0
+### T1 [contract] 契约 0.18.0
 
-- [x] `openapi.yaml`：`info.version` → `0.16.0`；新增 `/experiences/{experienceId}/likes` 的 `post`（201/200 + `ExperienceLikeResponse`，401/403/404）与 `delete`（204，401/404）。
+- [x] `openapi.yaml`：`info.version` → `0.18.0`；新增 `/experiences/{experienceId}/likes` 的 `post`（201/200 + `ExperienceLikeResponse`，401/403/404）与 `delete`（204，401/404）。
 - [x] 新增 `ExperienceLikeResponse`（`experience_id` / `like_count` / `is_liked`，全 required）；`ExperienceResponse` 增 `like_count` / `is_liked` 并加入 `required`。
 - [x] `Error.code` enum 增 `EXPERIENCE_NOT_FOUND`；新端点补成功 / 拒绝两组 examples。
 - [x] `OpenApiTest`：断言版本、两个路径、新增 schema 与 `ExperienceResponse` 扩展、`required` 集合、错误码 enum。
@@ -29,10 +29,10 @@
 **验证：** `cd RouteME/backend; .\mvnw.cmd -B -ntp -Dtest=OpenApiTest test`
 **覆盖：** D12、L-1~L-7、D-1、`@rule:api-contract`
 
-### T2 [backend] 迁移 V22
+### T2 [backend] 迁移 V24
 
-- [x] 新增 `V22__add_experience_likes.sql`：`experience_likes`（`(experience_id, user_id)` 唯一 + `(experience_id)` 索引 + 双外键）。
-- [x] 新增 `ExperienceLikeMigrationSqliteTest`（先 red）：全新库到 V22 建表；旧库（V21）升级后既有数据不变；重复 `(experience_id, user_id)` 插入被拒。
+- [x] 新增 `V24__add_experience_likes.sql`：`experience_likes`（`(experience_id, user_id)` 唯一 + `(experience_id)` 索引 + 双外键）。
+- [x] 新增 `ExperienceLikeMigrationSqliteTest`（先 red）：全新库到 V24 建表；旧库（V21）升级后既有数据不变；重复 `(experience_id, user_id)` 插入被拒。
 
 **验证：** `cd RouteME/backend; .\mvnw.cmd -B -ntp -Dtest=ExperienceLikeMigrationSqliteTest test`
 **覆盖：** D1、D13、`@rule:java-patterns`

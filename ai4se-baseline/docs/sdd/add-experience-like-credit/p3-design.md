@@ -1,4 +1,4 @@
-# P3 — add-experience-like-credit（REQ-022 旅行体验获赞增加信用分）
+# P3 — add-experience-like-credit（REQ-023 旅行体验获赞增加信用分）
 
 - **日期：** 2026-11-17 ｜ **记录人：** Lewis Liu（当前开发者，发起人确认）｜ **阶段：** P3 Pass（ATDD / 技术设计 / 任务分解 / 工件评审已签署）
 - **Change：** `add-experience-like-credit`（`trip-experiences` ADDED 2 Requirement / 12 Scenario；`user-credit` ADDED 3 Requirement / 15 Scenario；合计 27）
@@ -23,7 +23,7 @@
 | R1 | NFR 测试是否纳入 | **不纳入**；并发正确性作为功能 API 测试覆盖（C-7 / C-12） | 用户 2026-11-17 |
 | R2 | 点赞 / 取消端点风格 | **REST 资源风格**：`POST` / `DELETE /api/experiences/{experienceId}/likes`（首次 201 / 重复 200 / 取消 204） | 用户 2026-11-17；`@rule:api-contract` |
 | R3 | 「体验不存在」错误码 | **新增 `EXPERIENCE_NOT_FOUND`**（404），`Error.code` 闭集扩充并同步 `OpenApiTest` | 用户 2026-11-17；对齐 `TRIP_NOT_FOUND` 先例 |
-| R4 | 契约版本 / 迁移号 | **`0.16.0` + `V22__add_experience_likes.sql`**：`0.15.0` + `V21` 已由 `add-ai-itinerary` 在 registry 台账声明，本 change 顺延 | 用户 2026-11-17 |
+| R4 | 契约版本 / 迁移号 | **`0.18.0` + `V24__add_experience_likes.sql`**（P3 原定 `0.16.0` + `V22`；合并 `origin/main@b50e416` 后顺延）：`0.15.0` + `V21` 已由 `add-ai-itinerary` 在 registry 台账声明，本 change 顺延 | 用户 2026-11-17 |
 | R5 | 点赞态字段名 | 候选名 `liked_by_me` 定稿为 **`is_liked`**（`@rule:api-contract` 布尔 `is_` 前缀）；Delta 已同步并 `validate --strict` valid | G1 跟踪 T1；Dev |
 | R6 | P2 计数更正 | `user-credit` Delta 实为 15 Scenario（7 + 5 + 3），两 Delta 合计 27；Dov / G1 / 评审 / 质量报告 / handoff 已更正并注明 | P3 开工核对 |
 
@@ -44,7 +44,7 @@
 | tasks 评审报告 | 1 / 2（WAYNE） | WAYNE（IO） | 2026-11-17 |
 | tasks 评审报告 | 2 / 2（当前开发者） | Lewis Liu | 2026-11-17 |
 
-签署来源：发起人 2026-11-17 当次会话选择「全部批准」并指定第二签署人 Neal；报告内已逐条回填。契约 / 迁移号在签署后按用户新的裁决顺延（0.16.0 + V22），两份报告已追加「变更摘要」，结论与签署不变。
+签署来源：发起人 2026-11-17 当次会话选择「全部批准」并指定第二签署人 Neal；报告内已逐条回填。契约 / 迁移号在签署后按用户新的裁决顺延（0.18.0 + V24），两份报告已追加「变更摘要」，结论与签署不变。
 
 ## 5. 下一步
 

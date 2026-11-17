@@ -1,8 +1,8 @@
 # 变更提案：add-experience-like-credit
 
 - **触发：** GitHub issue #30「[P0] 旅行体验获赞增加信用分」（正文：优先级 P1 ｜ 信用系统迭代 2 ｜ Story 3 ｜ 故事点 5 ｜ 落点：旅行体验 / 信用记录）＋ 用户 2026-11-17 裁决 D1–D4
-- **需求条目：** `requirement-workspace/requirements/REQ-022-experience-like-credit.md`
-- **意图捕获：** `requirement-workspace/intents/REQ-022-experience-like-credit.md`
+- **需求条目：** `requirement-workspace/requirements/REQ-023-experience-like-credit.md`
+- **意图捕获：** `requirement-workspace/intents/REQ-023-experience-like-credit.md`
 - **能力：** `trip-experiences`（体验点赞，ADDED）+ `user-credit`（体验获赞阶梯加分，ADDED）
 - **规模：** M（1 张点赞表与 1 次迁移 + 点赞/取消端点 + 体验响应与两处展示面 + 获赞结算服务；复用既有记账服务，无新页面、无新路由）
 - **规则：** `@rule:api-contract`、`@rule:java-patterns`、`@rule:web-coding-style`、`@rule:security-baseline`、`@rule:tdd-cycle`、`@rule:sdd-artifacts`（原型先行按 `docs/prototype/prototype.html` 与 `styles.css` 为视觉基准执行）
@@ -86,9 +86,9 @@ issue #30 是信用系统迭代 2 的 Story 3：让「发布优质旅行体验�
 
 ## 需求与证据
 
-- 需求：`requirement-workspace/requirements/REQ-022-experience-like-credit.md`（24 场景，blocking OQ 0，DoR BLOCKER 0）
-- 意图：`requirement-workspace/intents/REQ-022-experience-like-credit.md`（证据锚点 + D1–D4）
-- 共享分析：`deep-dive.md`「REQ-022 增补」①–④；`impact-brief.md` §22（as-is → delta、blast radius、风险、拆分边界）
+- 需求：`requirement-workspace/requirements/REQ-023-experience-like-credit.md`（24 场景，blocking OQ 0，DoR BLOCKER 0）
+- 意图：`requirement-workspace/intents/REQ-023-experience-like-credit.md`（证据锚点 + D1–D4）
+- 共享分析：`deep-dive.md`「REQ-023 增补」①–④；`impact-brief.md` §22（as-is → delta、blast radius、风险、拆分边界）
 - 现状证据：`CreditService` / `CreditServiceImpl`（记账服务无调用方）；`ExperienceResponse`（无赞数字段）；`ExperienceController`（无点赞端点、无 DELETE）；`V8__create_trip_experiences.sql`（每作者每行程唯一）；`docs/prototype/ui.js` `expCard()` / `.exp-item`（无点赞交互）；`openapi.yaml` 0.14.0（`Error.code` 闭集）；`db/migration` V20。
 
 ## Effort / size

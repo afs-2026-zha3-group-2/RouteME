@@ -1,3 +1,4 @@
+import { useEffect, useRef } from 'react';
 import { Button, Input, Skeleton } from 'antd';
 import { tripMessages } from '../i18n/tripMessages';
 import { Avatar } from '../shell/Avatar';
@@ -47,6 +48,19 @@ export function ChatMain({
   const closed = completed || cancelled;
   const loading = messages === null && error === null;
 
+  const bodyRef = useRef<HTMLDivElement>(null);
+  const lastCountRef = useRef(0);
+
+  // 有新消息时贴在底部；轮询但没有新消息时不打断向上翻阅。
+  useEffect(() => {
+    const node = bodyRef.current;
+    const count = messages?.length ?? 0;
+    if (node !== null && count > lastCountRef.current) {
+      node.scrollTop = node.scrollHeight;
+    }
+    lastCountRef.current = count;
+  }, [messages]);
+
   return (
     <section className="chat-main">
       <div className="chat-head">
@@ -79,7 +93,7 @@ export function ChatMain({
         <span>{chatSafetyText(trip.meeting_areas, trip.meeting_time)}</span>
       </div>
 
-      <div className="chat-body">
+      <div className="chat-body" ref={bodyRef} aria-live="polite">
         {loading && <Skeleton active paragraph={{ rows: 4 }} />}
 
         {error !== null && (
@@ -100,7 +114,7 @@ export function ChatMain({
             const mine = message.sender_id === currentUser.id;
             return (
               <div key={message.id} className={mine ? 'msg me' : 'msg'}>
-                <Avatar user={mine ? currentUser : other} size="sm" />
+                {!mine && <Avatar user={other} size="sm" />}
                 <span className="msg-col">
                   <span className="bubble">{message.content}</span>
                   <span className="msg-time">{formatChatTime(message.sent_at)}</span>

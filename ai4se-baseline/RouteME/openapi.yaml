@@ -1,10 +1,10 @@
 openapi: 3.0.3
 info:
   title: RouteME API
-  version: 0.16.0
+  version: 0.18.0
   description: |
     RouteME 后端对外契约。本文件是前后端唯一事实源，字段名、类型、状态码与错误码只在这里定稿。
-        当前包含：脚手架问候语、演示账户与账号认证（注册/登录/会话/退出）、旅行计划（浏览/筛选/发布/详情/结束），同行匹配、申请、退出、聊天、我的旅行与举报，以及游后体验分享与参考发布所需数据。
+        当前包含：脚手架问候语、演示账户与账号认证（注册/登录/会话/退出）、旅行计划（浏览/筛选/发布/详情/结束），同行匹配、申请、退出、聊天、我的旅行与举报，游后体验分享与参考发布所需数据，以及管理后台（用户管理 / 举报处置 / 人工客服）与用户侧帮助入口。
         行程与体验列表按页返回：`page` 从 1 起，`size` 默认 20、上限 50。
         目的地为用户在地图地点库中搜索或点选的城市/地点名称，不再限定固定枚举。
 servers:
@@ -1700,6 +1700,555 @@ paths:
                 format: binary
         '404':
           description: 图片不存在或已被移除
+  /admin/users:
+    get:
+      operationId: listAdminUsers
+      summary: 管理端用户列表
+      description: 按注册时间倒序；`q` 支持用户 ID 精确匹配、昵称包含、邮箱包含（忽略大小写）。
+      parameters:
+        - $ref: '#/components/parameters/BearerToken'
+        - name: q
+          in: query
+          required: false
+          schema:
+            type: string
+        - name: status
+          in: query
+          required: false
+          schema:
+            $ref: '#/components/schemas/AccountStatus'
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/Size'
+      responses:
+        '200':
+          description: 用户列表的一页
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminUserPage'
+        '400':
+          $ref: '#/components/responses/InvalidInput'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/AdminRequired'
+        '500':
+          $ref: '#/components/responses/Unexpected'
+  /admin/users/{userId}:
+    get:
+      operationId: loadAdminUserDetail
+      summary: 管理端用户详情
+      parameters:
+        - $ref: '#/components/parameters/BearerToken'
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: 资料、账号状态与三类关联内容
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminUserDetail'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/AdminRequired'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/Unexpected'
+  /admin/users/{userId}/status:
+    post:
+      operationId: changeAdminUserStatus
+      summary: 暂停 / 封禁 / 恢复账号
+      parameters:
+        - $ref: '#/components/parameters/BearerToken'
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AdminUserStatusRequest'
+      responses:
+        '200':
+          description: 已迁移账号状态
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminUserDetail'
+        '400':
+          $ref: '#/components/responses/InvalidInput'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/AdminRequired'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '500':
+          $ref: '#/components/responses/Unexpected'
+  /admin/reports:
+    get:
+      operationId: listAdminReports
+      summary: 举报队列
+      description: 按创建时间倒序；可按处理状态筛选。
+      parameters:
+        - $ref: '#/components/parameters/BearerToken'
+        - name: status
+          in: query
+          required: false
+          schema:
+            $ref: '#/components/schemas/ReportStatus'
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/Size'
+      responses:
+        '200':
+          description: 举报队列的一页
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminReportPage'
+        '400':
+          $ref: '#/components/responses/InvalidInput'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/AdminRequired'
+        '500':
+          $ref: '#/components/responses/Unexpected'
+  /admin/reports/{reportId}:
+    get:
+      operationId: loadAdminReportDetail
+      summary: 举报详情
+      parameters:
+        - $ref: '#/components/parameters/BearerToken'
+        - name: reportId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: 举报上下文与处置历史
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminReportDetail'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/AdminRequired'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/Unexpected'
+  /admin/reports/{reportId}/start:
+    post:
+      operationId: startAdminReport
+      summary: 开始处理举报
+      parameters:
+        - $ref: '#/components/parameters/BearerToken'
+        - name: reportId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: 举报已进入 PROCESSING
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminReportDetail'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/AdminRequired'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '500':
+          $ref: '#/components/responses/Unexpected'
+  /admin/reports/{reportId}/resolve:
+    post:
+      operationId: resolveAdminReport
+      summary: 处理举报
+      description: 成立时在同一事务内按 action 处罚被举报用户；不成立时固定写入 REJECT。
+      parameters:
+        - $ref: '#/components/parameters/BearerToken'
+        - name: reportId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AdminReportResolveRequest'
+      responses:
+        '200':
+          description: 举报已处理
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminReportDetail'
+        '400':
+          $ref: '#/components/responses/InvalidInput'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/AdminRequired'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '500':
+          $ref: '#/components/responses/Unexpected'
+  /admin/service/sessions:
+    get:
+      operationId: listAdminServiceSessions
+      summary: 客服会话队列
+      description: WAITING 按创建时间升序，其余状态按创建时间倒序。
+      parameters:
+        - $ref: '#/components/parameters/BearerToken'
+        - name: status
+          in: query
+          required: false
+          schema:
+            $ref: '#/components/schemas/ServiceSessionStatus'
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/Size'
+      responses:
+        '200':
+          description: 会话队列的一页
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServiceSessionPage'
+        '400':
+          $ref: '#/components/responses/InvalidInput'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/AdminRequired'
+        '500':
+          $ref: '#/components/responses/Unexpected'
+  /admin/service/sessions/{sessionId}:
+    get:
+      operationId: loadAdminServiceSession
+      summary: 客服会话详情
+      parameters:
+        - $ref: '#/components/parameters/BearerToken'
+        - name: sessionId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: 用户资料、相关举报与完整消息
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServiceSessionDetail'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/AdminRequired'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/Unexpected'
+  /admin/service/sessions/{sessionId}/join:
+    post:
+      operationId: joinAdminServiceSession
+      summary: 接入客服会话
+      parameters:
+        - $ref: '#/components/parameters/BearerToken'
+        - name: sessionId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: 会话已进入 HANDLING
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServiceSessionDetail'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/AdminRequired'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '500':
+          $ref: '#/components/responses/Unexpected'
+  /admin/service/sessions/{sessionId}/close:
+    post:
+      operationId: closeAdminServiceSession
+      summary: 结束客服会话
+      parameters:
+        - $ref: '#/components/parameters/BearerToken'
+        - name: sessionId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: 会话已进入 CLOSED
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServiceSessionDetail'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/AdminRequired'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '500':
+          $ref: '#/components/responses/Unexpected'
+  /help/reports:
+    get:
+      operationId: listMyHelpReports
+      summary: 我的举报
+      description: 仅返回当前用户的举报，按创建时间倒序，最多 50 条；不含备注、处理人与被举报人处罚。
+      parameters:
+        - $ref: '#/components/parameters/BearerToken'
+      responses:
+        '200':
+          description: 本人举报列表
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HelpReports'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/Unexpected'
+  /service/sessions/current:
+    get:
+      operationId: loadCurrentServiceSession
+      summary: 当前客服会话
+      description: 没有未结束会话时响应体为空。
+      parameters:
+        - $ref: '#/components/parameters/BearerToken'
+      responses:
+        '200':
+          description: 当前 WAITING / HANDLING 会话与消息；无则为空
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServiceSessionDetail'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/Unexpected'
+  /service/sessions:
+    post:
+      operationId: openServiceSession
+      summary: 发起人工客服
+      description: 幂等：已有 WAITING / HANDLING 会话时返回原会话。
+      parameters:
+        - $ref: '#/components/parameters/BearerToken'
+      responses:
+        '200':
+          description: 新建或既有的未结束会话
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServiceSessionDetail'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/AccountRestricted'
+        '500':
+          $ref: '#/components/responses/Unexpected'
+  /service/sessions/{sessionId}/messages:
+    get:
+      operationId: listServiceMessages
+      summary: 会话消息
+      parameters:
+        - $ref: '#/components/parameters/BearerToken'
+        - name: sessionId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: 升序消息列表
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ServiceMessage'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/Unexpected'
+    post:
+      operationId: sendServiceMessage
+      summary: 发送客服消息
+      description: 用户只能写入本人会话；管理员写入任意未结束会话，sender_type 由服务端判定。
+      parameters:
+        - $ref: '#/components/parameters/BearerToken'
+        - name: sessionId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ServiceMessageRequest'
+      responses:
+        '201':
+          description: 消息已保存
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServiceMessage'
+        '400':
+          $ref: '#/components/responses/InvalidInput'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/AccountRestricted'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '500':
+          $ref: '#/components/responses/Unexpected'
+  /weather/forecast:
+    get:
+      operationId: loadWeatherForecast
+      summary: 目的地日期天气（Open-Meteo）
+      description: |
+        按目的地与旅行日期返回 Open-Meteo 的真实天气与出行提醒。
+        `destination_code` 与 `lng`/`lat` 至少提供一组：携带坐标时优先使用（例如高德选点结果），
+        否则按 6 位区划码解析城市中心坐标，用户无需再次输入城市。
+        日期窗口为今天 ≤ date ≤ 今天 + 15（`Asia/Shanghai`）；越界返回 200 且 `available=false`（`reason=OUT_OF_RANGE`），
+        不返回任何天气数值与提醒。上游失败返回 502 `WEATHER_UPSTREAM_ERROR`，绝不伪造天气。
+      parameters:
+        - name: destination_code
+          in: query
+          required: false
+          description: 目的地 6 位行政区划代码；与 `lng`/`lat` 至少提供一组
+          schema:
+            type: string
+            pattern: '^[0-9]{6}$'
+            example: '440100'
+        - name: date
+          in: query
+          required: true
+          description: 旅行日期；今天 ≤ date ≤ 今天 + 15
+          schema:
+            type: string
+            format: date
+        - name: lng
+          in: query
+          required: false
+          description: 已有目的地经度（如高德选点结果）；必须与 `lat` 成对出现
+          schema:
+            type: number
+            format: double
+        - name: lat
+          in: query
+          required: false
+          description: 已有目的地纬度；必须与 `lng` 成对出现
+          schema:
+            type: number
+            format: double
+      responses:
+        '200':
+          description: 可用天气，或日期超出预报窗口的不可用状态
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WeatherForecast'
+              examples:
+                available:
+                  value:
+                    date: '2026-11-21'
+                    destination_code: '440100'
+                    city: 广州市
+                    lng: 113.2644
+                    lat: 23.1291
+                    available: true
+                    weather:
+                      weather_code: 61
+                      weather_text: 小雨
+                      temp_max_c: 24.0
+                      temp_min_c: 17.0
+                      precipitation_probability_pct: 80
+                      precipitation_mm: 5.2
+                      wind_speed_kmh: 18.0
+                      uv_index: 3.0
+                    reminders:
+                      - code: rain
+                        text: 降雨概率 80%，记得带伞和雨具，户外行程注意防雨。降雨明显，建议调整户外行程。
+                    source: open-meteo
+                outOfRange:
+                  value:
+                    date: '2026-12-20'
+                    destination_code: '440100'
+                    city: 广州市
+                    lng: null
+                    lat: null
+                    available: false
+                    reason: OUT_OF_RANGE
+                    reminders: []
+                    source: open-meteo
+        '400':
+          $ref: '#/components/responses/InvalidInput'
+        '500':
+          $ref: '#/components/responses/Unexpected'
+        '502':
+          description: Open-Meteo 或地理编码不可用，或没有请求当日的数据
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                upstream:
+                  value:
+                    code: WEATHER_UPSTREAM_ERROR
 components:
   parameters:
     DemoUserId:
@@ -1767,6 +2316,39 @@ components:
             forbidden:
               value:
                 code: FORBIDDEN
+    Unauthorized:
+      description: 缺少或无效的登录会话
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          examples:
+            sessionInvalid:
+              value:
+                code: SESSION_INVALID
+    AdminRequired:
+      description: 已登录但角色不是 ADMIN
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          examples:
+            adminRequired:
+              value:
+                code: ADMIN_REQUIRED
+    AccountRestricted:
+      description: 账号处于 SUSPENDED 或 BANNED，不能执行该写操作
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          examples:
+            suspended:
+              value:
+                code: ACCOUNT_SUSPENDED
+            banned:
+              value:
+                code: ACCOUNT_BANNED
     NotFound:
       description: 资源不存在
       content:
@@ -1813,7 +2395,7 @@ components:
           description: 问候语文本，来自 greetings 表的 message 列
     DemoUser:
       type: object
-      required: [id, nickname, avatar_initial, bio, interests, profile_complete]
+      required: [id, nickname, avatar_initial, bio, interests, profile_complete, role, status]
       properties:
         id:
           type: integer
@@ -1869,6 +2451,10 @@ components:
           type: boolean
           readOnly: true
           description: 由必填字段派生的资料完善状态，不落库
+        role:
+          $ref: '#/components/schemas/AccountRole'
+        status:
+          $ref: '#/components/schemas/AccountStatus'
     UserProfile:
       type: object
       required: [id, nickname, avatar_initial, interests, profile_complete, credit_score, credit_level]
@@ -1971,6 +2557,19 @@ components:
           nullable: true
           readOnly: true
           description: 用户加入时间，UTC；仅读取端点返回
+        status:
+          $ref: '#/components/schemas/AccountStatus'
+        ban_reason_code:
+          type: string
+          nullable: true
+          readOnly: true
+          description: 仅有效状态为 BANNED 时出现；8 项封禁理由之一
+        ban_expires_at:
+          type: string
+          format: date-time
+          nullable: true
+          readOnly: true
+          description: 仅有效状态为 BANNED 时出现；到期后接口不再返回
         stats:
           $ref: '#/components/schemas/ProfileStats'
     UserCreditEntry:
@@ -2086,6 +2685,12 @@ components:
           minLength: 1
           maxLength: 20
           description: 昵称；注册后进入资料完善页补全其余必填字段
+        email:
+          type: string
+          format: email
+          maxLength: 120
+          nullable: true
+          description: 选填；去空白转小写后唯一，重复返回 409 EMAIL_TAKEN
     AuthLoginRequest:
       type: object
       required: [username, password]
@@ -2171,13 +2776,20 @@ components:
             type: string
             maxLength: 100
           nullable: true
-          description: 集合区域，选填，最多 3 个、每个 ≤100 字；未填写时为空数组
+          description: 集合地点，选填，每个 ≤100 字；新发布只保留 1 个，历史行程可能仍有 2–3 个；未填写时为空数组
         meeting_time:
           type: string
           nullable: true
           pattern: '^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$'
           description: 集合时间，本地墙上时间（无时区），选填；未填写时为 null
           example: '2026-11-20T08:30'
+        travel_mode:
+          type: string
+          nullable: true
+          enum: [driving, bicycling, transit]
+          description: |
+            出行方式：自驾 / 骑行 / 公共交通。0.15.0 起发布时可选；
+            本次上线前的行程为 null（前端按「未填写」展示，地图回退步行）。
         joined_count:
           type: integer
           minimum: 1
@@ -2215,7 +2827,7 @@ components:
                 type: string
                 maxLength: 100
               nullable: true
-              description: 集合区域，选填，最多 3 个
+              description: 集合地点，选填；新发布只保留 1 个，历史行程可能仍有 2–3 个
             meeting_time:
               type: string
               nullable: true
@@ -2290,18 +2902,23 @@ components:
             type: string
         meeting_areas:
           type: array
-          maxItems: 3
+          maxItems: 1
           items:
             type: string
             maxLength: 100
           nullable: true
-          description: 集合区域，选填，最多 3 个、每个 ≤100 字；null 或空数组视为未填写
+          description: 集合地点，选填，只接受 1 个、每个 ≤100 字；null 或空数组视为未填写
         meeting_time:
           type: string
           nullable: true
           pattern: '^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$'
           description: 集合时间，本地墙上时间（无时区），选填；日期部分不得晚于结束日期
           example: '2026-11-20T08:30'
+        travel_mode:
+          type: string
+          nullable: true
+          enum: [driving, bicycling, transit]
+          description: 出行方式：自驾 / 骑行 / 公共交通；选填，未填为 null
         budget_min_cents:
           type: integer
           minimum: 0
@@ -2325,12 +2942,12 @@ components:
       properties:
         meeting_areas:
           type: array
-          maxItems: 3
+          maxItems: 1
           items:
             type: string
             maxLength: 100
           nullable: true
-          description: 集合区域，最多 3 个；未传或传 null 视为清空
+          description: 集合地点，只接受 1 个；未传或传 null 视为清空
         meeting_time:
           type: string
           nullable: true
@@ -2687,7 +3304,7 @@ components:
       properties:
         target_type:
           type: string
-          enum: [trip, user]
+          enum: [trip, user, experience]
         target_id:
           type: integer
           format: int64
@@ -2698,6 +3315,11 @@ components:
           type: string
           maxLength: 200
           nullable: true
+        trip_id:
+          type: integer
+          format: int64
+          nullable: true
+          description: 从行程聊天页提交用户举报时携带该会话所属行程 id；后端校验双方在该行程下有会话，其他入口省略。
     ReportReceipt:
       type: object
       required: [received]
@@ -2705,6 +3327,747 @@ components:
         received:
           type: boolean
           readOnly: true
+    AccountRole:
+      type: string
+      enum: [USER, ADMIN]
+      description: 账号角色；客户端不能自选。
+    AccountStatus:
+      type: string
+      enum: [ACTIVE, SUSPENDED, BANNED]
+      description: 有效账号状态；到期封禁按 ACTIVE 返回。
+    BanReason:
+      type: string
+      enum: [HARASSMENT, FAKE_TRIP, FRAUD_RISK, ILLEGAL_CONTENT, IMPERSONATION, NO_SHOW_DISRUPTION, PRIVACY_LEAK, OTHER]
+    ReportStatus:
+      type: string
+      enum: [PENDING, PROCESSING, RESOLVED, REJECTED]
+    ReportResolutionAction:
+      type: string
+      enum: [SUSPEND, BAN, KEEP, UPDATE_BAN, REJECT]
+    ServiceSessionStatus:
+      type: string
+      enum: [WAITING, HANDLING, CLOSED]
+    AdminUserRef:
+      type: object
+      required: [id]
+      properties:
+        id:
+          type: integer
+          format: int64
+          readOnly: true
+        nickname:
+          type: string
+          nullable: true
+          readOnly: true
+    ReportedUser:
+      type: object
+      required: [id, nickname, status]
+      properties:
+        id:
+          type: integer
+          format: int64
+          readOnly: true
+        nickname:
+          type: string
+          readOnly: true
+        status:
+          $ref: '#/components/schemas/AccountStatus'
+    AdminUserSummary:
+      type: object
+      required: [id, nickname, avatar_initial, role, status, created_at]
+      properties:
+        id:
+          type: integer
+          format: int64
+          readOnly: true
+        nickname:
+          type: string
+          readOnly: true
+        avatar_initial:
+          type: string
+          readOnly: true
+        avatar_url:
+          type: string
+          nullable: true
+          readOnly: true
+        email:
+          type: string
+          nullable: true
+          readOnly: true
+          description: 未填写时省略，列表显示「未填写」
+        role:
+          $ref: '#/components/schemas/AccountRole'
+        status:
+          $ref: '#/components/schemas/AccountStatus'
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+    AdminUserTripRef:
+      type: object
+      required: [id, title, status, start_date]
+      properties:
+        id:
+          type: integer
+          format: int64
+          readOnly: true
+        title:
+          type: string
+          readOnly: true
+        status:
+          type: string
+          enum: [recruiting, full, ongoing, completed]
+        start_date:
+          type: string
+          format: date
+          readOnly: true
+    AdminUserExperienceRef:
+      type: object
+      required: [id, trip_id, created_at]
+      properties:
+        id:
+          type: integer
+          format: int64
+          readOnly: true
+        trip_id:
+          type: integer
+          format: int64
+          readOnly: true
+        trip_title:
+          type: string
+          nullable: true
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+    AdminUserReportRef:
+      type: object
+      required: [id, code, direction, status, reason, created_at]
+      properties:
+        id:
+          type: integer
+          format: int64
+          readOnly: true
+        code:
+          type: string
+          readOnly: true
+          description: 展示编号 `R-{id}`，与举报队列一致
+        direction:
+          type: string
+          enum: [REPORTER, REPORTED]
+        status:
+          $ref: '#/components/schemas/ReportStatus'
+        reason:
+          type: string
+          enum: [harassment, fake, safety, other]
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+    AdminUserDetail:
+      type: object
+      required: [id, nickname, avatar_initial, role, status, created_at,
+                 trips, experiences, reports, trip_total, experience_total, report_total]
+      properties:
+        id:
+          type: integer
+          format: int64
+          readOnly: true
+        nickname:
+          type: string
+          readOnly: true
+        avatar_initial:
+          type: string
+          readOnly: true
+        avatar_url:
+          type: string
+          nullable: true
+          readOnly: true
+        email:
+          type: string
+          nullable: true
+          readOnly: true
+        role:
+          $ref: '#/components/schemas/AccountRole'
+        status:
+          $ref: '#/components/schemas/AccountStatus'
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        school:
+          type: string
+          nullable: true
+        city:
+          type: string
+          nullable: true
+        major:
+          type: string
+          nullable: true
+        job:
+          type: string
+          nullable: true
+        bio:
+          type: string
+          nullable: true
+        interests:
+          type: array
+          readOnly: true
+          items:
+            type: string
+        status_reason:
+          type: string
+          nullable: true
+          readOnly: true
+        status_updated_at:
+          type: string
+          format: date-time
+          nullable: true
+          readOnly: true
+        status_updated_by:
+          allOf:
+            - $ref: '#/components/schemas/AdminUserRef'
+          nullable: true
+        ban_expires_at:
+          type: string
+          format: date-time
+          nullable: true
+          readOnly: true
+        ban_reason_code:
+          type: string
+          nullable: true
+          readOnly: true
+        ban_reason_note:
+          type: string
+          nullable: true
+          readOnly: true
+        trips:
+          type: array
+          maxItems: 50
+          items:
+            $ref: '#/components/schemas/AdminUserTripRef'
+        experiences:
+          type: array
+          maxItems: 50
+          items:
+            $ref: '#/components/schemas/AdminUserExperienceRef'
+        reports:
+          type: array
+          maxItems: 50
+          items:
+            $ref: '#/components/schemas/AdminUserReportRef'
+        trip_total:
+          type: integer
+          format: int64
+        experience_total:
+          type: integer
+          format: int64
+        report_total:
+          type: integer
+          format: int64
+    AdminUserPage:
+      type: object
+      required: [items, page, size, total, total_pages]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/AdminUserSummary'
+        page:
+          type: integer
+        size:
+          type: integer
+        total:
+          type: integer
+          format: int64
+        total_pages:
+          type: integer
+    AdminUserStatusRequest:
+      type: object
+      required: [action]
+      properties:
+        action:
+          type: string
+          enum: [SUSPEND, BAN, RESTORE]
+        reason:
+          type: string
+          maxLength: 200
+          nullable: true
+          description: SUSPEND / BAN 必填；RESTORE 可选
+        ban_reason_code:
+          $ref: '#/components/schemas/BanReason'
+        ban_reason_note:
+          type: string
+          maxLength: 200
+          nullable: true
+          description: ban_reason_code=OTHER 时必填
+        ban_expires_at:
+          type: string
+          format: date-time
+          nullable: true
+          description: BAN 必填且必须晚于当前时间
+    AdminReportTarget:
+      type: object
+      required: [type, id, label, exists]
+      properties:
+        type:
+          type: string
+          enum: [trip, user, experience]
+        id:
+          type: integer
+          format: int64
+        label:
+          type: string
+          nullable: true
+        exists:
+          type: boolean
+        content_excerpt:
+          type: string
+          nullable: true
+    AdminReportContext:
+      type: object
+      required: [origin, messages]
+      properties:
+        origin:
+          type: string
+          enum: [chat, trip]
+          description: chat = 从行程聊天提交的用户举报；trip = 以行程为对象的举报。
+        trip:
+          allOf:
+            - $ref: '#/components/schemas/AdminReportTripContext'
+          nullable: true
+        messages:
+          type: array
+          description: origin=chat 时按发送时间升序的举报人与被举报人完整会话；origin=trip 时为空数组。
+          items:
+            $ref: '#/components/schemas/AdminReportMessage'
+    AdminReportTripContext:
+      type: object
+      required: [id, publisher]
+      properties:
+        id:
+          type: integer
+          format: int64
+          readOnly: true
+        title:
+          type: string
+          nullable: true
+          readOnly: true
+        destination:
+          type: string
+          nullable: true
+          readOnly: true
+        start_date:
+          type: string
+          format: date
+          nullable: true
+          readOnly: true
+        end_date:
+          type: string
+          format: date
+          nullable: true
+          readOnly: true
+        status:
+          type: string
+          enum: [recruiting, full, ongoing, completed, cancelled]
+        publisher:
+          allOf:
+            - $ref: '#/components/schemas/AdminUserRef'
+          nullable: true
+    AdminReportMessage:
+      type: object
+      required: [id, sender, receiver, content, sent_at]
+      properties:
+        id:
+          type: integer
+          format: int64
+          readOnly: true
+        sender:
+          $ref: '#/components/schemas/AdminUserRef'
+        receiver:
+          $ref: '#/components/schemas/AdminUserRef'
+        content:
+          type: string
+          maxLength: 500
+        sent_at:
+          type: string
+          format: date-time
+          readOnly: true
+    AdminReportSummary:
+      type: object
+      required: [id, code, target_type, target_id, reason, created_at, status]
+      properties:
+        id:
+          type: integer
+          format: int64
+          readOnly: true
+        code:
+          type: string
+          readOnly: true
+          description: 展示编号 `R-{id}`
+        target_type:
+          type: string
+          enum: [trip, user, experience]
+        target_id:
+          type: integer
+          format: int64
+        target_label:
+          type: string
+          nullable: true
+        reporter:
+          $ref: '#/components/schemas/AdminUserRef'
+        reported_user:
+          allOf:
+            - $ref: '#/components/schemas/ReportedUser'
+          nullable: true
+        reason:
+          type: string
+          enum: [harassment, fake, safety, other]
+        created_at:
+          type: string
+          format: date-time
+        status:
+          $ref: '#/components/schemas/ReportStatus'
+    AdminReportDetail:
+      allOf:
+        - $ref: '#/components/schemas/AdminReportSummary'
+        - type: object
+          required: [target]
+          properties:
+            note:
+              type: string
+              nullable: true
+              description: 举报人备注；仅管理端可见
+            target:
+              $ref: '#/components/schemas/AdminReportTarget'
+            context:
+              allOf:
+                - $ref: '#/components/schemas/AdminReportContext'
+              nullable: true
+              description: 举报来源上下文；聊天举报回放会话，行程举报给出行程概要，早期用户举报省略。
+            processed_by:
+              allOf:
+                - $ref: '#/components/schemas/AdminUserRef'
+              nullable: true
+            processing_at:
+              type: string
+              format: date-time
+              nullable: true
+            resolved_at:
+              type: string
+              format: date-time
+              nullable: true
+            resolution_note:
+              type: string
+              nullable: true
+            resolution_action:
+              $ref: '#/components/schemas/ReportResolutionAction'
+    AdminReportResolveRequest:
+      type: object
+      required: [outcome, note]
+      properties:
+        outcome:
+          type: string
+          enum: [RESOLVED, REJECTED]
+        note:
+          type: string
+          minLength: 1
+          maxLength: 500
+        action:
+          type: string
+          enum: [SUSPEND, BAN, KEEP, UPDATE_BAN]
+          nullable: true
+          description: outcome=RESOLVED 时必填
+        ban_reason_code:
+          $ref: '#/components/schemas/BanReason'
+        ban_reason_note:
+          type: string
+          maxLength: 200
+          nullable: true
+        ban_expires_at:
+          type: string
+          format: date-time
+          nullable: true
+    AdminReportPage:
+      type: object
+      required: [items, page, size, total, total_pages]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/AdminReportSummary'
+        page:
+          type: integer
+        size:
+          type: integer
+        total:
+          type: integer
+          format: int64
+        total_pages:
+          type: integer
+    ServiceUser:
+      type: object
+      required: [id, nickname, status]
+      properties:
+        id:
+          type: integer
+          format: int64
+          readOnly: true
+        nickname:
+          type: string
+          readOnly: true
+        avatar_initial:
+          type: string
+          nullable: true
+        email:
+          type: string
+          nullable: true
+        status:
+          $ref: '#/components/schemas/AccountStatus'
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+    ServiceMessage:
+      type: object
+      required: [id, session_id, sender_type, sender_id, content, created_at]
+      properties:
+        id:
+          type: integer
+          format: int64
+          readOnly: true
+        session_id:
+          type: integer
+          format: int64
+          readOnly: true
+        sender_type:
+          type: string
+          enum: [USER, ADMIN]
+        sender_id:
+          type: integer
+          format: int64
+          readOnly: true
+        sender_nickname:
+          type: string
+          nullable: true
+          readOnly: true
+        content:
+          type: string
+          minLength: 1
+          maxLength: 500
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+    ServiceMessageRequest:
+      type: object
+      required: [content]
+      properties:
+        content:
+          type: string
+          minLength: 1
+          maxLength: 500
+    ServiceSessionSummary:
+      type: object
+      required: [id, user, status, created_at, message_count]
+      properties:
+        id:
+          type: integer
+          format: int64
+          readOnly: true
+        user:
+          $ref: '#/components/schemas/ServiceUser'
+        status:
+          $ref: '#/components/schemas/ServiceSessionStatus'
+        created_at:
+          type: string
+          format: date-time
+        joined_at:
+          type: string
+          format: date-time
+          nullable: true
+        closed_at:
+          type: string
+          format: date-time
+          nullable: true
+        last_message_at:
+          type: string
+          format: date-time
+          nullable: true
+        message_count:
+          type: integer
+          format: int64
+    ServiceSessionDetail:
+      allOf:
+        - $ref: '#/components/schemas/ServiceSessionSummary'
+        - type: object
+          properties:
+            messages:
+              type: array
+              items:
+                $ref: '#/components/schemas/ServiceMessage'
+            reports:
+              type: array
+              maxItems: 50
+              description: 仅管理端详情返回该字段
+              items:
+                $ref: '#/components/schemas/AdminUserReportRef'
+    ServiceSessionPage:
+      type: object
+      required: [items, page, size, total, total_pages]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/ServiceSessionSummary'
+        page:
+          type: integer
+        size:
+          type: integer
+        total:
+          type: integer
+          format: int64
+        total_pages:
+          type: integer
+    HelpReportSummary:
+      type: object
+      required: [id, code, target_type, target_id, reason, created_at, status]
+      properties:
+        id:
+          type: integer
+          format: int64
+          readOnly: true
+        code:
+          type: string
+          readOnly: true
+          description: 展示编号 `R-{id}`
+        target_type:
+          type: string
+          enum: [trip, user, experience]
+        target_id:
+          type: integer
+          format: int64
+        target_label:
+          type: string
+          nullable: true
+        reason:
+          type: string
+          enum: [harassment, fake, safety, other]
+        created_at:
+          type: string
+          format: date-time
+        status:
+          $ref: '#/components/schemas/ReportStatus'
+    HelpReports:
+      type: object
+      required: [items, total]
+      properties:
+        items:
+          type: array
+          maxItems: 50
+          items:
+            $ref: '#/components/schemas/HelpReportSummary'
+        total:
+          type: integer
+          format: int64
+    WeatherForecast:
+      type: object
+      required: [date, available, reminders, source]
+      properties:
+        date:
+          type: string
+          format: date
+          readOnly: true
+        destination_code:
+          type: string
+          nullable: true
+          readOnly: true
+        city:
+          type: string
+          nullable: true
+          readOnly: true
+        lng:
+          type: number
+          format: double
+          nullable: true
+          description: 实际使用的经度；不可用时为 null
+          readOnly: true
+        lat:
+          type: number
+          format: double
+          nullable: true
+          description: 实际使用的纬度；不可用时为 null
+          readOnly: true
+        available:
+          type: boolean
+          readOnly: true
+          description: 该日期是否有可用的真实天气
+        reason:
+          type: string
+          nullable: true
+          readOnly: true
+          enum: [OUT_OF_RANGE]
+        weather:
+          type: object
+          nullable: true
+          description: 天气不可用（超出预报窗口）时为 null
+          allOf:
+            - $ref: '#/components/schemas/WeatherDaily'
+        reminders:
+          type: array
+          readOnly: true
+          description: 出行提醒，按降雨 → 高温 → 紫外线 → 低温 → 温差 → 强风 → 平稳的固定顺序
+          items:
+            $ref: '#/components/schemas/WeatherReminder'
+        source:
+          type: string
+          readOnly: true
+          enum: [open-meteo]
+    WeatherDaily:
+      type: object
+      required: [weather_text, temp_max_c, temp_min_c]
+      properties:
+        weather_code:
+          type: integer
+          nullable: true
+          description: WMO 4677 天气码
+        weather_text:
+          type: string
+          description: 天气码对应的中文文案；未收录时为「未知天气」
+        temp_max_c:
+          type: number
+          format: double
+        temp_min_c:
+          type: number
+          format: double
+        precipitation_probability_pct:
+          type: integer
+          nullable: true
+          description: 当日最大降雨概率（%）；上游缺省时为 null
+        precipitation_mm:
+          type: number
+          format: double
+          nullable: true
+        wind_speed_kmh:
+          type: number
+          format: double
+          nullable: true
+        uv_index:
+          type: number
+          format: double
+          nullable: true
+          description: 当日最大紫外线指数；上游缺省时为 null，前端不展示也不参与提醒
+    WeatherReminder:
+      type: object
+      required: [code, text]
+      properties:
+        code:
+          type: string
+          enum: [rain, heat, uv, cold, temperature_gap, wind, calm]
+        text:
+          type: string
+          description: 面向用户的完整文案，内含真实天气数值
     Error:
       type: object
       required: [code]
@@ -2715,7 +4078,10 @@ components:
           enum:
             [GREETING_NOT_FOUND, INVALID_INPUT, DEMO_USER_REQUIRED, FORBIDDEN, USER_NOT_FOUND, TRIP_NOT_FOUND, TRIP_NOT_OPEN,
              APPLICATION_NOT_FOUND, APPLICATION_NOT_PENDING, DUPLICATE_APPLICATION, CHAT_NOT_ALLOWED, CHAT_READ_ONLY,
-             EXPERIENCE_NOT_ALLOWED, EXPERIENCE_NOT_FOUND, USERNAME_TAKEN, INVALID_CREDENTIALS, SESSION_INVALID, INTERNAL_ERROR]
+             EXPERIENCE_NOT_ALLOWED, EXPERIENCE_NOT_FOUND, USERNAME_TAKEN, INVALID_CREDENTIALS, SESSION_INVALID, WEATHER_UPSTREAM_ERROR,
+             INTERNAL_ERROR, ADMIN_REQUIRED, ACCOUNT_SUSPENDED, ACCOUNT_BANNED, INVALID_STATUS_TRANSITION,
+             CANNOT_TARGET_SELF, REPORT_NOT_FOUND, REPORT_NOT_PENDING, REPORT_NOT_PROCESSING, EMAIL_TAKEN,
+             SESSION_ALREADY_HANDLING, SESSION_NOT_HANDLING, SESSION_CLOSED]
         fields:
           type: object
           description: |

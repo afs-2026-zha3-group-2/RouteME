@@ -23,6 +23,7 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 
 import routeme.entity.TripExperienceEntity;
 import routeme.entity.TripExperiencePhotoEntity;
+import routeme.enums.WriteScopeEnum;
 import routeme.exception.ForbiddenActionException;
 import routeme.exception.InvalidInputException;
 import routeme.mapper.TripExperienceMapper;
@@ -37,6 +38,7 @@ import routeme.request.ExperienceWriteRequest;
 import routeme.response.ExperiencePhotoResponse;
 import routeme.response.ExperienceResponse;
 import routeme.response.ExperienceSaveResponse;
+import routeme.service.AccountStatusService;
 import routeme.service.DemoUserService;
 import routeme.service.ExperienceEligibility;
 import routeme.service.ExperienceLikeService;
@@ -61,6 +63,7 @@ public class ExperienceServiceImpl
     private final ExperienceEligibility eligibility;
     private final ExperienceLikeService experienceLikeService;
     private final Clock clock;
+    private final AccountStatusService accountStatusService;
 
     public ExperienceServiceImpl(
             TripPlanService tripPlanService,
@@ -69,7 +72,8 @@ public class ExperienceServiceImpl
             ExperiencePhotoStorage photoStorage,
             ExperienceEligibility eligibility,
             ExperienceLikeService experienceLikeService,
-            Clock clock) {
+            Clock clock,
+            AccountStatusService accountStatusService) {
         this.tripPlanService = tripPlanService;
         this.demoUserService = demoUserService;
         this.photoMapper = photoMapper;
@@ -77,11 +81,13 @@ public class ExperienceServiceImpl
         this.eligibility = eligibility;
         this.experienceLikeService = experienceLikeService;
         this.clock = clock;
+        this.accountStatusService = accountStatusService;
     }
 
     @Override
     @Transactional
     public ExperienceSaveResponse upsert(long tripId, long authorId, ExperienceWriteRequest request) {
+        accountStatusService.assertCanWrite(authorId, WriteScopeEnum.BUSINESS);
         TripPlan trip = tripPlanService.requireCurrent(tripId);
         eligibility.requireCanShare(trip, authorId);
         List<Long> photoIds = normalizePhotoIds(request.photoIdsOrDefault());

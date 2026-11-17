@@ -1,5 +1,7 @@
 package routeme.service;
 
+import java.util.List;
+
 import com.baomidou.mybatisplus.spring.service.IService;
 
 import routeme.entity.ReportEntity;
@@ -7,16 +9,33 @@ import routeme.pojo.Report;
 import routeme.request.ReportRequest;
 
 /**
- * 举报：记录原因与备注，不对外暴露处理流程。
+ * Report submission and the reporter's own read model.
  */
 public interface ReportService extends IService<ReportEntity> {
 
     /**
-     * 提交一条举报。
+     * Records a report submitted by {@code reporterId}.
      *
-     * @param reporterId 举报人（演示身份）id
-     * @param request    举报对象类型、对象 id、原因与选填备注
-     * @return 已落库的举报记录
+     * @param reporterId reporter account id
+     * @param request    target, reason and optional note
+     * @return stored report
      */
     Report submit(long reporterId, ReportRequest request);
+
+    /**
+     * Returns the reporter's own reports, newest first.
+     *
+     * @param reporterId reporter account id
+     * @param limit      maximum rows, applied after ordering
+     * @return reports owned by the caller
+     */
+    List<Report> listMine(long reporterId, int limit);
+
+    /**
+     * Counts the reporter's reports.
+     *
+     * @param reporterId reporter account id
+     * @return total rows owned by the caller
+     */
+    long countMine(long reporterId);
 }

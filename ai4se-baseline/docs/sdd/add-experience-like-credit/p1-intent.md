@@ -1,7 +1,7 @@
-# P1 — add-experience-like-credit（REQ-022 旅行体验获赞增加信用分）
+# P1 — add-experience-like-credit（REQ-023 旅行体验获赞增加信用分）
 
 - **日期：** 2026-11-17 ｜ **记录人：** Lewis Liu（当前开发者，发起人确认）｜ **阶段：** P1 Pass（质量 Pass；工件评审 1 Partial + 1 Pass，签署 7/7 齐备）
-- **需求：** REQ-022 旅行体验获赞增加信用分（GitHub issue #30；信用系统迭代 2 / Story 3 / 5 点）
+- **需求：** REQ-023 旅行体验获赞增加信用分（GitHub issue #30；信用系统迭代 2 / Story 3 / 5 点）
 - **能力：** `trip-experiences`（体验点赞，ADDED）+ `user-credit`（体验获赞阶梯加分，ADDED）；跨 capability 打包偏离见 proposal 评审 F-1（待 G1 SA 确认）
 - **分支 / 基线：** `.worktrees/add-experience-like-credit` / `feature/add-experience-like-credit` / `origin/main@64b38da`
 - **P0：** 跳过（仓库基线、规则与工具链已由既有 change 建立；本需求不新建工程脚手架）
@@ -23,11 +23,11 @@
 
 | 工件 | 路径 | 说明 |
 |---|---|---|
-| 意图捕获 | `requirement-workspace/intents/REQ-022-experience-like-credit.md` | 原始意图、证据锚点、D1–D4、Discovery Go |
-| Ready 需求 | `requirement-workspace/requirements/REQ-022-experience-like-credit.md` | 24 场景（L / T / D / E 四组）；blocking OQ 0；DoR BLOCKER 0 |
-| Deep-dive | `requirement-workspace/deep-dive.md`「REQ-022 增补」 | ① 数据契约（点赞表 / 赞数派生 / 档位派生 / 月度派生）/ ② 边界归属 / ③ 跨 REQ 一致 / ④ 展示契约 |
+| 意图捕获 | `requirement-workspace/intents/REQ-023-experience-like-credit.md` | 原始意图、证据锚点、D1–D4、Discovery Go |
+| Ready 需求 | `requirement-workspace/requirements/REQ-023-experience-like-credit.md` | 24 场景（L / T / D / E 四组）；blocking OQ 0；DoR BLOCKER 0 |
+| Deep-dive | `requirement-workspace/deep-dive.md`「REQ-023 增补」 | ① 数据契约（点赞表 / 赞数派生 / 档位派生 / 月度派生）/ ② 边界归属 / ③ 跨 REQ 一致 / ④ 展示契约 |
 | 影响面 | `requirement-workspace/impact-brief.md` §22 | 22.1–22.8；as-is → delta、blast radius、风险、拆分边界 |
-| 登记 | `requirement-workspace/registry.md`、`handoff.md`、`stories.md` | REQ-022 → `add-experience-like-credit`；故事「信用迭代2-S3」 |
+| 登记 | `requirement-workspace/registry.md`、`handoff.md`、`stories.md` | REQ-023 → `add-experience-like-credit`；故事「信用迭代2-S3」 |
 | 提案 | `openspec/changes/add-experience-like-credit/proposal.md` | 问题 / 范围 / 决策 D1–D10 / 影响面 / 规模 / 残余风险 |
 | Delta Spec | `openspec/changes/add-experience-like-credit/specs/trip-experiences/spec.md` | ADDED 2 Requirement / 12 Scenario（点赞与取消、赞数与点赞态展示） |
 | Delta Spec | `openspec/changes/add-experience-like-credit/specs/user-credit/spec.md` | ADDED 3 Requirement / 15 Scenario（阶梯加分、月度上限、计分边界） |

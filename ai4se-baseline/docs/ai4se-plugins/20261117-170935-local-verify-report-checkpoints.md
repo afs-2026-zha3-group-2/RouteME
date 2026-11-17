@@ -30,10 +30,10 @@
 
 - mode: persisted
 - report_path: docs/ai4se-plugins/20261117-171312-local-verify-report.md
-- overall: Pass（仅对同步前提交 0a6b9e5 成立）
+- overall: Partial（合并 main 后复验：build/E2E/OpenSpec 全绿；Redocly 6 个 error 均为 main 继承，likes 端点无 error）
 - waiver: N/A
 
 ## Next
 
-- suggested: 先同步 origin/main（b50e416）并顺延 0.18.0 + V24 + REQ-023，重跑全部命令后回填报告 addendum；G2 待 VL=Neal
+- suggested: 已按用户指示完成同步（0.18.0 + V24 + REQ-023）与复验，报告已追加 Post-sync addendum；下一步按用户指示合并 main；G2 待 VL=Neal 补签
 - on Fail without Waiver: hard-stop — do not call /sdd:pr-submit

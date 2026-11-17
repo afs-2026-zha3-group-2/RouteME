@@ -4,7 +4,7 @@
 - **Change:** `add-experience-like-credit`（`trip-experiences` ADDED 2 Requirement / 12 Scenario；`user-credit` ADDED 3 Requirement / 15 Scenario；合计 27）
 - **计数更正（2026-11-17，P3 前）：** `user-credit` Delta 实为 15 Scenario（7 + 5 + 3），两 Delta 合计 27；原记 12 / 24 系计数笔误，不改变评审结论。
 - **Date:** 2026-11-17 ｜ **Phase:** P2（`/sdd:delta-craft` step=review）
-- **Inputs:** [`proposal.md`](proposal.md)、[`specs/trip-experiences/spec.md`](specs/trip-experiences/spec.md)、[`specs/user-credit/spec.md`](specs/user-credit/spec.md)、`requirement-workspace/requirements/REQ-022-experience-like-credit.md`、`requirement-workspace/intents/REQ-022-experience-like-credit.md`、`requirement-workspace/deep-dive.md`「REQ-022 增补」、`requirement-workspace/impact-brief.md` §22
+- **Inputs:** [`proposal.md`](proposal.md)、[`specs/trip-experiences/spec.md`](specs/trip-experiences/spec.md)、[`specs/user-credit/spec.md`](specs/user-credit/spec.md)、`requirement-workspace/requirements/REQ-023-experience-like-credit.md`、`requirement-workspace/intents/REQ-023-experience-like-credit.md`、`requirement-workspace/deep-dive.md`「REQ-023 增补」、`requirement-workspace/impact-brief.md` §22
 - **Evidence:** `openspec validate add-experience-like-credit --strict` → valid；Living Spec `openspec/specs/trip-experiences/spec.md`（7 Requirement / 22 Scenario，无点赞需求，本 Delta 只 ADDED）；未归档 `add-credit-account/specs/user-credit/spec.md`（7 Requirement，本 Delta 不重名、不覆盖）
 
 ## AC review
@@ -26,7 +26,7 @@
 | DoV-2 歧义已列出或解决 | Pass（含注记） | 端点形态、错误码、字段名 → P3 契约定稿；月度并发保障 → P3 设计；多篇体验规则 → 多行数据单测 | issue 的「已 +18，应发 +5，实发 +2」示例与「每档 +1」不自洽；Delta 采用通用截断公式 `min(应发, 月度剩余, 分数余量)`，每档应发恒为 +1 |
 | DoV-3 角色关注点已记录 | Pass（含残余） | proposal 评审 F-1（SA）、F-4（SM 排期）；本报告残余风险 | G1 需 IO + SA 具名签署；SA 需裁决双 capability 打包 |
 | DoV-4 未声称已做业务实现 | Pass | 本阶段无代码 / 契约 / 迁移 / 原型改动 | — |
-| DoV-5 Delta 可追溯到提案 / 已批准需求 | Pass | REQ-022 场景映射：L-1 ~ L-8 → `trip-experiences`「体验点赞与取消点赞」；D-1 / D-2 / E-2 →「体验赞数与点赞态的展示」；T-1 ~ T-6 / E-1 →「体验获赞阶梯加分」；T-7 ~ T-10 →「体验获赞加分的月度上限」；L-8 / D-3 / T-3 边界 →「体验获赞的计分边界」 | 无孤儿 Requirement / Scenario |
+| DoV-5 Delta 可追溯到提案 / 已批准需求 | Pass | REQ-023 场景映射：L-1 ~ L-8 → `trip-experiences`「体验点赞与取消点赞」；D-1 / D-2 / E-2 →「体验赞数与点赞态的展示」；T-1 ~ T-6 / E-1 →「体验获赞阶梯加分」；T-7 ~ T-10 →「体验获赞加分的月度上限」；L-8 / D-3 / T-3 边界 →「体验获赞的计分边界」 | 无孤儿 Requirement / Scenario |
 
 **DoV 结论：** 5 / 5 Pass。
 

@@ -1,5 +1,6 @@
 /**
- * 行程详情只读地图：按途经点名称做高德地理编码，再绘制步行路线。
+ * 行程详情只读地图：按途经点名称做高德地理编码，再按行程的出行方式绘制路线
+ * （旧行程没有 travel_mode 时回退步行，与既有口径一致）。
  *
  * 与发布/探索页共用 AmapContainer + RouteLayer；不修改行程数据，也不提供
  * 编辑操作。高德服务不可用时依次降级：离线地名库定位 → 直线估算路线，
@@ -15,6 +16,7 @@ import {
   straightLineRoute,
   type RoutePlan,
   type RouteWaypoint,
+  type TravelMode,
 } from './AmapService';
 import { AmapContainer } from './AmapContainer';
 import { RouteLayer } from './RouteLayer';
@@ -23,13 +25,15 @@ import type { AmapMap, LngLat } from './types';
 type Props = {
   city: string;
   stops: string[];
+  /** 行程的出行方式；未填写的旧行程按步行处理。 */
+  mode?: TravelMode;
   focusStop: string | null;
   onFocusStop?: (name: string) => void;
 };
 
 const DEFAULT_CENTER: LngLat = [113.2644, 23.1291];
 
-export function AmapTripMap({ city, stops, focusStop, onFocusStop }: Props) {
+export function AmapTripMap({ city, stops, mode = 'walking', focusStop, onFocusStop }: Props) {
   const [map, setMap] = useState<AmapMap | null>(null);
   const [center, setCenter] = useState<LngLat>(DEFAULT_CENTER);
   const [zoom, setZoom] = useState(12);
@@ -85,14 +89,14 @@ export function AmapTripMap({ city, stops, focusStop, onFocusStop }: Props) {
 
       if (resolved.length >= 2) {
         try {
-          const plan = await planRoute('walking', resolved);
+          const plan = await planRoute(mode, resolved);
           if (active) {
             setRoute(plan);
           }
         } catch (reason: unknown) {
           // 路线服务不可用时仍展示途经点顺序与距离估算，避免整块地图空白。
           if (active) {
-            setRoute(straightLineRoute('walking', resolved));
+            setRoute(straightLineRoute(mode, resolved));
             setEstimateNote(
               `高德路线服务不可用（${amapErrorMessage(reason)}），已按直线显示途经点顺序，距离与时间为本地估算。`,
             );
@@ -108,7 +112,7 @@ export function AmapTripMap({ city, stops, focusStop, onFocusStop }: Props) {
     return () => {
       active = false;
     };
-  }, [city, stopsKey]);
+  }, [city, stopsKey, mode]);
 
   const focusId =
     focusStop === null

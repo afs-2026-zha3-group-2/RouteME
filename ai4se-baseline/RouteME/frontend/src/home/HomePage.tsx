@@ -44,9 +44,6 @@ export function HomePage({ currentUser }: Props) {
     resultsRef.current?.scrollIntoView({ block: 'start', behavior: 'smooth' });
   };
 
-  const openTripCount = state.status === 'ready' ? String(state.total) : '—';
-  const experienceCount =
-    experiences.state.status === 'ready' ? String(experiences.state.total) : '—';
   const summary = describeFilters(filters);
 
   const goPublish = () => {
@@ -67,16 +64,6 @@ export function HomePage({ currentUser }: Props) {
           <br />
           今天想走哪条路？
         </h1>
-        <div className="hero-stats">
-          <span className="hero-stat">
-            <b>{openTripCount}</b>
-            <span>招募中的行程</span>
-          </span>
-          <span className="hero-stat">
-            <b>{experienceCount}</b>
-            <span>真实游后体验</span>
-          </span>
-        </div>
       </section>
 
       <div className="seg-row">

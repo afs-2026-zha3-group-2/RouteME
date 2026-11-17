@@ -6,9 +6,9 @@
   - [`specs/trip-experiences/spec.md`](../../openspec/changes/add-experience-like-credit/specs/trip-experiences/spec.md)（ADDED 2 Requirement / 12 Scenario）
   - [`specs/user-credit/spec.md`](../../openspec/changes/add-experience-like-credit/specs/user-credit/spec.md)（ADDED 3 Requirement / 15 Scenario；2026-11-17 计数更正，原记 12）
 - **Supporting inputs:**
-  - [`requirements/REQ-022-experience-like-credit.md`](../../requirement-workspace/requirements/REQ-022-experience-like-credit.md)（24 场景，blocking OQ 0，DoR BLOCKER 0）
-  - [`intents/REQ-022-experience-like-credit.md`](../../requirement-workspace/intents/REQ-022-experience-like-credit.md)（D1–D4）
-  - [`deep-dive.md`](../../requirement-workspace/deep-dive.md)「REQ-022 增补」（数据契约 / 边界 / 跨 REQ / 展示契约）
+  - [`requirements/REQ-023-experience-like-credit.md`](../../requirement-workspace/requirements/REQ-023-experience-like-credit.md)（24 场景，blocking OQ 0，DoR BLOCKER 0）
+  - [`intents/REQ-023-experience-like-credit.md`](../../requirement-workspace/intents/REQ-023-experience-like-credit.md)（D1–D4）
+  - [`deep-dive.md`](../../requirement-workspace/deep-dive.md)「REQ-023 增补」（数据契约 / 边界 / 跨 REQ / 展示契约）
   - [`impact-brief.md`](../../requirement-workspace/impact-brief.md) §22
 - **Evidence:**
   - `openspec validate add-experience-like-credit --strict` → `Change 'add-experience-like-credit' is valid`
@@ -37,7 +37,7 @@
 | D Security | Pass | 自赞拒绝与未登录拒绝为服务端 MUST；无客户端写分端点 |
 | E Process | Pass | 纯 ADDED 追加，不改写任何基线 Requirement；`validate --strict` valid |
 | F Documentation | Pass | 正文中文、`SHALL` / `MUST` 保留英文；无绝对路径；场景格式与既有 Living Spec 一致 |
-| G Traceability | Pass | REQ-022 场景映射：L-1 ~ L-8 → `trip-experiences` 点赞与取消；D-1 / D-2 → 展示 Requirement；T-1 ~ T-10 + E-1 → `user-credit` 阶梯与月度；E-2 → 展示一致性；E-3 → 账户兜底；D-3 / L-8 → 计分边界 |
+| G Traceability | Pass | REQ-023 场景映射：L-1 ~ L-8 → `trip-experiences` 点赞与取消；D-1 / D-2 → 展示 Requirement；T-1 ~ T-10 + E-1 → `user-credit` 阶梯与月度；E-2 → 展示一致性；E-3 → 账户兜底；D-3 / L-8 → 计分边界 |
 
 ## Residual risks
 

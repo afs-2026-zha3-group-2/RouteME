@@ -1,8 +1,8 @@
 # 技术设计 — add-experience-like-credit
 
-- **Change：** `add-experience-like-credit`（REQ-022 / issue #30）｜ **阶段：** P3
+- **Change：** `add-experience-like-credit`（REQ-023 / issue #30）｜ **阶段：** P3
 - **输入：** [`specs/trip-experiences/spec.md`](specs/trip-experiences/spec.md)（ADDED 2 / 12 Scenario）、[`specs/user-credit/spec.md`](specs/user-credit/spec.md)（ADDED 3 / 15 Scenario）、[`atdd-design.md`](atdd-design.md)、[`proposal.md`](proposal.md)、[`g1-decision.md`](g1-decision.md)（Pass）
-- **约束：** 契约 `0.16.0`、迁移 `V22__add_experience_likes.sql`（当前 main 最大 0.14.0 / V20；`0.15.0` + `V21` 已由 `add-ai-itinerary` 在 registry 台账声明，本 change 按「先声明者优先」顺延，用户裁决 2026-11-17）；NFR 不纳入（用户裁决 2026-11-17）
+- **约束：** 契约 `0.18.0`、迁移 `V24__add_experience_likes.sql`（P3 原定 `0.16.0` + `V22`；合并 `origin/main@b50e416` 后 main 已至 `0.17.0` + `V23`，按先合并者优先顺延为 `0.18.0` + `V24`，用户裁决 2026-11-17）；NFR 不纳入（用户裁决 2026-11-17）
 - **原型：** `docs/prototype/ui.js` `expCard()` + 详情 `.exp-item`（P4 先改原型再改实现）
 - **字段定稿（P3）：** 点赞态字段由 Delta 候选名 `liked_by_me` 定稿为 **`is_liked`**（`@rule:api-contract`「布尔 `is_` / `has_` 前缀」）；Delta 已同步修订并通过 `openspec validate --strict`。
 
@@ -21,13 +21,13 @@
 | D9 | 月度额度 | 复用 `TripTimeZoneConstant.ZONE`（Asia/Shanghai）取月首瞬时；`used = SUM(applied_delta)`（当月、`reason_code = EXPERIENCE_LIKE`）；`allowance = 20 - used`；`delta = allowance >= 1 ? 1 : 0` | ① 按 `occurred_at` 字符串前缀切月：UTC 与北京时间差 8 小时，月初 00:00–08:00 会算错月；② 按理论值统计：总分裁断会让额度被虚耗 |
 | D10 | 幂等键与关联 | `EXPERIENCE_LIKE:{tripId}:{authorId}:{tier}`；`related_type = TRIP`、`related_id = tripId`；`reason_code = EXPERIENCE_LIKE` | 用体验 id 做幂等键：同行程第二篇跨档会重复加分，违背「同行程同作者 ≤ +5」 |
 | D11 | 结算事务 | 点赞记录插入 + 全部档位结算在同一 `@Transactional`；月度「查—算—写」依赖 SQLite 单写者串行化 + 幂等键唯一索引兜底 | 异步结算：点赞成功后结算失败会永久漏发且无补偿；多写者数据库（未来）需行锁，已登记风险 |
-| D12 | 契约 | `openapi.yaml` → `0.16.0`：两个新路径、`ExperienceLikeResponse`、`ExperienceResponse` 增 `like_count` / `is_liked`（required，readOnly）、`Error.code` 增 `EXPERIENCE_NOT_FOUND` | 复用 `INVALID_INPUT` 表示不存在：前端无法按码区分，且违反 `TRIP_NOT_FOUND` 等既有先例 |
-| D13 | 迁移 | `V22__add_experience_likes.sql`：建表 + 唯一索引 + `(experience_id)` 统计索引 | 复用他表存点赞关系：语义混淆且无法建唯一约束 |
+| D12 | 契约 | `openapi.yaml` → `0.18.0`：两个新路径、`ExperienceLikeResponse`、`ExperienceResponse` 增 `like_count` / `is_liked`（required，readOnly）、`Error.code` 增 `EXPERIENCE_NOT_FOUND` | 复用 `INVALID_INPUT` 表示不存在：前端无法按码区分，且违反 `TRIP_NOT_FOUND` 等既有先例 |
+| D13 | 迁移 | `V24__add_experience_likes.sql`：建表 + 唯一索引 + `(experience_id)` 统计索引 | 复用他表存点赞关系：语义混淆且无法建唯一约束 |
 | D14 | 前端 | `types.ts` / `api.ts` / 纯逻辑 `experiences/experienceLikes.ts` / `ExperienceCard` / `TripDetailPage` / `tripMessages` / `styles.css`；乐观更新 + 失败回滚；未登录禁用按钮；自己的体验不渲染按钮 | ① 组件内写 if/else：无法 node 环境单测（同 `creditDisplay` 先例）；② 失败静默：违反规格「不静默吞掉错误」 |
 | D15 | 原型先行 | P4 首任务先改 `docs/prototype/ui.js`（体验卡与详情体验区）与 `styles.css`，再改实现 | 直接改实现：违反 `prototype-ui-alignment` 的「先改原型再改实现」 |
 | D16 | 「我的体验」 | 三处同源指 `GET /api/experiences`、`GET /api/trips/{tripId}/experiences`、`GET /api/me/experiences` 三个**接口**；`MyTripsPage` 只用 `loadMyExperiences` 判断分享状态、不渲染体验列表，因此不新增点赞按钮 | 在我的旅行页新增体验列表：超出 issue 范围（可见面只有首页与详情） |
 
-## 1. 数据库（V22）
+## 1. 数据库（V24）
 
 ```sql
 CREATE TABLE experience_likes (
@@ -82,7 +82,7 @@ CREATE INDEX ix_experience_likes_experience ON experience_likes (experience_id);
 
 > 事务边界：1–4 在同一 `@Transactional`；`CreditService.book` 以 REQUIRED 传播加入同一事务。SQLite 单写者保证「查月度 → 写账本」不被交错；唯一索引是幂等的最终保障。
 
-## 3. 契约（0.15.0）
+## 3. 契约（0.18.0）
 
 ```yaml
 /experiences/{experienceId}/likes:
@@ -133,7 +133,7 @@ Error.code:
 
 | 层 | 内容 |
 |---|---|
-| 后端 API（先红） | `ExperienceLikeApiTest`（L-1~L-8）、`ExperienceLikeDisplayApiTest`（D-1）、`ExperienceLikeCreditApiTest`（C-1~C-3 / C-5~C-7 / C-13~C-14）、`ExperienceLikeCreditMonthApiTest`（C-8~C-12，可调 Clock）、`ExperienceLikeMigrationSqliteTest`（V22）、`OpenApiTest`（0.16.0 + 新 schema + 错误码） |
+| 后端 API（先红） | `ExperienceLikeApiTest`（L-1~L-8）、`ExperienceLikeDisplayApiTest`（D-1）、`ExperienceLikeCreditApiTest`（C-1~C-3 / C-5~C-7 / C-13~C-14）、`ExperienceLikeCreditMonthApiTest`（C-8~C-12，可调 Clock）、`ExperienceLikeMigrationSqliteTest`（V24）、`OpenApiTest`（0.18.0 + 新 schema + 错误码） |
 | 后端 UT（apply 时） | 档位推导（4/5/9/10/25/26）、月度窗口 Asia/Shanghai 月首、多篇体验取 max 不求和（C-4，mapper 多行 mock） |
 | 前端 UT | `experienceLikes.test.ts`（乐观更新 / 回滚 / 可赞判定） |
 | E2E | `e2e/tests/experience-likes.spec.ts`（D-2~D-4）；`credit.spec.ts` 追加 C-15（新作者 5 赞 → 81 且无明细入口） |
@@ -146,7 +146,7 @@ Error.code:
 | 既有 `ExperienceService` 读取签名变化影响既有测试 | P4 同步更新 `ExperienceServiceTest` / `ExperienceServicePersistenceTest` / `ExperienceControllerTest`；读取方法只增 viewer 参数，不改返回结构 |
 | 月度并发严格性依赖 SQLite 单写者 | 本 change 以「同事务 + 幂等键 + C-7 / C-12 并发断言」固定；迁移多写者数据库时需补行锁，已登记 |
 | 多篇体验无法在真实数据构造（V8 唯一约束） | C-4 用 mapper 多行 mock 单测；E2E / API 不做假数据绕过约束 |
-| 契约 `0.16.0` / `V22` 再被其他 change 越过 | 实现开始前复核 `openapi.yaml` 与迁移目录；被占用则整体顺延并同步 `OpenApiTest` |
+| 契约 `0.18.0` / `V24` 再被其他 change 越过 | 实现开始前复核 `openapi.yaml` 与迁移目录；被占用则整体顺延并同步 `OpenApiTest` |
 | E2E 不在 CI | 沿用既有残余风险；P4 本地跑受影响用例并在验证报告贴输出 |
 | 共享 E2E 库累积点赞 | 点赞用例只做相对断言（±1）并在末尾取消；C-15 用一次性新作者，不依赖种子赞数 |
 | 归档顺序 | 本 change 必须晚于 `add-credit-account` / `add-experience-photos` / `refine-experience-share` / `refine-inspiration-home`（P5 / G3 前核对） |

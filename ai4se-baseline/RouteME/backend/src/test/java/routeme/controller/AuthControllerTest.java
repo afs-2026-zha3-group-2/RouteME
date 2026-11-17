@@ -81,6 +81,14 @@ class AuthControllerTest {
     }
 
     @Test
+    void in_registerWithRoleAndStatus_out_ignored() throws Exception {
+        register(REGISTER_BODY.replace("}", ",\"role\":\"ADMIN\",\"status\":\"BANNED\"}"))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.user.role").value("USER"))
+                .andExpect(jsonPath("$.user.status").value("ACTIVE"));
+    }
+
+    @Test
     void in_duplicateUsernameDifferentCase_out_usernameTaken() throws Exception {
         register(REGISTER_BODY).andExpect(status().isCreated());
         String duplicate = REGISTER_BODY.replace("\"NewUser\"", "\"newuser\"");
@@ -117,6 +125,49 @@ class AuthControllerTest {
         register(REGISTER_BODY.replace("新同学", "字".repeat(21)))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value("INVALID_INPUT"));
+    }
+
+    @Test
+    void in_registerWithEmail_out_lowercasedAndUnique() throws Exception {
+        String body = """
+                {
+                  "username": "EmailUser",
+                  "password": "routeme-demo",
+                  "nickname": "邮箱用户",
+                  "email": "  Mail@Example.COM "
+                }
+                """;
+        register(body).andExpect(status().isCreated());
+
+        String duplicate = """
+                {
+                  "username": "EmailUser2",
+                  "password": "routeme-demo",
+                  "nickname": "邮箱用户二",
+                  "email": "mail@example.com"
+                }
+                """;
+        register(duplicate)
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.code").value("EMAIL_TAKEN"));
+    }
+
+    @Test
+    void in_invalidEmail_out_invalidInput() throws Exception {
+        register(REGISTER_BODY.replace("}", ",\"email\":\"not-an-email\"}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("INVALID_INPUT"));
+
+        register(REGISTER_BODY.replace("}", ",\"email\":\"" + "a".repeat(112) + "@example.com\"}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("INVALID_INPUT"));
+    }
+
+    @Test
+    void in_registerWithEmail_out_emailNotExposedInSession() throws Exception {
+        register(REGISTER_BODY.replace("}", ",\"email\":\"hidden@example.com\"}"))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.user.email").doesNotExist());
     }
 
     @Test

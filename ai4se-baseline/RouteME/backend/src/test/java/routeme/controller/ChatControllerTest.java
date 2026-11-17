@@ -1,12 +1,14 @@
 package routeme.controller;
 
 import static org.hamcrest.Matchers.nullValue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
+import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.test.web.servlet.MockMvc;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -24,6 +26,9 @@ class ChatControllerTest {
 
     @Autowired
     private MockMvc mockMvc;
+
+    @Autowired
+    private JdbcClient jdbcClient;
 
     @Test
     void in_matchedPair_out_conversationAscending() throws Exception {
@@ -172,5 +177,25 @@ class ChatControllerTest {
         mockMvc.perform(get("/api/trips/4/messages").param("with", "3"))
                 .andExpect(status().isUnauthorized())
                 .andExpect(jsonPath("$.code").value("DEMO_USER_REQUIRED"));
+    }
+
+    @Test
+    void in_suspendedSender_out_accountSuspendedAndNoNewMessage() throws Exception {
+        jdbcClient.sql("UPDATE app_users SET status = 'SUSPENDED' WHERE id = 1").update();
+        Integer before = jdbcClient.sql("SELECT COUNT(*) FROM chat_messages")
+                .query(Integer.class)
+                .single();
+
+        mockMvc.perform(post("/api/trips/4/messages")
+                        .header("X-User-Id", "1")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"receiver_id\":3,\"content\":\"暂停后还能聊吗\"}"))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.code").value("ACCOUNT_SUSPENDED"));
+
+        Integer after = jdbcClient.sql("SELECT COUNT(*) FROM chat_messages")
+                .query(Integer.class)
+                .single();
+        assertEquals(before, after, "suspended sender writes no chat row");
     }
 }

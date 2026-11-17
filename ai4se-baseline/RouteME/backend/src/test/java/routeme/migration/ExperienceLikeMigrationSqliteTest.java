@@ -17,7 +17,7 @@ import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.jdbc.datasource.DriverManagerDataSource;
 
 /**
- * V22：新建 experience_likes（体验点赞关系），以 (experience_id, user_id) 唯一约束
+ * V24：新建 experience_likes（体验点赞关系），以 (experience_id, user_id) 唯一约束
  * 保证同一用户对同一体验至多一条记录；取消点赞直接删除行。
  */
 class ExperienceLikeMigrationSqliteTest {
@@ -38,7 +38,7 @@ class ExperienceLikeMigrationSqliteTest {
                 .list();
         int applied = jdbcClient.sql("""
                 SELECT COUNT(*) FROM flyway_schema_history
-                 WHERE success = 1 AND version = '22'
+                 WHERE success = 1 AND version = '24'
                 """).query(Integer.class).single();
 
         // Then
@@ -46,7 +46,7 @@ class ExperienceLikeMigrationSqliteTest {
                 () -> assertTrue(
                         columns.containsAll(List.of("id", "experience_id", "user_id", "created_at")),
                         "experience_likes columns"),
-                () -> assertEquals(1, applied, "V22 applied once"));
+                () -> assertEquals(1, applied, "V24 applied once"));
     }
 
     @Test

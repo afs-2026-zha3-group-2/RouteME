@@ -58,7 +58,7 @@ class ProfileMigrationSqliteTest {
 
         // Then
         assertAll(
-                () -> assertEquals(4, users, "demo users stay seeded"),
+                () -> assertEquals(5, users, "four demo users plus the seeded administrator"),
                 () -> assertEquals(4, filledProfiles, "V13 fills every demo profile"),
                 () -> assertEquals("研一 · 地理科学", secondSchool, "legacy school text is preserved"),
                 () -> assertEquals("", viewerSchool, "the viewer identity keeps job / mbti instead of school"),

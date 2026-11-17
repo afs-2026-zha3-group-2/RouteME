@@ -30,6 +30,7 @@ import {
 import { tripMessages } from '../i18n/tripMessages';
 import { intensityLabel } from '../experiences/experienceForm';
 import { ExperienceLikeButton } from '../experiences/ExperienceLikeButton';
+import { ShareIcon } from '../experiences/shareIcons';
 import { meetingAreaText, meetingTimeText } from '../chat/chatMeeting';
 import { AmapTripMap } from '../map/amap/AmapTripMap';
 import { AmapPlacePicker } from '../map/amap/AmapPlacePicker';
@@ -40,6 +41,7 @@ import { useUserCredits } from '../profiles/useUserCredits';
 import { ReportModal } from '../safety/ReportModal';
 import { Avatar } from '../shell/Avatar';
 import type { DemoUser, Experience, MatchCandidate, TripApplication } from '../types';
+import { WeatherCard } from '../weather/WeatherCard';
 import { applicationEntryState, applicationErrorMessage } from './applicationEntry';
 import { CompanionCard } from './CompanionCard';
 import { tripCompanions } from './companions';
@@ -54,7 +56,7 @@ import {
   type MeetingFieldErrors,
   type MeetingFormValues,
 } from './meetingForm';
-import { MAX_MEETING_AREAS } from './tripOptions';
+import { TRIP_TRAVEL_MODE_LABELS } from './tripOptions';
 import { statusColor, statusLabel } from './tripStatus';
 import { TripCancelModal } from './TripCancelModal';
 import { cancelReasonLabel } from './tripCancel';
@@ -106,14 +108,13 @@ export function TripDetailPage({ currentUser, tripId }: Props) {
   >(null);
   const [reportOpen, setReportOpen] = useState(false);
   const [experiences, setExperiences] = useState<Experience[] | null>(null);
-  const [previewExperienceId, setPreviewExperienceId] = useState<number | null>(null);
 
   const updateExperience = (next: Experience) => {
     setExperiences((previous) =>
       previous === null ? previous : previous.map((item) => (item.id === next.id ? next : item)),
     );
   };
-  const [previewIndex, setPreviewIndex] = useState(0);
+
   const [meetingOpen, setMeetingOpen] = useState(false);
   const [meetingForm, setMeetingForm] = useState<MeetingFormValues>(emptyMeetingForm());
   const [meetingErrors, setMeetingErrors] = useState<MeetingFieldErrors>({});
@@ -294,6 +295,9 @@ export function TripDetailPage({ currentUser, tripId }: Props) {
   const mapCity = findCity(trip.destination_code)?.cityDisplayName.replace(/市$/, '') ?? trip.destination;
   const cityForSearch = mapCity.replace(/市$/, '');
   const hasStops = trip.stops.length > 0;
+  // 高德路线封装在本基线只支持步行 / 驾车 / 骑行：公共交通与未填写按步行折线示意。
+  const mapTravelMode =
+    trip.travel_mode === 'driving' || trip.travel_mode === 'bicycling' ? trip.travel_mode : 'walking';
   const focusPlace = (name: string) => {
     setFocusStop(name);
     mapSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
@@ -373,8 +377,13 @@ export function TripDetailPage({ currentUser, tripId }: Props) {
   return (
     <main className="form-page">
       <div className="detail-stack">
-        <a href="#/" className="detail-back">
-          {tripMessages.backHome}
+        <a
+          href="#/"
+          className="detail-back-btn"
+          aria-label={tripMessages.backHome}
+          title={tripMessages.backHome}
+        >
+          <ShareIcon name="left" />
         </a>
 
         <Card className="panel detail-card">
@@ -405,6 +414,10 @@ export function TripDetailPage({ currentUser, tripId }: Props) {
             </p>
           </header>
 
+          <section className="detail-section weather-section">
+            <WeatherCard destinationCode={trip.destination_code} date={trip.start_date} />
+          </section>
+
           {trip.ending_soon && (isPublisher || participant) && (
             <Alert type="warning" showIcon title={tripMessages.detailEndingSoon} />
           )}
@@ -431,6 +444,7 @@ export function TripDetailPage({ currentUser, tripId }: Props) {
                 <AmapTripMap
                   city={cityForSearch}
                   stops={trip.stops}
+                  mode={mapTravelMode}
                   focusStop={focusStop}
                   onFocusStop={setFocusStop}
                 />
@@ -473,6 +487,12 @@ export function TripDetailPage({ currentUser, tripId }: Props) {
                 <dt>{tripMessages.detailMeetingTime}</dt>
                 <dd>{meetingTimeText(trip.meeting_time)}</dd>
               </div>
+              {trip.travel_mode !== null && (
+                <div>
+                  <dt>{tripMessages.detailTravelMode}</dt>
+                  <dd>{TRIP_TRAVEL_MODE_LABELS[trip.travel_mode]}</dd>
+                </div>
+              )}
               {budget !== null && (
                 <div>
                   <dt>{tripMessages.detailBudget}</dt>
@@ -589,36 +609,15 @@ export function TripDetailPage({ currentUser, tripId }: Props) {
                       <div className="experience-photos">
                         <Image.PreviewGroup
                           items={experience.photos.map((photo) => photo.url)}
-                          preview={{
-                            open: previewExperienceId === experience.id,
-                            current: previewIndex,
-                            onChange: (current) => setPreviewIndex(current),
-                            onOpenChange: (open) => {
-                              setPreviewExperienceId(open ? experience.id : null);
-                              if (!open) {
-                                setPreviewIndex(0);
-                              }
-                            },
-                          }}
                         >
-                          <Image
-                            src={experience.photos[0].url}
-                            alt={tripMessages.experiencePhotoAlt}
-                          />
+                          {experience.photos.map((photo, index) => (
+                            <Image
+                              key={photo.id}
+                              src={photo.url}
+                              alt={`${tripMessages.experiencePhotoAlt} ${index + 1}`}
+                            />
+                          ))}
                         </Image.PreviewGroup>
-                        {experience.photos.length > 1 && (
-                          <Button
-                            size="small"
-                            className="experience-photos-more"
-                            onClick={() => {
-                              setPreviewIndex(0);
-                              setPreviewExperienceId(experience.id);
-                            }}
-                          >
-                            {tripMessages.experiencePhotoViewAll} {experience.photos.length}{' '}
-                            {tripMessages.experiencePhotoCountSuffix}
-                          </Button>
-                        )}
                       </div>
                     )}
                     <div className="exp-item-foot">
@@ -853,8 +852,7 @@ export function TripDetailPage({ currentUser, tripId }: Props) {
               <Typography.Text type="warning">{meetingDraftError}</Typography.Text>
             )}
             <AmapPlacePicker
-              mode="multi"
-              max={MAX_MEETING_AREAS}
+              mode="single"
               ariaLabel="集合地点"
               value={meetingForm.meetingAreas}
               onChange={(next) => setMeetingForm((current) => ({ ...current, meetingAreas: next }))}

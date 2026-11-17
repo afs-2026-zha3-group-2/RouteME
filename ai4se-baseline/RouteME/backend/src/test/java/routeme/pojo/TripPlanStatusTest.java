@@ -77,7 +77,7 @@ class TripPlanStatusTest {
         TripPlanDraft draft = new TripPlanDraft(
                 1L, "测试行程", "440400",
                 LocalDate.of(2026, 11, 15), LocalDate.of(2026, 11, 15),
-                List.of("香洲港", "情侣路"), null, null, null, null, null, List.of(), 3);
+                List.of("香洲港", "情侣路"), null, null, null, null, null, null, List.of(), 3);
 
         assertThrows(InvalidInputException.class,
                 () -> TripPlan.create(draft, at("2026-11-16T09:00:00Z"), LocalDate.of(2026, 11, 16)));
@@ -88,7 +88,7 @@ class TripPlanStatusTest {
         TripPlanDraft draft = new TripPlanDraft(
                 1L, "测试行程", "440400",
                 LocalDate.of(2026, 11, 16), LocalDate.of(2026, 11, 16),
-                List.of("香洲港", "情侣路"), null, null, null, null, null, List.of(), 3);
+                List.of("香洲港", "情侣路"), null, null, null, null, null, null, List.of(), 3);
 
         TripPlan created = TripPlan.create(draft, at("2026-11-16T09:00:00Z"), LocalDate.of(2026, 11, 16));
 
@@ -103,7 +103,7 @@ class TripPlanStatusTest {
             LocalDate start, LocalDate end, int joined, int capacity, Instant completedAt) {
         return new TripPlan(
                 1L, 1L, "测试行程", "440400", "珠海市", start, end,
-                List.of("香洲港", "情侣路"), null, null, null, null, null, List.of(),
+                List.of("香洲港", "情侣路"), null, null, null, null, null, null, List.of(),
                 capacity, joined, completedAt, CREATED, CREATED, null, null, null);
     }
 
@@ -111,7 +111,7 @@ class TripPlanStatusTest {
         return new TripPlan(
                 1L, 1L, "测试行程", "440400", "珠海市",
                 LocalDate.of(2026, 11, 16), LocalDate.of(2026, 11, 16),
-                List.of("香洲港", "情侣路"), null, null, null, null, null, List.of(),
+                List.of("香洲港", "情侣路"), null, null, null, null, null, null, List.of(),
                 4, 1, null, CREATED, CREATED, cancelledAt, "personal", null);
     }
 }

@@ -1,4 +1,4 @@
-# P2 — add-experience-like-credit（REQ-022 旅行体验获赞增加信用分）
+# P2 — add-experience-like-credit（REQ-023 旅行体验获赞增加信用分）
 
 - **日期：** 2026-11-17 ｜ **记录人：** Lewis Liu（当前开发者，发起人确认）｜ **阶段：** P2 Pass（Delta / AC-DoV / lint 完成；G1 Pass，IO=Wanye / SA=Jacky）
 - **Change：** `add-experience-like-credit`（`trip-experiences` ADDED 2 Requirement / 12 Scenario；`user-credit` ADDED 3 Requirement / 15 Scenario；合计 27）

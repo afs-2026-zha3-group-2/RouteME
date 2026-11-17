@@ -17,8 +17,12 @@ public final class TripCatalogConstant {
     public static final int MAX_CAPACITY = 12;
     public static final int MAX_TAGS = 5;
     public static final int MAX_MEETING_AREA_LENGTH = 100;
-    public static final int MAX_MEETING_AREAS = 3;
+    /** 发布 / 编辑集合信息只接受一个集合地点；历史数据可能仍有多个（旧上限 3）。 */
+    public static final int MAX_MEETING_AREAS = 1;
     public static final int MAX_NOTE_LENGTH = 500;
+
+    /** 出行方式：自驾 / 骑行 / 公共交通（值为契约占位符，非「步行」）。 */
+    public static final List<String> TRAVEL_MODES = List.of("driving", "bicycling", "transit");
 
     private TripCatalogConstant() {
     }
