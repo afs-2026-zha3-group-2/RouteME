@@ -14,6 +14,11 @@ export default defineConfig({
         target: apiTarget,
         changeOrigin: true,
       },
+      // 高德 JS API 安全模式的同源代理一级路由。
+      '/_AMapService': {
+        target: apiTarget,
+        changeOrigin: true,
+      },
     },
   },
   test: {

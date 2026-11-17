@@ -29,7 +29,7 @@ import routeme.config.AmapProperties;
  */
 @Slf4j
 @RestController
-@RequestMapping("/api/amap")
+@RequestMapping({"/api/amap", "/_AMapService"})
 public class AmapProxyController {
 
     /** 与前端搜索、定位、路线规划实际使用的接口保持一致。 */
@@ -73,6 +73,8 @@ public class AmapProxyController {
         }
 
         Map<String, String[]> parameters = request.getParameterMap();
+        String incomingKey = request.getParameter("key");
+        String incomingJscode = request.getParameter("jscode");
         try {
             String body = amapRestClient.get()
                     .uri(builder -> {
@@ -84,7 +86,16 @@ public class AmapProxyController {
                                 }
                             }
                         });
-                        builder.queryParam("key", properties.webServiceKey());
+                        if (properties.hasWebServiceKey()) {
+                            builder.queryParam("key", properties.webServiceKey());
+                        } else if (incomingKey != null && !incomingKey.isBlank()) {
+                            builder.queryParam("key", incomingKey);
+                        }
+                        if (properties.hasSecurityJsCode()) {
+                            builder.queryParam("jscode", properties.securityJsCode());
+                        } else if (incomingJscode != null && !incomingJscode.isBlank()) {
+                            builder.queryParam("jscode", incomingJscode);
+                        }
                         return builder.build();
                     })
                     .retrieve()
@@ -100,9 +111,9 @@ public class AmapProxyController {
         }
     }
 
-    /** {@code /api/amap/v3/place/text} → {@code v3/place/text}。 */
+    /** {@code /api/amap/v3/place/text} 或 {@code /_AMapService/v3/place/text} → {@code v3/place/text}。 */
     static String normalizePath(String requestUri) {
-        String path = requestUri.replaceFirst("^/api/amap", "");
+        String path = requestUri.replaceFirst("^/(api/amap|_AMapService)", "");
         int queryIndex = path.indexOf('?');
         if (queryIndex >= 0) {
             path = path.substring(0, queryIndex);

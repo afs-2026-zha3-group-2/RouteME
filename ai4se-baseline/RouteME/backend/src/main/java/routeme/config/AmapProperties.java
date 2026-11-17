@@ -10,10 +10,11 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
  * {@code AMAP_WEB_SERVICE_KEY} 与 {@code VITE_AMAP_JS_KEY}（前端）。
  *
  * @param webServiceKey 高德 Web 服务 Key，缺失时代理返回 503 配置错误
+ * @param securityJsCode 高德 JS API 安全密钥（securityJsCode），只保存在后端
  * @param baseUrl       高德 Web 服务地址，默认正式环境，测试或私有网关可覆盖
  */
 @ConfigurationProperties(prefix = "routeme.amap")
-public record AmapProperties(String webServiceKey, String baseUrl) {
+public record AmapProperties(String webServiceKey, String securityJsCode, String baseUrl) {
 
     private static final String DEFAULT_BASE_URL = "https://restapi.amap.com";
 
@@ -24,5 +25,10 @@ public record AmapProperties(String webServiceKey, String baseUrl) {
     /** Key 是否已配置（空白视为未配置）。 */
     public boolean hasWebServiceKey() {
         return webServiceKey != null && !webServiceKey.isBlank();
+    }
+
+    /** 安全密钥是否已配置。 */
+    public boolean hasSecurityJsCode() {
+        return securityJsCode != null && !securityJsCode.isBlank();
     }
 }

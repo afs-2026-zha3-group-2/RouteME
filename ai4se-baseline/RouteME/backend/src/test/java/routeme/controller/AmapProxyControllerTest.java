@@ -15,6 +15,9 @@ class AmapProxyControllerTest {
                 "v3/direction/driving",
                 AmapProxyController.normalizePath("/api/amap/v3/direction/driving?origin=1,2"));
         assertEquals("v3/geocode/geo", AmapProxyController.normalizePath("/api/amap/v3/geocode/geo/"));
+        assertEquals(
+                "v3/direction/walking",
+                AmapProxyController.normalizePath("/_AMapService/v3/direction/walking"));
     }
 
     @Test

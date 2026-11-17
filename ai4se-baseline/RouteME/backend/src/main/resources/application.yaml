@@ -28,6 +28,8 @@ routeme:
   amap:
     # 高德 Web 服务 Key：只允许后端代理使用，不下发到浏览器。
     web-service-key: ${AMAP_WEB_SERVICE_KEY:}
+    # 高德 JS API 安全密钥：配合 serviceHost 代理使用，不下发到浏览器。
+    security-js-code: ${AMAP_SECURITY_JS_CODE:}
     # 私有网关或测试替身可覆盖；默认高德正式服务。
     base-url: ${AMAP_REST_BASE_URL:https://restapi.amap.com}
 mybatis-plus:
