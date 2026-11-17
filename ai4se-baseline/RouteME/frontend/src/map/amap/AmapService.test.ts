@@ -4,37 +4,28 @@ import {
   amapErrorMessage,
   formatDistance,
   formatDuration,
-  parseGeocodeResults,
-  parseLocation,
-  parsePlaces,
-  parseRouteLeg,
+  toPlaceResult,
+  toRouteLeg,
 } from './AmapService';
 
-describe('AmapService parsing', () => {
-  it('parses locations and rejects malformed values', () => {
-    expect(parseLocation('113.3245,23.1064')).toEqual([113.3245, 23.1064]);
-    expect(parseLocation('')).toBeNull();
-    expect(parseLocation('not-a-point')).toBeNull();
-  });
+const lngLat = (lng: number, lat: number) => ({
+  getLng: () => lng,
+  getLat: () => lat,
+});
 
-  it('parses POIs, including array-form AMap fields', () => {
-    const places = parsePlaces({
-      status: '1',
-      pois: [
-        {
-          id: 'B0FFH123',
-          name: '广州塔',
-          address: [],
-          cityname: ['广州市'],
-          adname: ['海珠区'],
-          location: '113.3245,23.1064',
-          type: '风景名胜;地标景点',
-        },
-        { name: '缺少坐标', location: '' },
-      ],
-    });
-    expect(places).toHaveLength(1);
-    expect(places[0]).toMatchObject({
+describe('AmapService mapping', () => {
+  it('maps an SDK POI to a RouteMe place', () => {
+    expect(
+      toPlaceResult({
+        id: 'B0FFH123',
+        name: '广州塔',
+        address: [],
+        cityname: ['广州市'],
+        adname: ['海珠区'],
+        type: '风景名胜;地标景点',
+        location: lngLat(113.3245, 23.1064),
+      }),
+    ).toEqual({
       id: 'B0FFH123',
       name: '广州塔',
       address: '',
@@ -42,25 +33,24 @@ describe('AmapService parsing', () => {
       district: '海珠区',
       lng: 113.3245,
       lat: 23.1064,
+      type: '风景名胜;地标景点',
     });
   });
 
-  it('flattens step polylines into one leg path', () => {
-    const leg = parseRouteLeg(
+  it('drops POIs without a name or coordinates', () => {
+    expect(toPlaceResult({ name: '缺少坐标' })).toBeNull();
+    expect(toPlaceResult({ location: lngLat(1, 2) })).toBeNull();
+  });
+
+  it('merges step paths into one deduplicated leg', () => {
+    const leg = toRouteLeg(
       {
-        status: '1',
-        route: {
-          paths: [
-            {
-              distance: '1200',
-              duration: '900',
-              steps: [
-                { polyline: '113.32,23.10;113.33,23.11' },
-                { polyline: '113.33,23.11;113.34,23.12' },
-              ],
-            },
-          ],
-        },
+        distance: 1200,
+        time: 900,
+        steps: [
+          { path: [lngLat(113.32, 23.1), lngLat(113.33, 23.11)] },
+          { path: [lngLat(113.33, 23.11), lngLat(113.34, 23.12)] },
+        ],
       },
       [113.3, 23.1],
       [113.4, 23.2],
@@ -74,35 +64,15 @@ describe('AmapService parsing', () => {
     ]);
   });
 
-  it('falls back to the straight line when a route has no polyline', () => {
-    const leg = parseRouteLeg(
-      { status: '1', route: { paths: [{ distance: '10', duration: '5' }] } },
-      [1, 2],
-      [3, 4],
-    );
-    expect(leg.path).toEqual([
+  it('falls back to the straight line when a route has no path', () => {
+    expect(toRouteLeg({ distance: 10, time: 5 }, [1, 2], [3, 4]).path).toEqual([
       [1, 2],
       [3, 4],
     ]);
   });
 
-  it('parses geocode fallbacks', () => {
-    expect(
-      parseGeocodeResults(
-        {
-          status: '1',
-          geocodes: [
-            {
-              location: '113.2,23.1',
-              formatted_address: '广东省广州市海珠区广州塔',
-              city: ['广州市'],
-              district: ['海珠区'],
-            },
-          ],
-        },
-        '广州塔',
-      )[0],
-    ).toMatchObject({ name: '广州塔', id: 'geo-113.2-23.1', city: '广州市' });
+  it('throws a route error when there is no route at all', () => {
+    expect(() => toRouteLeg(undefined, [1, 2], [3, 4])).toThrow(AmapApiError);
   });
 
   it('formats distance and duration for the sidebar', () => {
@@ -116,6 +86,7 @@ describe('AmapService parsing', () => {
   it('maps AMap error codes to readable Chinese copy', () => {
     expect(amapErrorMessage(new AmapApiError('QUOTA', 'quota'))).toContain('配额');
     expect(amapErrorMessage(new AmapApiError('AUTH', 'auth'))).toContain('Key');
+    expect(amapErrorMessage(new AmapApiError('NO_RESULT', 'none'))).toContain('地点');
     expect(amapErrorMessage(new AmapApiError('ROUTE_NOT_FOUND', 'none'))).toContain('路线');
     expect(amapErrorMessage(new AmapApiError('AMAP_ERROR', 'x', '20800'))).toContain('20800');
   });

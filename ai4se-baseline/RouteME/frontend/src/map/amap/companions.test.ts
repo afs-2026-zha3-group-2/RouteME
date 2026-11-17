@@ -22,4 +22,13 @@ describe('companion matching', () => {
   it('hides companions without a shared stop', () => {
     expect(matchCompanions(['成都大熊猫基地'], MOCK_COMPANIONS)).toEqual([]);
   });
+
+  it('matches AMap POI names that extend the mock stop name', () => {
+    const matches = matchCompanions(
+      ['广州塔', '海心沙亚运公园', '花城广场', '北京路步行街'],
+      MOCK_COMPANIONS,
+    );
+    expect(topCompanionMatch(matches)).toEqual({ percent: 85, count: 3 });
+    expect(matches[0].matchedStops).toEqual(['广州塔', '海心沙亚运公园', '花城广场', '北京路步行街']);
+  });
 });
