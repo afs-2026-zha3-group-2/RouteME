@@ -85,6 +85,7 @@ export const tripMessages = {
   detailNote: '补充说明',
   detailPublisher: '发布者',
   detailParticipants: '当前同行者',
+  detailParticipantsEmpty: '还没有其他同行者。',
   detailParticipantsPending: '同行者信息将在同行能力上线后展示',
   applyEntry: '申请同行',
   applyEntryDisabled: '当前不可申请',
@@ -425,6 +426,13 @@ export const tripMessages = {
   // 个人主页
   profilePublicTitle: '个人主页',
   profilePublicHint: '其他用户从行程卡、行程详情与游后体验的发布者 / 作者入口进入这里。',
+  // 信用状态（等级文字由后端 code 映射，配色只做辅助）
+  creditPrefix: '信用分',
+  creditLevelExcellent: '信用优秀',
+  creditLevelGood: '信用良好',
+  creditLevelFair: '信用一般',
+  creditLevelLow: '信用较低',
+  creditLevelRisk: '信用风险',
   profileCompleteBadge: '资料已完善',
   profileIncompleteBadge: '资料未完善',
   profileIncompleteShort: '资料未完善',

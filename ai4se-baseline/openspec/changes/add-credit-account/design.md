@@ -2,7 +2,7 @@
 
 - **Change：** `add-credit-account`（REQ-019 / S19）｜ **阶段：** P3
 - **输入：** `specs/user-credit/spec.md`（7 Requirement / 22 Scenario）、`atdd-design.md`、`proposal.md`、`g1-decision.md`
-- **约束：** 契约 `0.12.0`、迁移 `V18__add_credit_account.sql`（用户裁决 2026-11-17）；NFR 不纳入
+- **约束：** 契约 `0.14.0`、迁移 `V20__add_credit_account.sql`（0.12.0 + V18 归 `add-experience-photos`，0.13.0 + V19 归 `add-trip-cancel`；本 change 顺延）；NFR 不纳入
 - **原型：** `docs/prototype/ui.js` `profileModal` + `styles.css` `.profile-credit`（已先行）
 
 ## 决策总览
@@ -15,14 +15,14 @@
 | D4 | 缺失账户 | 读路径 `ensureAccount`（`INSERT OR IGNORE` 初始 80）后再读 | 读不到返回 80 但不落库：留下「有用户无账户」的半状态，破坏不变量 |
 | D5 | 注册集成 | `AuthServiceImpl.register` 在既有事务内调用 `CreditService.ensureAccount` | 注册后异步建账户：失败会永久缺账户，且无法断言「注册失败不留账户」 |
 | D6 | 等级派生 | 后端 `CreditLevel` 枚举（`excellent/good/fair/low/risk` + `minScore`）在读取时派生；前端只做 code → 中文/色阶映射 | ① 等级落库：分数与等级会漂移；② 前端算阈值：前后端两套阈值，改区间要同步两处（D10 已否决） |
-| D7 | 契约 | `openapi.yaml` → `0.12.0`；`UserProfile` 新增 `credit_score`（int）与 `credit_level`（enum），两者加入 `required` | 独立信用端点：多一次往返、多一个加载态（D7 已否决） |
-| D8 | 迁移 | `V18__add_credit_account.sql`：建两表 + 回填 `app_users` 全表 80（含无登录凭据的 `id 4`） | 分两次迁移（建表 / 回填）：中途失败会留下空账户表 |
+| D7 | 契约 | `openapi.yaml` → `0.14.0`；`UserProfile` 新增 `credit_score`（int）与 `credit_level`（enum），两者加入 `required` | 独立信用端点：多一次往返、多一个加载态（D7 已否决） |
+| D8 | 迁移 | `V20__add_credit_account.sql`：建两表 + 回填 `app_users` 全表 80（含无登录凭据的 `id 4`） | 分两次迁移（建表 / 回填）：中途失败会留下空账户表 |
 | D9 | 展示落点 | 个人主页 hero 卡内、`.profile-hero-meta` 下一行：`<p class="profile-credit is-*">信用分：{n} / 100 · {label}</p>` | ① 独立卡：移动端多占一屏；② 徽标嵌昵称：信息密度高易被忽略；③ 并入「关于 TA」：可见性弱（用户已选 hero 内一行） |
 | D10 | 五档配色 | 低饱和五档：`is-excellent` 松石绿 / `is-good` 深海青 / `is-fair` 琥珀 / `is-low` 珊瑚 / `is-risk` 砖红；始终与分数+文字同现 | 中性单色：扫读性差；只靠颜色：违反「不能仅用颜色表示等级」 |
 | D11 | 前端结构 | 新增纯逻辑 `profile/creditDisplay.ts`（含文案拼装与色阶派生），`ProfilePage` 只负责渲染 | 直接在组件内写 if/else：无法在 node 环境单测 |
 | D12 | 单次请求 | 沿用 `loadUserProfile` 一次取全量；不新增请求 | 并行第二请求：多一个加载态与失败分支 |
 
-## 1. 数据库（V18）
+## 1. 数据库（V20）
 
 ```sql
 CREATE TABLE user_credit_account (
@@ -81,7 +81,7 @@ FROM app_users;
 
 > 事务边界：3 与 4 在同一个 `@Transactional` 内；唯一索引是幂等的最终保障。
 
-## 3. 契约（0.12.0）
+## 3. 契约（0.14.0）
 
 `components.schemas.UserProfile`：
 
@@ -120,11 +120,22 @@ properties:
 | E2E | `e2e/tests/credit.spec.ts`：注册 → 主页展示、他人视角、刷新一致、无明细/无 admin |
 | 命令 | 后端 `./mvnw -B -ntp verify`；前端 `npm run typecheck && npm run build && npm test`；E2E `npx playwright test e2e/tests/credit.spec.ts`；`openspec validate add-credit-account --strict` |
 
-## 6. 残余风险
+## 6. 范围扩展（2026-11-17，G1 r2 追认）
+
+| # | 决策 | 选择 | 放弃的备选与理由 |
+|---|---|---|---|
+| D13 | 列表面取数 | 新增只读端点 `GET /api/users/credits?ids=1,2,3`（≤50，需 `X-User-Id`），返回 `[{user_id, credit_score, credit_level}]`；缺账户按 80/good 补齐 | ① 扩行程发布者 / 申请者字段：要改两处契约与更多测试；② 逐条拉资料：一页 20 张卡就是 20 个请求 |
+| D14 | 展示实现 | 4 个新面复用 `.profile-credit` + `is-compact`；卡片 / 申请页由页面层一次取数后下发，详情页 1 个 id，弹窗直接用 `loadUserProfile` 响应 | 每个组件各自请求：无法保证「当前页一次查询」的规格约束 |
+| D15 | 边界 | 聊天页 / 顶栏 / 我的旅行资料卡仍不展示；`C-21` 反向用例覆盖 | — |
+
+- 端点路径 `/api/users/credits` 与既有 `/users/{userId}/profile`、`/users/me/*` 不冲突（无裸 `/users/{userId}` 映射）。
+- 前端新增 `profiles/useUserCredits.ts`：对 id 集去重、一次请求、当前页内缓存；失败时静默降级（不展示信用行，不阻断页面）。
+
+## 7. 残余风险
 
 | 风险 | 缓解 |
 |---|---|
-| 契约 0.12.0 / V18 与在途 REQ-017 / REQ-018 撞号 | 本 change 先行占用；两者合并时顺延并在其 change 内改号（P5 说明） |
+| 契约 `0.14.0` / `V20` 与后续 change 撞号 | 0.12.0 + V18 已归 `add-experience-photos`、0.13.0 + V19 已归 `add-trip-cancel`；本 change 使用时已顺延并回写；后续 change 继续顺延 |
 | 读路径 `ensureAccount` 带来一次写 | 仅首次读取；`INSERT OR IGNORE` 并发安全；迁移已覆盖存量账号，正常情况下不会触发 |
 | `credit_level` 码值与前端映射漂移 | 契约 enum + 前端 `CreditLevel` 联合类型 + 契约测试断言码值集合 |
 | E2E 不在 CI | 沿用既有残余风险；P4 本地全量回归并记录 |

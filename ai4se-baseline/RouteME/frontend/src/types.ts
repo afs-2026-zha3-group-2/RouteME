@@ -28,6 +28,16 @@ export type BanReasonCode =
   | 'PRIVACY_LEAK'
   | 'OTHER';
 
+/** 信用等级：由后端按分数实时派生，前端只负责文案与配色映射。 */
+export type CreditLevel = 'excellent' | 'good' | 'fair' | 'low' | 'risk';
+
+/** 批量信用状态项（`GET /api/users/credits`）；不含任何明细。 */
+export type UserCreditEntry = {
+  user_id: number;
+  credit_score: number;
+  credit_level: CreditLevel;
+};
+
 /**
  * 用户摘要：身份门、行程发布者、体验作者与会话用户共用。
  * 资料未完善时 city / major / job 缺省，学校可为空串。
@@ -79,6 +89,9 @@ export type UserProfile = {
   travel_style?: string | null;
   bio?: string | null;
   profile_complete: boolean;
+  /** 信用分，0–100；本人与他人视角均返回。 */
+  credit_score: number;
+  credit_level: CreditLevel;
   joined_at?: string | null;
   stats?: ProfileStats;
   /** 账号状态：SUSPENDED 只回 status；BANNED 同时回理由与解封时间。 */
@@ -502,4 +515,45 @@ export type HelpReportSummary = {
 export type HelpReports = {
   items: HelpReportSummary[];
   total: number;
+};
+
+/** Open-Meteo 单日天气；上游缺省的字段为 null，页面不展示对应项。 */
+export type WeatherDaily = {
+  weather_code: number | null;
+  weather_text: string;
+  temp_max_c: number;
+  temp_min_c: number;
+  precipitation_probability_pct: number | null;
+  precipitation_mm: number | null;
+  wind_speed_kmh: number | null;
+  uv_index: number | null;
+};
+
+/** 提醒类别：决定前端标签与色调，文案本身来自后端。 */
+export type WeatherReminderCode =
+  | 'rain'
+  | 'heat'
+  | 'uv'
+  | 'cold'
+  | 'temperature_gap'
+  | 'wind'
+  | 'calm';
+
+export type WeatherReminder = {
+  code: WeatherReminderCode;
+  text: string;
+};
+
+/** 目的地单日天气响应；`available=false` 时不携带任何天气数值。 */
+export type WeatherForecast = {
+  date: string;
+  destination_code: string | null;
+  city: string | null;
+  lng: number | null;
+  lat: number | null;
+  available: boolean;
+  reason: 'OUT_OF_RANGE' | null;
+  weather: WeatherDaily | null;
+  reminders: WeatherReminder[];
+  source: 'open-meteo';
 };

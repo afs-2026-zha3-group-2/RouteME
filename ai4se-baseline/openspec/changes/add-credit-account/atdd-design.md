@@ -43,7 +43,7 @@
    - `CreditAccountInitApiTest`：注册成功后 `GET` 该用户主页返回 80 / good；注册失败（重名 / 非法输入）后 `user_credit_account` 计数不变。
    - `CreditBoundaryApiTest`：SQL 夹具把分数改为 100/90/89/80/79/60/59/30/29/0，逐档断言 `credit_level`。
    - `CreditReadOnlyApiTest`：`PUT /api/users/me/credit` → 404；`PUT /api/users/me/profile` 携带 `credit_score` 不改变分数（按既有校验口径断言 400 或忽略）。
-   - `CreditMigrationSqliteTest`（沿用项目命名 `*MigrationSqliteTest`）：全新库 V1–V18 建两表；旧库升级后 `app_users` 全表回填 80，且 `app_users` 列集合不变。
+   - `CreditMigrationSqliteTest`（沿用项目命名 `*MigrationSqliteTest`）：全新库 V1–V20 建两表；旧库（V19）升级后 `app_users` 全表回填 80，且 `app_users` 列集合不变。
 2. **E2E（先红）**
    - `e2e/tests/credit.spec.ts`：注册 → 个人主页看到「信用分：80 / 100 · 信用良好」；换登录账号看同一用户同为 80 / good；刷新后不变；页面无「明细 / 历史」入口；无 admin 入口与排序/筛选控件。
 
@@ -83,3 +83,17 @@
 
 - 不写生产代码、不写完整 UT 套件、不做任务分解。
 - 不引入 Playwright / POM / Excel 生成器，不新建 CI 语义。
+
+## 8. 范围扩展（2026-11-17，G1 r2）
+
+| # | Scenario | Layer | 推荐附加层 | 依据 |
+|---|---|---|---|---|
+| R4-6 | 资料弹窗展示信用状态 | **E2E** | — | 弹窗 UI 行为；数据直接来自 `loadUserProfile` |
+| R4-7 | 行程详情页发布者展示 | **E2E** | — | 页面可见行为 |
+| R4-8 | 行程卡展示发布者信用状态 | **E2E** | 性能 | 断言每卡一行；请求次数由实现约束（页面层一次取数） |
+| R4-9 | 申请处理页展示申请者信用状态 | **E2E** | — | 页面可见行为 |
+| R4-10 | 未列出界面不展示（`C-21`） | **E2E** | 隐私 | 聊天页 / 顶栏 / 我的旅行资料卡反向断言 |
+| — | 批量端点（D13） | **API** | 安全 | `CreditBatchApiTest`：≤3 个 id 正常、缺账户按 80、无 `X-User-Id` 401、超过 50 个 400 |
+
+- 更新原反向用例：原「首页无信用分」改为「首页有信用分，但聊天页 / 顶栏无」。
+- 新增 API 预写清单：`CreditBatchApiTest`（先红）。

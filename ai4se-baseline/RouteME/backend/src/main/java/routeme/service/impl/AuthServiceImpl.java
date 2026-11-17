@@ -24,6 +24,7 @@ import routeme.pojo.UserAccount;
 import routeme.request.AuthLoginRequest;
 import routeme.request.AuthRegisterRequest;
 import routeme.service.AuthService;
+import routeme.service.CreditService;
 import routeme.service.DemoUserService;
 import routeme.utils.PasswordUtils;
 
@@ -40,10 +41,12 @@ public class AuthServiceImpl extends AbstractServiceImpl<AuthSessionMapper, Auth
     private static final Pattern EMAIL = Pattern.compile("^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$");
 
     private final DemoUserService demoUserService;
+    private final CreditService creditService;
     private final Clock clock;
 
-    public AuthServiceImpl(DemoUserService demoUserService, Clock clock) {
+    public AuthServiceImpl(DemoUserService demoUserService, CreditService creditService, Clock clock) {
         this.demoUserService = demoUserService;
+        this.creditService = creditService;
         this.clock = clock;
     }
 
@@ -67,8 +70,10 @@ public class AuthServiceImpl extends AbstractServiceImpl<AuthSessionMapper, Auth
                 username,
                 PasswordUtils.hash(password),
                 nickname,
-                nickname.substring(0, 1),
+nickname.substring(0, 1),
                 email);
+        // 注册与建信用账户同事务：注册失败时不留下半成品账户。
+        creditService.ensureAccount(user.id());
         return issue(user.id());
     }
 

@@ -3,10 +3,17 @@ import {
   AmapApiError,
   amapErrorMessage,
   catalogPlaceResult,
+  filterRelevantPlaces,
   formatDistance,
   formatDuration,
   haversineMeters,
+  isRelevantName,
+  longestCommonSubstring,
   matchCatalogPlace,
+  normalizeName,
+  pickRegeocodeName,
+  rankPlaces,
+  sortByDistance,
   straightLineRoute,
   toPlaceResult,
   toRouteLeg,
@@ -173,5 +180,85 @@ describe('straight-line route fallback', () => {
 
   it('rejects a route with fewer than two waypoints', () => {
     expect(() => straightLineRoute('walking', [waypoints[0]])).toThrow(AmapApiError);
+  });
+});
+describe('name relevance (guards against fuzzy matches)', () => {
+  const place = (name: string, address = '', lng = 0, lat = 0) => ({
+    id: `${name}-${lng}-${lat}`,
+    name,
+    address,
+    city: '',
+    district: '',
+    lng,
+    lat,
+    type: 'poi',
+  });
+
+  it('normalizes punctuation, brackets and admin suffixes', () => {
+    expect(normalizeName(' 广州塔（地铁站） ')).toBe('广州塔');
+    expect(normalizeName('淇澳岛风景区')).toBe('淇澳岛');
+  });
+
+  it('accepts containment but rejects shared prefixes', () => {
+    expect(isRelevantName('广州塔', '广州塔广场')).toBe(true);
+    expect(isRelevantName('海心沙', '海心沙亚运公园')).toBe(true);
+    // 高德在中山把「淇澳岛」模糊匹配成「淇澳服饰」：只有共同前缀，必须拒绝。
+    expect(isRelevantName('淇澳岛', '淇澳服饰')).toBe(false);
+    expect(isRelevantName('淇澳岛', '南方软件园')).toBe(false);
+  });
+
+  it('drops unrelated fuzzy matches and keeps the real one', () => {
+    const places = [
+      place('淇澳服饰', '大涌镇悦新路2号', 113.3039, 22.467),
+      place('淇澳岛', '唐家湾镇淇澳社区', 113.6357, 22.4151),
+    ];
+    const filtered = filterRelevantPlaces('淇澳岛', places);
+    expect(filtered.map((item) => item.name)).toEqual(['淇澳岛']);
+  });
+
+  it('returns nothing when every candidate is unrelated', () => {
+    expect(filterRelevantPlaces('淇澳岛', [place('南方软件园', '唐家湾镇')])).toEqual([]);
+  });
+
+  it('still accepts address matches (address search)', () => {
+    const places = [place('某某大厦', '阅江西路222号广州塔内', 113.32, 23.1)];
+    expect(filterRelevantPlaces('阅江西路', places)).toHaveLength(1);
+  });
+
+  it('ranks exact names before longer matches', () => {
+    const ranked = rankPlaces('广州塔', [
+      place('广州塔广场'),
+      place('广州塔'),
+      place('广州塔西登塔'),
+    ]);
+    expect(ranked[0].name).toBe('广州塔');
+    expect(ranked[2].name).toBe('广州塔西登塔');
+  });
+});
+
+describe('longest common substring', () => {
+  it('measures shared content', () => {
+    expect(longestCommonSubstring('香洲港集合', '香洲港客运码头')).toBe(3);
+    expect(longestCommonSubstring('淇澳岛', '南方软件园')).toBe(0);
+  });
+});
+
+describe('nearby distance helpers', () => {
+  it('sorts nearby results by distance from the click', () => {
+    const sorted = sortByDistance(
+      [
+        { id: 'far', name: '远处', address: '', city: '', district: '', lng: 113.65, lat: 22.43, type: 'poi' },
+        { id: 'near', name: '近处', address: '', city: '', district: '', lng: 113.6358, lat: 22.4152, type: 'poi' },
+      ],
+      113.6357,
+      22.4151,
+    );
+    expect(sorted.map((item) => item.id)).toEqual(['near', 'far']);
+    expect(sorted[0].distanceMeters).toBeLessThan(100);
+  });
+
+  it('takes a short name from a reverse-geocoded address', () => {
+    expect(pickRegeocodeName('广东省珠海市香洲区唐家湾镇淇澳社区')).toBe('淇澳社区');
+    expect(pickRegeocodeName('')).toBe('');
   });
 });

@@ -30,8 +30,10 @@ import type {
   TripFilters,
   TripMeetingRequest,
   TripSummary,
+  UserCreditEntry,
   UserProfile,
   UserProfileUpdateRequest,
+  WeatherForecast,
 } from './types';
 
 /**
@@ -106,6 +108,16 @@ export async function logoutAccount(token: string): Promise<void> {
     method: 'POST',
     headers: { Authorization: `Bearer ${token}` },
   });
+}
+
+/** 批量读取信用状态；用于行程卡、申请列表与详情页发布者行。 */
+export async function loadUserCredits(ids: number[], callerId: number): Promise<UserCreditEntry[]> {
+  if (ids.length === 0) {
+    return [];
+  }
+  const query = new URLSearchParams({ ids: ids.join(',') });
+  const response = await request(`/users/credits?${query.toString()}`, undefined, callerId);
+  return (await response.json()) as UserCreditEntry[];
 }
 
 /** 读取个人资料；本人读取时响应包含生日，他人读取时省略。 */
@@ -596,4 +608,19 @@ export async function loadServiceMessages(
 export async function loadHelpReports(token: string): Promise<HelpReports> {
   const response = await request('/help/reports', bearerInit(token));
   return (await response.json()) as HelpReports;
+}
+
+/** 目的地日期天气（Open-Meteo）；公开只读，失败由调用方展示可重试状态。 */
+export async function fetchWeatherForecast(
+  destinationCode: string,
+  date: string,
+  point?: { lng: number; lat: number },
+): Promise<WeatherForecast> {
+  const params = new URLSearchParams({ destination_code: destinationCode, date });
+  if (point !== undefined) {
+    params.set('lng', String(point.lng));
+    params.set('lat', String(point.lat));
+  }
+  const response = await request(`/weather/forecast?${params.toString()}`);
+  return (await response.json()) as WeatherForecast;
 }

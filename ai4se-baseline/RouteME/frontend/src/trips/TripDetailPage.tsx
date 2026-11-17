@@ -34,10 +34,15 @@ import { AmapTripMap } from '../map/amap/AmapTripMap';
 import { AmapPlacePicker } from '../map/amap/AmapPlacePicker';
 import { shareEligibility } from '../experiences/shareEligibility';
 import { publisherSummary } from '../profile/profileDisplay';
+import { creditLine, creditTone } from '../profile/creditDisplay';
+import { useUserCredits } from '../profiles/useUserCredits';
 import { ReportModal } from '../safety/ReportModal';
 import { Avatar } from '../shell/Avatar';
 import type { DemoUser, Experience, MatchCandidate, TripApplication } from '../types';
+import { WeatherCard } from '../weather/WeatherCard';
 import { applicationEntryState, applicationErrorMessage } from './applicationEntry';
+import { CompanionCard } from './CompanionCard';
+import { tripCompanions } from './companions';
 import {
   MAX_MEETING_AREA_LENGTH,
   addMeetingArea,
@@ -85,6 +90,8 @@ function pickLatestApplication(
 export function TripDetailPage({ currentUser, tripId }: Props) {
   const { state, reload } = useTrip(currentUser.id, tripId);
   const { openProfile } = useProfile();
+  const publisherId = state.status === 'ready' ? state.trip.publisher.id : 0;
+  const publisherCredits = useUserCredits(publisherId > 0 ? [publisherId] : [], currentUser.id);
   const [feedback, setFeedback] = useState<Feedback | null>(null);
   const [completing, setCompleting] = useState(false);
   const [myApplication, setMyApplication] = useState<TripApplication | null>(null);
@@ -270,6 +277,7 @@ export function TripDetailPage({ currentUser, tripId }: Props) {
   const isCompleted = trip.status === 'completed';
   const isCancelled = trip.status === 'cancelled';
   const participant = trip.participants.some((member) => member.id === currentUser.id);
+  const companions = tripCompanions(trip.participants, trip.publisher.id);
   const canShare = shareEligibility(trip, currentUser.id).kind === 'ready';
   const hasShared = experiences?.some((experience) => experience.author.id === currentUser.id) ?? false;
   const budget =
@@ -390,6 +398,10 @@ export function TripDetailPage({ currentUser, tripId }: Props) {
               </span>
             </p>
           </header>
+
+          <section className="detail-section weather-section">
+            <WeatherCard destinationCode={trip.destination_code} date={trip.start_date} />
+          </section>
 
           {trip.ending_soon && (isPublisher || participant) && (
             <Alert type="warning" showIcon title={tripMessages.detailEndingSoon} />
@@ -513,32 +525,41 @@ export function TripDetailPage({ currentUser, tripId }: Props) {
                     ))}
                   </span>
                 )}
+                {publisherCredits[trip.publisher.id] !== undefined && (
+                  <span
+                    className={`profile-credit is-compact publisher-credit ${creditTone(
+                      publisherCredits[trip.publisher.id].credit_level,
+                    )}`}
+                  >
+                    {creditLine(
+                      publisherCredits[trip.publisher.id].credit_score,
+                      publisherCredits[trip.publisher.id].credit_level,
+                    )}
+                  </span>
+                )}
               </span>
             </button>
           </section>
 
           <section className="detail-section">
             <h3 className="section-title">{tripMessages.detailParticipants}</h3>
-            <ul className="detail-participants">
-              {trip.participants.map((member) => {
-                const canChat =
-                  member.id !== currentUser.id &&
-                  (isPublisher || entry.kind === 'accepted');
-                return (
-                  <li key={member.id}>
-                    <span>{member.nickname}</span>
-                    {canChat && (
-                      <a
-                        className="ghost-link detail-participant-chat"
-                        href={`#/chat/${trip.id}/${member.id}`}
-                      >
-                        {tripMessages.mineChatEntry}
-                      </a>
-                    )}
-                  </li>
-                );
-              })}
-            </ul>
+            {companions.length === 0 ? (
+              <p className="detail-companions-empty">{tripMessages.detailParticipantsEmpty}</p>
+            ) : (
+              <ul className="detail-companions">
+                {companions.map((member) => (
+                  <CompanionCard
+                    key={member.id}
+                    member={member}
+                    canChat={
+                      member.id !== currentUser.id && (isPublisher || entry.kind === 'accepted')
+                    }
+                    chatHref={`#/chat/${trip.id}/${member.id}`}
+                    onOpenProfile={openProfile}
+                  />
+                ))}
+              </ul>
+            )}
           </section>
 
           <section className="detail-section">

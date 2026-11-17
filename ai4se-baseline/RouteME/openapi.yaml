@@ -1,7 +1,7 @@
 openapi: 3.0.3
 info:
   title: RouteME API
-  version: 0.13.0
+  version: 0.16.0
   description: |
     RouteME 后端对外契约。本文件是前后端唯一事实源，字段名、类型、状态码与错误码只在这里定稿。
         当前包含：脚手架问候语、演示账户与账号认证（注册/登录/会话/退出）、旅行计划（浏览/筛选/发布/详情/结束），同行匹配、申请、退出、聊天、我的旅行与举报，游后体验分享与参考发布所需数据，以及管理后台（用户管理 / 举报处置 / 人工客服）与用户侧帮助入口。
@@ -107,6 +107,57 @@ paths:
                 unexpected:
                   value:
                     code: INTERNAL_ERROR
+  /users/credits:
+    get:
+      operationId: loadUserCredits
+      summary: 批量读取信用状态
+      description: |
+        需携带 `X-User-Id`。供行程卡、申请列表与详情页发布者行一次取数；
+        `ids` 为逗号分隔的用户 id，最多 50 个；缺失信用账户的 id 按初始 80 分补齐。
+        只返回分数与等级码，不含任何加 / 扣分明细。
+      parameters:
+        - $ref: '#/components/parameters/DemoUserId'
+        - name: ids
+          in: query
+          required: true
+          description: 逗号分隔的用户 id，最多 50 个
+          schema:
+            type: string
+      responses:
+        '200':
+          description: 按请求顺序返回的信用状态
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/UserCreditEntry'
+              examples:
+                seeded:
+                  value:
+                    - user_id: 1
+                      credit_score: 80
+                      credit_level: good
+        '400':
+          description: ids 缺失、非数字或超过 50 个
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                invalid:
+                  value:
+                    code: INVALID_INPUT
+        '401':
+          description: 缺失或未知的 X-User-Id
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                missing:
+                  value:
+                    code: DEMO_USER_REQUIRED
   /users/{userId}/profile:
     get:
       operationId: loadUserProfile
@@ -2045,6 +2096,100 @@ paths:
           $ref: '#/components/responses/Conflict'
         '500':
           $ref: '#/components/responses/Unexpected'
+  /weather/forecast:
+    get:
+      operationId: loadWeatherForecast
+      summary: 目的地日期天气（Open-Meteo）
+      description: |
+        按目的地与旅行日期返回 Open-Meteo 的真实天气与出行提醒。
+        `destination_code` 与 `lng`/`lat` 至少提供一组：携带坐标时优先使用（例如高德选点结果），
+        否则按 6 位区划码解析城市中心坐标，用户无需再次输入城市。
+        日期窗口为今天 ≤ date ≤ 今天 + 15（`Asia/Shanghai`）；越界返回 200 且 `available=false`（`reason=OUT_OF_RANGE`），
+        不返回任何天气数值与提醒。上游失败返回 502 `WEATHER_UPSTREAM_ERROR`，绝不伪造天气。
+      parameters:
+        - name: destination_code
+          in: query
+          required: false
+          description: 目的地 6 位行政区划代码；与 `lng`/`lat` 至少提供一组
+          schema:
+            type: string
+            pattern: '^[0-9]{6}$'
+            example: '440100'
+        - name: date
+          in: query
+          required: true
+          description: 旅行日期；今天 ≤ date ≤ 今天 + 15
+          schema:
+            type: string
+            format: date
+        - name: lng
+          in: query
+          required: false
+          description: 已有目的地经度（如高德选点结果）；必须与 `lat` 成对出现
+          schema:
+            type: number
+            format: double
+        - name: lat
+          in: query
+          required: false
+          description: 已有目的地纬度；必须与 `lng` 成对出现
+          schema:
+            type: number
+            format: double
+      responses:
+        '200':
+          description: 可用天气，或日期超出预报窗口的不可用状态
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WeatherForecast'
+              examples:
+                available:
+                  value:
+                    date: '2026-11-21'
+                    destination_code: '440100'
+                    city: 广州市
+                    lng: 113.2644
+                    lat: 23.1291
+                    available: true
+                    weather:
+                      weather_code: 61
+                      weather_text: 小雨
+                      temp_max_c: 24.0
+                      temp_min_c: 17.0
+                      precipitation_probability_pct: 80
+                      precipitation_mm: 5.2
+                      wind_speed_kmh: 18.0
+                      uv_index: 3.0
+                    reminders:
+                      - code: rain
+                        text: 降雨概率 80%，记得带伞和雨具，户外行程注意防雨。降雨明显，建议调整户外行程。
+                    source: open-meteo
+                outOfRange:
+                  value:
+                    date: '2026-12-20'
+                    destination_code: '440100'
+                    city: 广州市
+                    lng: null
+                    lat: null
+                    available: false
+                    reason: OUT_OF_RANGE
+                    reminders: []
+                    source: open-meteo
+        '400':
+          $ref: '#/components/responses/InvalidInput'
+        '500':
+          $ref: '#/components/responses/Unexpected'
+        '502':
+          description: Open-Meteo 或地理编码不可用，或没有请求当日的数据
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                upstream:
+                  value:
+                    code: WEATHER_UPSTREAM_ERROR
 components:
   parameters:
     DemoUserId:
@@ -2253,7 +2398,7 @@ components:
           $ref: '#/components/schemas/AccountStatus'
     UserProfile:
       type: object
-      required: [id, nickname, avatar_initial, interests, profile_complete]
+      required: [id, nickname, avatar_initial, interests, profile_complete, credit_score, credit_level]
       properties:
         id:
           type: integer
@@ -2336,6 +2481,17 @@ components:
           type: boolean
           readOnly: true
           description: 六项必填同时成立时为 true；NULL / 空串 / 非法日期都算缺失
+        credit_score:
+          type: integer
+          minimum: 0
+          maximum: 100
+          readOnly: true
+          description: 当前信用分，0–100 闭区间；本人与他人视角均返回，不可由客户端修改
+        credit_level:
+          type: string
+          readOnly: true
+          enum: [excellent, good, fair, low, risk]
+          description: 由信用分实时派生：excellent 90–100 / good 80–89 / fair 60–79 / low 30–59 / risk 0–29
         joined_at:
           type: string
           format: date-time
@@ -2357,6 +2513,25 @@ components:
           description: 仅有效状态为 BANNED 时出现；到期后接口不再返回
         stats:
           $ref: '#/components/schemas/ProfileStats'
+    UserCreditEntry:
+      type: object
+      required: [user_id, credit_score, credit_level]
+      properties:
+        user_id:
+          type: integer
+          format: int64
+          readOnly: true
+        credit_score:
+          type: integer
+          minimum: 0
+          maximum: 100
+          readOnly: true
+          description: 当前信用分，0–100 闭区间
+        credit_level:
+          type: string
+          readOnly: true
+          enum: [excellent, good, fair, low, risk]
+          description: 由信用分实时派生：excellent 90–100 / good 80–89 / fair 60–79 / low 30–59 / risk 0–29
     ProfileStats:
       type: object
       required: [published, completed, joined, shared]
@@ -3699,6 +3874,103 @@ components:
         total:
           type: integer
           format: int64
+    WeatherForecast:
+      type: object
+      required: [date, available, reminders, source]
+      properties:
+        date:
+          type: string
+          format: date
+          readOnly: true
+        destination_code:
+          type: string
+          nullable: true
+          readOnly: true
+        city:
+          type: string
+          nullable: true
+          readOnly: true
+        lng:
+          type: number
+          format: double
+          nullable: true
+          description: 实际使用的经度；不可用时为 null
+          readOnly: true
+        lat:
+          type: number
+          format: double
+          nullable: true
+          description: 实际使用的纬度；不可用时为 null
+          readOnly: true
+        available:
+          type: boolean
+          readOnly: true
+          description: 该日期是否有可用的真实天气
+        reason:
+          type: string
+          nullable: true
+          readOnly: true
+          enum: [OUT_OF_RANGE]
+        weather:
+          type: object
+          nullable: true
+          description: 天气不可用（超出预报窗口）时为 null
+          allOf:
+            - $ref: '#/components/schemas/WeatherDaily'
+        reminders:
+          type: array
+          readOnly: true
+          description: 出行提醒，按降雨 → 高温 → 紫外线 → 低温 → 温差 → 强风 → 平稳的固定顺序
+          items:
+            $ref: '#/components/schemas/WeatherReminder'
+        source:
+          type: string
+          readOnly: true
+          enum: [open-meteo]
+    WeatherDaily:
+      type: object
+      required: [weather_text, temp_max_c, temp_min_c]
+      properties:
+        weather_code:
+          type: integer
+          nullable: true
+          description: WMO 4677 天气码
+        weather_text:
+          type: string
+          description: 天气码对应的中文文案；未收录时为「未知天气」
+        temp_max_c:
+          type: number
+          format: double
+        temp_min_c:
+          type: number
+          format: double
+        precipitation_probability_pct:
+          type: integer
+          nullable: true
+          description: 当日最大降雨概率（%）；上游缺省时为 null
+        precipitation_mm:
+          type: number
+          format: double
+          nullable: true
+        wind_speed_kmh:
+          type: number
+          format: double
+          nullable: true
+        uv_index:
+          type: number
+          format: double
+          nullable: true
+          description: 当日最大紫外线指数；上游缺省时为 null，前端不展示也不参与提醒
+    WeatherReminder:
+      type: object
+      required: [code, text]
+      properties:
+        code:
+          type: string
+          enum: [rain, heat, uv, cold, temperature_gap, wind, calm]
+        text:
+          type: string
+          description: 面向用户的完整文案，内含真实天气数值
     Error:
       type: object
       required: [code]
@@ -3709,9 +3981,9 @@ components:
           enum:
             [GREETING_NOT_FOUND, INVALID_INPUT, DEMO_USER_REQUIRED, FORBIDDEN, USER_NOT_FOUND, TRIP_NOT_FOUND, TRIP_NOT_OPEN,
              APPLICATION_NOT_FOUND, APPLICATION_NOT_PENDING, DUPLICATE_APPLICATION, CHAT_NOT_ALLOWED, CHAT_READ_ONLY,
-             EXPERIENCE_NOT_ALLOWED, USERNAME_TAKEN, INVALID_CREDENTIALS, SESSION_INVALID, INTERNAL_ERROR,
-             ADMIN_REQUIRED, ACCOUNT_SUSPENDED, ACCOUNT_BANNED, INVALID_STATUS_TRANSITION, CANNOT_TARGET_SELF,
-             REPORT_NOT_FOUND, REPORT_NOT_PENDING, REPORT_NOT_PROCESSING, EMAIL_TAKEN,
+             EXPERIENCE_NOT_ALLOWED, USERNAME_TAKEN, INVALID_CREDENTIALS, SESSION_INVALID, WEATHER_UPSTREAM_ERROR,
+             INTERNAL_ERROR, ADMIN_REQUIRED, ACCOUNT_SUSPENDED, ACCOUNT_BANNED, INVALID_STATUS_TRANSITION,
+             CANNOT_TARGET_SELF, REPORT_NOT_FOUND, REPORT_NOT_PENDING, REPORT_NOT_PROCESSING, EMAIL_TAKEN,
              SESSION_ALREADY_HANDLING, SESSION_NOT_HANDLING, SESSION_CLOSED]
         fields:
           type: object

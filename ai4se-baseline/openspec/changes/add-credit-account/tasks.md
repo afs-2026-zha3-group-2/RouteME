@@ -3,105 +3,132 @@
 - **依据：** [`specs/user-credit/spec.md`](specs/user-credit/spec.md)、[`atdd-design.md`](atdd-design.md)、[`design.md`](design.md)
 - **Owner：** Lewis Liu（当前开发者）｜ **协助：** Jay（design 第二签署）、Neal（tasks 第二签署 / P4 独立验证）
 - **顺序：** T1 → T2 → T3 → T4 → T5 → T8 → T9；T6 可与 T4/T5 并行，T7 依赖 T6。T10 在 T9 之后。
-- **契约：** `0.12.0`；`UserProfile` 新增 `credit_score` / `credit_level` 且进 `required`；`OpenApiTest` 为门禁。
-- **迁移：** `V18__add_credit_account.sql`（建两表 + 回填 `app_users` 全表 80）。
+- **契约：** `0.14.0`；`UserProfile` 新增 `credit_score` / `credit_level` 且进 `required`；`OpenApiTest` 为门禁。
+- **迁移：** `V20__add_credit_account.sql`（建两表 + 回填 `app_users` 全表 80；0.12.0+V18 / 0.13.0+V19 已被其他 change 占用）。
 - **视觉基准：** `docs/prototype/ui.js` `profileModal`、`docs/prototype/styles.css` `.profile-credit`（已先行更新）；不改原型的其他区域。
 
 ## 任务清单
 
-### T1 [contract] 契约 0.12.0
+### T1 [contract] 契约 0.14.0
 
-- [ ] `openapi.yaml`：`info.version` → `0.12.0`；`UserProfile.required` 增 `credit_score` / `credit_level`。
-- [ ] `UserProfile.properties` 增 `credit_score`（integer，0–100，readOnly）与 `credit_level`（string，enum `excellent/good/fair/low/risk`，readOnly）。
-- [ ] 示例补一组 `credit_score: 80` / `credit_level: good`。
-- [ ] `OpenApiTest`：断言两字段存在、`required` 包含、enum 集合精确匹配。
+- [x] `openapi.yaml`：`info.version` → `0.14.0`；`UserProfile.required` 增 `credit_score` / `credit_level`。
+- [x] `UserProfile.properties` 增 `credit_score`（integer，0–100，readOnly）与 `credit_level`（string，enum `excellent/good/fair/low/risk`，readOnly）。
+- [x] 示例补一组 `credit_score: 80` / `credit_level: good`。
+- [x] `OpenApiTest`：断言两字段存在、`required` 包含、enum 集合精确匹配。
 
 **验证：** `cd RouteME/backend; .\mvnw.cmd -B -ntp -Dtest=OpenApiTest test`
 **覆盖：** R4-4、R5-2、`@rule:api-contract`
 
-### T2 [backend] 迁移 V18
+### T2 [backend] 迁移 V20
 
-- [ ] 新增 `V18__add_credit_account.sql`：`user_credit_account`（`score` CHECK 0–100）、`credit_ledger`（前后分数 CHECK + 等式 CHECK + 幂等唯一索引 + `(user_id, occurred_at)` 索引）。
-- [ ] 同一迁移内回填：`INSERT OR IGNORE ... SELECT id, 80, strftime(...) FROM app_users`（含无登录凭据的 `id 4`）。
-- [ ] 新增 `CreditMigrationSqliteTest`（先 red）：全新库 V1–V18 建表；旧库升级后 `id 1–4` 均为 80；`app_users` 列集合不变。
+- [x] 新增 `V20__add_credit_account.sql`：`user_credit_account`（`score` CHECK 0–100）、`credit_ledger`（前后分数 CHECK + 等式 CHECK + 幂等唯一索引 + `(user_id, occurred_at)` 索引）。
+- [x] 同一迁移内回填：`INSERT OR IGNORE ... SELECT id, 80, strftime(...) FROM app_users`（含无登录凭据的 `id 4`）。
+- [x] 新增 `CreditMigrationSqliteTest`（先 red）：全新库 V1–V20 建表；旧库（V19）升级后 `id 1–4` 均为 80；`app_users` 列集合不变。
 
 **验证：** `cd RouteME/backend; .\mvnw.cmd -B -ntp -Dtest=CreditMigrationSqliteTest test`
 **覆盖：** R1-3、R1-4、`@rule:api-contract`
 
 ### T3 [backend] 信用账户与记账服务
 
-- [ ] 新增 `entity/UserCreditAccountEntity`、`entity/CreditLedgerEntity`（账户 `IdType.INPUT`，账本 `IdType.AUTO`）。
-- [ ] 新增 `mapper/UserCreditAccountMapper`、`mapper/CreditLedgerMapper`。
-- [ ] 新增 `enums/CreditLevel`（`ofScore` 唯一派生入口）与 `pojo/UserCredit`。
-- [ ] 新增 `service/CreditService` + `impl/CreditServiceImpl`：`read` / `ensureAccount`（`INSERT OR IGNORE`）/ `book`（裁断 + 实际生效量 + 同事务写账本 + 幂等冲突返回当前值）。
-- [ ] 新增 `CreditServiceImplTest`（先 red）：上下界、零值留痕、等式、幂等键、区间不变量。
+- [x] 新增 `entity/UserCreditAccountEntity`、`entity/CreditLedgerEntity`（账户 `IdType.INPUT`，账本 `IdType.AUTO`）。
+- [x] 新增 `mapper/UserCreditAccountMapper`、`mapper/CreditLedgerMapper`。
+- [x] 新增 `enums/CreditLevel`（`ofScore` 唯一派生入口）与 `pojo/UserCredit`。
+- [x] 新增 `service/CreditService` + `impl/CreditServiceImpl`：`read` / `ensureAccount`（`INSERT OR IGNORE`）/ `book`（裁断 + 实际生效量 + 同事务写账本 + 幂等冲突返回当前值）。
+- [x] 新增 `CreditServiceImplTest`（先 red）：上下界、零值留痕、等式、幂等键、区间不变量。
 
 **验证：** `cd RouteME/backend; .\mvnw.cmd -B -ntp -Dtest=CreditServiceImplTest test`
 **覆盖：** R2-1 ~ R2-3、R6-1 ~ R6-4、D2–D4
 
 ### T4 [backend] 注册初始化信用账户
 
-- [ ] `AuthServiceImpl.register` 在既有 `@Transactional` 内调用 `CreditService.ensureAccount(user.id())`。
-- [ ] 新增 `CreditAccountInitApiTest`（先 red）：注册成功 → 主页 80 / good；重名与非法输入 → `user_credit_account` 计数不变。
+- [x] `AuthServiceImpl.register` 在既有 `@Transactional` 内调用 `CreditService.ensureAccount(user.id())`。
+- [x] 新增 `CreditAccountInitApiTest`（先 red）：注册成功 → 主页 80 / good；重名与非法输入 → `user_credit_account` 计数不变。
 
 **验证：** `cd RouteME/backend; .\mvnw.cmd -B -ntp -Dtest=CreditAccountInitApiTest test`
 **覆盖：** R1-1、R1-2、D5
 
 ### T5 [backend] 个人主页响应集成
 
-- [ ] `UserProfile` 增加 `credit` 承载；`UserProfileServiceImpl.read` 与 `save` 均拼接信用值（save 返回体不能缺字段）。
-- [ ] `UserProfileResponse` 增 `creditScore` / `creditLevel` 两个非空字段，`from(...)` 同步。
-- [ ] 新增 `CreditProfileApiTest`（本人 / 他人均含两键、旧账号回填）、`CreditBoundaryApiTest`（十档边界）、`CreditReadOnlyApiTest`（`PUT /api/users/me/credit` → 404；资料请求携带 `credit_score` 不改分），均先 red。
+- [x] `UserProfile` 增加 `credit` 承载；`UserProfileServiceImpl.read` 与 `save` 均拼接信用值（save 返回体不能缺字段）。
+- [x] `UserProfileResponse` 增 `creditScore` / `creditLevel` 两个非空字段，`from(...)` 同步。
+- [x] 新增 `CreditProfileApiTest`（本人 / 他人均含两键、旧账号回填）、`CreditBoundaryApiTest`（十档边界）、`CreditReadOnlyApiTest`（`PUT /api/users/me/credit` → 404；资料请求携带 `credit_score` 不改分），均先 red。
 
 **验证：** `cd RouteME/backend; .\mvnw.cmd -B -ntp test`
 **覆盖：** R1-3、R1-4、R3-1、R5-1、R5-2、D6–D7
 
 ### T6 [frontend] 类型与纯函数
 
-- [ ] `types.ts`：新增 `CreditLevel` 联合类型；`UserProfile` 增 `credit_score: number`、`credit_level: CreditLevel`。
-- [ ] 新增 `profile/creditDisplay.ts`：`creditLabel` / `creditTone` / `creditLine`，对未知 code 与越界分数做回退。
-- [ ] `tripMessages.ts`：五个等级文案 + 「信用分」前缀。
-- [ ] 新增 `creditDisplay.test.ts`（五档映射、回退、整串格式）。
+- [x] `types.ts`：新增 `CreditLevel` 联合类型；`UserProfile` 增 `credit_score: number`、`credit_level: CreditLevel`。
+- [x] 新增 `profile/creditDisplay.ts`：`creditLabel` / `creditTone` / `creditLine`，对未知 code 与越界分数做回退。
+- [x] `tripMessages.ts`：五个等级文案 + 「信用分」前缀。
+- [x] 新增 `creditDisplay.test.ts`（五档映射、回退、整串格式）。
 
 **验证：** `cd RouteME/frontend; npm run typecheck && npm test`
 **覆盖：** R3-2、R4-4、D10–D11
 
 ### T7 [frontend] 个人主页展示
 
-- [ ] `ProfilePage.tsx`：`.profile-hero-meta` 之后渲染 `<p className="profile-credit is-*">{creditLine(...)}</p>`。
-- [ ] `styles.css`：`.profile-credit` + 五个 `is-*` 低饱和色阶（`--t-jade` / `--t-lagoon` / `--t-warn` / `--t-coral` / `--t-danger`），圆角 `var(--r-sm)`。
-- [ ] 走查 1440 / 768 / 390 × 浅色 / 深色：不溢出、不只靠颜色、资料未完善时同位置展示。
+- [x] `ProfilePage.tsx`：`.profile-hero-meta` 之后渲染 `<p className="profile-credit is-*">{creditLine(...)}</p>`。
+- [x] `styles.css`：`.profile-credit` + 五个 `is-*` 低饱和色阶（`--t-jade` / `--t-lagoon` / `--t-warn` / `--t-coral` / `--t-danger`），圆角 `var(--r-sm)`。
+- [x] 走查 1440 / 768 / 390 × 浅色 / 深色：不溢出、不只靠颜色、资料未完善时同位置展示。
 
 **验证：** `cd RouteME/frontend; npm run typecheck && npm run build`
 **覆盖：** R4-1、R4-3、R4-4、D9–D10
 
 ### T8 [tests] E2E 验收与反向用例
 
-- [ ] 新增 `RouteME/e2e/tests/credit.spec.ts`：注册 → 主页「信用分：80 / 100 · 信用良好」；他人视角同值；刷新一致；资料未完善仍展示。
-- [ ] 反向用例：无「明细 / 历史」入口；无 admin 路由与排序/筛选控件；首页卡片与资料弹窗无信用信息。
-- [ ] 夹具：时间戳唯一用户名；存量账号用 `linjianxia / 123456`（`id 1`）与 `id 4`。
+- [x] 新增 `RouteME/e2e/tests/credit.spec.ts`：注册 → 主页「信用分：80 / 100 · 信用良好」；他人视角同值；刷新一致；资料未完善仍展示。
+- [x] 反向用例：无「明细 / 历史」入口；无 admin 路由与排序/筛选控件；首页卡片与资料弹窗无信用信息。
+- [x] 夹具：时间戳唯一用户名；存量账号用 `linjianxia / 123456`（`id 1`）与 `id 4`。
 
 **验证：** `cd RouteME/e2e; npx playwright test tests/credit.spec.ts`
 **覆盖：** R4-1 ~ R4-5、R7-1、R7-2、ATDD §5
 
 ### T9 [verify] 回归验证
 
-- [ ] 后端全量 `./mvnw -B -ntp verify`。
-- [ ] 前端 `npm run typecheck && npm run build && npm test`。
-- [ ] E2E 全量 `npx playwright test`（全新库 + 独立端口）。
-- [ ] `openspec validate add-credit-account --strict`；Redocly lint（本地）。
+- [x] 后端全量 `./mvnw -B -ntp verify`。
+- [x] 前端 `npm run typecheck && npm run build && npm test`。
+- [x] E2E 全量 `npx playwright test`（全新库 + 独立端口）。
+- [x] `openspec validate add-credit-account --strict`；Redocly lint（本地）。
 
 **验证：** 上述命令逐条执行并在 P4 验证报告贴输出摘要
 **覆盖：** 全部 Scenario 的回归门禁
 
 ### T10 [docs] 文档收口
 
-- [ ] `docs/knowledge/interfaces/README.md`：登记 `UserProfile` 新增两字段。
-- [ ] `docs/sdd/add-credit-account/p3-design.md`（本轮）与 `p4-verify.md`（P4）。
-- [ ] `registry.md` 状态更新与 `docs/sdd/README.md` P4 列（P4 完成后）。
+- [x] `docs/knowledge/interfaces/README.md`：登记 `UserProfile` 新增两字段。
+- [x] `docs/sdd/add-credit-account/p3-design.md`（本轮）与 `p4-verify.md`（P4）。
+- [x] `registry.md` 状态更新与 `docs/sdd/README.md` P4 列（P4 完成后）。
 
 **验证：** 人工核对字段名与链接
 **覆盖：** `@rule:documentation-conventions`
+
+### T11 [contract+backend] 批量信用状态端点（2026-11-17 范围扩展）
+
+- [x] `GET /api/users/credits?ids=...`：≤50、需 `X-User-Id`、缺账户按 80 补齐、去重保序。
+- [x] `openapi.yaml` 新增路径 + `UserCreditEntry` schema；`OpenApiTest` 断言。
+- [x] `CreditBatchApiTest`：正常 / 缺账户 / 无头 401 / 超 50 / 非数字 / 重复。
+
+**验证：** `cd RouteME/backend; .\mvnw.cmd -B -ntp -Dtest=CreditBatchApiTest,OpenApiTest test`
+**覆盖：** R4-8、R4-9、D13
+
+### T12 [frontend] 四个新展示面
+
+- [x] `types.ts` 增 `UserCreditEntry`；`api.ts` 增 `loadUserCredits`。
+- [x] 新增 `profiles/useUserCredits.ts`（去重、一次请求、失败静默降级）。
+- [x] 资料弹窗、详情页发布者行、行程卡发布者行、申请处理页申请者行接入。
+- [x] `.profile-credit.is-compact` / `.tc-credit` / `.publisher-credit` 样式。
+
+**验证：** `cd RouteME/frontend; npm run typecheck && npm run build && npm test`
+**覆盖：** R4-6 ~ R4-9、D14
+
+### T13 [tests] E2E 展示面扩展
+
+- [x] `credit.spec.ts` 新增：弹窗 / 详情发布者 / 行程卡 / 申请者行。
+- [x] 反向用例改为「我的旅行资料卡无信用分」，保留无明细 / 无 admin。
+
+**验证：** `cd RouteME/e2e; npx playwright test tests/credit.spec.ts`
+**覆盖：** R4-6 ~ R4-10、C-21
 
 ## 层与顺序约束
 

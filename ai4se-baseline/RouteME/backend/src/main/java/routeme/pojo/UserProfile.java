@@ -2,8 +2,11 @@ package routeme.pojo;
 
 import java.util.List;
 
+import routeme.enums.CreditLevel;
+
 /**
- * 用户资料读模型：只包含可公开字段，封禁信息以有效状态为开关。
+ * 个人资料的领域视图：生日只在本人读取时填值，他人读取为 null；信用分与等级任意视角均填值。
+ * 封禁信息只在有效状态为 BANNED 时下发，以有效状态为开关。
  */
 public record UserProfile(
         long id,
@@ -23,6 +26,8 @@ public record UserProfile(
         String travelStyle,
         String bio,
         boolean profileComplete,
+        int creditScore,
+        CreditLevel creditLevel,
         String status,
         String banReasonCode,
         String banExpiresAt) {

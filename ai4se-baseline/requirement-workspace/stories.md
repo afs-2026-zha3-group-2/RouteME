@@ -331,3 +331,29 @@
 - **不含计分事件：** 体验获赞加分、退出扣分、举报核实扣分、月度上限与封禁均属后续故事；本故事只交付账户与展示底座。
 - **依赖：** `user-profile` / `user-profiles` 尚未归档；本故事只追加只读字段，不改其 Requirement 语义。
 - 未接入外部 ALM；本表为仓库内权威故事清单，ALM Sync 状态记为 Pending。
+
+## REQ-022 — 目的地天气与出行提醒（迭代 2 / P1）
+
+- **故事：** S22 目的地天气与出行提醒（发起人 2026-11-17 用户故事；优先级 P1；迭代 2；3 点；落点页面：路线创建页 / 行程详情页）
+- **需求编号说明：** `main` 已占用 REQ-001 ~ REQ-021（REQ-020 由并行 `refine-detail-companions` 占用），本需求按「后到者顺延」登记为 **REQ-022**。
+- **垂直切片：** 只负责「目的地 + 日期 → 获取天气 → 展示天气 → 给出基础出行提醒」；「天气 + 预算 + 兴趣 → AI 自动生成 / 调整旅行方案」属 `add-ai-itinerary`，不在本故事。
+- **技术边界：** Open-Meteo 提供真实天气；RouteMe 只做归一与固定规则提醒；高德负责地图真相；AI 不参与本故事。
+- **更新时间：** 2026-11-17
+
+| Story | Title | 角色 | Priority | Iteration | Points | Page | Parent REQ | Change | Status |
+|---|---|---|---|---|---|---|---|---|---|
+| S22 | 目的地天气与出行提醒 | 规划旅行的用户 | P1 | 迭代 2 | 3 | 路线创建页 / 行程详情页 | REQ-022 | `add-trip-weather` | P1 drafted（2026-11-17） |
+
+## Traceability（REQ-022）
+
+| Story | Requirement scenarios | Change spec | Story file |
+|---|---|---|---|
+| S22 | REQ-022 §4 S22-1 ~ S22-16 | `openspec/changes/add-trip-weather/specs/trip-weather/spec.md`（ADDED：6 Requirement / 28 Scenario） | 无独立故事文件：以 proposal + Delta 承接（与 REQ-012 / REQ-014 / REQ-019 同口径） |
+
+## Notes（REQ-022）
+
+- **不拆故事：** 「选目的地与日期 → 看天气 → 看提醒」是同一垂直切片；拆开只会在发布页得到「有天气没提醒」或反之的不完整验收。
+- **两处落点共享一个组件：** 发布页与详情页使用同一张天气卡与同一后端口径，避免两页给出不同结论。
+- **不做 AI 联动：** 天气参与推荐属 `add-ai-itinerary`；本故事只沉淀天气能力与固定提醒规则，后续 AI 推荐直接复用同一端点与提醒函数。
+- **多日行程：** 只展示旅行首日并标注日期；逐天预报另开需求。
+- **依赖：** 无外部依赖；`add-ai-itinerary` 的天气代理（未提交）在本 change 落地后应改为复用，P4 合并时核对。

@@ -1241,13 +1241,122 @@ REQ-010：聊天页按原型重构、聊天准入与退出语义调整、集合�
 | Risk | 原型无骨架 | `@rule:prototype-ui-alignment`；P3 先补原型截点再实现 |
 | Blocker | 无 | blocking OQ = 0；DoR BLOCKER = 0；A0 ⑨–⑫ 全过 |
 
-### 19.8 Suggested split boundaries（供 proposal-split / story-split）
+### 19.8 范围扩展（2026-11-17，发起人追认）
+
+- **背景：** 原需求只写「个人主页展示」，发起人明确「看别人时也要就近看到信用」。
+- **新增展示面：** 资料弹窗（`ProfileModal`，复用 `GET /users/{id}/profile`，零后端改动）、行程详情发布者行、灵感首页行程卡发布者行、申请处理页申请者行。
+- **数据获取：** 新增批量只读端点 `GET /api/users/credits?ids=...`（≤50），前端一次取数；详情页也走该端点（不用逐卡请求）。
+- **不变：** 可见性口径（分数 + 等级，本人与他人一致）、明细不展示、无管理端。
+- **保留边界：** 聊天页、顶栏、我的旅行资料卡仍不展示。
+
+### 19.9 Suggested split boundaries（供 proposal-split / story-split）
 
 - **一个 change：** `add-credit-account` ← REQ-019（信用系统迭代 1 / Story 1）。
 - **不并入计分故事：** 赞 / 退出 / 举报 / 月度上限 / 封禁属后续故事；本 change 只交付底座与展示，不预留业务事件端点。
 - **不并入管理后台：** 管理端能力不存在（无角色列、无端点、无页面），另开故事。
 - **阶段：** 单阶段；无归档前置依赖（`user-credit` 全新能力），但需与 REQ-016 / REQ-017 协调契约版本与迁移号。
 - **质量自检（split-heuristics）：** 子目标一句话可说明 ✓；端到端可观察（注册 → 个人主页看到「80 / 100 · 信用良好」）✓；可独立运行 ✓；capability 名真实（`user-credit`）✓；无依赖环 ✓；场景 15 条 ≤ 单 change 阈值 ✓。
+
+## 20. REQ-020 变更影响 — 灵感详情页同行者卡片化
+
+- **日期：** 2026-11-17 ｜ **触发：** 用户当次指令（详情页同行者只展示姓名，要求与发布者一样的 card）+ D1–D4 裁决
+- **粒度：** 应用架构（详情页展示面 / 同行者集合归属 / 资料弹窗复用 / 聊天入口），非代码设计
+- **基线：** `origin/main@6f9cb46`（独立 worktree `.worktrees/refine-detail-companions`，分支 `feature/refine-detail-companions`）
+
+### 20.1 Requirement set
+
+- `requirement-workspace/requirements/REQ-020-detail-companion-cards.md`（Ready 条目，10 场景 C-1 ~ C-10，blocking OQ 0，DoR BLOCKER 0）
+- `requirement-workspace/intents/REQ-020-detail-companion-cards.md`（意图捕获 + 证据锚点 + D1–D4）
+- 变更能力：`trip-plans`（MODIFIED「查看行程详情与清晰的状态」）；`trip-companions` / `user-profiles` 只读消费
+- 用户裁决：D1 只展示同行者（不含发布者）/ D2 卡片与发布者同构 / D3 整卡开资料 + 聊天独立入口 / D4 独立 worktree
+
+### 20.2 As-is asset inventory（evidence paths）
+
+| 资产 | 路径 | 现状 |
+|---|---|---|
+| 详情页页面 | `RouteME/frontend/src/trips/TripDetailPage.tsx` | 发布者资料卡 `:468-496`；同行者纯姓名列表 `:498-520` |
+| 资料摘要函数 | `RouteME/frontend/src/profile/profileDisplay.ts` | `publisherSummary` `:26-28`：学校 · 专业 → 职业 → 城市 → 空串 |
+| 前端类型 | `RouteME/frontend/src/types.ts` | `DemoUser` `:21-30`；`TripDetail.participants` `:119-125` |
+| 后端响应 | `RouteME/backend/src/main/java/routeme/response/DemoUserResponse.java`、`TripDetailResponse.java` | `participants: List<DemoUserResponse>`；字段含学校 / 专业 / 职业 / 城市 / 简介 / 兴趣 / 头像 |
+| 同行者集合 | `RouteME/backend/src/main/java/routeme/service/impl/ApplicationServiceImpl.java:193-202` | 发布者在最前 + 已接受同行者；`joined_count` 含发布者 |
+| 契约 | `RouteME/openapi.yaml:1890-1895` | `participants` 描述为「当前同行者」，字段不变 |
+| 样式 | `RouteME/frontend/src/styles.css:1265-1268,2498-2557,2691-2707` | `.detail-participants` 两处旧规则；`.publisher-row / .publisher-button / .publisher-name / .publisher-bio / .publisher-tags` 可复用 |
+| 资料弹窗 | `RouteME/frontend/src/profiles/ProfileContext.tsx:27-41`、`ProfileModal` | 全应用共用 `openProfile(userId)` |
+| 头像 | `RouteME/frontend/src/shell/Avatar.tsx:12-46` | `sm / lg / xl`；图片失败回退首字 |
+| 原型 | `docs/prototype/ui.js:500-520`、`docs/prototype/styles.css:712-725` | 发起人 `.host-card`；同行者 `.companion` 紧凑行（含发布者） |
+| E2E | `RouteME/e2e/tests/chat-entry.spec.ts:78-84` | 依赖 `.detail-participants` 下的「聊天」链接 |
+| Living Spec | `openspec/specs/trip-plans/spec.md:191-199`；`openspec/specs/trip-companions/spec.md:69-83` | 详情页展示「当前同行者」，至少含发布者；接受申请后进入同行者列表 |
+| 在途 change | `openspec/changes/refine-experience-share/`、`add-experience-photos/`、`refine-trip-map/`、`add-ai-itinerary/` | 均未归档；本需求不触碰体验、地图与 AI，无档案冲突 |
+
+### 20.3 As-is → proposed delta（逐资产）
+
+| 资产 | As-is | Proposed delta |
+|---|---|---|
+| 详情页同行者区 | `ul.detail-participants` 纯姓名 + 聊天链接 | 资料卡列表：头像 + 昵称 + 摘要 + 简介 + 兴趣 + 独立聊天入口；卡片主体打开资料弹窗 |
+| 发布者重复 | `participants` 含发布者，列表重复展示姓名 | 前端过滤 `trip.publisher.id`；发布者只保留上方资料卡 |
+| 空态 | 只有发布者时仍展示一行姓名 | 「还没有其他同行者」空态；不展示空列表 / 发布者姓名 |
+| 人数口径 | 页头 `joined_count / capacity` 含发布者 | **不变**；卡片数量 = `participants.length - 1` |
+| 资料弹窗 | 发布者卡片可用 | 同行者卡片同样调用 `openProfile`；不改弹窗 |
+| 聊天入口 | 列表内「聊天」链接 | 卡片内独立「聊天」链接；可见条件与路由不变 |
+| 原型 | `.companion` 紧凑行（含发布者） | `compPanel` 改为「过滤发布者 + 资料卡 + 空态」；新增卡片样式 |
+| 接口 / 契约 | `participants: DemoUser[]` | **零变化**；不新增字段、端点、版本 |
+| 数据库 / 迁移 | 无 | **零变化** |
+| Living Spec | `trip-plans` 旧展示口径 | MODIFIED「查看行程详情与清晰的状态」：发布者资料卡 + 同行者资料卡（不含发布者），人数不变 |
+| 测试 | `chat-entry.spec.ts` 依赖旧选择器 | 更新选择器；新增卡片、资料弹窗、空态、聊天权限、响应式断言 |
+
+### 20.4 Blast radius（应用架构）
+
+- **前端（1 页 + 样式 + 文案）：** `TripDetailPage.tsx` 同行者区重构；`styles.css` 新增卡片样式；`tripMessages.ts` 新增空态文案；无新路由、无新页面。
+- **原型（2 文件）：** `docs/prototype/ui.js` 的 `compPanel`；`docs/prototype/styles.css` 的同行者卡片样式。
+- **后端（0）：** 不改 `TripDetailResponse` / `DemoUserResponse` / `ApplicationServiceImpl`。
+- **契约 / 数据库（0）：** `openapi.yaml`、Flyway、种子数据均无 diff。
+- **资料弹窗（0）：** `ProfileModal` / `ProfileContext` 只读复用，不改权限与字段。
+- **测试（1 文件 + 新增）：** `chat-entry.spec.ts` 选择器；新增同行者卡片相关 E2E。
+- **不影响：** 首页、发布、申请处理、聊天页、我的旅行、体验区、举报、信用分。
+- **运行时风险面：** 纯渲染变化；最多多渲染若干 `Avatar` 节点，无新请求。
+
+### 20.5 Artifact impact（specs / tests / docs）
+
+| 工件 | 影响 |
+|---|---|
+| OpenSpec Delta | `trip-plans` **MODIFIED**「查看行程详情与清晰的状态」（1 Requirement，保留基线场景并新增同行者卡片 / 空态 / 发布者不重复口径） |
+| 长期规格 | 归档后替换 `openspec/specs/trip-plans/spec.md` 对应 Requirement 块 |
+| 契约 | 无变化（`openapi.yaml` 零 diff） |
+| 后端测试 | 无新增（后端零 diff；既有 API 回归即可） |
+| 前端测试 | P3 决定是否补 `TripDetailPage` 组件单测；至少 E2E 覆盖卡片、资料弹窗、空态、聊天入口 |
+| E2E | `chat-entry.spec.ts` 选择器更新；新增 `companions` 卡片路径（建议放入 `trips.spec.ts` 或新 `companion-cards.spec.ts`，P3 定） |
+| 知识库 | 无需登记接口变更；如需记录展示口径，更新 `docs/knowledge/domain` 的详情页词汇（P5 判断） |
+| 阶段记录 | `docs/sdd/refine-detail-companions/p1-intent.md` … `p4-verify.md`；`docs/sdd/README.md` 索引 |
+| 评审 | `docs/reviews/<yyyymmdd>-refine-detail-companions-proposal-review.md`、`-spec-review.md` |
+
+### 20.6 Dual-track notes（OpenSpec vs agile）
+
+- **OpenSpec 轨：** 单 change `refine-detail-companions`，单能力 `trip-plans`（MODIFIED）；不新建 `trip-companions` delta（不改同行规则）。
+- **Agile 轨：** 一个页面级垂直切片「详情页同行者卡片化」；估点由 SM 确认。
+- **并列轨道：** 同行者排序、申请规则、资料编辑、信用分展示分属其它需求，本 change 不预留空壳。
+
+### 20.7 Risks & blockers
+
+| 级别 | 项 | 说明 / 缓解 |
+|---|---|---|
+| Risk | 修改 Living Spec 「至少包含发布者本人」口径 | Delta MODIFIED 明确「发布者资料卡 + 同行者列表（不含发布者）」；人数仍含发布者；P2 G1 由 IO / SA 确认 |
+| Risk | `styles.css` 多人并行修改在 merge 时丢样式 | 新样式追加到文件末段；删除旧 `.detail-participants` 规则时用 grep 确认两处均已处理；merge 后抽查关键类 |
+| Risk | E2E 选择器悬空 | 更新 `chat-entry.spec.ts`；新增卡片断言使用稳定的语义定位（`getByRole` / 文本），不依赖纯层级 |
+| Risk | 卡片内按钮与链接嵌套导致可访问性问题 | 卡片主体用 `<button>`，聊天用并列 `<a>`；P3 设计与 P4 浏览器走查确认键盘可达 |
+| Risk | 资料字段缺失导致空占位 | 按 `publisherSummary` 回退与条件渲染；E2E 覆盖空简介 / 空兴趣用户 |
+| Risk | 发布者过滤后列表为空被误认为缺陷 | 明确空态文案与位置；E2E 覆盖「只有发布者」行程 |
+| Risk | 响应式 / 深色主题溢出 | P4 逐屏 1440 / 1024 / 768 / 390 × 浅 / 深色走查 |
+| Risk | 原型未先改 | P3 / P4 先改 `docs/prototype` 并浏览器验证，再改实现 |
+| Blocker | 无 | blocking OQ = 0；DoR BLOCKER = 0；A0 ⑨–⑫ 全过 |
+
+### 20.8 Suggested split boundaries（供 proposal-split / story-split）
+
+- **一个 change：** `refine-detail-companions` ← REQ-020。
+- **不并入同行规则：** 申请 / 接受 / 退出 / 聊天准入不变；不新建 `trip-companions` delta。
+- **不并入其它展示页：** 首页行程卡、体验卡、我的旅行、申请处理页、聊天页同行者展示另开需求。
+- **不并入资料能力：** `ProfileModal` 内容、资料编辑、头像上传不改。
+- **阶段：** 单阶段（原型先行 → 前端实现 → E2E / 走查）；无归档前置依赖；建议与在途 `add-experience-photos` / `refine-trip-map` 的 `styles.css` 改动保持追加式合并。
+- **质量自检（split-heuristics）：** 子目标一句话可说明 ✓；端到端可观察（详情页看到同行者卡片并可开资料 / 聊天）✓；可独立运行 ✓；capability 名真实（`trip-plans`）✓；无依赖环 ✓；场景 10 条 ≤ 单 change 阈值 ✓。
 
 ## 21. REQ-021 变更影响 — 取消行程（issue #28）
 
@@ -1353,4 +1462,57 @@ REQ-010：聊天页按原型重构、聊天准入与退出语义调整、集合�
 - **不拆 change：** 取消状态机与取消善后必须同批交付，否则验收无法闭环。
 - **不拆故事：** S21 一条故事覆盖两个入口与一次状态迁移；拆开会造成同一状态被两条故事重复验收。
 - **后续候选（均需另开需求）：** 信用分与信用记录、免扣分申请与管理员审核、删除行程、恢复/重新开启、取消原因申诉。
+
+## 22. REQ-022 变更影响 — 目的地天气与出行提醒（迭代 2 / P1）
+
+### 22.1 as-is 盘点
+
+| 位置 | 现状 |
+|---|---|
+| 后端天气 | 无 Open-Meteo 调用、无天气配置、无天气端点（全仓 grep 仅命中「天气或不可抗力原因」文案） |
+| 前端发布页 | `TripCreatePage` 侧栏只有预览卡与安全提示 |
+| 前端详情页 | `TripDetailPage` 只有标题 / 状态 / 日期 / 路线 / 集合 / 同行 |
+| 行程数据 | 只有 `destination_code` / `destination`，无坐标；支持 375 城市 |
+| 地图底座 | 高德 JS API 选点（途经点 / 集合点）+ 后端 `/_AMapService` 代理（白名单含 `v3/geocode/geo`） |
+| 契约 / 迁移 | `openapi.yaml` 0.13.0；迁移最新 V19（V20 / V21 已被在途 change 预约） |
+
+### 22.2 delta
+
+| 层 | 变更 |
+|---|---|
+| 能力 | 新增 `trip-weather`（6 Requirement / 28 Scenario） |
+| 后端 | `GET /api/weather/forecast`（Open-Meteo 代理）+ 坐标解析缓存 + 提醒纯函数 + 上游错误归一 |
+| 前端 | 共享 `WeatherCard`（五态）+ 发布页侧栏 + 详情页信息区 |
+| 契约 | 0.16.0：新增天气路径与 3 个 schema |
+| 数据 | 无迁移 |
+| 文案 | 天气字段标签、五态提示、四类提醒与平稳提示 |
+
+### 22.3 blast radius
+
+| 受影响 | 影响方式 |
+|---|---|
+| `TripCreatePage` | 侧栏新增卡片；表单校验与提交逻辑不变 |
+| `TripDetailPage` | 信息区新增区块；既有地图 / 路线 / 同行区块不变 |
+| `api.ts` / `types.ts` | 新增函数与类型，不改既有函数签名 |
+| `openapi.yaml` / `OpenApiTest` | 新增路径与 schema；版本递增 |
+| `application.yaml` | 新增 `routeme.weather.base-url`（默认正式环境，可被环境变量覆盖） |
+| E2E | 新增 `weather.spec.ts`；用 `page.route` 拦截，不影响其它用例 |
+
+### 22.4 风险
+
+| 类型 | 说明 | 缓解 |
+|---|---|---|
+| Risk | 与在途 `add-ai-itinerary` 的天气代理重复 | D1 定本 change 为权威；合并时 AI 侧改为复用；PR 描述显式记录 |
+| Risk | 城市中心坐标对山区 / 海岛精度不足 | 只承诺城市级判断；Delta 不承诺点位级 |
+| Risk | 上游网络不稳定 / 额度限制 | 失败不阻断业务；前端可重试；CI 不依赖真实上游 |
+| Risk | 日期越界被误当作错误 | 200 + `available:false` + `reason`，前端单独提示 |
+| Risk | 契约号段冲突（0.14.0 / 0.15.0 已被预约） | 取 0.16.0；P4 定稿前复核 |
+| Blocker | 无 | blocking OQ=0、DoR BLOCKER=0 |
+
+### 22.5 Suggested split boundaries
+
+- **不拆 change：** 后端天气 + 提醒规则 + 两页展示必须同批交付，否则「有数据没展示」或「有展示没数据」都不可验收。
+- **不拆故事：** S22 覆盖「选目的地与日期 → 看天气 → 看提醒」一条闭环。
+- **后续候选（另开需求）：** 多日逐天 / 逐小时预报、天气参与 AI 推荐、天气预警推送、精确到点位的天气。
+- **质量自检（split-heuristics）：** 子目标一句话可说明 ✓；端到端可观察（选目的地 → 看到真实天气与具体提醒）✓；可独立运行 ✓；capability 名真实 ✓；无依赖环 ✓。
 - **质量自检（split-heuristics）：** 子目标一句话可说明 ✓；端到端可观察（发布者取消 → 首页下架 / 申请关闭 / 聊天只读 / 我的旅行保留）✓；可独立运行 ✓；capability 名真实 ✓；无依赖环 ✓。

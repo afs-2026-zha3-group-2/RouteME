@@ -8,6 +8,7 @@
 
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { Button, Spin, Typography } from 'antd';
+import { wgs84ToGcj02 } from './geoDatum';
 import { createRasterMap } from './rasterMap';
 import './rasterMap.css';
 import type { AmapMap, LngLat } from './types';
@@ -107,10 +108,9 @@ export function AmapContainer({
     navigator.geolocation.getCurrentPosition(
       (position) => {
         setLocating(false);
-        mapRef.current?.setZoomAndCenter(15, [
-          position.coords.longitude,
-          position.coords.latitude,
-        ]);
+        // 浏览器给的是 WGS-84，底图是 GCJ-02：不纠偏会稳定偏出几百米。
+        const point = wgs84ToGcj02(position.coords.longitude, position.coords.latitude);
+        mapRef.current?.setZoomAndCenter(15, [point.lng, point.lat]);
       },
       () => {
         setLocating(false);

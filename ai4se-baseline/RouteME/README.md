@@ -102,7 +102,7 @@ npm run dev                          # http://localhost:5173，/api 代理到 80
 
 打开 <http://localhost:5173>，用种子账号登录（`linjianxia` / `chenyu` / `sunian` / `zhouye`，密码均为 `123456`）。
 
-冒烟接口：`GET /api/greeting`、`GET /api/users`、`GET /api/trips`、`GET /api/experiences`。
+冒烟接口：`GET /api/greeting`、`GET /api/users`、`GET /api/trips`、`GET /api/experiences`、`GET /api/weather/forecast`（`destination_code` + `date`，Open-Meteo 免 Key）。
 
 ## SQLite 数据
 
