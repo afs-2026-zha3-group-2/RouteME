@@ -44,6 +44,17 @@ API、事件与集成契约。字段一律 snake_case；时间字段为 RFC3339 
 - 错误码：`INVALID_INPUT`(400)、`DEMO_USER_REQUIRED`(401)、`FORBIDDEN`/`CHAT_NOT_ALLOWED`/`EXPERIENCE_NOT_ALLOWED`(403)、`TRIP_NOT_FOUND`/`APPLICATION_NOT_FOUND`(404)、`TRIP_NOT_OPEN`/`APPLICATION_NOT_PENDING`/`DUPLICATE_APPLICATION`/`CHAT_READ_ONLY`(409)、`INTERNAL_ERROR`(500)。
 - 状态由 `completed_at` 与人数推导，不是独立写入的字段；映射与字段约束以 `openapi.yaml` 为准。
 
+## RouteME 信用分展示（2026-11-17，`user-credit` / REQ-019）
+
+契约源：`RouteME/openapi.yaml`（v0.12.0）。校验：`cd RouteME/backend; .\mvnw.cmd -Dtest=OpenApiTest test`。
+
+- `GET /users/{userId}/profile` 的 `UserProfile` 新增两个只读必填字段：
+  - `credit_score`：integer，0–100；本人与他人视角均返回，任意存量 / 新注册账号都非空。
+  - `credit_level`：string，enum `excellent` / `good` / `fair` / `low` / `risk`；由分数实时派生（90 / 80 / 60 / 30 四道阈值，左闭右开）。
+- 初始分为 80；存量账号由迁移 `V18` 回填；**不存在面向客户端的写分端点**，资料保存请求携带 `credit_score` 会被忽略。
+- 加 / 扣分明细、原因、历史与变更记录只在服务端账本（`credit_ledger`）留存，不对外返回；管理端能力尚未交付。
+- 详情（阈值、账本字段、越界裁断、零变化留痕）以 `openapi.yaml` 与 `openspec/specs/user-credit/spec.md`（归档后）为准。
+
 ## REST 面
 
 机器可读契约以 `openapi.yaml` 为准，`npm run lint:api` 必须通过。按能力分组：

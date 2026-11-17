@@ -2,8 +2,10 @@ package routeme.pojo;
 
 import java.util.List;
 
+import routeme.enums.CreditLevel;
+
 /**
- * 个人资料的领域视图：生日只在本人读取时填值，他人读取为 null。
+ * 个人资料的领域视图：生日只在本人读取时填值，他人读取为 null；信用分与等级任意视角均填值。
  */
 public record UserProfile(
         long id,
@@ -22,5 +24,7 @@ public record UserProfile(
         List<String> interests,
         String travelStyle,
         String bio,
-        boolean profileComplete) {
+        boolean profileComplete,
+        int creditScore,
+        CreditLevel creditLevel) {
 }

@@ -10,6 +10,7 @@ import {
   publisherSummary,
   schoolMajor,
 } from './profileDisplay';
+import { creditLine, creditTone } from './creditDisplay';
 import { interestLabel } from './profileOptions';
 
 type Props = {
@@ -107,6 +108,9 @@ export function ProfilePage({ currentUser, userId, canEdit }: Props) {
             {ageZodiac !== '' && <span>{ageZodiac}</span>}
             {(profile.city ?? '') !== '' && <span>{profile.city}</span>}
             {(profile.gender ?? '') !== '' && <span>{profile.gender}</span>}
+          </p>
+          <p className={`profile-credit ${creditTone(profile.credit_level)}`}>
+            {creditLine(profile.credit_score, profile.credit_level)}
           </p>
           {(schoolAndMajor !== '' ||
             (profile.job ?? '') !== '' ||

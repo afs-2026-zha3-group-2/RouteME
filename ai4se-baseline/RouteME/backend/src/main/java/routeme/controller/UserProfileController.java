@@ -1,5 +1,8 @@
 package routeme.controller;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -15,11 +18,14 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
 
 import routeme.entity.UserEntity;
+import routeme.exception.InvalidInputException;
 import routeme.exception.SessionInvalidException;
 import routeme.pojo.DemoUser;
 import routeme.request.UserProfileUpdateRequest;
+import routeme.response.UserCreditResponse;
 import routeme.response.UserProfileResponse;
 import routeme.service.AuthService;
+import routeme.service.CreditService;
 import routeme.service.DemoUserService;
 import routeme.service.UserProfileService;
 import routeme.service.UserProfileStatsService;
@@ -33,21 +39,26 @@ public class UserProfileController {
 
     private static final String BEARER_PREFIX = "Bearer ";
     private static final String AVATAR_CACHE_CONTROL = "public, max-age=31536000, immutable";
+    /** 批量取数的上限：一页卡片的规模，避免被当成全量接口使用。 */
+    private static final int MAX_CREDIT_IDS = 50;
 
     private final UserProfileService userProfileService;
     private final UserProfileStatsService userProfileStatsService;
     private final DemoUserService demoUserService;
     private final AuthService authService;
+    private final CreditService creditService;
 
     public UserProfileController(
             UserProfileService userProfileService,
             UserProfileStatsService userProfileStatsService,
             DemoUserService demoUserService,
-            AuthService authService) {
+            AuthService authService,
+            CreditService creditService) {
         this.userProfileService = userProfileService;
         this.userProfileStatsService = userProfileStatsService;
         this.demoUserService = demoUserService;
         this.authService = authService;
+        this.creditService = creditService;
     }
 
     @GetMapping("/{userId}/profile")
@@ -61,6 +72,44 @@ public class UserProfileController {
                 caller.id() == userId,
                 target.getCreatedAt(),
                 userProfileStatsService.stats(userId));
+    }
+
+    /**
+     * 批量信用状态：卡片 / 申请列表 / 详情页发布者共用；只返回分数与等级码。
+     */
+    @GetMapping("/credits")
+    public List<UserCreditResponse> credits(
+            @RequestHeader(value = "X-User-Id", required = false) Long callerId,
+            @RequestParam(value = "ids", required = false) String ids) {
+        demoUserService.require(callerId);
+        return creditService.readAll(parseCreditIds(ids)).stream()
+                .map(UserCreditResponse::from)
+                .toList();
+    }
+
+    private static List<Long> parseCreditIds(String raw) {
+        if (raw == null || raw.isBlank()) {
+            throw new InvalidInputException("ids is required");
+        }
+        List<Long> ids = new ArrayList<>();
+        for (String part : raw.split(",")) {
+            String trimmed = part.trim();
+            if (trimmed.isEmpty()) {
+                continue;
+            }
+            try {
+                ids.add(Long.parseLong(trimmed));
+            } catch (NumberFormatException exception) {
+                throw new InvalidInputException("ids must be a comma-separated list of numbers");
+            }
+        }
+        if (ids.isEmpty()) {
+            throw new InvalidInputException("ids is required");
+        }
+        if (ids.size() > MAX_CREDIT_IDS) {
+            throw new InvalidInputException("at most " + MAX_CREDIT_IDS + " ids per request");
+        }
+        return ids.stream().distinct().toList();
     }
 
     @PutMapping("/me/profile")

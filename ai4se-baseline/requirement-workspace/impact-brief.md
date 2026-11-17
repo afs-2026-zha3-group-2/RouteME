@@ -1241,7 +1241,15 @@ REQ-010：聊天页按原型重构、聊天准入与退出语义调整、集合�
 | Risk | 原型无骨架 | `@rule:prototype-ui-alignment`；P3 先补原型截点再实现 |
 | Blocker | 无 | blocking OQ = 0；DoR BLOCKER = 0；A0 ⑨–⑫ 全过 |
 
-### 19.8 Suggested split boundaries（供 proposal-split / story-split）
+### 19.8 范围扩展（2026-11-17，发起人追认）
+
+- **背景：** 原需求只写「个人主页展示」，发起人明确「看别人时也要就近看到信用」。
+- **新增展示面：** 资料弹窗（`ProfileModal`，复用 `GET /users/{id}/profile`，零后端改动）、行程详情发布者行、灵感首页行程卡发布者行、申请处理页申请者行。
+- **数据获取：** 新增批量只读端点 `GET /api/users/credits?ids=...`（≤50），前端一次取数；详情页也走该端点（不用逐卡请求）。
+- **不变：** 可见性口径（分数 + 等级，本人与他人一致）、明细不展示、无管理端。
+- **保留边界：** 聊天页、顶栏、我的旅行资料卡仍不展示。
+
+### 19.9 Suggested split boundaries（供 proposal-split / story-split）
 
 - **一个 change：** `add-credit-account` ← REQ-019（信用系统迭代 1 / Story 1）。
 - **不并入计分故事：** 赞 / 退出 / 举报 / 月度上限 / 封禁属后续故事；本 change 只交付底座与展示，不预留业务事件端点。

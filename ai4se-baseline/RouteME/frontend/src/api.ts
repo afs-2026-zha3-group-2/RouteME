@@ -20,6 +20,7 @@ import type {
   TripFilters,
   TripMeetingRequest,
   TripSummary,
+  UserCreditEntry,
   UserProfile,
   UserProfileUpdateRequest,
 } from './types';
@@ -90,6 +91,16 @@ export async function logoutAccount(token: string): Promise<void> {
     method: 'POST',
     headers: { Authorization: `Bearer ${token}` },
   });
+}
+
+/** 批量读取信用状态；用于行程卡、申请列表与详情页发布者行。 */
+export async function loadUserCredits(ids: number[], callerId: number): Promise<UserCreditEntry[]> {
+  if (ids.length === 0) {
+    return [];
+  }
+  const query = new URLSearchParams({ ids: ids.join(',') });
+  const response = await request(`/users/credits?${query.toString()}`, undefined, callerId);
+  return (await response.json()) as UserCreditEntry[];
 }
 
 /** 读取个人资料；本人读取时响应包含生日，他人读取时省略。 */

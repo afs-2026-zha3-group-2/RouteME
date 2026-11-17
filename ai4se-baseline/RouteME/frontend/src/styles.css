@@ -4463,6 +4463,72 @@ svg {
   color: var(--ink-3);
 }
 
+/* 信用状态：分数 + 等级文字同时出现，颜色只做辅助（五档低饱和） */
+.profile-credit {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  width: fit-content;
+  margin: 0;
+  padding: 3px 10px;
+  border-radius: var(--r-sm);
+  border: 1px solid var(--line);
+  background: var(--surface-2);
+  font-size: 12px;
+  font-weight: 650;
+  color: var(--ink-2);
+}
+
+.profile-credit::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.profile-credit.is-excellent {
+  color: var(--t-jade);
+  border-color: color-mix(in srgb, var(--jade) 30%, transparent);
+  background: color-mix(in srgb, var(--jade) 8%, transparent);
+}
+
+.profile-credit.is-good {
+  color: var(--t-lagoon);
+  border-color: color-mix(in srgb, var(--lagoon) 28%, transparent);
+  background: color-mix(in srgb, var(--lagoon) 7%, transparent);
+}
+
+.profile-credit.is-fair {
+  color: var(--t-warn);
+  border-color: color-mix(in srgb, var(--amber) 32%, transparent);
+  background: color-mix(in srgb, var(--amber) 9%, transparent);
+}
+
+.profile-credit.is-low {
+  color: var(--t-coral);
+  border-color: color-mix(in srgb, var(--coral) 30%, transparent);
+  background: color-mix(in srgb, var(--coral) 8%, transparent);
+}
+
+.profile-credit.is-risk {
+  color: var(--t-danger);
+  border-color: color-mix(in srgb, var(--danger) 28%, transparent);
+  background: color-mix(in srgb, var(--danger) 7%, transparent);
+}
+
+/* 列表 / 弹窗内的紧凑形态：不抢主信息 */
+.profile-credit.is-compact {
+  gap: 5px;
+  padding: 1px 8px;
+  font-size: 11px;
+}
+
+.tc-credit,
+.publisher-credit {
+  margin-top: 8px;
+}
+
 .profile-chips {
   display: flex;
   flex-wrap: wrap;

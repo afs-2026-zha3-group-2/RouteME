@@ -45,6 +45,38 @@ class OpenApiTest {
     }
 
     @Test
+    void in_openApiFile_out_userCreditContractDeclared() throws IOException {
+        // Given
+        Map<String, Object> document = loadYaml(SPEC_PATH);
+        Map<String, Object> userProfile = schema(document, "UserProfile");
+        Map<String, Object> creditEntry = schema(document, "UserCreditEntry");
+
+        // When
+        Map<String, Object> creditScore = asMap(properties(userProfile).get("credit_score"));
+        Map<String, Object> creditLevel = asMap(properties(userProfile).get("credit_level"));
+
+        // Then
+        assertAll(
+                () -> assertTrue(
+                        required(userProfile).containsAll(List.of("credit_score", "credit_level")),
+                        "credit fields are required"),
+                () -> assertTrue(paths(document).containsKey("/users/credits"), "batch credit path declared"),
+                () -> assertTrue(
+                        required(creditEntry).containsAll(List.of("user_id", "credit_score", "credit_level")),
+                        "batch credit entry fields"),
+                () -> assertEquals("integer", creditScore.get("type"), "credit_score type"),
+                () -> assertEquals(0, creditScore.get("minimum"), "credit_score minimum"),
+                () -> assertEquals(100, creditScore.get("maximum"), "credit_score maximum"),
+                () -> assertEquals(Boolean.TRUE, creditScore.get("readOnly"), "credit_score readOnly"),
+                () -> assertEquals("string", creditLevel.get("type"), "credit_level type"),
+                () -> assertEquals(
+                        List.of("excellent", "good", "fair", "low", "risk"),
+                        creditLevel.get("enum"),
+                        "credit_level enum"),
+                () -> assertEquals(Boolean.TRUE, creditLevel.get("readOnly"), "credit_level readOnly"));
+    }
+
+    @Test
     void in_openApiFile_out_tripPlanContractDeclared() throws IOException {
         // Given
         Map<String, Object> document = loadYaml(SPEC_PATH);
@@ -60,7 +92,7 @@ class OpenApiTest {
 
         // Then
         assertAll(
-                () -> assertEquals("0.13.0", info.get("version"), "info.version"),
+                () -> assertEquals("0.14.0", info.get("version"), "info.version"),
                 () -> assertTrue(paths(document).containsKey("/users"), "/users declared"),
                 () -> assertTrue(paths(document).containsKey("/trips/{tripId}"), "detail path declared"),
                 () -> assertTrue(

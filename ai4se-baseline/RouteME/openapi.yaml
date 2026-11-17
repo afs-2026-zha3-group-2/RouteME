@@ -1,7 +1,7 @@
 openapi: 3.0.3
 info:
   title: RouteME API
-  version: 0.13.0
+  version: 0.14.0
   description: |
     RouteME 后端对外契约。本文件是前后端唯一事实源，字段名、类型、状态码与错误码只在这里定稿。
         当前包含：脚手架问候语、演示账户与账号认证（注册/登录/会话/退出）、旅行计划（浏览/筛选/发布/详情/结束），同行匹配、申请、退出、聊天、我的旅行与举报，以及游后体验分享与参考发布所需数据。
@@ -107,6 +107,57 @@ paths:
                 unexpected:
                   value:
                     code: INTERNAL_ERROR
+  /users/credits:
+    get:
+      operationId: loadUserCredits
+      summary: 批量读取信用状态
+      description: |
+        需携带 `X-User-Id`。供行程卡、申请列表与详情页发布者行一次取数；
+        `ids` 为逗号分隔的用户 id，最多 50 个；缺失信用账户的 id 按初始 80 分补齐。
+        只返回分数与等级码，不含任何加 / 扣分明细。
+      parameters:
+        - $ref: '#/components/parameters/DemoUserId'
+        - name: ids
+          in: query
+          required: true
+          description: 逗号分隔的用户 id，最多 50 个
+          schema:
+            type: string
+      responses:
+        '200':
+          description: 按请求顺序返回的信用状态
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/UserCreditEntry'
+              examples:
+                seeded:
+                  value:
+                    - user_id: 1
+                      credit_score: 80
+                      credit_level: good
+        '400':
+          description: ids 缺失、非数字或超过 50 个
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                invalid:
+                  value:
+                    code: INVALID_INPUT
+        '401':
+          description: 缺失或未知的 X-User-Id
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                missing:
+                  value:
+                    code: DEMO_USER_REQUIRED
   /users/{userId}/profile:
     get:
       operationId: loadUserProfile
@@ -1740,7 +1791,7 @@ components:
           description: 由必填字段派生的资料完善状态，不落库
     UserProfile:
       type: object
-      required: [id, nickname, avatar_initial, interests, profile_complete]
+      required: [id, nickname, avatar_initial, interests, profile_complete, credit_score, credit_level]
       properties:
         id:
           type: integer
@@ -1823,6 +1874,17 @@ components:
           type: boolean
           readOnly: true
           description: 六项必填同时成立时为 true；NULL / 空串 / 非法日期都算缺失
+        credit_score:
+          type: integer
+          minimum: 0
+          maximum: 100
+          readOnly: true
+          description: 当前信用分，0–100 闭区间；本人与他人视角均返回，不可由客户端修改
+        credit_level:
+          type: string
+          readOnly: true
+          enum: [excellent, good, fair, low, risk]
+          description: 由信用分实时派生：excellent 90–100 / good 80–89 / fair 60–79 / low 30–59 / risk 0–29
         joined_at:
           type: string
           format: date-time
@@ -1831,6 +1893,25 @@ components:
           description: 用户加入时间，UTC；仅读取端点返回
         stats:
           $ref: '#/components/schemas/ProfileStats'
+    UserCreditEntry:
+      type: object
+      required: [user_id, credit_score, credit_level]
+      properties:
+        user_id:
+          type: integer
+          format: int64
+          readOnly: true
+        credit_score:
+          type: integer
+          minimum: 0
+          maximum: 100
+          readOnly: true
+          description: 当前信用分，0–100 闭区间
+        credit_level:
+          type: string
+          readOnly: true
+          enum: [excellent, good, fair, low, risk]
+          description: 由信用分实时派生：excellent 90–100 / good 80–89 / fair 60–79 / low 30–59 / risk 0–29
     ProfileStats:
       type: object
       required: [published, completed, joined, shared]

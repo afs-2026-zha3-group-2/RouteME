@@ -34,6 +34,8 @@ import { AmapTripMap } from '../map/amap/AmapTripMap';
 import { AmapPlacePicker } from '../map/amap/AmapPlacePicker';
 import { shareEligibility } from '../experiences/shareEligibility';
 import { publisherSummary } from '../profile/profileDisplay';
+import { creditLine, creditTone } from '../profile/creditDisplay';
+import { useUserCredits } from '../profiles/useUserCredits';
 import { ReportModal } from '../safety/ReportModal';
 import { Avatar } from '../shell/Avatar';
 import type { DemoUser, Experience, MatchCandidate, TripApplication } from '../types';
@@ -85,6 +87,8 @@ function pickLatestApplication(
 export function TripDetailPage({ currentUser, tripId }: Props) {
   const { state, reload } = useTrip(currentUser.id, tripId);
   const { openProfile } = useProfile();
+  const publisherId = state.status === 'ready' ? state.trip.publisher.id : 0;
+  const publisherCredits = useUserCredits(publisherId > 0 ? [publisherId] : [], currentUser.id);
   const [feedback, setFeedback] = useState<Feedback | null>(null);
   const [completing, setCompleting] = useState(false);
   const [myApplication, setMyApplication] = useState<TripApplication | null>(null);
@@ -515,6 +519,18 @@ export function TripDetailPage({ currentUser, tripId }: Props) {
                 )}
               </span>
             </button>
+            {publisherCredits[trip.publisher.id] !== undefined && (
+              <p
+                className={`profile-credit is-compact publisher-credit ${creditTone(
+                  publisherCredits[trip.publisher.id].credit_level,
+                )}`}
+              >
+                {creditLine(
+                  publisherCredits[trip.publisher.id].credit_score,
+                  publisherCredits[trip.publisher.id].credit_level,
+                )}
+              </p>
+            )}
           </section>
 
           <section className="detail-section">
