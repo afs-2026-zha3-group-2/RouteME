@@ -293,3 +293,34 @@
 - **不含计分事件：** 体验获赞加分、退出扣分、举报核实扣分、月度上限与封禁均属后续故事；本故事只交付账户与展示底座。
 - **依赖：** `user-profile` / `user-profiles` 尚未归档；本故事只追加只读字段，不改其 Requirement 语义。
 - 未接入外部 ALM；本表为仓库内权威故事清单，ALM Sync 状态记为 Pending。
+
+---
+
+# Story list — REQ-022（issue #30 旅行体验获赞增加信用分）
+
+- **来源：** GitHub issue #30 `[P0] 旅行体验获赞增加信用分`（正文：优先级 P1 / 信用系统迭代 2 / Story 3 / 5 点 / 落点页面：旅行体验 / 信用记录）
+- **Change：** `add-experience-like-credit`（`trip-experiences` ADDED：体验点赞；`user-credit` ADDED：体验获赞阶梯加分）
+- **口径：** 一条故事 = 两个点赞展示面（首页体验卡 / 详情游后体验区）+ 两份能力增量（点赞数据与接口 + 获赞信用结算）+ 一次可观察的分数变化
+- **编号说明：** 本故事来自信用系统迭代 2 的 Story 3（issue #30），不属于原型 S01–S17；为避免与 issue #22「S22 AI 推荐路线」等既有编号冲突，本表不新造 S 编号，使用「信用迭代2-S3」。
+- **优先级说明：** issue 标题为 `[P0]`，正文写「优先级 P1」；本表并列记录两者，不单方面改写 issue。
+- **需求编号说明：** P1 起草时 `origin/main@64b38da` 最新为 REQ-021，本需求登记为 **REQ-022**。
+- **更新时间：** 2026-11-17
+
+| Story | Title | 角色 | Priority | Iteration | Points | Page | Parent REQ | Change | Status |
+|---|---|---|---|---|---|---|---|---|---|
+| 信用迭代2-S3 | 旅行体验获赞增加信用分 | 体验作者（受益）/ 已登录用户（点赞） | P0（标题）/ P1（正文） | 信用系统迭代 2 | 5 | 旅行体验（点赞）/ 信用记录（按 D2 不做可见明细） | REQ-022 | `add-experience-like-credit` | P1 Pass（2026-11-17；proposal 评审 Partial 待 G1 SA 裁决） |
+
+## Traceability（REQ-022）
+
+| Story | Requirement scenarios | Change spec | Story file |
+|---|---|---|---|
+| 信用迭代2-S3 | REQ-022 §4 L-1 ~ L-8 / T-1 ~ T-10 / D-1 ~ D-3 / E-1 ~ E-3 | `openspec/changes/add-experience-like-credit/specs/trip-experiences/spec.md`、`specs/user-credit/spec.md`（均为 ADDED） | 无独立故事文件：以 proposal + Delta 承接（与 REQ-012 / REQ-014 同口径） |
+
+## Notes（REQ-022）
+
+- **不拆子故事：** 点赞与结算必须同批交付；只有点赞无法验收 T 组场景，只有结算没有触发源（用户裁决 D1）。
+- **信用记录落点：** issue 写「旅行体验 / 信用记录」；按用户裁决 D2，信用加分明细不做可见面，分数变化在既有五个信用展示面体现。
+- **不并入扣分故事：** issue #29（举报扣分）、#31（退出同行扣分）、#32（安全学习恢复）属信用系统迭代 2 的其他 Story，另开 change。
+- **月度口径：** Asia/Shanghai 自然月（D3），按实发消耗（D4），截断不结转。
+- **归档顺序：** `user-credit` 与 `trip-experiences` 的 Living Spec 尚未包含 `add-credit-account` / `add-experience-photos` 等在途 delta；本故事归档需排在其后。
+- 未接入外部 ALM；本表为仓库内权威故事清单，ALM Sync 状态记为 Pending。

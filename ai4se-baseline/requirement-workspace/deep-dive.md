@@ -1129,3 +1129,93 @@ MVP 无推送、无通知；以下为详情页同行者展示面的 UI 契约。
 - `ExperienceServiceImpl` 仅允许 `COMPLETED`；取消行程无需改资格规则，补回归断言防止未来放宽。
 - 原型 `store.js:240-248` 已定义「取消行程只取消 PENDING、ACCEPTED 保留」；与 REQ-021 的 D3 / D5 一致。
 - `{TBD}`：无。非阻塞项（原因码 wire 命名、事件复用、列类型）在 REQ-021 §8 OQ-10 / OQ-11 记为 Dev 后续。
+
+## REQ-022 增补 — 旅行体验获赞增加信用分（issue #30 / 信用系统迭代 2）
+
+> 编号说明：REQ-022（`origin/main@64b38da` 最新为 REQ-021）；change `add-experience-like-credit`；能力 `trip-experiences`（点赞，ADDED）+ `user-credit`（获赞结算，ADDED）。
+
+### ① 数据契约（Data contract）
+
+| # | 概念 | grain（粒度） | 字段清单 | 状态迁移 | 来源 |
+|---|---|---|---|---|---|
+| A | **体验点赞** `experience_likes` | 每（体验, 用户）至多 1 条 | `id`（PK）、`experience_id`（引用 `trip_experiences.id`）、`user_id`（引用 `app_users.id`）、`created_at`；唯一约束 `(experience_id, user_id)` | 无记录 →（点赞）新增 1 条；已存在 →（重复点赞）不变；有记录 →（取消点赞）删除该条；赞数与点赞态由行数派生 | 点赞 / 取消点赞接口 |
+| B | **体验赞数 / 点赞态**（派生值，不落库） | 每（体验）1 个整数 + 每（体验, 当前用户）1 个布尔 | 无独立字段；`like_count = count(experience_likes where experience_id = e)`；`liked_by_me = exists(experience_likes where experience_id = e and user_id = viewer)` | 随点赞行增删即时变化 | 读取时派生（列表 / 详情 / 我的） |
+| C | **获赞档位结算记录**（账本行，不新增状态表） | 每（行程, 作者, 档位）至多 1 条 `credit_ledger` 行 | `reason_code = EXPERIENCE_LIKE`；`related_type = TRIP`、`related_id = tripId`；`idempotency_key = EXPERIENCE_LIKE:{tripId}:{authorId}:{tier}`（唯一）；`applied_delta` 为实发（0–1）；前后快照沿用 REQ-019 | 首次跨档 → 写 1 条（含被裁断为 0 的情况），档位锁定；重复 / 并发投递 → 唯一约束兜底，不再写、不改分；取消点赞 → 不删除不更新 | 结算服务（内部） |
+| D | **月度获赞加分累计**（派生值，不落库） | 每（用户, Asia/Shanghai 自然月）1 个整数 | 无独立表；= `sum(applied_delta)` over `credit_ledger where user_id = 作者 and reason_code = EXPERIENCE_LIKE and occurred_at ∈ [月初, 次月初)`（按 Asia/Shanghai 边界换算 UTC） | 月初边界后从 0 重新累计（查询口径）；不结转、不补发 | 读取时派生 |
+
+- **唯一真相：** 分数只在 `user_credit_account`；点赞事实只在 `experience_likes`；档位是否已结算只看账本幂等键是否存在，不引入「档位表」。
+- **幂等设计：** 档位以「行程 + 作者 + 档位」为键；幂等键存在即视为已结算（即使 `applied_delta = 0`），从而满足「锁定 + 不回滚 + 不重复」。
+- **零变化留痕（沿用 REQ-019 D11）：** 跨档应发 +1 但被月度额度或 0–100 上限完全裁断时，仍写一条 `applied_delta = 0` 的记录（等式成立），并占用幂等键。
+- **月度消耗（用户裁决 D4）：** 月度累计只加总 `applied_delta`（实发）；被总分封顶吃掉的部分不占月度额度。
+- **时区（用户裁决 D3）：** 账本 `occurred_at` 为 UTC instant；自然月边界按 Asia/Shanghai（UTC+8）换算，月初零点即 UTC 前一日 16:00。
+
+### ② 边界归属（Boundary attribution）
+
+| 规则 | 分支 | in / out | 理由 |
+|---|---|---|---|
+| 点赞资格 | 已登录用户点赞他人体验 | in | `L-1`；`(experience_id, user_id)` 唯一 |
+| 点赞资格 | 作者给自己的体验点赞 | in（禁止，403 `FORBIDDEN`） | `L-5`；服务端拒绝 |
+| 点赞资格 | 未登录 / 无有效 `X-User-Id` | in（401 `DEMO_USER_REQUIRED`） | `L-6`；沿用既有身份校验 |
+| 点赞资格 | 体验不存在 | in（404；错误码 P2 定稿） | `L-7`；不产生数据与积分 |
+| 点赞幂等 | 重复点赞同一体验 | in（幂等成功，不重复计数） | `L-2` |
+| 取消点赞 | 已赞后取消 | in（删行；不回滚积分） | `L-3` |
+| 取消点赞 | 未赞时取消 | in（幂等成功） | P2 定幂等返回码 |
+| 档位 | 5 / 10 / 15 / 20 / 25 首次跨过 | in（各 +1，累计 +5） | `T-1` / `T-2` |
+| 档位 | 25 档位之后继续增长 | in（封顶 +5，不再加分） | `T-3` |
+| 档位 | 同行程同作者多篇体验 | in（取最高赞单篇；单测多行数据覆盖） | `T-4`；当前模型每作者每行程一条 |
+| 档位 | 赞数回落、取消后再达 | in（不回收、不重复） | `L-4` / `T-5` |
+| 档位 | 同一档位重复投递 / 并发 | in（幂等键唯一兜底） | `T-6` / `E-1` |
+| 月度 | 本月累计未满 20 | in（按实发加总） | `T-7` / `T-10` |
+| 月度 | 累计已达 20 后跨档 | in（实发 0，仍留痕并锁定档位） | `T-7`；截断不结转 |
+| 月度 | 跨过 Asia/Shanghai 月初 | in（额度重置为 0） | `T-8` |
+| 总分 | 加分撞 100 上限 | in（`book` 裁断，实发可能为 0） | `T-9` |
+| 其他计分 | 点赞者本人 | out（不得分） | `L-8` |
+| 其他计分 | 完成旅行 | out（不得分） | issue 明确 |
+| 数据生命周期 | 体验 / 行程删除 | out（当前无删除端点） | 不存在回滚链路 |
+| 展示 | 信用加分明细 / 历史 / 入口 | out（禁止展示） | `D-3`；用户裁决 D2 |
+| 通知 | 点赞通知 / 推送 / 红点 | out | 本 change 不做 |
+| 管理端 | 点赞审计 / 反作弊 / 手工调账 | out | 本 change 不做 |
+
+### ③ 跨 REQ 一致性（Cross-REQ consistency）
+
+| 能力 | 各 REQ 的 grain + 字段 | aligned? | anchor REQ |
+|---|---|---|---|
+| `trip-experiences`（REQ-004 / R2 在途 change） | 既有 Requirement 定义发布资格、内容口径、详情页 / 首页展示、分页与参考发布；REQ-022 只以 ADDED 追加「点赞」块（点赞行、赞数与点赞态、两个展示面），不改写任何既有 Requirement | ✓ aligned | REQ-004 / `add-trip-experiences`（已归档） |
+| `trip-experiences`（REQ-018 图片） | 图片能力为 `photos` 字段与上传端点；REQ-022 只在 `ExperienceResponse` 追加 `like_count` / `liked_by_me`，不触碰图片字段 | ✓ aligned | REQ-018 / `add-experience-photos`（未归档） |
+| `user-credit`（REQ-019，未归档） | REQ-019 定义账户、等级、账本、记账服务与零变化留痕；REQ-022 以 ADDED 追加「体验获赞阶梯加分」：复用 `book` 的裁断 / 快照 / 幂等语义，分数与等级口径不变 | ✓ aligned | REQ-019 / `add-credit-account`（未归档） |
+| `user-profiles` / `user-profile`（REQ-009 / REQ-008） | 信用分只读字段已由 REQ-019 扩展至五个展示面；REQ-022 不新增展示面、不改接口形状 | ✓ aligned | REQ-009 / REQ-008 |
+| `trip-cancellation`（REQ-021） | 取消行程为终态且不可从 `COMPLETED` 进入；体验仅存在于 `COMPLETED` 行程，点赞不触碰行程状态机 | ✓ aligned | REQ-021 / `add-trip-cancel` |
+| `design-system` | 点赞按钮复用既有 `btn` / `badge` / 图标与色板令牌，不新增语义 | ✓ aligned | `openspec/specs/design-system/spec.md` |
+
+无未收敛的 ✗；A0 门 ⑪ 通过。
+
+### ④ 通知 / 展示契约（Notification / display contract）
+
+MVP 无推送、无通知；以下为点赞与信用状态的展示面契约。
+
+| trigger / surface（展示面） | recipient role | content + display fields | channel | cardinality | source |
+|---|---|---|---|---|---|
+| 灵感首页 — 体验卡（`.exp-card` / `.exp-foot`） | 已登录浏览者 | 点赞按钮（已赞 / 未赞两态）+ 赞数（`like_count`）；点击切换；失败回滚并提示 | 应用内卡片 | 每卡 1 处 | `D-1`；原型先行 |
+| 行程详情 — 游后体验区（`.exp-item`） | 已登录浏览者 / 同行者 / 发布者 | 同上，与首页同口径 | 应用内列表 | 每条体验 1 处 | `D-2` |
+| 信用状态（既有五面） | 本人 / 他人 | 分数 + 等级（既有口径）；因获赞加分而变化的分数只在此体现 | 应用内页面 | 既有 | REQ-019 |
+| 信用加分明细 / 历史 | 所有人 | **不展示**：无列表、无原因、无时间、无入口 | —（不存在） | 0 处 | 用户裁决 D2；`D-3` |
+| 点赞通知 / 红点 | — | **不展示 / 不发送** | — | 0 处 | 本 change 不做 |
+
+无展示面缺 display-fields；A0 门 ⑫ 通过。
+
+### 探针记录（REQ-022 体验获赞信用）
+
+- **点赞基线为零：** openapi / backend / frontend / Living Spec / 原型交互均无点赞；本 change 需从数据、接口到 UI 全链路新建。
+- **记账服务可直接复用：** `CreditServiceImpl.book` 已在同事务内完成裁断、`applied_delta`、前后快照与幂等键唯一兜底；本 change 只需在调用前做「档位判定 + 月度剩余裁断」，不得绕过 `book` 直接改账户表。
+- **幂等键即档位锁：** 由于零变化也写账本行（D11），「档位已结算」可以直接由幂等键存在性判定；无需新增档位状态表，也天然满足「回落再达不重复」。
+- **月度边界：** `occurred_at` 由 `Clock.instant()` 写入（UTC ISO 串）；月度统计必须按 Asia/Shanghai 换算边界（初月 UTC `16:00` 前一 UTC 日），不能直接用 UTC 自然月。
+- **每作者每行程一条体验：** `V8__create_trip_experiences.sql` 有 `(trip_id, author_id)` 唯一约束；「同行程多篇体验」规则以结算服务的 max 查询实现，单测用多行数据覆盖（必要时 mock mapper 返回多行）。
+- **响应一致性：** 列表 / 详情 / 我的三处都经 `ExperienceServiceImpl` 的同一映射路径；赞数需批量查询（先收集 experienceId，再一次 `group by`），点赞态按当前用户批量查询，禁止逐条查库（沿用 REQ-018 照片批量化经验）。
+- **自赞与未登录：** 控制器已有 `X-User-Id` 校验与 `DemoUserService.require`；自赞需在服务层比对 `experience.authorId`，不能只靠前端隐藏。
+- **错误码闭集：** `openapi.yaml` `Error.code` 为闭集枚举；「体验不存在」需新增码或在 P2 定为复用码，不得自造。
+- **无删除端点：** `ExperienceController` / `TripController` 无 DELETE；无需处理级联删除与积分回滚。
+- **E2E 选择器风险：** 既有 `experiences.spec.ts` / `inspiration-home` 相关用例依赖 `.exp-foot` / `.exp-item` 结构；新增点赞按钮可能影响严格定位（如 `getByRole('button')` 计数），P4 需同步检查。
+- **原型先行：** 原型 `ui.js` `expCard()` 与详情 `.exp-item` 用字符串模板；点赞态需在 `store.js` 增演示数据（或使用本地状态），并在 `prototype.html` / `styles.css` 增样式类，避免与实现类名漂移。
+- **归档顺序：** `user-credit` 与 `trip-experiences` 的 Living Spec 均未包含在途 change 的 delta；本 change 归档必须排在其后（P5）。
+- **`{TBD}`：** 无。非阻塞项（端点形态、错误码、契约 / 迁移号、月度聚合方式、并发保障）在 REQ-022 §8 记为 Dev 后续。
+- A0 门 ⑨–⑫：全部通过。

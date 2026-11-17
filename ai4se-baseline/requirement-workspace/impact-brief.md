@@ -1463,3 +1463,111 @@ REQ-010：聊天页按原型重构、聊天准入与退出语义调整、集合�
 - **不拆故事：** S21 一条故事覆盖两个入口与一次状态迁移；拆开会造成同一状态被两条故事重复验收。
 - **后续候选（均需另开需求）：** 信用分与信用记录、免扣分申请与管理员审核、删除行程、恢复/重新开启、取消原因申诉。
 - **质量自检（split-heuristics）：** 子目标一句话可说明 ✓；端到端可观察（发布者取消 → 首页下架 / 申请关闭 / 聊天只读 / 我的旅行保留）✓；可独立运行 ✓；capability 名真实 ✓；无依赖环 ✓。
+
+## 22. REQ-022 变更影响 — 旅行体验获赞增加信用分（issue #30）
+
+- **日期：** 2026-11-17 ｜ **触发：** `/sdd:p1`（GitHub issue #30 + 用户裁决 D1–D4）
+- **粒度：** 应用架构（点赞数据所有权 / 体验读取路径 / 信用结算集成点 / 两个展示面），非代码设计
+- **基线：** `origin/main@64b38da`（独立 worktree `.worktrees/add-experience-like-credit`，分支 `feature/add-experience-like-credit`）
+
+### 22.1 Requirement set
+
+- `requirement-workspace/requirements/REQ-022-experience-like-credit.md`（Ready 条目，24 场景 L-1 ~ L-8 / T-1 ~ T-10 / D-1 ~ D-3 / E-1 ~ E-3，blocking OQ 0，DoR BLOCKER 0）
+- `requirement-workspace/intents/REQ-022-experience-like-credit.md`（意图捕获 + 证据锚点 + D1–D4）
+- 能力：`trip-experiences`（点赞，ADDED）+ `user-credit`（获赞结算，ADDED）；复用 REQ-019 记账服务与五个信用展示面
+- 用户裁决：D1 包含点赞全链路 / D2 不做信用明细可见面 / D3 月度按 Asia/Shanghai / D4 月度额度按实发消耗
+
+### 22.2 As-is asset inventory（evidence paths）
+
+| 资产 | 路径 | 现状 |
+|---|---|---|
+| 点赞能力 | 全仓 grep `点赞 / like / likes / heart`（backend / frontend / openapi / openspec / prototype 交互） | **0 命中**：无表、无端点、无字段、无 UI、无需求 |
+| 信用账户与账本 | `RouteME/backend/src/main/java/routeme/service/CreditService.java`、`service/impl/CreditServiceImpl.java`、`entity/CreditLedgerEntity.java`、`entity/UserCreditAccountEntity.java`、`V20__add_credit_account.sql` | 0–100 账户 + append-only 账本；`book(CreditBooking)` 负责裁断 / 快照 / 幂等 / 零变化留行；**无业务事件调用方** |
+| 记账原因码 | `CreditServiceImplTest`（`EXPERIENCE_LIKE` 字面量） | 仅测试示例，无业务实现 |
+| 体验端点 | `RouteME/backend/src/main/java/routeme/controller/ExperienceController.java` | `GET /api/experiences`、`GET /api/trips/{tripId}/experiences`、`GET /api/me/experiences`、`POST /api/trips/{tripId}/experiences`；无点赞端点、无 DELETE |
+| 体验响应 | `RouteME/backend/src/main/java/routeme/response/ExperienceResponse.java` | `id` / `trip` / `author` / `content` / `intensity` / `advice` / `photos` / `createdAt` / `updatedAt` |
+| 体验数据模型 | `V8__create_trip_experiences.sql`；`TripExperienceEntity`；`TripExperienceMapper.xml` | 每（行程, 作者）唯一一条体验；列表查询已支持目的地 / 日期 / 标签 / 分页 |
+| 首页体验卡 | `RouteME/frontend/src/experiences/ExperienceCard.tsx`；`useExperiences.ts` | `.exp-foot` 三个链接（详情 / 参考发布）；无点赞按钮 |
+| 详情体验区 | `RouteME/frontend/src/trips/TripDetailPage.tsx`（游后真实体验区） | 体验列表展示作者 / 强度 / 正文 / 建议 / 照片；无点赞按钮 |
+| 信用展示面 | `profile/creditDisplay.ts`、`profiles/useUserCredits.ts`、`trips/TripCard.tsx`、`trips/TripDetailPage.tsx`、`trips/ApplicationsPage.tsx` | 五面已展示分数 + 等级；无明细面 |
+| 契约 | `RouteME/openapi.yaml`（`info.version: 0.14.0`；`Experience` schema；`Error.code` 闭集） | 需追加赞数 / 点赞态字段与新端点；错误码闭集需处理「体验不存在」 |
+| 迁移 | `db/migration`（最大 V20） | 需新增点赞表迁移（号在 P3 排他确认） |
+| 原型 | `docs/prototype/ui.js` `expCard()` / 详情 `.exp-item`；`styles.css`；`store.js` | 无点赞交互；两个浏览面均可插入按钮行 |
+| Living Spec | `openspec/specs/trip-experiences/spec.md` | 无点赞需求；Purpose 不含点赞（P5 视需要更新） |
+| 未归档相关 change | `add-credit-account`（`user-credit` ADDED）；`add-experience-photos` / `refine-experience-share` / `refine-inspiration-home`（`trip-experiences`） | 本 change 只追加 ADDED 块；归档需排在其后 |
+| 在途契约 / 迁移占用 | `add-ai-itinerary`（0.15.0 + V21 计划） | 本 change 版本号与迁移号 P3 排他确认 |
+
+### 22.3 As-is → proposed delta（逐资产）
+
+| 资产 | As-is | Proposed delta |
+|---|---|---|
+| 数据表 | 无点赞表 | **新增** `experience_likes`（`experience_id` + `user_id` 唯一，`created_at`）；**不改** `trip_experiences` / `app_users` / `credit_ledger` 结构 |
+| 体验响应 | 无赞数 / 点赞态 | 追加 `like_count`（整数）与 `liked_by_me`（布尔，按 `X-User-Id`）；列表 / 详情 / 我的三处同口径 |
+| 体验读取 | 无点赞聚合 | 列表与详情批量查询赞数（group by）与当前用户点赞态（一次 `in` 查询），禁止 N+1 |
+| 点赞 API | 无 | 新增点赞 / 取消点赞端点（由 `X-User-Id` 鉴权；自赞 403；不存在 404；重复点赞幂等） |
+| 信用结算 | 记账服务无调用方 | 新增「体验获赞阶梯加分」内部结算：档位判定（5/10/15/20/25）+ 行程封顶 +5 + 月度实发 ≤ +20（Asia/Shanghai）+ 幂等键（行程 + 作者 + 档位）+ 零变化留痕；调用既有 `CreditService.book` |
+| 账本口径 | `reason_code` 无业务值 | `reason_code = EXPERIENCE_LIKE`；`related_type = TRIP`、`related_id = tripId`；幂等键格式固定 |
+| 首页体验卡 | 无点赞按钮 | `.exp-foot` 增点赞按钮 + 赞数（已赞 / 未赞两态）；原型先行 |
+| 详情体验区 | 无点赞按钮 | 体验列表项增点赞按钮 + 赞数；与首页同口径；原型先行 |
+| 信用明细 | 不存在 | **无 delta**（用户裁决 D2：不做可见明细） |
+| 通知 | 无 | **无 delta**（不做点赞通知） |
+| 契约 | 0.14.0 | 次版本 + `Experience` 追加字段 + 两个点赞端点 + 错误码处理（P2/P3 定稿；版本号 P3 排他） |
+| 迁移 | V20 | 新增 `V*__add_experience_likes.sql`（号 P3 排他） |
+| Living Spec | `trip-experiences` 无点赞；`user-credit` Living Spec 尚未生成 | `trip-experiences` 追加「体验点赞」Requirement；`user-credit` 追加「体验获赞阶梯加分」Requirement（均为 ADDED；归档顺序受在途 change 约束） |
+| 原型 | 无点赞交互 | 体验卡与详情体验区补点赞按钮 / 赞数 / 点赞态，样式复用既有令牌 |
+
+### 22.4 Blast radius（应用架构）
+
+- **后端（2 个能力 + 1 处集成）：** 新增点赞实体 / mapper / service / 端点；`ExperienceServiceImpl` 读取路径追加批量聚合；新增 `user-credit` 结算服务（调用既有 `book`）；点赞事务内触发结算。
+- **数据（1 表 + 1 迁移）：** `experience_likes`；不加赞数冗余列；不改账本结构。
+- **契约（1 处扩展 + 2 端点）：** `Experience` 追加两字段；新增点赞 / 取消点赞端点；错误码闭集处理。
+- **前端（2 面 + 类型 / 文案）：** `ExperienceCard` 与 `TripDetailPage` 体验区；`types.ts` / `api.ts` / `tripMessages.ts` 同步；无新路由、无新页面。
+- **原型（2 面 + 演示数据）：** `docs/prototype` 的 `expCard` / 详情 `.exp-item` / `styles.css` / `store.js`。
+- **信用展示面（0 变化）：** 五面沿用 REQ-019；不新增明细面。
+- **不影响：** 行程发布 / 匹配 / 申请 / 聊天 / 举报 / 取消；体验发布 / 图片 / 分页筛选；注册与资料。
+- **运行时风险面：** 点赞事务多一次信用写入（同库同事务）；列表多两次批量查询；无新外部依赖。
+
+### 22.5 Artifact impact（specs / tests / docs）
+
+| 工件 | 影响 |
+|---|---|
+| OpenSpec Delta | `trip-experiences`（ADDED：点赞需求）+ `user-credit`（ADDED：体验获赞结算需求）；无 MODIFIED / REMOVED |
+| 长期规格 | 归档后 `trip-experiences` 增「体验点赞」块；`user-credit` 增「体验获赞阶梯加分」块（需在 `add-credit-account` 归档后合并） |
+| 契约 | `openapi.yaml` 次版本 + `Experience` 字段 + 点赞端点；后端契约测试同步 |
+| 后端测试 | 点赞服务单测（自赞 / 重复 / 不存在 / 并发唯一）；结算单测（档位、封顶、月度、幂等、0 裁断、多行取最大、时区边界）；列表聚合测试 |
+| 前端测试 | 点赞交互纯逻辑单测（赞数 / 点赞态 / 失败回滚）；类型与 API 测试 |
+| E2E | 点赞 → 赞数变化 → 再点赞幂等 → 取消 → 作者分数变化（跨 5 档）；无明细面；两个浏览面一致 |
+| 知识库 | `docs/knowledge/interfaces/README.md` 登记新端点与 `Experience` 新字段 |
+| 阶段记录 | `docs/sdd/add-experience-like-credit/p1..p4`；`docs/sdd/README.md` 索引 |
+| 评审 | `docs/reviews/20261117-add-experience-like-credit-proposal-review.md`、`-spec-review.md` |
+
+### 22.6 Dual-track notes（OpenSpec vs agile）
+
+- **OpenSpec 轨：** 单 change `add-experience-like-credit`，两个能力 ADDED（`trip-experiences` 点赞块 + `user-credit` 获赞结算块）；不改写任何既有 Requirement 块，避免与 4 个在途 change 争同一块。
+- **Agile 轨：** issue #30 即业务口径（信用系统迭代 2 / Story 3 / 5 点）；不拆故事——点赞与结算必须同批交付才能端到端验收（用户裁决 D1）。
+- **并列轨道：** 举报扣分（#29）、退出同行扣分（#31）、安全学习恢复（#32）分属其他故事；本 change 不预留其空壳。
+
+### 22.7 Risks & blockers
+
+| 级别 | 项 | 说明 / 缓解 |
+|---|---|---|
+| Risk | 归档顺序 | `user-credit` / `trip-experiences` 的 Living Spec 均未包含在途 delta；本 change 仅在 ADDED 块上工作，P5 必须排在 `add-credit-account` / `add-experience-photos` / `refine-experience-share` / `refine-inspiration-home` 之后，或与其 owner 协调 |
+| Risk | 契约版本 / 迁移号撞号 | `openapi.yaml` 头 0.14.0、迁移 V20；`add-ai-itinerary` 已声明 0.15.0 + V21；本 change 在 P3 排他确认 |
+| Risk | 月度上限并发严格性 | 先读月度累计再写账本存在竞态；SQLite 单写者 + `book` 同事务可缓解；P3 设计需给出保障方案（如条件更新 / 事务串行）并写测试 |
+| Risk | 时区换算错误 | `occurred_at` 为 UTC；月初边界按 Asia/Shanghai 换算（UTC 前一日 16:00）；单测覆盖 23:59 / 00:00 边界 |
+| Risk | 幂等键格式变更导致重复加分 | 幂等键格式固定为「行程 + 作者 + 档位」；单测断言格式；历史数据迁移（无历史点赞）不涉及 |
+| Risk | 列表 N+1 | 赞数与点赞态必须批量查询（group by / in），沿用 REQ-018 照片批量化经验 |
+| Risk | E2E 选择器漂移 | 新增点赞按钮可能影响 `.exp-foot` 内按钮计数断言；P4 同步修正既有用例 |
+| Risk | 错误码闭集 | 「体验不存在」需新增码或明确复用；P2 与契约版本一并定稿，不临时自造 |
+| Risk | 多篇体验规则不可演示 | 当前模型每作者每行程一条体验；规则以结算 max 查询 + 单测多行数据覆盖，story 层不主张该场景 E2E |
+| Risk | 分数变化不可见误解 | 用户裁决 D2 明确不做明细；分数变化在既有五面可见；proposal / stories / registry 显式记录 |
+| Blocker | 无 | blocking OQ = 0；DoR BLOCKER = 0；A0 ⑨–⑫ 全过；无外部依赖 |
+
+### 22.8 Suggested split boundaries（供 proposal-split / story-split）
+
+- **一个 change：** `add-experience-like-credit` ← REQ-022（信用系统迭代 2 / Story 3）。
+- **不拆点赞与结算：** 只有点赞没有结算，issue 的 T 组场景无法验收；只有结算没有点赞，没有触发源（用户裁决 D1）。
+- **不并入扣分故事：** #29 / #31 / #32 属信用系统迭代 2 的其他 Story，各有独立事件与规则，另开 change。
+- **不并入信用明细 / 管理后台：** 用户裁决 D2 与 REQ-019 D2 均明确不做；另开需求。
+- **阶段：** 单阶段；P5 归档受在途 change 顺序约束（见 22.7）。
+- **质量自检（split-heuristics）：** 子目标一句话可说明 ✓；端到端可观察（点赞 → 跨档 → 作者分数 +1 → 账本一条）✓；可独立运行 ✓；capability 名真实（`trip-experiences` / `user-credit`）✓；无依赖环 ✓；场景 24 条，单 change 可承载 ✓。
