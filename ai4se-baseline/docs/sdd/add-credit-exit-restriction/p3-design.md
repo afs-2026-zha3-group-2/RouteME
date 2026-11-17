@@ -1,6 +1,6 @@
 # P3 阶段记录 — add-credit-exit-restriction
 
-- **Change：** `add-credit-exit-restriction`（能力 `credit-enforcement` ADDED）｜ **需求：** REQ-022 ｜ **故事：** S22 + S23
+- **Change：** `add-credit-exit-restriction`（能力 `credit-enforcement` ADDED）｜ **需求：** REQ-024 ｜ **故事：** S25 + S26
 - **阶段：** P3（Design & decompose）｜ **日期：** 2026-11-17
 - **记录人：** Lewis Liu（当前开发者）
 - **分支：** `feature/add-credit-exit-restriction`
@@ -86,7 +86,7 @@
 | 阶段 | 提交 | 说明 |
 |---|---|---|
 | P0 | `41c173d` | 基线 + 范围裁决 |
-| P1 | `13c63d8` | REQ-022 / 提案 / Delta 草稿 / 两故事 / P1 评审 |
+| P1 | `13c63d8` | REQ-024 / 提案 / Delta 草稿 / 两故事 / P1 评审 |
 | P2 | `c790357` | Delta 定稿 / AC-DoV / consistency-lint / G1 |
 | P3 | 本次提交 | ATDD / design / tasks / 原型 / 预览 / design+tasks 评审 / P3 报告 |
 

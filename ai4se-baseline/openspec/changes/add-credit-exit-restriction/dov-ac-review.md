@@ -2,7 +2,7 @@
 
 - **Change：** `add-credit-exit-restriction`
 - **Delta：** [`specs/credit-enforcement/spec.md`](specs/credit-enforcement/spec.md)（ADDED 9 Requirement / 46 Scenario）
-- **需求：** [`REQ-022-exit-credit-restriction.md`](../../requirement-workspace/requirements/REQ-022-exit-credit-restriction.md)（S22-1 ~ S22-22 / S23-1 ~ S23-24）
+- **需求：** [`REQ-024-exit-credit-restriction.md`](../../requirement-workspace/requirements/REQ-024-exit-credit-restriction.md)（S25-1 ~ S25-22 / S26-1 ~ S26-24）
 - **日期：** 2026-11-17 ｜ **阶段：** P2（delta-craft review）
 - **工具：** `openspec validate add-credit-exit-restriction --strict` → `Change 'add-credit-exit-restriction' is valid`
 
@@ -25,7 +25,7 @@
 | DoV-2 歧义已列出或解决 | Pass | 六档边界左闭右开、集合时间优先、月度计数、0 分裁断、待核实顺序、60/59、只读范围均在 Delta 写明；blocking OQ 0 | 残余为 P3 技术口径（契约/迁移号） |
 | DoV-3 IO / SA 残余风险已记录 | Pass | 本文件「Residual risks」；G1 记录将固化 IO=WAYNE / SA=Jacky 的跟踪项 | 管理端、恢复入口、低信用测试数据 |
 | DoV-4 不以业务实现冒充完成 | Pass | P2 只做 Delta 与评审；未写代码、契约、迁移 | `openspec validate` 通过 |
-| DoV-5 Requirement 追溯到提案/需求 | Pass | S22-1~22 → Req1/2/3/4；S23-1~24 → Req5/6/7/8/9；两故事文件有 traceability 表 | 无孤儿 Scenario |
+| DoV-5 Requirement 追溯到提案/需求 | Pass | S25-1~22 → Req1/2/3/4；S26-1~24 → Req5/6/7/8/9；两故事文件有 traceability 表 | 无孤儿 Scenario |
 
 **DoV：5/5 Pass。**
 

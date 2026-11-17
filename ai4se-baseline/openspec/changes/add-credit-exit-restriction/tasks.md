@@ -1,6 +1,6 @@
 # Tasks — add-credit-exit-restriction
 
-- **Change：** `add-credit-exit-restriction` ｜ **REQ：** REQ-022 ｜ **Delta：** `specs/credit-enforcement/spec.md`（ADDED 9 Requirement / 46 Scenario）
+- **Change：** `add-credit-exit-restriction` ｜ **REQ：** REQ-024 ｜ **Delta：** `specs/credit-enforcement/spec.md`（ADDED 9 Requirement / 46 Scenario）
 - **ATDD：** `atdd-design.md`（A1–A5 / E1–E3 / Defer UT）
 - **设计：** `design.md`（D1–D20）
 - **Owner：** Lewis Liu（当前开发者）

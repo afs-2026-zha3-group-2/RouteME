@@ -1,6 +1,6 @@
 # P4 阶段记录 — add-credit-exit-restriction
 
-- **Change：** `add-credit-exit-restriction`（能力 `credit-enforcement` ADDED）｜ **需求：** REQ-022 ｜ **故事：** S22 + S23
+- **Change：** `add-credit-exit-restriction`（能力 `credit-enforcement` ADDED）｜ **需求：** REQ-024 ｜ **故事：** S25 + S26
 - **阶段：** P4（Apply & verify）｜ **日期：** 2026-11-17
 - **记录人：** Lewis Liu（当前开发者）｜ **VL：** Neal（G2 待签）
 - **分支：** `feature/add-credit-exit-restriction`
@@ -71,7 +71,7 @@ T1–T14 全部完成，`tasks.md` 复选框已勾选。T0（原型/预览）在
 | 阶段 | 提交 | 说明 |
 |---|---|---|
 | P0 | `41c173d` | 基线 + 范围裁决 |
-| P1 | `13c63d8` | REQ-022 / 提案 / Delta 草稿 / 两故事 / P1 评审 |
+| P1 | `13c63d8` | REQ-024 / 提案 / Delta 草稿 / 两故事 / P1 评审 |
 | P2 | `c790357` | Delta 定稿 / AC-DoV / consistency-lint / G1 |
 | P3 | `4a80f47` | ATDD / 设计 / 任务 / 原型 / 预览 / 评审 / P3 报告 |
 | P4 | 本次提交 | 契约 0.15.0 / V21 / 后端 / 前端 / E2E / 回归 / P4 记录 |

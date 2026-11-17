@@ -1,6 +1,6 @@
 # 变更提案：add-credit-exit-restriction
 
-- **需求来源：** 用户 P0 卡片「[P0] 退出同行扣减信用分」Story 4（信用系统迭代 2 / 5 点）与 Story 5（信用系统迭代 3 / 3 点）｜ **需求条目：** `requirement-workspace/requirements/REQ-022-exit-credit-restriction.md`
+- **需求来源：** 用户 P0 卡片「[P0] 退出同行扣减信用分」Story 4（信用系统迭代 2 / 5 点）与 Story 5（信用系统迭代 3 / 3 点）｜ **需求条目：** `requirement-workspace/requirements/REQ-024-exit-credit-restriction.md`
 - **能力：** `credit-enforcement`（**ADDED**）；依赖 `user-credit`（账户 / 账本）、`trip-companions`（退出 / 申请）、`trip-cancellation`（取消，未归档）、`trip-plans`（状态）、`trip-experiences`（体验）、`user-profile` / `user-profiles`（展示面）
 - **规模：** M（新增 1 个能力 / 9 组 Requirement / 46 Scenario；新增 `V21` 迁移 + 契约 0.15.0；退出三入口 + 五个展示面 + 限制守卫 + 自动清理）
 - **规则：** `@rule:spec-first`、`@rule:api-contract`、`@rule:java-patterns`、`@rule:web-coding-style`、`@rule:security-baseline`、`@rule:tdd-cycle`、`@rule:prototype-ui-alignment`、`@rule:sdd-artifacts`

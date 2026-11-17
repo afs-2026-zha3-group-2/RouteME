@@ -1,6 +1,6 @@
 # P2 阶段记录 — add-credit-exit-restriction
 
-- **Change：** `add-credit-exit-restriction`（能力 `credit-enforcement` ADDED）｜ **需求：** REQ-022 ｜ **故事：** S22 + S23
+- **Change：** `add-credit-exit-restriction`（能力 `credit-enforcement` ADDED）｜ **需求：** REQ-024 ｜ **故事：** S25 + S26
 - **阶段：** P2（Spec align / G1）｜ **日期：** 2026-11-17
 - **记录人：** Lewis Liu（当前开发者）
 - **分支：** `feature/add-credit-exit-restriction`
@@ -30,7 +30,7 @@
 - 文件：`openspec/changes/add-credit-exit-restriction/dov-ac-review.md`
 - AC：4/4 Pass（每条 Requirement 至少一个可测试 AC；AC 可观察；高风险负向/边界齐全；不混入实现细节/模糊词）。
 - DoV：5/5 Pass（范围与提案一致；歧义已解决；IO/SA 残余风险已记录；未冒充实现完成；46/46 场景可追）。
-- 映射：S22-1~22 → Req1/2/3/4；S23-1~24 → Req5/6/7/8/9；无孤儿场景。
+- 映射：S25-1~22 → Req1/2/3/4；S26-1~24 → Req5/6/7/8/9；无孤儿场景。
 
 ## 4. 一致性检查
 
@@ -75,7 +75,7 @@
 | 阶段 | 提交 | 说明 |
 |---|---|---|
 | P0 | `41c173d` | 基线 + 范围裁决 |
-| P1 | `13c63d8` | REQ-022 / 提案 / Delta 草稿 / 两故事 / P1 评审 |
+| P1 | `13c63d8` | REQ-024 / 提案 / Delta 草稿 / 两故事 / P1 评审 |
 | P2 | 本次提交 | Delta 定稿 / AC-DoV / consistency-lint / G1 / P2 报告 |
 
 ## 10. 准入 P3 的条件

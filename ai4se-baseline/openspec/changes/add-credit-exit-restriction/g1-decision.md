@@ -9,7 +9,7 @@
 
 | 工件 | 路径 | 结论 |
 |---|---|---|
-| 需求条目 | `requirement-workspace/requirements/REQ-022-exit-credit-restriction.md` | 46 场景（S22-1~22 / S23-1~24）；blocking OQ 15/15 resolved；DoR BLOCKER 0 |
+| 需求条目 | `requirement-workspace/requirements/REQ-024-exit-credit-restriction.md` | 46 场景（S25-1~22 / S26-1~24）；blocking OQ 15/15 resolved；DoR BLOCKER 0 |
 | 提案 | `openspec/changes/add-credit-exit-restriction/proposal.md` | Why / What Changes / Out of Scope / 决策 D1–D17 / 验收信号 / 残余风险齐备 |
 | Delta Spec | `openspec/changes/add-credit-exit-restriction/specs/credit-enforcement/spec.md` | ADDED 9 Requirement / 46 Scenario；`openspec validate --strict` valid |
 | AC / DoV 复核 | `openspec/changes/add-credit-exit-restriction/dov-ac-review.md` | AC 4/4 Pass；DoV 5/5 Pass；映射 46/46 |

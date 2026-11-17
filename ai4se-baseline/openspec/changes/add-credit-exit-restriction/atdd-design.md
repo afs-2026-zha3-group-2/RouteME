@@ -17,14 +17,14 @@
 
 | id | 验收工件 | 场景 |
 |---|---|---|
-| A1 | `CreditExitPreviewApiTest`：48h -5、7d 0、3–7d -3、24–72h -5、12–24h -8、<12h -10、旅行中 -15、边界、集合时间优先 | S22-2、S22-5 ~ S22-11、S22-21 |
-| A2 | `CreditExitReviewApiTest`：不可抗力/安全原因待核实、0 分裁断、月度第 2 次翻倍、幂等 | S22-3、S22-4、S22-12 ~ S22-17 |
-| A3 | `CreditRestrictionApiTest`：65→55 触发、60/59、记录幂等、自动撤回/解除/取消、系统取消原因、自动解除、不恢复 | S23-1 ~ S23-5、S23-13 ~ S23-18、S23-20 ~ S23-23 |
-| A4 | `CreditRestrictionGuardApiTest`：发布/申请/体验/聊天/资料/编辑/取消/结束/撤回/退出逐项 403 `CREDIT_RESTRICTED`；查看/举报保留 | S23-6 ~ S23-12、S23-24 |
+| A1 | `CreditExitPreviewApiTest`：48h -5、7d 0、3–7d -3、24–72h -5、12–24h -8、<12h -10、旅行中 -15、边界、集合时间优先 | S25-2、S25-5 ~ S25-11、S25-21 |
+| A2 | `CreditExitReviewApiTest`：不可抗力/安全原因待核实、0 分裁断、月度第 2 次翻倍、幂等 | S25-3、S25-4、S25-12 ~ S25-17 |
+| A3 | `CreditRestrictionApiTest`：65→55 触发、60/59、记录幂等、自动撤回/解除/取消、系统取消原因、自动解除、不恢复 | S26-1 ~ S26-5、S26-13 ~ S26-18、S26-20 ~ S26-23 |
+| A4 | `CreditRestrictionGuardApiTest`：发布/申请/体验/聊天/资料/编辑/取消/结束/撤回/退出逐项 403 `CREDIT_RESTRICTED`；查看/举报保留 | S26-6 ~ S26-12、S26-24 |
 | A5 | `CreditMigrationSqliteTest`：V21 双引擎、`credit_exit_event` / `credit_restriction` / `status_reason`、旧库升级 | 数据契约 |
-| E1 | `credit-exit.spec.ts`：详情 / 我的旅行 / 聊天三入口退出弹窗；个人原因 80→75；不可抗力待核实；旅行中 -15；二次确认 | S22-1、S22-2、S22-3、S22-10、S22-19 |
-| E2 | `credit-restriction.spec.ts`：五展示面「限制中」徽标；本人原因与自动解除说明；他人不看原因；被拦截发布/申请/体验/聊天/资料 | S23-4 ~ S23-12 |
-| E3 | `credit-cancel-reason.spec.ts`：系统取消原因「信用分低于 60，账号受限」；其他用户只看到已取消；聊天只读 | S23-15 ~ S23-17 |
+| E1 | `credit-exit.spec.ts`：详情 / 我的旅行 / 聊天三入口退出弹窗；个人原因 80→75；不可抗力待核实；旅行中 -15；二次确认 | S25-1、S25-2、S25-3、S25-10、S25-19 |
+| E2 | `credit-restriction.spec.ts`：五展示面「限制中」徽标；本人原因与自动解除说明；他人不看原因；被拦截发布/申请/体验/聊天/资料 | S26-4 ~ S26-12 |
+| E3 | `credit-cancel-reason.spec.ts`：系统取消原因「信用分低于 60，账号受限」；其他用户只看到已取消；聊天只读 | S26-15 ~ S26-17 |
 
 ## 3. Local vs CI gate expectations
 

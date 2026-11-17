@@ -1,7 +1,7 @@
 # G2 decision — add-credit-exit-restriction
 
 - **Gate：** G2（Verify）
-- **Change：** `add-credit-exit-restriction`（capability `credit-enforcement` ADDED，REQ-022 / S22 + S23）
+- **Change：** `add-credit-exit-restriction`（capability `credit-enforcement` ADDED，REQ-024 / S25 + S26）
 - **Timestamp：** 2026-11-17T18:15+0800
 - **Recorded by：** Lewis Liu（SM / current developer）
 

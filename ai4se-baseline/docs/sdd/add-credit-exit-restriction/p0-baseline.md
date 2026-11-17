@@ -1,6 +1,6 @@
 # P0 基线记录 — add-credit-exit-restriction
 
-- **Change：** `add-credit-exit-restriction`（能力 `credit-enforcement` ADDED）｜ **需求：** REQ-022 ｜ **故事：** Story 4「退出同行扣减信用分」+ Story 5「低信用分自动限制账号」
+- **Change：** `add-credit-exit-restriction`（能力 `credit-enforcement` ADDED）｜ **需求：** REQ-024 ｜ **故事：** Story 4「退出同行扣减信用分」+ Story 5「低信用分自动限制账号」
 - **阶段：** P0（Project baseline）｜ **日期：** 2026-11-17
 - **记录人：** Lewis Liu（当前开发者）
 - **分支：** `feature/add-credit-exit-restriction`（从 `main@ec360dc` 切出）
@@ -13,7 +13,7 @@
 
 | id | 议题 | 裁决 |
 |---|---|---|
-| D1 | 卡片范围 | **一个 change 覆盖两个故事**：Story 4 退出同行扣减信用分 + Story 5 低信用分自动限制账号；需求登记为 **REQ-022**，故事文件分两份。 |
+| D1 | 卡片范围 | **一个 change 覆盖两个故事**：Story 4 退出同行扣减信用分 + Story 5 低信用分自动限制账号；需求登记为 **REQ-024**，故事文件分两份。 |
 | D2 | 自动限制与 D1 冲突 | **以 Story 5 为准，推翻 REQ-019 D1** 的「本迭代不引入自动封禁（< 60）」；本 change 正式实现低于 60 自动限制，并在需求与规格中记录 D1 被取代。 |
 | D3 | 管理端 | **不做任何管理员能力**：不建管理员角色、后台接口或页面；不可抗力 / 安全原因退出暂不扣分并记为「待核实」，管理员核实与人工封禁另开 change；接受核实前一直不扣分。 |
 | D4 | 用户可见信息 | **不展示加扣分明细**；只展示当前信用分、等级、限制状态与限制原因（原因仅本人可见）；「信用记录」按信用状态理解，不提供逐条流水列表。 |
@@ -27,7 +27,7 @@
 | D12 | 解除后恢复 | **不恢复**原申请与同行关系；分数回到 ≥60 解除限制后，用户需重新申请或被重新接受。 |
 | D13 | 自动取消原因 | 在取消原因字典新增**系统原因「信用分低于 60，账号受限」**；发布者与已接受同行者可见，其他用户只看到「已取消」。 |
 | D14 | 零值计数 | 月度次数按**扣分事件**计入，包含被 0 分下限裁断、实际变化为 0 的退出扣分事件；≥7 天免责与待核实免责不计入。 |
-| D15 | 规格承载 | **新增能力 `credit-enforcement`（ADDED）**；`user-credit` / `trip-companions` / `trip-cancellation` 只作依赖，不改它们的未归档 Delta；一个 REQ-022 + 两个故事。 |
+| D15 | 规格承载 | **新增能力 `credit-enforcement`（ADDED）**；`user-credit` / `trip-companions` / `trip-cancellation` 只作依赖，不改它们的未归档 Delta；一个 REQ-024 + 两个故事。 |
 | D16 | 流程 | 不做 P5、不归档；P0–P4 每个阶段一次提交；P4 完成后统一 `git pull` → 合并 `main` → push → 删除 `feature/add-credit-exit-restriction`；签署按预选：当前开发者 Lewis Liu、SM Lewis、IO WAYNE、design 第二签署 Jay、tasks 第二签署 Neal、G2 Neal，每个工件写完仍停下来确认。 |
 | D17 | 契约与迁移 | 当前 `openapi.yaml` 0.14.0、Flyway head V20；本 change **暂定 0.15.0 + V21**，P3 按实际落地顺序排他确认；若 `add-ai-itinerary` 先落则顺延。 |
 
@@ -109,8 +109,8 @@
 | 角色 | 姓名 | 本阶段确认内容 | 日期 |
 |---|---|---|---|
 | 当前开发者 | Lewis Liu | 基线证据可复现；承担 P1–P4 实现与阶段记录 | 2026-11-17 |
-| SM | Lewis | 准入 P1；REQ-022 进入本迭代排期 | 2026-11-17 |
-| IO | WAYNE | REQ-022 需求来源（Story 4 + Story 5）；D1 被 Story 5 取代；管理端不在本 change | 2026-11-17 |
+| SM | Lewis | 准入 P1；REQ-024 进入本迭代排期 | 2026-11-17 |
+| IO | WAYNE | REQ-024 需求来源（Story 4 + Story 5）；D1 被 Story 5 取代；管理端不在本 change | 2026-11-17 |
 
 ## 9. 准入 P1 的条件
 

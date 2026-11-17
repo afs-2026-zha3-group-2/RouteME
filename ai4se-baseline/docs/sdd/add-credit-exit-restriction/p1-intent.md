@@ -1,6 +1,6 @@
 # P1 阶段记录 — add-credit-exit-restriction
 
-- **Change：** `add-credit-exit-restriction`（能力 `credit-enforcement` ADDED）｜ **需求：** REQ-022 ｜ **故事：** S22 退出同行扣减信用分 + S23 低信用分自动限制账号
+- **Change：** `add-credit-exit-restriction`（能力 `credit-enforcement` ADDED）｜ **需求：** REQ-024 ｜ **故事：** S25 退出同行扣减信用分 + S26 低信用分自动限制账号
 - **阶段：** P1（Intent & proposal）｜ **日期：** 2026-11-17
 - **记录人：** Lewis Liu（当前开发者）
 - **分支：** `feature/add-credit-exit-restriction`（P0 基线 `main@ec360dc`）
@@ -13,16 +13,16 @@
 
 | 类型 | 路径 | 说明 |
 |---|---|---|
-| 意图 | `requirement-workspace/intents/REQ-022-exit-credit-restriction.md` | 原始意图、六档扣分、限制规则、用户裁决 D1–D17、证据锚点、排除项 |
-| Ready 需求 | `requirement-workspace/requirements/REQ-022-exit-credit-restriction.md` | 六字段 + 46 场景（S22-1~22 / S23-1~24）+ 15 条 blocking OQ resolved + DoR 12 项 Pass |
-| Deep-dive | `requirement-workspace/deep-dive.md`「REQ-022 增补」 | ① 数据契约 / ② 边界归属 / ③ 跨 REQ 一致性 / ④ 通知展示契约 + 探针 |
+| 意图 | `requirement-workspace/intents/REQ-024-exit-credit-restriction.md` | 原始意图、六档扣分、限制规则、用户裁决 D1–D17、证据锚点、排除项 |
+| Ready 需求 | `requirement-workspace/requirements/REQ-024-exit-credit-restriction.md` | 六字段 + 46 场景（S25-1~22 / S26-1~24）+ 15 条 blocking OQ resolved + DoR 12 项 Pass |
+| Deep-dive | `requirement-workspace/deep-dive.md`「REQ-024 增补」 | ① 数据契约 / ② 边界归属 / ③ 跨 REQ 一致性 / ④ 通知展示契约 + 探针 |
 | 影响面 | `requirement-workspace/impact-brief.md` §22 | requirement set / as-is / delta / blast radius / artifact / dual-track / risks / split |
-| 故事 S22 | `requirement-workspace/stories/add-credit-exit-restriction-exit.story.md` | 退出扣分 / 待核实 / 三入口 / 月度 / 幂等 |
-| 故事 S23 | `requirement-workspace/stories/add-credit-exit-restriction-restriction.story.md` | <60 触发 / 只读 / 自动清理 / 展示 / 自动解除 |
-| 故事清单 | `requirement-workspace/stories.md`「Story list — REQ-022」 | S22 / S23 表 + traceability + notes |
+| 故事 S25 | `requirement-workspace/stories/add-credit-exit-restriction-exit.story.md` | 退出扣分 / 待核实 / 三入口 / 月度 / 幂等 |
+| 故事 S26 | `requirement-workspace/stories/add-credit-exit-restriction-restriction.story.md` | <60 触发 / 只读 / 自动清理 / 展示 / 自动解除 |
+| 故事清单 | `requirement-workspace/stories.md`「Story list — REQ-024」 | S25 / S26 表 + traceability + notes |
 | 提案 | `openspec/changes/add-credit-exit-restriction/proposal.md` | Why / What / Out of Scope / Capabilities / Impact / 决策 / 验收信号 / 残余风险 |
 | Delta 草稿 | `openspec/changes/add-credit-exit-restriction/specs/credit-enforcement/spec.md` | ADDED 9 Requirement / 46 Scenario |
-| 登记 | `requirement-workspace/registry.md`、`handoff.md` | REQ-022 行 + 边界说明 |
+| 登记 | `requirement-workspace/registry.md`、`handoff.md` | REQ-024 行 + 边界说明 |
 | 质量报告 | `docs/ai4se-plugins/20261117-153000-quality-checklist-report.md`（+ checkpoints） | P1 Overall Pass；P1-5 / P1-6 Skipped |
 
 ## 3. Discovery / 需求收敛
@@ -84,11 +84,11 @@
 | 阶段 | 提交 | 说明 |
 |---|---|---|
 | P0 | `41c173d` | `docs(p0): add-credit-exit-restriction record the baseline and scope decisions` |
-| P1 | 本次提交 | `docs(p1): add-credit-exit-restriction add REQ-022, proposal and delta draft` |
+| P1 | 本次提交 | `docs(p1): add-credit-exit-restriction add REQ-024, proposal and delta draft` |
 
 ## 10. 准入 P2 的条件
 
 - Delta 的 9 Requirement / 46 Scenario 可判定，且与 Ready 46 场景一一对应。
 - 契约 / 迁移号在 P2 / P3 按实际落地顺序排他确认。
 - 待核实退出的领域行为与「无管理端」边界在 P2 保持不冲突。
-- 任何新增/修改场景必须回写 `requirements/REQ-022-exit-credit-restriction.md` 与两份故事文件，保持 traceability。
+- 任何新增/修改场景必须回写 `requirements/REQ-024-exit-credit-restriction.md` 与两份故事文件，保持 traceability。

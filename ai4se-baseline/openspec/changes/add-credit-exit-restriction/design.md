@@ -1,6 +1,6 @@
 # 技术设计 — add-credit-exit-restriction
 
-- **Change：** `add-credit-exit-restriction` ｜ **REQ：** REQ-022 ｜ **Delta：** `specs/credit-enforcement/spec.md`（ADDED 9 Requirement / 46 Scenario）
+- **Change：** `add-credit-exit-restriction` ｜ **REQ：** REQ-024 ｜ **Delta：** `specs/credit-enforcement/spec.md`（ADDED 9 Requirement / 46 Scenario）
 - **G1：** Pass（IO=WAYNE / SA=Jacky，2026-11-17，`g1-decision.md`）
 - **基线：** `main@ec360dc`；分支 `feature/add-credit-exit-restriction`
 - **阶段：** P3（Design & decompose）

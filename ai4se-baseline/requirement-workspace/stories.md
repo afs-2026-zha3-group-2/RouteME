@@ -294,31 +294,31 @@
 - **依赖：** `user-profile` / `user-profiles` 尚未归档；本故事只追加只读字段，不改其 Requirement 语义。
 - 未接入外部 ALM；本表为仓库内权威故事清单，ALM Sync 状态记为 Pending。
 
-# Story list — REQ-022（退出同行扣分与低信用自动限制）
+# Story list — REQ-024（退出同行扣分与低信用自动限制）
 
 - **来源：** 用户当次会话 P0 卡片「[P0] 退出同行扣减信用分」；Story 4（信用系统迭代 2 / 5 点）与 Story 5（信用系统迭代 3 / 3 点）
 - **Change：** `add-credit-exit-restriction`（`credit-enforcement` ADDED）
-- **口径：** 两条故事共享同一 change 与同一信用执行链；S22 负责退出扣分与待核实，S23 负责 <60 限制与自动清理/解除；验收分开。
-- **编号：** 延续信用系统序列记为 S22 / S23（原型 S01–S18 不含信用体系）。
+- **口径：** 两条故事共享同一 change 与同一信用执行链；S25 负责退出扣分与待核实，S26 负责 <60 限制与自动清理/解除；验收分开。
+- **编号：** 延续信用系统序列记为 S25 / S26（原型 S01–S18 不含信用体系）。
 - **更新时间：** 2026-11-17
 
 | Story | Title | 角色 | Priority | Iteration | Points | Page | Parent REQ | Change | Status |
 |---|---|---|---|---|---|---|---|---|---|
-| S22 | 退出同行扣减信用分 | 已接受同行者 | P0 | 信用系统迭代 2 | 5 | 行程详情 / 我的旅行 / 聊天 | REQ-022 | `add-credit-exit-restriction` | P4 implemented（2026-11-17） |
-| S23 | 低信用分自动限制账号 | 受限用户 / 平台 | P0 | 信用系统迭代 3 | 3 | 个人主页 / 五展示面 / 被拦截提示 | REQ-022 | `add-credit-exit-restriction` | P4 implemented（2026-11-17） |
+| S25 | 退出同行扣减信用分 | 已接受同行者 | P0 | 信用系统迭代 2 | 5 | 行程详情 / 我的旅行 / 聊天 | REQ-024 | `add-credit-exit-restriction` | P4 implemented（2026-11-17） |
+| S26 | 低信用分自动限制账号 | 受限用户 / 平台 | P0 | 信用系统迭代 3 | 3 | 个人主页 / 五展示面 / 被拦截提示 | REQ-024 | `add-credit-exit-restriction` | P4 implemented（2026-11-17） |
 
-## Traceability（REQ-022）
+## Traceability（REQ-024）
 
 | Story | Requirement scenarios | Change spec | Story file |
 |---|---|---|---|
-| S22 | REQ-022 §4 S22-1 ~ S22-22 | `openspec/changes/add-credit-exit-restriction/specs/credit-enforcement/spec.md`（ADDED，P2 已定稿） | `requirement-workspace/stories/add-credit-exit-restriction-exit.story.md` |
-| S23 | REQ-022 §4 S23-1 ~ S23-24 | 同上 | `requirement-workspace/stories/add-credit-exit-restriction-restriction.story.md` |
+| S25 | REQ-024 §4 S25-1 ~ S25-22 | `openspec/changes/add-credit-exit-restriction/specs/credit-enforcement/spec.md`（ADDED，P2 已定稿） | `requirement-workspace/stories/add-credit-exit-restriction-exit.story.md` |
+| S26 | REQ-024 §4 S26-1 ~ S26-24 | 同上 | `requirement-workspace/stories/add-credit-exit-restriction-restriction.story.md` |
 
-## Notes（REQ-022）
+## Notes（REQ-024）
 
 - **不拆 change：** 用户 D1 明确一个 change 覆盖两个故事；退出扣分是限制的主要触发源，拆开无法在一次验收内看到「扣分 → <60 → 限制」。
-- **不拆 S22：** 原因 / 预计影响 / 六档扣分 / 月度 / 待核实是一条垂直切片；拆开会出现不可验收的半成品。
-- **不拆 S23：** 触发 / 只读 / 清理 / 展示 / 自动解除是同一条限制生命周期；拆开会出现半状态。
+- **不拆 S25：** 原因 / 预计影响 / 六档扣分 / 月度 / 待核实是一条垂直切片；拆开会出现不可验收的半成品。
+- **不拆 S26：** 触发 / 只读 / 清理 / 展示 / 自动解除是同一条限制生命周期；拆开会出现半状态。
 - **管理端排除：** 管理员核实、人工封禁、申诉与后台页面均不在本 change（D3）；待核实保持 pending。
 - **明细排除：** 用户端不展示加扣分明细（D4）；只看分数、等级、限制状态与本人原因。
 - **Delta 归属：** 新能力 `credit-enforcement`；不改未归档的 `user-credit` / `trip-cancellation` / `trip-companions` Delta（D15）。
