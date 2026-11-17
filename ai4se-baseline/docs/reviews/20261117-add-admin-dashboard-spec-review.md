@@ -79,3 +79,8 @@ Delta 为单 capability `admin-dashboard`（ADDED 5 Requirement / 13 Scenario）
 | 本报告 | 报告 2 | Jacky（SA） | 2026-11-17 | 已批准 |
 
 > 按 `@rule:artifact-review-gate`，Delta Spec 由 WAYNE 签署，评审报告由 WAYNE + 当前开发者（Jacky）签署；三处于 2026-11-17 按发起人确认签齐，P2 解锁。
+
+## 变更摘要（2026-11-17，P3 入口）
+
+- 仅命名与格式修正，不改变语义：响应组名与字段名由 camelCase 改为 `@rule:api-contract` 要求的 snake_case（`service_sessions`、`generated_at`、`by_role`、`by_status`、`new_last_7_days`、`new_last_30_days`），场景中的 `users.byStatus.*` 同步为 `users.by_status.*`。状态枚举键的大小写按 S1-06 保留（账号 / 举报 / 会话大写，行程 / 申请小写）。
+- 依据 `@rule:artifact-review-gate`「只改错字、链接或格式且不改变语义的修订，可复用上一份 `Pass` 报告」，本报告结论与签署记录保持有效，不重开评审；`openspec validate add-admin-dashboard --strict` 复跑仍为 valid（5 Requirement / 13 Scenario）。

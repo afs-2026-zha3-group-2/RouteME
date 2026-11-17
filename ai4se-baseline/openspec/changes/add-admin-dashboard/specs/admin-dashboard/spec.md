@@ -27,7 +27,7 @@
 
 ### Requirement: 概览计数结构与零填充
 
-响应 MUST 以固定键返回 `users`、`trips`、`applications`、`experiences`、`reports`、`serviceSessions` 六组与 `generatedAt`（统计生成时刻）；计数为 0 时 MUST 返回 0，MUST NOT 省略键或返回空对象。用户组 MUST 含 `total`、`byRole`、`byStatus`、`newLast7Days`、`newLast30Days`；行程组 MUST 含 `total`、`byStatus` 与两个新增字段；申请组 MUST 含 `total` 与 `byStatus`；体验组 MUST 含 `total` 与两个新增字段；举报组与客服会话组 MUST 含 `total` 与 `byStatus`。
+响应 MUST 以固定键返回 `users`、`trips`、`applications`、`experiences`、`reports`、`service_sessions` 六组与 `generated_at`（统计生成时刻）；计数为 0 时 MUST 返回 0，MUST NOT 省略键或返回空对象。用户组 MUST 含 `total`、`by_role`、`by_status`、`new_last_7_days`、`new_last_30_days`；行程组 MUST 含 `total`、`by_status` 与两个新增字段；申请组 MUST 含 `total` 与 `by_status`；体验组 MUST 含 `total` 与两个新增字段；举报组与客服会话组 MUST 含 `total` 与 `by_status`。组名与字段名按 `@rule:api-contract` 使用 snake_case。
 
 #### Scenario: 空库返回固定零值
 - **Given** 六类数据表均为空
@@ -42,8 +42,8 @@
 #### Scenario: 封禁到期的账号计入正常
 - **Given** 一个账号 `status=BANNED` 且解封时间早于当前时刻
 - **When** 管理员请求概览统计
-- **Then** 该账号计入 `users.byStatus.ACTIVE`
-- **And** 不计入 `users.byStatus.BANNED`
+- **Then** 该账号计入 `users.by_status.ACTIVE`
+- **And** 不计入 `users.by_status.BANNED`
 
 #### Scenario: 已取消行程与全部申请状态都计入
 - **Given** 存在一条已取消行程，以及覆盖五种状态的同行申请
@@ -60,13 +60,13 @@
 
 ### Requirement: 概览统计的新增计数窗口
 
-新增计数 MUST 以记录创建时间为准，MUST NOT 使用状态变更时间。窗口 MUST 按产品统一时区（Asia/Shanghai）的自然日计算：`newLast7Days` 覆盖当天与之前 6 个自然日，`newLast30Days` 覆盖当天与之前 29 个自然日；两者 MUST 包含当天，且 MUST 覆盖请求时刻。
+新增计数 MUST 以记录创建时间为准，MUST NOT 使用状态变更时间。窗口 MUST 按产品统一时区（Asia/Shanghai）的自然日计算：`new_last_7_days` 覆盖当天与之前 6 个自然日，`new_last_30_days` 覆盖当天与之前 29 个自然日；两者 MUST 包含当天，且 MUST 覆盖请求时刻。
 
 #### Scenario: 新增计数按产品时区自然日窗口
 - **Given** 三条记录分别在产品时区「今天 00:00 之后」「今天 00:00 之前 8 天」「今天 00:00 之前 31 天」
 - **When** 管理员请求概览统计
-- **Then** 第一条同时计入 `newLast7Days` 与 `newLast30Days`
-- **And** 第二条只计入 `newLast30Days`
+- **Then** 第一条同时计入 `new_last_7_days` 与 `new_last_30_days`
+- **And** 第二条只计入 `new_last_30_days`
 - **And** 第三条两者都不计入
 
 ### Requirement: 管理后台概览页
