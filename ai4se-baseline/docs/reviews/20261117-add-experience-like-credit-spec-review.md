@@ -4,7 +4,7 @@
 - **Scope:** focus=spec（`@rule:artifact-review-gate` 的 P1 Delta 评审）；root=`ai4se-baseline`；timestamp=2026-11-17
 - **Artifacts under review:**
   - [`specs/trip-experiences/spec.md`](../../openspec/changes/add-experience-like-credit/specs/trip-experiences/spec.md)（ADDED 2 Requirement / 12 Scenario）
-  - [`specs/user-credit/spec.md`](../../openspec/changes/add-experience-like-credit/specs/user-credit/spec.md)（ADDED 3 Requirement / 12 Scenario）
+  - [`specs/user-credit/spec.md`](../../openspec/changes/add-experience-like-credit/specs/user-credit/spec.md)（ADDED 3 Requirement / 15 Scenario；2026-11-17 计数更正，原记 12）
 - **Supporting inputs:**
   - [`requirements/REQ-022-experience-like-credit.md`](../../requirement-workspace/requirements/REQ-022-experience-like-credit.md)（24 场景，blocking OQ 0，DoR BLOCKER 0）
   - [`intents/REQ-022-experience-like-credit.md`](../../requirement-workspace/intents/REQ-022-experience-like-credit.md)（D1–D4）

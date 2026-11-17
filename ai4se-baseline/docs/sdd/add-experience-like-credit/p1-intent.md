@@ -30,7 +30,7 @@
 | 登记 | `requirement-workspace/registry.md`、`handoff.md`、`stories.md` | REQ-022 → `add-experience-like-credit`；故事「信用迭代2-S3」 |
 | 提案 | `openspec/changes/add-experience-like-credit/proposal.md` | 问题 / 范围 / 决策 D1–D10 / 影响面 / 规模 / 残余风险 |
 | Delta Spec | `openspec/changes/add-experience-like-credit/specs/trip-experiences/spec.md` | ADDED 2 Requirement / 12 Scenario（点赞与取消、赞数与点赞态展示） |
-| Delta Spec | `openspec/changes/add-experience-like-credit/specs/user-credit/spec.md` | ADDED 3 Requirement / 12 Scenario（阶梯加分、月度上限、计分边界） |
+| Delta Spec | `openspec/changes/add-experience-like-credit/specs/user-credit/spec.md` | ADDED 3 Requirement / 15 Scenario（阶梯加分、月度上限、计分边界） |
 | 提案评审 | `docs/reviews/20261117-add-experience-like-credit-proposal-review.md` | Partial（0 BLOCKER / 1 WARNING 双 capability 偏离 / 4 SUGGESTION） |
 | 规格评审 | `docs/reviews/20261117-add-experience-like-credit-spec-review.md` | Pass（0 BLOCKER / 0 WARNING / 4 SUGGESTION） |
 | P1 质量报告 | `docs/ai4se-plugins/20261117-151032-quality-checklist-report.md` | Overall Pass；P1-5 / P1-6 可选 Skipped |

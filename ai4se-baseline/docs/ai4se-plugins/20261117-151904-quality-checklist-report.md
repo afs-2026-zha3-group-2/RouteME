@@ -11,7 +11,7 @@
 
 | Check id | Required? | Status | Evidence |
 |----------|-----------|--------|----------|
-| P2-1 | yes | Pass | `openspec/changes/add-experience-like-credit/specs/trip-experiences/spec.md`、`specs/user-credit/spec.md`（ADDED 2 + 3 Requirement / 24 Scenario）；`openspec validate add-experience-like-credit --strict` → valid |
+| P2-1 | yes | Pass | `openspec/changes/add-experience-like-credit/specs/trip-experiences/spec.md`、`specs/user-credit/spec.md`（ADDED 2 + 3 Requirement / 27 Scenario；2026-11-17 计数更正，原记 24）；`openspec validate add-experience-like-credit --strict` → valid |
 | P2-2 | yes | Pass | `openspec/changes/add-experience-like-credit/dov-ac-review.md`（AC 4/4 + DoV 5/5 Pass，基线保留与残余风险已列） |
 | P2-3 | yes* | Skipped | G1 尚未被声明完成；用户未主张 G1，按清单说明标 Skipped（mid-stage QC），待 IO + SA 具名签署后补 `g1-decision.md` |
 | P2-4 | no | Pass | `openspec/changes/add-experience-like-credit/consistency-lint.md`（Pass；0 BLOCKER / 0 WARNING / 5 SUGGESTION / 7 N/A） |

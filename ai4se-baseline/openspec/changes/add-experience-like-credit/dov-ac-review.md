@@ -1,7 +1,8 @@
 # AC / DoV review — add-experience-like-credit
 
 - **Verdict: Pass**
-- **Change:** `add-experience-like-credit`（`trip-experiences` ADDED 2 Requirement / 12 Scenario；`user-credit` ADDED 3 Requirement / 12 Scenario）
+- **Change:** `add-experience-like-credit`（`trip-experiences` ADDED 2 Requirement / 12 Scenario；`user-credit` ADDED 3 Requirement / 15 Scenario；合计 27）
+- **计数更正（2026-11-17，P3 前）：** `user-credit` Delta 实为 15 Scenario（7 + 5 + 3），两 Delta 合计 27；原记 12 / 24 系计数笔误，不改变评审结论。
 - **Date:** 2026-11-17 ｜ **Phase:** P2（`/sdd:delta-craft` step=review）
 - **Inputs:** [`proposal.md`](proposal.md)、[`specs/trip-experiences/spec.md`](specs/trip-experiences/spec.md)、[`specs/user-credit/spec.md`](specs/user-credit/spec.md)、`requirement-workspace/requirements/REQ-022-experience-like-credit.md`、`requirement-workspace/intents/REQ-022-experience-like-credit.md`、`requirement-workspace/deep-dive.md`「REQ-022 增补」、`requirement-workspace/impact-brief.md` §22
 - **Evidence:** `openspec validate add-experience-like-credit --strict` → valid；Living Spec `openspec/specs/trip-experiences/spec.md`（7 Requirement / 22 Scenario，无点赞需求，本 Delta 只 ADDED）；未归档 `add-credit-account/specs/user-credit/spec.md`（7 Requirement，本 Delta 不重名、不覆盖）
@@ -10,7 +11,7 @@
 
 | Item | Result | Evidence | Notes |
 |---|---|---|---|
-| AC-1 每个 Requirement 至少一条可测 AC | Pass | 点赞 2 Requirement → 8 + 4 Scenario；结算 3 Requirement → 7 + 5 + 3 Scenario | 24 个场景均可落为 API / 单元 / E2E 断言 |
+| AC-1 每个 Requirement 至少一条可测 AC | Pass | 点赞 2 Requirement → 8 + 4 Scenario；结算 3 Requirement → 7 + 5 + 3 Scenario | 27 个场景均可落为 API / 单元 / E2E 断言 |
 | AC-2 AC 可观察 | Pass | 场景断言赞数、点赞态、信用分、账本 `applied_delta` / 前后快照、月度累计 | 无「正常工作」类表述 |
 | AC-3 负向 / 边界覆盖 | Pass | 自赞 403、未登录 401、体验不存在 404、重复点赞 / 取消幂等、并发点赞、档位锁定、赞数回落、月度截断、总分裁断、月初重置 | 高风险分支均有场景 |
 | AC-4 不是伪装的实现细节 | Pass（1 条 P2 注意项） | Delta 出现 `like_count` / `liked_by_me`（契约字段候选）与 `reason_code = EXPERIENCE_LIKE`（业务标识）；无类名 / 表名 / SQL | 字段名与「体验不存在」错误码在 P3 契约定稿；若改名需同步前端 / 测试 / E2E |
@@ -32,7 +33,7 @@
 ## 基线保留
 
 - `trip-experiences`：Living Spec 7 Requirement / 22 Scenario 全部保留（纯 ADDED）；新增 2 Requirement / 12 Scenario。
-- `user-credit`：`add-credit-account` 的 7 Requirement 全部保留（纯 ADDED）；新增 3 Requirement / 12 Scenario，无重名。
+- `user-credit`：`add-credit-account` 的 7 Requirement 全部保留（纯 ADDED）；新增 3 Requirement / 15 Scenario，无重名。
 - 归档顺序：本 change 的 Living 合并必须晚于 `add-credit-account` / `add-experience-photos` / `refine-experience-share` / `refine-inspiration-home`（P5 约束）。
 
 ## Residual risks / IO-SA concerns

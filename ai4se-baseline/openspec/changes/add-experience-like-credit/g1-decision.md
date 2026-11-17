@@ -4,6 +4,7 @@
 - **Change:** `add-experience-like-credit`（`trip-experiences` ADDED + `user-credit` ADDED，REQ-022 / issue #30）
 - **Timestamp:** 2026-11-17T15:25+0800
 - **Recorded by:** Qoder（AI agent）；G1 结论与签署由发起人 2026-11-17 具名确认（IO=Wanye / SA=Jacky），模型不代替人工批准
+- **计数更正（2026-11-17，P3 前）：** `user-credit` Delta 实为 15 Scenario（7 + 5 + 3），合计 27；原记 12 / 24 系计数笔误，不影响 G1 结论与签署
 
 ## Inputs
 
@@ -11,7 +12,7 @@
 |---|---|---|
 | Proposal | [`proposal.md`](proposal.md) | 问题、In/Out scope、影响面、D1–D10、残余风险齐全；能力 `trip-experiences` + `user-credit` 均 ADDED |
 | Delta Spec — `trip-experiences` | [`specs/trip-experiences/spec.md`](specs/trip-experiences/spec.md) | ADDED 2 Requirement / 12 Scenario；基线 7 Requirement / 22 Scenario 未改写 |
-| Delta Spec — `user-credit` | [`specs/user-credit/spec.md`](specs/user-credit/spec.md) | ADDED 3 Requirement / 12 Scenario；与 `add-credit-account` 7 Requirement 不重名 |
+| Delta Spec — `user-credit` | [`specs/user-credit/spec.md`](specs/user-credit/spec.md) | ADDED 3 Requirement / 15 Scenario；与 `add-credit-account` 7 Requirement 不重名 |
 | AC / DoV review | [`dov-ac-review.md`](dov-ac-review.md) | AC 4/4 Pass；DoV 5/5 Pass；基线保留与残余风险已列 |
 | Consistency lint | [`consistency-lint.md`](consistency-lint.md) | Pass；BLOCKER 0 / WARNING 0 / SUGGESTION 5 / N/A 7 |
 | P1 quality report | `docs/ai4se-plugins/20261117-151032-quality-checklist-report.md` | P1 Overall Pass（P1-1 ~ P1-4 Pass；P1-5 / P1-6 Skipped） |
@@ -34,7 +35,7 @@
 | Scope | 与 REQ-022 一致：体验点赞 / 取消点赞、赞数与点赞态展示、获赞阶梯加分、月度上限、计分边界；不做信用明细、通知、管理端、回收、结转 | `proposal.md` 范围；`dov-ac-review.md` DoV-1 |
 | Ambiguity | 无未决阻塞歧义：端点形态 / 错误码 / 字段名属 P3 契约定稿；月度截断按通用公式（每次跨档应发恒为 +1）；多篇体验规则以多行数据单测覆盖 | `dov-ac-review.md` DoV-2；`consistency-lint.md` L-03 / L-04 |
 | Conflict | 单 change 跨 `trip-experiences` / `user-credit` 与 `@rule:sdd-artifacts` one-capability 习惯存在偏离；**SA 在 G1 明确接受该打包**（理由：点赞与结算拆开后无法独立验收 issue 场景，且仓库有 `refine-inspiration-home` / `add-trip-completion` 先例） | `docs/reviews/20261117-add-experience-like-credit-proposal-review.md` F-1；本记录 Decision |
-| Traceability | REQ-022 24 个场景均有 Delta 落点；proposal In scope 5 项均有 Requirement 覆盖 | `dov-ac-review.md` DoV-5 |
+| Traceability | REQ-022 24 个 Ready 场景均有 Delta 落点（两个 Delta 共 27 Scenario）；proposal In scope 5 项均有 Requirement 覆盖 | `dov-ac-review.md` DoV-5 |
 | Residual risk | 归档顺序、契约 / 迁移号、月度并发严格性、多篇体验不可 E2E、原型先行、E2E 选择器漂移 | `dov-ac-review.md` 残余风险；`consistency-lint.md` 残余风险 |
 
 ## Decision

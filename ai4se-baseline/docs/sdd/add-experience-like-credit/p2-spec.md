@@ -1,7 +1,7 @@
 # P2 — add-experience-like-credit（REQ-022 旅行体验获赞增加信用分）
 
 - **日期：** 2026-11-17 ｜ **记录人：** Lewis Liu（当前开发者，发起人确认）｜ **阶段：** P2 Pass（Delta / AC-DoV / lint 完成；G1 Pass，IO=Wanye / SA=Jacky）
-- **Change：** `add-experience-like-credit`（`trip-experiences` ADDED 2 Requirement / 12 Scenario；`user-credit` ADDED 3 Requirement / 12 Scenario）
+- **Change：** `add-experience-like-credit`（`trip-experiences` ADDED 2 Requirement / 12 Scenario；`user-credit` ADDED 3 Requirement / 15 Scenario；合计 27）
 - **基线：** `origin/main@64b38da`；worktree `.worktrees/add-experience-like-credit`
 
 ## 1. P2 产物
@@ -9,7 +9,7 @@
 | 工件 | 路径 | 结论 |
 |---|---|---|
 | Delta Spec | `openspec/changes/add-experience-like-credit/specs/trip-experiences/spec.md` | ADDED 2 Requirement / 12 Scenario（点赞与取消、赞数与点赞态展示）；基线 7 Requirement / 22 Scenario 未改写 |
-| Delta Spec | `openspec/changes/add-experience-like-credit/specs/user-credit/spec.md` | ADDED 3 Requirement / 12 Scenario（阶梯加分、月度上限、计分边界）；`add-credit-account` 的 7 Requirement 不重名、不覆盖 |
+| Delta Spec | `openspec/changes/add-experience-like-credit/specs/user-credit/spec.md` | ADDED 3 Requirement / 15 Scenario（阶梯加分、月度上限、计分边界）；`add-credit-account` 的 7 Requirement 不重名、不覆盖 |
 | AC / DoV 复核 | `openspec/changes/add-experience-like-credit/dov-ac-review.md` | **Pass**：AC 4/4 + DoV 5/5；基线保留；残余风险与 IO/SA 关注点已列 |
 | 一致性检查 | `openspec/changes/add-experience-like-credit/consistency-lint.md` | **Pass**：0 BLOCKER / 0 WARNING / 5 SUGGESTION / 7 N/A |
 | P2 质量报告 | `docs/ai4se-plugins/20261117-151904-quality-checklist-report.md` | Overall Pass（P2-1 / P2-2 / P2-4 Pass；P2-3 按 G1 未主张 Skipped） |
