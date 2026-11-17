@@ -58,8 +58,8 @@
 
 ## 6. 条件与残余风险
 
-- **合并前条件：** 开 PR 后在目标提交上跑 CI 并附链接；未绿不得合入。
-- **合并后动作：** grep 抽查 `styles.css` 的 `.detail-companions` / `.companion-card` / `.companion-chat` 是否仍在（`styles.css` 为并行修改热点）。
+- **合并执行（2026-11-17）：** 按用户当次指示直接合并 `main`（未开 PR），偏离原「PR CI 未绿不得合入」条件，已在 `g2-decision.md` Merge record 记录；CI 由 `main` push `a3c2924` 触发，待回填 pipeline 报告。
+- **合并后动作（已完成）：** grep 命中 `.detail-companions` / `.companion-card` / `.companion-chat`；上游 `.profile-credit*` 同时保留（`styles.css` 为并行修改热点）。
 - **残余风险：** 组件层无单测（仓库无 jsdom / Testing Library）；同行者超过 6 人的折叠策略未定义；地图 / 发布类 E2E 的本机环境债务未在本 change 处理。
 
 ## 7. 阶段提交链
@@ -70,8 +70,10 @@
 | P2 | `afb3bac` | `docs(p2): refine-detail-companions refine the delta and record G1` |
 | P3 | `02179bb` | `docs(p3): refine-detail-companions design the companion cards and tasks` |
 | P4 实现 | `aa702f0` | `feat(p4): refine-detail-companions render companions as profile cards` |
-| P4 记录 | 本条提交 | `docs(p4): refine-detail-companions record the verification and G2` |
+| P4 记录 | `a2e67ef` | `docs(p4): refine-detail-companions record the verification and G2` |
+| 合并 | `a3c2924` | Merge `origin/main@ec360dc`；`main` 快进 `ec360dc..a3c2924` |
+| 合并记录 | 本条提交 | `docs(p4): refine-detail-companions record the merge into main` |
 
 ## 8. 下一阶段
 
-- PR → CI → 合并；P5 按用户既定要求**暂不执行**（不归档）。
+- 已合并 `main@a3c2924`（2026-11-17）；CI 结果待回填；P5 按用户既定要求**暂不执行**（不归档）。
