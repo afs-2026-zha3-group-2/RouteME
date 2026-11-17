@@ -275,7 +275,7 @@
       if (App.shareTripId !== r.a) {
         App.shareTripId = r.a;
         var ex = S.myExperience(r.a);
-        App.shareDraft = ex ? { content: ex.content, intensity: ex.intensity, advice: ex.advice } : { content: '', intensity: '', advice: '' };
+        App.shareDraft = ex ? { content: ex.content, intensity: ex.intensity, advice: ex.advice, photos: (ex.photos || []).slice() } : { content: '', intensity: '', advice: '', photos: [] };
         App.shareErrors = {};
       }
       html = UI.share(r.a, App.shareDraft, App.shareErrors);
@@ -369,6 +369,15 @@
       modalRoot.innerHTML = scrim + '<div class="modal-wrap">' + UI.reportModal(o.type, o.id, o.label) + '</div>';
     } else if (o.kind === 'saveView') {
       modalRoot.innerHTML = scrim + '<div class="modal-wrap">' + UI.saveViewModal(App.filters) + '</div>';
+    } else if (o.kind === 'photo') {
+      var photoExp = S.experiencesOf(o.tripId)[o.index];
+      var photoList = (photoExp && photoExp.photos) || [];
+      modalRoot.innerHTML = scrim + '<div class="modal-wrap"><div class="modal"><div class="modal-head">' +
+        '<h2 class="modal-title">体验照片 · ' + photoList.length + ' 张</h2>' +
+        '<button class="icon-btn" data-action="close-overlay" type="button" aria-label="关闭">' + UI.icon('x') + '</button></div>' +
+        '<div class="modal-body"><div class="photo-viewer">' + photoList.map(function (src) {
+          return '<img src="' + UI.esc(src) + '" alt="体验照片">';
+        }).join('') + '</div></div></div></div>';
     } else if (o.kind === 'confirm') {
       modalRoot.innerHTML = scrim + '<div class="modal-wrap">' + UI.confirmModal(App.confirm) + '</div>';
     } else if (o.kind === 'cancelTrip') {
@@ -453,6 +462,7 @@
   document.addEventListener('change', function (e) {
     var el = e.target;
     if (el.hasAttribute('data-filter')) { setFilter(el.getAttribute('data-filter'), el.value); }
+    else if (el.hasAttribute('data-share-photos')) { addSharePhotos(el.files); el.value = ''; }
     else if (el.hasAttribute('data-form') && App.draft) { App.draft[el.getAttribute('data-form')] = el.value; render(); }
   });
 
@@ -746,6 +756,25 @@
 
       /* --- S16 游后分享 --- */
       case 'set-intensity': App.shareDraft.intensity = trigger.getAttribute('data-value'); render(); return;
+      case 'pick-photos': {
+        var photoInput = view.querySelector('[data-share-photos]');
+        if (photoInput) photoInput.click();
+        return;
+      }
+      case 'photo-remove': App.shareDraft.photos.splice(parseInt(trigger.getAttribute('data-index'), 10), 1); App.shareErrors.photos = ''; render(); return;
+      case 'photo-up': {
+        var upIndex = parseInt(trigger.getAttribute('data-index'), 10);
+        var upList = App.shareDraft.photos;
+        if (upIndex > 0) { var upItem = upList[upIndex - 1]; upList[upIndex - 1] = upList[upIndex]; upList[upIndex] = upItem; render(); }
+        return;
+      }
+      case 'photo-down': {
+        var downIndex = parseInt(trigger.getAttribute('data-index'), 10);
+        var downList = App.shareDraft.photos;
+        if (downIndex < downList.length - 1) { var downItem = downList[downIndex + 1]; downList[downIndex + 1] = downList[downIndex]; downList[downIndex] = downItem; render(); }
+        return;
+      }
+      case 'photo-view': App.overlay = { kind: 'photo', tripId: id, index: parseInt(trigger.getAttribute('data-index'), 10) }; renderOverlay(); return;
       case 'submit-share': {
         var sr = S.saveExperience(id, App.shareDraft);
         if (!sr.ok) {
@@ -762,6 +791,34 @@
       }
     }
   });
+
+  function addSharePhotos(fileList) {
+    if (!App.shareDraft || !fileList) return;
+    App.shareDraft.photos = App.shareDraft.photos || [];
+    var files = Array.prototype.slice.call(fileList);
+    var error = '';
+    files.forEach(function (f) {
+      if (error) return;
+      if (App.shareDraft.photos.length >= 6) { error = '最多只能添加 6 张照片'; return; }
+      if (f.size > 5 * 1024 * 1024) { error = '单张照片不能超过 5MB'; return; }
+      if (['image/jpeg', 'image/png', 'image/webp'].indexOf(f.type) === -1) { error = '只支持 JPG / PNG / WebP'; return; }
+      var reader = new FileReader();
+      reader.onload = function () {
+        if (App.shareDraft.photos.length >= 6) return;
+        App.shareDraft.photos.push(String(reader.result));
+        render();
+      };
+      reader.readAsDataURL(f);
+    });
+    App.shareErrors = App.shareErrors || {};
+    if (error) {
+      App.shareErrors.photos = error;
+      render();
+      toast(error, 'warn');
+    } else {
+      App.shareErrors.photos = '';
+    }
+  }
 
   function sendChat(tripId, toId) {
     var input = view.querySelector('[data-chat-input]');

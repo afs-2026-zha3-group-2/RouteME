@@ -955,6 +955,31 @@ img, svg { display: block; max-width: 100%; }
 /* 强度卡选中后，标题用语义色、说明回归中性墨色，不把彩色稀释成低对比度 */
 .int-card.on span { color: var(--ink-2); }
 
+/* ---------- 游后体验照片 ---------- */
+.share-photos { display: grid; gap: 12px; }
+.photo-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(104px, 1fr)); gap: 10px; }
+.photo-tile { position: relative; margin: 0; aspect-ratio: 4 / 3; border-radius: 12px; overflow: hidden; border: 1px solid var(--line); background: var(--surface-2); }
+.photo-tile img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.photo-tile.is-cover::after { content: "首图"; position: absolute; left: 7px; top: 7px; padding: 2px 7px; border-radius: 999px; font-size: 10px; font-weight: 700; color: #fff; background: color-mix(in srgb, var(--dusk) 82%, #000); }
+.photo-actions { position: absolute; inset: auto 6px 6px auto; display: flex; gap: 4px; }
+.photo-actions button { width: 26px; height: 26px; border-radius: 8px; border: 0; display: grid; place-items: center; color: var(--ink); background: color-mix(in srgb, var(--surface) 88%, transparent); backdrop-filter: blur(3px); cursor: pointer; }
+.photo-actions button:hover { color: var(--t-coral); }
+.photo-actions svg { width: 14px; height: 14px; }
+.photo-empty { display: grid; place-items: center; gap: 6px; padding: 22px 14px; border-radius: var(--r); border: 1.5px dashed var(--line-2); background: var(--surface-2); color: var(--ink-3); font-size: 12.5px; line-height: 1.55; text-align: center; }
+.photo-empty svg { width: 22px; height: 22px; }
+.photo-note { display: flex; justify-content: space-between; gap: 10px; flex-wrap: wrap; font-size: 11.5px; color: var(--ink-3); }
+.photo-note .over { color: var(--t-coral); font-weight: 650; }
+.photo-error { font-size: 11.5px; color: var(--t-coral); }
+.experience-photos { display: flex; gap: 8px; align-items: flex-end; margin-top: 12px; flex-wrap: wrap; }
+.experience-photos img { width: 96px; height: 72px; object-fit: cover; border-radius: 10px; border: 1px solid var(--line); display: block; }
+.experience-photos-more { margin-left: auto; }
+.photo-viewer { display: grid; gap: 10px; }
+.photo-viewer img { width: 100%; border-radius: 12px; border: 1px solid var(--line); display: block; }
+@media (max-width: 680px) {
+  .photo-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .experience-photos-more { margin-left: 0; }
+}
+
 /* ---------- 抽屉 / 弹窗 ---------- */
 .scrim { position: fixed; inset: 0; z-index: 90; background: var(--overlay); backdrop-filter: blur(4px); -webkit-backdrop-filter: blur(4px); animation: fadeIn .2s var(--ease); }
 .drawer { position: fixed; top: 0; right: 0; bottom: 0; width: min(520px, 100%); z-index: 95; display: flex; flex-direction: column; background: var(--surface); color: var(--ink); border-left: 1px solid var(--line); box-shadow: var(--sh-3); animation: slideIn .3s var(--ease-out); }

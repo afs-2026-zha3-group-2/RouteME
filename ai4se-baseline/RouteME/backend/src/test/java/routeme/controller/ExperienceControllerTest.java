@@ -1,17 +1,35 @@
 package routeme.controller;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.UncheckedIOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.time.Instant;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.http.MediaType;
+import org.springframework.mock.web.MockMultipartFile;
+import org.springframework.test.context.DynamicPropertyRegistry;
+import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.transaction.annotation.Transactional;
+
+import com.jayway.jsonpath.JsonPath;
+
+import routeme.entity.TripExperiencePhotoEntity;
+import routeme.mapper.TripExperiencePhotoMapper;
 
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -22,8 +40,18 @@ class ExperienceControllerTest {
             {"content":"整条线基本没有爬升，日落前四十分钟到海边刚好。","intensity":"moderate","advice":"带一件防风外套。"}
             """;
 
+    private static final Path PHOTO_DIRECTORY = createPhotoDirectory();
+
+    @DynamicPropertySource
+    static void photoDirectory(DynamicPropertyRegistry registry) {
+        registry.add("routeme.experience.photo-dir", PHOTO_DIRECTORY::toString);
+    }
+
     @Autowired
     private MockMvc mockMvc;
+
+    @Autowired
+    private TripExperiencePhotoMapper photoMapper;
 
     @Test
     void in_seededData_out_experienceList() throws Exception {
@@ -88,6 +116,71 @@ class ExperienceControllerTest {
     }
 
     @Test
+    void in_uploadedPhotos_out_boundInOrder() throws Exception {
+        long first = uploadPhoto(1, "2");
+        long second = uploadPhoto(1, "2");
+
+        mockMvc.perform(post("/api/trips/1/experiences")
+                        .header("X-User-Id", "2")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"content":"整条线基本没有爬升，日落前四十分钟到海边刚好。","intensity":"moderate","advice":"带一件防风外套。","photo_ids":[%d,%d]}
+                                """.formatted(second, first)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.photos.length()").value(2))
+                .andExpect(jsonPath("$.photos[0].id").value(second))
+                .andExpect(jsonPath("$.photos[1].id").value(first))
+                .andExpect(jsonPath("$.photos[0].url").value("/api/experience-photos/" + second));
+
+        mockMvc.perform(get("/api/trips/1/experiences").header("X-User-Id", "1"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].photos.length()").value(2))
+                .andExpect(jsonPath("$[0].photos[0].id").value(second));
+    }
+
+    @Test
+    void in_foreignPhoto_out_forbidden() throws Exception {
+        insertPhoto(7101, 1, 3, null);
+
+        mockMvc.perform(post("/api/trips/1/experiences")
+                        .header("X-User-Id", "2")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(bodyWithPhotos(7101)))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.code").value("FORBIDDEN"));
+    }
+
+    @Test
+    void in_missingPhoto_out_invalidInput() throws Exception {
+        mockMvc.perform(post("/api/trips/1/experiences")
+                        .header("X-User-Id", "2")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(bodyWithPhotos(7199)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("INVALID_INPUT"));
+    }
+
+    @Test
+    void in_photoBoundToAnotherExperience_out_invalidInput() throws Exception {
+        insertPhoto(7102, 1, 2, 2L);
+
+        mockMvc.perform(post("/api/trips/1/experiences")
+                        .header("X-User-Id", "2")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(bodyWithPhotos(7102)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("INVALID_INPUT"));
+    }
+
+    @Test
+    void in_historicalExperiences_out_emptyPhotoArray() throws Exception {
+        mockMvc.perform(get("/api/experiences").header("X-User-Id", "1"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.items[0].photos").isArray())
+                .andExpect(jsonPath("$.items[0].photos.length()").value(0));
+    }
+
+    @Test
     void in_publisherShares_out_createdThenUpdated() throws Exception {
         mockMvc.perform(post("/api/trips/1/experiences")
                         .header("X-User-Id", "1")
@@ -96,7 +189,8 @@ class ExperienceControllerTest {
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.trip.id").value(1))
                 .andExpect(jsonPath("$.author.id").value(1))
-                .andExpect(jsonPath("$.intensity").value("moderate"));
+                .andExpect(jsonPath("$.intensity").value("moderate"))
+                .andExpect(jsonPath("$.photos.length()").value(0));
 
         mockMvc.perform(post("/api/trips/1/experiences")
                         .header("X-User-Id", "1")
@@ -139,15 +233,15 @@ class ExperienceControllerTest {
     }
 
     @Test
-        void in_unknownIntensity_out_invalidInput() throws Exception {
-            String body = "{\"content\":\"" + "字".repeat(12) + "\",\"intensity\":\"extreme\",\"advice\":\"建议\"}";
-            mockMvc.perform(post("/api/trips/1/experiences")
-                            .header("X-User-Id", "1")
-                            .contentType(MediaType.APPLICATION_JSON)
-                            .content(body))
-                    .andExpect(status().isBadRequest())
-                    .andExpect(jsonPath("$.code").value("INVALID_INPUT"));
-        }
+    void in_unknownIntensity_out_invalidInput() throws Exception {
+        String body = "{\"content\":\"" + "字".repeat(12) + "\",\"intensity\":\"extreme\",\"advice\":\"建议\"}";
+        mockMvc.perform(post("/api/trips/1/experiences")
+                        .header("X-User-Id", "1")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("INVALID_INPUT"));
+    }
 
     @Test
     void in_unknownTrip_out_notFound() throws Exception {
@@ -175,5 +269,75 @@ class ExperienceControllerTest {
         mockMvc.perform(get("/api/experiences"))
                 .andExpect(status().isUnauthorized())
                 .andExpect(jsonPath("$.code").value("DEMO_USER_REQUIRED"));
+    }
+
+    private long uploadPhoto(long tripId, String userId) throws Exception {
+        MvcResult result = mockMvc.perform(multipart("/api/trips/" + tripId + "/experiences/photos")
+                        .file(new MockMultipartFile("file", "trip.jpg", "image/jpeg", jpeg()))
+                        .header("X-User-Id", userId))
+                .andExpect(status().isOk())
+                .andReturn();
+        Number id = JsonPath.read(result.getResponse().getContentAsString(), "$.id");
+        return id.longValue();
+    }
+
+    private String bodyWithPhotos(long... photoIds) {
+        StringBuilder ids = new StringBuilder();
+        for (long photoId : photoIds) {
+            if (!ids.isEmpty()) {
+                ids.append(',');
+            }
+            ids.append(photoId);
+        }
+        return """
+                {"content":"整条线基本没有爬升，日落前四十分钟到海边刚好。","intensity":"moderate","advice":"带一件防风外套。","photo_ids":[%s]}
+                """.formatted(ids);
+    }
+
+    private void insertPhoto(long id, long tripId, long authorId, Long experienceId) {
+        TripExperiencePhotoEntity entity = new TripExperiencePhotoEntity();
+        entity.setId(id);
+        entity.setTripId(tripId);
+        entity.setAuthorId(authorId);
+        entity.setExperienceId(experienceId);
+        entity.setFileName("test-" + id + ".jpg");
+        entity.setMime("image/jpeg");
+        entity.setBytes(10L);
+        entity.setSortOrder(0);
+        entity.setCreatedAt(Instant.now().toString());
+        photoMapper.insert(entity);
+    }
+
+    private byte[] jpeg() {
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        try {
+            out.write(0xFF);
+            out.write(0xD8);
+            writeSegment(out, 0xE1, "Exif\u0000\u0000GPS".getBytes(StandardCharsets.ISO_8859_1));
+            writeSegment(out, 0xE0, "JFIF\u0000".getBytes(StandardCharsets.ISO_8859_1));
+            out.write(0xFF);
+            out.write(0xDA);
+            out.write(new byte[]{1, 2, 3, 4}, 0, 4);
+        } catch (IOException exception) {
+            throw new UncheckedIOException(exception);
+        }
+        return out.toByteArray();
+    }
+
+    private void writeSegment(ByteArrayOutputStream out, int marker, byte[] payload) throws IOException {
+        int length = payload.length + 2;
+        out.write(0xFF);
+        out.write(marker);
+        out.write((length >> 8) & 0xFF);
+        out.write(length & 0xFF);
+        out.write(payload, 0, payload.length);
+    }
+
+    private static Path createPhotoDirectory() {
+        try {
+            return Files.createTempDirectory("routeme-experience-photos-");
+        } catch (IOException exception) {
+            throw new UncheckedIOException(exception);
+        }
     }
 }

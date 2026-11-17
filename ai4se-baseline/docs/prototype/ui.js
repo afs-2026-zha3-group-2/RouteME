@@ -97,7 +97,8 @@
     star: '<path d="m10 2.8 2.3 4.7 5.2.8-3.8 3.6.9 5.1-4.6-2.4-4.6 2.4.9-5.1L2.5 8.3l5.2-.8z"/>',
     eye: '<path d="M1.8 10S4.8 4.6 10 4.6 18.2 10 18.2 10 15.2 15.4 10 15.4 1.8 10 1.8 10Z"/><circle cx="10" cy="10" r="2.4"/>',
     inbox: '<path d="M2.8 11.4 5 4.2h10l2.2 7.2v3.2a1.6 1.6 0 0 1-1.6 1.6H4.4a1.6 1.6 0 0 1-1.6-1.6z"/><path d="M2.8 11.4h4l.8 1.8h4.8l.8-1.8h4"/>',
-    finish: '<circle cx="10" cy="10" r="7.4"/><path d="m6.6 10.2 2.4 2.4 4.4-4.8"/>'
+    finish: '<circle cx="10" cy="10" r="7.4"/><path d="m6.6 10.2 2.4 2.4 4.4-4.8"/>',
+    camera: '<rect x="2.6" y="6" width="14.8" height="10.4" rx="2"/><path d="M7 6l1.4-2.4h3.2L13 6"/><circle cx="10" cy="11.2" r="3.2"/>'
   };
   function icon(name, cls) {
     var body = P[name] || P.info;
@@ -219,6 +220,22 @@
       '<button class="btn sm ghost" data-action="open-trip" data-id="' + t.id + '" type="button">看原行程</button>' +
       '<button class="btn sm primary" data-action="copy-trip" data-id="' + t.id + '" type="button">' + icon('copy') + '参考发布</button>' +
       '</div></article>';
+  }
+
+  /* ---------------- 体验照片网格 ---------------- */
+  function photoGrid(photos) {
+    if (!photos || !photos.length) {
+      return '<div class="photo-empty">' + icon('camera') + '<span>还没有照片。没有图也能发布，文字本身就是有用的信息。</span></div>';
+    }
+    return '<div class="photo-grid">' + photos.map(function (src, i) {
+      return '<figure class="photo-tile' + (i === 0 ? ' is-cover' : '') + '">' +
+        '<img src="' + esc(src) + '" alt="体验照片 ' + (i + 1) + '">' +
+        '<div class="photo-actions">' +
+        (i > 0 ? '<button data-action="photo-up" data-index="' + i + '" type="button" aria-label="上移">' + icon('left') + '</button>' : '') +
+        (i < photos.length - 1 ? '<button data-action="photo-down" data-index="' + i + '" type="button" aria-label="下移">' + icon('right') + '</button>' : '') +
+        '<button data-action="photo-remove" data-index="' + i + '" type="button" aria-label="移除">' + icon('x') + '</button>' +
+        '</div></figure>';
+    }).join('') + '</div>';
   }
 
   /* ---------------- 空状态 ---------------- */
@@ -508,7 +525,12 @@
             '<span class="badge ' + it.tone + '">强度 · ' + it.label + '</span>' +
             '<span class="muted" style="font-size:11px;margin-left:auto">' + esc(relTime(e.createdAt)) + '</span></div>' +
             '<p class="exp-item-body">' + esc(e.content) + '</p>' +
-            '<div class="exp-advice" style="margin-top:11px"><b>给后来者</b>' + esc(e.advice) + '</div></article>';
+            '<div class="exp-advice" style="margin-top:11px"><b>给后来者</b>' + esc(e.advice) + '</div>' +
+            (e.photos && e.photos.length
+              ? '<div class="experience-photos"><img src="' + esc(e.photos[0]) + '" alt="体验首图">' +
+                (e.photos.length > 1 ? '<button class="btn sm ghost experience-photos-more" data-action="photo-view" data-id="' + id + '" data-index="' + exps.indexOf(e) + '" type="button">' + icon('eye') + '查看全部 ' + e.photos.length + ' 张</button>' : '') +
+                '</div>'
+              : '') + '</article>';
         }).join('') + '</div></section>';
     } else if (t.status === 'COMPLETED') {
       expBlock = '<section class="panel">' + empty('还没有人留下体验', '参加过这次旅行的同学可以在这里写下真实感受与建议。', '', 'spark') + '</section>';
@@ -847,6 +869,15 @@
       '<label class="field' + bad(errors, 'content') + '"><span class="label">这次路线实际走下来怎么样<span class="req">*</span><span class="counter">' + (d.content || '').length + '/400</span></span>' +
       '<textarea class="textarea" data-share="content" rows="6" maxlength="400" placeholder="路况、强度、时间点、意料之外的情况……写具体的事，比“很好玩”有用得多。">' + esc(d.content) + '</textarea>' +
       fieldErr(errors, 'content') + '</label></section>' +
+      '<section class="panel"><h3 class="panel-title">' + icon('camera') + '照片（选填）</h3>' +
+      '<div class="share-photos">' +
+      photoGrid(d.photos) +
+      '<div class="photo-note"><span>最多 6 张，单张不超过 5MB，支持 JPG / PNG / WebP。首图为封面缩略图。</span>' +
+      '<span' + ((d.photos || []).length >= 6 ? ' class="over"' : '') + '>' + (d.photos || []).length + '/6</span></div>' +
+      (errors.photos ? '<span class="photo-error">' + esc(errors.photos) + '</span>' : '') +
+      '<div><button class="btn ghost sm" data-action="pick-photos" type="button">' + icon('plus') + '添加照片</button>' +
+      '<input type="file" accept="image/jpeg,image/png,image/webp" multiple data-share-photos hidden></div>' +
+      '</div></section>' +
       '<section class="panel"><h3 class="panel-title">' + icon('route') + '路线强度</h3>' +
       '<div class="field' + bad(errors, 'intensity') + '"><div class="intensity-picker">' + ints + '</div>' + fieldErr(errors, 'intensity') +
       '<span class="hint">按你真实的体感选，不要按“应该很轻松”选。</span></div></section>' +

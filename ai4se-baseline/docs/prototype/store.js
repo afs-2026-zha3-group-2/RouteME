@@ -386,13 +386,14 @@
       existing.content = p.content.trim();
       existing.intensity = p.intensity;
       existing.advice = p.advice.trim();
+      existing.photos = (p.photos || []).slice(0, 6);
       existing.createdAt = Date.now();
       commit();
       return { ok: true, experience: existing, updated: true };
     }
     var e = {
       id: nextId('e'), tripId: tripId, authorId: state.currentUserId,
-      content: p.content.trim(), intensity: p.intensity, advice: p.advice.trim(), createdAt: Date.now()
+      content: p.content.trim(), intensity: p.intensity, advice: p.advice.trim(), photos: (p.photos || []).slice(0, 6), createdAt: Date.now()
     };
     state.experiences.unshift(e);
     commit();
