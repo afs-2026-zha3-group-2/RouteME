@@ -228,7 +228,6 @@ export const tripMessages = {
   reportNoteLabel: '补充说明（选填，200 字以内）',
   reportSubmit: '提交举报',
   reportSuccess: '已收到，我们会处理',
-  reportReceiptHint: '关闭弹窗只结束回执展示，不改变行程、申请或聊天状态。',
   reportClose: '关闭',
   reportFailed: '举报提交失败',
   experiencesView: '旅行体验',

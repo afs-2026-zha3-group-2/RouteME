@@ -88,12 +88,7 @@ export function ReportModal({
         <Typography.Text type="secondary">{tripMessages.reportPrivacyNote}</Typography.Text>
         <Typography.Text type="secondary">{tripMessages.reportEmergencyNote}</Typography.Text>
         {received ? (
-          <Alert
-            type="success"
-            showIcon
-            title={tripMessages.reportSuccess}
-            description={tripMessages.reportReceiptHint}
-          />
+          <Alert type="success" showIcon title={tripMessages.reportSuccess} />
         ) : (
           <>
             <Typography.Text>{tripMessages.reportReasonLabel}</Typography.Text>

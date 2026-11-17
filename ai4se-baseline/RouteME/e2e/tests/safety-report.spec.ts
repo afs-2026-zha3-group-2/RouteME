@@ -175,9 +175,7 @@ test('submits once, shows the receipt and closes without changing state', async 
 
   const dialog = page.getByRole('dialog');
   await expect(dialog.getByText(RECEIPT)).toBeVisible();
-  await expect(
-    dialog.getByText('关闭弹窗只结束回执展示，不改变行程、申请或聊天状态。'),
-  ).toBeVisible();
+  await expect(dialog.getByText('关闭弹窗只结束回执展示')).toHaveCount(0);
   const footerButtons = dialog.locator('.ant-modal-footer').getByRole('button');
   await expect(footerButtons).toHaveCount(1);
   await expect(footerButtons).toHaveText(/^关\s*闭$/);
