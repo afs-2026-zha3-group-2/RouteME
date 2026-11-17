@@ -9,7 +9,8 @@ async function loginAs(page: Page, userId: number) {
 }
 
 async function pickPlace(page: Page, field: string, name: string) {
-  const input = page.getByLabel(field);
+  // 高德地图区域也带 aria-label（如「选择途经点的地图」），按 textbox 角色收窄到输入框。
+  const input = page.getByRole('textbox', { name: new RegExp(field) });
   await input.fill(name);
   await input.press('Enter');
   await expect(page.locator('.place-chip-name', { hasText: name }).first()).toBeVisible();
@@ -44,9 +45,12 @@ async function setMeetingTime(scope: Page | Locator, value: string) {
 
 /** 前序用例会创建行程，切到每页 45 条避免 seed 卡片被挤到第二页。 */
 async function expandPageSize(page: Page) {
-  const select = page.getByLabel('每页条数');
+  const select = page.locator('.pager-size .ant-select');
   if ((await select.count()) > 0) {
-    await select.selectOption('45');
+    await select.click();
+    await page.locator('.ant-select-item-option', { hasText: '45 条' }).click();
+    // 切到 45 条后列表常常只剩一页，分页条自身会卸载；等浮层收起即可。
+    await expect(page.locator('.ant-select-dropdown:visible')).toHaveCount(0);
   }
 }
 
@@ -257,7 +261,7 @@ test('blocks publishing and flags every missing required field', async ({ page }
   await expect(page).toHaveURL(/#\/trips\/new$/);
   await expect(page.getByLabel('标题')).toHaveAttribute('aria-invalid', 'true');
   await expect(page.locator('#trip-destination')).toHaveAttribute('aria-invalid', 'true');
-  await expect(page.getByLabel('途经点')).toHaveAttribute('aria-invalid', 'true');
+  await expect(page.getByRole('textbox', { name: /途经点/ })).toHaveAttribute('aria-invalid', 'true');
   await expect(page.getByText('给这条路线起个名字（40 字以内）')).toBeVisible();
   await expect(page.getByText('请选择目的地')).toBeVisible();
   await expect(page.getByText('至少写出两个途经点，别人才看得懂路线')).toBeVisible();
@@ -437,7 +441,7 @@ test('map pins add multiple stops and enforce the eight-stop limit', async ({ pa
   await expect(page.locator('.place-chip-name')).toHaveCount(8);
 
   // 第 9 个被拒绝并给出上限提示。
-  const input = page.getByLabel('途经点');
+  const input = page.getByRole('textbox', { name: /途经点/ });
   await input.fill('珠海');
   await input.press('Enter');
   await expect(page.locator('.place-message')).toContainText('最多选择 8 个地点');
@@ -642,5 +646,22 @@ test.describe('date pickers under reduced motion', () => {
     await page.goto('/');
     await page.getByLabel('出发不早于').click();
     await expect(page.locator('.app-date-popup')).toBeVisible();
+  });
+
+  test('opens the meeting time date-time panel instead of rendering it off-screen', async ({
+    page,
+  }) => {
+    await loginAs(page, 1);
+    await page.goto('/#/trips/new');
+
+    await page.getByLabel(/集合时间/).click();
+    const panel = page.locator('.app-date-popup');
+    await expect(panel).toBeVisible();
+    const box = await panel.boundingBox();
+    expect(box).not.toBeNull();
+    expect(box!.x).toBeGreaterThanOrEqual(0);
+    expect(box!.y).toBeGreaterThanOrEqual(0);
+    expect(box!.x).toBeLessThan(1280);
+    await expect(panel.locator('.ant-picker-time-panel')).toBeVisible();
   });
 });

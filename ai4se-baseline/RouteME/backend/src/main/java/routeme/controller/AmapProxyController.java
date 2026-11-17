@@ -20,8 +20,8 @@ import routeme.config.AmapProperties;
 /**
  * 高德 Web 服务同源代理。
  *
- * <p>前端（高德 JS API 2.0 的 {@code serviceHost} 指向 {@code /api/amap}）只请求
- * 本站路径，由本控制器补上 Web 服务 Key 后转发到高德 REST API。这样安全密钥不会
+ * <p>前端（高德 JS API 2.0 的 {@code serviceHost} 指向 {@code /_AMapService}）只请求
+ * 本站路径，由本控制器补上 Key 与安全密钥后转发到高德 REST API。这样安全密钥不会
  * 出现在浏览器产物里，也避免把高德 Key 硬编码在业务组件中。
  *
  * <p>只允许 GET 与白名单内的搜索/逆地理/路线规划接口，基础地址固定为配置值，
@@ -53,6 +53,8 @@ public class AmapProxyController {
             "{\"status\":\"0\",\"info\":\"AMAP_KEY_NOT_CONFIGURED\",\"infocode\":\"50000\"}";
     private static final String UPSTREAM_ERROR_BODY =
             "{\"status\":\"0\",\"info\":\"AMAP_PROXY_UNAVAILABLE\",\"infocode\":\"50001\"}";
+    private static final String OK_BODY =
+            "{\"status\":\"1\",\"info\":\"OK\",\"infocode\":\"10000\"}";
 
     private final RestClient amapRestClient;
     private final AmapProperties properties;
@@ -65,6 +67,10 @@ public class AmapProxyController {
     @GetMapping("/**")
     public ResponseEntity<String> proxy(HttpServletRequest request) {
         String path = normalizePath(request.getRequestURI());
+        // 高德 JS API 会发埋点请求（v3/log/init）；直接回成功，避免控制台 404 噪音。
+        if (path.startsWith("v3/log")) {
+            return ResponseEntity.ok().contentType(MediaType.APPLICATION_JSON).body(OK_BODY);
+        }
         if (!isAllowed(path)) {
             return ResponseEntity.status(HttpStatus.NOT_FOUND)
                     .contentType(MediaType.APPLICATION_JSON)
