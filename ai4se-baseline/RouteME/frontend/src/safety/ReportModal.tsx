@@ -1,7 +1,8 @@
 import { useState } from 'react';
-import { Alert, Button, Input, Modal, Select, Space, Typography } from 'antd';
+import { Alert, Button, Input, Modal, Space, Typography } from 'antd';
 import { submitReport } from '../api';
 import { tripMessages } from '../i18n/tripMessages';
+import { SoftSelect } from '../shell/SoftSelect';
 import type { ReportReason } from '../types';
 
 type Props = {
@@ -92,11 +93,11 @@ export function ReportModal({
         ) : (
           <>
             <Typography.Text>{tripMessages.reportReasonLabel}</Typography.Text>
-            <Select
+            <SoftSelect
               value={reason}
               options={REASON_OPTIONS}
-              onChange={(value) => setReason(value)}
-              aria-label={tripMessages.reportReasonLabel}
+              onChange={(value) => setReason(value as ReportReason)}
+              ariaLabel={tripMessages.reportReasonLabel}
             />
             <Typography.Text>{tripMessages.reportNoteLabel}</Typography.Text>
             <Input.TextArea
