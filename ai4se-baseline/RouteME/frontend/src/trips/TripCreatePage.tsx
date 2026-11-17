@@ -6,12 +6,16 @@ import 'dayjs/locale/zh-cn';
 import { createTrip, loadTrip } from '../api';
 import { AreaCascader } from '../area/AreaCascader';
 import { cityLabel } from '../area/areaOptions';
-import { gazetteerCityForCode } from '../areas/gazetteerCity';
 import { tripMessages } from '../i18n/tripMessages';
-import { PlacePicker } from '../map/PlacePicker';
+import { AmapPlacePicker } from '../map/amap/AmapPlacePicker';
 import type { DemoUser, TripSummary } from '../types';
-import { appDatePickerProps } from '../utils/datePickerProps';
-import { dayjsToIso, isoToDayjs } from '../utils/dates';
+import { appDatePickerProps, appDateTimePickerProps } from '../utils/datePickerProps';
+import {
+  dayjsToIso,
+  dayjsToLocalDateTime,
+  isoToDayjs,
+  localDateTimeToDayjs,
+} from '../utils/dates';
 import {
   addTag,
   emptyTripForm,
@@ -80,7 +84,10 @@ export function TripCreatePage({ currentUser, fromTripId }: Props) {
     setValues((previous) => ({ ...previous, ...patch }));
   };
 
-  const mapCity = gazetteerCityForCode(values.destinationCode);
+  const cityForSearch =
+    values.destinationCode === ''
+      ? undefined
+      : cityLabel(values.destinationCode).replace(/市$/, '');
   const hasDestination = values.destinationCode !== '';
 
   const previewTrip: TripSummary = {
@@ -256,7 +263,7 @@ export function TripCreatePage({ currentUser, fromTripId }: Props) {
             <h3 className="panel-title">{tripMessages.sectionRoute}</h3>
             <div className="form-stack">
             <Field label={tripMessages.fieldStops} htmlFor="trip-stops" error={errors.stops}>
-              <PlacePicker
+              <AmapPlacePicker
                 mode="multi"
                 inputId="trip-stops"
                 ariaLabel={tripMessages.fieldStops}
@@ -264,19 +271,14 @@ export function TripCreatePage({ currentUser, fromTripId }: Props) {
                 value={values.stops}
                 onChange={(stops) => update({ stops })}
                 max={MAX_STOPS}
-                showMap={mapCity !== undefined || !hasDestination}
-                city={mapCity}
-                onDestinationChange={(code) => update({ destinationCode: code })}
+                showMap
+                city={cityForSearch}
                 placeholder="搜索地点名称，必须能在地图上搜到"
-                emptyHint="至少两个途经点。输错的名字不会被接受，请从候选里选或直接点地图。"
+                emptyHint="至少两个途经点。请从搜索候选中选择，或直接点击地图。"
               />
             </Field>
-            {mapCity === undefined && (
-              <p className="form-hint">
-                {hasDestination
-                  ? tripMessages.waypointCityUncovered
-                  : tripMessages.waypointNeedsDestination}
-              </p>
+            {!hasDestination && (
+              <p className="form-hint">{tripMessages.waypointNeedsDestination}</p>
             )}
           </div>
           </Card>
@@ -349,7 +351,7 @@ export function TripCreatePage({ currentUser, fromTripId }: Props) {
                 {meetingDraftError !== null && (
                   <Typography.Text type="warning">{meetingDraftError}</Typography.Text>
                 )}
-                <PlacePicker
+                <AmapPlacePicker
                   mode="multi"
                   max={MAX_MEETING_AREAS}
                   ariaLabel="集合地点"
@@ -357,9 +359,8 @@ export function TripCreatePage({ currentUser, fromTripId }: Props) {
                   onChange={(next) => update({ meetingAreas: next })}
                   placeholder="搜索集合地点"
                   emptyHint="可添加多个集合区域，选中后按顺序编号。"
-                  showMap={mapCity !== undefined || !hasDestination}
-                  city={mapCity}
-                  onDestinationChange={(code) => update({ destinationCode: code })}
+                  showMap
+                  city={cityForSearch}
                 />
               </Field>
 
@@ -369,11 +370,14 @@ export function TripCreatePage({ currentUser, fromTripId }: Props) {
                 error={errors.meetingTime}
                 optional
               >
-                <Input
+                <DatePicker
+                  {...appDateTimePickerProps}
                   {...fieldProps('trip-meeting-time', errors.meetingTime)}
-                  type="datetime-local"
-                  value={values.meetingTime}
-                  onChange={(event) => update({ meetingTime: event.target.value })}
+                  className="trip-meeting-time"
+                  placeholder="选择日期与时间"
+                  value={localDateTimeToDayjs(values.meetingTime)}
+                  onChange={(value) => update({ meetingTime: dayjsToLocalDateTime(value) })}
+                  status={errors.meetingTime === undefined ? undefined : 'error'}
                 />
               </Field>
 

@@ -4,6 +4,7 @@ import {
   Alert,
   Button,
   Card,
+  DatePicker,
   Input,
   Modal,
   Progress,
@@ -28,11 +29,8 @@ import {
 import { tripMessages } from '../i18n/tripMessages';
 import { intensityLabel } from '../experiences/experienceForm';
 import { meetingAreaText, meetingTimeText } from '../chat/chatMeeting';
-import { gazetteerCityForCode } from '../areas/gazetteerCity';
-import { CityTravelMap } from '../map/CityTravelMap';
-import { cityIndexByName } from '../map/data/index';
-import { findPlaceByName, projectPlace, type Place } from '../map/placeCatalog';
-import { distanceKm, formatKm } from '../map/mapView';
+import { AmapTripMap } from '../map/amap/AmapTripMap';
+import { AmapPlacePicker } from '../map/amap/AmapPlacePicker';
 import { shareEligibility } from '../experiences/shareEligibility';
 import { publisherSummary } from '../profile/profileDisplay';
 import { ReportModal } from '../safety/ReportModal';
@@ -50,10 +48,11 @@ import {
   type MeetingFormValues,
 } from './meetingForm';
 import { MAX_MEETING_AREAS } from './tripOptions';
-import { PlacePicker } from '../map/PlacePicker';
 import { statusColor, statusLabel } from './tripStatus';
 import { useTrip } from './useTrip';
 import { useProfile } from '../profiles/ProfileContext';
+import { appDateTimePickerProps } from '../utils/datePickerProps';
+import { dayjsToLocalDateTime, localDateTimeToDayjs } from '../utils/dates';
 
 const MAX_MESSAGE_LENGTH = 120;
 
@@ -270,13 +269,11 @@ export function TripDetailPage({ currentUser, tripId }: Props) {
       ? null
       : `${trip.budget_min_cents / 100}${trip.budget_max_cents === null ? '' : ` – ${trip.budget_max_cents / 100}`} 元`;
 
-  const mapCity = gazetteerCityForCode(trip.destination_code);
-  const resolvedStops = trip.stops
-    .map((stop) => findPlaceByName(stop))
-    .filter((place): place is Place => place !== undefined);
-  const showRouteMap = mapCity !== undefined && resolvedStops.length > 0;
-  const focusPlace = (place: Place) => {
-    setFocusStop(place.id);
+  const mapCity = findCity(trip.destination_code)?.cityDisplayName.replace(/市$/, '') ?? trip.destination;
+  const cityForSearch = mapCity.replace(/市$/, '');
+  const hasStops = trip.stops.length > 0;
+  const focusPlace = (name: string) => {
+    setFocusStop(name);
     mapSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
   };
 
@@ -392,76 +389,43 @@ export function TripDetailPage({ currentUser, tripId }: Props) {
 
           <section className="detail-section">
             <h3 className="section-title">{tripMessages.detailStops}</h3>
-            {showRouteMap && (
+            {hasStops && (
               <div className="detail-map-section" ref={mapSectionRef}>
-                <CityTravelMap
-                  readOnly
-                  cityCode={cityIndexByName(mapCity)?.code ?? ''}
-                  cityName={`${mapCity}市`}
-                  provinceName={
-                    trip.province_name !== ''
-                      ? trip.province_name
-                      : (findCity(trip.destination_code)?.provinceName ?? '')
-                  }
-                  selected={resolvedStops.map((place) => place.id)}
-                  routeGenerated={resolvedStops.length >= 2}
-                  focusPoiId={focusStop}
-                  onFocusPoi={(poi) => setFocusStop(poi.id)}
-                  onNavigateChina={() => (window.location.hash = '#/map')}
-                  onNavigateProvince={() =>
-                    (window.location.hash = `#/map/${trip.province_code || findCity(trip.destination_code)?.provinceCode || ''}`)
-                  }
-                  onViewProfile={(userId) => openProfile(userId)}
-                  onInvite={(travelerTripId) => (window.location.hash = `#/trips/${travelerTripId}`)}
+                <AmapTripMap
+                  city={cityForSearch}
+                  stops={trip.stops}
+                  focusStop={focusStop}
+                  onFocusStop={setFocusStop}
                 />
                 <ol className="route-strip">
-                  {trip.stops.map((stop, index) => {
-                    const place = findPlaceByName(stop);
-                    const nextPlace =
-                      index < trip.stops.length - 1 ? findPlaceByName(trip.stops[index + 1]) : undefined;
-                    const leg =
-                      place !== undefined && nextPlace !== undefined
-                        ? distanceKm(projectPlace(place), projectPlace(nextPlace))
-                        : null;
-                    return (
-                      <li key={`${stop}-${index}`} className="route-strip-item">
-                        <button
-                          type="button"
-                          className={place === undefined ? 'route-strip-card off' : 'route-strip-card'}
-                          disabled={place === undefined}
-                          onClick={() => place !== undefined && focusPlace(place)}
-                        >
-                          <span className={`route-strip-index tone-${index % 4}`}>{index + 1}</span>
-                          <span className="route-strip-name">{stop}</span>
-                          {place === undefined && <span className="route-strip-off">不在地图</span>}
-                        </button>
-                        {leg !== null && <span className="route-strip-leg">步行 约 {formatKm(leg)} km</span>}
-                      </li>
-                    );
-                  })}
+                  {trip.stops.map((stop, index) => (
+                    <li key={`${stop}-${index}`} className="route-strip-item">
+                      <button
+                        type="button"
+                        className="route-strip-card"
+                        onClick={() => focusPlace(stop)}
+                      >
+                        <span className={`route-strip-index tone-${index % 4}`}>{index + 1}</span>
+                        <span className="route-strip-name">{stop}</span>
+                      </button>
+                    </li>
+                  ))}
                 </ol>
               </div>
             )}
-            {!showRouteMap && (
-              <p className="form-hint">
-                {mapCity === undefined ? tripMessages.detailMapNoCity : tripMessages.detailMapNoStops}
-              </p>
-            )}
+            {!hasStops && <p className="form-hint">{tripMessages.detailMapNoStops}</p>}
             <ol className="detail-stops">
-              {trip.stops.map((stop) => {
-                const place = findPlaceByName(stop);
-                return (
-                  <li key={stop}>
-                    {place !== undefined && showRouteMap ? (
-                      <button type="button" className="detail-stop-button" onClick={() => focusPlace(place)}>
-                        {stop}
-                      </button>
-                    ) : (
-                      stop
-                    )}
-                  </li>
-                );
-              })}
+              {trip.stops.map((stop, index) => (
+                <li key={`${stop}-${index}`}>
+                  {hasStops ? (
+                    <button type="button" className="detail-stop-button" onClick={() => focusPlace(stop)}>
+                      {stop}
+                    </button>
+                  ) : (
+                    stop
+                  )}
+                </li>
+              ))}
             </ol>
             <dl className="detail-facts">
               <div>
@@ -775,7 +739,7 @@ export function TripDetailPage({ currentUser, tripId }: Props) {
             {meetingDraftError !== null && (
               <Typography.Text type="warning">{meetingDraftError}</Typography.Text>
             )}
-            <PlacePicker
+            <AmapPlacePicker
               mode="multi"
               max={MAX_MEETING_AREAS}
               ariaLabel="集合地点"
@@ -783,7 +747,7 @@ export function TripDetailPage({ currentUser, tripId }: Props) {
               onChange={(next) => setMeetingForm((current) => ({ ...current, meetingAreas: next }))}
               placeholder="搜索集合地点"
               showMap={false}
-              city={mapCity}
+              city={cityForSearch}
             />
             {meetingErrors.meetingArea !== undefined && (
               <Typography.Text type="danger">{meetingErrors.meetingArea}</Typography.Text>
@@ -791,13 +755,19 @@ export function TripDetailPage({ currentUser, tripId }: Props) {
           </div>
           <div className="form-field">
             <label htmlFor="meeting-time">{tripMessages.meetingTimeLabel}</label>
-            <Input
+            <DatePicker
+              {...appDateTimePickerProps}
               id="meeting-time"
-              type="datetime-local"
-              value={meetingForm.meetingTime}
-              onChange={(event) =>
-                setMeetingForm((current) => ({ ...current, meetingTime: event.target.value }))
+              className="meeting-time"
+              placeholder="选择日期与时间"
+              value={localDateTimeToDayjs(meetingForm.meetingTime)}
+              onChange={(value) =>
+                setMeetingForm((current) => ({
+                  ...current,
+                  meetingTime: dayjsToLocalDateTime(value),
+                }))
               }
+              status={meetingErrors.meetingTime === undefined ? undefined : 'error'}
             />
             {meetingErrors.meetingTime !== undefined && (
               <Typography.Text type="danger">{meetingErrors.meetingTime}</Typography.Text>

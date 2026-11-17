@@ -6,3 +6,14 @@ export const appDatePickerProps = {
   classNames: { popup: { root: 'app-date-popup' } },
   getPopupContainer: (trigger: HTMLElement) => trigger.parentElement ?? document.body,
 };
+
+/**
+ * 日期 + 时间控件（如「集合时间」）的共用参数：与日期控件同一套弹层修补，
+ * 显示格式固定为 `YYYY-MM-DD HH:mm`，契约值仍是 `yyyy-MM-ddTHH:mm`。
+ */
+export const appDateTimePickerProps = {
+  ...appDatePickerProps,
+  format: 'YYYY-MM-DD HH:mm',
+  showTime: { format: 'HH:mm' },
+  needConfirm: false,
+} as const;
