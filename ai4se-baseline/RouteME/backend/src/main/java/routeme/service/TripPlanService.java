@@ -11,6 +11,7 @@ import routeme.pojo.DemoUser;
 import routeme.pojo.PageResult;
 import routeme.pojo.TripPlan;
 import routeme.request.TripCreateRequest;
+import routeme.request.TripCancelRequest;
 import routeme.request.TripMeetingRequest;
 import routeme.request.TripQuery;
 
@@ -102,7 +103,19 @@ public interface TripPlanService extends IService<TripPlanEntity> {
     DemoUser publisherOf(TripPlan trip);
 
     /**
-     * 发布者把自己的行程标记为已结束（写 completed_at）。
+     * 发布者取消自己的行程（仅招募中 / 已满员）。
+     *
+     * <p>取消是终态：写入 cancelled_at 与原因，同一事务内取消待处理申请；
+     * 条件更新保证并发只成功一次。</p>
+     *
+     * @param tripId      行程 id
+     * @param publisherId 当前身份 id，必须等于发布者
+     * @param request     取消原因与说明
+     * @return 取消后的行程（状态 cancelled）
+     */
+    TripPlan cancel(long tripId, long publisherId, TripCancelRequest request);
+
+    /** 发布者把自己的行程标记为已结束（写 completed_at）。
      *
      * @param tripId 行程 id
      * @param userId 当前身份 id，必须等于发布者

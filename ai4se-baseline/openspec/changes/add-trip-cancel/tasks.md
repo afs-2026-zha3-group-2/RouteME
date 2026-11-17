@@ -16,21 +16,21 @@
   - `styles.css`：`.action-note.danger`。
   - 验证：原型页面手动走查 1440 / 1024 / 768 / 390 与深浅主题。
 
-- [ ] **T1 后端 Red：取消 API 与状态用例**
+- [x] **T1 后端 Red：取消 API 与状态用例**
   - Owner：Neal ｜ 覆盖：E1–E4、E6–E8、E12–E14、E16–E21
   - 新增 `TripCancellationApiTest`（固定 Clock）：取消成功、原因校验、403 / 409、并发、PENDING / ACCEPTED、聊天只读、体验拒绝、统计、列表 / 分页、原因裁剪、旧数据。
   - `TripPlanStatusTest` 增加「取消优先于日期与人数」。
   - `ApplicationServiceTest` / `ChatControllerTest` / `ExperienceServiceTest` 增加取消分支失败用例。
   - 验证：`cd RouteME/backend; ./mvnw -q -Dtest=TripCancellationApiTest,TripPlanStatusTest,ApplicationServiceTest,ChatControllerTest,ExperienceServiceTest test`（预期失败）
 
-- [ ] **T2 迁移与领域状态**
+- [x] **T2 迁移与领域状态**
   - Owner：Neal ｜ 覆盖：E1、E2、E10、E21
   - 新增 `V19__trip_cancellation.sql`（三列 + 索引）。
   - `TripPlan` 增加 `cancelledAt / cancelReason / cancelNote`；`TripPlanEntity` 映射；`TripPlan.create / withId / withMeetingInfo` 与 `TripPlanStatusTest` / `TripMatchTest` 的测试工厂补齐。
   - `TripStatusEnum` 增加 `CANCELLED`；`status(now)` 取消优先；`endingSoon` 非 ONGOING 为 false。
   - 验证：`./mvnw -q -Dtest=TripPlanStatusTest,TripPlanServicePersistenceTest test`
 
-- [ ] **T3 取消服务、原因枚举与事件**
+- [x] **T3 取消服务、原因枚举与事件**
   - Owner：Neal ｜ 覆盖：E1、E2、E6–E8、E12、E16
   - 新增 `TripCancelReasonEnum`、`TripCancelRequest`、`TripCancelledEvent`。
   - `TripPlanService.cancel`：权限、状态、原因 / 说明校验、条件更新、事件发布。
@@ -38,27 +38,27 @@
   - `TripController` 增加 `POST /{tripId}/cancel`。
   - 验证：`./mvnw -q -Dtest=TripCancellationApiTest test`（E1–E4/E6–E8/E12 绿）
 
-- [ ] **T4 终态互斥与跨能力回归**
+- [x] **T4 终态互斥与跨能力回归**
   - Owner：Neal ｜ 覆盖：E4、E13–E18
   - `materializeIfExpired` / `complete` / `selectExpiredIds` / `completeIfAbsent` 排除 `cancelled_at`。
   - `addCompanion` / `removeCompanion` / `updateMeeting` / `decide` / `leave` 拒绝取消。
   - `ChatServiceImpl.send` 增加取消只读；`ExperienceServiceImpl` 回归断言。
   - 验证：`./mvnw -q -Dtest=TripCancellationApiTest,ApplicationServiceTest,ChatControllerTest,ExperienceServiceTest,TripCompletionApiTest test`
 
-- [ ] **T5 列表、我的旅行与统计**
+- [x] **T5 列表、我的旅行与统计**
   - Owner：Neal ｜ 覆盖：E11、E19
   - `TripPlanMapper.xml` 的 `openTripFilter` 与 `selectExpiredIds` 增加 `cancelled_at IS NULL`；`latestOpenByPublisher` 增加 `isNull(cancelledAt)`。
   - `UserProfileStatsServiceImpl.published` 排除取消；`MyTripsServiceImpl` 分组回归（matched 保留、completed 排除）。
   - 验证：`./mvnw -q -Dtest=MyTripsControllerTest,UserProfileControllerTest,TripPlanServicePersistenceTest,TripMatchTest test`
 
-- [ ] **T6 响应裁剪与契约 0.13.0**
+- [x] **T6 响应裁剪与契约 0.13.0**
   - Owner：Neal ｜ 覆盖：E10、E20
   - `TripDetailResponse` 增加 `cancelledAt / cancelReason / cancelNote` 与 `includeCancelDetail`；`TripController` 统一计算可见性。
   - `openapi.yaml` 升 0.13.0：五态枚举、`TripDetail` 字段、`TripCancelRequest`、`/trips/{tripId}/cancel`。
   - `OpenApiTest` 更新版本 / 枚举 / schema 断言；`redocly lint` 通过。
   - 验证：`./mvnw -q -Dtest=OpenApiTest,TripCancellationApiTest test; npx @redocly/cli lint openapi.yaml`
 
-- [ ] **T7 前端状态、弹窗与详情**
+- [x] **T7 前端状态、弹窗与详情**
   - Owner：Neal ｜ 覆盖：E5、E6、E8–E10、E15、E20
   - `types.ts` 加 `cancelled` 与 `TripCancelRequest`；`api.ts` 加 `cancelTrip`。
   - `tripStatus.ts` / `StatusBadge.tsx` / `styles.css` 增加取消态（`danger` tone）。
@@ -66,21 +66,21 @@
   - 新增 `TripCancelModal.tsx`；`TripDetailPage.tsx` 接入入口、已取消提示与原因展示，隐藏结束 / 申请 / 体验。
   - 验证：`cd RouteME/frontend; npm test -- --run`
 
-- [ ] **T8 我的旅行、申请入口、聊天与体验**
+- [x] **T8 我的旅行、申请入口、聊天与体验**
   - Owner：Neal ｜ 覆盖：E5、E13–E15、E18
   - `mineTrips.ts` 发布组增加 `cancel`（recruiting/full）；`MyTripsPage.tsx` 复用 `TripCancelModal`，取消后 `reload()`，已取消显示 note。
   - `applicationEntry.ts` 增加 cancelled 分支（ACCEPTED 可聊天、不可退出；其他不可用）。
   - `ChatPage.tsx` 只读提示「该行程已取消」；体验入口在取消时隐藏。
   - 验证：`npm test -- --run`
 
-- [ ] **T9 E2E 用户路径**
+- [x] **T9 E2E 用户路径**
   - Owner：Neal ｜ 覆盖：E5、E9、E10、E14、E15、E18
   - `trips.spec.ts`：详情取消（普通原因 + other 说明校验）、二次确认取消不变、我的旅行入口、已取消态。
   - `companions.spec.ts`：PENDING 自动取消、ACCEPTED 保留、聊天只读、再申请 409。
   - `experiences.spec.ts`：取消后无体验入口。
   - 验证：`cd RouteME/e2e; npx playwright test tests/trips.spec.ts tests/companions.spec.ts tests/experiences.spec.ts`
 
-- [ ] **T10 回归验证与收尾**
+- [x] **T10 回归验证与收尾**
   - Owner：Neal ｜ 覆盖：全部 + Non-goals 反向验证
   - 全量：`./mvnw test`、`npm test -- --run`、`npx playwright test`、`openspec validate add-trip-cancel --strict`、`redocly lint openapi.yaml`。
   - 反向检查：无 credit / admin / 退款 / 恢复端点；取消后 `completed_at` 仍为空；PENDING 无残留。

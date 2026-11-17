@@ -13,6 +13,7 @@ import type {
   Paging,
   ReportRequest,
   TripApplication,
+  TripCancelRequest,
   TripCreateRequest,
   TripDetail,
   TripFilters,
@@ -192,6 +193,23 @@ export async function createTrip(userId: number, body: TripCreateRequest): Promi
 
 export async function completeTrip(userId: number, tripId: number): Promise<TripDetail> {
   const response = await request(`/trips/${tripId}/complete`, { method: 'POST' }, userId);
+  return (await response.json()) as TripDetail;
+}
+
+export async function cancelTrip(
+  userId: number,
+  tripId: number,
+  body: TripCancelRequest,
+): Promise<TripDetail> {
+  const response = await request(
+    `/trips/${tripId}/cancel`,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    },
+    userId,
+  );
   return (await response.json()) as TripDetail;
 }
 

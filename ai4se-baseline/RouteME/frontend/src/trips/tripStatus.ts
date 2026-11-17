@@ -11,10 +11,13 @@ export function statusLabel(status: TripStatus): string {
   if (status === 'completed') {
     return tripMessages.statusCompleted;
   }
+  if (status === 'cancelled') {
+    return tripMessages.statusCancelled;
+  }
   return tripMessages.statusRecruiting;
 }
 
-export type StatusTone = 'surf' | 'amber' | 'jade' | 'muted';
+export type StatusTone = 'surf' | 'amber' | 'jade' | 'muted' | 'danger';
 
 export function statusTone(status: TripStatus): StatusTone {
   if (status === 'full') {
@@ -25,6 +28,9 @@ export function statusTone(status: TripStatus): StatusTone {
   }
   if (status === 'completed') {
     return 'muted';
+  }
+  if (status === 'cancelled') {
+    return 'danger';
   }
   return 'surf';
 }
@@ -38,6 +44,9 @@ export function statusColor(status: TripStatus): string {
   }
   if (status === 'completed') {
     return 'default';
+  }
+  if (status === 'cancelled') {
+    return 'red';
   }
   return 'blue';
 }

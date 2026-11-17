@@ -60,7 +60,7 @@ class OpenApiTest {
 
         // Then
         assertAll(
-                () -> assertEquals("0.11.0", info.get("version"), "info.version"),
+                () -> assertEquals("0.13.0", info.get("version"), "info.version"),
                 () -> assertTrue(paths(document).containsKey("/users"), "/users declared"),
                 () -> assertTrue(paths(document).containsKey("/trips/{tripId}"), "detail path declared"),
                 () -> assertTrue(
@@ -79,7 +79,7 @@ class OpenApiTest {
                         "create required fields"),
                 () -> assertTrue(
                         enums(properties(tripPlan).get("status"))
-                                .containsAll(List.of("recruiting", "full", "ongoing", "completed")),
+                                .containsAll(List.of("recruiting", "full", "ongoing", "completed", "cancelled")),
                         "status enum"),
                 () -> assertTrue(properties(tripPlan).containsKey("ending_soon"), "ending_soon declared"),
                 () -> assertTrue(
@@ -354,6 +354,44 @@ class OpenApiTest {
                 () -> assertTrue(tripDetailProperties.containsKey("meeting_time"), "trip detail meeting_time"),
                 () -> assertTrue(createProperties.containsKey("meeting_areas"), "create request meeting_areas"),
                 () -> assertTrue(createProperties.containsKey("meeting_time"), "create request meeting_time")
+        );
+    }
+
+    @Test
+    void in_openApiFile_out_tripCancellationContractDeclared() throws IOException {
+        // Given
+        Map<String, Object> document = loadYaml(SPEC_PATH);
+
+        // When
+        Map<String, Object> cancelTrip = operation(document, "/trips/{tripId}/cancel", "post");
+        Map<String, Object> cancelRequest = schema(document, "TripCancelRequest");
+        Map<String, Map<String, Object>> tripDetailProperties = allOfProperties(document, "TripDetail");
+
+        // Then
+        assertAll(
+                () -> assertTrue(responses(cancelTrip).containsKey("200"), "cancel returns 200"),
+                () -> assertTrue(responses(cancelTrip).containsKey("400"), "cancel returns 400"),
+                () -> assertTrue(responses(cancelTrip).containsKey("403"), "cancel returns 403"),
+                () -> assertTrue(responses(cancelTrip).containsKey("409"), "cancel returns 409"),
+                () -> assertTrue(
+                        parameterNames(document, cancelTrip).containsAll(List.of("X-User-Id", "tripId")),
+                        "cancel parameters"),
+                () -> assertTrue(required(cancelRequest).contains("reason"), "cancel reason required"),
+                () -> assertEquals(
+                        8, enums(properties(cancelRequest).get("reason")).size(), "cancel reason enum size"),
+                () -> assertTrue(
+                        enums(properties(cancelRequest).get("reason")).containsAll(List.of(
+                                "personal", "time_changed", "plan_changed", "not_enough_people",
+                                "weather", "illness", "safety", "other")),
+                        "cancel reason enum"),
+                () -> assertEquals(
+                        100, properties(cancelRequest).get("note").get("maxLength"), "cancel note maxLength"),
+                () -> assertTrue(tripDetailProperties.containsKey("cancelled_at"), "cancelled_at declared"),
+                () -> assertTrue(tripDetailProperties.containsKey("cancel_reason"), "cancel_reason declared"),
+                () -> assertTrue(tripDetailProperties.containsKey("cancel_note"), "cancel_note declared"),
+                () -> assertEquals(
+                        Boolean.TRUE, tripDetailProperties.get("cancel_reason").get("readOnly"),
+                        "cancel_reason readOnly")
         );
     }
 

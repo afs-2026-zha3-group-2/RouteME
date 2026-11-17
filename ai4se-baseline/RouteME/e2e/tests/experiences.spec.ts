@@ -331,3 +331,36 @@ test('shows skeletons instead of the previous view while lists load', async ({ p
   await expect(page.locator('.exp-card').first()).toBeVisible();
   await expect(page.locator('[aria-busy="true"]')).toHaveCount(0);
 });
+
+test('rejects experience sharing after the trip is cancelled', async ({ page }) => {
+  const title = `E2E 取消体验 ${Date.now()}`;
+  const trip = await createOpenTrip(page, title);
+
+  await loginAs(page, 1);
+  await page.goto(`/#/trips/${trip.id}`);
+  await expect(page.getByText('这是你发布的行程')).toBeVisible();
+  await expect(page.getByRole('button', { name: '发表游后体验' })).toHaveCount(0);
+
+  const cancelled = await page.request.post(`${API}/trips/${trip.id}/cancel`, {
+    headers: { 'X-User-Id': '1', 'Content-Type': 'application/json' },
+    data: { reason: 'personal' },
+  });
+  expect(cancelled.ok()).toBeTruthy();
+
+  await page.reload();
+  await expect(page.getByText('这条行程已取消')).toBeVisible();
+  await expect(page.getByRole('button', { name: '发表游后体验' })).toHaveCount(0);
+  await expect(page.getByRole('button', { name: '结束行程' })).toHaveCount(0);
+
+  // 直接进入分享页也停在不可发表状态。
+  await page.goto(`/#/share/${trip.id}`);
+  await expect(page.getByText('行程结束后才能发表体验')).toBeVisible();
+  await expect(page.getByText('当前状态：已取消')).toBeVisible();
+  await expect(page.getByPlaceholder(/路况、强度、时间点/)).toHaveCount(0);
+
+  const rejected = await page.request.post(`${API}/trips/${trip.id}/experiences`, {
+    headers: { 'X-User-Id': '1', 'Content-Type': 'application/json' },
+    data: { content: '取消后不应该能发表体验。', intensity: 'relaxed', advice: '无' },
+  });
+  expect(rejected.status()).toBe(403);
+});

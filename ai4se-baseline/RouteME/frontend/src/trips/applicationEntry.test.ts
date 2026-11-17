@@ -45,6 +45,23 @@ describe('applicationEntryState', () => {
     });
   });
 
+  it('returns cancelled for an accepted companion on a cancelled trip', () => {
+    expect(applicationEntryState(tripWith('cancelled'), 1, applicationWith('accepted')).kind).toBe(
+      'cancelled',
+    );
+  });
+
+  it('returns unavailable for a pending or stranger on a cancelled trip', () => {
+    expect(applicationEntryState(tripWith('cancelled'), 1, applicationWith('pending'))).toEqual({
+      kind: 'unavailable',
+      reason: tripMessages.applyCancelledTrip,
+    });
+    expect(applicationEntryState(tripWith('cancelled'), 1, null)).toEqual({
+      kind: 'unavailable',
+      reason: tripMessages.applyCancelledTrip,
+    });
+  });
+
   it('returns unavailable with the full reason for a full trip', () => {
     expect(applicationEntryState(tripWith('full'), 1, null)).toEqual({
       kind: 'unavailable',
@@ -87,6 +104,12 @@ describe('applicationErrorMessage', () => {
 
   it('maps a closed completed trip to the ended reason', () => {
     expect(applicationErrorMessage('TRIP_NOT_OPEN', tripWith('completed'))).toBe(tripMessages.applyEnded);
+  });
+
+  it('maps a closed cancelled trip to the cancelled reason', () => {
+    expect(applicationErrorMessage('TRIP_NOT_OPEN', tripWith('cancelled'))).toBe(
+      tripMessages.applyCancelledTrip,
+    );
   });
 
   it('maps any other closed trip to the generic reason', () => {

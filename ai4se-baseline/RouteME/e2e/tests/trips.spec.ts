@@ -665,3 +665,78 @@ test.describe('date pickers under reduced motion', () => {
     await expect(panel.locator('.ant-picker-time-panel')).toBeVisible();
   });
 });
+
+test('publisher cancels a recruiting trip from the detail page after confirming the reason', async ({
+  page,
+}) => {
+  const title = `E2E 取消行程 ${Date.now()}`;
+  const created = await createTripViaApi(page, title, isoDaysFromToday(7), isoDaysFromToday(7));
+  await loginAs(page, 1);
+  await page.goto(`/#/trips/${created.id}`);
+
+  await expect(page.getByRole('heading', { name: title })).toBeVisible();
+  const primary = page.locator('.detail-actions-primary');
+  await expect(primary.getByRole('button', { name: '取消行程' })).toBeVisible();
+  await expect(primary.getByRole('button', { name: '结束行程' })).toHaveCount(0);
+
+  await primary.getByRole('button', { name: '取消行程' }).click();
+  const dialog = page.getByRole('dialog');
+  await expect(dialog).toContainText('取消后不可恢复');
+
+  // 原因必选。
+  await dialog.getByRole('button', { name: '确认取消' }).click();
+  await expect(dialog.getByText('请选择取消原因')).toBeVisible();
+
+  // 「其他原因」必须补 1–100 字说明。
+  await dialog.locator('.ant-select').click();
+  await page.locator('.ant-select-item-option', { hasText: '其他原因' }).click();
+  await dialog.getByRole('button', { name: '确认取消' }).click();
+  await expect(dialog.getByText('请填写 1–100 字的取消说明')).toBeVisible();
+
+  await dialog.getByPlaceholder('说明具体情况（仅发布者与已接受同行者可见）').fill('临时家里有事');
+  await dialog.getByRole('button', { name: '确认取消' }).click();
+
+  await expect(page.getByText('这条行程已取消')).toBeVisible();
+  await expect(page.getByText('已取消', { exact: true })).toBeVisible();
+  await expect(page.getByText('取消原因：其他原因 · 临时家里有事')).toBeVisible();
+  await expect(page.getByRole('button', { name: '取消行程' })).toHaveCount(0);
+  await expect(page.getByRole('button', { name: '结束行程' })).toHaveCount(0);
+  await expect(page.getByRole('button', { name: '查看同行的申请' })).toHaveCount(0);
+  await expect(page.getByRole('button', { name: '编辑集合信息' })).toHaveCount(0);
+
+  // 首页不再展示已取消行程。
+  await page.goto('/');
+  await expandPageSize(page);
+  await expect(page.locator('.trip-card', { hasText: title })).toHaveCount(0);
+
+  // 我的旅行保留为只读行。
+  await page.goto('/#/mine');
+  const row = page.locator('.mine-row', { hasText: title });
+  await expect(row).toBeVisible();
+  await expect(row.locator('[data-status="cancelled"]')).toContainText('已取消');
+  await expect(row).toContainText('行程已取消，不再展示在灵感首页。');
+  await expect(row.getByRole('button', { name: '取消行程' })).toHaveCount(0);
+  await expect(row.getByRole('button', { name: '结束行程' })).toHaveCount(0);
+});
+
+test('cancels a recruiting trip from my trips and keeps a read-only row', async ({ page }) => {
+  const title = `E2E 我的旅行取消 ${Date.now()}`;
+  await createTripViaApi(page, title, isoDaysFromToday(7), isoDaysFromToday(7));
+  await loginAs(page, 1);
+  await page.goto('/#/mine');
+
+  const row = page.locator('.mine-row', { hasText: title });
+  await expect(row).toBeVisible();
+  await row.getByRole('button', { name: '取消行程' }).click();
+
+  const dialog = page.getByRole('dialog');
+  await dialog.locator('.ant-select').click();
+  await page.locator('.ant-select-item-option', { hasText: '天气或不可抗力原因' }).click();
+  await dialog.getByRole('button', { name: '确认取消' }).click();
+
+  await expect(row.locator('[data-status="cancelled"]')).toContainText('已取消');
+  await expect(row).toContainText('行程已取消，不再展示在灵感首页。');
+  await expect(row.getByRole('button', { name: '取消行程' })).toHaveCount(0);
+  await expect(row.getByRole('button', { name: '查看同行的申请' })).toHaveCount(0);
+  await expect(row.getByRole('button', { name: /查\s*看/ })).toBeVisible();
+});

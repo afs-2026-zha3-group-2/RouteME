@@ -43,6 +43,8 @@ export function ChatMain({
   onLeave,
 }: Props) {
   const completed = trip.status === 'completed';
+  const cancelled = trip.status === 'cancelled';
+  const closed = completed || cancelled;
   const loading = messages === null && error === null;
 
   return (
@@ -108,8 +110,10 @@ export function ChatMain({
           })}
       </div>
 
-      {completed ? (
-        <div className="composer-closed">{tripMessages.chatReadOnly}</div>
+      {closed ? (
+        <div className="composer-closed">
+          {cancelled ? tripMessages.chatReadOnlyCancelled : tripMessages.chatReadOnly}
+        </div>
       ) : (
         <div className="composer">
           <Input.TextArea

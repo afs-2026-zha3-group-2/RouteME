@@ -93,7 +93,7 @@ export type AuthRegisterRequest = {
   nickname: string;
 };
 
-export type TripStatus = 'recruiting' | 'full' | 'ongoing' | 'completed';
+export type TripStatus = 'recruiting' | 'full' | 'ongoing' | 'completed' | 'cancelled';
 
 export type TripSummary = {
   id: number;
@@ -122,6 +122,26 @@ export type TripDetail = TripSummary & {
   budget_max_cents: number | null;
   participants: DemoUser[];
   completed_at: string | null;
+  cancelled_at: string | null;
+  /** 仅发布者与已接受同行者可见；其他请求为 null。 */
+  cancel_reason: TripCancelReason | null;
+  /** 仅「其他原因」必填；仅发布者与已接受同行者可见。 */
+  cancel_note: string | null;
+};
+
+export type TripCancelReason =
+  | 'personal'
+  | 'time_changed'
+  | 'plan_changed'
+  | 'not_enough_people'
+  | 'weather'
+  | 'illness'
+  | 'safety'
+  | 'other';
+
+export type TripCancelRequest = {
+  reason: TripCancelReason;
+  note?: string | null;
 };
 
 export type TripCreateRequest = {
