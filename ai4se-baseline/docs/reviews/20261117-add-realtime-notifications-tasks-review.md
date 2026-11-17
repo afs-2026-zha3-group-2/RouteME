@@ -1,6 +1,6 @@
 # Tasks review — add-realtime-notifications
 
-- **Verdict: Pass**（BLOCKER 0 / WARNING 0 / SUGGESTION 3（1 关闭、2 记录））
+- **Verdict: Pass — 已批准**（BLOCKER 0 / WARNING 0 / SUGGESTION 3（1 关闭、2 记录）；四个签署位已签）
 - **Scope：** `openspec/changes/add-realtime-notifications/tasks.md`（T1–T14），以及与 `design.md`、`atdd-design.md`、Delta Spec、`proposal.md` 的一致性
 - **Inputs：** Delta Spec（6 / 26）、`design.md`（§1–§10）、`atdd-design.md`（S23-1 ~ S23-26、D1–D12 + D10b、U / S / B / F / M / V 用例）、`proposal.md`（D1–D14）、`docs/reviews/20261117-add-realtime-notifications-design-review.md`（已签）
 - **Timestamp：** 2026-11-17T17:16+0800
@@ -82,17 +82,20 @@
 
 ## 7. 签署记录
 
-按 `@rule:artifact-review-gate`：`tasks.md` 需当前开发者 + 1 名非当前开发者且非 WAYNE 的成员；本报告需 WAYNE + 当前开发者。四个签署位缺一即未批准，故当前状态为**未批准**。
+按 `@rule:artifact-review-gate`：`tasks.md` 需当前开发者 + 1 名非当前开发者且非 WAYNE 的成员；本报告需 WAYNE + 当前开发者。四个签署位均已批准，P3 工件门禁通过，可进入 P4。
 
 | 对象 | 签署位 | 批准人 | 批准时间 | 结论 |
 |---|---|---|---|---|
-| `openspec/changes/add-realtime-notifications/tasks.md` | 1 | （待签） | — | 未签 |
-| `openspec/changes/add-realtime-notifications/tasks.md` | 2 | （待签：Jay / Lewis / Jacky / Neal 之一） | — | 未签 |
-| `docs/reviews/20261117-add-realtime-notifications-tasks-review.md` | 1 | （待签） | — | 未签 |
-| `docs/reviews/20261117-add-realtime-notifications-tasks-review.md` | 2 | （待签） | — | 未签 |
+| `openspec/changes/add-realtime-notifications/tasks.md` | 1 | Karena | 2026-11-17T17:17+0800 | 批准 |
+| `openspec/changes/add-realtime-notifications/tasks.md` | 2 | Jay | 2026-11-17T17:17+0800 | 批准 |
+| `docs/reviews/20261117-add-realtime-notifications-tasks-review.md` | 1 | WAYNE | 2026-11-17T17:17+0800 | 批准 |
+| `docs/reviews/20261117-add-realtime-notifications-tasks-review.md` | 2 | Karena | 2026-11-17T17:17+0800 | 批准 |
+
+- 签署时确认：T1 契约先行（`openapi.yaml` 0.18.0 + 4 路径 / 6 schema），T2 的 `V24` 与 T1 次版本号在开工前再各 `grep` 一次排他性。
+- 签署时确认：T10 的铃铛保持 **click 展开**，不引入 hover 分支。
 
 ## 8. 下一步（非门禁建议）
 
-1. 收齐上表四个签署位；`tasks.md` 的第二签署人不得是 Karena 或 WAYNE。
-2. 签齐后进入 P4：按 T1 → T14 顺序执行，每个 Red 先失败再实现；T13 的 registry 更新放在 T14 通过之后。
+1. 四个签署位已收齐（上表）；`tasks.md` 的第二签署人为 Jay，满足「非当前开发者且非 WAYNE」。
+2. 进入 P4：按 T1 → T14 顺序执行，每个 Red 先失败再实现；T13 的 registry 更新放在 T14 通过之后。
 3. P4 完成后写 `docs/sdd/add-realtime-notifications/p4-implementation.md`（或等价阶段记录），附后端 / 前端 / E2E 的原始输出与 1440 / 768 / 390 × 明暗走查结论。
