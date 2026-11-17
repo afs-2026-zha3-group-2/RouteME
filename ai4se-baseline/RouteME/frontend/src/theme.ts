@@ -1,6 +1,4 @@
-import { theme, type ThemeConfig } from 'antd';
-
-export type ColorMode = 'light' | 'dark';
+import type { ThemeConfig } from 'antd';
 
 type Palette = {
   bg: string;
@@ -23,58 +21,34 @@ type Palette = {
 };
 
 /**
- * 与 styles.css 的 :root / [data-theme="dark"] 同值。
+ * 与 styles.css 的 :root 同值。
  * 改色时两处同批修改，见 openspec/changes/apply-prototype-visual-design/design.md §2。
  */
-export const palettes: Record<ColorMode, Palette> = {
-  light: {
-    bg: '#f5f8fb',
-    surface: '#ffffff',
-    surface2: '#eef4f9',
-    surface3: '#e2ecf4',
-    ink: '#16324f',
-    ink2: '#3e5c7c',
-    ink3: '#67809b',
-    line: '#dce7f0',
-    line2: '#c2d4e2',
-    lagoon: '#0e8074',
-    lagoonSoft: '#e0f4ee',
-    jade: '#149a63',
-    warn: '#d98613',
-    danger: '#e0483a',
-    info: '#2f9fe0',
-    shadow: '0 1px 2px rgba(20, 51, 95, .06), 0 2px 8px -4px rgba(20, 51, 95, .1)',
-    shadowSecondary: '0 2px 6px rgba(20, 51, 95, .06), 0 14px 30px -18px rgba(20, 51, 95, .3)',
-  },
-  dark: {
-    bg: '#20395a',
-    surface: '#2a4b6d',
-    surface2: '#33577a',
-    surface3: '#3e6489',
-    ink: '#f4f9fd',
-    ink2: '#cbdbeb',
-    ink3: '#b3c7da',
-    line: '#5f86aa',
-    line2: '#7a9fc2',
-    lagoon: '#2fc9a8',
-    lagoonSoft: '#1a5a50',
-    jade: '#35c98a',
-    warn: '#f0a93c',
-    danger: '#ff6b5c',
-    info: '#56a3ee',
-    shadow: '0 1px 2px rgba(0, 0, 0, .3)',
-    shadowSecondary: '0 2px 6px rgba(0, 0, 0, .26), 0 16px 34px -20px rgba(0, 0, 0, .55)',
-  },
+const palette: Palette = {
+  bg: '#f5f8fb',
+  surface: '#ffffff',
+  surface2: '#eef4f9',
+  surface3: '#e2ecf4',
+  ink: '#16324f',
+  ink2: '#3e5c7c',
+  ink3: '#67809b',
+  line: '#dce7f0',
+  line2: '#c2d4e2',
+  lagoon: '#0e8074',
+  lagoonSoft: '#e0f4ee',
+  jade: '#149a63',
+  warn: '#d98613',
+  danger: '#e0483a',
+  info: '#2f9fe0',
+  shadow: '0 1px 2px rgba(20, 51, 95, .06), 0 2px 8px -4px rgba(20, 51, 95, .1)',
+  shadowSecondary: '0 2px 6px rgba(20, 51, 95, .06), 0 14px 30px -18px rgba(20, 51, 95, .3)',
 };
 
 const FONT_FAMILY =
   '"Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", system-ui, sans-serif';
 
-export function buildTheme(mode: ColorMode): ThemeConfig {
-  const palette = palettes[mode];
-
+export function buildTheme(): ThemeConfig {
   return {
-    algorithm: mode === 'dark' ? theme.darkAlgorithm : theme.defaultAlgorithm,
     token: {
       colorPrimary: palette.lagoon,
       colorInfo: palette.info,

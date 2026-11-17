@@ -1,6 +1,6 @@
 # 技术设计 — add-credit-recovery
 
-- **Change：** `add-credit-recovery`（REQ-026 / S27 安全学习恢复信用分）
+- **Change：** `add-credit-recovery`（REQ-027 / S28 安全学习恢复信用分）
 - **输入：** [`specs/user-credit/spec.md`](specs/user-credit/spec.md)（ADDED 7 Requirement / 29 Scenario）、[`atdd-design.md`](atdd-design.md)（A1–A29）、[`proposal.md`](proposal.md)（产品决策 D1–D7）、`g1-decision.md`（**Pass**）
 - **日期：** 2026-11-17 ｜ **作者：** Lewis Liu（当前开发者）｜ **第二签署：** Jay（2026-11-17 已签）
 - **前置：** G1 **Pass（无条件，2026-11-17，IO=WAYNE / SA=Jacky）**。本设计与 [`tasks.md`](tasks.md) 已于 2026-11-17 通过工件评审（`docs/reviews/20261117-add-credit-recovery-design-review.md` / `-tasks-review.md`，BLOCKER 0）。
@@ -21,7 +21,7 @@
 | D7 | 恢复记账 | `CreditService.book(delta = 60 - before, reasonCode = SAFETY_LEARNING_RECOVERY, relatedId = sessionId)` | 固定 `+15`：R4 明确禁止固定加分；直接 `UPDATE` 账户：绕过账本与等式校验 |
 | D8 | 并发与月度唯一 | **不用 `SELECT ... FOR UPDATE`**。恢复幂等键 `learning-recovery:<userId>:<monthKey>` 落在既有 `credit_ledger.idempotency_key` 唯一索引上；提交前先用 `CreditService.recorded(key)` 判月度配额 | `SELECT FOR UPDATE` 锁账户行：**SQLite 无该语法**，V20 已定「迁移与 SQL 单份兼容 SQLite/H2」，引入即破坏双库一致；另建计数字段：R5 明确禁止第二份真相 |
 | D9 | 自然月窗口 | `CreditMonth.monthKey(Instant)` 纯函数，时区复用 `TripTimeZoneConstant.ZONE`（Asia/Shanghai） | `LocalDate.now()` 隐含系统时区；在 SQL 里做月份换算：两库函数不同 |
-| D10 | 契约 | `openapi.yaml` `0.14.0 → 0.22.0`；3 个端点 + 4 个 schema + 6 个错误码 | 复用 `PATCH /api/users/me/credit`：语义是改分，且会与「明细不可见」冲突 |
+| D10 | 契约 | `openapi.yaml` `0.14.0 → 0.23.0`；3 个端点 + 4 个 schema + 6 个错误码 | 复用 `PATCH /api/users/me/credit`：语义是改分，且会与「明细不可见」冲突 |
 | D11 | 前端 | 新建 `credit/LearningPage.tsx` + `credit/learningState.ts`（纯函数，可 vitest）+ `api.ts` 三方法 + `route.ts` 补 `creditLearning` | 塞进 `ProfilePage`：一页四态加题库渲染，会把资料页撑成两套关注点 |
 | D12 | 入口 | `TripCreatePage` 读 `useMyCredit().restricted`：受限于时渲染 `CreditRestrictedNotice`（`.blocked-notice`）+ 学习入口链接（`.publish-guard-note`），发布按钮 disabled | proposal D6 范围内的其余三处（首页提示条、个人主页信用行、侧栏常驻入口）用户已明确不选 |
 | D13 | NFR | 不纳入本 change | 沿用 `add-credit-account` 的裁决；P4 只在验证报告记录两条结构事实 |
@@ -30,7 +30,7 @@
 ## 1. 数据库（V27）
 
 ```sql
--- 安全学习考试会话（REQ-026 / add-credit-recovery）。
+-- 安全学习考试会话（REQ-027 / add-credit-recovery）。
 -- 一次考试一行：开始即计次（R5），通过与否都落 submitted。
 -- 只存「完成标记 + 抽中题号 + 作答 + 结果」；不建逐题明细表（D1）。
 -- 与 V20 同约定：单份 SQL 同时兼容 SQLite（开发/生产）与 H2（测试）。
@@ -61,7 +61,7 @@ CREATE INDEX ix_credit_learning_user_month ON credit_learning_session (user_id, 
 - **不加 `month_key` 的默认值或生成列**：由服务端按 `CreditMonth` 写入，测试可直接造跨月数据。
 - **`app_users` 不变**：本 change 不引入限制列或限制表（R1 + atdd 反向验证）。
 - **无需回填**：新表对既有数据零影响，旧库升级只多一张空表。
-- **号位**：`0.15.0 + V21` 已被 `add-ai-itinerary`（REQ-017）登记；本 change 取 `0.22.0 + V27`。若 `add-ai-itinerary` 在合并前放弃或改名，P4 前按实际最大号复核一次。
+- **号位**：`0.15.0 + V21` 已被 `add-ai-itinerary`（REQ-017）登记；本 change 取 `0.23.0 + V27`。若 `add-ai-itinerary` 在合并前放弃或改名，P4 前按实际最大号复核一次。
 
 ## 2. 后端结构
 
@@ -170,10 +170,10 @@ creditRestrictionGuard.requireNotRestricted(publisherId);   // 受限 -> 403 CRE
 
 未登录与不存在的用户沿用既有 `DEMO_USER_REQUIRED` / `USER_NOT_FOUND`，不新增码。
 
-## 4. 契约（0.22.0）
+## 4. 契约（0.23.0）
 
 ```yaml
-info: { version: 0.22.0 }
+info: { version: 0.23.0 }
 
 paths:
   /api/credit/learning/sessions:
@@ -237,7 +237,7 @@ components.schemas:
 | R2 | 前端「继续本次考试」依赖 `sessionStorage`，换标签页即丢失 | 丢失后只是重新开始并占一次考试次数；R5 已规定「开始即计次」，不做补偿 |
 | R3 | 题库为 20 题固定内容，反复考试可能背题 | 本 change 的 Non-goal（真实题库与 AI 判题为后续迭代）；D4 的 JSON 结构已支持扩题 |
 | R4 | `recorded(key)` 与 `book` 之间存在读→写窗口 | 由账本唯一索引兜底；两者组合满足 R7 的「只生效一次、不超过 60」 |
-| R5 | 契约 `0.22.0` 依赖 `add-ai-itinerary` 先合入 | 已在 D6/迁移段写明复核点；`OpenApiTest` 会在版本号不符时直接红 |
+| R5 | 契约 `0.23.0` 依赖 `add-ai-itinerary` 先合入 | 已在 D6/迁移段写明复核点；`OpenApiTest` 会在版本号不符时直接红 |
 | R6 | 恢复后五个展示面刷新时机 | `useUserCredits` / 资料页均在路由切换时取数；E2E A24 / A25 覆盖，不新增全局状态 |
 
 ## 7. 对齐自检

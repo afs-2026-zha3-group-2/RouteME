@@ -3,16 +3,16 @@
 - **依据：** [`specs/user-credit/spec.md`](specs/user-credit/spec.md)（7 Requirement / 29 Scenario）、[`atdd-design.md`](atdd-design.md)（A1–A29）、[`design.md`](design.md)（D1–D14）
 - **Owner：** Lewis Liu（当前开发者）｜ **第二签署：** Jay（design / tasks 共用同一签署位）
 - **顺序：** T1 → T2 → T3 → T4 → T5 → T6 → T7；T8 → T9 → T10 → T11；T12 依赖 T7 + T11；T13 最后。
-- **契约：** `0.22.0`（`0.15.0` 已被 `add-ai-itinerary` 登记）；3 端点 / 4 schema / 6 错误码；`OpenApiTest` 为门禁。
+- **契约：** `0.23.0`（`0.15.0` 已被 `add-ai-itinerary` 登记）；3 端点 / 4 schema / 6 错误码；`OpenApiTest` 为门禁。
 - **迁移：** `V27__add_credit_learning.sql`（`V21` 已被 `add-ai-itinerary` 登记）。
 - **视觉基准：** [`docs/prototype/credit-learning.html`](../../../docs/prototype/credit-learning.html)（四态 + 深色，已先行）。
 - **前置：** G1 **Pass（无条件，2026-11-17，IO=WAYNE / SA=Jacky）**，本文件与 `design.md` 已通过工件评审（第二签署 Jay 已签，BLOCKER 0）；P4 已按 T1 起推进。每条任务开工前先写/扩展对应测试类，先红后绿。
 
 ## 任务清单
 
-### T1 [contract] 契约 0.22.0
+### T1 [contract] 契约 0.23.0
 
-- [x] `openapi.yaml`：`info.version` → `0.22.0`。
+- [x] `openapi.yaml`：`info.version` → `0.23.0`。
 - [x] 新增 3 个 path：`POST /api/credit/learning/sessions`、`POST /api/credit/learning/sessions/{sessionId}/lessons/complete`、`POST /api/credit/learning/sessions/{sessionId}/submission`；均带 `X-User-Id` 参数与 `Error` 错误体（仓库错误 schema 实名 `Error`）。
 - [x] 新增 schema：`LearningQuestion`（`required: [id, category, question, options]`）、`LearningSession`、`LearningResult`、`LearningAnswerDetail`；**题面与明细均不含答案或判分依据字段**。
 - [x] `Error.code` enum 追加 6 项；`POST /api/trips` 的 responses 补 `'403': CREDIT_RESTRICTED`。
@@ -151,12 +151,12 @@
 
 ### T13 [docs] 登记回填
 
-- [x] `requirement-workspace/registry.md`：REQ-026 行状态 → `p4-pass`，notes 补 P4 段（T1–T13 结论 + 门禁数字 + `p4-apply.md`）。
-- [x] `requirement-workspace/stories.md`：REQ-026 段 Status → `P4 Pass（2026-11-17）`，Notes 追加「P4 产出」条（T1–T13 关键结论与测试数字）。
-- [x] `requirement-workspace/handoff.md`：REQ-026 的 P1/P2/P3 状态 bullet 追加 P4 段与带入 local-verify / G2 的 6 条跟踪项。
+- [x] `requirement-workspace/registry.md`：REQ-027 行状态 → `p4-pass`，notes 补 P4 段（T1–T13 结论 + 门禁数字 + `p4-apply.md`）。
+- [x] `requirement-workspace/stories.md`：REQ-027 段 Status → `P4 Pass（2026-11-17）`，Notes 追加「P4 产出」条（T1–T13 关键结论与测试数字）。
+- [x] `requirement-workspace/handoff.md`：REQ-027 的 P1/P2/P3 状态 bullet 追加 P4 段与带入 local-verify / G2 的 6 条跟踪项。
 - [x] `docs/sdd/add-credit-recovery/p4-apply.md`：阶段记录（产出表 / 本阶段裁决 P4-D1..D6 / 校验 / 待签 / 跟踪项 / 提交记录）。
 
-**P4 结果：** `registry.md` REQ-026 → `p4-pass`（notes 追加 P4 段：契约 `0.22.0` / `V27` / 题库与判分 / 会话记账配额 / 发布拦截 / 前端五态与拦截入口 / E2E 3/3 + 门禁数字 + 待 local-verify 与 G2）；`stories.md` S27 Status → `P4 Pass（2026-11-17）` 并在 Notes 追加「P4 产出」条（含测试数字）；`handoff.md` 新增「P4 状态（REQ-026）」bullet（含带入 local-verify / G2 的 6 条跟踪项）；阶段记录 `docs/sdd/add-credit-recovery/p4-apply.md`（7 节：产出 / 裁决 P4-D1..D6 / 校验 / 待签 VL 与 IO+SA G2 / 跟踪项 / 未提交记录）。本阶段**未代签**任何评审位。
+**P4 结果：** `registry.md` REQ-027 → `p4-pass`（notes 追加 P4 段：契约 `0.23.0` / `V27` / 题库与判分 / 会话记账配额 / 发布拦截 / 前端五态与拦截入口 / E2E 3/3 + 门禁数字 + 待 local-verify 与 G2）；`stories.md` S28 Status → `P4 Pass（2026-11-17）` 并在 Notes 追加「P4 产出」条（含测试数字）；`handoff.md` 新增「P4 状态（REQ-027）」bullet（含带入 local-verify / G2 的 6 条跟踪项）；阶段记录 `docs/sdd/add-credit-recovery/p4-apply.md`（7 节：产出 / 裁决 P4-D1..D6 / 校验 / 待签 VL 与 IO+SA G2 / 跟踪项 / 未提交记录）。本阶段**未代签**任何评审位。
 
 **验证：** `cd ai4se-baseline; npx --no-install openspec validate add-credit-recovery --strict`
 **覆盖：** `@rule:documentation`
@@ -185,7 +185,7 @@
 | 每条有验证命令 | Pass：13/13 |
 | 29 Scenario 全覆盖 | Pass：覆盖映射 29/29，无孤儿任务 |
 | 设计决策全覆盖 | Pass：D1–D14 均有落点（D14 → T6 `CreditReason`） |
-| 迁移与契约号排他 | Pass：`0.22.0 + V27`，与 `add-ai-itinerary`（`0.15.0 + V21`）不冲突 |
+| 迁移与契约号排他 | Pass：`0.23.0 + V27`，与 `add-ai-itinerary`（`0.15.0 + V21`）不冲突 |
 | G1 前置 | Pass：T1 提交前必须取得具名签署 |
 
 ## 合并与号位重排（2026-11-17）
@@ -194,6 +194,6 @@
 |---|---|
 | 合并方向 | 用户裁决：`feature/add-credit-recovery` 直接合入 `main`（未开 PR） |
 | 基线偏差 | 合并开始时本地 `main` 落后 `origin/main` 9 个提交（含 `add-experience-like-credit`） |
-| 号位（三次顺延后最终） | REQ-026 / S27 / 契约 0.22.0 / `V27__add_credit_learning.sql` |
-| 门禁（最终复跑） | 后端 `verify` 576/576；前端 417（54 文件）+ `typecheck` + `build`；openspec valid；Redocly 0 error / 25 warning；删库后 Flyway V1–V27 重放；本 change E2E 3/3 + 信用域与受影响回归 34/34（合计 37/37、8 份 spec） |
+| 号位（四次顺延后最终） | REQ-027 / S28 / 契约 0.23.0 / `V27__add_credit_learning.sql` |
+| 门禁（最终复跑） | 后端 `verify` 597/597；前端 446（56 文件）+ `typecheck` + `build`；openspec valid；Redocly 0 error / 25 warning；删库后 Flyway V1–V27 重放；本 change E2E 3/3 + 信用域与受影响回归 34/34 + `admin` 10/10（合计 47/47、9 份 spec） |
 | 未签 | G2（VL）、E3；记录见 `docs/sdd/add-credit-recovery/p4-apply.md` §8 |

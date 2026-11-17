@@ -61,7 +61,7 @@ public record TripPlan(
     }
 
     /**
-     * 四态推导：已结束 > 旅行中 > 已满员 > 招募中。
+     * 五态推导：已取消 > 已结束 > 旅行中 > 已满员 > 招募中。
      * 到达结束日期次日 00:00（Asia/Shanghai）即视为已结束，无需人工操作。
      */
     public TripStatusEnum status(Instant now) {

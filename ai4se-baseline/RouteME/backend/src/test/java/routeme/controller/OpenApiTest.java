@@ -26,6 +26,7 @@ class OpenApiTest {
     private static final List<String> HTTP_METHODS = List.of("get", "post", "put", "patch", "delete");
 
     private static final List<String> ADMIN_CONSOLE_PATHS = List.of(
+            "/admin/dashboard",
             "/admin/users",
             "/admin/users/{userId}",
             "/admin/users/{userId}/status",
@@ -78,7 +79,7 @@ class OpenApiTest {
 
         // Then
         assertAll(
-                () -> assertEquals("0.22.0", info.get("version"), "info.version"),
+                () -> assertEquals("0.23.0", info.get("version"), "info.version"),
                 () -> assertTrue(responses(likeExperience).containsKey("201"), "first like returns 201"),
                 () -> assertTrue(responses(likeExperience).containsKey("200"), "duplicate like returns 200"),
                 () -> assertTrue(responses(likeExperience).containsKey("403"), "self like returns 403"),
@@ -155,7 +156,7 @@ class OpenApiTest {
 
         // Then
         assertAll(
-                () -> assertEquals("0.22.0", info.get("version"), "info.version"),
+                () -> assertEquals("0.23.0", info.get("version"), "info.version"),
                 () -> assertTrue(paths(document).containsKey("/users"), "/users declared"),
                 () -> assertTrue(paths(document).containsKey("/trips/{tripId}"), "detail path declared"),
                 () -> assertTrue(
@@ -729,9 +730,9 @@ class OpenApiTest {
 
         // Then
         assertAll(
-                () -> assertEquals("0.22.0", info.get("version"), "info.version"),
+                () -> assertEquals("0.23.0", info.get("version"), "info.version"),
                 () -> assertTrue(paths(document).keySet().containsAll(ADMIN_CONSOLE_PATHS), "admin console paths"),
-                () -> assertEquals(16L, adminOperations, "admin console operations"),
+                () -> assertEquals(17L, adminOperations, "admin console operations"),
                 () -> assertTrue(
                         ADMIN_CONSOLE_PATHS.stream()
                                 .map(path -> asMap(paths(document).get(path)))
@@ -836,7 +837,7 @@ class OpenApiTest {
 
         // Then
         assertAll(
-                () -> assertEquals("0.22.0", asMap(document.get("info")).get("version"), "info.version"),
+                () -> assertEquals("0.23.0", asMap(document.get("info")).get("version"), "info.version"),
                 () -> assertTrue(responses(startSession).containsKey("201"), "session start returns 201"),
                 () -> assertTrue(
                         responses(startSession).keySet().containsAll(List.of("401", "404", "409", "429")),
@@ -910,7 +911,7 @@ class OpenApiTest {
 
         // Then
         assertAll(
-                () -> assertEquals("0.22.0", info.get("version"), "info.version"),
+                () -> assertEquals("0.23.0", info.get("version"), "info.version"),
                 () -> assertTrue(responses(operation).containsKey("200"), "200 response"),
                 () -> assertTrue(responses(operation).containsKey("401"), "401 response"),
                 () -> assertTrue(responses(operation).containsKey("404"), "404 response"),
@@ -932,6 +933,97 @@ class OpenApiTest {
                 () -> assertTrue(
                         required(reference).containsAll(List.of("trip_id", "destination", "start_date", "interests")),
                         "reference required fields"));
+    }
+
+    @Test
+    void in_openApiFile_out_adminDashboardContractDeclared() throws IOException {
+        // Given
+        Map<String, Object> document = loadYaml(SPEC_PATH);
+
+        // When
+        Map<String, Object> dashboard = operation(document, "/admin/dashboard", "get");
+        Map<String, Object> dashboardSchema = schema(document, "AdminDashboard");
+        Map<String, Map<String, Object>> dashboardProperties = properties(dashboardSchema);
+        Map<String, Object> ok = asMap(responses(dashboard).get("200"));
+        Map<String, Object> cacheControl = asMap(asMap(ok.get("headers")).get("Cache-Control"));
+        Map<String, Object> users = schema(document, "AdminDashboardUsers");
+        Map<String, Object> trips = schema(document, "AdminDashboardTrips");
+        Map<String, Object> applications = schema(document, "AdminDashboardApplications");
+        Map<String, Object> experiences = schema(document, "AdminDashboardExperiences");
+        Map<String, Object> reports = schema(document, "AdminDashboardReports");
+        Map<String, Object> serviceSessions = schema(document, "AdminDashboardServiceSessions");
+
+        // Then
+        assertAll(
+                () -> assertTrue(
+                        parameterNames(document, dashboard).contains("Authorization"),
+                        "dashboard requires bearer"),
+                () -> assertTrue(responses(dashboard).keySet().containsAll(List.of("200", "401", "403", "500")),
+                        "dashboard responses"),
+                () -> assertEquals(Boolean.FALSE, dashboardSchema.get("additionalProperties"),
+                        "dashboard schema is closed"),
+                () -> assertTrue(
+                        required(dashboardSchema).containsAll(List.of(
+                                "users", "trips", "applications", "experiences", "reports",
+                                "service_sessions", "generated_at")),
+                        "dashboard required groups"),
+                () -> assertTrue(
+                        dashboardProperties.get("generated_at").get("format").equals("date-time")
+                                && Boolean.TRUE.equals(dashboardProperties.get("generated_at").get("readOnly")),
+                        "generated_at is read-only date-time"),
+                () -> assertTrue(
+                        cacheControl.get("description").toString().contains("no-store"),
+                        "dashboard is not cached"),
+                () -> assertEquals(
+                        required(users),
+                        List.of("total", "by_role", "by_status", "new_last_7_days", "new_last_30_days"),
+                        "users required fields"),
+                () -> assertEquals(
+                        required(asMap(properties(users).get("by_role"))),
+                        List.of("USER", "ADMIN"),
+                        "users role buckets"),
+                () -> assertEquals(
+                        required(asMap(properties(users).get("by_status"))),
+                        List.of("ACTIVE", "SUSPENDED", "BANNED"),
+                        "users status buckets"),
+                () -> assertEquals(
+                        required(trips),
+                        List.of("total", "by_status", "new_last_7_days", "new_last_30_days"),
+                        "trips required fields"),
+                () -> assertEquals(
+                        required(asMap(properties(trips).get("by_status"))),
+                        List.of("recruiting", "full", "ongoing", "completed", "cancelled"),
+                        "trip status buckets"),
+                () -> assertEquals(
+                        required(applications),
+                        List.of("total", "by_status"),
+                        "applications required fields"),
+                () -> assertEquals(
+                        required(asMap(properties(applications).get("by_status"))),
+                        List.of("pending", "accepted", "rejected", "cancelled", "left"),
+                        "application status buckets"),
+                () -> assertEquals(
+                        required(experiences),
+                        List.of("total", "new_last_7_days", "new_last_30_days"),
+                        "experiences required fields"),
+                () -> assertEquals(
+                        required(reports),
+                        List.of("total", "by_status"),
+                        "reports required fields"),
+                () -> assertEquals(
+                        required(asMap(properties(reports).get("by_status"))),
+                        List.of("PENDING", "PROCESSING", "RESOLVED", "REJECTED"),
+                        "report status buckets"),
+                () -> assertEquals(
+                        required(serviceSessions),
+                        List.of("total", "by_status"),
+                        "service sessions required fields"),
+                () -> assertEquals(
+                        required(asMap(properties(serviceSessions).get("by_status"))),
+                        List.of("WAITING", "HANDLING", "CLOSED"),
+                        "service session status buckets"),
+                () -> assertEquals(0, properties(users).get("total").get("minimum"), "counts are non-negative")
+        );
     }
 
     private Map<String, Object> loadYaml(Path specPath) throws IOException {

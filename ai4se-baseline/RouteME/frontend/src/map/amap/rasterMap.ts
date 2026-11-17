@@ -211,6 +211,7 @@ class RasterTileMap implements AmapMap {
     host.addEventListener('pointerup', this.onPointerUp);
     host.addEventListener('pointercancel', this.onPointerUp);
     host.addEventListener('wheel', this.onWheel, { passive: false });
+    host.addEventListener('dblclick', this.onDoubleClick);
 
     this.measure();
     if (typeof ResizeObserver !== 'undefined') {
@@ -312,6 +313,7 @@ class RasterTileMap implements AmapMap {
     this.host.removeEventListener('pointerup', this.onPointerUp);
     this.host.removeEventListener('pointercancel', this.onPointerUp);
     this.host.removeEventListener('wheel', this.onWheel);
+    this.host.removeEventListener('dblclick', this.onDoubleClick);
     for (const tile of this.tiles.values()) {
       this.detachTile(tile);
     }
@@ -414,6 +416,16 @@ class RasterTileMap implements AmapMap {
     const rect = this.host.getBoundingClientRect();
     const step = event.deltaY > 0 ? -0.5 : 0.5;
     this.zoomAround(this.zoom + step, event.clientX - rect.left, event.clientY - rect.top);
+  };
+
+  /** 双击放大：地图交互的常见预期（与 + 按钮同一缩放级别步长）。 */
+  private readonly onDoubleClick = (event: MouseEvent): void => {
+    const rect = this.host.getBoundingClientRect();
+    this.zoomAround(
+      this.zoom + 1,
+      event.clientX - rect.left,
+      event.clientY - rect.top,
+    );
   };
 
   private readonly onPointerDown = (event: PointerEvent): void => {

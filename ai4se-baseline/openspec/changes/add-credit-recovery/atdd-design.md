@@ -1,6 +1,6 @@
 # ATDD 设计 — add-credit-recovery
 
-- **Change：** `add-credit-recovery`（REQ-026 / S27 安全学习恢复信用分）
+- **Change：** `add-credit-recovery`（REQ-027 / S28 安全学习恢复信用分）
 - **输入：** `specs/user-credit/spec.md`（ADDED 7 Requirement / 29 Scenario）、`g1-decision.md`（**Pass**）、`proposal.md`（D1–D7）
 - **日期：** 2026-11-17 ｜ **作者：** Lewis Liu（当前开发者）
 - **前置：** G1 **Pass（无条件，2026-11-17，IO=WAYNE / SA=Jacky）**；本设计与 `tasks.md` 已于 2026-11-17 通过工件评审（BLOCKER 0），P4 按 T1 起推进。
@@ -8,7 +8,7 @@
 
 ## 1. ATDD 层次划分
 
-用例 ID `A1–A29` 按 Delta 顺序编号，与 REQ-026 的 `R-1 ~ R-27` **不是同一编号体系**（Delta 比需求多 2 条拆分场景）。
+用例 ID `A1–A29` 按 Delta 顺序编号，与 REQ-027 的 `R-1 ~ R-27` **不是同一编号体系**（Delta 比需求多 2 条拆分场景）。
 
 | ID | Delta Requirement | Scenario | Layer | 附加层 | 依据 |
 |---|---|---|---|---|---|

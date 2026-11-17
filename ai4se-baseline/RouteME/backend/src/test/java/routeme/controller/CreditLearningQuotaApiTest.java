@@ -16,7 +16,7 @@ import routeme.config.MutableClockTestConfig;
 import routeme.config.MutableClockTestConfig.MutableClock;
 
 /**
- * 月度考试配额与跨自然月窗口（REQ-026 R5）：用可推进时钟覆盖月底到月初的边界。
+ * 月度考试配额与跨自然月窗口（REQ-027 R5）：用可推进时钟覆盖月底到月初的边界。
  */
 @Import(MutableClockTestConfig.class)
 class CreditLearningQuotaApiTest extends CreditLearningTestSupport {

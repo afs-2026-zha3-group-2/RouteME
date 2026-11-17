@@ -4,7 +4,7 @@
 - **日期：** 2026-11-17 ｜ **记录人：** liuwa2（当前开发者）
 - **分支 / 基点：** `feature/add-credit-recovery` ← `origin/main@ec360dc`（本地 `main` 落后 37 个提交，未沿用旧基点）
 
-> **过程快照：** 需求 / 故事编号、契约与迁移号、403 错误码已随 P4 合并 `origin/main@acf1b1f` 统一为 REQ-026 / S27 / `0.22.0` / `V27` / `CREDIT_RESTRICTED`；本文保留 P1 当时口径，变更明细见 `p4-apply.md` §8。
+> **过程快照：** 需求 / 故事编号、契约与迁移号、403 错误码已随 P4 合并与四次号位顺延（第四次 `origin/main@0f4ab14`）统一为 REQ-027 / S28 / `0.23.0` / `V27` / `CREDIT_RESTRICTED`；本文保留 P1 当时口径，变更明细见 `p4-apply.md` §8。
 
 ## 1. 阶段目标
 
@@ -20,8 +20,8 @@
 
 | 工件 | 未产出原因 | 建议落点 |
 |---|---|---|
-| 意图捕获 `intents/REQ-026-credit-recovery.md` | 未获授权新增需求条目；且 OQ-1 未定会改变范围 | OQ-1 裁定后补齐 |
-| Ready 需求 `requirements/REQ-026-credit-recovery.md` | 同上，DoR 尚有 4 条 BLOCKER | blocking OQ 清零后 |
+| 意图捕获 `intents/REQ-027-credit-recovery.md` | 未获授权新增需求条目；且 OQ-1 未定会改变范围 | OQ-1 裁定后补齐 |
+| Ready 需求 `requirements/REQ-027-credit-recovery.md` | 同上，DoR 尚有 4 条 BLOCKER | blocking OQ 清零后 |
 | Delta 草稿 `specs/user-credit/spec.md` | P1 门槛只要求 proposal；4 条 blocking OQ 未定，此时写 Delta 会把未定口径固化成验收场景 | P2 |
 | `stories.md` / `registry.md` / `handoff.md` 登记 | 需求编号与 capability 归属未最终确认 | P1 收尾或 P2 入口 |
 | 提案评审记录 / 质量报告 | 提案本身尚未签署 | 提案裁定后 |

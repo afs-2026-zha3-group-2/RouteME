@@ -169,6 +169,24 @@ describe('AmapService mapping', () => {
   it('names the AMap upstream when the proxy forward fails', () => {
     expect(amapErrorMessage(new AmapApiError('UPSTREAM_UNAVAILABLE', 'forward'))).toContain('上游');
   });
+
+  it('explains a platform mismatch (10009) with actionable copy', () => {
+    const message = amapErrorMessage(new AmapApiError('AUTH', 'auth', '10009'));
+    expect(message).toContain('10009');
+    expect(message).toContain('Web端');
+    expect(message).toContain('s=rsv3');
+  });
+
+  it('explains an unpaired security code (10008)', () => {
+    const message = amapErrorMessage(new AmapApiError('AUTH', 'auth', '10008'));
+    expect(message).toContain('10008');
+    expect(message).toContain('security-js-code');
+  });
+
+  it('explains an unpaired security code', () => {
+    const message = amapErrorMessage(new AmapApiError('AUTH', 'auth', 'INVALID_USER_SCODE'));
+    expect(message).toContain('jscode');
+  });
 });
 
 describe('parseTransitLeg', () => {

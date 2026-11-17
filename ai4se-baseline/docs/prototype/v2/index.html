@@ -1,0 +1,68 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>RouteMe 路觅 · 原型图 v2</title>
+<meta name="description" content="RouteMe 路觅原型图 v2：旅行灵感、旅行地图、发布行程、AI 规划、我的旅行、同行消息六屏设计板，点击可放大交互。">
+<link rel="stylesheet" href="assets/board.css">
+<link rel="stylesheet" href="assets/app.css">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='9' fill='%231aa79b'/%3E%3Cpath d='M8 23c4.5-11 11.5-11 16 0' stroke='%23fff' stroke-width='2.6' fill='none' stroke-linecap='round'/%3E%3Ccircle cx='16' cy='11' r='2.8' fill='%23ffe9b8'/%3E%3C/svg%3E">
+</head>
+<body>
+
+<header class="bhead">
+  <div class="bhead-left">
+    <span class="bhead-mark" aria-hidden="true">
+      <svg viewBox="0 0 32 32" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round"><path d="M6 24c5-12 15-12 20 0"/><circle cx="16" cy="10" r="3" fill="#ffe9b8" stroke="none"/></svg>
+    </span>
+    <div class="bhead-txt">
+      <h1>RouteMe 路觅 · 原型图</h1>
+      <p>六屏设计板 · 浅蓝灰画布 + 3×2 编号栅格</p>
+    </div>
+    <div class="bhead-tags"><span class="vtag">V2</span></div>
+  </div>
+  <div class="bhead-right">
+    <span class="bhead-hint">点击任一屏 <b>放大并交互</b> · Esc 返回 · ← → 切屏</span>
+    <a class="blink" href="../v1/index.html">← v1 原型包</a>
+    <a class="blink" href="../index.html">版本入口</a>
+  </div>
+</header>
+
+<main class="board" id="board" aria-label="RouteMe 六屏原型设计板"></main>
+
+<div class="ovl" id="ovl" hidden role="dialog" aria-modal="true" aria-label="单屏放大预览">
+  <div class="ovl-bar">
+    <div class="ovl-cap" id="ovl-cap"></div>
+    <div class="ovl-actions">
+      <button class="ovl-btn" type="button" data-ov="prev">
+        <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12.5 5 7.5 10l5 5"/></svg>
+        上一屏
+      </button>
+      <button class="ovl-btn" type="button" data-ov="next">
+        下一屏
+        <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M7.5 5 12.5 10l-5 5"/></svg>
+      </button>
+      <button class="ovl-btn" type="button" data-ov="close">
+        <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M5.4 5.4 14.6 14.6M14.6 5.4 5.4 14.6"/></svg>
+        关闭
+      </button>
+    </div>
+  </div>
+  <div class="ovl-stage" id="ovl-stage">
+    <div class="ovl-scaler" id="ovl-scaler"><div class="ovl-app" id="ovl-app"></div></div>
+  </div>
+  <span class="ovl-hint">放大层内的标签、筛选、收藏、聊天输入均可交互</span>
+</div>
+
+<noscript>
+  <p style="max-width:720px;margin:40px auto;font:14px/1.8 -apple-system,'Microsoft YaHei',sans-serif;color:#4d5a71">
+    设计板由 assets/*.js 渲染，需要启用 JavaScript。静态内容见同目录 <code>README.md</code>。
+  </p>
+</noscript>
+
+<script src="assets/data.js"></script>
+<script src="assets/app.js"></script>
+<script src="assets/board.js"></script>
+</body>
+</html>

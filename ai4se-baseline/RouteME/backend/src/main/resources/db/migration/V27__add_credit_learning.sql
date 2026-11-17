@@ -1,4 +1,4 @@
--- 安全学习考试会话（REQ-026 / add-credit-recovery）。
+-- 安全学习考试会话（REQ-027 / add-credit-recovery）。
 -- 一次考试一行：开始即计次（R5），通过与否都落 submitted。
 -- 只存「完成标记 + 抽中题号 + 作答 + 结果」；不建逐题明细表（design D1）。
 -- 月度考试次数按 (user_id, month_key) 计数派生，不建计数表（R5）。

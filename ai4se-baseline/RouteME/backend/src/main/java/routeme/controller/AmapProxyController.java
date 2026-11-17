@@ -25,6 +25,10 @@ import routeme.config.AmapProperties;
  *
  * <p>只允许 GET 与白名单内的搜索/逆地理/路线规划接口，基础地址固定为配置值，
  * 不接受客户端传入的完整 URL，避免被当作任意请求转发器。
+ *
+ * <p>平台标记：JS API 的 Key（Web 端）必须是 {@code s=rsv3} 才会被 restapi 接受，
+ * 否则一律返回 10009 USERKEY_PLAT_NOMATCH——即使 Key 与安全密钥都正确。
+ * 浏览器发往 {@code /_AMapService} 的请求不带这个参数，因此由本代理补齐。
  */
 @Slf4j
 @RestController
@@ -50,6 +54,11 @@ public class AmapProxyController {
 
     private static final String MISSING_KEY_BODY =
             "{\"status\":\"0\",\"info\":\"AMAP_KEY_NOT_CONFIGURED\",\"infocode\":\"50000\"}";
+    /**
+     * JS API Key 的平台标记：restapi 靠它区分「Web 端」与「Web 服务」Key。
+     * 缺失时 JS API Key 会被判为平台不匹配（10009）。
+     */
+    static final String JS_PLATFORM = "rsv3";
     private static final String UPSTREAM_ERROR_BODY =
             "{\"status\":\"0\",\"info\":\"AMAP_PROXY_UNAVAILABLE\",\"infocode\":\"50001\"}";
     private static final String OK_BODY =
@@ -102,6 +111,9 @@ public class AmapProxyController {
                                 }
                             }
                         });
+                        if (parameters.keySet().stream().noneMatch(name -> "s".equalsIgnoreCase(name))) {
+                            builder.queryParam("s", JS_PLATFORM);
+                        }
                         if (properties.hasWebServiceKey()) {
                             builder.queryParam("key", properties.webServiceKey());
                         } else if (incomingKey != null && !incomingKey.isBlank()) {

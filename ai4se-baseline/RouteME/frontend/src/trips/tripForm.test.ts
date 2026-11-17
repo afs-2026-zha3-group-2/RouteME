@@ -114,6 +114,11 @@ describe('initialTripForm', () => {
     expect(form.endDate).toBe('2026-11-16');
   });
 
+  it('defaults the meeting date to today as well', () => {
+    const form = initialTripForm(new Date(2026, 10, 16, 0, 30));
+    expect(form.meetingTime).toBe('2026-11-16T08:30');
+  });
+
   it('formats local dates without shifting across UTC midnight', () => {
     expect(todayIso(new Date(2026, 0, 1, 0, 5))).toBe('2026-01-01');
     expect(todayIso(new Date(2026, 11, 31, 23, 55))).toBe('2026-12-31');

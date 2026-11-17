@@ -54,9 +54,9 @@
 
 ---
 
-# Story list — REQ-026（issue #32 安全学习恢复信用分）
+# Story list — REQ-027（issue #32 安全学习恢复信用分）
 
-> 编号说明：REQ-019 / S19 由 `add-credit-account` 占用、REQ-020 由并行 `refine-detail-companions` 预留、REQ-021 / S21 为 `add-trip-cancel`，REQ-022 / S22 由 `add-trip-weather` 占用。经三次合并顺延：REQ-023 被 `add-experience-like-credit` 占用；同步 `origin/main@3db5b14` 时 REQ-024 / S25 被 `add-traveler-recommendation` 占用；同步 `origin/main@acf1b1f` 时 REQ-025 / S25 / S26 被 `add-credit-exit-restriction` 占用。本故事最终定为 **REQ-026 / S27**（契约 `0.22.0` / `V27__add_credit_learning.sql`）。
+> 编号说明：REQ-019 / S19 由 `add-credit-account` 占用、REQ-020 由并行 `refine-detail-companions` 预留、REQ-021 / S21 为 `add-trip-cancel`，REQ-022 / S22 由 `add-trip-weather` 占用。经四次合并顺延：REQ-023 被 `add-experience-like-credit` 占用；同步 `origin/main@3db5b14` 时 REQ-024 / S25 被 `add-traveler-recommendation` 占用；同步 `origin/main@acf1b1f` 时 REQ-025 / S25 / S26 被 `add-credit-exit-restriction` 占用；同步 `origin/main@0f4ab14` 时 REQ-026 / S27 / 契约 `0.22.0` 被 `add-admin-dashboard` 占用。本故事最终定为 **REQ-027 / S28**（契约 `0.23.0` / `V27__add_credit_learning.sql`）。
 
 - **来源：** issue #32 `[P0] 安全学习恢复信用分`（信用系统迭代 4 / Story 6 / 5 点 / 落点页面：安全学习页）
 - **Change：** `add-credit-recovery`（`user-credit` ADDED Requirements，追加恢复段）
@@ -66,15 +66,15 @@
 
 | Story | Title | 角色 | Priority | Iteration | Points | Page | Parent REQ | Change | Status |
 |---|---|---|---|---|---|---|---|---|---|
-| S27 | 安全学习恢复信用分（< 60 → 60） | 受限用户（信用分 < 60） | P0 | 信用系统迭代 4 | 5 | 安全学习页 | REQ-026 | `add-credit-recovery` | P3 Pass（2026-11-17，G1 Pass）；P4 Pass（2026-11-17） |
+| S28 | 安全学习恢复信用分（< 60 → 60） | 受限用户（信用分 < 60） | P0 | 信用系统迭代 4 | 5 | 安全学习页 | REQ-027 | `add-credit-recovery` | P3 Pass（2026-11-17，G1 Pass）；P4 Pass（2026-11-17） |
 
-## Traceability（REQ-026）
+## Traceability（REQ-027）
 
 | Story | Requirement scenarios | Change spec | Story file |
 |---|---|---|---|
-| S27 | REQ-026 §4 R-1 ~ R-27 | `openspec/changes/add-credit-recovery/specs/user-credit/spec.md`（ADDED：7 Requirement / 29 Scenario） | 无独立故事文件：以意图 + proposal + Delta 承接（与 REQ-012 / REQ-019 同口径） |
+| S28 | REQ-027 §4 R-1 ~ R-27 | `openspec/changes/add-credit-recovery/specs/user-credit/spec.md`（ADDED：7 Requirement / 29 Scenario） | 无独立故事文件：以意图 + proposal + Delta 承接（与 REQ-012 / REQ-019 同口径） |
 
-## Notes（REQ-026）
+## Notes（REQ-027）
 
 - **不拆子故事：** 「参加考试 → 判分通过 → 补到 60 → 限制解除」是同一垂直切片；拆开会出现「能考试但不能恢复」或「能恢复但没被拦过」的不可验收半成品。
 - **限制端复用统一守卫（D1 / D6）：** 故事把「低于 60 被限制」当作前提；合并 `origin/main@acf1b1f` 后按用户裁决，限制端跟随 `add-credit-exit-restriction` 的 `CreditRestrictionGuard`（`score < 60` 或存在生效中限制即受限），本变更只交付恢复端与发布页引导入口，不再自建门禁。
@@ -456,4 +456,32 @@
 - **管理端排除：** 管理员核实、人工封禁、申诉与后台页面均不在本 change（D3）；待核实保持 pending。
 - **明细排除：** 用户端不展示加扣分明细（D4）；只看分数、等级、限制状态与本人原因。
 - **Delta 归属：** 新能力 `credit-enforcement`；不改未归档的 `user-credit` / `trip-cancellation` / `trip-companions` Delta（D15）。
+
+---
+
+# Story list — REQ-026（S27 管理后台概览统计）
+
+- **来源：** 用户 2026-11-17 需求「admin account which provide basic dashboard for statistics and count of different users etc」
+- **Change：** `add-admin-dashboard`（`admin-dashboard` ADDED：5 Requirement / 13 Scenario）
+- **口径：** 一条故事 = 一个页面 + 一份只读契约 + 一次聚合查询；只统计，不改任何业务状态机
+- **编号说明：** `stories.md` 现有最大编号为 S24（S19 在 REQ-018 与 REQ-019 各有一条历史重号，属并行登记遗留），本故事顺延为 **S27**（合并 main 后 S25 / S26 已由 `add-credit-exit-restriction` 占用，原登记 S25）
+- **更新时间：** 2026-11-17
+
+| Story | Title | 角色 | Priority | Iteration | Points | Page | Parent REQ | Change | Status |
+|---|---|---|---|---|---|---|---|---|---|
+| S27 | 查看平台概览统计 | 平台管理员 | P0 | 管理后台迭代 4 | 3 | 管理后台概览页 `#/admin` | REQ-026 | `add-admin-dashboard` | P1 drafted（2026-11-17） |
+
+## Traceability（REQ-026）
+
+| Story | Requirement scenarios | Change spec | Story file |
+|---|---|---|---|
+| S27 | REQ-026 §4（change spec 历史编号 S25-1 ~ S25-13） | `openspec/changes/add-admin-dashboard/specs/admin-dashboard/spec.md`（ADDED：5 Requirement / 13 Scenario） | `requirement-workspace/stories/add-admin-dashboard.story.md` |
+
+## Notes（REQ-026）
+
+- **不拆故事：** 「看数字 → 进入处理页」是同一垂直切片；只做接口或只做页面都不可验收。
+- **六组共享一次请求：** 避免首屏六个请求与部分失败；也不引入缓存与轮询。
+- **三组不可跳转：** 行程 / 申请 / 体验没有后台列表页，卡片只展示数字，不放假入口。
+- **口径依赖既有能力：** 账号有效状态复用 `admin-console` 的惰性恢复；行程状态复用 `TripPlan.status` 的四态推导；本故事不重复定义。
+- **边界：** 趋势图、时间范围选择、导出、自动刷新与更多维度统计均不在本故事。
 - 未接入外部 ALM；本表为仓库内权威故事清单，ALM Sync 状态记为 Pending。

@@ -12,7 +12,10 @@ async function pickPlace(page: Page, field: string, name: string) {
   // 高德地图区域也带 aria-label（如「选择途经点的地图」），按 textbox 角色收窄到输入框。
   const input = page.getByRole('textbox', { name: new RegExp(field) });
   await input.fill(name);
-  await input.press('Enter');
+  // 搜索有 320ms 防抖：等候选出现再点选，避免把「结果还没到」误判成「地点不存在」。
+  const option = page.locator('.amap-search-item').filter({ hasText: name }).first();
+  await expect(option).toBeVisible();
+  await option.click();
   await expect(page.locator('.place-chip-name', { hasText: name }).first()).toBeVisible();
 }
 

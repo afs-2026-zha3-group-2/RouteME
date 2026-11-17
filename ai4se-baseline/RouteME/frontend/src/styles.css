@@ -67,6 +67,14 @@
   --sh-3: 0 8px 24px -8px rgba(20, 51, 95, 0.2), 0 32px 64px -32px rgba(20, 51, 95, 0.45);
   --ring: 0 0 0 3px rgba(14, 128, 116, 0.22);
 
+  /* 管理后台概览图表：只引用主题变量，浅 / 深色自动跟随 */
+  --admin-chart-1: var(--lagoon);
+  --admin-chart-2: var(--surf);
+  --admin-chart-3: var(--amber);
+  --admin-chart-4: var(--coral);
+  --admin-chart-5: var(--dusk);
+  --admin-chart-track: var(--surface-3);
+
   --topbar-h: 66px;
   --rail-w: 246px;
   --ease: cubic-bezier(0.22, 0.68, 0.32, 1);
@@ -644,10 +652,6 @@ svg {
 
 .topbar-spacer {
   flex: 1;
-}
-
-.theme-toggle {
-  flex: none;
 }
 
 .user-switch {
@@ -6135,6 +6139,22 @@ svg {
   color: var(--t-danger);
 }
 
+/* 底图加载失败时的横幅：不铺满地图，否则用户连点都没法点。 */
+.amap-state-error.is-banner {
+  inset: auto 12px 12px 12px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 8px 10px;
+  border: 1px solid color-mix(in srgb, var(--t-danger) 45%, var(--line));
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--surface) 96%, transparent);
+  box-shadow: var(--sh-2);
+  text-align: left;
+}
+
 .amap-controls {
   position: absolute;
   top: 12px;
@@ -6171,34 +6191,6 @@ svg {
 .amap-controls button:disabled {
   opacity: 0.55;
   cursor: progress;
-}
-
-.amap-locate-error {
-  position: absolute;
-  left: 50%;
-  bottom: 52px;
-  z-index: 35;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  max-width: min(420px, calc(100% - 24px));
-  padding: 8px 10px 8px 12px;
-  border: 1px solid color-mix(in srgb, var(--warn) 45%, var(--line));
-  border-radius: 10px;
-  background: var(--surface);
-  box-shadow: var(--sh-2);
-  color: var(--t-warn);
-  font-size: 12px;
-  transform: translateX(-50%);
-}
-
-.amap-locate-error button {
-  border: 0;
-  background: transparent;
-  color: var(--ink-3);
-  font-size: 15px;
-  line-height: 1;
-  cursor: pointer;
 }
 
 .amap-search-overlay {
@@ -6961,9 +6953,107 @@ svg {
   gap: 6px;
 }
 
+/* 选点小地图：高度随宽度与视口自适应，窄屏也不至于只剩一条缝。 */
 .amap-picker-map .amap-container {
-  min-height: 250px;
-  height: 250px;
+  min-height: clamp(220px, 42vw, 300px);
+  height: clamp(220px, 42vw, 300px);
+}
+
+/* 选中位置信息卡：钉在点击点上，随地图移动。 */
+.amap-point-callout {
+  position: absolute;
+  z-index: 45;
+  width: 0;
+  height: 0;
+  pointer-events: none;
+}
+
+.amap-point-pin {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 14px;
+  height: 14px;
+  margin: -7px 0 0 -7px;
+  border: 2px solid var(--surface);
+  border-radius: 50%;
+  background: var(--t-lagoon, #2f9fe0);
+  box-shadow: 0 0 0 4px color-mix(in srgb, #2f9fe0 30%, transparent), var(--sh-1);
+}
+
+.amap-point-card {
+  position: absolute;
+  left: 0;
+  bottom: 14px;
+  display: grid;
+  gap: 3px;
+  width: max-content;
+  max-width: min(280px, 70vw);
+  padding: 9px 11px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--surface) 97%, transparent);
+  box-shadow: var(--sh-2);
+  color: var(--ink-2);
+  font-size: 12px;
+  line-height: 1.35;
+  pointer-events: auto;
+  transform: translateX(-50%);
+}
+
+.amap-point-name {
+  color: var(--ink-1);
+  font-size: 13px;
+}
+
+.amap-point-address,
+.amap-point-coords {
+  color: var(--ink-3);
+}
+
+.amap-point-coords {
+  font-variant-numeric: tabular-nums;
+}
+
+.amap-point-flag {
+  justify-self: start;
+  padding: 1px 6px;
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--warn) 18%, transparent);
+  color: var(--t-warn);
+  font-size: 10.5px;
+}
+
+.amap-point-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 6px;
+  margin-top: 4px;
+}
+
+/* 高德搜索不可用时的示意位置提示。 */
+.amap-search-degraded {
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--line);
+  background: color-mix(in srgb, var(--warn) 12%, transparent);
+  color: var(--t-warn);
+  font-size: 11px;
+  line-height: 1.4;
+}
+
+.amap-search-degraded-reason {
+  display: block;
+  margin-top: 2px;
+  color: var(--ink-3);
+}
+
+.amap-search-badge {
+  justify-self: start;
+  padding: 1px 6px;
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--warn) 16%, transparent);
+  color: var(--t-warn);
+  font-size: 10px;
 }
 
 .amap-picker-hint {
@@ -8860,6 +8950,72 @@ svg {
   color: var(--ink);
 }
 
+/* ---------- 后台概览：指标卡与快照分布图 ---------- */
+
+.admin-dashboard-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.admin-dashboard-updated {
+  margin: 0;
+  font-size: 12.5px;
+  color: var(--ink-2);
+}
+
+.admin-dashboard-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.admin-metric-card {
+  display: grid;
+  gap: 14px;
+  align-content: start;
+  min-width: 0;
+  padding: 18px;
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+  background: var(--surface);
+  box-shadow: var(--sh-1);
+  color: inherit;
+  text-decoration: none;
+}
+
+a.admin-metric-card {
+  transition: transform 0.18s var(--ease), box-shadow 0.18s var(--ease),
+    border-color 0.18s var(--ease);
+}
+
+a.admin-metric-card:hover {
+  transform: translateY(-2px);
+  border-color: color-mix(in srgb, var(--lagoon) 36%, var(--line));
+  box-shadow: var(--sh-2);
+}
+
+a.admin-metric-card:focus-visible {
+  outline: none;
+  box-shadow: var(--ring);
+}
+
+.admin-metric-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.admin-metric-title {
+  margin: 0;
+  font-size: 13.5px;
+  font-weight: 750;
+  color: var(--ink);
+}
+
 .ai-min-stops {
   margin: 0 0 8px;
   font-size: 12.5px;
@@ -9172,6 +9328,48 @@ svg {
   list-style: none;
 }
 
+.admin-metric-total {
+  font-family: var(--font-num);
+  font-size: 1.7rem;
+  font-weight: 800;
+  line-height: 1;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+
+.admin-metric-visual {
+  display: grid;
+  gap: 12px;
+  align-content: start;
+}
+
+.admin-stack {
+  display: grid;
+  gap: 7px;
+}
+
+.admin-stack-track {
+  display: flex;
+  height: 10px;
+  border-radius: 99px;
+  overflow: hidden;
+  background: var(--admin-chart-track);
+}
+
+.admin-stack-seg {
+  display: block;
+  min-width: 2px;
+  height: 100%;
+}
+
+.admin-chart-legend {
+  display: grid;
+  gap: 5px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
 .recommendation-row {
   display: grid;
   gap: 8px;
@@ -9237,5 +9435,191 @@ svg {
 @media (max-width: 900px) {
   .recommendation-row {
     padding: 10px;
+  }
+}
+
+.admin-chart-legend li {
+  display: grid;
+  grid-template-columns: 8px minmax(0, 1fr) auto minmax(34px, auto);
+  gap: 7px;
+  align-items: baseline;
+  font-size: 11.5px;
+  color: var(--ink-2);
+}
+
+.admin-chart-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  align-self: center;
+}
+
+.admin-chart-legend-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.admin-chart-legend-value {
+  font-family: var(--font-num);
+  font-weight: 650;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+
+.admin-chart-legend-percent {
+  text-align: right;
+  font-family: var(--font-num);
+  color: var(--ink-2);
+  font-variant-numeric: tabular-nums;
+}
+
+.admin-metric-foot {
+  display: flex;
+  gap: 8px 18px;
+  flex-wrap: wrap;
+  padding-top: 10px;
+  border-top: 1px dashed var(--line);
+  font-size: 11.5px;
+  color: var(--ink-2);
+}
+
+.admin-metric-foot b {
+  margin-left: 5px;
+  font-family: var(--font-num);
+  font-size: 12.5px;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+
+.admin-meter {
+  display: grid;
+  gap: 6px;
+}
+
+.admin-meter-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  font-size: 12px;
+  color: var(--ink-2);
+}
+
+.admin-meter-value {
+  font-family: var(--font-num);
+  font-weight: 700;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+
+.admin-meter-ratio {
+  margin-left: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--ink-2);
+}
+
+.admin-meter-track {
+  height: 10px;
+  border-radius: 99px;
+  overflow: hidden;
+  background: var(--admin-chart-track);
+}
+
+.admin-meter-fill {
+  display: block;
+  height: 100%;
+  border-radius: 99px;
+}
+
+.admin-donut {
+  display: grid;
+  gap: 12px;
+  justify-items: center;
+}
+
+.admin-donut-figure {
+  position: relative;
+  width: 132px;
+  height: 132px;
+}
+
+.admin-donut-figure svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.admin-donut-track {
+  stroke: var(--admin-chart-track);
+}
+
+.admin-donut-center {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  gap: 2px;
+  pointer-events: none;
+  text-align: center;
+}
+
+.admin-donut-center b {
+  font-family: var(--font-num);
+  font-size: 1.5rem;
+  line-height: 1;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+
+.admin-donut-center span {
+  font-size: 11px;
+  color: var(--ink-2);
+}
+
+.admin-donut .admin-chart-legend {
+  width: 100%;
+}
+
+.admin-chart-tone-1 {
+  background: var(--admin-chart-1);
+  stroke: var(--admin-chart-1);
+}
+
+.admin-chart-tone-2 {
+  background: var(--admin-chart-2);
+  stroke: var(--admin-chart-2);
+}
+
+.admin-chart-tone-3 {
+  background: var(--admin-chart-3);
+  stroke: var(--admin-chart-3);
+}
+
+.admin-chart-tone-4 {
+  background: var(--admin-chart-4);
+  stroke: var(--admin-chart-4);
+}
+
+.admin-chart-tone-5 {
+  background: var(--admin-chart-5);
+  stroke: var(--admin-chart-5);
+}
+
+@media (max-width: 1180px) {
+  .admin-dashboard-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 680px) {
+  .admin-dashboard-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .admin-metric-card {
+    padding: 16px;
   }
 }

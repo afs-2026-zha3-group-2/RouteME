@@ -482,7 +482,7 @@ export const tripMessages = {
   profileNotFound: '用户不存在',
   mineProfileIncomplete: '资料未完善',
 
-  // 安全学习信用恢复（REQ-026）
+  // 安全学习信用恢复（REQ-027）
   creditLearningTitle: '安全学习',
   creditLearningSubtitle:
     '完成学习并答题通过，信用分补回 60，立即可再次发布行程。每月最多考 2 次，最多恢复 1 次。',

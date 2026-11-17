@@ -3,9 +3,9 @@ import { expect, test, type Page } from '@playwright/test';
 import { isoDaysFromToday } from './support';
 
 /**
- * 天气卡人工走查证据：1440 / 768 / 390 × 浅 / 深色，各截一张发布页侧栏。
+ * 天气卡人工走查证据：1440 / 768 / 390，各截一张发布页侧栏。
  * 天气接口用固定响应注入，保证截图与真实网络无关；同时断言页面无横向溢出。
- * 产物写入 `ai4se-baseline/docs/preview/weather-create-<宽>-<主题>.png`。
+ * 产物写入 `ai4se-baseline/docs/preview/weather-create-<宽>-light.png`。
  */
 
 const VIEWPORTS = [
@@ -13,8 +13,6 @@ const VIEWPORTS = [
   { width: 768, height: 1100 },
   { width: 390, height: 1100 },
 ];
-
-const THEMES = ['light', 'dark'] as const;
 
 function readyForecast(date: string): Record<string, unknown> {
   return {
@@ -47,11 +45,10 @@ function readyForecast(date: string): Record<string, unknown> {
   };
 }
 
-async function prepare(page: Page, theme: string) {
-  await page.addInitScript((mode) => {
+async function prepare(page: Page) {
+  await page.addInitScript(() => {
     window.localStorage.setItem('routeme.currentUserId', '1');
-    window.localStorage.setItem('routeme.colorMode', mode);
-  }, theme);
+  });
   const date = isoDaysFromToday(3);
   await page.route('**/api/weather/forecast**', async (route) => {
     const url = new URL(route.request().url());
@@ -68,28 +65,26 @@ async function prepare(page: Page, theme: string) {
   await expect(page.getByTestId('weather-ready')).toBeVisible();
 }
 
-test('天气卡在 1440 / 768 / 390 × 浅 / 深色下不溢出', async ({ page }) => {
+test('天气卡在 1440 / 768 / 390 下不溢出', async ({ page }) => {
   for (const viewport of VIEWPORTS) {
-    for (const theme of THEMES) {
-      await page.setViewportSize({ width: viewport.width, height: viewport.height });
-      await prepare(page, theme);
-      const overflow = await page.evaluate(
-        () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
-      );
-      expect(overflow, `no horizontal overflow at ${viewport.width} ${theme}`).toBeLessThanOrEqual(1);
-      await page.getByTestId('weather-card').scrollIntoViewIfNeeded();
-      await page.screenshot({
-        path: path.join(
-          import.meta.dirname,
-          '..',
-          '..',
-          '..',
-          'docs',
-          'preview',
-          `weather-create-${viewport.width}-${theme}.png`,
-        ),
-        fullPage: false,
-      });
-    }
+    await page.setViewportSize({ width: viewport.width, height: viewport.height });
+    await prepare(page);
+    const overflow = await page.evaluate(
+      () => document.documentElement.scrollWidth - document.documentElement.clientWidth,
+    );
+    expect(overflow, `no horizontal overflow at ${viewport.width}`).toBeLessThanOrEqual(1);
+    await page.getByTestId('weather-card').scrollIntoViewIfNeeded();
+    await page.screenshot({
+      path: path.join(
+        import.meta.dirname,
+        '..',
+        '..',
+        '..',
+        'docs',
+        'preview',
+        `weather-create-${viewport.width}-light.png`,
+      ),
+      fullPage: false,
+    });
   }
 });

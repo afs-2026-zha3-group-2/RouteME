@@ -6,7 +6,7 @@ import { expect, test, type Page } from '@playwright/test';
 import { pickDestination, pickPlace } from './support';
 
 /**
- * REQ-026 / add-credit-recovery 的端到端口径（A1 / A6 / A24 / A25 / D6）。
+ * REQ-027 / add-credit-recovery 的端到端口径（A1 / A6 / A24 / A25 / D6）。
  *
  * 造分：产品侧没有扣分入口（扣分事件是 non-goal），所以按 atdd-design §4 用 SQL
  * 直接改 `user_credit_account.score`，并补一条 `SYSTEM_ADJUST` 账本行保证

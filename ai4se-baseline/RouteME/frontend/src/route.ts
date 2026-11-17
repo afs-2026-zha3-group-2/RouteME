@@ -12,6 +12,7 @@ export type Route =
   | { name: 'creditLearning' }
   | { name: 'map'; provinceCode?: string; cityCode?: string }
   | { name: 'help' }
+  | { name: 'adminDashboard' }
   | { name: 'adminUsers' }
   | { name: 'adminUserDetail'; userId: number }
   | { name: 'adminReports' }
@@ -56,6 +57,9 @@ export function parseRoute(hash: string): Route {
   if (path === '/help') {
     return { name: 'help' };
   }
+  if (path === '/admin') {
+    return { name: 'adminDashboard' };
+  }
   if (path === '/admin/users') {
     return { name: 'adminUsers' };
   }
@@ -77,7 +81,7 @@ export function parseRoute(hash: string): Route {
   if (adminServiceDetail) {
     return { name: 'adminServiceDetail', sessionId: Number(adminServiceDetail[1]) };
   }
-  // 安全学习独立页：入口只在发布行程被拦截时出现，但页面可直接深链。（REQ-026 / OQ-6）
+  // 安全学习独立页：入口只在发布行程被拦截时出现，但页面可直接深链。（REQ-027 / OQ-6）
   if (path === '/credit/learning') {
     return { name: 'creditLearning' };
   }
@@ -139,6 +143,9 @@ export function routeToHash(route: Route): string {
   }
   if (route.name === 'help') {
     return '#/help';
+  }
+  if (route.name === 'adminDashboard') {
+    return '#/admin';
   }
   if (route.name === 'adminUsers') {
     return '#/admin/users';

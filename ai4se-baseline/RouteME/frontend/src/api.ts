@@ -1,4 +1,5 @@
 import type {
+  AdminDashboard,
   AdminReportDetail,
   AdminReportResolveRequest,
   AdminReportSummary,
@@ -504,6 +505,12 @@ function listQuery(filters: {
   }
   const query = params.toString();
   return query ? `?${query}` : '';
+}
+
+/** 管理后台概览：只读快照，页面只在首次加载与手动刷新时调用。 */
+export async function loadAdminDashboard(token: string): Promise<AdminDashboard> {
+  const response = await request('/admin/dashboard', bearerInit(token));
+  return (await response.json()) as AdminDashboard;
 }
 
 /** 管理端用户列表：`q` 支持 ID / 昵称 / 邮箱，`status` 为账号状态。 */

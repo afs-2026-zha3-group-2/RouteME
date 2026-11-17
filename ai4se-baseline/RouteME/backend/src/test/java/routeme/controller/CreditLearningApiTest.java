@@ -20,7 +20,7 @@ import routeme.pojo.UserCredit;
 import routeme.utils.CreditLearningKey;
 
 /**
- * 安全学习考试：开始即计次、参加资格、身份边界、学习完成门禁与判分（REQ-026 R2 / R3）。
+ * 安全学习考试：开始即计次、参加资格、身份边界、学习完成门禁与判分（REQ-027 R2 / R3）。
  */
 class CreditLearningApiTest extends CreditLearningTestSupport {
 

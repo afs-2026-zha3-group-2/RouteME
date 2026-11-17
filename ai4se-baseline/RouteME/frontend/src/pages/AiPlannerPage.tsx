@@ -31,7 +31,7 @@ import { moveStop, removeStop, replaceStop, resolvedCount } from '../ai/itinerar
 import { resolveStops, type ResolvedStop } from '../ai/poiResolve';
 import {
   canGenerate,
-  emptyPlannerForm,
+  defaultPlannerForm,
   toGenerateRequest,
   yuanToCents,
   type PlannerFormValues,
@@ -46,6 +46,7 @@ import {
   formatDistance,
   formatDuration,
   planRoute,
+  reverseGeocode,
 } from '../map/amap/AmapService';
 import type { AmapMap, LngLat } from '../map/amap/types';
 import type {
@@ -95,7 +96,7 @@ function toWaypoint(stop: ResolvedStop & { lng: number; lat: number }): RouteWay
 }
 
 export function AiPlannerPage({ currentUser }: Props) {
-  const [form, setForm] = useState<PlannerFormValues>(emptyPlannerForm);
+  const [form, setForm] = useState<PlannerFormValues>(() => defaultPlannerForm());
   const [generating, setGenerating] = useState(false);
   const [generateError, setGenerateError] = useState<string | null>(null);
   const [planMeta, setPlanMeta] = useState<PlanMeta | null>(null);
@@ -106,8 +107,6 @@ export function AiPlannerPage({ currentUser }: Props) {
   const [weather, setWeather] = useState<WeatherForecast | null>(null);
   const [weatherLoading, setWeatherLoading] = useState(false);
   const [weatherError, setWeatherError] = useState(false);
-  const [locating, setLocating] = useState(false);
-  const [locateError, setLocateError] = useState<string | null>(null);
   const [pickMode, setPickMode] = useState(false);
   const [pickTarget, setPickTarget] = useState<PlaceSlot>('origin');
   const [candidates, setCandidates] = useState<PlaceResult[] | null>(null);
@@ -129,43 +128,6 @@ export function AiPlannerPage({ currentUser }: Props) {
 
   const pickPlace = (slot: PlaceSlot) => (place: PlaceResult) => {
     update({ [slot]: { name: place.name, lng: place.lng, lat: place.lat } });
-    if (slot === 'origin') {
-      setLocateError(null);
-    }
-  };
-
-  const locateOrigin = () => {
-    if (!('geolocation' in navigator)) {
-      setLocateError(aiMessages.locateFailed);
-      return;
-    }
-    setLocating(true);
-    setLocateError(null);
-    navigator.geolocation.getCurrentPosition(
-      (position) => {
-        const { longitude, latitude } = position.coords;
-        // 坐标反查附近 POI，取最近点作为出发地名称；查不到用真实坐标 + 通用名。
-        aroundPlaces(longitude, latitude, 1000)
-          .then((places) => {
-            const nearest = places[0];
-            update({
-              origin:
-                nearest !== undefined
-                  ? { name: nearest.name, lng: nearest.lng, lat: nearest.lat }
-                  : { name: aiMessages.currentLocation, lng: longitude, lat: latitude },
-            });
-          })
-          .catch(() => {
-            update({ origin: { name: aiMessages.currentLocation, lng: longitude, lat: latitude } });
-          })
-          .finally(() => setLocating(false));
-      },
-      () => {
-        setLocating(false);
-        setLocateError(aiMessages.locateFailed);
-      },
-      { enableHighAccuracy: true, timeout: 8000 },
-    );
   };
 
   const onMapClick = (point: LngLat) => {
@@ -174,9 +136,21 @@ export function AiPlannerPage({ currentUser }: Props) {
     }
     setCandidatesLoading(true);
     setCandidates([]);
-    aroundPlaces(point[0], point[1], 500)
-      .then((places) => setCandidates(places))
-      .catch(() => setCandidates([]))
+    // 点击点本身永远可选（坐标精确等于点击位置），附近 POI 只是额外候选；
+    // 高德不可用时附近搜索返回空，选点仍然可用。
+    Promise.all([
+      reverseGeocode(point[0], point[1]).catch(() => null),
+      aroundPlaces(point[0], point[1], 500).catch(() => [] as PlaceResult[]),
+    ])
+      .then(([exact, nearby]) => {
+        const list: PlaceResult[] = exact === null ? [] : [exact];
+        for (const place of nearby) {
+          if (!list.some((item) => item.id === place.id)) {
+            list.push(place);
+          }
+        }
+        setCandidates(list);
+      })
       .finally(() => setCandidatesLoading(false));
   };
 
@@ -405,14 +379,6 @@ export function AiPlannerPage({ currentUser }: Props) {
                     <span className="ai-place-coords">
                       {form.origin.lng.toFixed(4)}, {form.origin.lat.toFixed(4)}
                     </span>
-                  </div>
-                )}
-                <Button size="small" loading={locating} onClick={locateOrigin}>
-                  {aiMessages.useCurrentLocation}
-                </Button>
-                {locateError !== null && (
-                  <div className="ai-inline-error" role="alert">
-                    {locateError}
                   </div>
                 )}
               </div>
