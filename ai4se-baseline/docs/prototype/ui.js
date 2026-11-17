@@ -506,16 +506,22 @@
       '<span class="host-tags">' + tags(host.interests, m.shared) + '</span></span></button>' +
       '<p class="hint" style="margin-top:10px">点击查看完整资料。平台不展示电话、证件与精确住址。</p></section>';
 
+    var companions = parts.filter(function (p) { return p.id !== t.creatorId; });
     var compPanel = '<section class="panel"><h3 class="panel-title">' + icon('users') + '当前同行者 ' + n + '/' + t.capacity + '</h3>' +
       '<span class="meter' + (n >= t.capacity ? ' full' : '') + '" style="margin-bottom:12px"><i style="width:' + Math.min(100, n / t.capacity * 100) + '%"></i></span>' +
-      '<div class="companions">' + parts.map(function (p) {
-        var isHost = p.id === t.creatorId;
-        var chatBtn = (p.id !== meId && S.canChat(id, p.id))
-          ? '<a class="btn sm ghost" href="#/chat/' + id + '/' + p.id + '">' + icon('chat') + '聊天</a>' : '';
-        return '<div class="companion">' + avatar(p, 'sm') +
-          '<span><span class="companion-name">' + esc(p.nickname) + (p.id === meId ? ' · 你' : '') + '</span>' +
-          '<span class="companion-role" style="display:block">' + (isHost ? '发起人' : '同行者') + '</span></span>' + chatBtn + '</div>';
-      }).join('') + '</div>' +
+      (companions.length
+        ? '<div class="companions">' + companions.map(function (p) {
+            var chatBtn = (p.id !== meId && S.canChat(id, p.id))
+              ? '<a class="btn sm ghost companion-chat" href="#/chat/' + id + '/' + p.id + '">' + icon('chat') + '聊天</a>' : '';
+            var summary = p.school || p.job || p.city || '';
+            return '<div class="companion-card"><button class="host-card companion-main" data-action="profile" data-id="' + p.id + '" type="button">' + avatar(p, 'lg') +
+              '<span class="host-info"><span class="host-name">' + esc(p.nickname) + (p.id === meId ? ' · 你' : '') + '</span>' +
+              (summary ? '<span class="host-school">' + esc(summary) + '</span>' : '') +
+              (p.bio ? '<span class="host-bio">' + esc(p.bio) + '</span>' : '') +
+              (p.interests && p.interests.length ? '<span class="host-tags">' + tags(p.interests, m.shared) + '</span>' : '') +
+              '</span></button>' + chatBtn + '</div>';
+          }).join('') + '</div>'
+        : '<p class="companions-empty">还没有其他同行者。</p>') +
       (n < t.capacity && t.status === 'RECRUITING' ? '<p class="hint" style="margin-top:10px">还有 ' + (t.capacity - n) + ' 个名额，招满后自动停止接受申请。</p>' : '') +
       '</section>';
 

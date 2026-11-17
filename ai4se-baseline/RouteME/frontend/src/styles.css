@@ -1261,8 +1261,7 @@ svg {
   width: 100%;
 }
 
-.detail-stops,
-.detail-participants {
+.detail-stops {
   margin: 0;
   padding-left: 20px;
 }
@@ -2687,23 +2686,10 @@ svg {
   box-shadow: var(--sh-1);
 }
 
-.detail-stops li,
-.detail-participants li {
+.detail-stops li {
   font-size: 13.5px;
   line-height: 1.7;
   color: var(--ink-2);
-}
-
-.detail-participants li {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-}
-
-.detail-participant-chat {
-  margin-top: 0;
-  font-size: 12.5px;
 }
 
 .match-summary {
@@ -6661,4 +6647,41 @@ svg {
   .chat-main {
     min-height: 62vh;
   }
+}
+
+/* ---------- 详情页同行者资料卡 ---------- */
+.detail-companions {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.companion-card {
+  display: grid;
+  gap: 6px;
+  padding: 10px;
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+  background: var(--surface-2);
+}
+
+.companion-card .publisher-button {
+  padding: 0;
+}
+
+.companion-card .publisher-button:hover {
+  background: color-mix(in srgb, var(--lagoon) 8%, transparent);
+}
+
+.companion-chat {
+  justify-self: end;
+  font-size: 12.5px;
+}
+
+.detail-companions-empty {
+  margin: 0;
+  font-size: 13px;
+  color: var(--ink-3);
 }

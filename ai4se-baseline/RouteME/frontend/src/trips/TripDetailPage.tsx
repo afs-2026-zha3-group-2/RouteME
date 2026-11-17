@@ -37,6 +37,8 @@ import { ReportModal } from '../safety/ReportModal';
 import { Avatar } from '../shell/Avatar';
 import type { DemoUser, Experience, MatchCandidate, TripApplication } from '../types';
 import { applicationEntryState, applicationErrorMessage } from './applicationEntry';
+import { CompanionCard } from './CompanionCard';
+import { tripCompanions } from './companions';
 import {
   MAX_MEETING_AREA_LENGTH,
   addMeetingArea,
@@ -263,6 +265,7 @@ export function TripDetailPage({ currentUser, tripId }: Props) {
   const isPublisher = entry.kind === 'publisher';
   const isCompleted = trip.status === 'completed';
   const participant = trip.participants.some((member) => member.id === currentUser.id);
+  const companions = tripCompanions(trip.participants, trip.publisher.id);
   const canShare = shareEligibility(trip, currentUser.id).kind === 'ready';
   const hasShared = experiences?.some((experience) => experience.author.id === currentUser.id) ?? false;
   const budget =
@@ -497,26 +500,23 @@ export function TripDetailPage({ currentUser, tripId }: Props) {
 
           <section className="detail-section">
             <h3 className="section-title">{tripMessages.detailParticipants}</h3>
-            <ul className="detail-participants">
-              {trip.participants.map((member) => {
-                const canChat =
-                  member.id !== currentUser.id &&
-                  (isPublisher || entry.kind === 'accepted');
-                return (
-                  <li key={member.id}>
-                    <span>{member.nickname}</span>
-                    {canChat && (
-                      <a
-                        className="ghost-link detail-participant-chat"
-                        href={`#/chat/${trip.id}/${member.id}`}
-                      >
-                        {tripMessages.mineChatEntry}
-                      </a>
-                    )}
-                  </li>
-                );
-              })}
-            </ul>
+            {companions.length === 0 ? (
+              <p className="detail-companions-empty">{tripMessages.detailParticipantsEmpty}</p>
+            ) : (
+              <ul className="detail-companions">
+                {companions.map((member) => (
+                  <CompanionCard
+                    key={member.id}
+                    member={member}
+                    canChat={
+                      member.id !== currentUser.id && (isPublisher || entry.kind === 'accepted')
+                    }
+                    chatHref={`#/chat/${trip.id}/${member.id}`}
+                    onOpenProfile={openProfile}
+                  />
+                ))}
+              </ul>
+            )}
           </section>
 
           <section className="detail-section">

@@ -78,7 +78,7 @@ test('reaches chat from the rail, the application drawer and the companion list'
   // 详情页同行者列表里的「聊天」入口。
   await page.goto(`/#/trips/${created.id}`);
   await page
-    .locator('.detail-participants')
+    .locator('.detail-companions')
     .getByRole('link', { name: '聊天' })
     .click();
   await expect(page).toHaveURL(new RegExp(`#/chat/${created.id}/1$`));
