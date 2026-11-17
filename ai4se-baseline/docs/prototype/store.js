@@ -63,7 +63,7 @@
   }
   function myApp(tripId, userId) {
     var id = userId || state.currentUserId;
-    var list = appsOf(tripId).filter(function (a) { return a.applicantId === id && a.status !== 'CANCELLED'; });
+    var list = appsOf(tripId).filter(function (a) { return a.applicantId === id && a.status !== 'CANCELLED' && a.status !== 'LEFT'; });
     return list.length ? list[list.length - 1] : null;
   }
   function hostPendingCount(userId) {
@@ -327,15 +327,62 @@
     return { done: done, blocked: blocked };
   }
 
-  function leaveTrip(tripId) {
+  /* 原型用简化扣分：48h -5；其余档位按同一左闭右开规则。 */
+  function creditDepartureBasis(t) {
+    if (t && t.meetingTime) {
+      var meeting = new Date(t.meetingTime);
+      if (!isNaN(meeting.getTime())) return meeting.getTime();
+    }
+    return new Date(t.startDate + 'T00:00:00').getTime();
+  }
+
+  function creditExitPreview(tripId, reason) {
+    var t = trip(tripId);
+    if (!t) return null;
+    var diff = creditDepartureBasis(t) - Date.now();
+    var day = 86400000, hour = 3600000;
+    if (reason !== 'personal') {
+      return { delta: 0, tier: 'pending', counted: false, review: 'pending', label: '暂不扣分，待核实' };
+    }
+    if (diff < 0) return { delta: -15, tier: 'during', counted: false, review: 'not_required', label: '旅行中退出 -15' };
+    if (diff >= 7 * day) return { delta: 0, tier: 'ge7d', counted: false, review: 'not_required', label: '不扣分，仅记录' };
+    if (diff >= 3 * day) return { delta: -3, tier: 'd3to7d', counted: true, review: 'not_required', label: '出发前 3–7 天 -3' };
+    if (diff >= 24 * hour) return { delta: -5, tier: 'h24to72', counted: true, review: 'not_required', label: '出发前 24–72 小时 -5' };
+    if (diff >= 12 * hour) return { delta: -8, tier: 'h12to24', counted: true, review: 'not_required', label: '出发前 12–24 小时 -8' };
+    return { delta: -10, tier: 'lt12h', counted: true, review: 'not_required', label: '出发前 12 小时内 -10' };
+  }
+
+  function leaveTrip(tripId, reason) {
     var t = trip(tripId);
     if (!t) return false;
     if (t.creatorId === state.currentUserId) return false;
     var a = acceptedApps(tripId).filter(function (x) { return x.applicantId === state.currentUserId; })[0];
     if (!a) return false;
+    var me = me();
+    if (me && Number(me.creditScore) < 60) return false;
+    var preview = creditExitPreview(tripId, reason || 'personal');
+    var before = Number(me.creditScore);
+    if (!isFinite(before)) before = 80;
+    var after = Math.max(0, Math.min(100, before + preview.delta));
     snapshot('退出《' + t.title + '》的同行');
-    a.status = 'CANCELLED';
+    a.status = 'LEFT';
+    a.statusReason = 'USER_EXIT';
+    me.creditScore = after;
+    me.creditRestricted = after < 60;
+    me.creditRestrictionReason = after < 60 ? 'CREDIT_SCORE_BELOW_60' : null;
     syncStatus(t);
+    commit();
+    return { score: after, before: before, delta: after - before, preview: preview };
+  }
+
+  /* 原型专用：一键演示限制态；不会进入生产代码。 */
+  function simulateRestriction() {
+    var me = me();
+    if (!me) return false;
+    snapshot('演示：信用分降至 55');
+    me.creditScore = 55;
+    me.creditRestricted = true;
+    me.creditRestrictionReason = 'CREDIT_SCORE_BELOW_60';
     commit();
     return true;
   }
@@ -518,7 +565,8 @@
     setUser: setUser, createTrip: createTrip, updateTrip: updateTrip, updateMeetingInfo: updateMeetingInfo,
     cancelTrip: cancelTrip, deleteTrip: deleteTrip, completeTrip: completeTrip,
     apply: apply, cancelApplication: cancelApplication, decide: decide, bulkDecide: bulkDecide,
-    leaveTrip: leaveTrip, sendMessage: sendMessage, thread: thread, chatPartners: chatPartners,
+    leaveTrip: leaveTrip, creditExitPreview: creditExitPreview, simulateRestriction: simulateRestriction,
+    sendMessage: sendMessage, thread: thread, chatPartners: chatPartners,
     saveExperience: saveExperience, addReport: addReport,
     saveView: saveView, deleteView: deleteView,
     undo: undo, canUndo: canUndo, undoLabel: undoLabel, reset: reset,

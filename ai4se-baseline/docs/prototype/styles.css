@@ -1213,3 +1213,13 @@ img, svg { display: block; max-width: 100%; }
   .page-head .btn { margin-left: 0; }
   .msg { max-width: 88%; }
 }
+
+/* ????:?????????????? */
+.credit-restricted-badge { margin-left: 6px; vertical-align: 1px; }
+.restriction-note { display: block; margin-top: 6px; font-size: 12px; line-height: 1.55; color: var(--t-warn); }
+.leave-preview { display: flex; flex-direction: column; gap: 4px; margin: 12px 0; padding: 12px 14px; border: 1px solid color-mix(in srgb, var(--amber) 32%, transparent); border-radius: 14px; background: color-mix(in srgb, var(--amber) 7%, transparent); }
+.leave-preview-label { font-size: 11.5px; letter-spacing: .04em; color: var(--ink-3); }
+.leave-preview b { font-size: 15px; color: var(--ink-1); }
+.leave-preview .hint { font-size: 11.5px; color: var(--ink-3); }
+.blocked-notice { display: flex; gap: 10px; align-items: flex-start; margin-bottom: 14px; padding: 12px 14px; border: 1px solid color-mix(in srgb, var(--danger) 24%, transparent); border-radius: 14px; background: color-mix(in srgb, var(--danger) 6%, transparent); font-size: 12.5px; line-height: 1.6; color: var(--ink-2); }
+

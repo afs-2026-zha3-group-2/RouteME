@@ -590,6 +590,9 @@
 
   function tripForm(d, errors, source, isEdit) {
     errors = errors || {};
+    if (S.me() && Number(S.me().creditScore) < 60) {
+      return empty('账号受限，暂不能发布行程', '信用分低于 60，当前账号仅可查看；分数回到 60 分及以上自动解除。', '<a class="btn primary" href="#/mine">返回我的旅行</a>', 'shield');
+    }
     var destOpts = ['<option value="">选择目的地</option>'].concat(D.DESTINATIONS.map(function (x) {
       return '<option value="' + x + '"' + (d.destination === x ? ' selected' : '') + '>' + x + '</option>';
     })).join('');
@@ -820,7 +823,10 @@
     }).join('') : '<div class="empty" style="margin:auto"><span class="empty-icon">' + icon('chat') + '</span>' +
       '<p class="empty-title">开始第一次对话</p><p class="empty-text">建议先确认集合时间与地点，再讨论装备和节奏。首次见面请选择公共场所。</p></div>';
 
-    var composer = closed
+    var restricted = S.me() && Number(S.me().creditScore) < 60;
+    var composer = restricted
+      ? '<div class="composer-closed">' + icon('shield') + ' 信用分低于 60，当前账号仅可查看；分数回到 60 分及以上自动解除。</div>'
+      : closed
       ? '<div class="composer-closed">' + icon('info') + ' 行程已' + (t.status === 'COMPLETED' ? '结束' : '取消') + '，聊天记录保留但不再发送新消息。</div>'
       : '<div class="composer"><textarea class="textarea grow" data-chat-input rows="1" maxlength="500" placeholder="输入消息，Enter 发送，Shift + Enter 换行"></textarea>' +
       '<button class="btn sea" data-action="send-msg" data-trip="' + t.id + '" data-to="' + other.id + '" type="button">' + icon('send') + '发送</button></div>';
@@ -846,6 +852,9 @@
     errors = errors || {};
     var t = S.trip(tripId);
     if (!t) return empty('找不到这条行程', '它可能已被删除。', '<a class="btn primary" href="#/mine">回到我的旅行</a>', 'search');
+    if (S.me() && Number(S.me().creditScore) < 60) {
+      return empty('账号受限，暂不能发布体验', '信用分低于 60，当前账号仅可查看；分数回到 60 分及以上自动解除。', '<a class="btn primary" href="#/mine">返回我的旅行</a>', 'shield');
+    }
     if (!S.canShare(tripId)) {
       return empty('还不能分享这次旅行', '只有已结束、并且你实际参加过的行程才能发表体验。这是为了保证首页上的内容都是真实发生过的。',
         '<a class="btn primary" href="#/trip/' + tripId + '">看看这条行程</a>', 'shield');
@@ -908,7 +917,16 @@
     var score = isFinite(n) ? Math.max(0, Math.min(100, Math.round(n))) : 80;
     var label = score >= 90 ? '信用优秀' : score >= 80 ? '信用良好' : score >= 60 ? '信用一般' : score >= 30 ? '信用较低' : '信用风险';
     var tone = score >= 90 ? 'is-excellent' : score >= 80 ? 'is-good' : score >= 60 ? 'is-fair' : score >= 30 ? 'is-low' : 'is-risk';
-    return { score: score, label: label, tone: tone };
+    return { score: score, label: label, tone: tone, restricted: score < 60 };
+  }
+
+  function creditRestrictedBadge(credit) {
+    return credit && credit.restricted ? '<span class="badge danger credit-restricted-badge">限制中</span>' : '';
+  }
+
+  function creditRestrictionNote() {
+    return '<p class="restriction-note">' + icon('shield') +
+      ' 信用分低于 60，当前账号仅可查看；分数回到 60 分及以上自动解除。</p>';
   }
 
   function profileModal(userId) {
@@ -924,7 +942,8 @@
       '<div class="modal-body"><div class="profile-top">' + avatar(u, 'xl') +
       '<span><span class="profile-name">' + esc(u.nickname) + (isMe ? ' <span class="badge dusk no-dot">这是你</span>' : '') + '</span>' +
       '<span class="profile-school" style="display:block">' + esc(u.school) + '</span>' +
-      '<span class="profile-credit ' + credit.tone + '">信用分：' + credit.score + ' / 100 · ' + credit.label + '</span>' +
+      '<span class="profile-credit ' + credit.tone + '">信用分：' + credit.score + ' / 100 · ' + credit.label + ' ' + creditRestrictedBadge(credit) + '</span>' +
+      (isMe && credit.restricted ? '<span class="restriction-note">信用分低于 60，原因：CREDIT_SCORE_BELOW_60；分数回到 60 分及以上自动解除。</span>' : '') +
       '<span class="muted" style="font-size:11.5px">加入于 ' + esc(relTime(u.joinedAt)) + '</span></span></div>' +
       '<p class="profile-bio">' + esc(u.bio) + '</p>' +
       '<div class="tc-tags" style="margin-top:14px">' + tags(u.interests, shared) + '</div>' +
@@ -937,6 +956,7 @@
       '</div>' +
       '<p class="privacy-note">' + icon('shield') + ' 平台只展示昵称、简介与旅行兴趣。电话、证件、精确住址和实时位置不会向任何人公开，包括已匹配的同行者。</p>' +
       '</div><div class="modal-foot">' +
+      (isMe && !credit.restricted ? '<button class="btn ghost" data-action="simulate-restriction" type="button">' + icon('shield') + '模拟信用限制（原型）</button>' : '') +
       (isMe ? '' : '<button class="btn danger" data-action="report" data-type="user" data-id="' + u.id + '" data-label="' + esc(u.nickname) + '" type="button">' + icon('flag') + '举报这位用户</button>') +
       '<button class="btn ghost" data-action="close-overlay" type="button">关闭</button></div></div>';
   }
@@ -1063,7 +1083,7 @@
 
   /* ---------------- 取消行程 ---------------- */
   function cancelTripModal(t) {
-    var options = '<option value="">请选择原因</option>' + D.CANCEL_REASONS.map(function (r) {
+    var options = '<option value="">请选择原因</option>' + D.CANCEL_REASONS.filter(function (r) { return !r.systemOnly; }).map(function (r) {
       return '<option value="' + r.value + '">' + esc(r.label) + '</option>';
     }).join('');
     return '<div class="modal" role="dialog" aria-modal="true" aria-label="取消行程" style="max-width:480px">' +
@@ -1078,6 +1098,41 @@
       '<textarea class="textarea" data-cancel-note rows="3" maxlength="100" placeholder="说明具体情况（仅发布者与已接受同行者可见）"></textarea></label>' +
       '</div><div class="modal-foot"><button class="btn ghost" data-action="close-overlay" type="button">再想想</button>' +
       '<button class="btn danger" data-action="confirm-cancel-trip" type="button">' + icon('x') + '确认取消</button></div></div>';
+  }
+
+  /* ---------------- 退出同行（信用影响） ---------------- */
+  function leaveTripPreview(p) {
+    if (!p) return '';
+    return '<div class="leave-preview" data-leave-preview><span class="leave-preview-label">本次预计信用影响</span>' +
+      '<b>' + esc(p.label) + '</b>' +
+      (p.review === 'pending' ? '<span class="hint">退出后进入待核实；核实前不扣分，也不计入当月次数。</span>' : '') +
+      (p.review === 'not_required' && p.delta === 0 ? '<span class="hint">仅记录事实，不扣分。</span>' : '') +
+      '</div>';
+  }
+
+  function leaveTripModal(tripId) {
+    var t = S.trip(tripId);
+    if (!t) return '';
+    var preview = S.creditExitPreview(tripId, 'personal');
+    var options = [
+      { value: 'personal', label: '个人原因' },
+      { value: 'force_majeure', label: '不可抗力' },
+      { value: 'safety', label: '安全原因（退出后可举报）' }
+    ].map(function (r) {
+      return '<option value="' + r.value + '">' + esc(r.label) + '</option>';
+    }).join('');
+    return '<div class="modal" role="dialog" aria-modal="true" aria-label="退出同行" style="max-width:500px">' +
+      '<div class="modal-head"><h2 class="modal-title">退出这次同行？</h2>' +
+      '<button class="icon-btn" data-action="close-overlay" type="button" aria-label="关闭">' + icon('x') + '</button></div>' +
+      '<div class="modal-body">' +
+      '<p class="action-note danger" style="margin-bottom:14px">' + icon('alert') +
+      ' 退出后名额会释放；已匹配关系解除，聊天记录保留。请先确认本次信用影响。</p>' +
+      '<label class="field"><span class="label">退出原因（必选）</span>' +
+      '<select class="input" data-leave-reason data-trip-id="' + esc(t.id) + '">' + options + '</select></label>' +
+      leaveTripPreview(preview) +
+      '<p class="hint">选择不可抗力或安全原因时暂不扣分，记录待核实；管理员核实不在本次原型范围内。</p>' +
+      '</div><div class="modal-foot"><button class="btn ghost" data-action="close-overlay" type="button">再想想</button>' +
+      '<button class="btn danger" data-action="confirm-leave" data-id="' + esc(t.id) + '" type="button">' + icon('exit') + '确认退出</button></div></div>';
   }
 
   /* ---------------- 保存筛选 ---------------- */
@@ -1135,7 +1190,7 @@
     mine: mine, chat: chat, share: share, profileModal: profileModal, appsDrawer: appsDrawer,
     meetingModal: meetingModal,
     switchUserModal: switchUserModal, reportModal: reportModal, confirmModal: confirmModal,
-    cancelTripModal: cancelTripModal,
+    cancelTripModal: cancelTripModal, leaveTripModal: leaveTripModal, leaveTripPreview: leaveTripPreview,
     saveViewModal: saveViewModal, scriptDrawer: scriptDrawer
   };
 })(window);
