@@ -78,3 +78,11 @@ P4 提交 `2e552fc` 后 `git pull --no-rebase --autostash --no-edit origin main`
 - **合并期修复：** target/classes 残留旧 V24 迁移产物致「more than one migration with version 24」，清陈旧产物后重跑绿（构建卫生）；真实天气 502 为 firewall 拦截窗口（G2 观察项，产品失败即终止不伪造）。
 - **重验：** 后端 **495/495** EXIT=0；前端 **401/401**（52 files）+ build 绿；E2E 全量 **154：123/31**（**ai-planner 12/12** + **experience-likes 3/3** + admin 5/5 + credit 9/9；31 红 = map9+trips9 refine-trip-map 偏差 + auth7+profile2 main UI refresh 债务 + profiles4 污染，隔离 fresh DB **8/8** 证实）；门禁 openspec strict **valid** + redocly **0 error / 21 warnings**。
 - **验收口径达成，G2 结论维持 Pass with documented debts**（原签署不变，见 g2-decision.md Addendum 3）。提交：openapi + OpenApiTest + V25 + 三报告 addendum staged → `git commit --no-edit` → push 前再 pull → push。
+
+## 9. 第四波合并 addendum（merge 提交 8edd99b 后 push 前再 pull）
+
+第三波 merge 提交 `8edd99b` 后 push 前再 pull，main 又推进到 `91f9bce`（add-traveler-recommendation：可解释同行者推荐），仅 styles.css 1 冲突（EOF 追加块碰撞），其余 auto-merge；沿用 standing ruling。明细见 verify report §11。
+
+- **并集要点：** styles.css node 字节并集（公共前缀 8445 行 + `.ai-planner-*` + `.recommendation-*`，9139 行）；契约 **0.20.0**（OpenApiTest 4 处断言同步，14 门禁方法完整）；V25 无碰撞；main 新测试 3 处构造调用补 `aiItineraryId` 尾参 null（auto-merge fallout，同既有 union 口径）。
+- **重验：** 后端 **514/514** EXIT=0；前端 **406/406**（53 files）+ build 绿；E2E 全量 **161：129/32**（**ai-planner 12/12** + **traveler-recommendation 7/7**；32 红 = map9+trips9 refine-trip-map + auth7+profile2 main UI refresh 债务 + **profiles:37 main traveler-recommendation 新偏差**（spec 字节相同而 main 详情页 recommendation 块致按钮双元素 strict mode，隔离两次均红，git 证据）+ profiles4 污染隔离转绿）；门禁 openspec strict **valid** + redocly **0 error / 21 warnings**。
+- **验收口径达成，G2 结论维持 Pass with documented debts**（原签署不变，见 g2-decision.md Addendum 4）。提交：styles.css + openapi + OpenApiTest + 3 测试修复 + 三报告 addendum staged → `git commit --no-edit` → push 前再 pull → push。

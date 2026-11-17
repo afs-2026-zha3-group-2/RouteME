@@ -70,3 +70,13 @@ P4 提交 `2e552fc` 后 pull 触发与 main（`0979e916`，0.16.0）28 文件冲
 - **重验证据：** 后端 **495/495** EXIT=0；前端 **401/401**（52 files）+ build 绿；E2E 全量 **154：123/31**，**ai-planner 12/12** + **experience-likes 3/3** + admin 5/5 + credit 9/9；profiles 隔离 fresh DB **8/8** 证污染；openspec strict **valid** + redocly **0 error / 21 warnings**。真实天气 502 为 firewall 拦截窗口（观察项延续，产品失败即终止不伪造）。
 - **债务更新：** 偏差债务更新为「map 9 + trips 9 = 18 例 refine-trip-map」（trips:476 单集合点用例第二波切点即存在，pickPlace 级联同类偏差）；main E2E 债务由 10 例降为 9 例（credit 1 红被 main like-credit 提交修复，余 auth 7 + profile 2）；债务 1/2 延续。31 红均非本 change 回归。
 - **G2 结论维持 Pass with documented debts**（原签署不变；不替代 G3，不执行 P5/不归档）。下一步：`git commit --no-edit`（第三波 merge）→ push 前再 pull 核对 → push。
+
+## Addendum 4：第四波合并（merge 提交 8edd99b 后 push 前再 pull，2026-11-17 19:5x）
+
+第三波 merge 提交 `8edd99b` 后 push 前再 pull，main 推进到 `91f9bce`（add-traveler-recommendation），仅 styles.css 1 冲突沿用 standing ruling 字节并集解决。本 addendum 不改动上方原 G2 签署与 Addendum 1/2/3。明细见 verify report §11 / p4-verify §9。
+
+- **契约再演进：** main traveler-recommendation 也占 0.19.0 → 合并后 **0.20.0**（OpenApiTest 14 门禁方法完整、4 处版本断言同步）；styles.css `.ai-planner-*` + `.recommendation-*` 并集；V25 无碰撞（fresh DB Flyway V1–V25 验证）。技术边界不变。
+- **合并期修复（auto-merge fallout）：** main 新测试 3 处构造调用基于旧 record，补 `aiItineraryId` 尾参 null（RecommendationControllerTest/TravelerMatchTest/TravelerRecommendationRankerTest）。
+- **重验证据：** 后端 **514/514** EXIT=0；前端 **406/406**（53 files）+ build 绿；E2E 全量 **161：129/32**，**ai-planner 12/12** + **traveler-recommendation 7/7**；profiles 隔离 fresh DB 7/8（4 污染转绿）；openspec strict **valid** + redocly **0 error / 21 warnings**。
+- **债务更新：** 新增「main traveler-recommendation E2E 偏差 1 例（profiles:37：spec 第三波切点==main 字节相同，main 详情页 recommendation 块致 `查看 阿岚 的资料` 按钮双元素 strict mode violation，隔离两次均红；E2E 不在 CI，main 自身即红）」；main E2E 债务合计 10 例（auth 7 + profile 2 + profiles:37）；偏差债务 map9+trips9=18 延续；债务 1/2 延续。32 红均非本 change 回归。
+- **G2 结论维持 Pass with documented debts**（原签署不变；不替代 G3，不执行 P5/不归档）。下一步：`git commit --no-edit`（第四波 merge）→ push 前再 pull 核对 → push。

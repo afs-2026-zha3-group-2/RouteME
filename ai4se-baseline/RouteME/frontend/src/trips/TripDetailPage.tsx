@@ -48,6 +48,8 @@ import { WeatherCard } from '../weather/WeatherCard';
 import { applicationEntryState, applicationErrorMessage } from './applicationEntry';
 import { CompanionCard } from './CompanionCard';
 import { tripCompanions } from './companions';
+import { TravelerRecommendationPanel } from './TravelerRecommendationPanel';
+import { useRecommendations } from './useRecommendations';
 import {
   MAX_MEETING_AREA_LENGTH,
   addMeetingArea,
@@ -95,6 +97,11 @@ function pickLatestApplication(
 export function TripDetailPage({ currentUser, tripId }: Props) {
   const { state, reload } = useTrip(currentUser.id, tripId);
   const { openProfile } = useProfile();
+  const recommendations = useRecommendations(
+    currentUser.id,
+    tripId,
+    currentUser.interests.join('|'),
+  );
   const publisherId = state.status === 'ready' ? state.trip.publisher.id : 0;
   const publisherCredits = useUserCredits(publisherId > 0 ? [publisherId] : [], currentUser.id);
   const [feedback, setFeedback] = useState<Feedback | null>(null);
@@ -734,6 +741,15 @@ export function TripDetailPage({ currentUser, tripId }: Props) {
               <p className="detail-meta">{match.match.basis}</p>
               <p className="form-hint match-rule">{tripMessages.matchRuleHint}</p>
             </section>
+          )}
+
+          {!isCancelled && (
+            <TravelerRecommendationPanel
+              state={recommendations.state}
+              tripTitle={trip.title}
+              onRetry={recommendations.reload}
+              onOpenProfile={openProfile}
+            />
           )}
 
           {feedback !== null && (

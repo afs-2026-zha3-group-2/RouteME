@@ -215,3 +215,43 @@ P4 提交 `2e552fc` 后按发起人指令 `git pull --no-rebase --autostash --no
 
 - openapi 冲突解决 + 0.19.0 + OpenApiTest 断言 + V25 重命名 staged；三报告 addendum staged；排除项延续。
 - `git commit --no-edit`（第三波 merge）→ push 前再 pull 核对 → push。
+
+## 11. 第四波合并 addendum（第三波 merge 提交后 push 前再 pull，2026-11-17 19:5x）
+
+第三波 merge 提交 `8edd99b` 后 push 前再 pull，main 又推进到 **`91f9bce`**（`add-traveler-recommendation`：可解释同行者推荐 + 分值，契约也占 0.19.0，无新迁移）。仅 **styles.css 1 文件冲突**（2 区均为 EOF 追加块碰撞），其余 auto-merge；沿用 standing ruling。
+
+### 11.1 冲突解决与版本再演进
+
+- **styles.css 字节安全并集：** node 直取 `:2`/`:3` 两父本字节，公共前缀 8445 行 + HEAD `.ai-planner-*` 完整块 + main `.recommendation-*` 完整块顺序拼接（9139 行，LF/UTF-8 无 BOM，0 冲突标记）。
+- **契约版本：** main traveler-recommendation 也占 0.19.0 → 合并后 **0.20.0**；`OpenApiTest` 4 处版本断言同步（auto-merge 后 14 门禁方法完整：main 新增 travelerRecommendation + 本 change AI + admin 均保留）。
+- **迁移：** main 无新迁移，`V25__ai_itineraries` 无碰撞（fresh DB Flyway V1–V25 验证）。
+
+### 11.2 合并期发现与修复（auto-merge fallout）
+
+| # | 发现 | 修复 |
+|---|---|---|
+| 11-1 | **main 新测试构造调用缺尾参（testCompile 3 处）**：main traveler-recommendation 测试基于无 `aiItineraryId` 的旧 record 编写，auto-merge 后与并集 record（TripPlan 24 参 / TripCreateRequest 14 参）不匹配 | `RecommendationControllerTest`（TripCreateRequest 补 null）、`TravelerMatchTest`/`TravelerRecommendationRankerTest`（TripPlan 补尾 null）各 1 处；复跑 verify EXIT=0（同第一/二波 TripPlanStatusTest union 口径） |
+
+### 11.3 第四波合并后全量重验（fresh DB V1–V25，沙箱外后端）
+
+| 层 | 命令 | 结果 |
+|---|---|---|
+| 后端 | `.\mvnw.cmd verify`（清 SPRING_DATASOURCE_URL） | **514 tests / 0 failures / 0 errors** EXIT=0（main traveler-recommendation 测试并入 + 11-1 修复，较第三波 495 增长） |
+| 前端单测 | `npm test` | **53 files / 406 tests passed** |
+| 前端类型/构建 | `npm run build`（含 tsc --noEmit） | 0 errors + 构建成功（styles.css 并集后） |
+| E2E 全量 | `npx playwright test`（fresh `routeme-m4-final.db`） | **161 tests：129 passed / 32 failed**（15.9m，`e2e-m4.log`）；**ai-planner A1–A12 12/12**；main 新增 **traveler-recommendation 7/7** + admin/credit/experience-likes 全绿 |
+| E2E 隔离 | `npx playwright test profiles.spec.ts`（fresh `routeme-m4-profiles.db`，两次） | **7/8**：4 例污染转绿，**:37 隔离仍红 = main 新偏差**（见 11.4） |
+| 契约门禁 | `openspec validate add-ai-itinerary --strict` / `redocly lint` | **valid** / **0 error / 21 warnings**（0.20.0） |
+
+### 11.4 32 红分类（无本 change 回归）
+
+- **map.spec 9 + trips.spec 9 = 18 例 refine-trip-map 偏差**（延续原裁决）。
+- **auth.spec 7 + profile.spec 2 = 9 例 main UI refresh 既有 E2E 偏差**（延续 §9.4 git 证据）。
+- **profiles.spec:37 = 1 例 main traveler-recommendation 新偏差（本轮新发现，git 证据）：** profiles.spec 在第三波切点 `8edd99b` == main `91f9bce` **字节相同**（hash 比对），但 main 详情页新增 recommendation 块使 `查看 阿岚 的资料` 按钮双元素（publisher-row + recommendation-user）→ spec `getByRole` strict mode violation；**fresh DB 隔离两次复跑均红**，非污染非本 change 回归（本 change 未动详情页 publisher 按钮，AI 摘要为加性块）。E2E 不在 CI（债务 2），main 自身即红。
+- **profiles.spec 其余 4 例 = 债务 1 数据污染**（隔离 fresh DB 转绿证实）。
+- **验收口径达成：** ai-planner 12/12 + traveler-recommendation 7/7 + 非地图套件隔离全绿（除 main 自身 :37 偏差）；32 红均非本 change 回归（18 refine-trip-map + 10 main E2E 债务 + 4 污染）。
+
+### 11.5 提交
+
+- styles.css 并集 + 0.20.0 + OpenApiTest 断言 + 3 测试构造修复 staged；三报告 addendum staged；排除项延续。
+- `git commit --no-edit`（第四波 merge）→ push 前再 pull 核对 → push。
