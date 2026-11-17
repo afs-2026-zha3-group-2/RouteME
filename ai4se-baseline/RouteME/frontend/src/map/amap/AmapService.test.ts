@@ -90,4 +90,14 @@ describe('AmapService mapping', () => {
     expect(amapErrorMessage(new AmapApiError('ROUTE_NOT_FOUND', 'none'))).toContain('路线');
     expect(amapErrorMessage(new AmapApiError('AMAP_ERROR', 'x', '20800'))).toContain('20800');
   });
+
+  it('names the backend proxy when it is unreachable', () => {
+    const message = amapErrorMessage(new AmapApiError('PROXY_UNAVAILABLE', 'down'));
+    expect(message).toContain('后端');
+    expect(message).toContain('8080');
+  });
+
+  it('names the AMap upstream when the proxy forward fails', () => {
+    expect(amapErrorMessage(new AmapApiError('UPSTREAM_UNAVAILABLE', 'forward'))).toContain('上游');
+  });
 });

@@ -10,6 +10,7 @@
  * 纯映射函数单独导出，便于在 Node 环境测试。
  */
 
+import { amapServiceHost } from './config';
 import { loadAmap } from './loader';
 import type { LngLat } from './types';
 
@@ -146,7 +147,9 @@ export type AmapErrorCode =
   | 'AMAP_ERROR'
   | 'NO_RESULT'
   | 'ROUTE_NOT_FOUND'
-  | 'INVALID_WAYPOINTS';
+  | 'INVALID_WAYPOINTS'
+  | 'PROXY_UNAVAILABLE'
+  | 'UPSTREAM_UNAVAILABLE';
 
 /** 高德错误统一包装，UI 只读取 code/infocode，不解析原始结果对象。 */
 export class AmapApiError extends Error {
@@ -260,7 +263,7 @@ export function toRouteLeg(
   };
 }
 
-/** 高德 SDK 失败结果 → 统一错误（含配额 / Key / 安全密钥）。 */
+/** 高德 SDK 失败结果 → 统一错误（含配额 / Key / 安全密钥 / 代理）。 */
 function sdkError(
   status: string,
   info: string | undefined,
@@ -268,19 +271,82 @@ function sdkError(
 ): AmapApiError {
   const code = String(infocode ?? '');
   const message = info ?? '高德服务返回错误';
-  if (QUOTA_INFOCODES.has(code)) {
+  const upper = message.toUpperCase();
+  if (QUOTA_INFOCODES.has(code) || upper.includes('QPS') || upper.includes('LIMIT')) {
     return new AmapApiError('QUOTA', '高德 API 配额或并发限制已触发', code);
   }
-  if (AUTH_INFOCODES.has(code) || message.toUpperCase().includes('SCODE')) {
+  if (AUTH_INFOCODES.has(code) || upper.includes('SCODE')) {
     return new AmapApiError('AUTH', '高德 Key 或安全密钥无效', code || 'INVALID_USER_SCODE');
   }
   if (status === 'no_data') {
     return new AmapApiError('NO_RESULT', '没有找到结果', code);
   }
+  // 本站代理自定义的错误码：区分「后端没配 Key」「转发失败」「路径被拒」。
+  if (code === '50000' || upper.includes('AMAP_KEY_NOT_CONFIGURED')) {
+    return new AmapApiError('NOT_CONFIGURED', '后端未配置高德 Key', code);
+  }
+  if (code === '50001' || upper.includes('AMAP_PROXY_UNAVAILABLE')) {
+    return new AmapApiError('UPSTREAM_UNAVAILABLE', '高德上游转发失败', code || '50001');
+  }
   return new AmapApiError('AMAP_ERROR', message, code);
 }
 
 /* ---------- 插件加载 ---------- */
+
+/** 代理探测结果：ok / 后端未配置安全密钥 / 后端不可达。 */
+export type ProxyProbeResult = 'ok' | 'not-configured' | 'unavailable';
+
+let probePending: Promise<ProxyProbeResult> | null = null;
+
+/**
+ * 探测同源地图代理是否可用。
+ *
+ * <p>高德插件失败会统一回调 {@code status: 'error'}，无法区分「Key 错」与
+ * 「后端没启动」。先探一次代理：502/504/网络错误说明后端不可达，503 说明后端
+ * 缺少安全密钥，这样用户看到的是可操作的提示而不是笼统的「高德服务返回错误」。
+ */
+export async function probeProxy(): Promise<ProxyProbeResult> {
+  if (typeof window === 'undefined') {
+    return 'unavailable';
+  }
+  if (probePending !== null) {
+    return probePending;
+  }
+  probePending = (async () => {
+    const controller = new AbortController();
+    const timer = window.setTimeout(() => controller.abort(), 4000);
+    try {
+      const response = await fetch(`${amapServiceHost()}/v3/ip`, {
+        signal: controller.signal,
+        cache: 'no-store',
+        headers: { Accept: 'application/json' },
+      });
+      if (response.status === 503) {
+        return 'not-configured';
+      }
+      if (!response.ok) {
+        return 'unavailable';
+      }
+      // 只要拿到 JSON，代理链路就是通的；业务状态交给插件回调处理。
+      const body = (await response.json().catch(() => null)) as { info?: string } | null;
+      if (body?.info === 'AMAP_PROXY_UNAVAILABLE') {
+        return 'unavailable';
+      }
+      return 'ok';
+    } catch {
+      return 'unavailable';
+    } finally {
+      window.clearTimeout(timer);
+    }
+  })();
+  return probePending;
+}
+
+/** 允许「重新加载地图」后再次探测（例如刚启动后端）。 */
+export function resetProxyProbe(): void {
+  probePending = null;
+  sdkPending = null;
+}
 
 let sdkPending: Promise<AmapSdk> | null = null;
 
@@ -288,26 +354,38 @@ function loadSdk(): Promise<AmapSdk> {
   if (sdkPending !== null) {
     return sdkPending;
   }
-  sdkPending = loadAmap()
-    .then(
-      (namespace) =>
-        new Promise<AmapSdk>((resolve, reject) => {
-          const sdk = namespace as unknown as AmapSdk;
-          if (typeof sdk.plugin !== 'function') {
-            reject(new AmapApiError('AMAP_ERROR', '高德插件加载器不可用'));
-            return;
-          }
-          sdk.plugin(PLUGINS, () => resolve(sdk));
-        }),
-    )
-    .catch((error: unknown) => {
-      sdkPending = null;
-      if (error instanceof AmapApiError) {
-        throw error;
-      }
-      const message = error instanceof Error ? error.message : '高德地图加载失败';
-      throw new AmapApiError('NOT_CONFIGURED', message);
+  sdkPending = (async () => {
+    const probe = await probeProxy();
+    if (probe === 'unavailable') {
+      throw new AmapApiError(
+        'PROXY_UNAVAILABLE',
+        '地图代理不可达（后端未启动）',
+        'PROXY_UNAVAILABLE',
+      );
+    }
+    if (probe === 'not-configured') {
+      throw new AmapApiError(
+        'NOT_CONFIGURED',
+        '后端未配置高德安全密钥',
+        'AMAP_KEY_NOT_CONFIGURED',
+      );
+    }
+    const namespace = await loadAmap();
+    const sdk = namespace as unknown as AmapSdk;
+    if (typeof sdk.plugin !== 'function') {
+      throw new AmapApiError('AMAP_ERROR', '高德插件加载器不可用');
+    }
+    return await new Promise<AmapSdk>((resolve) => {
+      sdk.plugin(PLUGINS, () => resolve(sdk));
     });
+  })().catch((error: unknown) => {
+    sdkPending = null;
+    if (error instanceof AmapApiError) {
+      throw error;
+    }
+    const message = error instanceof Error ? error.message : '高德地图加载失败';
+    throw new AmapApiError('NOT_CONFIGURED', message);
+  });
   return sdkPending;
 }
 
@@ -516,6 +594,10 @@ export function amapErrorMessage(error: unknown): string {
       case 'NOT_CONFIGURED':
       case 'MISSING_JS_KEY':
         return '高德地图尚未配置：请设置 VITE_AMAP_JS_KEY 与后端高德安全密钥。';
+      case 'PROXY_UNAVAILABLE':
+        return '地图代理不可达：请确认后端已启动（默认 8080），然后重新加载地图。';
+      case 'UPSTREAM_UNAVAILABLE':
+        return '高德上游暂时连不上（代理转发失败），请稍后重试。';
       case 'NETWORK':
         return '高德服务连接失败，请检查网络后重试。';
       case 'NO_RESULT':

@@ -7,7 +7,7 @@
 
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { Button, Spin, Typography } from 'antd';
-import { amapErrorMessage } from './AmapService';
+import { amapErrorMessage, resetProxyProbe } from './AmapService';
 import { loadAmap } from './loader';
 import type { AmapMap, LngLat } from './types';
 
@@ -175,7 +175,14 @@ export function AmapContainer({
       {status === 'error' && (
         <div className="amap-state amap-state-error" role="alert">
           <Typography.Text>{error}</Typography.Text>
-          <Button size="small" onClick={() => setAttempt((previous) => previous + 1)}>
+          <Button
+            size="small"
+            onClick={() => {
+              // 用户可能刚启动后端；清掉缓存的探测与插件状态后重试。
+              resetProxyProbe();
+              setAttempt((previous) => previous + 1);
+            }}
+          >
             重新加载地图
           </Button>
         </div>
