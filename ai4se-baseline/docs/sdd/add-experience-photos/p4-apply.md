@@ -38,7 +38,7 @@
 ## 3. 契约 / 迁移排号确认
 
 - 本 change 已实际落地 **`openapi.yaml` 0.12.0 + `V18__add_experience_photos.sql`**；`OpenApiTest` 断言版本 0.12.0。
-- 在途 `add-ai-itinerary`（REQ-017）仍为 p1-in-progress、未合并，按 `design.md` D11「以合并先后为准，不共用编号」，其 P3 / P4 需顺延为 **0.13.0 + V19**；已在 `registry.md` / `handoff.md` 记录。
+- 在途 `add-credit-account`（REQ-019，P3 完成）与 `add-ai-itinerary`（REQ-017，P1）均未合并；按 `design.md` D11「以合并先后为准，不共用编号」，`add-credit-account` 顺延 **0.13.0 + V19**、`add-ai-itinerary` 顺延 **0.14.0 + V20**；已在 `registry.md` / `handoff.md` 记录。
 - C1（P5 更新 Living Spec `Purpose` 为「纯文字 + 可选图片 + 内置封面」）未在本阶段执行，挂 P5。
 
 ## 4. 残余风险与未覆盖面

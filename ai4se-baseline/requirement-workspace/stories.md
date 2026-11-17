@@ -235,3 +235,30 @@
 - 四组划分与状态推导沿用 `MyTripsServiceImpl` 与 `trip-plans` 的四态，本故事不重复定义。
 - 原型中的「编辑 / 删除 / 参考发布」不在本迭代落地：前两者无路由与接口，后者属 S17。
 - 未接入外部 ALM；本表为仓库内权威故事清单，ALM Sync 状态记为 Pending。
+
+# Story list — REQ-019（信用分账户与等级展示）
+
+- **来源：** 用户当次会话提供的 P0 故事「信用分账户与等级展示」（信用系统迭代 1 / Story 1 / 2 点 / 落点页面：用户个人主页 + 管理后台用户详情页）
+- **Change：** `add-credit-account`（`user-credit` ADDED：7 Requirement / 22 Scenario）
+- **口径：** 一条故事 = 一个展示面（个人主页）+ 一份只读契约扩展 + 一次状态迁移（无信用账户 → 初始 80 分账户）
+- **编号说明：** 本故事不在 `docs/prototype/stories.html` 的 S01–S18 内（原型把「信用体系」列为 MVP 之外），按延续序列记为 **S19** 以便与既有故事表并列。
+- **需求编号说明：** P1 起草时原为 REQ-018；合并 `origin/main`（2026-11-17，`77ab02b`）后该号由 `add-experience-photos`（游后体验图片上传）占用，按项目「后到者顺延」惯例改为 **REQ-019**。
+- **更新时间：** 2026-11-17
+
+| Story | Title | 角色 | Priority | Iteration | Points | Page | Parent REQ | Change | Status |
+|---|---|---|---|---|---|---|---|---|---|
+| S19 | 信用分账户与等级展示 | 平台用户 | P0 | 信用系统迭代 1 | 2 | 个人主页 | REQ-019 | `add-credit-account` | P1 drafted（2026-11-17） |
+
+## Traceability（REQ-019）
+
+| Story | Requirement scenarios | Change spec | Story file |
+|---|---|---|---|
+| S19 | REQ-019 §4 C-1 ~ C-16 | `openspec/changes/add-credit-account/specs/user-credit/spec.md`（ADDED：7 Requirement / 22 Scenario） | 无独立故事文件：以 proposal + Delta 承接（与 REQ-012 / REQ-014 同口径） |
+
+## Notes（REQ-019）
+
+- **不拆子故事：** 「用户创建 → 初始化账户 → 展示信用状态」是同一垂直切片；拆开只会得到「只有接口没有展示」的不可验收半成品。
+- **管理端 AC 推迟：** 故事 AC3 / AC4 与 AC6 的管理端一半按裁决 D2 推迟，另开故事；本故事不覆盖，Delta 中以「管理后台信用分视图与计分明细的边界」显式约束。
+- **不含计分事件：** 体验获赞加分、退出扣分、举报核实扣分、月度上限与封禁均属后续故事；本故事只交付账户与展示底座。
+- **依赖：** `user-profile` / `user-profiles` 尚未归档；本故事只追加只读字段，不改其 Requirement 语义。
+- 未接入外部 ALM；本表为仓库内权威故事清单，ALM Sync 状态记为 Pending。

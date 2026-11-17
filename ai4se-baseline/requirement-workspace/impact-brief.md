@@ -1146,3 +1146,105 @@ REQ-010：聊天页按原型重构、聊天准入与退出语义调整、集合�
 - **单故事：** S16 增强项；不新开故事，避免与原型故事列表双维护。
 - **切片建议（P3 任务顺序）：** 契约 + 迁移 → 后端上传（魔数 / EXIF）/ 读取 / 归属 / 懒清理 → 分享页上传与编辑 → 详情页展示 → 历史兼容与 E2E 回归 → 原型与文档。
 - **质量自检（split-heuristics）：** 子目标一句话可说清 ✓；端到端可观察（上传 → 保存 → 详情可见 → 编辑排序）✓；可独立运行 ✓；capability 名真实 ✓；无依赖环 ✓（仅依赖已完成的上传先例）。
+
+## 19. REQ-019 变更影响 — 信用分账户与等级展示（信用系统迭代 1）
+
+- **日期：** 2026-11-17 ｜ **触发：** `/sdd:p1`（用户提供 P0 故事 + 8 项裁决 D1–D8）
+- **粒度：** 应用架构（数据所有权 / 注册集成点 / 个人主页展示面 / 管理端边界），非代码设计
+- **基线：** `main@cf3ed76`（P1/P2 期间）→ 合并 `origin/main@77ab02b` 时发现 REQ-018 已被 `add-experience-photos` 占用，本需求按「后到者顺延」改为 **REQ-019**
+
+### 19.1 Requirement set
+
+- `requirement-workspace/requirements/REQ-019-credit-account.md`（Ready 条目，16 场景 C-1 ~ C-16，blocking OQ 0，DoR BLOCKER 0）
+- `requirement-workspace/intents/REQ-019-credit-account.md`（意图捕获 + 证据锚点 + D1–D11）
+- 新增能力：`user-credit`（ADDED）；依赖 `user-profile` / `user-profiles`（未归档，只读字段扩展）与 `user-auth`（注册集成点）
+- 用户裁决：D1 0–100 五档（0–120 方案作废）/ D2 本轮只做用户端 / D3 账户表 + 账本表 / D4 本人与他人同口径、明细不展示 / D5 统一回填 80 / D6 落地记账服务 / D7 扩展个人主页响应 / D8 `add-credit-account` + `user-credit` / D9 不改 `user-auth` / D10 等级英文码 + 前端映射 / D11 零变化仍留一条 `applied_delta = 0` 记录
+
+### 19.2 As-is asset inventory（evidence paths）
+
+| 资产 | 路径 | 现状 |
+|---|---|---|
+| 信用分实现 | 全仓 grep `信用分 / 信誉分 / credit_score / creditScore / reputation` | **0 命中**：无实现、无规格、无迁移、无原型 |
+| 用户表 | `RouteME/backend/src/main/resources/db/migration/V3__create_demo_users.sql`、`V10__add_user_profile.sql` | 仅昵称 / 首字头像 / 学校 / 简介 / 兴趣 + 资料八列；无分数、无角色 |
+| 注册链路 | `RouteME/backend/src/main/java/routeme/service/impl/AuthServiceImpl.java` | `register` 为 `@Transactional`；校验 → `DemoUserService.createAccount` → `issue` |
+| 账号写入 | `RouteME/backend/src/main/java/routeme/service/DemoUserService.java` / `impl/DemoUserServiceImpl.java` | 注册与演示账号共用的唯一写入口 |
+| 个人主页接口 | `RouteME/backend/src/main/java/routeme/controller/UserProfileController.java`、`service/impl/UserProfileServiceImpl.java`、`response/UserProfileResponse.java` | `GET /api/users/{userId}/profile`；`@JsonInclude(NON_NULL)`；本人 / 他人仅生日差异 |
+| 个人主页页面 | `RouteME/frontend/src/profile/ProfilePage.tsx` | `#/users/{id}`；hero + 资料卡；单次 `loadUserProfile` |
+| 前端类型 / API | `RouteME/frontend/src/types.ts`（`UserProfile`）、`RouteME/frontend/src/api.ts`（`loadUserProfile`） | 需同步新增只读字段 |
+| 文案 | `RouteME/frontend/src/i18n/tripMessages.ts`（`profile*`） | 等级 / 分数文案落点 |
+| 既有账号 | `V3`、`V12`（id 4 周野）、`V13`、`V14`、`V15` | 4 个演示用户 + 已注册账号，均需回填 |
+| 契约 | `RouteME/openapi.yaml`（`info.version: 0.11.0`、`components.schemas.UserProfile`） | 需追加只读字段并升次版本 |
+| 迁移 | `RouteME/backend/src/main/resources/db/migration` | 头为 `V17__meeting_areas.sql` |
+| 管理端 | 全仓 grep `admin / 管理后台`；`app_users` 列 | **0 命中**；无角色列、无端点、无页面 |
+| Living Spec | `openspec/specs/user-auth/spec.md`「注册账号」；`openspec/specs/design-system/spec.md` | 注册需求不含信用分；展示令牌可复用 |
+| 未归档相关 change | `openspec/changes/add-user-profile/`（`user-profile` ADDED）、`openspec/changes/add-user-profiles/`（`user-profiles` ADDED） | 个人主页响应归属方，本需求在其上追加字段 |
+| 原型 | `docs/prototype/stories.html`、`docs/prototype/discovery-cn.html` | 信用体系列为 MVP 之外 / 后续，无页面骨架 |
+
+### 19.3 As-is → proposed delta（逐资产）
+
+| 资产 | As-is | Proposed delta |
+|---|---|---|
+| 数据表 | 无信用相关表 | **新增** `user_credit_account`（每用户 1 条，`score` 0–100）+ `credit_ledger`（append-only，含前后快照与幂等键）；**不改** `app_users` |
+| 历史数据 | 4 个演示用户 + 已注册账号无分数 | 迁移回填 80（全表，不只覆盖有凭据账号） |
+| 注册链路 | 只建账号与会话 | 同事务内建信用账户并置 80；失败分支不落账户 |
+| 个人主页接口 | 返回资料 + `joined_at` + `stats` | 追加只读信用字段（分数 + 等级），本人 / 他人同口径；非空值（破 `NON_NULL` 省略） |
+| 个人主页页面 | hero + 资料卡，无信用区 | 新增信用状态展示（分数 + `/ 100` + 等级文字，不只颜色）；资料未完善仍展示 |
+| 资料保存接口 | 用户可写资料字段 | 信用字段不属于可写字段；携带即忽略（无写分端点） |
+| 记账能力 | 无 | 新增内部记账服务：0–100 裁断、实际生效量、前后快照、同事务写账本、幂等键唯一约束；**无业务事件调用方** |
+| 契约 | 0.11.0 | 次版本 + `UserProfile` 新字段（`credit_score` + `credit_level`，等级取 `excellent` / `good` / `fair` / `low` / `risk`）；版本号与迁移号在 P3 排他确认（REQ-016 / REQ-017 已占用 V17 / V18 与 0.12.0） |
+| 管理端 | 不存在 | **无 delta**（D2 推迟；AC3 / AC4 / AC6 管理端一半不在本需求） |
+| Living Spec | `user-auth` 注册需求不含信用分 | 新增 `user-credit` 规格；D9 裁定不改 `user-auth`「注册账号」 |
+| 原型 | 无信用分页面 | P3 需补一个原型截点（个人主页信用状态）再对齐实现 |
+
+### 19.4 Blast radius（应用架构）
+
+- **后端（1 个新能力 + 2 处集成）：** 新增 `user-credit` 的实体 / mapper / service / 记账服务；注册链路插入账户初始化；个人主页读取路径拼接信用字段。
+- **数据（2 表 + 1 迁移）：** 账户表与流水表；回填 80；不动既有表结构与既有种子。
+- **契约（1 处扩展）：** `UserProfile` 追加只读字段；无新端点。
+- **前端（1 页 + 类型 + 文案）：** `ProfilePage` 展示信用状态；`types.ts` / `tripMessages.ts` 同步；无新路由、无新页面。
+- **管理端（0）：** 不新增角色、端点与页面。
+- **不影响：** 首页、行程、申请、聊天、体验、举报；`ProfileModal` 与他人摘要接口不变。
+- **运行时风险面：** 注册事务多一次写入（同库同事务，无新依赖）；个人主页读取多一次按用户查询。
+
+### 19.5 Artifact impact（specs / tests / docs）
+
+| 工件 | 影响 |
+|---|---|
+| OpenSpec Delta | `user-credit` **ADDED**（账户 / 初始化与回填 / 五档派生 / 展示口径 / 只读 / 账本与记账（含零变化留痕）/ 越界裁断）；无 MODIFIED、无 REMOVED |
+| 长期规格 | 归档后新增 Living Spec `openspec/specs/user-credit/spec.md` |
+| 契约 | `openapi.yaml` 次版本 + `UserProfile` 新字段；后端契约测试同步 |
+| 后端测试 | 记账服务单测（裁断 / 快照 / 等式 / 幂等键）；注册集成测试（成功建账户 80、失败无账户）；个人主页响应断言（本人 / 他人 / 历史账号 / 资料未完善） |
+| 前端测试 | 等级派生纯函数单测（五档边界）；展示串断言 |
+| E2E | 注册 → 个人主页看到「80 / 100 · 信用良好」；他人视角看到同一分数；无明细入口 |
+| 知识库 | `docs/knowledge/interfaces/README.md` 需登记 `GET /users/{id}/profile` 新字段 |
+| 阶段记录 | `docs/sdd/add-credit-account/p1..p4`；`docs/sdd/README.md` 索引 |
+| 评审 | `docs/reviews/20261117-add-credit-account-proposal-review.md`、`-spec-review.md` |
+
+### 19.6 Dual-track notes（OpenSpec vs agile）
+
+- **OpenSpec 轨：** 单 change `add-credit-account`，单能力 `user-credit`（ADDED）；个人主页字段扩展写在同一 Delta，不新建 `user-profile` delta（避免与未归档 change 撞块）。
+- **Agile 轨：** 故事「信用分账户与等级展示」（信用系统迭代 1 / P0 / 2 点）即业务口径；不另拆多条故事（尺寸小于拆分阈值，且四件事必须同批交付才能闭环）。
+- **并列轨道：** `creditscore-account` 与后续「计分事件」「管理后台」分属不同故事，本需求不预留空壳端点。
+
+### 19.7 Risks & blockers
+
+| 级别 | 项 | 说明 / 缓解 |
+|---|---|---|
+| Risk | 契约版本号撞号 | REQ-017 已声明 0.12.0；本需求升次版本前必须在 P3 按合并顺序确认 |
+| Risk | 迁移号撞号 | main 头为 V17；REQ-016 声明 V17、REQ-017 声明 V18；本需求迁移号在 P3 排他确认（不预设 V18 / V19） |
+| Risk | `NON_NULL` 序列化导致字段被省略 | 信用字段必须非空；实现后需断言「他人视角也含该键」 |
+| Risk | 历史账号漏回填 | 回填按 `app_users` 全表，不只按有登录凭据的账号；E2E 覆盖 id 4 等无凭据账号 |
+| Risk | 未归档 change 交叉 | `add-user-profile` / `add-user-profiles` 尚未归档；本需求只追加字段，不改其 Requirement 语义；归档顺序不影响本 change 通过 |
+| Risk | 管理端 AC 被误认为未完成 | D2 已显式推迟；proposal / 需求 / registry 均标注推迟范围 |
+| Risk | 等级英文码与前端文案不一致 | 契约固定五个码值，前端映射集中在 i18n；契约测试断言码值集合，E2E 断言展示文字 |
+| Risk | 零变化记录被误当成异常数据 | Delta 明确「变更前 = 变更后、实际变化量 0」为合法记录；记账服务单测覆盖该分支 |
+| Risk | 原型无骨架 | `@rule:prototype-ui-alignment`；P3 先补原型截点再实现 |
+| Blocker | 无 | blocking OQ = 0；DoR BLOCKER = 0；A0 ⑨–⑫ 全过 |
+
+### 19.8 Suggested split boundaries（供 proposal-split / story-split）
+
+- **一个 change：** `add-credit-account` ← REQ-019（信用系统迭代 1 / Story 1）。
+- **不并入计分故事：** 赞 / 退出 / 举报 / 月度上限 / 封禁属后续故事；本 change 只交付底座与展示，不预留业务事件端点。
+- **不并入管理后台：** 管理端能力不存在（无角色列、无端点、无页面），另开故事。
+- **阶段：** 单阶段；无归档前置依赖（`user-credit` 全新能力），但需与 REQ-016 / REQ-017 协调契约版本与迁移号。
+- **质量自检（split-heuristics）：** 子目标一句话可说明 ✓；端到端可观察（注册 → 个人主页看到「80 / 100 · 信用良好」）✓；可独立运行 ✓；capability 名真实（`user-credit`）✓；无依赖环 ✓；场景 15 条 ≤ 单 change 阈值 ✓。

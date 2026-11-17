@@ -21,6 +21,7 @@ import {
   formatDuration,
   geocodePlace,
   planRoute,
+  straightLineRoute,
   type PlaceResult,
   type RoutePlan,
   type RouteWaypoint,
@@ -69,6 +70,7 @@ export function MapExplorerPage({ provinceCode, cityCode }: Props) {
   const [routeRequested, setRouteRequested] = useState(false);
   const [planning, setPlanning] = useState(false);
   const [routeError, setRouteError] = useState<string | null>(null);
+  const [estimateNote, setEstimateNote] = useState<string | null>(null);
   const [candidate, setCandidate] = useState<PlaceResult | null>(null);
   const [candidateLoading, setCandidateLoading] = useState(false);
   const [savedLabel, setSavedLabel] = useState<string | null>(null);
@@ -140,11 +142,13 @@ export function MapExplorerPage({ provinceCode, cityCode }: Props) {
   useEffect(() => {
     if (!routeRequested || waypoints.length < 2) {
       setRoute(null);
+      setEstimateNote(null);
       return;
     }
     let active = true;
     setPlanning(true);
     setRouteError(null);
+    setEstimateNote(null);
     planRoute(mode, waypoints)
       .then((plan) => {
         if (active) {
@@ -153,9 +157,19 @@ export function MapExplorerPage({ provinceCode, cityCode }: Props) {
         }
       })
       .catch((reason: unknown) => {
-        if (active) {
+        if (!active) {
+          return;
+        }
+        // 路线服务不可用时仍按直线展示途经点顺序，避免整块地图空白。
+        setPlanning(false);
+        try {
+          setRoute(straightLineRoute(mode, waypoints));
+          setRouteError(null);
+          setEstimateNote(
+            `高德路线服务不可用（${amapErrorMessage(reason)}），已按直线显示途经点顺序，距离与时间为本地估算。`,
+          );
+        } catch {
           setRoute(null);
-          setPlanning(false);
           setRouteError(amapErrorMessage(reason));
         }
       });
@@ -361,6 +375,9 @@ export function MapExplorerPage({ provinceCode, cityCode }: Props) {
 
           {routeError !== null && (
             <Alert type="error" showIcon title="路线规划失败" description={routeError} />
+          )}
+          {estimateNote !== null && (
+            <Alert type="info" showIcon title="已按直线显示路线" description={estimateNote} />
           )}
 
           <ItineraryPanel
