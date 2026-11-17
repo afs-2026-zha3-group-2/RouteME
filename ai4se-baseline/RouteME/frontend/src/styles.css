@@ -6914,3 +6914,132 @@ svg {
     min-height: 62vh;
   }
 }
+
+/* 目的地天气卡：发布页侧栏与行程详情页共用（真实数据 + 后端提醒，不伪造数值）。 */
+.weather-card .weather-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.weather-source {
+  border: none;
+  background: var(--lagoon-soft);
+  color: var(--t-lagoon);
+}
+
+.weather-loading {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--ink-3);
+  font-size: 13px;
+}
+
+.weather-error {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.weather-main {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  margin-top: 2px;
+}
+
+.weather-temp {
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.weather-text {
+  font-size: 14px;
+  color: var(--ink-2);
+}
+
+.weather-date {
+  margin: 2px 0 10px;
+  font-size: 12.5px;
+  color: var(--ink-3);
+}
+
+.weather-facts {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(88px, 1fr));
+  gap: 8px;
+  margin: 0 0 10px;
+}
+
+.weather-fact {
+  padding: 8px 6px;
+  border-radius: 10px;
+  background: var(--surface-2);
+  text-align: center;
+}
+
+.weather-fact dt {
+  margin: 0;
+  font-size: 11px;
+  color: var(--ink-3);
+}
+
+.weather-fact dd {
+  margin: 2px 0 0;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.weather-reminders {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.weather-reminder {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 8px 10px;
+  border-radius: 10px;
+  background: var(--surface-2);
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--ink-2);
+}
+
+.weather-reminder-tag {
+  flex: 0 0 auto;
+  margin-inline-end: 0;
+  border: none;
+}
+
+.weather-reminder-info {
+  background: rgba(47, 159, 224, 0.12);
+}
+
+.weather-reminder-warning {
+  background: rgba(255, 183, 3, 0.16);
+}
+
+.weather-reminder-danger {
+  background: rgba(224, 72, 58, 0.12);
+}
+
+.weather-reminder-success {
+  background: rgba(20, 154, 99, 0.12);
+}
+
+@media (max-width: 640px) {
+  .weather-facts {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}

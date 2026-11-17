@@ -33,15 +33,15 @@ API、事件与集成契约。字段一律 snake_case；时间字段为 RFC3339 
 | GET | `/experiences` | 旅行体验分页列表；`destination_code`、`date_from`、`date_to`、`tags`、`page`、`size`，按最近保存时间倒序；按关联行程日期区间求交集 |
 | GET | `/me/experiences` | 我的体验（我的旅行「已完成」入口用） |
 | GET | `/trips/{tripId}/experiences` | 某行程的体验，按首次发布时间升序 |
-| POST | `/trips/{tripId}/experiences` | 发布或修改我的体验；首次 201、更新 200；`{content, intensity, advice}` |
-
+| POST | `/trips/{tripId}/experiences` | 发布或修改我的体验；首次 201、更新 200 ；`{content, intensity, advice}` |
+| GET | `/weather/forecast` | 目的地单日天气（Open-Meteo，公开只读）；`destination_code` 与可选 `lng`/`lat` 至少一组 + `date` ；越界 200 + `available=false`（`OUT_OF_RANGE`），上游失败 502 `WEATHER_UPSTREAM_ERROR` |
 - 所有 `/trips*`、`/matches*`、`/me/*`、`/applications/*`、`/reports` 请求要求 `X-User-Id`（`app_users.id`）；缺失或未知返回 401 `DEMO_USER_REQUIRED`。
 - 列表只返回未结束行程；`sort` 非法返回 400。
 - 分页：`/trips`、`/matches`、`/experiences` 返回 `{items, page, size, total, total_pages}`；`page` 从 1 起、`size` 默认 20 且上限 50，越界返回 400 `INVALID_INPUT`。`/me/*` 与 `/trips/{id}/experiences` 仍返回数组。
 - 同行关系 = 发布者 + 该行程 `ACCEPTED` 的申请者；`joined_count` 仍由 `trip-plans` 单一写入，接受/退出经服务方法联动。
 - 聊天仅对已匹配双方开放；行程 `completed` 后可读不可写；只有 `PENDING` 申请不能进入。
 - 体验仅对「已结束且参加过（发布者或已接受同行者）」开放；每人每行程一条，再次提交即更新；`content` 10–400 字、`intensity` ∈ relaxed/moderate/tiring、`advice` 必填 ≤120 字。
-- 错误码：`INVALID_INPUT`(400)、`DEMO_USER_REQUIRED`(401)、`FORBIDDEN`/`CHAT_NOT_ALLOWED`/`EXPERIENCE_NOT_ALLOWED`(403)、`TRIP_NOT_FOUND`/`APPLICATION_NOT_FOUND`(404)、`TRIP_NOT_OPEN`/`APPLICATION_NOT_PENDING`/`DUPLICATE_APPLICATION`/`CHAT_READ_ONLY`(409)、`INTERNAL_ERROR`(500)。
+- 错误码：`INVALID_INPUT`(400)、`DEMO_USER_REQUIRED`(401)、`FORBIDDEN`/`CHAT_NOT_ALLOWED`/`EXPERIENCE_NOT_ALLOWED`(403)、`TRIP_NOT_FOUND`/`APPLICATION_NOT_FOUND`(404)、`TRIP_NOT_OPEN`/`APPLICATION_NOT_PENDING`/`DUPLICATE_APPLICATION`/`CHAT_READ_ONLY`(409)、`WEATHER_UPSTREAM_ERROR`(502)、`INTERNAL_ERROR`(500)。
 - 状态由 `completed_at` 与人数推导，不是独立写入的字段；映射与字段约束以 `openapi.yaml` 为准。
 
 ## RouteME 信用分展示（2026-11-17，`user-credit` / REQ-019）

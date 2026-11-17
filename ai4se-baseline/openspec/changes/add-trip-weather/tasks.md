@@ -78,3 +78,18 @@
 | 契约号段被占用 | 顺延次版本号并同步 `OpenApiTest` |
 | `add-ai-itinerary` 先合并 | 按设计 §8 rebase 并删除 AI 侧天气代理 |
 | E2E 与既有用例争用端口 | 沿用隔离端口与独立 SQLite |
+
+## 5. 执行清单（openspec 任务追踪）
+
+- [x] **T1 契约：`openapi.yaml` 0.16.0 + 天气路径与 schema**
+- [x] **T2 后端纯函数 Red：WMO 文案与提醒规则**
+- [x] **T3 配置与异常：`WeatherProperties` / `WeatherConfig` / `WeatherUpstreamException`**
+- [x] **T4 坐标解析：`DestinationLocator` 与进程内缓存**
+- [x] **T5 天气服务：窗口校验、上游调用、daily 对齐、字段归一**
+- [x] **T6 控制器：参数校验与错误映射**
+- [x] **T7 前端纯函数：状态派生、日期与温度文案、提醒色调**
+- [x] **T8 前端请求与组件：`useWeather` 防竞态 + `WeatherCard` 五态**
+- [x] **T9 挂载：发布页侧栏与详情页信息区**
+- [x] **T10 E2E：`weather.spec.ts` 7 场景**
+- [x] **T11 文档：知识库接口表、变更日志、架构计数与冒烟接口**
+- [x] **T12 回归与走查：后端全量、前端 build + 单测、1440/768/390 × 浅/深**

@@ -39,6 +39,7 @@ import { useUserCredits } from '../profiles/useUserCredits';
 import { ReportModal } from '../safety/ReportModal';
 import { Avatar } from '../shell/Avatar';
 import type { DemoUser, Experience, MatchCandidate, TripApplication } from '../types';
+import { WeatherCard } from '../weather/WeatherCard';
 import { applicationEntryState, applicationErrorMessage } from './applicationEntry';
 import {
   MAX_MEETING_AREA_LENGTH,
@@ -394,6 +395,10 @@ export function TripDetailPage({ currentUser, tripId }: Props) {
               </span>
             </p>
           </header>
+
+          <section className="detail-section weather-section">
+            <WeatherCard destinationCode={trip.destination_code} date={trip.start_date} />
+          </section>
 
           {trip.ending_soon && (isPublisher || participant) && (
             <Alert type="warning" showIcon title={tripMessages.detailEndingSoon} />

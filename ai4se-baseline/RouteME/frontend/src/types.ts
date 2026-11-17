@@ -283,3 +283,44 @@ export type ExperienceFilters = {
   date_to?: string;
   tags?: string[];
 };
+
+/** Open-Meteo 单日天气；上游缺省的字段为 null，页面不展示对应项。 */
+export type WeatherDaily = {
+  weather_code: number | null;
+  weather_text: string;
+  temp_max_c: number;
+  temp_min_c: number;
+  precipitation_probability_pct: number | null;
+  precipitation_mm: number | null;
+  wind_speed_kmh: number | null;
+  uv_index: number | null;
+};
+
+/** 提醒类别：决定前端标签与色调，文案本身来自后端。 */
+export type WeatherReminderCode =
+  | 'rain'
+  | 'heat'
+  | 'uv'
+  | 'cold'
+  | 'temperature_gap'
+  | 'wind'
+  | 'calm';
+
+export type WeatherReminder = {
+  code: WeatherReminderCode;
+  text: string;
+};
+
+/** 目的地单日天气响应；`available=false` 时不携带任何天气数值。 */
+export type WeatherForecast = {
+  date: string;
+  destination_code: string | null;
+  city: string | null;
+  lng: number | null;
+  lat: number | null;
+  available: boolean;
+  reason: 'OUT_OF_RANGE' | null;
+  weather: WeatherDaily | null;
+  reminders: WeatherReminder[];
+  source: 'open-meteo';
+};
