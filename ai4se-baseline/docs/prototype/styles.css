@@ -973,14 +973,14 @@ img, svg { display: block; max-width: 100%; }
 .photo-note { display: flex; justify-content: space-between; gap: 10px; flex-wrap: wrap; font-size: 11.5px; color: var(--ink-3); }
 .photo-note .over { color: var(--t-coral); font-weight: 650; }
 .photo-error { font-size: 11.5px; color: var(--t-coral); }
-.experience-photos { display: flex; gap: 8px; align-items: flex-end; margin-top: 12px; flex-wrap: wrap; }
-.experience-photos img { width: 96px; height: 72px; object-fit: cover; border-radius: 10px; border: 1px solid var(--line); display: block; }
-.experience-photos-more { margin-left: auto; }
+.experience-photos { display: flex; gap: 8px; margin-top: 12px; flex-wrap: wrap; }
+.experience-photo { padding: 0; border: 0; background: none; border-radius: 10px; line-height: 0; cursor: zoom-in; }
+.experience-photo img { width: 96px; height: 72px; object-fit: cover; border-radius: 10px; border: 1px solid var(--line); display: block; transition: border-color .2s var(--ease); }
+.experience-photo:hover img { border-color: var(--ink-3); }
 .photo-viewer { display: grid; gap: 10px; }
 .photo-viewer img { width: 100%; border-radius: 12px; border: 1px solid var(--line); display: block; }
 @media (max-width: 680px) {
   .photo-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  .experience-photos-more { margin-left: 0; }
 }
 
 /* ---------- 抽屉 / 弹窗 ---------- */

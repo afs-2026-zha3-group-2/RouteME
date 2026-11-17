@@ -49,13 +49,14 @@ test('上传体验图片并在详情页查看全部（体验图片 E1）', async
   await page.getByRole('button', { name: '发布体验' }).click();
 
   await expect(page).toHaveURL(new RegExp(`#/trips/${trip.id}$`));
-  await expect(page.locator('.experience-photos img')).toHaveAttribute('src', first.url);
-  const viewAll = page.getByRole('button', { name: '查看全部 2 张' });
-  await expect(viewAll).toBeVisible();
-  await viewAll.click();
-  await expect(page.locator('.ant-image-preview-img')).toHaveAttribute('src', first.url);
-  await page.locator('.ant-image-preview-switch-next').click();
+  const detailPhotos = page.locator('.experience-photos img');
+  await expect(detailPhotos).toHaveCount(2);
+  await expect(detailPhotos.nth(0)).toHaveAttribute('src', first.url);
+  await expect(detailPhotos.nth(1)).toHaveAttribute('src', second.url);
+  await detailPhotos.nth(1).click();
   await expect(page.locator('.ant-image-preview-img')).toHaveAttribute('src', second.url);
+  await page.locator('.ant-image-preview-switch-prev').click();
+  await expect(page.locator('.ant-image-preview-img')).toHaveAttribute('src', first.url);
 });
 
 test('编辑体验时删除并重排图片（体验图片 E2）', async ({ page }) => {
@@ -74,8 +75,10 @@ test('编辑体验时删除并重排图片（体验图片 E2）', async ({ page 
   await page.getByPlaceholder('例如：鞋一定要抓地，普通跑鞋会滑。').fill('按顺序整理照片。');
   await page.getByRole('button', { name: '发布体验' }).click();
   await expect(page).toHaveURL(new RegExp(`#/trips/${trip.id}$`));
-  await expect(page.getByRole('button', { name: '查看全部 3 张' })).toBeVisible();
-  await expect(page.locator('.experience-photos img')).toHaveAttribute('src', first.url);
+  const detailPhotos = page.locator('.experience-photos img');
+  await expect(detailPhotos).toHaveCount(3);
+  await expect(detailPhotos.nth(0)).toHaveAttribute('src', first.url);
+  await expect(detailPhotos.nth(2)).toHaveAttribute('src', third.url);
 
   await page.getByRole('button', { name: '修改我的体验' }).click();
   await expect(page.locator('.photo-tile')).toHaveCount(3);
@@ -86,8 +89,8 @@ test('编辑体验时删除并重排图片（体验图片 E2）', async ({ page 
   await page.getByRole('button', { name: '保存修改' }).click();
 
   await expect(page).toHaveURL(new RegExp(`#/trips/${trip.id}$`));
-  await expect(page.locator('.experience-photos img')).toHaveAttribute('src', third.url);
-  await expect(page.getByRole('button', { name: '查看全部 2 张' })).toBeVisible();
+  await expect(page.locator('.experience-photos img')).toHaveCount(2);
+  await expect(page.locator('.experience-photos img').nth(0)).toHaveAttribute('src', third.url);
 
   await page.goto(`/#/share/${trip.id}`);
   await expect(page.locator('.photo-tile img').nth(0)).toHaveAttribute('src', third.url);
@@ -130,8 +133,9 @@ test('未提交图片可预览移除，提交失败后保留可重试（体验�
   await page.unroute(`**${API}/trips/${trip.id}/experiences`);
   await page.getByRole('button', { name: '发布体验' }).click();
   await expect(page).toHaveURL(new RegExp(`#/trips/${trip.id}$`));
-  await expect(page.locator('.experience-photos img')).toHaveAttribute('src', second.url);
-  await expect(page.getByRole('button', { name: '查看全部 2 张' })).toBeVisible();
+  await expect(page.locator('.experience-photos img')).toHaveCount(2);
+  await expect(page.locator('.experience-photos img').nth(0)).toHaveAttribute('src', second.url);
+  await expect(page.locator('.experience-photos img').nth(1)).toHaveAttribute('src', replacement.url);
 });
 
 test('非作者看不到体验图片入口（体验图片 E5）', async ({ page }) => {
@@ -143,7 +147,6 @@ test('非作者看不到体验图片入口（体验图片 E5）', async ({ page 
 
   await page.goto('/#/trips/1');
   await expect(page.getByRole('button', { name: /发表游后体验|修改我的体验/ })).toHaveCount(0);
-  await expect(page.locator('.experience-photos-more')).toHaveCount(0);
 });
 
 test('无图体验只显示文字，首页体验卡保持内置封面（体验图片 E4 / R4）', async ({ page }) => {

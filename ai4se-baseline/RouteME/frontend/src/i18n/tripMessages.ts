@@ -309,8 +309,6 @@ export const tripMessages = {
   experiencePhotoSize: '单张照片不能超过 5MB',
   experiencePhotoType: '只支持 JPG / PNG / WebP',
   experiencePhotoFailed: '照片上传失败',
-  experiencePhotoViewAll: '查看全部',
-  experiencePhotoCountSuffix: '张',
   experiencePhotoViewerTitle: '体验照片',
   referencePublish: '参考此行程发布',
   referenceHint: '已预填目的地、途经点与兴趣；请重新选择标题、日期、人数与集合区域。',
