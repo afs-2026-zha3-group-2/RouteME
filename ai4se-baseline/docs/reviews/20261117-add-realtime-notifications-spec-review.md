@@ -52,13 +52,13 @@
 
 ## 6. 签署记录
 
-按 `@rule:artifact-review-gate`：Delta Spec 由 WAYNE 签；本报告由 WAYNE + 当前开发者（Karena）签。**以下签署位尚未批准，不得进入 P3。**
+按 `@rule:artifact-review-gate`：Delta Spec 由 WAYNE 签；本报告由 WAYNE + 当前开发者（Karena）签。三个签署位均已批准，可出具 G1 并进入 P3。
 
 | 对象 | 签署位 | 批准人 | 批准时间 | 结论 |
 |---|---|---|---|---|
-| `specs/notifications/spec.md` | 1 | 待签（WAYNE） | — | 待批准 |
-| `docs/reviews/20261117-add-realtime-notifications-spec-review.md` | 1 | 待签（WAYNE） | — | 待批准 |
-| `docs/reviews/20261117-add-realtime-notifications-spec-review.md` | 2 | 待签（Karena，当前开发者） | — | 待批准 |
+| `specs/notifications/spec.md` | 1 | WAYNE | 2026-11-17T16:44+0800 | 批准（发起人当次确认） |
+| `docs/reviews/20261117-add-realtime-notifications-spec-review.md` | 1 | WAYNE | 2026-11-17T16:44+0800 | 批准（发起人当次确认） |
+| `docs/reviews/20261117-add-realtime-notifications-spec-review.md` | 2 | Karena | 2026-11-17T16:44+0800 | 批准（发起人当次确认） |
 
 ## 7. 下一步（非门禁建议）
 

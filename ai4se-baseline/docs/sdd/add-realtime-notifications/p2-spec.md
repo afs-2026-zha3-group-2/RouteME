@@ -14,6 +14,9 @@
 |---|---|---|
 | Delta Spec | [`specs/notifications/spec.md`](../../../openspec/changes/add-realtime-notifications/specs/notifications/spec.md) | ADDED 6 Requirement / 26 Scenario |
 | 规格评审 | [`20261117-add-realtime-notifications-spec-review.md`](../../reviews/20261117-add-realtime-notifications-spec-review.md) | Pass；0 BLOCKER / 0 WARNING / 3 SUGGESTION（S-01 提示条未落场景、S-02 失败隔离只写在申请类、S-03 契约需回指 Requirement） |
+| AC / DoV 复核 | [`dov-ac-review.md`](../../../openspec/changes/add-realtime-notifications/dov-ac-review.md) | AC 5/5、DoV 5/5、REQ 26/26 全覆盖 |
+| 一致性检查 | [`consistency-lint.md`](../../../openspec/changes/add-realtime-notifications/consistency-lint.md) | Pass；0 BLOCKER / 0 WARNING / 3 SUGGESTION |
+| G1 决策 | [`g1-decision.md`](../../../openspec/changes/add-realtime-notifications/g1-decision.md) | Pass（无条件；IO=WAYNE / SA=Karena，2026-11-17T16:48+0800） |
 | 阶段记录 | 本文件 | G1 前的规格口径与校验 |
 
 ### Requirement ↔ 场景 ↔ 故事
@@ -44,10 +47,10 @@
 
 | 角色 | 姓名 | 确认内容 | 日期 |
 |---|---|---|---|
-| IO | WAYNE | Delta Spec 与提案一致（`notifications` ADDED；26 场景） | 待签 |
+| IO | WAYNE | Delta Spec 与提案一致（`notifications` ADDED；26 场景） | 2026-11-17 |
 | AO | Karena | 承接 P3–P4 | 2026-11-17 |
 
-**阶段结论：待签署**（Delta Spec 由 WAYNE 签；规格评审报告由 WAYNE + Karena 签）。G1 与 `g1-decision.md` 待规格签署后另行出具。
+**阶段结论：Pass**（Delta Spec 由 WAYNE 签；规格评审报告由 WAYNE + Karena 签，见 `docs/reviews/20261117-add-realtime-notifications-spec-review.md` §6，2026-11-17T16:44+0800）。G1 见 [`g1-decision.md`](../../../openspec/changes/add-realtime-notifications/g1-decision.md)。
 
 ## 6. 提交
 
