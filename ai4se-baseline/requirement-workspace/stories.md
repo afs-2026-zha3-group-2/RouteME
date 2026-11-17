@@ -80,6 +80,31 @@
 
 ---
 
+# Story list — REQ-004（S16 发布游后体验）
+
+- **来源：** 原型故事 `docs/prototype/stories.html` S16「发布游后体验」及其 4 条 AC；issue #18 `[P1] S16 发布游后体验`（迭代 3 / P1 / 3 点 / 落点页面：游后分享页）
+- **Change：** 基线 `add-trip-experiences`（已归档，REQ-004）；本故事 R2 = `refine-experience-share`（`trip-experiences` MODIFIED + ADDED）
+- **口径：** 一条故事 = 一个页面（游后分享页）+ 复用一份体验契约 + 一次状态迁移（已结束行程 → 体验已发布 / 已修改）
+
+| Story | Title | 角色 | Priority | Iteration | Points | Page | Parent REQ | Change | Status |
+|---|---|---|---|---|---|---|---|---|---|
+| S16 | 发布游后体验 | 完成旅行的用户 | P1 | 3 | 3 | 游后分享页 | REQ-004 | `refine-experience-share` | P4 Pass / G2 Pass / CI-CD Pass（2026-11-16，`build-e2abd4e`）；R2 布局对齐原型 P4 Pass / G2 Pass / CI-CD Pass（2026-11-16，`build-6ff2d21`），待 P5 |
+
+## Traceability（REQ-004 / S16）
+
+| Story | Requirement scenarios | Change spec | Story file |
+|---|---|---|---|
+| S16 | REQ-004 §4 #1–#8；`openspec/specs/trip-experiences/spec.md` 7 Requirement / 22 Scenario（基线） | `openspec/changes/refine-experience-share/specs/trip-experiences/spec.md`（MODIFIED 3） | 无独立故事文件：原型 S16 已提供 4 条 AC，本 change 以 proposal + delta 承接 |
+
+## Notes（REQ-004 / S16）
+
+- 主干能力（资格校验、两处展示、重复提交即修改、纯文字 + 三档强度 + 一条建议）已由 `add-trip-experiences` 归档交付；本故事 R2 只收敛展示口径：分享页 hero、「你的体验会去哪里」三条、「分享边界」两条、体验卡内置封面、两种不可用提示。
+- 图片上传按 AC 记为增强项，本迭代不做；E2E 继续断言分享页没有上传入口。
+- 「同一行程重复发布」按 AC 取更简单的一条：同一用户对同一行程只有一条体验，再次提交即修改（`upsert`），体验条数不变。
+- 不可用原因在前端区分（未结束 / 未参加），服务端仍以 `EXPERIENCE_NOT_ALLOWED`（403）拒绝；不升 `openapi.yaml`、不改数据库迁移。
+
+---
+
 # Story list — REQ-011（S15 结束行程）
 
 - **来源：** 用户提供的 S15 故事、10 条业务规则与 12 条验收标准（2026-11-16）
@@ -116,7 +141,7 @@
 
 | Story | Title | 角色 | Priority | Iteration | Points | Page | Parent REQ | Change | Status |
 |---|---|---|---|---|---|---|---|---|---|
-| S14 | 举报入口与回执 | 与陌生人同行的学生 | P0 | 3 | 1 | 详情页 / 聊天页 | REQ-012 | `refine-safety-report` | P4 Pass（2026-11-16，已并入 `main` 并 push；G2 待 VL Neal） |
+| S14 | 举报入口与回执 | 与陌生人同行的学生 | P0 | 3 | 1 | 详情页 / 聊天页 | REQ-012 | `refine-safety-report` | P4 Pass（2026-11-16，已两次合并 `main`；G2 待 VL Neal） |
 
 ## Traceability（REQ-012）
 
@@ -186,3 +211,26 @@
 - **「集合地点必须重新填写」按「不得沿用原行程取值」验收：** `trip-plans` 明确集合区域选填（`spec.md:151`）；本需求不把集合区域升级为必填。
 - **无代码 / 契约 / 迁移 / 测试改动：** 参考发布为纯前端预填，`TripCreateRequest` 无来源字段；证据见 `intents/REQ-014-reference-publish.md`。
 - 用户裁决 D1（已验证交付收口）/ D2（记录人 Jacky）/ D3（编号 REQ-014）。
+
+# Story list — REQ-015（S11 我的旅行）
+
+- **来源：** issue #13 `[P0] S11 我的旅行`；`docs/prototype/stories.html` S11
+- **口径：** 一条故事 = 一个页面 + 一份接口契约 + 一次状态迁移（本故事复用 `GET /api/me/trips`，只新增一个只读聚合字段；页面状态迁移为「进入页面 → 切换分组 → 行内动作」）
+- **更新时间：** 2026-11-16
+
+| Story | Title | 角色 | Priority | Iteration | Points | Page | Parent REQ | Change | Status |
+|---|---|---|---|---|---|---|---|---|---|
+| S11 | 一屏看到发布、申请、匹配与已结束 | 全部 | P0 | 2 | 2 | 我的旅行页 | REQ-015 | `refine-my-trips` | P1 drafted（2026-11-16） |
+
+## Traceability（REQ-015）
+
+| Story | Requirement scenarios | Change spec | Story file |
+|---|---|---|---|
+| S11 | REQ-015 §4 #1–#12 | `openspec/changes/refine-my-trips/specs/trip-companions/spec.md`（MODIFIED「我的旅行聚合与最低安全能力」） | `requirement-workspace/stories/refine-my-trips.story.md` |
+
+## Notes
+
+- 本故事只覆盖「我的旅行」聚合视图；发布行程（S06）、详情（S05）、申请处理（S09）、取消申请（S10）、退出同行（S13）、结束行程（S15）、体验分享（S16）、参考发布（S17）均不在本故事内，只作为行内入口被调用。
+- 四组划分与状态推导沿用 `MyTripsServiceImpl` 与 `trip-plans` 的四态，本故事不重复定义。
+- 原型中的「编辑 / 删除 / 参考发布」不在本迭代落地：前两者无路由与接口，后者属 S17。
+- 未接入外部 ALM；本表为仓库内权威故事清单，ALM Sync 状态记为 Pending。

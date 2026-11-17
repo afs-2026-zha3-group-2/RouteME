@@ -26,10 +26,11 @@ export const INTENSITY_OPTIONS: {
   value: ExperienceIntensity;
   label: string;
   description: string;
+  tone: 'jade' | 'amber' | 'coral';
 }[] = [
-  { value: 'relaxed', label: tripMessages.intensityRelaxed, description: '走走停停，随时能坐下' },
-  { value: 'moderate', label: tripMessages.intensityModerate, description: '正常步速，午后会累' },
-  { value: 'tiring', label: tripMessages.intensityTiring, description: '需要体力和一双好鞋' },
+  { value: 'relaxed', label: tripMessages.intensityRelaxed, description: '走走停停，随时能坐下', tone: 'jade' },
+  { value: 'moderate', label: tripMessages.intensityModerate, description: '正常步速，午后会累', tone: 'amber' },
+  { value: 'tiring', label: tripMessages.intensityTiring, description: '需要体力和一双好鞋', tone: 'coral' },
 ];
 
 export function intensityLabel(value: ExperienceIntensity): string {

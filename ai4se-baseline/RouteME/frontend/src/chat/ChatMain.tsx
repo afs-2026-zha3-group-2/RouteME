@@ -74,7 +74,7 @@ export function ChatMain({
       </div>
 
       <div className="chat-safety">
-        <span>{chatSafetyText(trip.meeting_area, trip.meeting_time)}</span>
+        <span>{chatSafetyText(trip.meeting_areas, trip.meeting_time)}</span>
       </div>
 
       <div className="chat-body">

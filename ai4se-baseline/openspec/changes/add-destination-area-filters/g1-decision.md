@@ -50,7 +50,7 @@
 
 | 角色 | 姓名 |
 |---|---|
-| IO | WANYE |
+| IO | WAYNE |
 | SA | JACKY、KARENA |
 | AO（当前开发） | JAY |
 | VL | NEAL |

@@ -2,6 +2,7 @@ package routeme.entity;
 
 import java.time.Instant;
 import java.time.LocalDate;
+import java.util.List;
 
 import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableId;
@@ -34,7 +35,8 @@ public class TripPlanEntity {
     /** JSON 数组文本。 */
     private String stops;
 
-    private String meetingArea;
+    /** JSON 数组文本；V17 起替代 meeting_area（旧列保留不读写）。 */
+    private String meetingAreas;
 
     private String meetingTime;
 
@@ -67,7 +69,7 @@ public class TripPlanEntity {
         entity.setStartDate(trip.startDate().toString());
         entity.setEndDate(trip.endDate().toString());
         entity.setStops(JsonListUtils.write(trip.stops()));
-        entity.setMeetingArea(trip.meetingArea());
+        entity.setMeetingAreas(JsonListUtils.write(trip.meetingAreas()));
         entity.setMeetingTime(trip.meetingTime());
         entity.setNote(trip.note());
         entity.setBudgetMinCents(trip.budgetMinCents());
@@ -91,7 +93,7 @@ public class TripPlanEntity {
                 LocalDate.parse(startDate),
                 LocalDate.parse(endDate),
                 JsonListUtils.parse(stops),
-                meetingArea,
+                meetingAreas == null ? List.of() : JsonListUtils.parse(meetingAreas),
                 meetingTime,
                 note,
                 budgetMinCents,
@@ -168,12 +170,12 @@ public class TripPlanEntity {
         this.stops = stops;
     }
 
-    public String getMeetingArea() {
-        return meetingArea;
+    public String getMeetingAreas() {
+        return meetingAreas;
     }
 
-    public void setMeetingArea(String meetingArea) {
-        this.meetingArea = meetingArea;
+    public void setMeetingAreas(String meetingAreas) {
+        this.meetingAreas = meetingAreas;
     }
 
     public String getMeetingTime() {

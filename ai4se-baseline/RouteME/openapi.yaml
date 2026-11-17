@@ -1,7 +1,7 @@
 openapi: 3.0.3
 info:
   title: RouteME API
-  version: 0.10.0
+  version: 0.11.0
   description: |
     RouteME 后端对外契约。本文件是前后端唯一事实源，字段名、类型、状态码与错误码只在这里定稿。
         当前包含：脚手架问候语、演示账户与账号认证（注册/登录/会话/退出）、旅行计划（浏览/筛选/发布/详情/结束），同行匹配、申请、退出、聊天、我的旅行与举报，以及游后体验分享与参考发布所需数据。
@@ -539,7 +539,7 @@ paths:
                   start_date: '2026-11-16'
                   end_date: '2026-11-16'
                   stops: [陈家祠地铁站集合, 恩宁路骑楼, 永庆坊]
-                  meeting_area: 陈家祠地铁站 D 口
+                  meeting_areas: [陈家祠地铁站 D 口]
                   budget_min_cents: 8000
                   budget_max_cents: 15000
                   tags: [摄影, 历史, 美食]
@@ -737,15 +737,15 @@ paths:
             examples:
               success:
                 value:
-                  meeting_area: 陈家祠地铁站 D 口
+                  meeting_areas: [陈家祠地铁站 D 口]
                   meeting_time: '2026-11-20T08:30'
               clear:
                 value:
-                  meeting_area: null
+                  meeting_areas: []
                   meeting_time: null
               invalidTime:
                 value:
-                  meeting_area: 陈家祠地铁站 D 口
+                  meeting_areas: [陈家祠地铁站 D 口]
                   meeting_time: '2026-12-01T08:30'
       responses:
         '200':
@@ -1816,11 +1816,14 @@ components:
           minimum: 2
           maximum: 12
           description: 计划人数，含发布者
-        meeting_area:
-          type: string
-          maxLength: 100
+        meeting_areas:
+          type: array
+          maxItems: 3
+          items:
+            type: string
+            maxLength: 100
           nullable: true
-          description: 集合区域，选填；未填写时为 null
+          description: 集合区域，选填，最多 3 个、每个 ≤100 字；未填写时为空数组
         meeting_time:
           type: string
           nullable: true
@@ -1856,10 +1859,14 @@ components:
         - type: object
           required: [participants]
           properties:
-            meeting_area:
-              type: string
+            meeting_areas:
+              type: array
+              maxItems: 3
+              items:
+                type: string
+                maxLength: 100
               nullable: true
-              description: 集合区域，选填
+              description: 集合区域，选填，最多 3 个
             meeting_time:
               type: string
               nullable: true
@@ -1914,9 +1921,14 @@ components:
           minItems: 2
           items:
             type: string
-        meeting_area:
-          type: string
-          maxLength: 100
+        meeting_areas:
+          type: array
+          maxItems: 3
+          items:
+            type: string
+            maxLength: 100
+          nullable: true
+          description: 集合区域，选填，最多 3 个、每个 ≤100 字；null 或空数组视为未填写
         meeting_time:
           type: string
           nullable: true
@@ -1944,11 +1956,14 @@ components:
     TripMeetingRequest:
       type: object
       properties:
-        meeting_area:
-          type: string
-          maxLength: 100
+        meeting_areas:
+          type: array
+          maxItems: 3
+          items:
+            type: string
+            maxLength: 100
           nullable: true
-          description: 集合区域；未传或传 null 视为清空
+          description: 集合区域，最多 3 个；未传或传 null 视为清空
         meeting_time:
           type: string
           nullable: true
@@ -2147,6 +2162,21 @@ components:
         pending_application_count:
           type: integer
           minimum: 0
+        pending_applications:
+          type: array
+          description: 按行程聚合的待处理申请数，只包含数量大于 0 的已发布行程；无待处理时为空数组
+          items:
+            $ref: '#/components/schemas/PendingApplicationCount'
+    PendingApplicationCount:
+      type: object
+      required: [trip_id, count]
+      properties:
+        trip_id:
+          type: integer
+          format: int64
+        count:
+          type: integer
+          minimum: 1
     ExperienceWriteRequest:
       type: object
       required: [content, intensity, advice]

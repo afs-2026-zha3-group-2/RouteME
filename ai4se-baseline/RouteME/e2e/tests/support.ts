@@ -46,7 +46,7 @@ export async function createTripViaApi(
       stops: ['香洲港集合', '情侣路骑行'],
       tags: ['摄影'],
       capacity: options.capacity ?? 3,
-      meeting_area: options.meeting?.area ?? null,
+      meeting_areas: options.meeting?.area ? [options.meeting.area] : null,
       meeting_time: options.meeting?.time ?? null,
     },
   });

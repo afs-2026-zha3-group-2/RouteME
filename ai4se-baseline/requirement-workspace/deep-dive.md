@@ -770,3 +770,55 @@ MVP 无推送；以下为参考发布路径的 UI 展示面契约。
 - E2E `experiences.spec.ts:88-100` 已覆盖点击 → 发布页 → 人数 / 标题为空 → 途经点与标签带入 → 未补齐提交被拦截；`route.test.ts:25-28` 覆盖 `from` 参数保留。
 - `{TBD}`：无。非阻塞项（独立体验详情页、集合区域必填、来源统计）已在 REQ-014 §8 标 deferred。
 - A0 门 ⑨–⑫：全部通过。
+
+## REQ-015 增补 — 我的旅行四组聚合（S11）
+
+### ① 数据契约（Data contract）
+
+- **唯一读入口：** `GET /api/me/trips`（`MyTripsController` → `MyTripsServiceImpl`）返回 `published` / `applied` / `matched` / `completed` / `pending_application_count`。
+- **本需求新增只读字段：** `pending_applications: [{trip_id, count}]`（按行程聚合的待处理申请数）。`pending_application_count` 保留为总数，二者同源（`applicationService.listForPublisher(...).filter(isPending)`），只读聚合，不新增表、不改写路径。
+- `published` / `matched` / `completed` 复用 `TripPlan`；`applied` 复用 `TripApplication`（含 `trip` 摘要与 `status`）。前端不需要新增请求即可渲染四组。
+- 动作复用既有接口：`POST /api/applications/{id}/cancel`（撤回）、`POST /api/trips/{id}/leave`（退出）、`POST /api/trips/{id}/complete`（结束）、`GET /api/me/experiences`（写/改体验判定）。
+- 契约版本：`openapi.yaml` 递增次版本，`MyTrips` 的 `required` 仍为原 5 项，新字段可选，保证既有客户端不破。
+
+### ② 边界归属（Boundary attribution）
+
+| 关注点 | 归属 | 说明 |
+|---|---|---|
+| 四组划分与待处理计数 | `trip-companions`（`MyTripsServiceImpl`） | 本需求只消费，不改分组规则 |
+| 申请状态迁移 | `trip-companions`（`ApplicationServiceImpl`） | 撤回 / 接受 / 拒绝不变 |
+| 退出同行与人数回退 | `trip-companions` / `trip-plans` | 沿用 `add-trip-completion` 的规则 |
+| 行程状态与结束 | `trip-plans` | 本页只读 `status` / `ending_soon` |
+| 体验分享资格与入口 | `trip-experiences` | 本页只调用既有 `loadMyExperiences` 与分享路由 |
+| 个人资料卡 | `user-profile` | 保留 `.mine-profile-card`，本需求不重构 |
+| 行式列表与分段样式 | `design-system` | 复用 `.seg` / `.mine-row` 令牌与「我的旅行列表对齐」约束 |
+
+### ③ 跨 REQ 一致性（Cross-REQ consistency）
+
+- **与 REQ-003：** 四组定义与待处理提醒来自「我的旅行聚合与最低安全能力」，本需求只把提醒定位收紧到具体行程，不新增安全能力。
+- **与 REQ-011：** 「结束行程」只在旅行中显示，二次确认沿用详情页已有 Modal；本页不复制校验逻辑。
+- **与 REQ-010：** 撤回申请后，发布者待处理数必须同步下降；本需求在页内动作后重取聚合以保证一致。
+- **与 REQ-004（S16）：** 完成组保留「发表 / 修改我的体验」入口与已分享标记。
+- **与 REQ-009：** 保留资料卡上的「查看资料 / 编辑资料 / 完善资料」入口。
+- **与 design-system：** 操作按钮固定在右侧同一列，≤640px 换行到卡片下方。
+
+### ④ 通知 / 展示契约（Notification / display contract）
+
+| surface | recipient | content + display fields | channel | cardinality |
+|---|---|---|---|---|
+| 页头副标题 | 有已发布行程的用户 | 待处理数 > 0：「你有 {n} 条申请等待处理。」；否则「目前没有待处理的申请。」 | 应用内文本 | 每页 1 处 |
+| 页头提醒入口 | 待处理数 > 0 | 「去处理」按钮，跳存在待处理申请的行程的 `#/trips/{id}/applications` | 应用内按钮 | 每页 1 处 |
+| 行内「处理申请」 | 发布者 | 「处理申请」或「处理申请 · {n}」 | 应用内按钮 | 每行 1 处 |
+| 分组空态 | 该组为空 | 标题 + 说明 + 主 CTA（发布 / 去看行程 / 发现同行者 / 无已完成行程） | 应用内空态 | 每组 1 处 |
+
+无展示面缺 display-fields；A0 门 ⑪ 通过。
+
+### 探针记录（REQ-015 我的旅行）
+
+- `MyTripsServiceImpl.forUser()` 已把 `published` 的待处理申请逐条展开；新增按行程分组只需在既有 stream 上收集，避免第二次查询。
+- `TripSummaryResponse` 被多处复用，**不**把待处理数加进摘要，避免污染首页 / 详情契约；只扩 `MyTrips`。
+- 前端 E2E 既依赖 `#/mine` 的 `role=tab` 与 `.mine-row`：分段改用 antd `Segmented` 后角色变为 `radio`，必须同批更新 `companions.spec.ts`；`.mine-row` 类名保留。
+- `TripCard` 内已有 `coverTone()` 与 `dayLabel()`，但都是模块私有；行式列表要复用需抽到纯逻辑模块（P3 决定落点）。
+- `applications` 页面已存在且带接受 / 拒绝，提醒与行内入口直接跳该路由，无需新页面。
+- `Leave` / `cancel` / `complete` 接口均返回可判定结果（成功 / 409 / 404），页内动作后 `reload()` 即可同步。
+- `{TBD}`：无。非阻塞项（轮询间隔、编辑 / 删除入口、参考发布）已在 REQ-015 §5 / §3 标注。

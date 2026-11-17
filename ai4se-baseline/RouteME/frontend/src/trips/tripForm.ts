@@ -11,7 +11,7 @@ export type TripFormValues = {
   endDate: string;
   stops: string[];
   capacity: string;
-  meetingArea: string;
+  meetingAreas: string[];
   meetingTime: string;
   budgetMin: string;
   budgetMax: string;
@@ -29,7 +29,7 @@ export const emptyTripForm: TripFormValues = {
   endDate: '',
   stops: [],
   capacity: '4',
-  meetingArea: '',
+  meetingAreas: [],
   meetingTime: '',
   budgetMin: '',
   budgetMax: '',
@@ -85,7 +85,7 @@ export function validateTripForm(values: TripFormValues): TripFieldErrors {
     errors.tags = tripMessages.errorTagsLimit;
   }
   const meetingErrors = validateMeetingForm(
-    { meetingArea: values.meetingArea, meetingTime: values.meetingTime },
+    { meetingAreas: values.meetingAreas, meetingTime: values.meetingTime },
     values.endDate,
   );
   if (meetingErrors.meetingArea !== undefined) {
@@ -104,7 +104,7 @@ export function toCreateRequest(values: TripFormValues): TripCreateRequest {
     start_date: values.startDate,
     end_date: values.endDate,
     stops: values.stops.map((stop) => stop.trim()).filter((stop) => stop !== ''),
-    meeting_area: blankToNull(values.meetingArea),
+    meeting_areas: values.meetingAreas.length > 0 ? values.meetingAreas : null,
     meeting_time: blankToNull(values.meetingTime),
     note: blankToNull(values.note),
     budget_min_cents: toCents(values.budgetMin),

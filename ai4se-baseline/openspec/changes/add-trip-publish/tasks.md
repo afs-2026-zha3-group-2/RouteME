@@ -161,3 +161,45 @@
 - [x] 回归：`npm test` 137 通过；`build` 通过；`trips.spec.ts` 11/11 通过；全量 53/54（唯一失败为既有 `profiles.spec.ts:23`）。
 
 **验证：** `cd RouteME/frontend; npm test; npm run build`、`cd RouteME/e2e; npx playwright test`
+
+## 12. R6 任务（日期弹层在减少动态效果下可用，2026-11-16）
+
+### T22 [frontend] 统一日期弹层挂载
+
+- [x] 新增 `utils/datePickerProps.ts`：`getPopupContainer` 挂字段容器 + `app-date-popup`。
+- [x] 发布页起止日期、首页「出发不早于 / 不晚于」统一使用；字段容器设 `position: relative`。
+- [x] `@media (prefers-reduced-motion: reduce)` 下把 `.app-date-popup` 固定到字段下方。
+
+### T23 [e2e] reduced-motion 回归
+
+- [x] `trips.spec.ts` 新增用例：开启 reduced motion 后点开日期面板、断言面板在视口内、点「今天」关闭并回填。
+- [x] 发布页 `allowClear=false` 后无法清空日期，删除「缺失日期」断言，保留标题 / 目的地 / 途经点校验。
+- [x] 回归：`npm test` 185 通过（main 基线）；`build` 通过；`trips.spec.ts` 13/14（既有身份门用例未更新）；`companions.spec.ts` 10/10。
+
+**验证：** `cd RouteME/e2e; npx playwright test tests/trips.spec.ts -g "date pickers under reduced motion"`
+
+## 13. R7 任务（导航风格交互地图，2026-11-16）
+
+### T24 [frontend] 视口与交互
+
+- [x] 新增 `map/mapView.ts`：`normalizeView` / `viewportFor` / `zoomView` / `panView` / `clientToViewPoint`，附 5 项单测。
+- [x] `PlaceMap` 支持拖拽平移、滚轮与按钮缩放、回到当前范围、全屏（Esc 退出）。
+- [x] 点击坐标改用 `getScreenCTM().inverse()`，修复 SVG 留白造成的偏移。
+
+### T25 [frontend] 导航风格底图与选择反馈
+
+- [x] 省级视图：城市点 + 高速连线 + 六个主城市标签；城市视图：道路网、河流、公园、分区标签。
+- [x] 选中点按顺序编号并用蓝色路线连接；点位 hover/选中时显示名称。
+- [x] 点击空白弹出最近候选浮层，可点「加入路线」。
+
+### T26 [frontend] 显示时机
+
+- [x] 未选目的地显示全省地图；选定城市自动聚焦；未覆盖城市隐藏地图并提示。
+- [x] 集合地点去掉「地图选点」开关，直接显示地图。
+
+### T27 [e2e] 地图回归
+
+- [x] 新增 `map supports zoom, fullscreen and click-to-add`：缩放改变 viewBox、全屏开关、点击空白浮层加入路线。
+- [x] 发布用例改为断言全省地图 + 城市聚焦；回归 `npm test` 198 通过、`build` 通过。
+
+**验证：** `cd RouteME/e2e; npx playwright test tests/trips.spec.ts -g "map supports zoom|publishes a trip"`

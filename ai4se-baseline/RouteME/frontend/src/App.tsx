@@ -8,6 +8,7 @@ import { HomePage } from './home/HomePage';
 import { tripMessages } from './i18n/tripMessages';
 import { IdentityGate } from './identity/IdentityGate';
 import { MyTripsPage } from './mine/MyTripsPage';
+import { MapExplorerPage } from './pages/MapExplorerPage';
 import { ProfilePage } from './profile/ProfilePage';
 import { ProfileProvider } from './profiles/ProfileContext';
 import { profileToUser } from './profile/profileDisplay';
@@ -189,6 +190,9 @@ export function App() {
           )}
           {route.name === 'mine' && (
             <MyTripsPage currentUser={currentUser} isAuthenticated={authToken !== null} />
+          )}
+          {route.name === 'map' && (
+            <MapExplorerPage provinceCode={route.provinceCode} cityCode={route.cityCode} />
           )}
           {route.name === 'profileSetup' && (
             <ProfileSetupPage

@@ -10,6 +10,7 @@ import { gazetteerCityForCode } from '../areas/gazetteerCity';
 import { tripMessages } from '../i18n/tripMessages';
 import { PlacePicker } from '../map/PlacePicker';
 import type { DemoUser, TripSummary } from '../types';
+import { appDatePickerProps } from '../utils/datePickerProps';
 import { dayjsToIso, isoToDayjs } from '../utils/dates';
 import {
   addTag,
@@ -20,8 +21,10 @@ import {
   type TripFieldErrors,
   type TripFormValues,
 } from './tripForm';
+import { addMeetingArea } from './meetingForm';
 import {
   INTEREST_TAGS,
+  MAX_MEETING_AREAS,
   MAX_STOPS,
   MAX_TAGS,
   MAX_TAG_LENGTH,
@@ -46,7 +49,8 @@ export function TripCreatePage({ currentUser, fromTripId }: Props) {
   const [submitting, setSubmitting] = useState(false);
   const [tagDraft, setTagDraft] = useState('');
   const [tagError, setTagError] = useState<string | null>(null);
-  const [meetingMapOpen, setMeetingMapOpen] = useState(false);
+  const [meetingDraft, setMeetingDraft] = useState('');
+  const [meetingDraftError, setMeetingDraftError] = useState<string | null>(null);
 
   useEffect(() => {
     if (fromTripId === undefined) {
@@ -89,7 +93,7 @@ export function TripCreatePage({ currentUser, fromTripId }: Props) {
     start_date: values.startDate,
     end_date: values.endDate === '' ? values.startDate : values.endDate,
     stops: values.stops.length > 0 ? values.stops : ['至少写出两个途经点'],
-    meeting_area: values.meetingArea.trim() === '' ? null : values.meetingArea,
+    meeting_areas: values.meetingAreas,
     meeting_time: values.meetingTime.trim() === '' ? null : values.meetingTime,
     tags: values.tags,
     capacity: Number(values.capacity) || 2,
@@ -204,12 +208,11 @@ export function TripCreatePage({ currentUser, fromTripId }: Props) {
                 error={errors.startDate}
                 required
               >
-                <div className="trip-date-anchor">
+<div className="trip-date-anchor">
                   <DatePicker
+                    {...appDatePickerProps}
                     {...fieldProps('trip-start-date', errors.startDate)}
                     className="trip-date"
-                    classNames={{ popup: { root: 'trip-date-popup' } }}
-                    getPopupContainer={(trigger) => trigger.parentElement ?? document.body}
                     format="YYYY-MM-DD"
                     placeholder="选择日期"
                     locale={zhCN.DatePicker}
@@ -228,12 +231,11 @@ export function TripCreatePage({ currentUser, fromTripId }: Props) {
                 error={errors.endDate}
                 required
               >
-                <div className="trip-date-anchor">
+<div className="trip-date-anchor">
                   <DatePicker
+                    {...appDatePickerProps}
                     {...fieldProps('trip-end-date', errors.endDate)}
                     className="trip-date"
-                    classNames={{ popup: { root: 'trip-date-popup' } }}
-                    getPopupContainer={(trigger) => trigger.parentElement ?? document.body}
                     format="YYYY-MM-DD"
                     placeholder="选择日期"
                     locale={zhCN.DatePicker}
@@ -262,8 +264,9 @@ export function TripCreatePage({ currentUser, fromTripId }: Props) {
                 value={values.stops}
                 onChange={(stops) => update({ stops })}
                 max={MAX_STOPS}
-                showMap={mapCity !== undefined}
+                showMap={mapCity !== undefined || !hasDestination}
                 city={mapCity}
+                onDestinationChange={(code) => update({ destinationCode: code })}
                 placeholder="搜索地点名称，必须能在地图上搜到"
                 emptyHint="至少两个途经点。输错的名字不会被接受，请从候选里选或直接点地图。"
               />
@@ -305,28 +308,59 @@ export function TripCreatePage({ currentUser, fromTripId }: Props) {
                 htmlFor="trip-meeting-area"
                 optional
                 hint={tripMessages.hintMeeting}
+                error={errors.meetingArea}
               >
                 <Space.Compact style={{ width: '100%' }}>
                   <Input
                     id="trip-meeting-area"
-                    value={values.meetingArea}
-                    placeholder="可以直接输入集合地点，或在地图上选"
-                    onChange={(event) => update({ meetingArea: event.target.value })}
+                    value={meetingDraft}
+                    placeholder="手输集合地点，或从下方地图多选（最多 3 个）"
+                    onChange={(event) => {
+                      setMeetingDraft(event.target.value);
+                      setMeetingDraftError(null);
+                    }}
+                    onPressEnter={() => {
+                      const result = addMeetingArea(values.meetingAreas, meetingDraft);
+                      if (result.error !== null) {
+                        setMeetingDraftError(result.error);
+                        return;
+                      }
+                      update({ meetingAreas: result.next });
+                      setMeetingDraft('');
+                      setMeetingDraftError(null);
+                    }}
                   />
-                  <Button onClick={() => setMeetingMapOpen((previous) => !previous)}>
-                    {meetingMapOpen ? '收起地图' : '地图选点'}
+                  <Button
+                    onClick={() => {
+                      const result = addMeetingArea(values.meetingAreas, meetingDraft);
+                      if (result.error !== null) {
+                        setMeetingDraftError(result.error);
+                        return;
+                      }
+                      update({ meetingAreas: result.next });
+                      setMeetingDraft('');
+                      setMeetingDraftError(null);
+                    }}
+                    disabled={meetingDraft.trim() === ''}
+                  >
+                    添加
                   </Button>
                 </Space.Compact>
-                {meetingMapOpen && (
-                  <PlacePicker
-                    mode="single"
-                    ariaLabel="集合地点"
-                    value={values.meetingArea === '' ? [] : [values.meetingArea]}
-                    onChange={(next) => update({ meetingArea: next[0] ?? '' })}
-                    placeholder="搜索集合地点"
-                    emptyHint="选中后会把地点名写进集合区域。"
-                  />
+                {meetingDraftError !== null && (
+                  <Typography.Text type="warning">{meetingDraftError}</Typography.Text>
                 )}
+                <PlacePicker
+                  mode="multi"
+                  max={MAX_MEETING_AREAS}
+                  ariaLabel="集合地点"
+                  value={values.meetingAreas}
+                  onChange={(next) => update({ meetingAreas: next })}
+                  placeholder="搜索集合地点"
+                  emptyHint="可添加多个集合区域，选中后按顺序编号。"
+                  showMap={mapCity !== undefined || !hasDestination}
+                  city={mapCity}
+                  onDestinationChange={(code) => update({ destinationCode: code })}
+                />
               </Field>
 
               <Field

@@ -15,7 +15,7 @@
 | Delta Spec — 同行 | [`specs/trip-companions/spec.md`](../../openspec/changes/add-trip-completion/specs/trip-companions/spec.md) | MODIFIED 5（提交与取消申请 / 处理申请 / 聊天 / 退出同行 / 我的旅行聚合） |
 | AC / DoV 评审 | [`dov-ac-review.md`](../../openspec/changes/add-trip-completion/dov-ac-review.md) | AC 4/4 Pass；DoV 5/5 Pass；S15-1~26 全部 traceable |
 | 一致性检查 | [`consistency-lint.md`](../../openspec/changes/add-trip-completion/consistency-lint.md) | phase=p2；Pass；0 BLOCKER / 0 WARNING / 5 SUGGESTION |
-| G1 决策 | [`g1-decision.md`](../../openspec/changes/add-trip-completion/g1-decision.md) | **Pass**；IO=Wanye、SA=Jacky / Karena；双 capability 例外已追认 |
+| G1 决策 | [`g1-decision.md`](../../openspec/changes/add-trip-completion/g1-decision.md) | **Pass**；IO=WAYNE、SA=Jacky / Karena；双 capability 例外已追认 |
 | P2 质量报告 | [`docs/ai4se-plugins/20261116-145842-quality-checklist-report.md`](../../docs/ai4se-plugins/20261116-145842-quality-checklist-report.md) | P2-1 ~ P2-4 Pass；Overall Pass |
 | 校验 | `openspec validate add-trip-completion --strict` | valid |
 
@@ -29,7 +29,7 @@
 
 | 角色 | 姓名 | 结论 | 日期 |
 |---|---|---|---|
-| IO | Wanye | Pass | 2026-11-16 |
+| IO | WAYNE | Pass | 2026-11-16 |
 | SA | Jacky / Karena | Pass（双 capability 例外追认） | 2026-11-16 |
 
 **G1：Pass。** 无阻断条件；跟踪项见 `g1-decision.md`。

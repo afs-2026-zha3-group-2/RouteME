@@ -63,7 +63,8 @@ Windows     cd RouteME/backend; .\mvnw.cmd spring-boot:run    # 启动 8080
 - 冒烟：`GET /api/greeting`、`GET /api/users`、`GET /api/trips`、`GET /api/experiences`（其余 `/trips*`、`/me/*`、`/matches*` 需 `X-User-Id`，1–3 为演示账户）。
 - 契约校验：`cd RouteME; npx @redocly/cli lint openapi.yaml`（0 error），或 `cd RouteME/backend; .\mvnw.cmd -Dtest=OpenApiTest test`。
 - 前端：`cd RouteME/frontend; npm run build; npm test`。
-- 端到端：后端与前端启动后 `cd RouteME/e2e; npx playwright test`（11 个用例；本地门禁，CI 不跑 Playwright）。
+- 端到端：后端与前端启动后 `cd RouteME/e2e; npx playwright test`（90 个用例；本地门禁，CI 不跑 Playwright）。全量前必须 fresh DB：备份并删除 `SqlLite/routeme.db` 后重启后端由 Flyway 重建（V1–V17），否则累积行程挤出种子卡片致首页断言失败。
+- 时钟口径（2026-11-17）：后端测试涉及种子行程状态一律 `@Import(FixedClockTestConfig.class)`（NOW=2026-11-16T09:00Z）并用 `trip.status(NOW)`；生产代码一律用注入 `clock.instant()`，禁用无参 `status()`（Instant.now()）——日期翻篇后种子行程过期会误判 COMPLETED（updateMeeting 409 缺陷已修）。e2e 首页断言用未来日期行程，不依赖固定种子出发日。
 
 ## CI / CD
 

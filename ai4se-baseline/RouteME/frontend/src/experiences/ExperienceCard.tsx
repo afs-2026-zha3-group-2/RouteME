@@ -1,6 +1,7 @@
 import { cityLabel } from '../area/areaOptions';
 import { tripMessages } from '../i18n/tripMessages';
 import { Avatar } from '../shell/Avatar';
+import { coverTone } from '../trips/coverTone';
 import { StatusBadge } from '../trips/StatusBadge';
 import { intensityLabel } from './experienceForm';
 import type { Experience } from '../types';
@@ -16,8 +17,17 @@ type Props = {
 };
 
 export function ExperienceCard({ experience }: Props) {
+  const destination = cityLabel(experience.trip.destination_code) || experience.trip.destination;
+
   return (
     <article className="exp-card">
+      <div
+        className={`exp-cover cover-${coverTone(experience.trip.destination_code)}`}
+        aria-hidden="true"
+      >
+        {destination}
+      </div>
+
       <div className="exp-head">
         <Avatar user={experience.author} size="sm" />
         <a
@@ -26,9 +36,7 @@ export function ExperienceCard({ experience }: Props) {
           aria-label={`查看 ${experience.author.nickname} 的个人主页`}
         >
           <b>{experience.author.nickname}</b>
-          <span>
-            {cityLabel(experience.trip.destination_code) || experience.trip.destination}
-          </span>
+          <span>{destination}</span>
         </a>
         <span className={`badge ${INTENSITY_TONE[experience.intensity]}`}>
           {tripMessages.experienceIntensityLabel} · {intensityLabel(experience.intensity)}

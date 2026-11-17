@@ -28,3 +28,4 @@ export const MAX_TAG_LENGTH = 12;
 export const MAX_TITLE_LENGTH = 40;
 export const MIN_STOPS = 2;
 export const MAX_STOPS = 8;
+export const MAX_MEETING_AREAS = 3;

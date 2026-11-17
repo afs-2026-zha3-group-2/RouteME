@@ -62,7 +62,7 @@
 
 ## Residual risks
 
-- 退出语义（`LEFT` 仍可聊）与活规格相反，依赖 SA（Jacky）+ IO（Wanye）在 G3 前具名追认；未追认则不能归档。
+- 退出语义（`LEFT` 仍可聊）与活规格相反，依赖 SA（Jacky）+ IO（WAYNE）在 G3 前具名追认；未追认则不能归档。
 - `trip_applications` 无 `(trip_id, applicant_id)` 唯一约束，退出后重新申请会产生两条记录；本 change 保留历史、不折叠，「我申请的」可能同时出现「已退出」与「已匹配同行」。
 - 错误码口径与 `@rule:api-contract` 的 422 描述长期不一致；本 change 只记录偏离，回写规则需走 `/sdd:rules-govern`。
 

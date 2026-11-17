@@ -17,6 +17,7 @@ public final class TripCatalogConstant {
     public static final int MAX_CAPACITY = 12;
     public static final int MAX_TAGS = 5;
     public static final int MAX_MEETING_AREA_LENGTH = 100;
+    public static final int MAX_MEETING_AREAS = 3;
     public static final int MAX_NOTE_LENGTH = 500;
 
     private TripCatalogConstant() {

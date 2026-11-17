@@ -68,7 +68,7 @@ public class TripPlanServiceImpl extends AbstractServiceImpl<TripPlanMapper, Tri
                 request.startDate(),
                 request.endDate(),
                 request.stops(),
-                request.meetingArea(),
+                request.meetingAreas(),
                 request.meetingTime(),
                 request.note(),
                 request.budgetMinCents(),
@@ -245,29 +245,15 @@ public class TripPlanServiceImpl extends AbstractServiceImpl<TripPlanMapper, Tri
         if (trip.publisherId() != publisherId) {
             throw new ForbiddenActionException("only the publisher can edit meeting info of trip " + tripId);
         }
-        if (trip.status() == TripStatusEnum.COMPLETED) {
+        if (trip.status(clock.instant()) == TripStatusEnum.COMPLETED) {
             throw new TripNotOpenException(tripId);
         }
-        String meetingArea = normalizeMeetingArea(request == null ? null : request.meetingArea());
+        List<String> meetingAreas = TripPlan.cleanMeetingAreas(request == null ? null : request.meetingAreas());
         String meetingTime = TripMeetingRules.normalize(request == null ? null : request.meetingTime());
         TripMeetingRules.requireWithinEndDate(trip.endDate(), meetingTime);
-        TripPlan updated = trip.withMeetingInfo(meetingArea, meetingTime, clock.instant());
+        TripPlan updated = trip.withMeetingInfo(meetingAreas, meetingTime, clock.instant());
         updateById(TripPlanEntity.from(updated));
         return updated;
-    }
-
-    private String normalizeMeetingArea(String meetingArea) {
-        if (meetingArea == null) {
-            return null;
-        }
-        String trimmed = meetingArea.trim();
-        if (trimmed.isEmpty()) {
-            return null;
-        }
-        if (trimmed.length() > MAX_MEETING_AREA_LENGTH) {
-            throw new InvalidInputException("meeting area is too long");
-        }
-        return trimmed;
     }
 
     private void updateJoinedCount(long tripId, int joinedCount) {

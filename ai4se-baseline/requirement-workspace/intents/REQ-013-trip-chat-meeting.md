@@ -27,7 +27,7 @@
 | 必填性 | 集合区域与集合时间都选填；空值显示「待确认」 |
 | 页面范围 | 严格按原型两栏：会话列表 + 主区 + 头部动作 + 集合安全条 + Enter 发送 |
 | 范围外 | 不做 WebSocket、已读回执、推送、图片 |
-| 记录与签署 | SM=Lewis、AO=Jay、IO=Wanye、SA=Jacky、VL=Neal |
+| 记录与签署 | SM=Lewis、AO=Jay、IO=WAYNE、SA=Jacky、VL=Neal |
 
 ## 证据锚点
 

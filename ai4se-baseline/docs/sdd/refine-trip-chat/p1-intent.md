@@ -86,7 +86,7 @@
 | 角色 | 姓名 | 本阶段确认内容 | 日期 |
 |---|---|---|---|
 | SM | Lewis | 排期与故事归属：S12-1～S12-4 同批交付，不拆 PR | 2026-11-16 |
-| IO | Wanye | 需求来源 REQ-013 与用户裁决一致 | 2026-11-16 |
+| IO | WAYNE | 需求来源 REQ-013 与用户裁决一致 | 2026-11-16 |
 | SA | Jacky | 接受六项关键裁定，同意进入 P2 | 2026-11-16 |
 | AO | Jay | 影响面与工作量判断（M）；承担实现与验证 | 2026-11-16 |
 
@@ -96,4 +96,4 @@
 
 - Delta Spec 覆盖 REQ-013 的 25 条场景，且逐条映射到 `trip-companions` / `trip-plans`。
 - MODIFIED 块写清旧行为与新行为差异，尤其是退出语义。
-- AC / DoV 复核无 BLOCKER；G1 由 SA（Jacky）与 IO（Wanye）签署。
+- AC / DoV 复核无 BLOCKER；G1 由 SA（Jacky）与 IO（WAYNE）签署。

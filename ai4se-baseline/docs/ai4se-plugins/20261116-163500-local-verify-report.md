@@ -84,7 +84,7 @@ E2E 首轮有 2 个既有用例失败，归因为 dev 库累积数据（27 条�
 | E2E 数据污染无自动清理（每轮全量会再累积） | AO | 另立 change（独立测试库或 afterEach 清理） |
 | 前端单包 1,018 kB chunk 体积 warning | AO | 后续性能 change |
 | `spec-review-3.md` 的 AO 批准签名 | AO（Jay） | G2 前补签 |
-| 归档前 SA 追认双 capability 与退出语义冲突裁决 | SA（Jacky）+ IO（Wanye） | P5 / G3 前 |
+| 归档前 SA 追认双 capability 与退出语义冲突裁决 | SA（Jacky）+ IO（WAYNE） | P5 / G3 前 |
 
 ## 7. 结论
 

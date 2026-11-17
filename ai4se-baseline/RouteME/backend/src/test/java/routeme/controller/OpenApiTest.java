@@ -1,10 +1,5 @@
 package routeme.controller;
 
-import static org.junit.jupiter.api.Assertions.assertAll;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -13,6 +8,10 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
+import static org.junit.jupiter.api.Assertions.assertAll;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import org.junit.jupiter.api.Test;
 import org.yaml.snakeyaml.Yaml;
 
@@ -61,7 +60,7 @@ class OpenApiTest {
 
         // Then
         assertAll(
-                () -> assertEquals("0.10.0", info.get("version"), "info.version"),
+                () -> assertEquals("0.11.0", info.get("version"), "info.version"),
                 () -> assertTrue(paths(document).containsKey("/users"), "/users declared"),
                 () -> assertTrue(paths(document).containsKey("/trips/{tripId}"), "detail path declared"),
                 () -> assertTrue(
@@ -220,6 +219,7 @@ class OpenApiTest {
         Map<String, Object> application = schema(document, "TripApplication");
         Map<String, Object> match = schema(document, "Match");
         Map<String, Object> myTrips = schema(document, "MyTrips");
+        Map<String, Object> pendingApplicationCount = schema(document, "PendingApplicationCount");
         Map<String, Object> reportRequest = schema(document, "ReportRequest");
         Map<String, Object> errorSchema = schema(document, "Error");
 
@@ -254,6 +254,19 @@ class OpenApiTest {
                                 .containsAll(List.of(
                                         "published", "applied", "matched", "completed", "pending_application_count")),
                         "my trips groups"),
+                () -> assertTrue(
+                        properties(myTrips).containsKey("pending_applications"),
+                        "my trips per-trip pending counts"),
+                () -> assertFalse(
+                        required(myTrips).contains("pending_applications"),
+                        "pending_applications stays optional"),
+                () -> assertTrue(
+                        required(pendingApplicationCount).containsAll(List.of("trip_id", "count")),
+                        "pending application count fields"),
+                () -> assertEquals(
+                        Integer.valueOf(1),
+                        properties(pendingApplicationCount).get("count").get("minimum"),
+                        "pending count minimum"),
                 () -> assertTrue(
                         enums(properties(reportRequest).get("reason"))
                                 .containsAll(List.of("harassment", "fake", "safety", "other")),
@@ -331,11 +344,15 @@ class OpenApiTest {
                 () -> assertTrue(responses(putMeeting).containsKey("403"), "meeting update returns 403"),
                 () -> assertTrue(responses(putMeeting).containsKey("409"), "meeting update returns 409"),
                 () -> assertTrue(
-                        properties(meetingRequest).keySet().containsAll(List.of("meeting_area", "meeting_time")),
+                        properties(meetingRequest).keySet().containsAll(List.of("meeting_areas", "meeting_time")),
                         "meeting request fields"),
-                () -> assertTrue(tripPlanProperties.containsKey("meeting_area"), "trip plan meeting_area"),
+                () -> assertTrue(tripPlanProperties.containsKey("meeting_areas"), "trip plan meeting_areas"),
+                () -> assertTrue(!tripPlanProperties.containsKey("meeting_area"), "trip plan meeting_area removed"),
+                () -> assertEquals(3, tripPlanProperties.get("meeting_areas").get("maxItems"), "meeting_areas maxItems"),
                 () -> assertTrue(tripPlanProperties.containsKey("meeting_time"), "trip plan meeting_time"),
+                () -> assertTrue(tripDetailProperties.containsKey("meeting_areas"), "trip detail meeting_areas"),
                 () -> assertTrue(tripDetailProperties.containsKey("meeting_time"), "trip detail meeting_time"),
+                () -> assertTrue(createProperties.containsKey("meeting_areas"), "create request meeting_areas"),
                 () -> assertTrue(createProperties.containsKey("meeting_time"), "create request meeting_time")
         );
     }
