@@ -1,68 +1,71 @@
 /* ============================================================
    RouteMe 路觅 · 设计系统
-   取值与 docs/prototype/styles.css 对齐：深海蓝绿主导，落日珊瑚为
-   主动作，松石 / 琥珀 / 暮色紫作强调，暖砂与冷墨分层。
+   取值对齐品牌 Logo：深海军蓝为墨、松石绿为主色、天蓝为辅助、
+   珊瑚橙为目的地/主动作、琥珀为高光；冷白纸感与夜航蓝分层。
    tokens → base → shell → components → pages → antd → responsive
    ============================================================ */
 
 :root {
-  /* 主导族 · 深海 */
-  --deep: #06232b;
-  --tide: #0f4c5c;
-  --lagoon: #12707f;
-  --lagoon-soft: #e3f0f1;
+  /* 主导族 · 海军蓝 → 松石绿 */
+  --deep: #14335f;
+  --tide: #1b5a8a;
+  --lagoon: #0e8074;
+  --lagoon-soft: #e0f4ee;
 
-  /* 强调 */
-  --coral: #ff6b35;
-  --coral-deep: #e04f1c;
-  --amber: #f5a524;
-  --surf: #12a89b;
-  --dusk: #7b5cff;
+  /* 强调 · Logo 的落日图钉 / 太阳 / 天空 */
+  --coral: #ff7a45;
+  --coral-deep: #f0503c;
+  --amber: #ffb703;
+  --surf: #2f9fe0;
+  --dusk: #4a7fd6;
 
   /* 语义 */
-  --jade: #10925f;
+  --jade: #149a63;
   --warn: #d98613;
-  --danger: #d8402f;
-  --info: #2b7fd4;
+  --danger: #e0483a;
+  --info: #2f9fe0;
 
-  /* 中性 · 暖砂 */
-  --bg: #f2ece1;
-  --surface: #fffdf9;
-  --surface-2: #f8f2e7;
-  --surface-3: #f1e9db;
-  --ink: #0b2a33;
-  --ink-2: #3f5d67;
-  --ink-3: #576b72;
-  --line: #e4dbcb;
-  --line-2: #d3c7b2;
-  /* 侧栏底色：与页面同为暖砂，只降饱和、略降明度；深色沿用 --surface */
-  --rail-bg: #eeebe3;
-  --on-deep: #f3fbfc;
-  --on-deep-accent: #ffd166;
+  /* 中性 · 冷白纸感 */
+  --bg: #f5f8fb;
+  --surface: #ffffff;
+  --surface-2: #eef4f9;
+  --surface-3: #e2ecf4;
+  --ink: #16324f;
+  --ink-2: #3e5c7c;
+  --ink-3: #67809b;
+  --line: #dce7f0;
+  --line-2: #c2d4e2;
+  /* 侧栏底色：与页面同为冷白，只降明度；深色沿用 --surface */
+  --rail-bg: #edf3f8;
+  --on-deep: #f4fbff;
+  --on-deep-accent: #ffc23d;
+  /* 品牌插画里的旅人剪影：亮色为海军蓝，暗色转浅 */
+  --brand-ink: #16324f;
 
   /* 文字色：同色相加深，保证落在中性面上 ≥4.5:1 */
-  --t-lagoon: #12707f;
-  --t-surf: #0d756c;
+  --t-lagoon: #0b6b60;
+  --t-surf: #1668a0;
   --t-jade: #0d774e;
   --t-warn: #8a5409;
   --t-danger: #b32c1c;
-  --t-dusk: #6642ff;
-  --t-coral: #b74117;
-  --t-info: #246ab2;
+  --t-dusk: #2f5fb3;
+  --t-coral: #c2401f;
+  --t-info: #1668a0;
 
-  --grad-tide: linear-gradient(122deg, #0f4c5c 0%, #116b7a 42%, #623dff 100%);
-  --grad-sunset: linear-gradient(104deg, #ff6b35 0%, #f5a524 100%);
-  --grad-shore: linear-gradient(140deg, #0c7a70 0%, #12707f 55%, #0f4c5c 100%);
+  --grad-tide: linear-gradient(122deg, #16324f 0%, #1b5a8a 45%, #0e8074 100%);
+  --grad-sunset: linear-gradient(104deg, #ff9a3d 0%, #ff5347 100%);
+  --grad-shore: linear-gradient(140deg, #0e8074 0%, #1b5a8a 55%, #16324f 100%);
+  --grad-meadow: linear-gradient(100deg, #0b6b60 0%, #0e8074 100%);
 
-  --r-sm: 8px;
-  --r: 14px;
-  --r-lg: 20px;
-  --r-xl: 28px;
+  --r-sm: 10px;
+  --r: 16px;
+  --r-lg: 22px;
+  --r-xl: 30px;
 
-  --sh-1: 0 1px 2px rgba(6, 35, 43, 0.06), 0 2px 8px -4px rgba(6, 35, 43, 0.1);
-  --sh-2: 0 2px 6px rgba(6, 35, 43, 0.06), 0 14px 30px -18px rgba(6, 35, 43, 0.34);
-  --sh-3: 0 8px 24px -8px rgba(6, 35, 43, 0.22), 0 32px 64px -32px rgba(6, 35, 43, 0.5);
-  --ring: 0 0 0 3px rgba(18, 112, 127, 0.22);
+  --sh-1: 0 1px 2px rgba(20, 51, 95, 0.06), 0 2px 8px -4px rgba(20, 51, 95, 0.1);
+  --sh-2: 0 2px 6px rgba(20, 51, 95, 0.06), 0 14px 30px -18px rgba(20, 51, 95, 0.3);
+  --sh-3: 0 8px 24px -8px rgba(20, 51, 95, 0.2), 0 32px 64px -32px rgba(20, 51, 95, 0.45);
+  --ring: 0 0 0 3px rgba(14, 128, 116, 0.22);
 
   --topbar-h: 66px;
   --rail-w: 246px;
@@ -76,47 +79,49 @@
 }
 
 [data-theme="dark"] {
-  --deep: #030e13;
-  --tide: #0d4453;
-  --lagoon: #2b93a4;
-  --lagoon-soft: #10333c;
+  --deep: #0a1424;
+  --tide: #123c63;
+  --lagoon: #2fc9a8;
+  --lagoon-soft: #0d3a34;
 
-  --coral: #ff8354;
-  --coral-deep: #ff6b35;
-  --amber: #ffbb3d;
-  --surf: #2fc9b8;
-  --dusk: #9b83ff;
+  --coral: #ff8a5c;
+  --coral-deep: #ff6a3d;
+  --amber: #ffc23d;
+  --surf: #56b8f0;
+  --dusk: #8fb3ff;
 
-  --jade: #2fc07f;
+  --jade: #35c98a;
   --warn: #f0a93c;
   --danger: #ff6b5c;
   --info: #56a3ee;
 
-  --bg: #061116;
-  --surface: #0e1f26;
-  --surface-2: #132a33;
-  --surface-3: #19343e;
-  --ink: #e9f4f6;
-  --ink-2: #a6c1c9;
-  --ink-3: #869da4;
-  --line: #1d3742;
-  --line-2: #274a57;
-  --rail-bg: #0e1f26;
-  --on-deep: #eaf6f8;
-  --on-deep-accent: #ffd166;
+  --bg: #0a1424;
+  --surface: #0f1e33;
+  --surface-2: #14283f;
+  --surface-3: #1a3350;
+  --ink: #e8f1f8;
+  --ink-2: #a9c0d6;
+  --ink-3: #7f97ad;
+  --line: #1e344d;
+  --line-2: #2a4763;
+  --rail-bg: #0f1e33;
+  --on-deep: #eaf6ff;
+  --on-deep-accent: #ffc23d;
+  --brand-ink: #dfeaf5;
 
-  --t-lagoon: #31a7ba;
-  --t-surf: #2fc9b8;
-  --t-jade: #2fc07f;
+  --t-lagoon: #3fd6b4;
+  --t-surf: #56b8f0;
+  --t-jade: #35c98a;
   --t-warn: #f0a93c;
   --t-danger: #ff7f70;
-  --t-dusk: #9e87ff;
-  --t-coral: #ff8354;
+  --t-dusk: #8fb3ff;
+  --t-coral: #ff8a5c;
   --t-info: #56a3ee;
 
-  --grad-tide: linear-gradient(122deg, #0d4453 0%, #146b7a 44%, #6448d4 100%);
-  --grad-sunset: linear-gradient(104deg, #ff8354 0%, #ffbb3d 100%);
-  --grad-shore: linear-gradient(140deg, #0c7a70 0%, #146b7a 55%, #0b3742 100%);
+  --grad-tide: linear-gradient(122deg, #0e2a4a 0%, #12507a 45%, #0d7f68 100%);
+  --grad-sunset: linear-gradient(104deg, #ff9a3d 0%, #ff6a3d 100%);
+  --grad-shore: linear-gradient(140deg, #0d7f68 0%, #12507a 55%, #0e2a4a 100%);
+  --grad-meadow: linear-gradient(100deg, #0d7f68 0%, #12507a 100%);
 
   --sh-1: 0 1px 2px rgba(0, 0, 0, 0.5);
   --sh-2: 0 2px 6px rgba(0, 0, 0, 0.4), 0 16px 34px -20px rgba(0, 0, 0, 0.9);
@@ -156,17 +161,17 @@ body::before {
   z-index: -1;
   pointer-events: none;
   background:
-    radial-gradient(46% 40% at 12% 8%, rgba(18, 112, 127, 0.16), transparent 62%),
-    radial-gradient(40% 38% at 88% 4%, rgba(255, 107, 53, 0.12), transparent 64%),
-    radial-gradient(50% 44% at 72% 92%, rgba(123, 92, 255, 0.1), transparent 66%),
+    radial-gradient(46% 40% at 12% 8%, rgba(14, 128, 116, 0.14), transparent 62%),
+    radial-gradient(40% 38% at 88% 4%, rgba(47, 159, 224, 0.14), transparent 64%),
+    radial-gradient(50% 44% at 72% 92%, rgba(255, 122, 69, 0.1), transparent 66%),
     var(--bg);
 }
 
 [data-theme="dark"] body::before {
   background:
-    radial-gradient(46% 40% at 12% 8%, rgba(18, 112, 127, 0.22), transparent 62%),
-    radial-gradient(40% 38% at 88% 4%, rgba(255, 131, 84, 0.14), transparent 64%),
-    radial-gradient(50% 44% at 72% 92%, rgba(155, 131, 255, 0.16), transparent 66%),
+    radial-gradient(46% 40% at 12% 8%, rgba(47, 201, 168, 0.16), transparent 62%),
+    radial-gradient(40% 38% at 88% 4%, rgba(86, 184, 240, 0.14), transparent 64%),
+    radial-gradient(50% 44% at 72% 92%, rgba(255, 138, 92, 0.12), transparent 66%),
     var(--bg);
 }
 
@@ -255,7 +260,7 @@ svg {
     hsl(var(--hue, 190) 58% 32%),
     hsl(calc(var(--hue, 190) + 42) 62% 18%)
   );
-  box-shadow: inset 0 0 0 1.5px rgba(255, 255, 255, 0.3), 0 2px 8px -3px rgba(6, 35, 43, 0.5);
+  box-shadow: inset 0 0 0 1.5px rgba(255, 255, 255, 0.3), 0 2px 8px -3px rgba(20, 51, 95, 0.45);
   user-select: none;
 }
 
@@ -446,10 +451,10 @@ svg {
 }
 
 .btn.primary {
-  background: var(--grad-sunset);
-  color: #2b1206;
+  background: var(--grad-meadow);
+  color: #f2fffd;
   border-color: transparent;
-  box-shadow: 0 6px 18px -8px var(--coral);
+  box-shadow: 0 6px 18px -8px var(--lagoon);
 }
 
 .btn.sm {
@@ -568,22 +573,9 @@ svg {
   flex: none;
 }
 
-.brand-mark img {
+.brand-mark svg {
   width: 100%;
   height: 100%;
-  display: block;
-}
-
-/* the dark asset repaints the travellers' navy silhouette so it stays legible */
-.brand-mark .mark-dark {
-  display: none;
-}
-
-[data-theme="dark"] .brand-mark .mark-light {
-  display: none;
-}
-
-[data-theme="dark"] .brand-mark .mark-dark {
   display: block;
 }
 
@@ -596,6 +588,12 @@ svg {
   font-size: 16px;
   font-weight: 800;
   letter-spacing: -0.02em;
+  color: var(--ink);
+}
+
+/* 字标分色对齐 Logo：Route 为海军蓝、Me 为松石绿 */
+.brand-me {
+  color: var(--lagoon);
 }
 
 .brand-text i {
@@ -875,7 +873,16 @@ svg {
   position: absolute;
   inset: 0;
   z-index: -2;
-  background: url('/login-bg.png') center / cover no-repeat;
+  background: var(--grad-tide);
+}
+
+.gate-scene {
+  position: absolute;
+  inset: 0;
+  z-index: -2;
+  width: 100%;
+  height: 100%;
+  display: block;
 }
 
 .gate::after {
@@ -883,11 +890,11 @@ svg {
   position: absolute;
   inset: 0;
   z-index: -1;
-  background: linear-gradient(180deg, rgba(242, 236, 225, 0.58), rgba(242, 236, 225, 0.82));
+  background: linear-gradient(180deg, rgba(245, 248, 251, 0.72), rgba(245, 248, 251, 0.9));
 }
 
 [data-theme="dark"] .gate::after {
-  background: linear-gradient(180deg, rgba(6, 17, 22, 0.74), rgba(6, 17, 22, 0.9));
+  background: linear-gradient(180deg, rgba(10, 20, 36, 0.78), rgba(10, 20, 36, 0.92));
 }
 
 .gate-inner {
@@ -934,10 +941,18 @@ svg {
 
 .gate-title em {
   font-style: normal;
-  background: var(--grad-sunset);
+  background: var(--grad-meadow);
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
+}
+
+.gate-tagline {
+  margin: -14px 0 24px;
+  font-size: 12px;
+  font-weight: 650;
+  letter-spacing: 0.3em;
+  color: var(--ink-3);
 }
 
 .gate-sub {
@@ -1256,7 +1271,7 @@ svg {
   width: 300px;
   height: 300px;
   border-radius: 50%;
-  background: radial-gradient(circle, rgba(245, 165, 36, 0.4), transparent 66%);
+  background: radial-gradient(circle, rgba(255, 183, 3, 0.42), transparent 66%);
 }
 
 .disc-hero > * {
@@ -1594,23 +1609,23 @@ svg {
 }
 
 .cover-lagoon {
-  background: linear-gradient(135deg, #0c7a70, #12707f 58%, #0f4c5c);
+  background: linear-gradient(135deg, #17a37f, #0e8074 55%, #1b5a8a);
 }
 
 .cover-coral {
-  background: linear-gradient(135deg, #ff8354, #e04f1c);
+  background: linear-gradient(135deg, #ff9a3d, #f0503c);
 }
 
 .cover-jade {
-  background: linear-gradient(135deg, #2fc07f, #0d774e);
+  background: linear-gradient(135deg, #35c98a, #0b6b60);
 }
 
 .cover-dusk {
-  background: linear-gradient(135deg, #9b83ff, #623dff);
+  background: linear-gradient(135deg, #56b8f0, #2f5fb3);
 }
 
 .cover-amber {
-  background: linear-gradient(135deg, #ffbb3d, #d98613);
+  background: linear-gradient(135deg, #ffc23d, #d98613);
 }
 
 .tc-dest {
@@ -1620,7 +1635,7 @@ svg {
   font-weight: 800;
   letter-spacing: 0.1em;
   color: #fff;
-  text-shadow: 0 1px 6px rgba(6, 35, 43, 0.4);
+  text-shadow: 0 1px 6px rgba(20, 51, 95, 0.45);
 }
 
 .tc-cover .badge {
@@ -2507,18 +2522,18 @@ svg {
 }
 
 .ant-btn.ant-btn-primary {
-  background: var(--grad-sunset);
+  background: var(--grad-meadow);
   border-color: transparent;
-  color: #2b1206;
-  box-shadow: 0 6px 18px -8px var(--coral);
+  color: #f2fffd;
+  box-shadow: 0 6px 18px -8px var(--lagoon);
 }
 
 .ant-btn.ant-btn-primary:not(:disabled):hover {
-  background: var(--grad-sunset);
+  background: var(--grad-meadow);
   border-color: transparent;
-  color: #2b1206;
-  filter: saturate(1.08);
-  box-shadow: 0 12px 28px -10px var(--coral);
+  color: #f2fffd;
+  filter: saturate(1.08) brightness(1.06);
+  box-shadow: 0 12px 28px -10px var(--lagoon);
 }
 
 .ant-btn.ant-btn-primary:disabled {
@@ -3396,17 +3411,17 @@ svg {
 }
 
 :root {
-  --map-sea-from: #d9eef3;
-  --map-sea-to: #bcdde6;
-  --map-land-from: #f3efe2;
-  --map-land-to: #e5ddc8;
+  --map-sea-from: #d7ecf7;
+  --map-sea-to: #b9dcee;
+  --map-land-from: #e9f4ec;
+  --map-land-to: #d5e8da;
 }
 
 [data-theme="dark"] {
-  --map-sea-from: #0b2530;
-  --map-sea-to: #08202a;
-  --map-land-from: #1b333a;
-  --map-land-to: #15292f;
+  --map-sea-from: #0c2136;
+  --map-sea-to: #081a2b;
+  --map-land-from: #14333c;
+  --map-land-to: #102a33;
 }
 
 /* ---------- 减少动效 ---------- */

@@ -118,12 +118,12 @@ export function PlaceMap({ selected, onPick, kinds, activePlaceId, city }: Props
           >
         <defs>
           <linearGradient id="map-sea" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="var(--map-sea-from, #d9eef3)" />
-            <stop offset="100%" stopColor="var(--map-sea-to, #bcdde6)" />
+            <stop offset="0%" stopColor="var(--map-sea-from, #d7ecf7)" />
+            <stop offset="100%" stopColor="var(--map-sea-to, #b9dcee)" />
           </linearGradient>
           <linearGradient id="map-land" x1="0" y1="0" x2="1" y2="1">
-            <stop offset="0%" stopColor="var(--map-land-from, #f3efe2)" />
-            <stop offset="100%" stopColor="var(--map-land-to, #e5ddc8)" />
+            <stop offset="0%" stopColor="var(--map-land-from, #e9f4ec)" />
+            <stop offset="100%" stopColor="var(--map-land-to, #d5e8da)" />
           </linearGradient>
         </defs>
 

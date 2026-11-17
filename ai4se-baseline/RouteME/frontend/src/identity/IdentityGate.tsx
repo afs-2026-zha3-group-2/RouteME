@@ -1,6 +1,7 @@
 import { BrandMark } from '../shell/BrandMark';
 import type { AuthSession } from '../types';
 import { AuthPanel } from './AuthPanel';
+import { GateScene } from './GateScene';
 
 const LOOP_STEPS = ['旅行灵感', '发布行程', '发现同行者', '建立连接', '一起旅行', '分享体验'];
 
@@ -11,16 +12,21 @@ type Props = {
 export function IdentityGate({ onAuthenticated }: Props) {
   return (
     <main className="gate">
+      <GateScene />
       <div className="gate-inner">
         <div className="gate-cols">
           <div className="gate-hero">
             <div className="gate-brand">
               <BrandMark />
               <span className="brand-text">
-                <b>RouteMe</b>
+                <b>
+                  Route<span className="brand-me">Me</span>
+                </b>
                 <i>路觅</i>
               </span>
             </div>
+
+            <p className="gate-tagline">Travel Together, Discover More</p>
 
             <h1 className="gate-title">
               先有一条想走的路，
