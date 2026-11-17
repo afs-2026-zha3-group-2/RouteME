@@ -4,6 +4,7 @@ import { loadUserProfile } from '../api';
 import { tripMessages } from '../i18n/tripMessages';
 import { Avatar } from '../shell/Avatar';
 import type { DemoUser, UserProfile } from '../types';
+import { AccountStatusBanner } from './AccountStatusBanner';
 import {
   ageZodiacLabel,
   hasPublicContent,
@@ -128,6 +129,15 @@ export function ProfilePage({ currentUser, userId, canEdit }: Props) {
           </Button>
         )}
       </header>
+
+      {/* 本人受限时顶栏已有同一条提示，避免同一页重复两次。 */}
+      {!isSelf && (
+        <AccountStatusBanner
+          status={profile.status}
+          banReasonCode={profile.ban_reason_code}
+          banExpiresAt={profile.ban_expires_at}
+        />
+      )}
 
       {!profile.profile_complete && (
         <Alert

@@ -1,9 +1,17 @@
 import { useEffect, useState } from 'react';
 import { Alert, Button, ConfigProvider, Space, Spin, Typography, message } from 'antd';
 import zhCN from 'antd/locale/zh_CN';
+import { AdminGuard } from './admin/AdminGuard';
+import { AdminReportDetailPage } from './admin/reports/AdminReportDetailPage';
+import { AdminReportsPage } from './admin/reports/AdminReportsPage';
+import { AdminServiceDetailPage } from './admin/service/AdminServiceDetailPage';
+import { AdminServicePage } from './admin/service/AdminServicePage';
+import { AdminUserDetailPage } from './admin/users/AdminUserDetailPage';
+import { AdminUsersPage } from './admin/users/AdminUsersPage';
 import { loadSessionUser, loadUsers, logoutAccount } from './api';
 import { ChatPage } from './chat/ChatPage';
 import { ShareExperiencePage } from './experiences/ShareExperiencePage';
+import { HelpPage } from './help/HelpPage';
 import { HomePage } from './home/HomePage';
 import { tripMessages } from './i18n/tripMessages';
 import { IdentityGate } from './identity/IdentityGate';
@@ -214,6 +222,49 @@ export function App() {
               tripId={route.tripId}
               otherUserId={route.userId}
             />
+          )}
+          {route.name === 'help' && <HelpPage currentUser={currentUser} token={authToken} />}
+          {route.name === 'adminUsers' && (
+            <AdminGuard currentUser={currentUser} token={authToken}>
+              {(token) => <AdminUsersPage token={token} />}
+            </AdminGuard>
+          )}
+          {route.name === 'adminUserDetail' && (
+            <AdminGuard currentUser={currentUser} token={authToken}>
+              {(token) => (
+                <AdminUserDetailPage
+                  token={token}
+                  userId={route.userId}
+                  currentUser={currentUser}
+                />
+              )}
+            </AdminGuard>
+          )}
+          {route.name === 'adminReports' && (
+            <AdminGuard currentUser={currentUser} token={authToken}>
+              {(token) => <AdminReportsPage token={token} />}
+            </AdminGuard>
+          )}
+          {route.name === 'adminReportDetail' && (
+            <AdminGuard currentUser={currentUser} token={authToken}>
+              {(token) => <AdminReportDetailPage token={token} reportId={route.reportId} />}
+            </AdminGuard>
+          )}
+          {route.name === 'adminService' && (
+            <AdminGuard currentUser={currentUser} token={authToken}>
+              {(token) => <AdminServicePage token={token} currentUser={currentUser} />}
+            </AdminGuard>
+          )}
+          {route.name === 'adminServiceDetail' && (
+            <AdminGuard currentUser={currentUser} token={authToken}>
+              {(token) => (
+                <AdminServiceDetailPage
+                  token={token}
+                  currentUser={currentUser}
+                  sessionId={route.sessionId}
+                />
+              )}
+            </AdminGuard>
           )}
           {route.name === 'notFound' && <PlaceholderPage text={tripMessages.detailNotFound} />}
         </AppShell>

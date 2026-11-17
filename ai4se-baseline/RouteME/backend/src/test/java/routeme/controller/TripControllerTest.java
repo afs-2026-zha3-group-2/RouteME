@@ -6,12 +6,14 @@ import static org.hamcrest.Matchers.hasItems;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.nullValue;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
+import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -47,6 +49,9 @@ class TripControllerTest {
 
     @Autowired
     private MockMvc mockMvc;
+
+    @Autowired
+    private JdbcClient jdbcClient;
 
     @Test
     void in_validRequest_out_createdRecruitingTrip() throws Exception {
@@ -260,12 +265,15 @@ class TripControllerTest {
     }
 
     @Test
-    void in_demoUsersEndpoint_out_fourAccounts() throws Exception {
+    void in_demoUsersEndpoint_out_demoAccountsPlusSeededAdmin() throws Exception {
         mockMvc.perform(get("/api/users"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$", hasSize(4)))
+                .andExpect(jsonPath("$", hasSize(5)))
                 .andExpect(jsonPath("$[0].nickname").value("林见夏"))
-                .andExpect(jsonPath("$[0].avatar_initial").value("夏"));
+                .andExpect(jsonPath("$[0].avatar_initial").value("夏"))
+                .andExpect(jsonPath("$[0].role").value("USER"))
+                .andExpect(jsonPath("$[4].role").value("ADMIN"))
+                .andExpect(jsonPath("$[4].nickname").value("平台管理员"));
     }
 
     @Test
@@ -393,6 +401,22 @@ class TripControllerTest {
         mockMvc.perform(post("/api/trips/9999/complete").header("X-User-Id", "1"))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.code").value("TRIP_NOT_FOUND"));
+    }
+
+    @Test
+    void in_suspendedPublisher_out_accountSuspendedAndNoNewTrip() throws Exception {
+        jdbcClient.sql("UPDATE app_users SET status = 'SUSPENDED' WHERE id = 2").update();
+        Integer before = jdbcClient.sql("SELECT COUNT(*) FROM trip_plans")
+                .query(Integer.class)
+                .single();
+
+        postTrip(VALID_TRIP, "2").andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.code").value("ACCOUNT_SUSPENDED"));
+
+        Integer after = jdbcClient.sql("SELECT COUNT(*) FROM trip_plans")
+                .query(Integer.class)
+                .single();
+        assertEquals(before, after, "suspended publisher writes no trip row");
     }
 
     private ResultActions postTrip(String body, String userId) throws Exception {

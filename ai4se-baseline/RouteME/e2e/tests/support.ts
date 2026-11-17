@@ -2,6 +2,82 @@ import { expect, type Page } from '@playwright/test';
 
 export const API = '/api';
 
+/** 管理后台种子账号：仅供本地演示，凭据只登记在交付说明里。 */
+const ADMIN_USERNAME = 'admin';
+const ADMIN_PASSWORD = 'admin12345';
+
+export type ApiAccount = { id: number; token: string; nickname: string };
+
+export async function createUserViaApi(
+  page: Page,
+  nickname = `e2e_${Date.now()}`,
+): Promise<ApiAccount> {
+  const response = await page.request.post(`${API}/auth/register`, {
+    data: {
+      username: `e2e${Date.now().toString().slice(-10)}${Math.floor(Math.random() * 1000)}`,
+      password: 'e2e-pass-123',
+      nickname,
+    },
+  });
+  expect(response.status()).toBe(201);
+  const session = (await response.json()) as {
+    token: string;
+    user: { id: number; nickname: string };
+  };
+  return { id: session.user.id, token: session.token, nickname: session.user.nickname };
+}
+
+export async function loginAsAdmin(page: Page): Promise<ApiAccount> {
+  const response = await page.request.post(`${API}/auth/login`, {
+    data: { username: ADMIN_USERNAME, password: ADMIN_PASSWORD },
+  });
+  expect(response.ok()).toBeTruthy();
+  const session = (await response.json()) as {
+    token: string;
+    user: { id: number; nickname: string };
+  };
+  await page.goto('/');
+  await page.evaluate((value) => {
+    window.localStorage.setItem('routeme.currentUserId', String(value.userId));
+    window.localStorage.setItem('routeme.authToken', value.token);
+  }, { userId: session.user.id, token: session.token });
+  await page.reload();
+  return {
+    id: session.user.id,
+    token: session.token,
+    nickname: session.user.nickname,
+  };
+}
+
+/** 直接以账号 token 打开页面：用户侧客服与举报页都走 Bearer。 */
+export async function loginAsAccount(page: Page, account: ApiAccount): Promise<void> {
+  await page.goto('/');
+  await page.evaluate((value) => {
+    window.localStorage.setItem('routeme.currentUserId', String(value.userId));
+    window.localStorage.setItem('routeme.authToken', value.token);
+  }, { userId: account.id, token: account.token });
+  await page.reload();
+}
+
+export async function setUserStatusViaApi(
+  page: Page,
+  adminToken: string,
+  userId: number,
+  body: {
+    action: 'SUSPEND' | 'BAN' | 'RESTORE';
+    reason?: string | null;
+    ban_reason_code?: string | null;
+    ban_reason_note?: string | null;
+    ban_expires_at?: string | null;
+  },
+) {
+  const response = await page.request.post(`${API}/admin/users/${userId}/status`, {
+    headers: { Authorization: `Bearer ${adminToken}`, 'Content-Type': 'application/json' },
+    data: body,
+  });
+  return response;
+}
+
 export async function loginAs(page: Page, userId: number) {
   await page.addInitScript((id) => {
     window.localStorage.setItem('routeme.currentUserId', String(id));

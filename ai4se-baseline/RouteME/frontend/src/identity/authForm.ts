@@ -4,7 +4,7 @@ import type { AuthRegisterRequest } from '../types';
 export type AuthMode = 'login' | 'register';
 
 /**
- * 注册收用户名 / 密码 / 确认密码 / 昵称；资料在完善页填写。
+ * 注册收用户名 / 密码 / 确认密码 / 昵称与选填邮箱；资料在完善页填写。
  * 确认密码只做前端比对，不进入请求体。
  */
 export type AuthFormValues = {
@@ -12,10 +12,11 @@ export type AuthFormValues = {
   password: string;
   passwordConfirm: string;
   nickname: string;
+  email: string;
 };
 
 export type AuthFieldErrors = Partial<
-  Record<'username' | 'password' | 'passwordConfirm' | 'nickname', string>
+  Record<'username' | 'password' | 'passwordConfirm' | 'nickname' | 'email', string>
 >;
 
 export const emptyAuthForm: AuthFormValues = {
@@ -23,9 +24,11 @@ export const emptyAuthForm: AuthFormValues = {
   password: '',
   passwordConfirm: '',
   nickname: '',
+  email: '',
 };
 
 const USERNAME_PATTERN = /^[A-Za-z0-9_]{3,20}$/;
+const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const MIN_PASSWORD = 8;
 const MAX_PASSWORD = 64;
 const MAX_NICKNAME = 20;
@@ -59,15 +62,22 @@ export function validateAuthForm(mode: AuthMode, values: AuthFormValues): AuthFi
     if (nickname === '' || nickname.length > MAX_NICKNAME) {
       errors.nickname = tripMessages.authErrorNickname;
     }
+
+    const email = values.email.trim();
+    if (email !== '' && !EMAIL_PATTERN.test(email)) {
+      errors.email = tripMessages.authErrorEmailFormat;
+    }
   }
   return errors;
 }
 
 export function toRegisterRequest(values: AuthFormValues): AuthRegisterRequest {
+  const email = values.email.trim().toLowerCase();
   return {
     username: values.username.trim(),
     password: values.password,
     nickname: values.nickname.trim(),
+    email: email === '' ? null : email,
   };
 }
 
@@ -75,6 +85,9 @@ export function toRegisterRequest(values: AuthFormValues): AuthRegisterRequest {
 export function authErrorMessage(code: string): string {
   if (code === 'USERNAME_TAKEN') {
     return tripMessages.authErrorUsernameTaken;
+  }
+  if (code === 'EMAIL_TAKEN') {
+    return tripMessages.authErrorEmailTaken;
   }
   if (code === 'INVALID_CREDENTIALS') {
     return tripMessages.authErrorInvalidCredentials;

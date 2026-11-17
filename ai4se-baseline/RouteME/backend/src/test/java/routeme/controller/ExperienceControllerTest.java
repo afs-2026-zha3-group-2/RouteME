@@ -1,5 +1,6 @@
 package routeme.controller;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -22,6 +23,7 @@ import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
+import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.transaction.annotation.Transactional;
@@ -52,6 +54,9 @@ class ExperienceControllerTest {
 
     @Autowired
     private TripExperiencePhotoMapper photoMapper;
+
+    @Autowired
+    private JdbcClient jdbcClient;
 
     @Test
     void in_seededData_out_experienceList() throws Exception {
@@ -339,5 +344,25 @@ class ExperienceControllerTest {
         } catch (IOException exception) {
             throw new UncheckedIOException(exception);
         }
+    }
+
+    @Test
+    void in_suspendedAuthor_out_accountSuspendedAndNoNewExperience() throws Exception {
+        jdbcClient.sql("UPDATE app_users SET status = 'SUSPENDED' WHERE id = 1").update();
+        Integer before = jdbcClient.sql("SELECT COUNT(*) FROM trip_experiences")
+                .query(Integer.class)
+                .single();
+
+        mockMvc.perform(post("/api/trips/1/experiences")
+                        .header("X-User-Id", "1")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(VALID_BODY))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.code").value("ACCOUNT_SUSPENDED"));
+
+        Integer after = jdbcClient.sql("SELECT COUNT(*) FROM trip_experiences")
+                .query(Integer.class)
+                .single();
+        assertEquals(before, after, "suspended author writes no experience row");
     }
 }

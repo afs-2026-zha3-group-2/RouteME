@@ -1,10 +1,12 @@
 package routeme.request;
 
 /**
- * 注册请求：只收窄为用户名、密码与昵称；旧版资料字段（学校 / 简介 / 兴趣 / 头像首字）被忽略。
+ * Registration payload. {@code email} is optional; role and status are never accepted from the
+ * client (design D10 / A3).
  */
 public record AuthRegisterRequest(
         String username,
         String password,
-        String nickname) {
+        String nickname,
+        String email) {
 }

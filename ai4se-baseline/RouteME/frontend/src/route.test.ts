@@ -38,6 +38,24 @@ describe('parseRoute', () => {
       expect(parseRoute('#/trips/abc')).toEqual({ name: 'notFound' });
       expect(parseRoute('#/settings')).toEqual({ name: 'notFound' });
       expect(parseRoute('#/chat/12')).toEqual({ name: 'notFound' });
+      expect(parseRoute('#/admin/users/abc')).toEqual({ name: 'notFound' });
+      expect(parseRoute('#/admin')).toEqual({ name: 'notFound' });
+    });
+
+    it('maps the help and admin console paths', () => {
+      expect(parseRoute('#/help')).toEqual({ name: 'help' });
+      expect(parseRoute('#/admin/users')).toEqual({ name: 'adminUsers' });
+      expect(parseRoute('#/admin/users/12')).toEqual({ name: 'adminUserDetail', userId: 12 });
+      expect(parseRoute('#/admin/reports')).toEqual({ name: 'adminReports' });
+      expect(parseRoute('#/admin/reports/34')).toEqual({
+        name: 'adminReportDetail',
+        reportId: 34,
+      });
+      expect(parseRoute('#/admin/service')).toEqual({ name: 'adminService' });
+      expect(parseRoute('#/admin/service/56')).toEqual({
+        name: 'adminServiceDetail',
+        sessionId: 56,
+      });
     });
 
     it('round-trips every route through its hash', () => {
@@ -53,6 +71,13 @@ describe('parseRoute', () => {
         { name: 'share' as const, tripId: 7 },
         { name: 'profileSetup' as const },
         { name: 'userProfile' as const, userId: 7 },
+        { name: 'help' as const },
+        { name: 'adminUsers' as const },
+        { name: 'adminUserDetail' as const, userId: 7 },
+        { name: 'adminReports' as const },
+        { name: 'adminReportDetail' as const, reportId: 7 },
+        { name: 'adminService' as const },
+        { name: 'adminServiceDetail' as const, sessionId: 7 },
       ];
       expect(routes.map((route) => parseRoute(routeToHash(route)))).toEqual(routes);
     });

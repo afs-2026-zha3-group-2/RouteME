@@ -66,12 +66,21 @@ public class DemoUserServiceImpl extends AbstractServiceImpl<UserMapper, UserEnt
     }
 
     @Override
+    public boolean emailExists(String email) {
+        if (email == null || email.isBlank()) {
+            return false;
+        }
+        return count(Wrappers.<UserEntity>lambdaQuery().eq(UserEntity::getEmail, email)) > 0;
+    }
+
+    @Override
     @Transactional
     public DemoUser createAccount(
             String username,
             String passwordHash,
             String nickname,
-            String avatarInitial) {
+            String avatarInitial,
+            String email) {
         UserEntity entity = new UserEntity();
         entity.setId(nextId(UserEntity::getId));
         entity.setUsername(username);
@@ -82,6 +91,9 @@ public class DemoUserServiceImpl extends AbstractServiceImpl<UserMapper, UserEnt
         entity.setBio("");
         entity.setInterests(JsonListUtils.write(List.of()));
         entity.setCreatedAt(clock.instant().toString());
+        entity.setEmail(email);
+        entity.setRole("USER");
+        entity.setStatus("ACTIVE");
         save(entity);
         return entity.toDemoUser(clock);
     }

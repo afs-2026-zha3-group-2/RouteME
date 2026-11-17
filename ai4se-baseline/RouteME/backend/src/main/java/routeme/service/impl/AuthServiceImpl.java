@@ -14,6 +14,7 @@ import routeme.entity.AuthSessionEntity;
 import routeme.entity.UserEntity;
 import routeme.exception.InvalidCredentialsException;
 import routeme.exception.InvalidInputException;
+import routeme.exception.EmailTakenException;
 import routeme.exception.SessionInvalidException;
 import routeme.exception.UsernameTakenException;
 import routeme.mapper.AuthSessionMapper;
@@ -36,6 +37,7 @@ public class AuthServiceImpl extends AbstractServiceImpl<AuthSessionMapper, Auth
         implements AuthService {
 
     private static final Pattern USERNAME = Pattern.compile(AuthConstant.USERNAME_PATTERN);
+    private static final Pattern EMAIL = Pattern.compile("^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$");
 
     private final DemoUserService demoUserService;
     private final Clock clock;
@@ -54,14 +56,19 @@ public class AuthServiceImpl extends AbstractServiceImpl<AuthSessionMapper, Auth
         String username = normalizeUsername(request.username());
         String password = requirePassword(request.password());
         String nickname = requireNickname(request.nickname());
+        String email = normalizeEmail(request.email());
         if (demoUserService.findByUsername(username).isPresent()) {
             throw new UsernameTakenException("username already registered: " + username);
+        }
+        if (email != null && demoUserService.emailExists(email)) {
+            throw new EmailTakenException(email);
         }
         DemoUser user = demoUserService.createAccount(
                 username,
                 PasswordUtils.hash(password),
                 nickname,
-                nickname.substring(0, 1));
+                nickname.substring(0, 1),
+                email);
         return issue(user.id());
     }
 
@@ -158,5 +165,19 @@ public class AuthServiceImpl extends AbstractServiceImpl<AuthSessionMapper, Auth
                     "nickname must be 1-" + AuthConstant.MAX_NICKNAME_LENGTH + " characters");
         }
         return nickname;
+    }
+
+    private static String normalizeEmail(String raw) {
+        if (raw == null) {
+            return null;
+        }
+        String email = raw.trim().toLowerCase(Locale.ROOT);
+        if (email.isEmpty()) {
+            return null;
+        }
+        if (email.length() > 120 || !EMAIL.matcher(email).matches()) {
+            throw new InvalidInputException("email is not a valid address");
+        }
+        return email;
     }
 }

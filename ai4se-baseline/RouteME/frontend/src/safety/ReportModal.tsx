@@ -11,6 +11,8 @@ type Props = {
   targetType: 'trip' | 'user';
   targetId: number;
   targetLabel: string;
+  /** 聊天页提交用户举报时，携带当前会话所属行程，供管理端回放会话。 */
+  tripId?: number;
   onClose: () => void;
 };
 
@@ -29,6 +31,7 @@ export function ReportModal({
   targetType,
   targetId,
   targetLabel,
+  tripId,
   onClose,
 }: Props) {
   const [reason, setReason] = useState<ReportReason>('safety');
@@ -53,6 +56,7 @@ export function ReportModal({
         target_id: targetId,
         reason,
         note: note.trim() === '' ? null : note.trim(),
+        ...(tripId === undefined ? {} : { trip_id: tripId }),
       });
       if (!receipt.received) {
         throw new Error('REPORT_NOT_RECEIVED');

@@ -415,6 +415,64 @@ class UserProfileControllerTest {
     }
 
     @Test
+    void in_bannedAccountProfile_out_statusAndBanFields() throws Exception {
+        String admin = loginAsAdmin();
+        String owner = register("封禁资料");
+        long ownerId = userId(owner);
+        changeStatus(admin, ownerId, """
+                {"action":"BAN","reason":"severe","ban_reason_code":"HARASSMENT",
+                 "ban_expires_at":"2026-07-01T00:00:00Z"}
+                """).andExpect(status().isOk());
+
+        mockMvc.perform(get("/api/users/" + ownerId + "/profile")
+                        .header("X-User-Id", String.valueOf(ownerId)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("BANNED"))
+                .andExpect(jsonPath("$.ban_reason_code").value("HARASSMENT"))
+                .andExpect(jsonPath("$.ban_expires_at").value("2026-07-01T00:00:00Z"))
+                .andExpect(jsonPath("$.status_reason").doesNotExist())
+                .andExpect(jsonPath("$.ban_reason_note").doesNotExist());
+    }
+
+    @Test
+    void in_suspendedAccountProfile_out_statusOnly() throws Exception {
+        String admin = loginAsAdmin();
+        String owner = register("暂停资料");
+        long ownerId = userId(owner);
+        changeStatus(admin, ownerId, """
+                {"action":"SUSPEND","reason":"temporary"}
+                """).andExpect(status().isOk());
+
+        mockMvc.perform(get("/api/users/" + ownerId + "/profile")
+                        .header("X-User-Id", String.valueOf(ownerId)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("SUSPENDED"))
+                .andExpect(jsonPath("$.ban_reason_code").doesNotExist())
+                .andExpect(jsonPath("$.ban_expires_at").doesNotExist())
+                .andExpect(jsonPath("$.status_reason").doesNotExist());
+    }
+
+    @Test
+    void in_restoredAccountProfile_out_activeWithoutBanFields() throws Exception {
+        String admin = loginAsAdmin();
+        String owner = register("恢复资料");
+        long ownerId = userId(owner);
+        changeStatus(admin, ownerId, """
+                {"action":"SUSPEND","reason":"temporary"}
+                """).andExpect(status().isOk());
+        changeStatus(admin, ownerId, """
+                {"action":"RESTORE"}
+                """).andExpect(status().isOk());
+
+        mockMvc.perform(get("/api/users/" + ownerId + "/profile")
+                        .header("X-User-Id", String.valueOf(ownerId)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("ACTIVE"))
+                .andExpect(jsonPath("$.ban_reason_code").doesNotExist())
+                .andExpect(jsonPath("$.ban_expires_at").doesNotExist());
+    }
+
+    @Test
     void in_avatarReadWithoutAvatar_out_notFound() throws Exception {
         String session = register("小夏");
 
@@ -439,6 +497,24 @@ class UserProfileControllerTest {
                         .content(body))
                 .andExpect(status().isCreated())
                 .andReturn().getResponse().getContentAsString();
+    }
+
+    private String loginAsAdmin() throws Exception {
+        return mockMvc.perform(post("/api/auth/login")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"username":"admin","password":"admin12345"}
+                                """))
+                .andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString();
+    }
+
+    private org.springframework.test.web.servlet.ResultActions changeStatus(
+            String admin, long userId, String body) throws Exception {
+        return mockMvc.perform(post("/api/admin/users/" + userId + "/status")
+                .header("Authorization", bearer(admin))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(body));
     }
 
     private static String uniqueUsername() {

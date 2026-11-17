@@ -9,6 +9,13 @@ export type Route =
   | { name: 'profileSetup' }
   | { name: 'userProfile'; userId: number }
   | { name: 'map'; provinceCode?: string; cityCode?: string }
+  | { name: 'help' }
+  | { name: 'adminUsers' }
+  | { name: 'adminUserDetail'; userId: number }
+  | { name: 'adminReports' }
+  | { name: 'adminReportDetail'; reportId: number }
+  | { name: 'adminService' }
+  | { name: 'adminServiceDetail'; sessionId: number }
   | { name: 'notFound' };
 
 export function parseRoute(hash: string): Route {
@@ -35,6 +42,30 @@ export function parseRoute(hash: string): Route {
   }
   if (path === '/profile/setup') {
     return { name: 'profileSetup' };
+  }
+  if (path === '/help') {
+    return { name: 'help' };
+  }
+  if (path === '/admin/users') {
+    return { name: 'adminUsers' };
+  }
+  const adminUserDetail = /^\/admin\/users\/(\d+)$/.exec(path);
+  if (adminUserDetail) {
+    return { name: 'adminUserDetail', userId: Number(adminUserDetail[1]) };
+  }
+  if (path === '/admin/reports') {
+    return { name: 'adminReports' };
+  }
+  const adminReportDetail = /^\/admin\/reports\/(\d+)$/.exec(path);
+  if (adminReportDetail) {
+    return { name: 'adminReportDetail', reportId: Number(adminReportDetail[1]) };
+  }
+  if (path === '/admin/service') {
+    return { name: 'adminService' };
+  }
+  const adminServiceDetail = /^\/admin\/service\/(\d+)$/.exec(path);
+  if (adminServiceDetail) {
+    return { name: 'adminServiceDetail', sessionId: Number(adminServiceDetail[1]) };
   }
   const profile = /^\/users\/(\d+)$/.exec(path);
   if (profile) {
@@ -85,6 +116,27 @@ export function routeToHash(route: Route): string {
   }
   if (route.name === 'profileSetup') {
     return '#/profile/setup';
+  }
+  if (route.name === 'help') {
+    return '#/help';
+  }
+  if (route.name === 'adminUsers') {
+    return '#/admin/users';
+  }
+  if (route.name === 'adminUserDetail') {
+    return `#/admin/users/${route.userId}`;
+  }
+  if (route.name === 'adminReports') {
+    return '#/admin/reports';
+  }
+  if (route.name === 'adminReportDetail') {
+    return `#/admin/reports/${route.reportId}`;
+  }
+  if (route.name === 'adminService') {
+    return '#/admin/service';
+  }
+  if (route.name === 'adminServiceDetail') {
+    return `#/admin/service/${route.sessionId}`;
   }
   if (route.name === 'userProfile') {
     return `#/users/${route.userId}`;

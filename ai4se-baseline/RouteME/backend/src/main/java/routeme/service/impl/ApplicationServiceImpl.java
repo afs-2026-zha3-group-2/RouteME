@@ -14,6 +14,7 @@ import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 
 import routeme.enums.ApplicationStatusEnum;
 import routeme.enums.TripStatusEnum;
+import routeme.enums.WriteScopeEnum;
 import routeme.exception.ApplicationNotFoundException;
 import routeme.exception.ApplicationNotPendingException;
 import routeme.exception.DuplicateApplicationException;
@@ -29,6 +30,7 @@ import routeme.pojo.TripPlan;
 import routeme.request.ApplicationCreateRequest;
 import routeme.response.TripApplicationResponse;
 import routeme.service.ApplicationService;
+import routeme.service.AccountStatusService;
 import routeme.service.DemoUserService;
 import routeme.service.TripCompletedEvent;
 import routeme.service.TripCancelledEvent;
@@ -48,17 +50,23 @@ public class ApplicationServiceImpl
     private final TripPlanService tripPlanService;
     private final DemoUserService demoUserService;
     private final Clock clock;
+    private final AccountStatusService accountStatusService;
 
     public ApplicationServiceImpl(
-            TripPlanService tripPlanService, DemoUserService demoUserService, Clock clock) {
+            TripPlanService tripPlanService,
+            DemoUserService demoUserService,
+            Clock clock,
+            AccountStatusService accountStatusService) {
         this.tripPlanService = tripPlanService;
         this.demoUserService = demoUserService;
         this.clock = clock;
+        this.accountStatusService = accountStatusService;
     }
 
     @Override
     @Transactional
     public TripApplication apply(long tripId, long applicantId, ApplicationCreateRequest request) {
+        accountStatusService.assertCanWrite(applicantId, WriteScopeEnum.BUSINESS);
         TripPlan trip = tripPlanService.requireCurrent(tripId);
         if (trip.publisherId() == applicantId) {
             throw new ForbiddenActionException("publisher cannot apply to own trip " + tripId);

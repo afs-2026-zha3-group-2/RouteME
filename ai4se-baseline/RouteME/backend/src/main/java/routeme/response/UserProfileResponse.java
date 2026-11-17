@@ -7,7 +7,9 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import routeme.pojo.UserProfile;
 
 /**
- * 资料响应：可空字段直接省略；生日只在本人响应中出现。
+ * 用户资料响应：在既有资料字段之外补充只读的账号状态与封禁信息。
+ * 封禁字段只在有效状态为 {@code BANNED} 时下发；{@code status_reason} 与
+ * {@code ban_reason_note} 属管理员内部信息，永不出现在用户侧响应中。
  */
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public record UserProfileResponse(
@@ -29,7 +31,10 @@ public record UserProfileResponse(
         String bio,
         boolean profileComplete,
         String joinedAt,
-        ProfileStatsResponse stats) {
+        ProfileStatsResponse stats,
+        String status,
+        String banReasonCode,
+        String banExpiresAt) {
 
     public static UserProfileResponse from(UserProfile profile, boolean includeBirthday) {
         return from(profile, includeBirthday, null, null);
@@ -59,6 +64,9 @@ public record UserProfileResponse(
                 profile.bio(),
                 profile.profileComplete(),
                 joinedAt,
-                stats);
+                stats,
+                profile.status(),
+                profile.banReasonCode(),
+                profile.banExpiresAt());
     }
 }

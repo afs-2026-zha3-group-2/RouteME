@@ -58,6 +58,30 @@ public class UserEntity {
 
     private String createdAt;
 
+    /** Optional unique registration email; lower-cased on write. */
+    private String email;
+
+    /** {@code USER} / {@code ADMIN}. */
+    private String role;
+
+    /** {@code ACTIVE} / {@code SUSPENDED} / {@code BANNED}. */
+    private String status;
+
+    /** Reason of the latest suspend / ban / restore action. */
+    private String statusReason;
+
+    private String statusUpdatedAt;
+
+    /** Administrator id that performed the latest status change. */
+    private Long statusUpdatedBy;
+
+    /** Ban expiry for BANNED accounts; historical value after restore. */
+    private String banExpiresAt;
+
+    private String banReasonCode;
+
+    private String banReasonNote;
+
     public Long getId() {
         return id;
     }
@@ -194,6 +218,78 @@ public class UserEntity {
         this.createdAt = createdAt;
     }
 
+    public String getEmail() {
+        return email;
+    }
+
+    public void setEmail(String email) {
+        this.email = email;
+    }
+
+    public String getRole() {
+        return role;
+    }
+
+    public void setRole(String role) {
+        this.role = role;
+    }
+
+    public String getStatus() {
+        return status;
+    }
+
+    public void setStatus(String status) {
+        this.status = status;
+    }
+
+    public String getStatusReason() {
+        return statusReason;
+    }
+
+    public void setStatusReason(String statusReason) {
+        this.statusReason = statusReason;
+    }
+
+    public String getStatusUpdatedAt() {
+        return statusUpdatedAt;
+    }
+
+    public void setStatusUpdatedAt(String statusUpdatedAt) {
+        this.statusUpdatedAt = statusUpdatedAt;
+    }
+
+    public Long getStatusUpdatedBy() {
+        return statusUpdatedBy;
+    }
+
+    public void setStatusUpdatedBy(Long statusUpdatedBy) {
+        this.statusUpdatedBy = statusUpdatedBy;
+    }
+
+    public String getBanExpiresAt() {
+        return banExpiresAt;
+    }
+
+    public void setBanExpiresAt(String banExpiresAt) {
+        this.banExpiresAt = banExpiresAt;
+    }
+
+    public String getBanReasonCode() {
+        return banReasonCode;
+    }
+
+    public void setBanReasonCode(String banReasonCode) {
+        this.banReasonCode = banReasonCode;
+    }
+
+    public String getBanReasonNote() {
+        return banReasonNote;
+    }
+
+    public void setBanReasonNote(String banReasonNote) {
+        this.banReasonNote = banReasonNote;
+    }
+
     public DemoUser toDemoUser() {
         return toDemoUser(Clock.systemUTC());
     }
@@ -211,12 +307,14 @@ public class UserEntity {
                 job,
                 bio,
                 parsedInterests,
-                ProfileRules.complete(nickname, birthday, gender, city, parsedInterests, travelStyle, clock));
+                ProfileRules.complete(nickname, birthday, gender, city, parsedInterests, travelStyle, clock),
+                role,
+                status);
     }
 
     public UserAccount toUserAccount() {
         return new UserAccount(
                 id, username, passwordHash, nickname, avatarInitial, school, bio, JsonListUtils.parse(interests),
-                avatarUrl, birthday, gender, city, major, job, mbti, travelStyle);
+                avatarUrl, birthday, gender, city, major, job, mbti, travelStyle, email, role, status);
     }
 }

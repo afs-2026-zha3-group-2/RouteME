@@ -1,13 +1,16 @@
 import { useEffect, useRef, useState, type KeyboardEvent as ReactKeyboardEvent, type ReactNode } from 'react';
+import { loadUserProfile } from '../api';
+import { adminMessages } from '../i18n/adminMessages';
 import { tripMessages } from '../i18n/tripMessages';
+import { AccountStatusBanner } from '../profile/AccountStatusBanner';
 import { publisherSummary } from '../profile/profileDisplay';
 import type { Route } from '../route';
 import type { ColorMode } from '../theme';
-import type { DemoUser } from '../types';
+import type { DemoUser, UserProfile } from '../types';
 import { Avatar } from './Avatar';
 import { BrandMark } from './BrandMark';
 
-type NavKey = 'discover' | 'map' | 'create' | 'mine' | 'chat';
+type NavKey = 'discover' | 'map' | 'create' | 'mine' | 'chat' | 'admin';
 
 type NavItem = { key: NavKey; label: string; href: string };
 
@@ -39,6 +42,9 @@ function activeKey(route: Route): NavKey | null {
   }
   if (route.name === 'chat') {
     return 'chat';
+  }
+  if (route.name.startsWith('admin')) {
+    return 'admin';
   }
   return null;
 }
@@ -96,6 +102,22 @@ function NavIcon({ name }: { name: NavKey }) {
       </svg>
     );
   }
+  if (name === 'admin') {
+    return (
+      <svg
+        viewBox="0 0 20 20"
+        aria-hidden="true"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.7"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      >
+        <path d="M10 2.8 16.4 5v5.1c0 3.4-2.5 5.8-6.4 7.1-3.9-1.3-6.4-3.7-6.4-7.1V5z" />
+        <path d="m7.3 10 1.9 1.9 3.6-3.8" />
+      </svg>
+    );
+  }
   return (
     <svg
       viewBox="0 0 20 20"
@@ -143,6 +165,32 @@ export function AppShell({
   );
   const accountTriggerRef = useRef<HTMLButtonElement>(null);
   const accountMenuRef = useRef<HTMLDivElement>(null);
+
+  // 受限账号（BANNED / SUSPENDED）在任意页面都要先看到处罚说明；理由与解封时间只在本人资料接口下发。
+  const [selfProfile, setSelfProfile] = useState<UserProfile | null>(null);
+
+  useEffect(() => {
+    if (currentUser.status !== 'BANNED' && currentUser.status !== 'SUSPENDED') {
+      setSelfProfile(null);
+      return;
+    }
+    let active = true;
+    loadUserProfile(currentUser.id, currentUser.id)
+      .then((profile) => {
+        if (active) {
+          setSelfProfile(profile);
+        }
+      })
+      .catch(() => {
+        // 读不到完整资料时仍按会话里的 status 给出提示，理由显示占位符。
+        if (active) {
+          setSelfProfile(null);
+        }
+      });
+    return () => {
+      active = false;
+    };
+  }, [currentUser.id, currentUser.status]);
 
   useEffect(() => {
     if (!accountOpen) {
@@ -365,6 +413,19 @@ export function AppShell({
               ))}
             </div>
           ))}
+          {currentUser.role === 'ADMIN' && (
+            <div className="rail-group">
+              <span className="rail-group-title">管理</span>
+              <a
+                className={active === 'admin' ? 'rail-link active' : 'rail-link'}
+                href="#/admin/users"
+                aria-current={active === 'admin' ? 'page' : undefined}
+              >
+                <NavIcon name="admin" />
+                <span>{adminMessages.title}</span>
+              </a>
+            </div>
+          )}
         </nav>
 
         <div className="rail-foot">
@@ -441,6 +502,12 @@ export function AppShell({
       </aside>
 
       <div className="view" id="main-content" tabIndex={-1}>
+        <AccountStatusBanner
+          status={selfProfile?.status ?? currentUser.status}
+          banReasonCode={selfProfile?.ban_reason_code}
+          banExpiresAt={selfProfile?.ban_expires_at}
+          className="view-status-notice"
+        />
         {children}
       </div>
 
@@ -456,6 +523,16 @@ export function AppShell({
             <span>{item.label}</span>
           </a>
         ))}
+        {currentUser.role === 'ADMIN' && (
+          <a
+            className={active === 'admin' ? 'tab-link active' : 'tab-link'}
+            href="#/admin/users"
+            aria-current={active === 'admin' ? 'page' : undefined}
+          >
+            <NavIcon name="admin" />
+            <span>{adminMessages.title}</span>
+          </a>
+        )}
       </nav>
     </div>
   );

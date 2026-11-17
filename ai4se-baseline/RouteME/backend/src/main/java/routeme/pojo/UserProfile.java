@@ -3,7 +3,7 @@ package routeme.pojo;
 import java.util.List;
 
 /**
- * 个人资料的领域视图：生日只在本人读取时填值，他人读取为 null。
+ * 用户资料读模型：只包含可公开字段，封禁信息以有效状态为开关。
  */
 public record UserProfile(
         long id,
@@ -22,5 +22,8 @@ public record UserProfile(
         List<String> interests,
         String travelStyle,
         String bio,
-        boolean profileComplete) {
+        boolean profileComplete,
+        String status,
+        String banReasonCode,
+        String banExpiresAt) {
 }

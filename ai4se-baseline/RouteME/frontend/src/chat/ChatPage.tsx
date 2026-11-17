@@ -263,6 +263,7 @@ export function ChatPage({ currentUser, tripId, otherUserId }: Props) {
         targetType="user"
         targetId={activeOtherId}
         targetLabel={partner.other.nickname}
+        tripId={activeTripId}
         onClose={() => setReportOpen(false)}
       />
     </main>

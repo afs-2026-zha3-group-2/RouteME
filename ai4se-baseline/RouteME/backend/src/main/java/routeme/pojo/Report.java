@@ -3,7 +3,8 @@ package routeme.pojo;
 import java.time.Instant;
 
 /**
- * 举报记录；MVP 只记录，不提供处置后台。
+ * Report row. {@code status} starts at PENDING; processing metadata is filled by administrators.
+ * {@code contextTripId} pins the trip chat a user report was submitted from.
  */
 public record Report(
         long id,
@@ -12,5 +13,12 @@ public record Report(
         long reporterId,
         String reason,
         String note,
-        Instant createdAt) {
+        Long contextTripId,
+        Instant createdAt,
+        String status,
+        Long processedBy,
+        Instant processingAt,
+        Instant resolvedAt,
+        String resolutionNote,
+        String resolutionAction) {
 }

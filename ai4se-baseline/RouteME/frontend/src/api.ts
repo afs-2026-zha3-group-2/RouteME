@@ -1,4 +1,10 @@
 import type {
+  AdminReportDetail,
+  AdminReportResolveRequest,
+  AdminReportSummary,
+  AdminUserDetail,
+  AdminUserStatusRequest,
+  AdminUserSummary,
   AuthRegisterRequest,
   AuthSession,
   ChatMessage,
@@ -8,11 +14,15 @@ import type {
   ExperienceFilters,
   ExperiencePhoto,
   ExperienceWriteRequest,
+  HelpReports,
   MatchCandidate,
   MyTrips,
   Page,
   Paging,
   ReportRequest,
+  ServiceMessage,
+  ServiceSessionDetail,
+  ServiceSessionSummary,
   TripApplication,
   TripCancelRequest,
   TripCreateRequest,
@@ -58,6 +68,12 @@ export async function request(path: string, init?: RequestInit, userId?: number)
 export async function loadUsers(): Promise<DemoUser[]> {
   const response = await request('/users');
   return (await response.json()) as DemoUser[];
+}
+
+function bearerInit(token: string, init?: RequestInit): RequestInit {
+  const headers = new Headers(init?.headers);
+  headers.set('Authorization', `Bearer ${token}`);
+  return { ...init, headers };
 }
 
 export async function registerAccount(body: AuthRegisterRequest): Promise<AuthSession> {
@@ -398,4 +414,186 @@ export async function uploadExperiencePhoto(
     userId,
   );
   return (await response.json()) as ExperiencePhoto;
+}
+
+function listQuery(filters: {
+  q?: string;
+  status?: string;
+  page?: number;
+  size?: number;
+}): string {
+  const params = new URLSearchParams();
+  if (filters.q !== undefined && filters.q !== '') {
+    params.set('q', filters.q);
+  }
+  if (filters.status !== undefined && filters.status !== '') {
+    params.set('status', filters.status);
+  }
+  if (filters.page !== undefined) {
+    params.set('page', String(filters.page));
+  }
+  if (filters.size !== undefined) {
+    params.set('size', String(filters.size));
+  }
+  const query = params.toString();
+  return query ? `?${query}` : '';
+}
+
+/** 管理端用户列表：`q` 支持 ID / 昵称 / 邮箱，`status` 为账号状态。 */
+export async function loadAdminUsers(
+  token: string,
+  filters: { q?: string; status?: string; page?: number; size?: number } = {},
+): Promise<Page<AdminUserSummary>> {
+  const response = await request(`/admin/users${listQuery(filters)}`, bearerInit(token));
+  return (await response.json()) as Page<AdminUserSummary>;
+}
+
+export async function loadAdminUser(token: string, userId: number): Promise<AdminUserDetail> {
+  const response = await request(`/admin/users/${userId}`, bearerInit(token));
+  return (await response.json()) as AdminUserDetail;
+}
+
+export async function changeUserStatus(
+  token: string,
+  userId: number,
+  body: AdminUserStatusRequest,
+): Promise<AdminUserDetail> {
+  const response = await request(
+    `/admin/users/${userId}/status`,
+    bearerInit(token, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    }),
+  );
+  return (await response.json()) as AdminUserDetail;
+}
+
+/** 管理端举报队列：`status` 为 PENDING / PROCESSING / RESOLVED / REJECTED。 */
+export async function loadAdminReports(
+  token: string,
+  filters: { status?: string; page?: number; size?: number } = {},
+): Promise<Page<AdminReportSummary>> {
+  const response = await request(`/admin/reports${listQuery(filters)}`, bearerInit(token));
+  return (await response.json()) as Page<AdminReportSummary>;
+}
+
+export async function loadAdminReport(token: string, reportId: number): Promise<AdminReportDetail> {
+  const response = await request(`/admin/reports/${reportId}`, bearerInit(token));
+  return (await response.json()) as AdminReportDetail;
+}
+
+export async function startAdminReport(
+  token: string,
+  reportId: number,
+): Promise<AdminReportDetail> {
+  const response = await request(`/admin/reports/${reportId}/start`, bearerInit(token, { method: 'POST' }));
+  return (await response.json()) as AdminReportDetail;
+}
+
+export async function resolveAdminReport(
+  token: string,
+  reportId: number,
+  body: AdminReportResolveRequest,
+): Promise<AdminReportDetail> {
+  const response = await request(
+    `/admin/reports/${reportId}/resolve`,
+    bearerInit(token, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    }),
+  );
+  return (await response.json()) as AdminReportDetail;
+}
+
+/** 管理端客服队列：`WAITING` 升序、其余倒序（服务端排序）。 */
+export async function loadAdminServiceSessions(
+  token: string,
+  filters: { status?: string; page?: number; size?: number } = {},
+): Promise<Page<ServiceSessionSummary>> {
+  const response = await request(
+    `/admin/service/sessions${listQuery(filters)}`,
+    bearerInit(token),
+  );
+  return (await response.json()) as Page<ServiceSessionSummary>;
+}
+
+export async function loadAdminServiceSession(
+  token: string,
+  sessionId: number,
+): Promise<ServiceSessionDetail> {
+  const response = await request(`/admin/service/sessions/${sessionId}`, bearerInit(token));
+  return (await response.json()) as ServiceSessionDetail;
+}
+
+export async function joinServiceSession(
+  token: string,
+  sessionId: number,
+): Promise<ServiceSessionDetail> {
+  const response = await request(
+    `/admin/service/sessions/${sessionId}/join`,
+    bearerInit(token, { method: 'POST' }),
+  );
+  return (await response.json()) as ServiceSessionDetail;
+}
+
+export async function closeServiceSession(
+  token: string,
+  sessionId: number,
+): Promise<ServiceSessionDetail> {
+  const response = await request(
+    `/admin/service/sessions/${sessionId}/close`,
+    bearerInit(token, { method: 'POST' }),
+  );
+  return (await response.json()) as ServiceSessionDetail;
+}
+
+/** 用户侧或管理端发消息；发送者类型由服务端按角色判定。 */
+export async function sendServiceMessage(
+  token: string,
+  sessionId: number,
+  content: string,
+): Promise<ServiceMessage> {
+  const response = await request(
+    `/service/sessions/${sessionId}/messages`,
+    bearerInit(token, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ content }),
+    }),
+  );
+  return (await response.json()) as ServiceMessage;
+}
+
+/** 当前未结束的客服会话；没有时后端返回 200 空体。 */
+export async function loadCurrentServiceSession(
+  token: string,
+): Promise<ServiceSessionDetail | null> {
+  const response = await request('/service/sessions/current', bearerInit(token));
+  const body = await response.text();
+  return body === '' ? null : (JSON.parse(body) as ServiceSessionDetail);
+}
+
+/** 创建或返回既有未结束会话（幂等）。 */
+export async function openServiceSession(token: string): Promise<ServiceSessionDetail> {
+  const response = await request('/service/sessions', bearerInit(token, { method: 'POST' }));
+  return (await response.json()) as ServiceSessionDetail;
+}
+
+export async function loadServiceMessages(
+  token: string,
+  sessionId: number,
+): Promise<ServiceMessage[]> {
+  const response = await request(
+    `/service/sessions/${sessionId}/messages`,
+    bearerInit(token),
+  );
+  return (await response.json()) as ServiceMessage[];
+}
+
+/** 我的举报：仅本人，按时间倒序，最多最近 50 条。 */
+export async function loadHelpReports(token: string): Promise<HelpReports> {
+  const response = await request('/help/reports', bearerInit(token));
+  return (await response.json()) as HelpReports;
 }

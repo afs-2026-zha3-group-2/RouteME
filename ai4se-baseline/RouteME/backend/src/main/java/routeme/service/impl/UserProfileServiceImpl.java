@@ -23,12 +23,14 @@ import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import lombok.extern.slf4j.Slf4j;
 import routeme.constant.ProfileConstant;
 import routeme.entity.UserEntity;
+import routeme.enums.AccountStatusEnum;
 import routeme.exception.InvalidProfileException;
 import routeme.exception.UserNotFoundException;
 import routeme.model.ProfileRules;
 import routeme.pojo.AvatarFile;
 import routeme.pojo.UserProfile;
 import routeme.request.UserProfileUpdateRequest;
+import routeme.service.AccountStatusService;
 import routeme.service.DemoUserService;
 import routeme.service.UserProfileService;
 import routeme.utils.JsonListUtils;
@@ -44,14 +46,17 @@ public class UserProfileServiceImpl implements UserProfileService {
     private static final SecureRandom RANDOM = new SecureRandom();
 
     private final DemoUserService demoUserService;
+    private final AccountStatusService accountStatusService;
     private final Clock clock;
     private final Path avatarDirectory;
 
     public UserProfileServiceImpl(
             DemoUserService demoUserService,
+            AccountStatusService accountStatusService,
             Clock clock,
             @Value("${routeme.profile.avatar-dir:../SqlLite/uploads/avatars}") String avatarDirectory) {
         this.demoUserService = demoUserService;
+        this.accountStatusService = accountStatusService;
         this.clock = clock;
         this.avatarDirectory = Path.of(avatarDirectory).toAbsolutePath().normalize();
         try {
@@ -181,6 +186,12 @@ public class UserProfileServiceImpl implements UserProfileService {
                 interests,
                 entity.getTravelStyle(),
                 clock);
+        // 封禁信息只在有效状态为 BANNED 时下发；到期 / 恢复后自动消失（design D4）。
+        AccountStatusEnum effective = accountStatusService.effectiveStatus(entity);
+        boolean banned = effective == AccountStatusEnum.BANNED;
+        String status = effective.code();
+        String banReasonCode = banned ? entity.getBanReasonCode() : null;
+        String banExpiresAt = banned ? entity.getBanExpiresAt() : null;
         return new UserProfile(
                 entity.getId(),
                 entity.getNickname(),
@@ -198,7 +209,10 @@ public class UserProfileServiceImpl implements UserProfileService {
                 interests,
                 entity.getTravelStyle(),
                 ProfileRules.trimToNull(entity.getBio()),
-                complete);
+                complete,
+                status,
+                banReasonCode,
+                banExpiresAt);
     }
 
     private byte[] readBytes(MultipartFile file) {

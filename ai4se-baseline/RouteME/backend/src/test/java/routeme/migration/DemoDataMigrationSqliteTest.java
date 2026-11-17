@@ -45,7 +45,7 @@ class DemoDataMigrationSqliteTest {
 
         // Then
         assertAll(
-                () -> assertEquals(4, users, "demo users"),
+                () -> assertEquals(5, users, "four demo users plus the seeded administrator"),
                 () -> assertEquals(7, trips, "seeded trips"),
                 () -> assertEquals(2, completed, "completed trips"),
                 () -> assertEquals(5, unfinished, "unfinished trips"),

@@ -18,7 +18,7 @@ type Props = {
 };
 
 /**
- * 登录 / 注册表单。注册收用户名 / 密码（输入两次）/ 昵称，
+ * 登录 / 注册表单。注册收用户名 / 密码（输入两次）/ 昵称与选填邮箱，
  * 学校、兴趣等资料在注册后的完善页填写。
  */
 export function AuthPanel({ onAuthenticated }: Props) {
@@ -141,6 +141,23 @@ export function AuthPanel({ onAuthenticated }: Props) {
               value={values.nickname}
               maxLength={20}
               onChange={(event) => update({ nickname: event.target.value })}
+            />
+          </AuthField>
+        )}
+
+        {mode === 'register' && (
+          <AuthField
+            label={tripMessages.authEmail}
+            hint={tripMessages.authEmailHint}
+            error={errors.email}
+            htmlFor="auth-email"
+          >
+            <Input
+              id="auth-email"
+              value={values.email}
+              autoComplete="email"
+              onChange={(event) => update({ email: event.target.value })}
+              onPressEnter={submit}
             />
           </AuthField>
         )}

@@ -3,7 +3,8 @@ package routeme.pojo;
 import java.util.List;
 
 /**
- * 用户公开摘要：身份门、发布者与体验作者共用；资料完善状态由必填字段派生。
+ * User summary rendered by the front end. {@code role} and {@code status} are read-only and always
+ * come from {@code app_users}; clients never supply them.
  */
 public record DemoUser(
         long id,
@@ -16,5 +17,7 @@ public record DemoUser(
         String job,
         String bio,
         List<String> interests,
-        boolean profileComplete) {
+        boolean profileComplete,
+        String role,
+        String status) {
 }
