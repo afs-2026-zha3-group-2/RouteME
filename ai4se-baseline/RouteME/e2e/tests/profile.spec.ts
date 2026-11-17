@@ -1,6 +1,11 @@
 import { expect, test, type Page } from '@playwright/test';
 
-const API = `${process.env.ROUTEME_E2E_API_BASE ?? 'http://localhost:8080'}/api`;
+// Relative by default: API rows must land on the same backend the page talks to.
+// An absolute default (http://localhost:8080) silently seeds another backend when
+// the suite runs on isolated ports, and every session-dependent test then 401s.
+const API = process.env.ROUTEME_E2E_API_BASE
+  ? `${process.env.ROUTEME_E2E_API_BASE}/api`
+  : '/api';
 const PASSWORD = 'profile-pass-123';
 
 type Account = {
