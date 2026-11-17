@@ -357,3 +357,39 @@
 - **不做 AI 联动：** 天气参与推荐属 `add-ai-itinerary`；本故事只沉淀天气能力与固定提醒规则，后续 AI 推荐直接复用同一端点与提醒函数。
 - **多日行程：** 只展示旅行首日并标注日期；逐天预报另开需求。
 - **依赖：** 无外部依赖；`add-ai-itinerary` 的天气代理（未提交）在本 change 落地后应改为复用，P4 合并时核对。
+
+---
+
+# Story list — REQ-023（实时通知与未读计数）
+
+- **来源：** 发起人 2026-11-17 在 `#/chat` 的观察——「申请到达 / 我的申请被接受 / 收到新消息都没有实时提示，也没有显示收到几条通知的红点」；优先级 P0；迭代 3；5 点（S23-1 ~ S23-5 各 1 点）；落点页面：全局壳层、聊天页、行程详情、我的旅行
+- **Change：** `add-realtime-notifications`（`notifications` ADDED：6 Requirement / 26 Scenario）
+- **口径：** 一条故事 = 一条垂直切片（记录 → 推送 → 计数 → 指示与跳转），拆为 S23-1 ~ S23-5 五个可独立验收的步骤（S23-5 覆盖消息类通知的创建与自消息守卫）
+- **需求编号说明：** `main` 已占用 REQ-001 ~ REQ-022，本需求按「后到者顺延」登记为 **REQ-023**
+- **更新时间：** 2026-11-17
+
+| Story | Title | 角色 | Priority | Iteration | Points | Page | Parent REQ | Change | Status |
+|---|---|---|---|---|---|---|---|---|---|
+| S23-1 | 申请到达时告知发布者 | 行程发布者 | P0 | 迭代 3 | 1 | 全局壳层 / 行程详情 | REQ-023 | `add-realtime-notifications` | P1 drafted（2026-11-17） |
+| S23-2 | 申请被裁决时告知申请者 | 申请者 | P0 | 迭代 3 | 1 | 全局壳层 / 我的旅行 | REQ-023 | `add-realtime-notifications` | P1 drafted（2026-11-17） |
+| S23-3 | 未读计数与已读边界 | 平台用户 | P0 | 迭代 3 | 1 | 全局壳层 / 聊天页 | REQ-023 | `add-realtime-notifications` | P1 drafted（2026-11-17） |
+| S23-4 | 数字徽标与一键跳转 | 平台用户 | P0 | 迭代 3 | 1 | 全局壳层 / 聊天页 | REQ-023 | `add-realtime-notifications` | P1 drafted（2026-11-17） |
+| S23-5 | 新消息到达时告知接收方 | 会话双方 | P0 | 迭代 3 | 1 | 全局壳层 / 聊天页 | REQ-023 | `add-realtime-notifications` | P1 drafted（2026-11-17） |
+
+## Traceability（REQ-023）
+
+| Story | Requirement scenarios | Change spec | Story file |
+|---|---|---|---|
+| S23-1 | REQ-023 §4 S23-1、S23-4、S23-10、S23-23 | `openspec/changes/add-realtime-notifications/specs/notifications/spec.md`（ADDED：申请类通知） | `stories/add-realtime-notifications.story.md` |
+| S23-2 | REQ-023 §4 S23-2、S23-3、S23-7、S23-23、S23-26 | 同上（裁决通知与失败隔离） | 同上 |
+| S23-3 | REQ-023 §4 S23-7 ~ S23-9、S23-16 ~ S23-20 | 同上（计数、列表、已读范围） | 同上 |
+| S23-4 | REQ-023 §4 S23-11 ~ S23-15、S23-21 ~ S23-23、S23-25、S23-26 | 同上（实时投递与指示器） | 同上 |
+| S23-5 | REQ-023 §4 S23-5、S23-6、S23-10、S23-23、S23-24 | 同上（消息类通知与自消息守卫） | 同上 |
+
+## Notes（REQ-023）
+
+- **不拆 change：** 四步共享同一张表、同一份计数口径与同一个推送通道；拆成四个 change 只会得到「有通知没计数」或「有计数没入口」的半成品。
+- **只读依赖既有能力：** `trip-companions`（申请 / 裁决语义）与聊天准入规则保持不变，本 change 只在既有成功路径上追加通知；因此不 MODIFY `trip-companions`（其 Delta 未归档）。
+- **拒信也通知（D5）：** 发起人只点名「被接受」，但沉默地拒绝是更差的失败模式；Delta 把 reject 显式写成场景。
+- **刻意排除：** 通知中心历史页、筛选 / 分组、按类型偏好、邮件 / 短信 / OS 推送、浏览器关闭时的推送、WebSocket 与消息队列。
+- **降级口径：** 推送只是延迟优化，REST 列表才是真相；断线、后端重启、推送失败都不改变计数，也不影响申请 / 裁决 / 发消息本身。

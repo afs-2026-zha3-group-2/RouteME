@@ -1171,3 +1171,50 @@ MVP 无推送、无通知；以下为详情页同行者展示面的 UI 契约。
 | 提醒 | 每条一句，前置类别标签（雨 / 热 / 冷 / 风 / 平稳） |
 | 状态 | 未就绪（缺目的地或日期）、加载中、成功、暂无该日期天气预报、失败 + 重试 |
 | 探针 | `data-testid="weather-card"`、`weather-loading`、`weather-error`、`weather-retry`、`weather-reminder`、`weather-out-of-range` |
+
+## REQ-023 增补 — 实时通知与未读计数
+
+### ① 数据契约
+
+| 事实 | 证据 | 约束 |
+|---|---|---|
+| 三类事件都已存在成功路径，但没有落任何「通知」痕迹 | `ApplicationServiceImpl.apply` / `decide`、`ChatServiceImpl.send` | 通知必须在既有成功路径上追加，不复制业务判定 |
+| 申请与裁决在同一个事务里完成 | `ApplicationServiceImpl` 的 `@Transactional` | 通知行与事件同事务写入；通知失败不得连带回滚（D6 需 P3 定序） |
+| 聊天消息落库后由接收方下次轮询才看到 | `V6__create_chat_messages.sql`、`ChatServiceImpl.send` | 消息通知必须携带 `trip_id` 与消息 id，才能定位会话并可跳转 |
+| 会话由 `(trip_id, 双方)` 唯一确定 | `ChatService` 的 `requireAccess`、`ChatPartnerResponse` | 「读某个会话」的判定键是 `trip_id` + 对方 id，不是消息 id |
+| 允许给自己发消息 | `ChatServiceImpl.requireAccess` 中 `userId == withUserId` 不发 `ForbiddenActionException` | 自消息必须显式不产生通知（S23-5） |
+| 无可复用的通知表或未读字段 | `V1`–`V23` 无 `notification*` 表；`app_users` 无计数列 | 必须新增一张表；未读由 `read_at IS NULL` 派生，不另设计数器 |
+| 迁移必须同时跑 SQLite 与 H2 | `mvnw test` 从空库迁移 H2；本地为 SQLite | 列类型与索引写法需两库通用 |
+| 契约由测试断言 | `OpenApiTest` 断言 `info.version` 与关键 schema | 新路径与 schema 必须进 `openapi.yaml`，版本号同步 |
+
+### ② 边界归属
+
+| 关注点 | 归属 | 说明 |
+|---|---|---|
+| 谁该被通知、何时算成功 | `trip-companions` / 聊天既有规则（只读） | 通知只在既有成功路径之后追加，不重新判定 |
+| 通知记录、未读计数、已读范围 | 新能力 `notifications` | 唯一写入口是 `NotificationService` |
+| 实时投递 | 新能力 `notifications`（SSE 注册表） | 推送只是延迟优化，REST 列表是真相（D3） |
+| 申请 / 聊天准入 | 既有服务 | 本 change 不改任何 `requireAccess` 或状态机分支 |
+| 邮件 / 短信 / OS 推送 | 外部系统 | 明确不在本 change |
+
+### ③ 跨 REQ 一致性
+
+| 相关 REQ | 关系 |
+|---|---|
+| REQ-003 / REQ-013（申请与聊天） | 只读依赖；不 MODIFY 其 Delta（未归档），通知语义由新能力承接（D1） |
+| REQ-010（申请入口） | 申请按钮与重复申请拦截口径不变；被拦截的请求不产生通知（S23-4） |
+| REQ-015（我的旅行） | 「待处理申请」计数仍来自既有接口；本 change 的铃铛计数是另一份口径，不得互相替代 |
+| REQ-021（取消行程） | 取消后既有会话可继续；本 change 不因行程取消删除或改写已有通知 |
+| REQ-022（天气） | 无交集；均不改壳层以外的同一区块 |
+
+### ④ 展示契约 + 探针
+
+| 展示 | 口径 |
+|---|---|
+| 顶栏铃铛 | 数字 = 未读总数；0 时不显示徽标；点击打开通知面板 |
+| 通知面板 | 最新 50 条，逐条给头像 / 昵称 / 文案 / 相对时间 / 未读标记；顶部「全部已读」 |
+| 侧栏与移动 tab 聊天入口 | 数字 = 未读消息数；与铃铛同源，不各自计数 |
+| 会话列表行 | 每个会话的未读消息数；打开会话后归零 |
+| 提示条 | 申请类事件总是提示；消息只在对应会话未打开时提示（D14） |
+| 空态 / 失败 | 无通知时面板给空态；推送断开时保留最后一次计数，不显示错误弹窗 |
+| 探针 | `data-testid="notif-bell"`、`notif-badge`、`notif-panel`、`notif-item`、`notif-mark-all`、`chat-badge-rail`、`chat-badge-tab`、`chat-item-unread` |
