@@ -1,4 +1,5 @@
 import { Button, Input, Skeleton } from 'antd';
+import { CreditRestrictedNotice } from '../credit/CreditRestrictedNotice';
 import { tripMessages } from '../i18n/tripMessages';
 import { Avatar } from '../shell/Avatar';
 import type { ChatMessage, DemoUser, TripDetail } from '../types';
@@ -15,6 +16,7 @@ type Props = {
   content: string;
   sending: boolean;
   canLeave: boolean;
+  restricted: boolean;
   onContentChange: (value: string) => void;
   onSend: () => void;
   onProfile: () => void;
@@ -36,6 +38,7 @@ export function ChatMain({
   content,
   sending,
   canLeave,
+  restricted,
   onContentChange,
   onSend,
   onProfile,
@@ -113,6 +116,10 @@ export function ChatMain({
       {closed ? (
         <div className="composer-closed">
           {cancelled ? tripMessages.chatReadOnlyCancelled : tripMessages.chatReadOnly}
+        </div>
+      ) : restricted ? (
+        <div className="composer-closed">
+          <CreditRestrictedNotice />
         </div>
       ) : (
         <div className="composer">

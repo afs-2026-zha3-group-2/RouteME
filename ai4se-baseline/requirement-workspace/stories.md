@@ -304,14 +304,14 @@
 
 | Story | Title | 角色 | Priority | Iteration | Points | Page | Parent REQ | Change | Status |
 |---|---|---|---|---|---|---|---|---|---|
-| S22 | 退出同行扣减信用分 | 已接受同行者 | P0 | 信用系统迭代 2 | 5 | 行程详情 / 我的旅行 / 聊天 | REQ-022 | `add-credit-exit-restriction` | P1 drafted（2026-11-17） |
-| S23 | 低信用分自动限制账号 | 受限用户 / 平台 | P0 | 信用系统迭代 3 | 3 | 个人主页 / 五展示面 / 被拦截提示 | REQ-022 | `add-credit-exit-restriction` | P1 drafted（2026-11-17） |
+| S22 | 退出同行扣减信用分 | 已接受同行者 | P0 | 信用系统迭代 2 | 5 | 行程详情 / 我的旅行 / 聊天 | REQ-022 | `add-credit-exit-restriction` | P4 implemented（2026-11-17） |
+| S23 | 低信用分自动限制账号 | 受限用户 / 平台 | P0 | 信用系统迭代 3 | 3 | 个人主页 / 五展示面 / 被拦截提示 | REQ-022 | `add-credit-exit-restriction` | P4 implemented（2026-11-17） |
 
 ## Traceability（REQ-022）
 
 | Story | Requirement scenarios | Change spec | Story file |
 |---|---|---|---|
-| S22 | REQ-022 §4 S22-1 ~ S22-22 | `openspec/changes/add-credit-exit-restriction/specs/credit-enforcement/spec.md`（ADDED，待 P2 定稿） | `requirement-workspace/stories/add-credit-exit-restriction-exit.story.md` |
+| S22 | REQ-022 §4 S22-1 ~ S22-22 | `openspec/changes/add-credit-exit-restriction/specs/credit-enforcement/spec.md`（ADDED，P2 已定稿） | `requirement-workspace/stories/add-credit-exit-restriction-exit.story.md` |
 | S23 | REQ-022 §4 S23-1 ~ S23-24 | 同上 | `requirement-workspace/stories/add-credit-exit-restriction-restriction.story.md` |
 
 ## Notes（REQ-022）

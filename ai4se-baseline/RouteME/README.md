@@ -71,7 +71,7 @@ backend/src/main/java/routeme/
 ```text
 ai4se-baseline/RouteME/
 ├── backend/            Spring Boot 服务（/api）
-│   ├── src/main/resources/db/migration/   Flyway V1–V8
+│   ├── src/main/resources/db/migration/   Flyway V1–V21
 │   └── src/main/resources/mapper/         复杂查询 XML
 ├── frontend/           React SPA（开发时 /api 代理到 8080）
 ├── e2e/                Playwright 端到端（本地门禁）
@@ -119,10 +119,10 @@ npm run dev                          # http://localhost:5173，/api 代理到 80
 ## 测试与校验
 
 ```powershell
-cd ai4se-baseline/RouteME/backend;  .\mvnw.cmd -B verify          # 132 tests（H2 + SQLite）
-cd ai4se-baseline/RouteME/frontend; npm run build; npm test       # 34 tests + 类型检查
+cd ai4se-baseline/RouteME/backend;  .\mvnw.cmd -B verify          # 337 tests（H2 + SQLite）
+cd ai4se-baseline/RouteME/frontend; npm run build; npm test       # 293 tests + 类型检查
 cd ai4se-baseline/RouteME;          npx -y @redocly/cli lint openapi.yaml   # 0 error
-cd ai4se-baseline/RouteME/e2e;      npx playwright test           # 11 个用例，需前后端已启动
+cd ai4se-baseline/RouteME/e2e;      npx playwright test           # 123 个用例，需前后端已启动
 ```
 
 Playwright 不进 CI，是本地门禁；E2E 会在开发库新增带唯一标题/内容的行程与体验，断言不依赖总数。

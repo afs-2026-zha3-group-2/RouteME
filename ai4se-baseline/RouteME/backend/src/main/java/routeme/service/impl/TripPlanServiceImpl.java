@@ -36,6 +36,7 @@ import routeme.request.TripCreateRequest;
 import routeme.request.TripCancelRequest;
 import routeme.request.TripMeetingRequest;
 import routeme.request.TripQuery;
+import routeme.service.CreditRestrictionGuard;
 import routeme.service.DemoUserService;
 import routeme.service.TripCancelledEvent;
 import routeme.service.TripCompletedEvent;
@@ -52,12 +53,17 @@ public class TripPlanServiceImpl extends AbstractServiceImpl<TripPlanMapper, Tri
     private static final int MAX_CANCEL_NOTE_LENGTH = 100;
 
     private final DemoUserService demoUserService;
+    private final CreditRestrictionGuard creditRestrictionGuard;
     private final Clock clock;
     private final ApplicationEventPublisher events;
 
     public TripPlanServiceImpl(
-            DemoUserService demoUserService, Clock clock, ApplicationEventPublisher events) {
+            DemoUserService demoUserService,
+            CreditRestrictionGuard creditRestrictionGuard,
+            Clock clock,
+            ApplicationEventPublisher events) {
         this.demoUserService = demoUserService;
+        this.creditRestrictionGuard = creditRestrictionGuard;
         this.clock = clock;
         this.events = events;
     }
@@ -65,6 +71,7 @@ public class TripPlanServiceImpl extends AbstractServiceImpl<TripPlanMapper, Tri
     @Override
     @Transactional
     public TripPlan create(TripCreateRequest request, long publisherId) {
+        creditRestrictionGuard.requireNotRestricted(publisherId);
         Instant now = clock.instant();
         TripPlanDraft draft = new TripPlanDraft(
                 publisherId,
@@ -199,6 +206,7 @@ public class TripPlanServiceImpl extends AbstractServiceImpl<TripPlanMapper, Tri
     @Override
     @Transactional
     public TripPlan cancel(long tripId, long publisherId, TripCancelRequest request) {
+        creditRestrictionGuard.requireNotRestricted(publisherId);
         TripPlan trip = requireCurrent(tripId);
         if (trip.publisherId() != publisherId) {
             throw new ForbiddenActionException("only the publisher can cancel trip " + tripId);
@@ -222,13 +230,59 @@ public class TripPlanServiceImpl extends AbstractServiceImpl<TripPlanMapper, Tri
         if (!updated) {
             throw new TripNotOpenException(tripId);
         }
-        events.publishEvent(new TripCancelledEvent(tripId, now));
+        events.publishEvent(new TripCancelledEvent(tripId, now, reason.wireValue()));
         return require(tripId);
     }
 
     @Override
     @Transactional
+    public TripPlan cancelByCreditRestriction(long tripId, Instant now) {
+        TripPlan trip = require(tripId);
+        if (trip.cancelledAt() != null || trip.completedAt() != null) {
+            return trip;
+        }
+        TripStatusEnum status = trip.status(now);
+        if (status != TripStatusEnum.RECRUITING
+                && status != TripStatusEnum.FULL
+                && status != TripStatusEnum.ONGOING) {
+            return trip;
+        }
+        boolean updated = lambdaUpdate()
+                .eq(TripPlanEntity::getId, tripId)
+                .isNull(TripPlanEntity::getCancelledAt)
+                .isNull(TripPlanEntity::getCompletedAt)
+                .set(TripPlanEntity::getCancelledAt, now.toString())
+                .set(TripPlanEntity::getCancelReason, TripCancelReasonEnum.CREDIT_RESTRICTED.wireValue())
+                .set(TripPlanEntity::getCancelNote, "信用分低于 60，账号受限")
+                .set(TripPlanEntity::getUpdatedAt, now.toString())
+                .update();
+        if (updated) {
+            events.publishEvent(new TripCancelledEvent(
+                    tripId, now, TripCancelReasonEnum.CREDIT_RESTRICTED.wireValue()));
+        }
+        return require(tripId);
+    }
+
+    @Override
+    @Transactional
+    public void cancelUnfinishedByPublisher(long publisherId, Instant now) {
+        for (TripPlan trip : findAllTrips()) {
+            if (trip.publisherId() != publisherId) {
+                continue;
+            }
+            TripStatusEnum status = trip.status(now);
+            if (status == TripStatusEnum.RECRUITING
+                    || status == TripStatusEnum.FULL
+                    || status == TripStatusEnum.ONGOING) {
+                cancelByCreditRestriction(trip.id(), now);
+            }
+        }
+    }
+
+    @Override
+    @Transactional
     public TripPlan complete(long tripId, long userId) {
+        creditRestrictionGuard.requireNotRestricted(userId);
         TripPlan trip = requireCurrent(tripId);
         if (trip.publisherId() != userId) {
             throw new ForbiddenActionException("only the publisher can complete trip " + tripId);
@@ -282,6 +336,7 @@ public class TripPlanServiceImpl extends AbstractServiceImpl<TripPlanMapper, Tri
     @Override
     @Transactional
     public TripPlan updateMeeting(long tripId, long publisherId, TripMeetingRequest request) {
+        creditRestrictionGuard.requireNotRestricted(publisherId);
         TripPlan trip = require(tripId);
         if (trip.publisherId() != publisherId) {
             throw new ForbiddenActionException("only the publisher can edit meeting info of trip " + tripId);

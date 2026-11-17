@@ -29,6 +29,7 @@ import routeme.pojo.TripPlan;
 import routeme.request.ApplicationCreateRequest;
 import routeme.response.TripApplicationResponse;
 import routeme.service.ApplicationService;
+import routeme.service.CreditRestrictionGuard;
 import routeme.service.DemoUserService;
 import routeme.service.TripCompletedEvent;
 import routeme.service.TripCancelledEvent;
@@ -47,18 +48,24 @@ public class ApplicationServiceImpl
 
     private final TripPlanService tripPlanService;
     private final DemoUserService demoUserService;
+    private final CreditRestrictionGuard creditRestrictionGuard;
     private final Clock clock;
 
     public ApplicationServiceImpl(
-            TripPlanService tripPlanService, DemoUserService demoUserService, Clock clock) {
+            TripPlanService tripPlanService,
+            DemoUserService demoUserService,
+            CreditRestrictionGuard creditRestrictionGuard,
+            Clock clock) {
         this.tripPlanService = tripPlanService;
         this.demoUserService = demoUserService;
+        this.creditRestrictionGuard = creditRestrictionGuard;
         this.clock = clock;
     }
 
     @Override
     @Transactional
     public TripApplication apply(long tripId, long applicantId, ApplicationCreateRequest request) {
+        creditRestrictionGuard.requireNotRestricted(applicantId);
         TripPlan trip = tripPlanService.requireCurrent(tripId);
         if (trip.publisherId() == applicantId) {
             throw new ForbiddenActionException("publisher cannot apply to own trip " + tripId);
@@ -87,6 +94,7 @@ public class ApplicationServiceImpl
     @Override
     @Transactional
     public TripApplication cancel(long applicationId, long userId) {
+        creditRestrictionGuard.requireNotRestricted(userId);
         TripApplication application = require(applicationId);
         if (application.applicantId() != userId) {
             throw new ForbiddenActionException("only the applicant can cancel application " + applicationId);
@@ -95,21 +103,52 @@ public class ApplicationServiceImpl
             throw new ApplicationNotPendingException(applicationId);
         }
         Instant now = clock.instant();
-        updateStatus(applicationId, ApplicationStatusEnum.CANCELLED, now);
+        updateStatus(applicationId, ApplicationStatusEnum.CANCELLED, "USER_CANCEL", now);
         return application.withStatus(ApplicationStatusEnum.CANCELLED, now);
     }
 
     @Override
+    public Optional<TripApplication> findAccepted(long tripId, long userId) {
+        return lambdaQuery()
+                .eq(TripApplicationEntity::getTripId, tripId)
+                .eq(TripApplicationEntity::getApplicantId, userId)
+                .eq(TripApplicationEntity::getStatus, ApplicationStatusEnum.ACCEPTED.name())
+                .oneOpt()
+                .map(TripApplicationEntity::toApplication);
+    }
+
+    @Override
+    public List<TripApplication> acceptedByUser(long userId) {
+        return lambdaQuery()
+                .eq(TripApplicationEntity::getApplicantId, userId)
+                .eq(TripApplicationEntity::getStatus, ApplicationStatusEnum.ACCEPTED.name())
+                .list().stream()
+                .map(TripApplicationEntity::toApplication)
+                .toList();
+    }
+
+    @Override
     @Transactional
-    public void leave(long tripId, long userId) {
-        TripPlan trip = tripPlanService.require(tripId);
-        if (trip.publisherId() == userId) {
-            throw new ForbiddenActionException("publisher cannot leave own trip " + tripId);
-        }
-        TripApplication accepted = findAccepted(tripId, userId)
-                .orElseThrow(() -> new ForbiddenActionException("only accepted companions can leave trip " + tripId));
-        tripPlanService.removeCompanion(tripId);
-        updateStatus(accepted.id(), ApplicationStatusEnum.LEFT, clock.instant());
+    public void markLeft(long applicationId, String statusReason, Instant at) {
+        lambdaUpdate()
+                .eq(TripApplicationEntity::getId, applicationId)
+                .eq(TripApplicationEntity::getStatus, ApplicationStatusEnum.ACCEPTED.name())
+                .set(TripApplicationEntity::getStatus, ApplicationStatusEnum.LEFT.name())
+                .set(TripApplicationEntity::getStatusReason, statusReason)
+                .set(TripApplicationEntity::getDecidedAt, at.toString())
+                .update();
+    }
+
+    @Override
+    @Transactional
+    public void cancelPendingByUser(long userId, String statusReason, Instant at) {
+        lambdaUpdate()
+                .eq(TripApplicationEntity::getApplicantId, userId)
+                .eq(TripApplicationEntity::getStatus, ApplicationStatusEnum.PENDING.name())
+                .set(TripApplicationEntity::getStatus, ApplicationStatusEnum.CANCELLED.name())
+                .set(TripApplicationEntity::getStatusReason, statusReason)
+                .set(TripApplicationEntity::getDecidedAt, at.toString())
+                .update();
     }
 
     @Override
@@ -203,6 +242,7 @@ public class ApplicationServiceImpl
     }
 
     private TripApplication decide(long applicationId, long publisherId, ApplicationStatusEnum next) {
+        creditRestrictionGuard.requireNotRestricted(publisherId);
         TripApplication application = require(applicationId);
         TripPlan trip = tripPlanService.requireCurrent(application.tripId());
         if (trip.publisherId() != publisherId) {
@@ -223,17 +263,19 @@ public class ApplicationServiceImpl
             }
             tripPlanService.addCompanion(trip.id());
         }
-        updateStatus(applicationId, next, now);
+        updateStatus(applicationId, next,
+                next == ApplicationStatusEnum.REJECTED ? "PUBLISHER_REJECT" : null, now);
         return application.withStatus(next, now);
     }
 
     @Override
     @Transactional
-    public void cancelPending(long tripId, Instant now) {
+    public void cancelPending(long tripId, String statusReason, Instant now) {
         lambdaUpdate()
                 .eq(TripApplicationEntity::getTripId, tripId)
                 .eq(TripApplicationEntity::getStatus, ApplicationStatusEnum.PENDING.name())
                 .set(TripApplicationEntity::getStatus, ApplicationStatusEnum.CANCELLED.name())
+                .set(TripApplicationEntity::getStatusReason, statusReason)
                 .set(TripApplicationEntity::getDecidedAt, now.toString())
                 .update();
     }
@@ -241,13 +283,14 @@ public class ApplicationServiceImpl
     @EventListener
     @Transactional
     public void onTripCompleted(TripCompletedEvent event) {
-        cancelPending(event.tripId(), event.completedAt());
+        cancelPending(event.tripId(), "TRIP_COMPLETED", event.completedAt());
     }
 
     @EventListener
     @Transactional
     public void onTripCancelled(TripCancelledEvent event) {
-        cancelPending(event.tripId(), event.cancelledAt());
+        // 待处理申请随行程取消；原因属于行程（cancel_reason），不是申请人受限。
+        cancelPending(event.tripId(), "TRIP_CANCELLED", event.cancelledAt());
     }
 
     private List<TripApplication> findByTrip(long tripId) {
@@ -259,14 +302,7 @@ public class ApplicationServiceImpl
                 .toList();
     }
 
-    private Optional<TripApplication> findAccepted(long tripId, long applicantId) {
-        return lambdaQuery()
-                .eq(TripApplicationEntity::getTripId, tripId)
-                .eq(TripApplicationEntity::getApplicantId, applicantId)
-                .eq(TripApplicationEntity::getStatus, ApplicationStatusEnum.ACCEPTED.name())
-                .oneOpt()
-                .map(TripApplicationEntity::toApplication);
-    }
+
 
     private long countChatPartners(long tripId, long applicantId) {
         return count(Wrappers.<TripApplicationEntity>lambdaQuery()
@@ -286,10 +322,12 @@ public class ApplicationServiceImpl
                         ApplicationStatusEnum.ACCEPTED.name())) > 0;
     }
 
-    private void updateStatus(long applicationId, ApplicationStatusEnum status, Instant decidedAt) {
+    private void updateStatus(
+            long applicationId, ApplicationStatusEnum status, String statusReason, Instant decidedAt) {
         lambdaUpdate()
                 .eq(TripApplicationEntity::getId, applicationId)
                 .set(TripApplicationEntity::getStatus, status.name())
+                .set(TripApplicationEntity::getStatusReason, statusReason)
                 .set(TripApplicationEntity::getDecidedAt, decidedAt == null ? null : decidedAt.toString())
                 .update();
     }

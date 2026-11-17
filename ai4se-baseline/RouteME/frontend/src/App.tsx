@@ -3,6 +3,7 @@ import { Alert, Button, ConfigProvider, Space, Spin, Typography, message } from 
 import zhCN from 'antd/locale/zh_CN';
 import { loadSessionUser, loadUsers, logoutAccount } from './api';
 import { ChatPage } from './chat/ChatPage';
+import { CreditProvider } from './credit/CreditContext';
 import { ShareExperiencePage } from './experiences/ShareExperiencePage';
 import { HomePage } from './home/HomePage';
 import { tripMessages } from './i18n/tripMessages';
@@ -167,56 +168,58 @@ export function App() {
 
     return (
       <ProfileProvider currentUser={currentUser}>
-        <AppShell
-          currentUser={currentUser}
-          isAuthenticated={authToken !== null}
-          onLogout={logout}
-          route={route}
-          mode={mode}
-          onToggleMode={toggleMode}
-        >
-          {route.name === 'home' && <HomePage currentUser={currentUser} />}
-          {route.name === 'create' && (
-            <TripCreatePage currentUser={currentUser} fromTripId={route.fromTripId} />
-          )}
-          {route.name === 'share' && (
-            <ShareExperiencePage currentUser={currentUser} tripId={route.tripId} />
-          )}
-          {route.name === 'detail' && (
-            <TripDetailPage currentUser={currentUser} tripId={route.tripId} />
-          )}
-          {route.name === 'applications' && (
-            <ApplicationsPage currentUser={currentUser} tripId={route.tripId} />
-          )}
-          {route.name === 'mine' && (
-            <MyTripsPage currentUser={currentUser} isAuthenticated={authToken !== null} />
-          )}
-          {route.name === 'map' && (
-            <MapExplorerPage provinceCode={route.provinceCode} cityCode={route.cityCode} />
-          )}
-          {route.name === 'profileSetup' && (
-            <ProfileSetupPage
-              currentUser={currentUser}
-              token={authToken}
-              onSaved={handleProfileSaved}
-            />
-          )}
-          {route.name === 'userProfile' && (
-            <ProfilePage
-              currentUser={currentUser}
-              userId={route.userId}
-              canEdit={authToken !== null}
-            />
-          )}
-          {route.name === 'chat' && (
-            <ChatPage
-              currentUser={currentUser}
-              tripId={route.tripId}
-              otherUserId={route.userId}
-            />
-          )}
-          {route.name === 'notFound' && <PlaceholderPage text={tripMessages.detailNotFound} />}
-        </AppShell>
+        <CreditProvider currentUser={currentUser}>
+          <AppShell
+            currentUser={currentUser}
+            isAuthenticated={authToken !== null}
+            onLogout={logout}
+            route={route}
+            mode={mode}
+            onToggleMode={toggleMode}
+          >
+            {route.name === 'home' && <HomePage currentUser={currentUser} />}
+            {route.name === 'create' && (
+              <TripCreatePage currentUser={currentUser} fromTripId={route.fromTripId} />
+            )}
+            {route.name === 'share' && (
+              <ShareExperiencePage currentUser={currentUser} tripId={route.tripId} />
+            )}
+            {route.name === 'detail' && (
+              <TripDetailPage currentUser={currentUser} tripId={route.tripId} />
+            )}
+            {route.name === 'applications' && (
+              <ApplicationsPage currentUser={currentUser} tripId={route.tripId} />
+            )}
+            {route.name === 'mine' && (
+              <MyTripsPage currentUser={currentUser} isAuthenticated={authToken !== null} />
+            )}
+            {route.name === 'map' && (
+              <MapExplorerPage provinceCode={route.provinceCode} cityCode={route.cityCode} />
+            )}
+            {route.name === 'profileSetup' && (
+              <ProfileSetupPage
+                currentUser={currentUser}
+                token={authToken}
+                onSaved={handleProfileSaved}
+              />
+            )}
+            {route.name === 'userProfile' && (
+              <ProfilePage
+                currentUser={currentUser}
+                userId={route.userId}
+                canEdit={authToken !== null}
+              />
+            )}
+            {route.name === 'chat' && (
+              <ChatPage
+                currentUser={currentUser}
+                tripId={route.tripId}
+                otherUserId={route.userId}
+              />
+            )}
+            {route.name === 'notFound' && <PlaceholderPage text={tripMessages.detailNotFound} />}
+          </AppShell>
+        </CreditProvider>
       </ProfileProvider>
     );
   };

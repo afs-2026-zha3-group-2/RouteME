@@ -1,9 +1,10 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Alert, Button, Modal, Segmented, Skeleton, Typography, message } from 'antd';
 import { cityLabel } from '../area/areaOptions';
-import { cancelApplication, completeTrip, leaveTrip, loadMyExperiences, loadMyTrips } from '../api';
+import { cancelApplication, completeTrip, loadMyExperiences, loadMyTrips } from '../api';
 import { mineMeetingNote } from '../chat/chatMeeting';
 import { tripMessages } from '../i18n/tripMessages';
+import { useMyCredit } from '../credit/CreditContext';
 import { publisherSummary } from '../profile/profileDisplay';
 import { Avatar } from '../shell/Avatar';
 import { EmptyState } from '../shell/EmptyState';
@@ -11,6 +12,7 @@ import { applicationLabel } from '../trips/applicationStatus';
 import { coverTone } from '../trips/coverTone';
 import { StatusBadge } from '../trips/StatusBadge';
 import { TripCancelModal } from '../trips/TripCancelModal';
+import { TripLeaveModal } from '../trips/TripLeaveModal';
 import type { DemoUser, Experience, MyTrips, TripApplication, TripSummary } from '../types';
 import {
   actionsFor,
@@ -28,7 +30,7 @@ type Props = {
   isAuthenticated: boolean;
 };
 
-type ConfirmAction = { kind: 'complete' | 'leave'; trip: TripSummary };
+type ConfirmAction = { kind: 'complete'; trip: TripSummary };
 
 function pendingHint(count: number): string {
   return count > 0
@@ -37,12 +39,14 @@ function pendingHint(count: number): string {
 }
 
 export function MyTripsPage({ currentUser, isAuthenticated }: Props) {
+  const { refresh: refreshCredit } = useMyCredit();
   const [data, setData] = useState<MyTrips | null>(null);
   const [experiences, setExperiences] = useState<Experience[]>([]);
   const [tab, setTab] = useState<MineTab>('published');
   const [error, setError] = useState<string | null>(null);
   const [busyKey, setBusyKey] = useState<string | null>(null);
   const [confirmAction, setConfirmAction] = useState<ConfirmAction | null>(null);
+  const [leaveTarget, setLeaveTarget] = useState<TripSummary | null>(null);
   const [cancelTarget, setCancelTarget] = useState<TripSummary | null>(null);
   const inFlight = useRef<Promise<void> | null>(null);
 
@@ -127,8 +131,12 @@ export function MyTripsPage({ currentUser, isAuthenticated }: Props) {
       window.location.hash = `#/share/${trip.id}`;
       return;
     }
-    if (action === 'complete' || action === 'leave') {
-      setConfirmAction({ kind: action, trip });
+    if (action === 'complete') {
+      setConfirmAction({ kind: 'complete', trip });
+      return;
+    }
+    if (action === 'leave') {
+      setLeaveTarget(trip);
       return;
     }
     if (action === 'cancelTrip') {
@@ -153,16 +161,11 @@ export function MyTripsPage({ currentUser, isAuthenticated }: Props) {
     if (confirmAction === null) {
       return;
     }
-    const { kind, trip } = confirmAction;
-    setBusyKey(`${kind}-${trip.id}`);
+    const { trip } = confirmAction;
+    setBusyKey(`complete-${trip.id}`);
     try {
-      if (kind === 'complete') {
-        await completeTrip(currentUser.id, trip.id);
-        message.success(tripMessages.detailEndedToast);
-      } else {
-        await leaveTrip(currentUser.id, trip.id);
-        message.success(tripMessages.leaveSuccess);
-      }
+      await completeTrip(currentUser.id, trip.id);
+      message.success(tripMessages.detailEndedToast);
       setConfirmAction(null);
       await reload(true);
     } catch (caught: unknown) {
@@ -486,27 +489,28 @@ export function MyTripsPage({ currentUser, isAuthenticated }: Props) {
 
       <Modal
         open={confirmAction !== null}
-        title={
-          confirmAction?.kind === 'complete'
-            ? tripMessages.detailCompleteTrip
-            : tripMessages.leaveTrip
-        }
-        okText={
-          confirmAction?.kind === 'complete'
-            ? tripMessages.detailCompleteTrip
-            : tripMessages.leaveTrip
-        }
+        title={tripMessages.detailCompleteTrip}
+        okText={tripMessages.detailCompleteTrip}
         cancelText={tripMessages.createCancel}
         confirmLoading={busyKey !== null}
         onOk={() => void confirmNow()}
         onCancel={() => setConfirmAction(null)}
       >
-        <Typography.Paragraph>
-          {confirmAction?.kind === 'complete'
-            ? tripMessages.detailCompleteHint
-            : tripMessages.leaveConfirm}
-        </Typography.Paragraph>
+        <Typography.Paragraph>{tripMessages.detailCompleteHint}</Typography.Paragraph>
       </Modal>
+
+      <TripLeaveModal
+        open={leaveTarget !== null}
+        userId={currentUser.id}
+        tripId={leaveTarget?.id ?? 0}
+        title={leaveTarget?.title}
+        onClose={() => setLeaveTarget(null)}
+        onLeft={() => {
+          setLeaveTarget(null);
+          refreshCredit();
+          void reload(true);
+        }}
+      />
     </main>
   );
 }

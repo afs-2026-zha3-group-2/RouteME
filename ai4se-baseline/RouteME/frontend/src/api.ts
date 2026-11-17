@@ -8,6 +8,9 @@ import type {
   ExperienceFilters,
   ExperiencePhoto,
   ExperienceWriteRequest,
+  LeavePreview,
+  LeaveReason,
+  LeaveResult,
   MatchCandidate,
   MyTrips,
   Page,
@@ -284,8 +287,30 @@ export async function rejectApplication(userId: number, applicationId: number): 
   return (await response.json()) as TripApplication;
 }
 
-export async function leaveTrip(userId: number, tripId: number): Promise<void> {
-  await request(`/trips/${tripId}/leave`, { method: 'POST' }, userId);
+export async function loadLeavePreview(
+  userId: number,
+  tripId: number,
+  reason: LeaveReason,
+): Promise<LeavePreview> {
+  const response = await request(`/trips/${tripId}/leave-preview?reason=${reason}`, undefined, userId);
+  return (await response.json()) as LeavePreview;
+}
+
+export async function leaveTrip(
+  userId: number,
+  tripId: number,
+  reason: LeaveReason,
+): Promise<LeaveResult> {
+  const response = await request(
+    `/trips/${tripId}/leave`,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ reason }),
+    },
+    userId,
+  );
+  return (await response.json()) as LeaveResult;
 }
 
 export async function loadMyTrips(userId: number): Promise<MyTrips> {

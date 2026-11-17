@@ -19,7 +19,6 @@ import {
   applyForTrip,
   cancelApplication,
   completeTrip,
-  leaveTrip,
   loadMatch,
   loadMyApplications,
   loadTrip,
@@ -28,13 +27,15 @@ import {
   saveTripMeeting,
 } from '../api';
 import { tripMessages } from '../i18n/tripMessages';
+import { CreditRestrictedNotice } from '../credit/CreditRestrictedNotice';
+import { useMyCredit } from '../credit/CreditContext';
 import { intensityLabel } from '../experiences/experienceForm';
 import { meetingAreaText, meetingTimeText } from '../chat/chatMeeting';
 import { AmapTripMap } from '../map/amap/AmapTripMap';
 import { AmapPlacePicker } from '../map/amap/AmapPlacePicker';
 import { shareEligibility } from '../experiences/shareEligibility';
 import { publisherSummary } from '../profile/profileDisplay';
-import { creditLine, creditTone } from '../profile/creditDisplay';
+import { creditLine, creditRestrictedBadge, creditTone } from '../profile/creditDisplay';
 import { useUserCredits } from '../profiles/useUserCredits';
 import { ReportModal } from '../safety/ReportModal';
 import { Avatar } from '../shell/Avatar';
@@ -54,6 +55,8 @@ import {
 import { MAX_MEETING_AREAS } from './tripOptions';
 import { statusColor, statusLabel } from './tripStatus';
 import { TripCancelModal } from './TripCancelModal';
+import { TripLeaveModal } from './TripLeaveModal';
+import { leaveResultText } from './leavePreview';
 import { cancelReasonLabel } from './tripCancel';
 import { useTrip } from './useTrip';
 import { useProfile } from '../profiles/ProfileContext';
@@ -87,6 +90,7 @@ function pickLatestApplication(
 export function TripDetailPage({ currentUser, tripId }: Props) {
   const { state, reload } = useTrip(currentUser.id, tripId);
   const { openProfile } = useProfile();
+  const { restricted, refresh: refreshCredit } = useMyCredit();
   const publisherId = state.status === 'ready' ? state.trip.publisher.id : 0;
   const publisherCredits = useUserCredits(publisherId > 0 ? [publisherId] : [], currentUser.id);
   const [feedback, setFeedback] = useState<Feedback | null>(null);
@@ -96,11 +100,9 @@ export function TripDetailPage({ currentUser, tripId }: Props) {
   const [match, setMatch] = useState<MatchCandidate | null>(null);
   const [applyMessage, setApplyMessage] = useState('');
   const [submitting, setSubmitting] = useState(false);
-  const [leaving, setLeaving] = useState(false);
   const [cancelling, setCancelling] = useState(false);
-  const [confirmAction, setConfirmAction] = useState<
-    'complete' | 'cancelApply' | 'leave' | null
-  >(null);
+  const [leaveOpen, setLeaveOpen] = useState(false);
+  const [confirmAction, setConfirmAction] = useState<'complete' | 'cancelApply' | null>(null);
   const [reportOpen, setReportOpen] = useState(false);
   const [experiences, setExperiences] = useState<Experience[] | null>(null);
   const [previewExperienceId, setPreviewExperienceId] = useState<number | null>(null);
@@ -200,20 +202,6 @@ export function TripDetailPage({ currentUser, tripId }: Props) {
     }
   };
 
-  const leave = async () => {
-    setLeaving(true);
-    setFeedback(null);
-    try {
-      await leaveTrip(currentUser.id, tripId);
-      setMyApplication((current) => (current === null ? null : { ...current, status: 'left' }));
-      reload();
-    } catch (error: unknown) {
-      showActionError(error);
-    } finally {
-      setLeaving(false);
-    }
-  };
-
   const openMeeting = (meetingAreas: string[] | null, meetingTime: string | null) => {
     setMeetingForm(meetingFormFrom({ meeting_areas: meetingAreas, meeting_time: meetingTime }));
     setMeetingErrors({});
@@ -290,25 +278,14 @@ export function TripDetailPage({ currentUser, tripId }: Props) {
   };
 
   const confirmTitle =
-    confirmAction === 'complete'
-      ? tripMessages.detailCompleteTrip
-      : confirmAction === 'cancelApply'
-        ? tripMessages.applyCancelConfirm
-        : tripMessages.leaveConfirm;
+    confirmAction === 'complete' ? tripMessages.detailCompleteTrip : tripMessages.applyCancelConfirm;
   const confirmOkText =
-    confirmAction === 'complete'
-      ? tripMessages.detailCompleteTrip
-      : confirmAction === 'cancelApply'
-        ? tripMessages.applyCancel
-        : tripMessages.leaveTrip;
-  const confirmBusy =
-    confirmAction === 'complete' ? completing : confirmAction === 'leave' ? leaving : cancelling;
+    confirmAction === 'complete' ? tripMessages.detailCompleteTrip : tripMessages.applyCancel;
+  const confirmBusy = confirmAction === 'complete' ? completing : cancelling;
   const confirmHint =
     confirmAction === 'complete'
       ? tripMessages.detailCompleteHint
-      : confirmAction === 'cancelApply'
-        ? '撤回后可以再次申请，但需要发布者重新处理。'
-        : '退出后这条行程的聊天会保留，仍可继续和发布者沟通。';
+      : '撤回后可以再次申请，但需要发布者重新处理。';
 
   const submitApplication = async () => {
     if (submitting) {
@@ -354,8 +331,6 @@ export function TripDetailPage({ currentUser, tripId }: Props) {
       await complete();
     } else if (confirmAction === 'cancelApply') {
       await cancelMyApplication();
-    } else if (confirmAction === 'leave') {
-      await leave();
     }
     setConfirmAction(null);
   };
@@ -398,6 +373,8 @@ export function TripDetailPage({ currentUser, tripId }: Props) {
           {trip.ending_soon && (isPublisher || participant) && (
             <Alert type="warning" showIcon title={tripMessages.detailEndingSoon} />
           )}
+
+          {restricted && <CreditRestrictedNotice />}
 
           {isCancelled && (
             <Alert
@@ -483,6 +460,7 @@ export function TripDetailPage({ currentUser, tripId }: Props) {
               <div className="detail-actions">
                 <Button
                   size="small"
+                  disabled={restricted}
                   onClick={() => openMeeting(trip.meeting_areas ?? [], trip.meeting_time ?? null)}
                 >
                   {tripMessages.meetingEdit}
@@ -526,6 +504,11 @@ export function TripDetailPage({ currentUser, tripId }: Props) {
                     {creditLine(
                       publisherCredits[trip.publisher.id].credit_score,
                       publisherCredits[trip.publisher.id].credit_level,
+                    )}
+                    {publisherCredits[trip.publisher.id].credit_restricted && (
+                      <span className="badge danger credit-restricted-badge">
+                        {creditRestrictedBadge(publisherCredits[trip.publisher.id].credit_restricted)}
+                      </span>
                     )}
                   </span>
                 )}
@@ -621,7 +604,10 @@ export function TripDetailPage({ currentUser, tripId }: Props) {
             {(canShare || isCompleted) && (
               <div className="detail-actions">
                 {canShare && (
-                  <Button onClick={() => (window.location.hash = `#/share/${trip.id}`)}>
+                  <Button
+                    disabled={restricted}
+                    onClick={() => (window.location.hash = `#/share/${trip.id}`)}
+                  >
                     {hasShared ? tripMessages.experienceEditEntry : tripMessages.experienceShareEntry}
                   </Button>
                 )}
@@ -691,7 +677,7 @@ export function TripDetailPage({ currentUser, tripId }: Props) {
                       {`与 ${trip.publisher.nickname} 沟通`}
                     </Button>
                     {!isCompleted && !isCancelled && (
-                      <Button block danger loading={leaving} onClick={() => setConfirmAction('leave')}>
+                      <Button block danger onClick={() => setLeaveOpen(true)}>
                         {tripMessages.leaveTrip}
                       </Button>
                     )}
@@ -741,7 +727,13 @@ export function TripDetailPage({ currentUser, tripId }: Props) {
                         onChange={(event) => setApplyMessage(event.target.value)}
                       />
                     </label>
-                    <Button type="primary" block loading={submitting} onClick={submitApplication}>
+                    <Button
+                      type="primary"
+                      block
+                      loading={submitting}
+                      disabled={restricted}
+                      onClick={submitApplication}
+                    >
                       {tripMessages.applySubmit}
                     </Button>
                     <p className="hint">{tripMessages.applyChatHint}</p>
@@ -754,7 +746,11 @@ export function TripDetailPage({ currentUser, tripId }: Props) {
           {isPublisher && (
             <div className="detail-actions detail-actions-primary">
               {trip.status === 'ongoing' && (
-                <Button loading={completing} onClick={() => setConfirmAction('complete')}>
+                <Button
+                  loading={completing}
+                  disabled={restricted}
+                  onClick={() => setConfirmAction('complete')}
+                >
                   {tripMessages.detailCompleteTrip}
                 </Button>
               )}
@@ -765,7 +761,7 @@ export function TripDetailPage({ currentUser, tripId }: Props) {
                 </Button>
               )}
               {(trip.status === 'recruiting' || trip.status === 'full') && (
-                <Button danger onClick={() => setCancelOpen(true)}>
+                <Button danger disabled={restricted} onClick={() => setCancelOpen(true)}>
                   {tripMessages.detailCancelTrip}
                 </Button>
               )}
@@ -882,6 +878,20 @@ export function TripDetailPage({ currentUser, tripId }: Props) {
         trip={trip}
         onClose={() => setCancelOpen(false)}
         onCancelled={() => {
+          reload();
+        }}
+      />
+
+      <TripLeaveModal
+        open={leaveOpen}
+        userId={currentUser.id}
+        tripId={trip.id}
+        title={trip.title}
+        onClose={() => setLeaveOpen(false)}
+        onLeft={(result) => {
+          setMyApplication((current) => (current === null ? null : { ...current, status: 'left' }));
+          setFeedback({ tone: 'warning', title: leaveResultText(result) });
+          refreshCredit();
           reload();
         }}
       />

@@ -26,5 +26,7 @@ public record UserProfile(
         String bio,
         boolean profileComplete,
         int creditScore,
-        CreditLevel creditLevel) {
+        CreditLevel creditLevel,
+        boolean creditRestricted,
+        String creditRestrictionReason) {
 }

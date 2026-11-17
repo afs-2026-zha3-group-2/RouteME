@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState, type KeyboardEvent as ReactKeyboardEvent, type ReactNode } from 'react';
+import { useMyCredit } from '../credit/CreditContext';
 import { tripMessages } from '../i18n/tripMessages';
+import { creditRestrictedActionMessage } from '../profile/creditDisplay';
 import { publisherSummary } from '../profile/profileDisplay';
 import type { Route } from '../route';
 import type { ColorMode } from '../theme';
@@ -133,6 +135,9 @@ export function AppShell({
   children,
 }: Props) {
   const active = activeKey(route);
+  const { restricted } = useMyCredit();
+  const navBlockedTitle = (item: NavItem) =>
+    restricted && item.key === 'create' ? creditRestrictedActionMessage() : undefined;
   const [identityOpen, setIdentityOpen] = useState(false);
   const identityRef = useRef<HTMLDivElement>(null);
   const identityTriggerRef = useRef<HTMLButtonElement>(null);
@@ -355,9 +360,21 @@ export function AppShell({
               {group.items.map((item) => (
                 <a
                   key={item.key}
-                  className={active === item.key ? 'rail-link active' : 'rail-link'}
+                  className={[
+                    active === item.key ? 'rail-link active' : 'rail-link',
+                    navBlockedTitle(item) !== undefined ? 'is-disabled' : '',
+                  ]
+                    .filter((name) => name !== '')
+                    .join(' ')}
                   href={item.href}
                   aria-current={active === item.key ? 'page' : undefined}
+                  aria-disabled={navBlockedTitle(item) !== undefined || undefined}
+                  title={navBlockedTitle(item)}
+                  onClick={(event) => {
+                    if (navBlockedTitle(item) !== undefined) {
+                      event.preventDefault();
+                    }
+                  }}
                 >
                   <NavIcon name={item.key} />
                   <span>{item.label}</span>
@@ -448,9 +465,21 @@ export function AppShell({
         {NAV_ITEMS.map((item) => (
           <a
             key={item.key}
-            className={active === item.key ? 'tab-link active' : 'tab-link'}
+            className={[
+              active === item.key ? 'tab-link active' : 'tab-link',
+              navBlockedTitle(item) !== undefined ? 'is-disabled' : '',
+            ]
+              .filter((name) => name !== '')
+              .join(' ')}
             href={item.href}
             aria-current={active === item.key ? 'page' : undefined}
+            aria-disabled={navBlockedTitle(item) !== undefined || undefined}
+            title={navBlockedTitle(item)}
+            onClick={(event) => {
+              if (navBlockedTitle(item) !== undefined) {
+                event.preventDefault();
+              }
+            }}
           >
             <NavIcon name={item.key} />
             <span>{item.label}</span>

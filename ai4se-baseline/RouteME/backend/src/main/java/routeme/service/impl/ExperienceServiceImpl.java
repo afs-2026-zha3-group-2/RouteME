@@ -36,6 +36,7 @@ import routeme.request.ExperienceWriteRequest;
 import routeme.response.ExperiencePhotoResponse;
 import routeme.response.ExperienceResponse;
 import routeme.response.ExperienceSaveResponse;
+import routeme.service.CreditRestrictionGuard;
 import routeme.service.DemoUserService;
 import routeme.service.ExperienceEligibility;
 import routeme.service.ExperiencePhotoService;
@@ -57,6 +58,7 @@ public class ExperienceServiceImpl
     private final TripExperiencePhotoMapper photoMapper;
     private final ExperiencePhotoStorage photoStorage;
     private final ExperienceEligibility eligibility;
+    private final CreditRestrictionGuard creditRestrictionGuard;
     private final Clock clock;
 
     public ExperienceServiceImpl(
@@ -65,18 +67,21 @@ public class ExperienceServiceImpl
             TripExperiencePhotoMapper photoMapper,
             ExperiencePhotoStorage photoStorage,
             ExperienceEligibility eligibility,
+            CreditRestrictionGuard creditRestrictionGuard,
             Clock clock) {
         this.tripPlanService = tripPlanService;
         this.demoUserService = demoUserService;
         this.photoMapper = photoMapper;
         this.photoStorage = photoStorage;
         this.eligibility = eligibility;
+        this.creditRestrictionGuard = creditRestrictionGuard;
         this.clock = clock;
     }
 
     @Override
     @Transactional
     public ExperienceSaveResponse upsert(long tripId, long authorId, ExperienceWriteRequest request) {
+        creditRestrictionGuard.requireNotRestricted(authorId);
         TripPlan trip = tripPlanService.requireCurrent(tripId);
         eligibility.requireCanShare(trip, authorId);
         List<Long> photoIds = normalizePhotoIds(request.photoIdsOrDefault());

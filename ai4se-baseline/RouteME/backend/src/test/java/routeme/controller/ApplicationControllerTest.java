@@ -199,8 +199,24 @@ class ApplicationControllerTest {
 
         @Test
         void in_acceptedCompanion_out_leavesAndCanReapply() throws Exception {
-            mockMvc.perform(post("/api/trips/4/leave").header("X-User-Id", "1"))
-                    .andExpect(status().isNoContent());
+            mockMvc.perform(get("/api/trips/4/leave-preview?reason=personal").header("X-User-Id", "1"))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.penalty_tier").value("during"))
+                    .andExpect(jsonPath("$.theoretical_delta").value(-15))
+                    .andExpect(jsonPath("$.applied_delta").value(-15))
+                    .andExpect(jsonPath("$.monthly_ordinal").value(0));
+
+            mockMvc.perform(post("/api/trips/4/leave")
+                            .header("X-User-Id", "1")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("{\"reason\":\"personal\"}"))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.credit_score").value(65))
+                    .andExpect(jsonPath("$.credit_level").value("fair"))
+                    .andExpect(jsonPath("$.credit_restricted").value(false))
+                    .andExpect(jsonPath("$.theoretical_delta").value(-15))
+                    .andExpect(jsonPath("$.applied_delta").value(-15))
+                    .andExpect(jsonPath("$.review_status").value("not_required"));
 
             mockMvc.perform(get("/api/me/applications").header("X-User-Id", "1"))
                     .andExpect(status().isOk())
@@ -224,23 +240,42 @@ class ApplicationControllerTest {
 
         @Test
         void in_publisherLeave_out_forbidden() throws Exception {
-            mockMvc.perform(post("/api/trips/3/leave").header("X-User-Id", "2"))
+            mockMvc.perform(post("/api/trips/3/leave")
+                            .header("X-User-Id", "2")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("{\"reason\":\"personal\"}"))
                     .andExpect(status().isForbidden())
                     .andExpect(jsonPath("$.code").value("FORBIDDEN"));
         }
 
         @Test
         void in_nonCompanionLeave_out_forbidden() throws Exception {
-            mockMvc.perform(post("/api/trips/5/leave").header("X-User-Id", "1"))
+            mockMvc.perform(post("/api/trips/5/leave")
+                            .header("X-User-Id", "1")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("{\"reason\":\"personal\"}"))
                     .andExpect(status().isForbidden())
                     .andExpect(jsonPath("$.code").value("FORBIDDEN"));
         }
 
         @Test
         void in_completedTripLeave_out_notOpen() throws Exception {
-            mockMvc.perform(post("/api/trips/1/leave").header("X-User-Id", "2"))
+            mockMvc.perform(post("/api/trips/1/leave")
+                            .header("X-User-Id", "2")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("{\"reason\":\"personal\"}"))
                     .andExpect(status().isConflict())
                     .andExpect(jsonPath("$.code").value("TRIP_NOT_OPEN"));
+        }
+
+        @Test
+        void in_missingLeaveReason_out_invalidInput() throws Exception {
+            mockMvc.perform(post("/api/trips/4/leave")
+                            .header("X-User-Id", "1")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("{}"))
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.code").value("INVALID_INPUT"));
         }
 
         @Test

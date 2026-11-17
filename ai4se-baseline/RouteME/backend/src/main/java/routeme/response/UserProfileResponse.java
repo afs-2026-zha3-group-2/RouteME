@@ -30,6 +30,8 @@ public record UserProfileResponse(
         boolean profileComplete,
         int creditScore,
         String creditLevel,
+        boolean creditRestricted,
+        String creditRestrictionReason,
         String joinedAt,
         ProfileStatsResponse stats) {
 
@@ -62,6 +64,8 @@ public record UserProfileResponse(
                 profile.profileComplete(),
                 profile.creditScore(),
                 profile.creditLevel().wireValue(),
+                profile.creditRestricted(),
+                profile.creditRestrictionReason(),
                 joinedAt,
                 stats);
     }

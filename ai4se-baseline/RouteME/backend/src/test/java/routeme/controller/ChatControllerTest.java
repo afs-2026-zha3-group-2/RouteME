@@ -44,8 +44,12 @@ class ChatControllerTest {
 
     @Test
     void in_leftCompanion_out_canStillReadAndSend() throws Exception {
-        mockMvc.perform(post("/api/trips/4/leave").header("X-User-Id", "1"))
-                .andExpect(status().isNoContent());
+        mockMvc.perform(post("/api/trips/4/leave")
+                        .header("X-User-Id", "1")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"reason\":\"personal\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.credit_score").isNumber());
 
         mockMvc.perform(get("/api/trips/4/messages").header("X-User-Id", "1").param("with", "3"))
                 .andExpect(status().isOk())
@@ -157,8 +161,12 @@ class ChatControllerTest {
 
     @Test
     void in_leftCompanion_out_partnerStillListed() throws Exception {
-        mockMvc.perform(post("/api/trips/4/leave").header("X-User-Id", "1"))
-                .andExpect(status().isNoContent());
+        mockMvc.perform(post("/api/trips/4/leave")
+                        .header("X-User-Id", "1")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"reason\":\"personal\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.credit_score").isNumber());
 
         mockMvc.perform(get("/api/me/chat-partners").header("X-User-Id", "1"))
                 .andExpect(status().isOk())
