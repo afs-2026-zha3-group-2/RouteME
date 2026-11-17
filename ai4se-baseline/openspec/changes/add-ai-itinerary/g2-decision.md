@@ -39,3 +39,14 @@
 ## 结论
 
 G2 **Pass**（2 条既有债务 + 1 偏差债务 + 1 观察项，均已记录）。本记录不替代 G3；按发起人指示**不执行 P5、不归档**。签署后执行 P4 阶段提交 → `git pull --no-rebase --autostash --no-edit origin main` → push。
+
+## Addendum：合并集成与契约偏离（push 前 pull 触发 main 合并，2026-11-17）
+
+P4 提交 `2e552fc` 后 pull 触发与 main（`0979e916`，0.16.0）28 文件冲突。**发起人裁决（AskUserQuestion 选项 A）：采用 main 天气为唯一权威，并集解决其余冲突，全量重验后提交推送，在 p4-verify/g2 记录契约偏离。**本 addendum 不改动上方原 G2 签署记录，仅补充合并后的契约偏离与重验证据。
+
+- **契约偏离（天气权威转移）：** 本 change 原自带天气代理与 main `add-trip-weather` 重复；裁决后删重复天气类（WeatherText/WeatherTextTest），`AiItineraryServiceImpl` 重构消费 main `WeatherService.forecast(WeatherQuery)`，天气形状改 main 嵌套 `WeatherForecast`（weather:WeatherDaily|null + reminders[] + available/reason）。前端 `fetchWeatherForecast(destinationCode,date,point?)` 新签名 + AiPlannerPage/snapshot/TripDetailPage 嵌套适配。**契约 0.12.0 → 0.16.0 基 + AI 接口 → 0.17.0**；迁移 `V18__ai_itineraries` → `V21__ai_itineraries`（main V18 photos/V19 cancel/V20 credit 占用）。技术边界不变：Open-Meteo 真实天气仍实际参与推荐（generate 内自取注入），AI 不伪造天气/经纬度/路线/距离/时间/价格。
+- **地图并集：** main 栅格底图 + SVG overlay 为权威（高德矢量引擎本仓库网络环境不可初始化），`AmapService` main 基 + transit 加性 port（三结构兼容保留）；`RouteLayer` numbers 编号接线（AC8）。
+- **合并期修复：** ① 独立 MAPPER 补 SNAKE_CASE（main 天气 POJO camelCase 组件）→ 快照保存 400→201；② rasterMap.ts host 调试钩子 + ai-planner.spec A1 点击重写为投影像素 pointer 事件。
+- **合并后重验证据：** 后端 verify **364/364** BUILD SUCCESS；前端 **363/363** + typecheck 0 + build 成功；E2E 全量 **143：121 passed / 22 failed**，**ai-planner 12/12**，main 新增 credit/detail-companions/experience-photos/weather/weather-walkthrough 全绿；**profiles.spec fresh DB 隔离 8/8** 证实全量 4 红为债务 1 污染（非回归）；map 9 + trips 9 = 18 红归 refine-trip-map（china-map 级联依赖）偏差（延续原裁决，不修旧 spec）；真实天气 200（Open-Meteo 嵌套）验证。明细见 verify report §8。
+- **债务更新：** 偏差债务由「map/trips 21 例」更新为「map 9 + trips 9 = 18 例」（main 合并更新 trips.spec 后红数下降）；新增「天气权威转移 add-trip-weather」契约偏离记录；债务 1（fresh DB）延续，profiles 污染为其最新表现（隔离复跑证实）。
+- **G2 结论维持 Pass with documented debts**（原签署 Jay/Neal/WAYNE 不变；本 addendum 为合并集成补充记录，不替代 G3，不执行 P5/不归档）。下一步：`git commit --no-edit`（merge）→ push（pull 已先做）。

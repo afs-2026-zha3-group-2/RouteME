@@ -1,23 +1,21 @@
 package routeme.service;
 
+import routeme.param.WeatherQuery;
 import routeme.pojo.WeatherForecast;
 
 /**
- * 目的地天气：Open-Meteo 单日预报的获取与归一。
+ * 目的地天气：Open-Meteo 单日预报的获取、归一与出行提醒生成。
  */
 public interface WeatherService {
 
     /**
-     * 查询目的地指定日期的天气摘要。
+     * 查询目的地某一天的天气。
      *
-     * <p>日期必须落在预报窗口内（今天 ≤ date ≤ 今天+15，按行程业务时区解释），
-     * 超窗抛 {@code INVALID_INPUT}；上游失败或无该日数据抛
-     * {@code WEATHER_UPSTREAM_ERROR}，绝不返回估算或伪造天气。
+     * <p>日期超出预报窗口时返回 {@code available=false}（reason=OUT_OF_RANGE），
+     * 不请求上游、不伪造天气；上游失败抛 {@code WeatherUpstreamException}。</p>
      *
-     * @param lng  目的地经度
-     * @param lat  目的地纬度
-     * @param date 旅行日期 yyyy-MM-dd
-     * @return 归一化天气摘要，source 恒为 open-meteo
+     * @param query 目的地（区划码或坐标）与日期
+     * @return 归一化天气与出行提醒
      */
-    WeatherForecast forecast(double lng, double lat, String date);
+    WeatherForecast forecast(WeatherQuery query);
 }

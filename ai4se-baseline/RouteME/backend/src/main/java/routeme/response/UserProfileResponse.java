@@ -28,6 +28,8 @@ public record UserProfileResponse(
         String travelStyle,
         String bio,
         boolean profileComplete,
+        int creditScore,
+        String creditLevel,
         String joinedAt,
         ProfileStatsResponse stats) {
 
@@ -58,6 +60,8 @@ public record UserProfileResponse(
                 profile.travelStyle(),
                 profile.bio(),
                 profile.profileComplete(),
+                profile.creditScore(),
+                profile.creditLevel().wireValue(),
                 joinedAt,
                 stats);
     }

@@ -66,6 +66,7 @@ export const aiMessages = {
 
   weatherTitle: '天气',
   weatherEmpty: '选择目的地和日期后，这里会展示真实天气',
+  weatherOutOfRange: '暂无该日期天气预报，可换一个更近的日期。',
   weatherLoading: '天气获取中…',
   weatherSource: 'Open-Meteo 真实预报',
   precipitationProbability: '降雨概率',

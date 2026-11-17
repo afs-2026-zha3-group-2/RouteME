@@ -18,6 +18,7 @@ import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 
 import routeme.constant.TripTimeZoneConstant;
+import routeme.enums.TripCancelReasonEnum;
 import routeme.enums.TripStatusEnum;
 import routeme.exception.ForbiddenActionException;
 import routeme.exception.InvalidInputException;
@@ -32,10 +33,12 @@ import routeme.pojo.TripPlan;
 import routeme.pojo.TripPlanDraft;
 import routeme.entity.TripPlanEntity;
 import routeme.request.TripCreateRequest;
+import routeme.request.TripCancelRequest;
 import routeme.request.TripMeetingRequest;
 import routeme.request.TripQuery;
 import routeme.service.AiItineraryService;
 import routeme.service.DemoUserService;
+import routeme.service.TripCancelledEvent;
 import routeme.service.TripCompletedEvent;
 import routeme.service.TripPlanService;
 
@@ -46,6 +49,8 @@ import routeme.service.TripPlanService;
 @Service
 public class TripPlanServiceImpl extends AbstractServiceImpl<TripPlanMapper, TripPlanEntity>
         implements TripPlanService {
+
+    private static final int MAX_CANCEL_NOTE_LENGTH = 100;
 
     private final DemoUserService demoUserService;
     private final AiItineraryService aiItineraryService;
@@ -158,12 +163,13 @@ public class TripPlanServiceImpl extends AbstractServiceImpl<TripPlanMapper, Tri
     public TripPlan materializeIfExpired(long tripId) {
         TripPlan trip = require(tripId);
         Instant now = clock.instant();
-        if (trip.completedAt() != null || now.isBefore(trip.plannedEnd())) {
+        if (trip.cancelledAt() != null || trip.completedAt() != null || now.isBefore(trip.plannedEnd())) {
             return trip;
         }
         boolean updated = lambdaUpdate()
                 .eq(TripPlanEntity::getId, tripId)
                 .isNull(TripPlanEntity::getCompletedAt)
+                .isNull(TripPlanEntity::getCancelledAt)
                 .set(TripPlanEntity::getCompletedAt, trip.plannedEnd().toString())
                 .set(TripPlanEntity::getUpdatedAt, now.toString())
                 .update();
@@ -188,6 +194,7 @@ public class TripPlanServiceImpl extends AbstractServiceImpl<TripPlanMapper, Tri
         LambdaQueryWrapper<TripPlanEntity> query = Wrappers.<TripPlanEntity>lambdaQuery()
                 .eq(TripPlanEntity::getPublisherId, publisherId)
                 .isNull(TripPlanEntity::getCompletedAt)
+                .isNull(TripPlanEntity::getCancelledAt)
                 .orderByDesc(TripPlanEntity::getCreatedAt)
                 .orderByDesc(TripPlanEntity::getId);
         return page(new Page<TripPlanEntity>(1, 1, false), query).getRecords().stream()
@@ -198,6 +205,36 @@ public class TripPlanServiceImpl extends AbstractServiceImpl<TripPlanMapper, Tri
     @Override
     public DemoUser publisherOf(TripPlan trip) {
         return demoUserService.require(trip.publisherId());
+    }
+
+    @Override
+    @Transactional
+    public TripPlan cancel(long tripId, long publisherId, TripCancelRequest request) {
+        TripPlan trip = requireCurrent(tripId);
+        if (trip.publisherId() != publisherId) {
+            throw new ForbiddenActionException("only the publisher can cancel trip " + tripId);
+        }
+        Instant now = clock.instant();
+        TripStatusEnum status = trip.status(now);
+        if (status != TripStatusEnum.RECRUITING && status != TripStatusEnum.FULL) {
+            throw new TripNotOpenException(tripId);
+        }
+        TripCancelReasonEnum reason = TripCancelReasonEnum.parse(request == null ? null : request.reason());
+        String note = normalizeCancelNote(request == null ? null : request.note(), reason);
+        boolean updated = lambdaUpdate()
+                .eq(TripPlanEntity::getId, tripId)
+                .isNull(TripPlanEntity::getCancelledAt)
+                .isNull(TripPlanEntity::getCompletedAt)
+                .set(TripPlanEntity::getCancelledAt, now.toString())
+                .set(TripPlanEntity::getCancelReason, reason.wireValue())
+                .set(TripPlanEntity::getCancelNote, note)
+                .set(TripPlanEntity::getUpdatedAt, now.toString())
+                .update();
+        if (!updated) {
+            throw new TripNotOpenException(tripId);
+        }
+        events.publishEvent(new TripCancelledEvent(tripId, now));
+        return require(tripId);
     }
 
     @Override
@@ -214,6 +251,7 @@ public class TripPlanServiceImpl extends AbstractServiceImpl<TripPlanMapper, Tri
         boolean updated = lambdaUpdate()
                 .eq(TripPlanEntity::getId, tripId)
                 .isNull(TripPlanEntity::getCompletedAt)
+                .isNull(TripPlanEntity::getCancelledAt)
                 .set(TripPlanEntity::getCompletedAt, now.toString())
                 .set(TripPlanEntity::getUpdatedAt, now.toString())
                 .update();
@@ -228,7 +266,9 @@ public class TripPlanServiceImpl extends AbstractServiceImpl<TripPlanMapper, Tri
     public TripPlan addCompanion(long tripId) {
         TripPlan trip = requireCurrent(tripId);
         Instant now = clock.instant();
-        if (trip.status(now) == TripStatusEnum.COMPLETED || trip.joinedCount() >= trip.capacity()) {
+        if (trip.status(now) == TripStatusEnum.COMPLETED
+                || trip.status(now) == TripStatusEnum.CANCELLED
+                || trip.joinedCount() >= trip.capacity()) {
             throw new TripNotOpenException(tripId);
         }
         updateJoinedCount(tripId, trip.joinedCount() + 1);
@@ -239,7 +279,8 @@ public class TripPlanServiceImpl extends AbstractServiceImpl<TripPlanMapper, Tri
     @Transactional
     public TripPlan removeCompanion(long tripId) {
         TripPlan trip = requireCurrent(tripId);
-        if (trip.status(clock.instant()) == TripStatusEnum.COMPLETED) {
+        if (trip.status(clock.instant()) == TripStatusEnum.COMPLETED
+                || trip.status(clock.instant()) == TripStatusEnum.CANCELLED) {
             throw new TripNotOpenException(tripId);
         }
         if (trip.joinedCount() <= 1) {
@@ -256,7 +297,8 @@ public class TripPlanServiceImpl extends AbstractServiceImpl<TripPlanMapper, Tri
         if (trip.publisherId() != publisherId) {
             throw new ForbiddenActionException("only the publisher can edit meeting info of trip " + tripId);
         }
-        if (trip.status(clock.instant()) == TripStatusEnum.COMPLETED) {
+        if (trip.status(clock.instant()) == TripStatusEnum.COMPLETED
+                || trip.status(clock.instant()) == TripStatusEnum.CANCELLED) {
             throw new TripNotOpenException(tripId);
         }
         List<String> meetingAreas = TripPlan.cleanMeetingAreas(request == null ? null : request.meetingAreas());
@@ -265,6 +307,20 @@ public class TripPlanServiceImpl extends AbstractServiceImpl<TripPlanMapper, Tri
         TripPlan updated = trip.withMeetingInfo(meetingAreas, meetingTime, clock.instant());
         updateById(TripPlanEntity.from(updated));
         return updated;
+    }
+
+    private String normalizeCancelNote(String raw, TripCancelReasonEnum reason) {
+        String note = raw == null ? null : raw.strip();
+        if (note != null && note.isEmpty()) {
+            note = null;
+        }
+        if (reason == TripCancelReasonEnum.OTHER && note == null) {
+            throw new InvalidInputException("cancel note is required for other reason");
+        }
+        if (note != null && note.length() > MAX_CANCEL_NOTE_LENGTH) {
+            throw new InvalidInputException("cancel note must be at most " + MAX_CANCEL_NOTE_LENGTH + " characters");
+        }
+        return note;
     }
 
     private void updateJoinedCount(long tripId, int joinedCount) {

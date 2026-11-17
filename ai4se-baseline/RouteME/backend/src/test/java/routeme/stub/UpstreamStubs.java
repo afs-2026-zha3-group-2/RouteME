@@ -11,9 +11,10 @@ import java.util.Map;
 import java.util.concurrent.Executors;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import tools.jackson.databind.ObjectMapper;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpServer;
+
+import tools.jackson.databind.ObjectMapper;
 
 /**
  * AI / Open-Meteo 上游测试替身（JDK HttpServer，ephemeral 端口）。
@@ -50,7 +51,7 @@ public final class UpstreamStubs {
               "temperature_2m_min": [17.0],
               "precipitation_probability_max": [20],
               "precipitation_sum": [0.0],
-              "weather_code": [1],
+              "weather_code": [2],
               "wind_speed_10m_max": [12.5],
               "uv_index_max": [6.0]
             } }

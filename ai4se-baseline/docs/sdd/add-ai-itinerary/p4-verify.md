@@ -49,3 +49,14 @@
 - **阶段提交：** `feat(p4): add-ai-itinerary AI recommendation, weather proxy and snapshot save loop`；提交前核对分支 `feature/add-ai-itinerary`，只 stage 本 change + 收编路径（并行 AMap SDK 化在途改动按发起人裁决收编）；排除工作区根 `../.gitignore` / `../.vscode/tasks.json`、preview 图片删除（D 不 stage）、t8-*.json/log 证据、备份 db。
 - **push 前 pull：** `git pull --no-rebase --autostash --no-edit origin main`（P2 偏离③口径，禁 rebase/force push；`--no-edit` 防 vim 交互阻塞，偏离④教训）。
 - **收编说明：** 并行会话 AMap SDK 化在途文件（AmapConfig/AmapProxyController/TripPlan* 契约字段/application.yaml/README/backend/.gitignore 等）随本阶段提交入库；preview 图片删除属并行会话未触碰。
+
+## 6. 合并集成 addendum（push 前 pull 触发 main 合并）
+
+P4 提交 `2e552fc` 后 `git pull --no-rebase --autostash --no-edit origin main` 触发与 main（`0979e916`，0.16.0）28 文件冲突（main 已落 add-trip-weather / add-experience-photos / add-trip-cancel / add-credit-account / refine-detail-companions / refine-safety-report）。**发起人裁决（选项 A）：main 天气为唯一权威 + 并集其余冲突 + 全量重验后提交推送 + 记录契约偏离。**明细见 `docs/ai4se-plugins/20261117-144000-local-verify-report.md` §8。
+
+- **契约偏离（天气改由 add-trip-weather 提供）：** 删重复天气类（WeatherText/WeatherTextTest）；AiItineraryServiceImpl 重构消费 main `WeatherService.forecast(WeatherQuery)`；天气改 main 嵌套 `WeatherForecast`（weather:WeatherDaily|null + reminders[]）；前端 `fetchWeatherForecast(destinationCode,date,point?)` 新签名 + AiPlannerPage/snapshot/TripDetailPage 嵌套适配；openapi 0.16.0 基 + AI 接口 → **0.17.0**；`V18__ai_itineraries` → **`V21__ai_itineraries`**（main V18–V20 占用）。
+- **地图并集：** main 栅格底图 + SVG overlay 为权威，`AmapService` main 基 + transit 加性 port；`RouteLayer` 接线 numbers 编号（AC8）；styles.css/TripDetailPage 并集。
+- **合并期修复：** ① AiItineraryServiceImpl 独立 MAPPER 补 SNAKE_CASE 策略（main 天气 POJO camelCase 组件绑定）→ 快照保存 400→201；② rasterMap.ts host 暴露栅格实例 + ai-planner.spec A1 `__amapClick` 重写为投影像素 pointer 事件（main 栅格取代 AMap.Map 矢量 stub）。
+- **合并后重验：** 后端 `mvnw verify` **364/364** BUILD SUCCESS；前端 **363/363**（45 files）+ typecheck 0 + build 成功；E2E 全量 **143：121 passed / 22 failed**（ai-planner **12/12**，main 新增 credit/detail-companions/experience-photos/weather/weather-walkthrough 全绿）；**profiles.spec fresh DB 隔离 8/8** 证实全量 4 红为债务 1 污染；map 9 + trips 9 = 18 红归 refine-trip-map（china-map 级联依赖）偏差。真实天气 200（Open-Meteo 嵌套）验证。
+- **验收口径达成：** ai-planner 12/12 + 非地图套件隔离全绿；22 红均非本 change 回归（18 refine-trip-map 偏差 + 4 债务 1 污染）。G2 结论维持 **Pass with documented debts**，新增契约偏离（天气权威转移 add-trip-weather）记录于 g2-decision.md addendum。
+- **提交：** 20 冲突文件全解决 staged + 4 后端 AI 文件补 staged + 2 E2E 修复文件（ai-planner.spec/rasterMap.ts）staged；排除 `.vscode/tasks.json`（unstaged）/ t8-*.json（untracked）；`git commit --no-edit`（merge）→ push（pull 已先做）。

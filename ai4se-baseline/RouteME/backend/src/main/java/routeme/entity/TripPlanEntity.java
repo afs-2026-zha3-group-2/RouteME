@@ -55,6 +55,12 @@ public class TripPlanEntity {
 
     private String completedAt;
 
+    private String cancelledAt;
+
+    private String cancelReason;
+
+    private String cancelNote;
+
     private String createdAt;
 
     private String updatedAt;
@@ -81,6 +87,9 @@ public class TripPlanEntity {
         entity.setCapacity(trip.capacity());
         entity.setJoinedCount(trip.joinedCount());
         entity.setCompletedAt(trip.completedAt() == null ? null : trip.completedAt().toString());
+        entity.setCancelledAt(trip.cancelledAt() == null ? null : trip.cancelledAt().toString());
+        entity.setCancelReason(trip.cancelReason());
+        entity.setCancelNote(trip.cancelNote());
         entity.setCreatedAt(trip.createdAt().toString());
         entity.setUpdatedAt(trip.updatedAt().toString());
         entity.setAiItineraryId(trip.aiItineraryId());
@@ -108,6 +117,9 @@ public class TripPlanEntity {
                 completedAt == null ? null : Instant.parse(completedAt),
                 Instant.parse(createdAt),
                 Instant.parse(updatedAt),
+                cancelledAt == null ? null : Instant.parse(cancelledAt),
+                cancelReason,
+                cancelNote,
                 aiItineraryId);
     }
 
@@ -245,6 +257,30 @@ public class TripPlanEntity {
 
     public void setCompletedAt(String completedAt) {
         this.completedAt = completedAt;
+    }
+
+    public String getCancelledAt() {
+        return cancelledAt;
+    }
+
+    public void setCancelledAt(String cancelledAt) {
+        this.cancelledAt = cancelledAt;
+    }
+
+    public String getCancelReason() {
+        return cancelReason;
+    }
+
+    public void setCancelReason(String cancelReason) {
+        this.cancelReason = cancelReason;
+    }
+
+    public String getCancelNote() {
+        return cancelNote;
+    }
+
+    public void setCancelNote(String cancelNote) {
+        this.cancelNote = cancelNote;
     }
 
     public String getCreatedAt() {

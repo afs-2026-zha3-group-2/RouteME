@@ -25,11 +25,14 @@ describe('validateExperience', () => {
   });
 
   it('accepts boundary values', () => {
-    expect(hasExperienceErrors(validateExperience({ content: '字'.repeat(10), intensity: 'relaxed', advice: '带水' })))
-      .toBe(false);
     expect(
       hasExperienceErrors(
-        validateExperience({ content: '字'.repeat(400), intensity: 'tiring', advice: '字'.repeat(120) }),
+        validateExperience({ ...emptyExperienceDraft, content: '字'.repeat(10), advice: '带水' }),
+      ),
+    ).toBe(false);
+    expect(
+      hasExperienceErrors(
+        validateExperience({ ...emptyExperienceDraft, content: '字'.repeat(400), advice: '字'.repeat(120) }),
       ),
     ).toBe(false);
   });
@@ -37,11 +40,33 @@ describe('validateExperience', () => {
 
 describe('toExperienceRequest', () => {
   it('trims content and advice while keeping the intensity', () => {
-    expect(toExperienceRequest({ content: ` ${'字'.repeat(10)} `, intensity: 'tiring', advice: ' 带水 ' })).toEqual({
+    expect(
+      toExperienceRequest({
+        content: ` ${'字'.repeat(10)} `,
+        intensity: 'tiring',
+        advice: ' 带水 ',
+        photos: [],
+      }),
+    ).toEqual({
       content: '字'.repeat(10),
       intensity: 'tiring',
       advice: '带水',
+      photo_ids: [],
     });
+  });
+
+  it('maps photos to ordered photo ids', () => {
+    expect(
+      toExperienceRequest({
+        ...emptyExperienceDraft,
+        content: '字'.repeat(10),
+        advice: '带水',
+        photos: [
+          { id: 7, url: '/api/experience-photos/7' },
+          { id: 9, url: '/api/experience-photos/9' },
+        ],
+      }).photo_ids,
+    ).toEqual([7, 9]);
   });
 });
 

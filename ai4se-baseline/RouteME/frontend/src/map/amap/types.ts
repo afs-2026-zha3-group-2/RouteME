@@ -1,53 +1,46 @@
-/** 高德 JS API 2.0 的最小类型声明（项目不额外引第三方 @types）。 */
+/** 地图组件的最小类型声明（渲染不依赖高德 JS 引擎）。 */
 
 export type LngLat = [number, number];
+
+export type MapSize = { width: number; height: number };
 
 export type AmapLngLat = {
   getLng(): number;
   getLat(): number;
 };
 
-export type AmapMapEvent = {
-  lnglat?: AmapLngLat;
-};
-
+/**
+ * 地图实例能力：栅格底图自己渲染，业务组件只依赖这套接口。
+ *
+ * <p>名字沿用 `AmapMap` 以保持调用方不变；实现是
+ * `map/amap/rasterMap.ts` 的 Web Mercator 瓦片地图。
+ */
 export type AmapMap = {
-  destroy(): void;
-  resize(): void;
-  setZoomAndCenter(zoom: number, center: LngLat, immediately?: boolean): void;
+  /** 覆盖层挂载点：与地图同坐标系，子元素用 `project()` 定位。 */
+  readonly overlay: HTMLElement | null;
+  getZoom(): number;
   setZoom(zoom: number): void;
+  setZoomAndCenter(zoom: number, center: LngLat): void;
   setCenter(center: LngLat): void;
   getCenter(): AmapLngLat;
-  getZoom(): number;
-  setFitView(overlays?: unknown[], immediately?: boolean, avoid?: number[], maxZoom?: number): void;
-  add(overlay: unknown | unknown[]): void;
-  remove(overlay: unknown | unknown[]): void;
-  clearMap(): void;
-  on(event: string, handler: (event: AmapMapEvent) => void): void;
-  off(event: string, handler?: (event: AmapMapEvent) => void): void;
+  getSize(): MapSize;
+  /** 经纬度 → 容器内像素（左上角原点）。 */
+  project(point: LngLat): { x: number; y: number };
+  /** 容器内像素 → 经纬度。 */
+  unproject(x: number, y: number): LngLat;
+  /** 让一组坐标完整落在视野内。 */
+  fitBounds(points: LngLat[], padding?: number, maxZoom?: number): void;
+  /** 视野/尺寸变化时回调，返回取消订阅函数。 */
+  onChange(listener: () => void): () => void;
+  resize(): void;
+  destroy(): void;
 };
 
-export type AmapMarker = {
-  setMap(map: AmapMap | null): void;
-  setPosition(position: LngLat): void;
-  setContent(content: string | HTMLElement): void;
-  setzIndex(index: number): void;
-  getPosition(): AmapLngLat | undefined;
-  on(event: string, handler: () => void): void;
-};
-
-export type AmapPolyline = {
-  setMap(map: AmapMap | null): void;
-  setPath(path: LngLat[]): void;
-};
-
-export type AmapPixel = { getX(): number; getY(): number };
-
+/** 高德 JS API 脚本命名空间（仅地理编码/搜索等 Web 服务使用）。 */
 export type AmapNamespace = {
-  Map: new (container: string | HTMLElement, options: Record<string, unknown>) => AmapMap;
-  Marker: new (options: Record<string, unknown>) => AmapMarker;
-  Polyline: new (options: Record<string, unknown>) => AmapPolyline;
-  Pixel: new (x: number, y: number) => AmapPixel;
+  v?: string;
+  plugin?(names: string[], callback?: () => void): void;
+  [key: string]: unknown;
 };
 
 declare global {

@@ -1,0 +1,3664 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>RouteMe 路觅 · 应用界面预览</title>
+<style>
+/* ============================================================
+   RouteMe — logged-in app screens preview (single file)
+   Screens: 旅行灵感 / 旅行地图 / 行程详情 / 发布行程 /
+            我的旅行 / 同行申请 / 同行消息 / 个人主页 / 发表体验
+   Palette mirrors frontend/src/styles.css (logo palette).
+   Logo uses the tracked public/brand-mark.png pair.
+   ============================================================ */
+
+:root {
+  --deep: #14335f;
+  --tide: #1b5a8a;
+  --lagoon: #0e8074;
+  --lagoon-soft: #e0f4ee;
+  --coral: #ff7a45;
+  --coral-deep: #f0503c;
+  --amber: #ffb703;
+  --surf: #2f9fe0;
+  --dusk: #4a7fd6;
+  --jade: #149a63;
+  --warn: #d98613;
+  --danger: #e0483a;
+
+  --bg: #f5f8fb;
+  --surface: #ffffff;
+  --surface-2: #eef4f9;
+  --surface-3: #e2ecf4;
+  --ink: #16324f;
+  --ink-2: #3e5c7c;
+  --ink-3: #67809b;
+  --line: #dce7f0;
+  --line-2: #c2d4e2;
+
+  --map-bg: #e6f0f7;
+  --map-block: #d9e7f1;
+  --map-park: #cfe8dd;
+  --map-water: #bcdcef;
+  --map-road: #ffffff;
+  --map-road-2: #f4fafd;
+  --map-label: #7d97ae;
+
+  --t-lagoon: #0b6b60;
+  --t-surf: #1668a0;
+  --t-jade: #0d774e;
+  --t-warn: #8a5409;
+  --t-coral: #c2401f;
+
+  --grad-tide: linear-gradient(122deg, #16324f 0%, #1b5a8a 45%, #0e8074 100%);
+  --grad-sunset: linear-gradient(104deg, #ff9a3d 0%, #ff5347 100%);
+  --grad-shore: linear-gradient(140deg, #0e8074 0%, #1b5a8a 55%, #16324f 100%);
+  --grad-meadow: linear-gradient(100deg, #0b6b60 0%, #0e8074 100%);
+
+  --sh-1: 0 1px 2px rgba(20, 51, 95, .06), 0 2px 8px -4px rgba(20, 51, 95, .10);
+  --sh-2: 0 2px 6px rgba(20, 51, 95, .06), 0 14px 30px -18px rgba(20, 51, 95, .30);
+  --sh-3: 0 8px 24px -8px rgba(20, 51, 95, .20), 0 32px 64px -32px rgba(20, 51, 95, .45);
+
+  --r-sm: 10px;
+  --r: 16px;
+  --r-lg: 22px;
+  --r-xl: 30px;
+
+  --topbar-h: 66px;
+  --rail-w: 246px;
+  --font: "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", system-ui, sans-serif;
+  --font-num: "Bahnschrift", "SF Mono", "Cascadia Mono", ui-monospace, monospace;
+  --ease: cubic-bezier(.16, 1, .3, 1);
+}
+
+html[data-theme="dark"] {
+  --deep: #0a1424;
+  --tide: #123c63;
+  --lagoon: #2fc9a8;
+  --lagoon-soft: #0d3a34;
+  --coral: #ff8a5c;
+  --coral-deep: #ff6a3d;
+  --amber: #ffc23d;
+  --surf: #56b8f0;
+  --dusk: #8fb3ff;
+  --jade: #35c98a;
+  --warn: #f0a93c;
+  --danger: #ff6b5c;
+
+  --bg: #0a1424;
+  --surface: #0f1e33;
+  --surface-2: #14283f;
+  --surface-3: #1a3350;
+  --ink: #e8f1f8;
+  --ink-2: #a9c0d6;
+  --ink-3: #7f97ad;
+  --line: #1e344d;
+  --line-2: #2a4763;
+
+  --map-bg: #0c1f34;
+  --map-block: #112a42;
+  --map-park: #10332f;
+  --map-water: #0d2c49;
+  --map-road: #1b3a58;
+  --map-road-2: #162f4a;
+  --map-label: #5f7f9c;
+
+  --t-lagoon: #3fd6b4;
+  --t-surf: #56b8f0;
+  --t-jade: #35c98a;
+  --t-warn: #f0a93c;
+  --t-coral: #ff8a5c;
+
+  --grad-tide: linear-gradient(122deg, #0e2a4a 0%, #12507a 45%, #0d7f68 100%);
+  --grad-sunset: linear-gradient(104deg, #ff9a3d 0%, #ff6a3d 100%);
+  --grad-shore: linear-gradient(140deg, #0d7f68 0%, #12507a 55%, #0e2a4a 100%);
+
+  --sh-1: 0 1px 2px rgba(0, 0, 0, .5);
+  --sh-2: 0 2px 6px rgba(0, 0, 0, .4), 0 16px 34px -20px rgba(0, 0, 0, .9);
+  --sh-3: 0 10px 30px -10px rgba(0, 0, 0, .7), 0 40px 70px -34px rgba(0, 0, 0, 1);
+}
+
+* { box-sizing: border-box; }
+[hidden] { display: none !important; }
+
+html { scroll-behavior: smooth; }
+
+body {
+  margin: 0;
+  font-family: var(--font);
+  color: var(--ink);
+  background: var(--bg);
+  -webkit-font-smoothing: antialiased;
+}
+
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(900px 460px at 84% -10%, rgba(47, 159, 224, .10), transparent 62%),
+    radial-gradient(700px 420px at 6% 4%, rgba(14, 128, 116, .08), transparent 60%);
+}
+
+a { color: inherit; }
+button { font-family: inherit; color: inherit; }
+h1, h2, h3, h4, p { margin: 0; }
+
+.muted { color: var(--ink-3); }
+.num { font-family: var(--font-num); letter-spacing: -.02em; }
+
+/* ---------------- shell ---------------- */
+.topbar {
+  position: fixed;
+  inset: 0 0 auto 0;
+  height: var(--topbar-h);
+  z-index: 40;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 0 22px;
+  background: color-mix(in srgb, var(--surface) 88%, transparent);
+  border-bottom: 1px solid var(--line);
+  backdrop-filter: saturate(160%) blur(14px);
+}
+
+.brand { display: flex; align-items: center; gap: 10px; text-decoration: none; }
+.brand img { width: 34px; height: 34px; display: block; }
+.brand .mark-dark { display: none; }
+html[data-theme="dark"] .brand .mark-light { display: none; }
+html[data-theme="dark"] .brand .mark-dark { display: block; }
+.brand-text { display: grid; line-height: 1.05; }
+.brand-text b { font-size: 16px; font-weight: 800; letter-spacing: -.02em; }
+.brand-text b em { font-style: normal; color: var(--lagoon); }
+.brand-text i { font-style: normal; font-size: 10.5px; color: var(--ink-3); letter-spacing: .28em; }
+
+.topbar-spacer { flex: 1; }
+
+.icon-btn {
+  width: 38px; height: 38px;
+  display: grid; place-items: center;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: var(--surface);
+  color: var(--ink-2);
+  cursor: pointer;
+  transition: all .2s var(--ease);
+}
+.icon-btn:hover { color: var(--ink); border-color: var(--line-2); transform: translateY(-1px); }
+
+.id-pill {
+  display: flex; align-items: center; gap: 9px;
+  height: 42px; padding: 0 12px 0 6px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: var(--surface);
+  cursor: pointer;
+  box-shadow: var(--sh-1);
+  transition: all .2s var(--ease);
+}
+.id-pill:hover { border-color: var(--line-2); }
+.id-pill .who { display: grid; text-align: left; line-height: 1.15; }
+.id-pill .who b { font-size: 12.5px; font-weight: 800; }
+.id-pill .who span { font-size: 10.5px; color: var(--ink-3); }
+
+.rail {
+  position: fixed;
+  top: var(--topbar-h);
+  bottom: 0;
+  left: 0;
+  width: var(--rail-w);
+  z-index: 30;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 18px 14px 14px;
+  background: var(--surface);
+  border-right: 1px solid var(--line);
+  overflow-y: auto;
+}
+
+.rail-group {
+  padding: 10px 10px 6px;
+  font-size: 10.5px;
+  font-weight: 800;
+  letter-spacing: .18em;
+  color: var(--ink-3);
+  text-transform: uppercase;
+}
+
+.nav-item {
+  display: flex; align-items: center; gap: 11px;
+  height: 42px; padding: 0 14px;
+  border-radius: 12px;
+  color: var(--ink-2);
+  text-decoration: none;
+  font-size: 14px; font-weight: 600;
+  border: 1px solid transparent;
+  transition: all .2s var(--ease);
+}
+.nav-item svg { width: 18px; height: 18px; flex: none; opacity: .85; }
+.nav-item:hover { background: var(--surface-2); color: var(--ink); }
+.nav-item.on {
+  background: linear-gradient(100deg, var(--lagoon-soft), color-mix(in srgb, var(--surf) 12%, transparent));
+  border-color: color-mix(in srgb, var(--lagoon) 18%, transparent);
+  color: var(--t-lagoon);
+  font-weight: 800;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .5);
+}
+html[data-theme="dark"] .nav-item.on { color: var(--lagoon); box-shadow: none; }
+.nav-item.on svg { opacity: 1; }
+
+.rail-foot { margin-top: auto; }
+
+.rail-profile {
+  display: flex; align-items: center; gap: 10px;
+  width: 100%;
+  padding: 10px;
+  border-radius: 14px;
+  border: 1px solid var(--line);
+  background: var(--surface-2);
+  cursor: pointer;
+  text-align: left;
+  transition: all .2s var(--ease);
+}
+.rail-profile:hover { border-color: var(--line-2); background: var(--surface-3); }
+.rail-profile .who { display: grid; min-width: 0; line-height: 1.25; }
+.rail-profile .who b { font-size: 12.5px; font-weight: 800; }
+.rail-profile .who span { font-size: 11px; color: var(--ink-3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.rail-profile .chev { margin-left: auto; color: var(--ink-3); }
+
+.view {
+  position: relative;
+  z-index: 1;
+  margin-left: var(--rail-w);
+  padding: calc(var(--topbar-h) + 26px) 30px 70px;
+  max-width: 1360px;
+}
+
+/* ---------------- atoms ---------------- */
+.avatar {
+  width: 34px; height: 34px;
+  border-radius: 999px;
+  display: grid; place-items: center;
+  font-weight: 800; font-size: 13px;
+  color: #fff;
+  flex: none;
+  box-shadow: inset 0 0 0 2px rgba(255, 255, 255, .35);
+}
+.av-xs { width: 26px; height: 26px; font-size: 11px; }
+.av-lg { width: 48px; height: 48px; font-size: 17px; }
+.av-xl { width: 78px; height: 78px; font-size: 28px; box-shadow: 0 0 0 4px var(--surface), var(--sh-2); }
+
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+  height: 42px; padding: 0 19px;
+  border-radius: 999px;
+  border: 1px solid transparent;
+  background: transparent;
+  font-size: 13.5px; font-weight: 750;
+  color: var(--ink);
+  cursor: pointer;
+  text-decoration: none;
+  white-space: nowrap;
+  transition: transform .2s var(--ease), box-shadow .2s ease, background .2s ease, border-color .2s ease;
+}
+.btn-primary { background: var(--grad-meadow); color: #fff; box-shadow: 0 12px 26px -14px rgba(14, 128, 116, .85); }
+.btn-primary:hover { transform: translateY(-2px); box-shadow: 0 18px 34px -16px rgba(14, 128, 116, .9); }
+.btn-sun { background: var(--grad-sunset); color: #fff; box-shadow: 0 12px 26px -14px rgba(240, 80, 60, .8); }
+.btn-sun:hover { transform: translateY(-2px); }
+.btn-ghost { background: var(--surface); border-color: var(--line-2); color: var(--ink); box-shadow: var(--sh-1); }
+.btn-ghost:hover { transform: translateY(-1px); box-shadow: var(--sh-2); }
+.btn-quiet { color: var(--ink-2); padding: 0 12px; }
+.btn-quiet:hover { background: var(--surface-2); color: var(--ink); }
+.btn-danger { color: var(--danger); background: color-mix(in srgb, var(--danger) 8%, transparent); }
+.btn-danger:hover { background: color-mix(in srgb, var(--danger) 14%, transparent); }
+.btn-sm { height: 34px; padding: 0 14px; font-size: 12.5px; }
+.btn[disabled] { opacity: .45; cursor: not-allowed; transform: none !important; box-shadow: none; }
+.btn-block { width: 100%; }
+
+.tag {
+  display: inline-flex; align-items: center; gap: 5px;
+  height: 24px; padding: 0 9px;
+  border-radius: 7px;
+  font-size: 11.5px; font-weight: 700;
+  color: var(--t-lagoon);
+  background: color-mix(in srgb, var(--lagoon) 10%, transparent);
+}
+.tag.warm { color: var(--t-coral); background: color-mix(in srgb, var(--coral) 12%, transparent); }
+.tag.grey { color: var(--ink-3); background: var(--surface-2); }
+.tag.sky { color: var(--t-surf); background: color-mix(in srgb, var(--surf) 12%, transparent); }
+
+.pill {
+  display: inline-flex; align-items: center; gap: 6px;
+  height: 28px; padding: 0 11px;
+  border-radius: 999px;
+  font-size: 11.5px; font-weight: 800;
+  background: var(--surface-2);
+  color: var(--ink-2);
+  border: 1px solid var(--line);
+}
+.pill .dot { width: 6px; height: 6px; border-radius: 999px; background: currentColor; }
+.pill.recruiting { color: var(--t-surf); background: color-mix(in srgb, var(--surf) 13%, var(--surface)); border-color: color-mix(in srgb, var(--surf) 26%, transparent); }
+.pill.full { color: var(--t-warn); background: color-mix(in srgb, var(--amber) 16%, var(--surface)); border-color: color-mix(in srgb, var(--amber) 30%, transparent); }
+.pill.ongoing { color: var(--t-jade); background: color-mix(in srgb, var(--jade) 13%, var(--surface)); border-color: color-mix(in srgb, var(--jade) 26%, transparent); }
+.pill.completed { color: var(--ink-3); background: var(--surface-2); }
+
+.badge-dot {
+  display: inline-grid; place-items: center;
+  min-width: 18px; height: 18px; padding: 0 5px;
+  border-radius: 999px;
+  background: var(--surface-3);
+  color: var(--ink-2);
+  font-size: 11px; font-weight: 800;
+  font-family: var(--font-num);
+}
+
+.card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+  box-shadow: var(--sh-1);
+}
+
+.page-head { display: flex; align-items: flex-start; gap: 20px; margin-bottom: 22px; }
+.page-head .left { flex: 1; }
+.page-head h1 { font-size: 30px; font-weight: 900; letter-spacing: -.03em; line-height: 1.1; }
+.page-sub { margin-top: 8px; color: var(--ink-2); font-size: 13.5px; line-height: 1.6; max-width: 72ch; }
+.head-actions { display: flex; gap: 10px; align-items: center; padding-top: 4px; }
+
+.breadcrumb { display: flex; align-items: center; gap: 7px; font-size: 12px; color: var(--ink-3); margin-bottom: 10px; }
+.breadcrumb b { color: var(--ink); font-weight: 750; }
+.back-link { display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px; color: var(--ink-2); text-decoration: none; font-weight: 650; }
+.back-link:hover { color: var(--lagoon); }
+
+/* ---------------- segmented + tabs ---------------- */
+.seg {
+  display: inline-flex;
+  padding: 4px;
+  gap: 4px;
+  border-radius: 999px;
+  background: var(--surface-3);
+  border: 1px solid var(--line);
+}
+.seg-btn {
+  height: 34px; padding: 0 16px;
+  border: 0; border-radius: 999px;
+  background: transparent;
+  color: var(--ink-2);
+  font-size: 13px; font-weight: 700;
+  cursor: pointer;
+  display: inline-flex; align-items: center; gap: 7px;
+  transition: all .2s var(--ease);
+}
+.seg-btn:hover { color: var(--ink); }
+.seg-btn.on { background: var(--surface); color: var(--ink); box-shadow: var(--sh-1); font-weight: 800; }
+
+.tabs { display: flex; gap: 6px; flex-wrap: wrap; }
+.tab {
+  height: 40px; padding: 0 16px;
+  border-radius: 12px;
+  border: 1px solid var(--line);
+  background: var(--surface);
+  color: var(--ink-2);
+  font-size: 13px; font-weight: 700;
+  cursor: pointer;
+  display: inline-flex; align-items: center; gap: 8px;
+  transition: all .2s var(--ease);
+}
+.tab:hover { border-color: var(--line-2); color: var(--ink); }
+.tab.on { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+.tab.on .badge-dot { background: rgba(255, 255, 255, .18); color: #fff; }
+
+/* ---------------- hero (home) ---------------- */
+.hero {
+  position: relative;
+  overflow: hidden;
+  border-radius: var(--r-xl);
+  background: var(--grad-tide);
+  color: #f4fbff;
+  padding: 30px 32px;
+  display: grid;
+  grid-template-columns: 1.25fr .75fr;
+  gap: 28px;
+  align-items: center;
+  box-shadow: var(--sh-3);
+  margin-bottom: 20px;
+}
+.hero::after {
+  content: "";
+  position: absolute;
+  right: -120px; top: -160px;
+  width: 460px; height: 460px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 183, 3, .38), transparent 66%);
+}
+.hero-copy { position: relative; z-index: 1; }
+.hero-copy h1 {
+  font-size: clamp(28px, 3.1vw, 40px);
+  line-height: 1.16;
+  font-weight: 900;
+  letter-spacing: -.03em;
+}
+.hero-copy h1 em { font-style: normal; color: var(--amber); }
+.hero-stats { display: flex; gap: 30px; margin-top: 26px; }
+.hero-stats .num { font-size: 30px; font-weight: 800; line-height: 1; }
+.hero-stats .lbl { margin-top: 7px; font-size: 12px; color: rgba(244, 251, 255, .72); font-weight: 600; }
+.hero-art { position: relative; z-index: 1; height: 168px; }
+.hero-art svg { width: 100%; height: 100%; }
+
+/* ---------------- filters ---------------- */
+.filters {
+  padding: 16px 18px 14px;
+  margin-bottom: 20px;
+}
+.filter-row { display: grid; grid-template-columns: 1.25fr 1fr 1fr .9fr; gap: 12px; }
+.fld { display: grid; gap: 6px; min-width: 0; }
+.fld > span { font-size: 11.5px; font-weight: 750; color: var(--ink-3); letter-spacing: .02em; }
+.control {
+  height: 40px;
+  display: flex; align-items: center; gap: 8px;
+  padding: 0 12px;
+  border-radius: 11px;
+  border: 1px solid var(--line);
+  background: var(--surface);
+  color: var(--ink);
+  font-size: 13px;
+  width: 100%;
+  cursor: pointer;
+  transition: border-color .2s ease, box-shadow .2s ease;
+}
+.control:hover { border-color: var(--line-2); }
+.control:focus-visible, .control:focus { outline: none; border-color: var(--lagoon); box-shadow: 0 0 0 3px rgba(14, 128, 116, .16); }
+.control.placeholder { color: var(--ink-3); }
+.control .arrow { margin-left: auto; color: var(--ink-3); font-size: 10px; }
+input.control, select.control { cursor: text; }
+select.control { cursor: pointer; appearance: none; }
+.control.has-clear { position: relative; }
+
+.chip-row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-top: 14px; }
+.chip-label { font-size: 11.5px; font-weight: 750; color: var(--ink-3); margin-right: 2px; }
+.chip {
+  height: 30px; padding: 0 12px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: var(--surface);
+  color: var(--ink-2);
+  font-size: 12px; font-weight: 700;
+  cursor: pointer;
+  transition: all .18s var(--ease);
+}
+.chip:hover { border-color: var(--line-2); color: var(--ink); }
+.chip.on { background: color-mix(in srgb, var(--lagoon) 12%, var(--surface)); border-color: color-mix(in srgb, var(--lagoon) 34%, transparent); color: var(--t-lagoon); }
+
+.filter-foot {
+  display: flex; align-items: center; gap: 12px;
+  margin-top: 14px; padding-top: 12px;
+  border-top: 1px dashed var(--line-2);
+}
+.filter-foot .hint { font-size: 11.5px; color: var(--ink-3); }
+
+/* ---------------- trip cards ---------------- */
+.trip-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(290px, 1fr));
+  gap: 16px;
+}
+
+.trip-card {
+  position: relative;
+  display: flex; flex-direction: column;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+  box-shadow: var(--sh-1);
+  overflow: hidden;
+  transition: transform .28s var(--ease), box-shadow .28s ease, border-color .28s ease;
+}
+.trip-card:hover { transform: translateY(-5px); box-shadow: var(--sh-2); border-color: var(--line-2); }
+
+.tc-cover { position: relative; height: 142px; overflow: hidden; }
+.tc-cover svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+.tc-cover::after {
+  content: "";
+  position: absolute; inset: 0;
+  background: linear-gradient(180deg, rgba(4, 16, 28, .06) 0%, rgba(4, 16, 28, .42) 100%);
+}
+.tc-city {
+  position: absolute; z-index: 2; left: 14px; top: 12px;
+  color: #fff; font-size: 14px; font-weight: 900; letter-spacing: .06em;
+  text-shadow: 0 2px 12px rgba(0, 0, 0, .45);
+}
+.tc-status { position: absolute; z-index: 2; right: 12px; top: 10px; backdrop-filter: blur(6px); }
+.tc-body { display: flex; flex-direction: column; flex: 1; padding: 10px 16px 14px; }
+.tc-title { font-size: 16.5px; font-weight: 850; line-height: 1.34; letter-spacing: -.015em; }
+.tc-meta { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px; font-size: 12px; color: var(--ink-3); font-weight: 600; }
+.tc-route { margin-top: 10px; font-size: 12px; line-height: 1.6; color: var(--ink-2); }
+.tc-route b { color: var(--t-lagoon); margin-right: 4px; }
+.tc-tags { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 10px; }
+
+.tc-match {
+  display: flex; align-items: center; gap: 10px;
+  margin-top: 12px; padding: 9px 11px;
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--amber) 9%, var(--surface));
+  border: 1px solid color-mix(in srgb, var(--amber) 22%, transparent);
+}
+.ring { position: relative; width: 36px; height: 36px; flex: none; }
+.ring svg { transform: rotate(-90deg); display: block; }
+.ring span { position: absolute; inset: 0; display: grid; place-items: center; font-family: var(--font-num); font-size: 11px; font-weight: 800; }
+.tc-match .why { font-size: 11.5px; line-height: 1.5; color: var(--ink-2); }
+.tc-match .why b { display: block; font-size: 12px; color: var(--ink); }
+.trip-card[role="link"] { cursor: pointer; }
+
+.tc-foot {
+  display: flex; align-items: center; gap: 10px;
+  margin-top: auto; padding-top: 12px;
+  border-top: 1px dashed var(--line-2);
+}
+.tc-host { display: flex; align-items: center; gap: 8px; border: 0; background: none; padding: 0; cursor: pointer; text-align: left; }
+.tc-host span { font-size: 11.5px; color: var(--ink-3); font-weight: 600; }
+.tc-host b { color: var(--ink-2); font-weight: 750; }
+.tc-host:hover span { color: var(--ink); }
+.cap { margin-left: auto; text-align: right; display: grid; gap: 5px; }
+.cap .n { font-family: var(--font-num); font-size: 12px; font-weight: 800; }
+.meter { width: 64px; height: 5px; border-radius: 999px; background: var(--surface-3); overflow: hidden; }
+.meter i { display: block; height: 100%; border-radius: 999px; background: var(--grad-meadow); }
+.meter.is-full i { background: var(--grad-sunset); }
+
+/* experience cards */
+.exp-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 16px; }
+.exp-card { display: flex; flex-direction: column; overflow: hidden; }
+.exp-cover { position: relative; height: 96px; overflow: hidden; }
+.exp-cover svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+.exp-cover .city { position: absolute; left: 14px; bottom: 10px; color: #fff; font-weight: 900; font-size: 13.5px; letter-spacing: .05em; text-shadow: 0 2px 10px rgba(0, 0, 0, .5); }
+.exp-body { padding: 12px 16px 14px; display: flex; flex-direction: column; gap: 10px; flex: 1; }
+.exp-head { display: flex; align-items: center; gap: 8px; }
+.exp-head .who { display: grid; line-height: 1.3; }
+.exp-head .who b { font-size: 12.5px; }
+.exp-head .who span { font-size: 11px; color: var(--ink-3); }
+.exp-quote { font-size: 12.5px; line-height: 1.7; color: var(--ink-2); border-left: 3px solid var(--line-2); padding-left: 10px; }
+.exp-advice { font-size: 12px; line-height: 1.6; color: var(--ink-2); padding: 9px 11px; border-radius: 10px; background: var(--surface-2); }
+.exp-advice b { color: var(--ink); }
+.exp-detail { display: grid; gap: 12px; margin-top: 10px; }
+.exp-detail .exp-quote { font-size: 13.5px; line-height: 1.75; padding-left: 12px; }
+.exp-detail .exp-advice { font-size: 12.5px; padding: 10px 13px; }
+.exp-foot { margin-top: auto; display: flex; align-items: center; gap: 8px; padding-top: 10px; border-top: 1px dashed var(--line-2); }
+.exp-foot .from { font-size: 11px; color: var(--ink-3); min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.exp-foot .acts { margin-left: auto; display: flex; gap: 6px; }
+
+/* ---------------- map screen ---------------- */
+.map-grid { display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 16px; align-items: start; }
+.map-card { position: relative; border-radius: var(--r-lg); overflow: hidden; border: 1px solid var(--line); background: var(--surface); box-shadow: var(--sh-1); }
+.map-canvas { position: relative; height: clamp(520px, 68vh, 680px); background: #dfeaf2; }
+.map-tips { border: 0; border-top: 1px solid var(--line); border-radius: 0; box-shadow: none; background: var(--surface-2); padding: 15px 18px 14px; display: grid; gap: 7px; }
+.map-tips h3 { font-size: 13.5px; font-weight: 800; }
+.map-tips ol { margin: 0; padding-left: 18px; display: grid; gap: 6px; font-size: 12px; line-height: 1.55; color: var(--ink-2); }
+.map-tips b { color: var(--ink); margin-right: 5px; }
+.map-tips .sub { font-size: 11.5px; color: var(--ink-3); }
+html[data-theme="dark"] .map-canvas { background: #0d2036; }
+.map-canvas > svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+
+.map-search {
+  position: absolute; z-index: 3; left: 14px; top: 14px;
+  width: min(420px, calc(100% - 28px));
+}
+.map-search .control { height: 44px; box-shadow: var(--sh-2); border-radius: 12px; }
+.search-shell {
+  display: flex; align-items: center; gap: 9px;
+  height: 44px; padding: 0 12px;
+  border-radius: 12px;
+  border: 1px solid var(--line);
+  background: var(--surface);
+  color: var(--ink-3);
+  box-shadow: var(--sh-2);
+}
+.search-input {
+  flex: 1; min-width: 0;
+  border: 0; outline: 0; background: none;
+  color: var(--ink); font: inherit; font-size: 13px;
+}
+.search-input::placeholder { color: var(--ink-3); }
+.kbd {
+  font-family: var(--font-num); font-size: 10px;
+  color: var(--ink-3);
+  border: 1px solid var(--line);
+  border-radius: 5px;
+  padding: 2px 5px;
+  flex: none;
+}
+.legend .water { width: 18px; height: 8px; border-radius: 4px; background: var(--map-water); }
+.search-results {
+  margin-top: 8px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  box-shadow: var(--sh-2);
+  overflow: hidden;
+}
+.search-results button {
+  display: block; width: 100%; text-align: left;
+  padding: 10px 12px; border: 0; background: none; cursor: pointer;
+  border-bottom: 1px solid var(--line);
+}
+.search-results button:last-child { border-bottom: 0; }
+.search-results button:hover { background: var(--surface-2); }
+.search-results b { display: block; font-size: 13px; font-weight: 750; }
+.search-results span { font-size: 11.5px; color: var(--ink-3); }
+
+.map-ctl { position: absolute; z-index: 3; right: 14px; top: 14px; display: grid; gap: 8px; }
+.map-ctl button {
+  width: 36px; height: 36px;
+  display: grid; place-items: center;
+  border-radius: 10px;
+  border: 1px solid var(--line);
+  background: var(--surface);
+  color: var(--ink-2);
+  font-size: 15px; font-weight: 800;
+  cursor: pointer;
+  box-shadow: var(--sh-1);
+}
+.map-ctl button:hover { color: var(--ink); }
+
+.legend {
+  position: absolute; z-index: 3; right: 14px; bottom: 14px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--surface) 92%, transparent);
+  border: 1px solid var(--line);
+  box-shadow: var(--sh-1);
+  font-size: 11px; color: var(--ink-2);
+  display: grid; gap: 7px;
+  backdrop-filter: blur(8px);
+}
+.legend .row { display: flex; align-items: center; gap: 7px; }
+.legend .line { width: 18px; height: 4px; border-radius: 4px; background: var(--surf); }
+.legend .pin { width: 12px; height: 12px; border-radius: 999px; background: var(--tide); box-shadow: inset 0 0 0 2px #fff; }
+.legend .credit { color: var(--ink-3); font-size: 10px; }
+
+.map-rail { display: grid; gap: 12px; }
+.rail-card { padding: 14px 16px; }
+.rail-card h3 { font-size: 14px; font-weight: 850; letter-spacing: -.01em; }
+.rail-card .sub { margin-top: 4px; font-size: 11.5px; color: var(--ink-3); line-height: 1.5; }
+.rail-head { display: flex; align-items: center; gap: 8px; }
+.rail-head .right { margin-left: auto; display: flex; gap: 6px; }
+.rail-card + .rail-card { margin-top: 0; }
+.stack { display: grid; gap: 12px; }
+
+.range { display: flex; align-items: center; gap: 8px; margin-top: 10px; }
+.range .control { height: 36px; font-size: 12.5px; }
+
+.wp-list { display: grid; gap: 7px; margin-top: 10px; }
+.wp-item {
+  display: flex; align-items: center; gap: 8px;
+  padding: 8px 9px;
+  border-radius: 10px;
+  border: 1px solid var(--line);
+  background: var(--surface);
+  transition: all .2s var(--ease);
+}
+.wp-item:hover { border-color: var(--line-2); }
+.wp-item.focus { border-color: var(--lagoon); box-shadow: 0 0 0 3px rgba(14, 128, 116, .14); }
+.wp-grip { color: var(--ink-3); cursor: grab; font-size: 12px; letter-spacing: -2px; }
+.wp-num {
+  width: 20px; height: 20px; border-radius: 999px;
+  display: grid; place-items: center;
+  font-size: 10.5px; font-weight: 800; color: #fff;
+  background: var(--tide); flex: none;
+}
+.wp-item:first-child .wp-num { background: var(--lagoon); }
+.wp-item:last-child .wp-num { background: var(--coral-deep); }
+.wp-name { min-width: 0; display: grid; line-height: 1.25; }
+.wp-name b { font-size: 12.5px; font-weight: 750; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.wp-name span { font-size: 10.5px; color: var(--ink-3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.wp-tools { margin-left: auto; display: flex; gap: 2px; }
+.wp-tools button {
+  width: 22px; height: 22px; border-radius: 6px; border: 0; background: none;
+  color: var(--ink-3); cursor: pointer; font-size: 11px; line-height: 1;
+}
+.wp-tools button:hover { background: var(--surface-2); color: var(--ink); }
+.wp-tools button[disabled] { opacity: .3; cursor: default; }
+.wp-tools button.del:hover { background: color-mix(in srgb, var(--danger) 12%, transparent); color: var(--danger); }
+
+.seg-mini { display: flex; gap: 4px; margin-top: 8px; }
+.seg-mini button {
+  flex: 1; height: 30px;
+  border-radius: 8px; border: 1px solid var(--line);
+  background: var(--surface); color: var(--ink-2);
+  font-size: 11.5px; font-weight: 700; cursor: pointer;
+}
+.seg-mini button.on { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+
+.stat-strip {
+  display: grid; grid-template-columns: repeat(3, 1fr);
+  gap: 1px; margin-top: 10px;
+  border-radius: 12px; overflow: hidden;
+  background: var(--line);
+  border: 1px solid var(--line);
+}
+.stat-strip div { background: var(--surface-2); padding: 9px 10px; }
+.stat-strip span { display: block; font-size: 10.5px; color: var(--ink-3); font-weight: 700; }
+.stat-strip b { display: block; margin-top: 4px; font-family: var(--font-num); font-size: 14px; font-weight: 800; }
+
+.legs { display: grid; gap: 8px; margin-top: 10px; }
+.leg { display: flex; align-items: flex-start; gap: 8px; font-size: 11.5px; }
+.leg .dot { width: 7px; height: 7px; border-radius: 999px; background: var(--surf); margin-top: 5px; flex: none; }
+.leg .txt { color: var(--ink-2); }
+.leg .txt b { display: block; font-size: 12px; color: var(--ink); }
+.leg .txt span { color: var(--ink-3); }
+
+.companions { display: flex; align-items: center; gap: 9px; margin-top: 10px; }
+.stack-av { display: flex; }
+.stack-av span {
+  width: 26px; height: 26px; border-radius: 999px;
+  display: grid; place-items: center;
+  font-size: 10.5px; font-weight: 800; color: #fff;
+  border: 2px solid var(--surface);
+  margin-left: -8px;
+}
+.stack-av span:first-child { margin-left: 0; }
+.companions .meta { font-size: 11.5px; color: var(--ink-3); }
+.companions .meta b { color: var(--ink); }
+
+/* ---------------- detail ---------------- */
+.detail-wrap { max-width: 980px; }
+.detail-hero {
+  position: relative; overflow: hidden;
+  border-radius: var(--r-lg);
+  color: #f4fbff;
+  padding: 28px 28px 26px;
+  margin-bottom: 14px;
+  box-shadow: var(--sh-2);
+}
+.detail-hero svg.art { position: absolute; inset: 0; width: 100%; height: 100%; }
+.detail-hero .inner { position: relative; z-index: 1; }
+.detail-hero .badge-row { display: flex; align-items: center; gap: 8px; }
+.detail-hero .badge-row .spacer { flex: 1; }
+.report-link { color: #ffd9d3; font-size: 12px; font-weight: 700; text-decoration: none; }
+.report-link:hover { color: #fff; text-decoration: underline; }
+.detail-hero h1 { margin-top: 16px; font-size: clamp(24px, 2.6vw, 32px); font-weight: 900; letter-spacing: -.03em; line-height: 1.2; }
+.detail-hero .meta { margin-top: 12px; display: flex; gap: 9px; flex-wrap: wrap; font-size: 12.5px; color: rgba(244, 251, 255, .82); }
+.detail-hero .meta b { color: #fff; }
+
+.detail-card { padding: 20px 22px; margin-bottom: 14px; }
+.sec-title { display: flex; align-items: center; gap: 8px; font-size: 14px; font-weight: 850; letter-spacing: -.01em; }
+.sec-title .hint { margin-left: auto; font-size: 11.5px; font-weight: 600; color: var(--ink-3); }
+
+.route-map {
+  position: relative; height: 240px; margin-top: 12px;
+  border-radius: 14px; overflow: hidden;
+  border: 1px solid var(--line);
+  background: #dfeaf2;
+}
+html[data-theme="dark"] .route-map { background: #0d2036; }
+.route-map svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+
+.stop-strip { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 12px; }
+.stop-chip {
+  display: inline-flex; align-items: center; gap: 7px;
+  height: 32px; padding: 0 12px 0 6px;
+  border-radius: 999px;
+  border: 1px solid var(--line);
+  background: var(--surface);
+  font-size: 12px; font-weight: 700; color: var(--ink-2);
+  cursor: pointer;
+  transition: all .2s var(--ease);
+}
+.stop-chip:hover { border-color: var(--line-2); color: var(--ink); }
+.stop-chip .n {
+  width: 20px; height: 20px; border-radius: 999px;
+  display: grid; place-items: center;
+  color: #fff; font-size: 10.5px; font-weight: 800;
+}
+.stop-chip:nth-child(4n+1) .n { background: var(--coral-deep); }
+.stop-chip:nth-child(4n+2) .n { background: var(--surf); }
+.stop-chip:nth-child(4n+3) .n { background: var(--lagoon); }
+.stop-chip:nth-child(4n+4) .n { background: var(--jade); }
+
+.facts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px 18px; margin-top: 14px; }
+.fact { display: flex; gap: 8px; font-size: 12.5px; }
+.fact dt { color: var(--ink-3); min-width: 56px; font-weight: 650; }
+.fact dd { margin: 0; color: var(--ink); font-weight: 650; }
+.warn-note {
+  margin-top: 12px; padding: 9px 12px;
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--amber) 12%, var(--surface));
+  border: 1px solid color-mix(in srgb, var(--amber) 28%, transparent);
+  font-size: 11.5px; color: var(--t-warn); font-weight: 650;
+}
+
+.publisher { display: flex; align-items: flex-start; gap: 12px; margin-top: 12px; }
+.publisher .who { min-width: 0; }
+.publisher .who b { font-size: 14px; }
+.publisher .who p { margin-top: 4px; font-size: 12px; color: var(--ink-2); line-height: 1.6; }
+.publisher .who .tags { margin-top: 8px; display: flex; gap: 6px; flex-wrap: wrap; }
+
+.people { display: grid; gap: 8px; margin-top: 12px; }
+.person { display: flex; align-items: center; gap: 9px; padding: 8px 10px; border-radius: 10px; border: 1px solid var(--line); background: var(--surface); }
+.person b { font-size: 12.5px; }
+.person .chat-link { margin-left: auto; font-size: 12px; font-weight: 750; color: var(--t-lagoon); text-decoration: none; }
+.person .chat-link:hover { text-decoration: underline; }
+
+.exp-item { padding: 14px 0; border-top: 1px dashed var(--line-2); }
+.exp-item:first-of-type { border-top: 0; padding-top: 12px; }
+.exp-item .head { display: flex; align-items: center; gap: 8px; }
+.exp-item .head b { font-size: 12.5px; }
+.exp-item .head .tag { margin-left: auto; }
+.exp-item p { margin-top: 9px; font-size: 12.5px; line-height: 1.7; color: var(--ink-2); }
+.exp-item .advice { margin-top: 9px; font-size: 12px; color: var(--ink-2); }
+.exp-item .advice b { color: var(--ink); }
+
+.match-box {
+  display: flex; align-items: center; gap: 14px;
+  margin-top: 12px; padding: 14px;
+  border-radius: 14px;
+  background: linear-gradient(120deg, color-mix(in srgb, var(--amber) 12%, var(--surface)), var(--surface));
+  border: 1px solid color-mix(in srgb, var(--amber) 26%, transparent);
+}
+.match-box .ring { width: 58px; height: 58px; }
+.match-box .ring span { font-size: 15px; }
+.match-box .why { font-size: 12.5px; color: var(--ink-2); line-height: 1.6; }
+.match-box .why b { display: block; color: var(--ink); font-size: 13px; }
+
+.apply { margin-top: 12px; }
+.apply .label { font-size: 12.5px; font-weight: 800; }
+.apply .label span { margin-left: 6px; font-size: 11px; color: var(--ink-3); font-weight: 600; }
+.apply textarea {
+  width: 100%; margin-top: 8px; min-height: 78px; resize: vertical;
+  padding: 11px 12px;
+  border-radius: 11px; border: 1px solid var(--line);
+  background: var(--surface); color: var(--ink);
+  font-family: inherit; font-size: 13px; line-height: 1.6;
+}
+.apply textarea:focus { outline: none; border-color: var(--lagoon); box-shadow: 0 0 0 3px rgba(14, 128, 116, .16); }
+.apply .hint { margin-top: 8px; font-size: 11.5px; color: var(--ink-3); }
+.apply .btn { margin-top: 12px; }
+
+.pending-note {
+  display: flex; gap: 10px; align-items: flex-start;
+  padding: 12px 14px; border-radius: 12px;
+  background: color-mix(in srgb, var(--amber) 10%, var(--surface));
+  border: 1px solid color-mix(in srgb, var(--amber) 26%, transparent);
+  font-size: 12.5px; color: var(--t-warn); line-height: 1.6; font-weight: 650;
+}
+
+.owner-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.owner-badge { font-size: 11.5px; font-weight: 750; color: var(--t-lagoon); }
+
+/* ---------------- forms ---------------- */
+.form-grid { display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(300px, .9fr); gap: 18px; align-items: start; }
+.form-stack { display: grid; gap: 14px; }
+.form-card { padding: 18px 20px; }
+.form-card h3 { font-size: 14px; font-weight: 850; }
+.form-card .card-sub { margin-top: 4px; font-size: 11.5px; color: var(--ink-3); }
+.field { display: grid; gap: 6px; margin-top: 14px; }
+.field:first-of-type { margin-top: 12px; }
+.field > label { font-size: 12px; font-weight: 750; color: var(--ink-2); }
+.field > label .req { color: var(--danger); margin-left: 3px; }
+.field > label .opt { margin-left: 6px; font-weight: 600; color: var(--ink-3); font-size: 11px; }
+.field .count { justify-self: end; font-family: var(--font-num); font-size: 11px; color: var(--ink-3); }
+.field .help { font-size: 11px; color: var(--ink-3); line-height: 1.5; }
+.field .err { font-size: 11px; color: var(--danger); }
+input.text, textarea.text {
+  width: 100%; padding: 10px 12px;
+  border-radius: 11px; border: 1px solid var(--line);
+  background: var(--surface); color: var(--ink);
+  font-family: inherit; font-size: 13px;
+}
+input.text { height: 40px; }
+textarea.text { resize: vertical; line-height: 1.6; }
+input.text:focus, textarea.text:focus { outline: none; border-color: var(--lagoon); box-shadow: 0 0 0 3px rgba(14, 128, 116, .16); }
+.two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+.aside-sticky { position: sticky; top: calc(var(--topbar-h) + 26px); display: grid; gap: 14px; }
+.aside-label { font-size: 11.5px; font-weight: 700; color: var(--ink-3); }
+.preview-card { overflow: hidden; }
+.preview-card .hint { margin-top: 10px; font-size: 11.5px; color: var(--ink-3); }
+.safety { padding: 16px 18px; border-radius: 16px; background: color-mix(in srgb, var(--amber) 9%, var(--surface)); border: 1px solid color-mix(in srgb, var(--amber) 26%, transparent); }
+.safety h4 { font-size: 13px; font-weight: 850; color: var(--t-warn); }
+.safety ul { margin: 10px 0 0; padding: 0; list-style: none; display: grid; gap: 8px; }
+.safety li { position: relative; padding-left: 20px; font-size: 12px; line-height: 1.6; color: var(--ink-2); }
+.safety li::before { content: "✓"; position: absolute; left: 0; color: var(--t-warn); font-weight: 800; }
+
+.tag-picker { display: flex; gap: 7px; flex-wrap: wrap; margin-top: 6px; }
+.intensity { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 10px; }
+.intensity button {
+  padding: 12px;
+  border-radius: 12px;
+  border: 1px solid var(--line);
+  background: var(--surface);
+  text-align: left;
+  cursor: pointer;
+  transition: all .2s var(--ease);
+}
+.intensity button b { display: block; font-size: 13px; }
+.intensity button span { display: block; margin-top: 4px; font-size: 11px; color: var(--ink-3); line-height: 1.5; }
+.intensity button.on { border-color: var(--lagoon); background: color-mix(in srgb, var(--lagoon) 8%, var(--surface)); box-shadow: 0 0 0 3px rgba(14, 128, 116, .12); }
+.intensity button.on b { color: var(--t-lagoon); }
+
+/* ---------------- my trips ---------------- */
+.mine-head { display: flex; align-items: flex-start; gap: 16px; }
+.mine-head .left { flex: 1; }
+.profile-strip { display: flex; align-items: center; gap: 12px; padding: 14px 18px; margin-bottom: 14px; }
+.profile-strip .who { display: grid; line-height: 1.35; }
+.profile-strip .who b { font-size: 14px; }
+.profile-strip .who span { font-size: 12px; color: var(--ink-3); }
+.profile-strip .acts { margin-left: auto; display: flex; gap: 8px; }
+
+.trip-rows { display: grid; gap: 10px; margin-top: 14px; }
+.trip-row { display: flex; align-items: stretch; gap: 14px; padding: 12px; }
+.tr-cover {
+  position: relative; width: 104px; border-radius: 12px; overflow: hidden; flex: none; min-height: 78px;
+}
+.tr-cover svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+.tr-cover span { position: absolute; left: 8px; bottom: 6px; color: #fff; font-size: 11px; font-weight: 800; text-shadow: 0 1px 8px rgba(0, 0, 0, .5); }
+.tr-main { min-width: 0; flex: 1; display: flex; flex-direction: column; gap: 6px; justify-content: center; }
+.tr-title { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.tr-title a { font-size: 14.5px; font-weight: 800; text-decoration: none; }
+.tr-title a:hover { color: var(--lagoon); }
+.tr-meta { display: flex; gap: 8px; flex-wrap: wrap; font-size: 11.5px; color: var(--ink-3); font-weight: 600; }
+.tr-note { font-size: 11.5px; color: var(--ink-2); padding: 6px 9px; border-radius: 8px; background: var(--surface-2); }
+.tr-actions { display: flex; align-items: center; gap: 6px; flex: none; }
+
+.empty-state { display: grid; place-items: center; gap: 8px; padding: 54px 20px; text-align: center; }
+.empty-state .ico { width: 46px; height: 46px; border-radius: 14px; display: grid; place-items: center; background: var(--surface-2); color: var(--ink-3); }
+.empty-state b { font-size: 14px; }
+.empty-state p { font-size: 12px; color: var(--ink-3); max-width: 46ch; line-height: 1.6; }
+
+/* ---------------- applications ---------------- */
+.app-row { display: flex; align-items: flex-start; gap: 12px; padding: 14px; border-bottom: 1px dashed var(--line-2); }
+.app-row:last-child { border-bottom: 0; }
+.app-row .who { min-width: 0; flex: 1; display: grid; gap: 5px; }
+.app-row .who .top { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.app-row .who .top b { font-size: 13.5px; }
+.app-row .msg { font-size: 12px; color: var(--ink-2); line-height: 1.6; }
+.app-row .acts { display: flex; gap: 6px; flex: none; }
+
+/* ---------------- chat ---------------- */
+.chat-grid { display: grid; grid-template-columns: 288px minmax(0, 1fr); gap: 14px; align-items: stretch; height: min(74vh, 680px); }
+.conv-list { display: flex; flex-direction: column; overflow: hidden; }
+.conv-scroll { overflow-y: auto; padding: 6px; display: grid; gap: 4px; }
+.conv {
+  display: flex; gap: 10px; align-items: flex-start;
+  padding: 10px; border-radius: 12px; cursor: pointer;
+  border: 1px solid transparent;
+  text-align: left; background: none; width: 100%;
+}
+.conv:hover { background: var(--surface-2); }
+.conv.on { background: var(--grad-tide); border-color: transparent; }
+.conv.on .ci-name, .conv.on .ci-trip, .conv.on .ci-last { color: #fff; }
+.conv.on .ci-trip, .conv.on .ci-last { opacity: .78; }
+.ci-body { min-width: 0; display: grid; gap: 3px; }
+.ci-name { font-size: 13px; font-weight: 800; color: var(--ink); }
+.ci-trip { font-size: 11px; color: var(--ink-2); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.ci-last { font-size: 11.5px; color: var(--ink-3); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+.thread { display: flex; flex-direction: column; overflow: hidden; }
+.thread-head { display: flex; align-items: center; gap: 10px; padding: 12px 16px; border-bottom: 1px solid var(--line); }
+.thread-head .who { display: grid; line-height: 1.3; }
+.thread-head .who b { font-size: 13.5px; }
+.thread-head .who span { font-size: 11px; color: var(--ink-3); }
+.thread-acts { margin-left: auto; display: flex; gap: 2px; align-items: center; }
+.meeting-strip {
+  display: flex; gap: 10px; align-items: center; flex-wrap: wrap;
+  padding: 9px 16px;
+  background: color-mix(in srgb, var(--amber) 10%, var(--surface));
+  border-bottom: 1px solid color-mix(in srgb, var(--amber) 24%, transparent);
+  font-size: 11px; color: var(--t-warn); font-weight: 650;
+}
+.meeting-strip b { color: var(--ink); }
+.msgs { flex: 1; overflow-y: auto; padding: 16px; display: grid; gap: 10px; align-content: start; }
+.msg { display: flex; gap: 8px; align-items: flex-end; max-width: 76%; }
+.msg.me { margin-left: auto; flex-direction: row-reverse; }
+.bubble { padding: 9px 12px; border-radius: 14px; background: var(--surface-2); font-size: 12.5px; line-height: 1.6; color: var(--ink); border: 1px solid var(--line); }
+.msg.me .bubble { background: var(--grad-tide); color: #fff; border-color: transparent; }
+.msg-col { display: grid; gap: 2px; min-width: 0; }
+.msg .time { font-size: 10px; color: var(--ink-3); margin-top: 4px; }
+.msg.me .time { text-align: right; }
+.composer { padding: 10px 14px; border-top: 1px solid var(--line); display: flex; gap: 10px; align-items: flex-end; }
+.composer textarea {
+  flex: 1; min-height: 40px; max-height: 110px; resize: none;
+  padding: 10px 12px; border-radius: 12px; border: 1px solid var(--line);
+  background: var(--surface); color: var(--ink); font-family: inherit; font-size: 12.5px; line-height: 1.5;
+}
+.composer textarea:focus { outline: none; border-color: var(--lagoon); box-shadow: 0 0 0 3px rgba(14, 128, 116, .16); }
+.readonly-bar { padding: 12px; text-align: center; font-size: 12px; color: var(--ink-3); background: var(--surface-2); border-top: 1px solid var(--line); }
+
+/* ---------------- profile ---------------- */
+.profile-cover { position: relative; height: 138px; overflow: hidden; }
+.profile-cover svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+.profile-head { display: flex; align-items: flex-start; gap: 18px; padding: 22px; }
+.profile-head .who { flex: 1; min-width: 0; }
+.profile-head h1 { font-size: 25px; font-weight: 900; letter-spacing: -.03em; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.profile-meta { margin-top: 8px; display: flex; gap: 8px; flex-wrap: wrap; font-size: 12.5px; color: var(--ink-2); }
+.profile-chips { margin-top: 10px; display: flex; gap: 7px; flex-wrap: wrap; }
+.profile-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; margin-top: 14px; }
+.fact-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px 20px; margin-top: 12px; }
+.fact-grid .k { font-size: 11px; color: var(--ink-3); font-weight: 700; }
+.fact-grid .v { margin-top: 3px; font-size: 13px; font-weight: 650; }
+.bio { margin-top: 10px; font-size: 13px; line-height: 1.75; color: var(--ink-2); }
+
+/* ---------------- modal + toast ---------------- */
+.modal {
+  position: fixed; inset: 0; z-index: 80;
+  display: grid; place-items: center;
+  padding: 24px;
+  background: rgba(9, 20, 36, .48);
+  backdrop-filter: blur(3px);
+}
+.modal[hidden] { display: none; }
+.modal-card {
+  width: min(560px, 100%);
+  max-height: 84vh; overflow: auto;
+  background: var(--surface);
+  border-radius: 18px;
+  box-shadow: 0 30px 80px -30px rgba(0, 0, 0, .6);
+  border: 1px solid var(--line);
+}
+.modal-head { display: flex; align-items: center; gap: 10px; padding: 16px 18px; border-bottom: 1px solid var(--line); }
+.modal-head h3 { font-size: 15px; font-weight: 850; flex: 1; }
+.modal-body { padding: 16px 18px; display: grid; gap: 12px; }
+.modal-foot { display: flex; justify-content: flex-end; gap: 8px; padding: 12px 18px 16px; }
+.modal .note { font-size: 11.5px; color: var(--ink-3); line-height: 1.6; }
+
+.toast {
+  position: fixed; z-index: 90;
+  left: 50%; bottom: 26px;
+  transform: translate(-50%, 12px);
+  padding: 10px 16px;
+  border-radius: 999px;
+  background: var(--ink);
+  color: var(--bg);
+  font-size: 12.5px; font-weight: 700;
+  box-shadow: var(--sh-3);
+  opacity: 0;
+  pointer-events: none;
+  transition: all .25s var(--ease);
+}
+.toast.show { opacity: 1; transform: translate(-50%, 0); }
+
+.screen { display: none; }
+.screen.on { display: block; animation: rise .3s var(--ease); }
+@keyframes rise { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+
+/* ---------------- responsive ---------------- */
+@media (max-width: 1180px) {
+  .map-grid { grid-template-columns: minmax(0, 1fr) 310px; }
+  .form-grid { grid-template-columns: minmax(0, 1.3fr) minmax(280px, .9fr); }
+}
+
+@media (max-width: 1024px) {
+  .hero { grid-template-columns: 1fr; }
+  .hero-art { display: none; }
+  .map-grid { grid-template-columns: 1fr; }
+  .map-canvas { height: 460px; }
+  .map-search { width: calc(100% - 78px); }
+  .kbd { display: none; }
+  .form-grid { grid-template-columns: 1fr; }
+  .aside-sticky { position: static; }
+  .filter-row { grid-template-columns: 1fr 1fr; }
+  .chat-grid { grid-template-columns: 240px minmax(0, 1fr); }
+}
+
+@media (max-width: 860px) {
+  :root { --rail-w: 0px; }
+  .rail { display: none; }
+  .view { margin-left: 0; padding: calc(var(--topbar-h) + 20px) 16px 90px; }
+  .trip-grid, .exp-grid { grid-template-columns: 1fr; }
+  .profile-grid { grid-template-columns: 1fr; }
+  .chat-grid { grid-template-columns: 1fr; height: auto; }
+  .conv-list { max-height: 220px; }
+  .thread { min-height: 460px; }
+  .detail-wrap { max-width: none; }
+}
+
+@media (max-width: 620px) {
+  .page-head { flex-direction: column; }
+  .filter-row { grid-template-columns: 1fr; }
+  .hero { padding: 24px 20px; }
+  .hero-stats { gap: 20px; }
+  .two-col, .facts, .fact-grid, .intensity { grid-template-columns: 1fr; }
+  .trip-row { flex-wrap: wrap; }
+  .tr-actions { width: 100%; justify-content: flex-end; }
+  .modal { padding: 12px; }
+  .detail-hero { padding: 20px; }
+  .brand-text { display: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * { animation: none !important; transition: none !important; }
+  html { scroll-behavior: auto; }
+}
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <a class="brand" href="#/" aria-label="RouteMe 路觅首页">
+    <img class="mark mark-light" src="../../RouteME/frontend/public/brand-mark.png" alt="" />
+    <img class="mark mark-dark" src="../../RouteME/frontend/public/brand-mark-dark.png" alt="" />
+    <span class="brand-text"><b>Route<em>Me</em></b><i>路觅</i></span>
+  </a>
+
+  <span class="topbar-spacer"></span>
+
+  <button class="icon-btn" id="themeBtn" aria-label="切换到深色模式" title="切换到深色模式">
+    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+      <path d="M21 12.8A8.5 8.5 0 1 1 11.2 3a6.6 6.6 0 0 0 9.8 9.8Z"/>
+    </svg>
+  </button>
+
+  <button class="id-pill" id="idPill" aria-label="账号菜单">
+    <span class="avatar av-xs" style="background:linear-gradient(140deg,#0e8074,#2f9fe0)">夏</span>
+    <span class="who"><b>林见夏</b><span>已登录</span></span>
+    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" style="color:var(--ink-3)">
+      <path d="m6 9 6 6 6-6"/>
+    </svg>
+  </button>
+</header>
+
+<aside class="rail">
+  <div class="rail-group">浏览</div>
+  <a class="nav-item" href="#/" data-nav="home">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="m15.5 8.5-2 5-5 2 2-5 5-2Z"/></svg>
+    旅行灵感
+  </a>
+  <a class="nav-item" href="#/map" data-nav="map">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m9 4 6 2 5-2v14l-5 2-6-2-5 2V6l5-2Z"/><path d="M9 4v14M15 6v14"/></svg>
+    旅行地图
+  </a>
+
+  <div class="rail-group">我的</div>
+  <a class="nav-item" href="#/trips/new" data-nav="create">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
+    发布行程
+  </a>
+  <a class="nav-item" href="#/mine" data-nav="mine">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="8" r="3.2"/><path d="M3.5 19c.6-3 2.7-4.6 5.5-4.6s4.9 1.6 5.5 4.6"/><path d="M17 7v6M14 10h6"/></svg>
+    我的旅行
+  </a>
+  <a class="nav-item" href="#/chat" data-nav="chat">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 11.5a8.5 8.5 0 0 1-12.3 7.6L3 21l1.9-5.7A8.5 8.5 0 1 1 21 11.5Z"/></svg>
+    同行消息
+  </a>
+
+  <div class="rail-foot">
+    <button class="rail-profile" id="railProfile">
+      <span class="avatar av-xs" style="background:linear-gradient(140deg,#b45309,#ff9a3d)">夏</span>
+      <span class="who"><b>林见夏</b><span>大三 · 视觉传达</span></span>
+      <svg class="chev" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="m9 6 6 6-6 6"/></svg>
+    </button>
+  </div>
+</aside>
+
+<main class="view" id="view">
+
+  <!-- ==================== HOME ==================== -->
+  <section class="screen" data-screen="home">
+    <div class="hero">
+      <div class="hero-copy">
+        <h1>早上好，<em>林见夏</em>。<br />今天想走哪条路？</h1>
+        <div class="hero-stats">
+          <div><div class="num" id="statPlans">4</div><div class="lbl">招募中的行程</div></div>
+          <div><div class="num" id="statExps">2</div><div class="lbl">真实游后体验</div></div>
+        </div>
+      </div>
+      <div class="hero-art" aria-hidden="true">
+        <svg viewBox="0 0 340 190" fill="none">
+          <circle cx="268" cy="46" r="26" fill="#ffb703" opacity=".9"/>
+          <circle cx="268" cy="46" r="44" fill="#ffb703" opacity=".16"/>
+          <path d="M18 156c46-6 52-62 96-70s56 26 92 8 36-52 84-56" fill="none" stroke="#ffcf9e" stroke-width="2.6" stroke-linecap="round" stroke-dasharray="7 9"/>
+          <circle cx="18" cy="156" r="7" fill="#8fe0cc"/>
+          <circle cx="114" cy="86" r="7" fill="#ffc23d"/>
+          <circle cx="206" cy="94" r="7" fill="#fff"/>
+          <circle cx="290" cy="38" r="9" fill="#ff7a45"/>
+          <path d="M290 32v12M284 38h12" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round"/>
+          <g stroke="rgba(143,224,204,.28)" stroke-width="1.2" fill="none">
+            <path d="M-10 124c58-20 92 12 150-6s86-30 140-12 70 18 90 12"/>
+            <path d="M-10 150c58-20 92 12 150-6s86-30 140-12 70 18 90 12"/>
+          </g>
+        </svg>
+      </div>
+    </div>
+
+    <div class="seg" id="viewTabs" role="tablist" aria-label="浏览视图" style="margin-bottom:14px">
+      <button class="seg-btn on" data-view="plans" role="tab" aria-selected="true">招募中的行程</button>
+      <button class="seg-btn" data-view="experiences" role="tab" aria-selected="false">旅行体验</button>
+    </div>
+
+    <div class="card filters" data-tab="plans">
+      <div class="filter-row">
+        <div class="fld">
+          <span>目的地</span>
+          <select class="control" id="fDest">
+            <option value="">全部目的地</option>
+            <option value="深圳">广东省 · 深圳市</option>
+            <option value="珠海">广东省 · 珠海市</option>
+            <option value="佛山">广东省 · 佛山市</option>
+            <option value="上海">上海市 · 上海市</option>
+          </select>
+        </div>
+        <div class="fld">
+          <span>出发不早于</span>
+          <input class="control" type="date" id="fFrom" />
+        </div>
+        <div class="fld">
+          <span>出发不晚于</span>
+          <input class="control" type="date" id="fTo" />
+        </div>
+        <div class="fld" id="sortField">
+          <span>排序</span>
+          <select class="control" id="fSort">
+            <option value="match">按匹配度</option>
+            <option value="date">按出发日期</option>
+            <option value="new">按最新发布</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="chip-row">
+        <span class="chip-label">兴趣</span>
+        <button class="chip" data-tag="摄影">摄影</button>
+        <button class="chip" data-tag="美食">美食</button>
+        <button class="chip" data-tag="海边">海边</button>
+        <button class="chip" data-tag="徒步">徒步</button>
+        <button class="chip" data-tag="露营">露营</button>
+        <button class="chip" data-tag="历史">历史</button>
+        <button class="chip" data-tag="展览">展览</button>
+        <button class="chip" data-tag="夜景">夜景</button>
+        <button class="chip" data-tag="自然">自然</button>
+        <button class="chip" data-tag="骑行">骑行</button>
+        <button class="chip" data-tag="市集">市集</button>
+        <button class="chip" data-tag="温泉">温泉</button>
+      </div>
+
+      <div class="filter-foot">
+        <button class="btn btn-ghost btn-sm" id="clearFilters" disabled>清除全部条件</button>
+        <span class="hint" id="filterSummary">未设置筛选，展示全部公开内容</span>
+      </div>
+    </div>
+
+    <div id="plansPane">
+      <div class="trip-grid" id="tripGrid"></div>
+      <div class="empty-state" id="plansEmpty" hidden>
+        <span class="ico">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.2-3.2"/></svg>
+        </span>
+        <b>还没有符合条件的行程</b>
+        <p>换个条件试试，或者发布一条属于你的路线。</p>
+        <div style="display:flex;gap:8px">
+          <button class="btn btn-ghost btn-sm" id="emptyClear">清除全部条件</button>
+          <a class="btn btn-primary btn-sm" href="#/trips/new">去发布行程</a>
+        </div>
+      </div>
+
+      <div style="display:flex;align-items:center;gap:10px;margin-top:16px;flex-wrap:wrap">
+        <span class="hint muted" style="font-size:11.5px" id="pagerTotal">共 4 条</span>
+        <span class="hint muted" style="margin-left:auto">已显示全部结果</span>
+      </div>
+    </div>
+
+    <div id="expPane" hidden>
+      <div style="font-size:11.5px;color:var(--ink-3);margin-bottom:10px">2 条体验</div>
+      <div class="exp-grid" id="expGrid"></div>
+    </div>
+  </section>
+
+  <!-- ==================== MAP ==================== -->
+  <section class="screen" data-screen="map">
+    <div class="page-head">
+      <div class="left">
+        <h1>旅行地图</h1>
+        <p class="page-sub">搜索城市或景点 → 加入途经点 → 拖拽排序 → 生成真实路线 → 发现同路的人。</p>
+      </div>
+      <div class="head-actions">
+        <button class="btn btn-ghost btn-sm" id="mapImport">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 3v12m0 0 4-4m-4 4-4-4"/><path d="M4 17v3h16v-3"/></svg>
+          导入行程
+        </button>
+        <button class="btn btn-primary btn-sm" id="mapSaveTop">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 4h11l3 3v13H5z"/><path d="M8 4v5h7V4M8 20v-6h8v6"/></svg>
+          保存路线
+        </button>
+      </div>
+    </div>
+
+    <div class="map-grid">
+      <div class="map-card">
+        <div class="map-canvas">
+          <svg viewBox="0 0 900 640" preserveAspectRatio="xMidYMid slice" role="img" aria-label="广州路线地图">
+            <rect width="900" height="640" fill="var(--map-bg)" />
+
+            <!-- river -->
+            <path d="M620 -40c40 130-40 190 10 300s120 90 90 220-90 130-70 210h300V-40Z" fill="var(--map-water)" />
+            <path d="M-20 540c150-60 210 30 330-30s160-120 260-60" stroke="var(--map-water)" stroke-width="34" fill="none" opacity=".85" />
+
+            <!-- parks -->
+            <path d="M60 70c70-40 150-10 160 50s-50 90-120 76S-10 110 60 70Z" fill="var(--map-park)" />
+            <path d="M330 520c60-40 150-20 160 40s-60 80-130 66-100-66-30-106Z" fill="var(--map-park)" />
+            <circle cx="762" cy="86" r="52" fill="var(--map-park)" opacity=".9" />
+
+            <!-- city blocks -->
+            <g fill="var(--map-block)" opacity=".75">
+              <rect x="120" y="200" width="90" height="70" rx="10" />
+              <rect x="230" y="176" width="110" height="52" rx="10" />
+              <rect x="360" y="220" width="130" height="74" rx="10" />
+              <rect x="180" y="296" width="120" height="60" rx="10" />
+              <rect x="430" y="330" width="96" height="90" rx="10" />
+              <rect x="300" y="392" width="104" height="64" rx="10" />
+              <rect x="96" y="392" width="80" height="86" rx="10" />
+              <rect x="560" y="120" width="86" height="70" rx="10" />
+              <rect x="660" y="300" width="110" height="80" rx="10" />
+            </g>
+
+            <!-- roads -->
+            <g stroke="var(--map-road)" stroke-linecap="round" fill="none">
+              <path d="M-20 260h940" stroke-width="10" />
+              <path d="M-20 380h940" stroke-width="7" />
+              <path d="M240 -20v680" stroke-width="9" />
+              <path d="M470 -20v680" stroke-width="7" />
+              <path d="M700 -20v680" stroke-width="5" />
+              <path d="M-20 150c160 60 260 10 360 50s120 60 240 20 180 20 340-20" stroke-width="5" opacity=".9" />
+              <path d="M40 640c80-120 190-90 250-160" stroke-width="5" opacity=".75" />
+              <path d="M520 640c40-140 150-170 180-260" stroke-width="4" opacity=".7" />
+            </g>
+            <g stroke="var(--map-road-2)" stroke-width="1.6" fill="none" opacity=".9">
+              <path d="M-20 260h940M-20 380h940" />
+            </g>
+
+            <!-- labels -->
+            <g fill="var(--map-label)" font-size="12" font-weight="700" letter-spacing=".08em">
+              <text x="132" y="330">荔湾区</text>
+              <text x="392" y="300">越秀区</text>
+              <text x="742" y="230" transform="rotate(78 742 230)">珠 江</text>
+              <text x="566" y="520">海珠区</text>
+              <text x="300" y="120">流花湖公园</text>
+            </g>
+
+            <!-- route casing + line -->
+            <polyline id="mapRoute" points="180,470 350,410 500,330 690,210" fill="none"
+              stroke="rgba(255,255,255,.92)" stroke-width="13" stroke-linecap="round" stroke-linejoin="round" />
+            <polyline id="mapRouteLine" points="180,470 350,410 500,330 690,210" fill="none"
+              stroke="url(#routeGrad)" stroke-width="6" stroke-linecap="round" stroke-linejoin="round" />
+            <defs>
+              <linearGradient id="routeGrad" x1="0" y1="0" x2="1" y2="0">
+                <stop offset="0" stop-color="#0e8074" />
+                <stop offset=".6" stop-color="#2f9fe0" />
+                <stop offset="1" stop-color="#4a7fd6" />
+              </linearGradient>
+            </defs>
+
+            <!-- markers（由脚本按途经点渲染） -->
+            <g id="mapMarkers" font-family="Bahnschrift, ui-monospace, monospace" font-size="13" font-weight="800" text-anchor="middle"></g>
+          </svg>
+
+          <div class="map-search">
+            <div class="search-shell">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.2-3.2"/></svg>
+              <input id="mapSearch" class="search-input" placeholder="搜索城市、景点或地址，例如：广州塔" autocomplete="off" />
+              <span class="kbd">Enter</span>
+            </div>
+            <div class="search-results" id="searchResults" hidden></div>
+          </div>
+
+          <div class="map-ctl">
+            <button type="button" title="放大" id="zoomIn">＋</button>
+            <button type="button" title="缩小" id="zoomOut">－</button>
+            <button type="button" title="回到路线" id="recenter">◎</button>
+          </div>
+
+          <div class="legend">
+            <div class="row"><span class="line"></span>生成的路线</div>
+            <div class="row"><span class="pin"></span>途经点</div>
+            <div class="row"><span class="water"></span>水域 / 绿地</div>
+            <div class="credit">示意地图 · 由 AMap 提供服务</div>
+          </div>
+        </div>
+
+        <div class="card map-tips">
+          <h3>怎么用这张地图</h3>
+          <ol>
+            <li><b>搜一个点</b>搜索城市、景点或地址，从候选里选一个加入途经点。</li>
+            <li><b>排好顺序</b>用 ↑ ↓ 调整先走哪里，第一个点默认当作集合点。</li>
+            <li><b>生成并保存</b>选好出行方式后重新生成，满意就保存到「发布行程」。</li>
+          </ol>
+          <p class="sub">路线距离与时长按出行方式估算，实际导航请以地图服务为准。</p>
+        </div>
+      </div>
+
+      <div class="map-rail">
+        <div class="card rail-card">
+          <div class="rail-head">
+            <h3>路线设置</h3>
+            <span class="right"><span class="tag sky">广州市</span></span>
+          </div>
+          <p class="sub">先定城市，再挑几个想去的点。</p>
+          <div class="range">
+            <input class="control" type="date" value="2026-11-23" aria-label="开始日期" />
+            <span class="muted">→</span>
+            <input class="control" type="date" value="2026-11-24" aria-label="结束日期" />
+          </div>
+          <div class="seg-mini" id="transportSeg">
+            <button type="button" class="on" data-mode="driving">驾车</button>
+            <button type="button" data-mode="transit">公交</button>
+            <button type="button" data-mode="walking">步行</button>
+          </div>
+        </div>
+
+        <div class="card rail-card">
+          <div class="rail-head">
+            <h3>途经点</h3>
+            <span class="right">
+              <span class="badge-dot" id="wpCount">4</span>
+              <button class="btn btn-quiet btn-sm" id="wpClear" style="height:26px">清空</button>
+            </span>
+          </div>
+          <p class="sub">拖拽排序，或点箭头调整顺序。</p>
+          <div class="wp-list" id="wpList"></div>
+          <button class="btn btn-ghost btn-sm btn-block" id="wpAdd" style="margin-top:10px">＋ 添加途经点</button>
+        </div>
+
+        <div class="warn-note" id="routeWarn" hidden>至少选择两个途经点才能生成路线。</div>
+
+        <div class="card rail-card">
+          <div class="rail-head">
+            <h3>路线概览</h3>
+            <span class="right"><span class="tag" id="routeMode">驾车</span></span>
+          </div>
+          <div class="stat-strip">
+            <div><span>总距离</span><b id="statDist">32.6 km</b></div>
+            <div><span>预计时长</span><b id="statDur">1 小时 12 分</b></div>
+            <div><span>途经点</span><b id="statStops">4 个</b></div>
+          </div>
+          <div class="legs" id="legs"></div>
+          <button class="btn btn-ghost btn-sm btn-block" id="genRoute" style="margin-top:12px">重新生成路线</button>
+        </div>
+
+        <div>
+          <button class="btn btn-primary btn-block" id="saveRoute">保存路线</button>
+          <p class="sub" style="text-align:center;margin-top:8px">保存后可在「发布行程」里继续填写。</p>
+        </div>
+
+        <div class="card rail-card">
+          <div class="rail-head">
+            <h3>附近同路的人</h3>
+            <span class="right"><span class="tag warm">2 位</span></span>
+          </div>
+          <p class="sub">目的地相同、日期接近的同学。</p>
+          <div class="people">
+            <div class="person">
+              <span class="avatar av-xs" style="background:linear-gradient(140deg,#0e8074,#2f9fe0)">雨</span>
+              <span style="display:grid;line-height:1.3"><b>陈雨</b><span class="muted" style="font-size:11px">暨南大学 · 旅游管理</span></span>
+              <span class="tag warm" style="margin-left:auto">92%</span>
+            </div>
+            <div class="person">
+              <span class="avatar av-xs" style="background:linear-gradient(140deg,#4a7fd6,#2f9fe0)">野</span>
+              <span style="display:grid;line-height:1.3"><b>周野</b><span class="muted" style="font-size:11px">同济大学 · 建筑学</span></span>
+              <span class="tag warm" style="margin-left:auto">84%</span>
+            </div>
+          </div>
+          <button class="btn btn-ghost btn-sm btn-block" id="mapMatch" style="margin-top:10px">查看匹配理由</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ==================== DETAIL ==================== -->
+  <section class="screen" data-screen="detail">
+    <div class="detail-wrap">
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:12px">
+        <a class="back-link" href="#/">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="m15 6-6 6 6 6"/></svg>
+          返回灵感首页
+        </a>
+        <span style="margin-left:auto"></span>
+        <button class="btn btn-quiet btn-sm" id="reportBtn">举报这条行程</button>
+      </div>
+
+      <div class="detail-hero" style="background:var(--grad-shore)">
+        <svg class="art" viewBox="0 0 900 260" preserveAspectRatio="none" aria-hidden="true">
+          <circle cx="614" cy="54" r="30" fill="#ffc23d" opacity=".95" />
+          <circle cx="614" cy="54" r="58" fill="#ffc23d" opacity=".16" />
+          <path d="M-20 210c120-70 210 30 330-26s180-104 300-52 190 56 310-4v160H-20Z" fill="rgba(255,255,255,.10)" />
+          <path d="M-20 238c140-56 220 18 340-22s200-74 300-30 190 40 300 4v90H-20Z" fill="rgba(255,255,255,.08)" />
+          <path d="M30 176c80-12 120-46 200-50s130 30 210 12 120-56 190-58" stroke="rgba(255,255,255,.65)" stroke-width="2.6" stroke-dasharray="7 8" fill="none" stroke-linecap="round" />
+          <g fill="rgba(255,255,255,.9)">
+            <circle cx="30" cy="176" r="5" /><circle cx="230" cy="126" r="5" /><circle cx="440" cy="138" r="5" /><circle cx="630" cy="80" r="6" />
+          </g>
+          <g stroke="rgba(255,255,255,.16)" stroke-width="1.4" fill="none">
+            <path d="M-20 92c150-26 240 22 360 0s210-40 320-16 170 26 260 6" />
+            <path d="M-20 62c150-26 240 22 360 0s210-40 320-16 170 26 260 6" />
+          </g>
+        </svg>
+        <div class="inner">
+          <div class="badge-row">
+            <span class="pill recruiting" id="detailStatus"><span class="dot"></span>招募中</span>
+            <span class="tag sky" id="dCity">广东省 · 深圳市</span>
+            <span class="spacer"></span>
+            <span class="tag" id="dDayTag" style="background:rgba(255,255,255,.16);color:#fff">2 天 1 夜</span>
+          </div>
+          <h1 id="dTitle">深圳大鹏半岛海岸线徒步</h1>
+          <div class="meta">
+            <span><b id="dDate">11月23日</b> <span id="dWeekday">周一出发</span></span>
+            <span>·</span>
+            <span id="dCapacity"><b>1 / 6</b> 人已加入</span>
+            <span>·</span>
+            <span>预算 <b id="dBudget">¥280–420</b></span>
+            <span>·</span>
+            <span>强度 <b id="dIntensity">适中</b></span>
+          </div>
+        </div>
+      </div>
+
+      <div class="card detail-card">
+        <div class="sec-title">
+          路线
+          <span class="hint" id="dRouteHint">大鹏所城 → 东西涌 → 天文台 → 杨梅坑</span>
+        </div>
+        <div class="route-map">
+          <svg viewBox="0 0 900 300" preserveAspectRatio="xMidYMid slice" role="img" aria-label="行程路线图">
+            <rect width="900" height="300" fill="var(--map-bg)" />
+            <path d="M-20 250c120-70 190 10 300-40s210-90 300-46 190 40 340-10v146H-20Z" fill="var(--map-water)" opacity=".92" />
+            <path d="M-20 210c130-40 200 20 320-20s200-70 300-34 170 26 300-18" stroke="var(--map-road)" stroke-width="6" fill="none" />
+            <path d="M60 -20c40 90 10 140 60 200s120 60 150 140" stroke="var(--map-road)" stroke-width="6" fill="none" />
+            <path d="M760 -20c-30 70 10 120-30 180s-60 60-80 120" stroke="var(--map-road)" stroke-width="5" fill="none" />
+            <path d="M60 130c70-40 140 10 200-24s120-46 180-20 110 30 160-10" stroke="var(--map-park)" stroke-width="34" fill="none" opacity=".8" />
+            <polyline points="116,196 268,150 432,166 588,102 742,74" fill="none" stroke="rgba(255,255,255,.9)" stroke-width="12" stroke-linecap="round" stroke-linejoin="round" />
+            <polyline points="116,196 268,150 432,166 588,102 742,74" fill="none" stroke="url(#detailGrad)" stroke-width="5.5" stroke-linecap="round" stroke-linejoin="round" />
+            <defs>
+              <linearGradient id="detailGrad" x1="0" y1="1" x2="1" y2="0">
+                <stop offset="0" stop-color="#0e8074" /><stop offset=".55" stop-color="#2f9fe0" /><stop offset="1" stop-color="#ff5347" />
+              </linearGradient>
+            </defs>
+            <g font-family="Bahnschrift, ui-monospace, monospace" font-size="12" font-weight="800" text-anchor="middle">
+              <circle cx="116" cy="196" r="15" fill="#0e8074" stroke="#fff" stroke-width="3.5" /><text x="116" y="200" fill="#fff">1</text>
+              <circle cx="268" cy="150" r="15" fill="#1b5a8a" stroke="#fff" stroke-width="3.5" /><text x="268" y="154" fill="#fff">2</text>
+              <circle cx="432" cy="166" r="15" fill="#2f9fe0" stroke="#fff" stroke-width="3.5" /><text x="432" y="170" fill="#fff">3</text>
+              <circle cx="588" cy="102" r="15" fill="#4a7fd6" stroke="#fff" stroke-width="3.5" /><text x="588" y="106" fill="#fff">4</text>
+              <circle cx="742" cy="74" r="17" fill="#ff5347" stroke="#fff" stroke-width="3.5" /><text x="742" y="79" fill="#fff">5</text>
+            </g>
+          </svg>
+        </div>
+        <div class="stop-strip" id="dStops">
+          <button class="stop-chip"><span class="n">1</span>大鹏所城集合</button>
+          <button class="stop-chip"><span class="n">2</span>东西涌穿越 12km</button>
+          <button class="stop-chip"><span class="n">3</span>天文台观景</button>
+          <button class="stop-chip"><span class="n">4</span>民宿休整</button>
+          <button class="stop-chip"><span class="n">5</span>次日杨梅坑骑行</button>
+        </div>
+        <div class="facts">
+          <dl class="fact"><dt>集合区域</dt><dd id="dMeetingArea">大鹏所城东门</dd></dl>
+          <dl class="fact"><dt>集合时间</dt><dd id="dMeetingTime">11-23 08:30</dd></dl>
+          <dl class="fact"><dt>计划人数</dt><dd id="dPlanCount">含发起人共 6 人</dd></dl>
+          <dl class="fact"><dt>报名截止</dt><dd>出发前一天 20:00</dd></dl>
+        </div>
+        <div class="warn-note">只写公共区域，不要公开电话、宿舍或家庭住址。首次见面请选择人多的集合点。</div>
+      </div>
+
+      <div class="card detail-card">
+        <div class="sec-title">发布者</div>
+        <div class="publisher">
+          <span class="avatar av-lg" id="dHostAv" style="background:linear-gradient(140deg,#0e8074,#2f9fe0)">雨</span>
+          <div class="who">
+            <b id="dHostName">陈雨</b>
+            <p id="dHostMeta">暨南大学 · 旅游管理 · 大三</p>
+            <div class="tags">
+              <span class="tag">摄影</span><span class="tag">徒步</span><span class="tag grey">已完善资料</span>
+            </div>
+          </div>
+          <button class="btn btn-ghost btn-sm" id="dHostProfile" style="margin-left:auto">查看主页</button>
+        </div>
+      </div>
+
+      <div class="card detail-card">
+        <div class="sec-title">
+          当前同行者
+          <span class="hint" id="dJoined">2 / 6</span>
+          <a class="back-link" href="#/applications" id="dApplications" style="margin-left:14px">查看同行的申请</a>
+        </div>
+        <div class="people" id="dPeople"></div>
+      </div>
+
+      <div class="card detail-card" id="dMatchCard">
+        <div class="sec-title">为什么推荐给你</div>
+        <div class="match-box">
+          <div class="ring" id="dMatchRing"></div>
+          <div class="why" id="dMatchWhy"></div>
+        </div>
+      </div>
+
+      <div class="owner-row card detail-card" id="ownerBar" hidden>
+        <span class="owner-badge">这是你发布的行程</span>
+        <span class="muted" style="font-size:12px">处理申请、编辑集合信息或结束行程。</span>
+        <span style="margin-left:auto"></span>
+        <a class="btn btn-ghost btn-sm" href="#/applications">查看同行的申请</a>
+        <a class="btn btn-ghost btn-sm" href="#/mine">管理行程</a>
+        <button class="btn btn-danger btn-sm" id="endTripBtn">结束行程</button>
+      </div>
+
+      <div class="card detail-card" id="applyCard">
+        <div class="sec-title">申请同行 <span class="hint">对方接受后才会开放聊天</span></div>
+        <div class="apply">
+          <div class="label">一句申请说明 <span>让对方知道你为什么合适</span></div>
+          <textarea id="applyMsg" placeholder="例如：这条线我走过一半，想补上日落那段，可以帮忙背装备。"></textarea>
+          <div class="hint">提交后对方接受才会开放聊天，不会变成无条件私聊。</div>
+          <button class="btn btn-sun" id="applyBtn">提交同行申请</button>
+        </div>
+      </div>
+
+      <div class="pending-note" id="pendingNote" hidden></div>
+
+      <div class="card detail-card" id="dExperienceCard">
+        <div class="sec-title">游后真实体验 <span class="hint">行程结束后开放</span></div>
+        <div id="dExperience"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ==================== CREATE ==================== -->
+  <section class="screen" data-screen="create">
+    <div class="page-head">
+      <div class="left">
+        <h1>发布一条想走的路</h1>
+        <p class="page-sub">写清楚目的地、日期和路线，别人才知道能不能和你同路。</p>
+      </div>
+      <div class="head-actions">
+        <span class="pill"><span class="dot" style="background:var(--jade)"></span>草稿已自动保存</span>
+      </div>
+    </div>
+
+    <div class="form-grid">
+      <div class="form-stack">
+        <div class="card form-card">
+          <h3>基本信息</h3>
+          <p class="card-sub">先用一句话说清去哪里、走几天。</p>
+
+          <div class="field">
+            <label for="cTitle">标题<span class="req">*</span></label>
+            <input class="text" id="cTitle" maxlength="40" value="深圳大鹏半岛海岸线徒步" placeholder="例如：周末去大鹏走一段海岸线" />
+            <span class="count"><span id="cTitleCount">12</span> / 40</span>
+          </div>
+
+          <div class="field">
+            <label for="cDest">目的地<span class="req">*</span></label>
+            <select class="control" id="cDest">
+              <option>广东省 · 深圳市</option>
+              <option>广东省 · 广州市</option>
+              <option>广东省 · 珠海市</option>
+              <option>广东省 · 佛山市</option>
+              <option>上海市 · 上海市</option>
+            </select>
+            <span class="help">必须选到城市，途经点搜索与地图会优先定位到这里。</span>
+          </div>
+
+          <div class="two-col">
+            <div class="field">
+              <label for="cStart">出发日期<span class="req">*</span></label>
+              <input class="control" type="date" id="cStart" value="2026-11-23" />
+            </div>
+            <div class="field">
+              <label for="cEnd">结束日期<span class="req">*</span></label>
+              <input class="control" type="date" id="cEnd" value="2026-11-24" />
+            </div>
+          </div>
+
+          <div class="two-col">
+            <div class="field">
+              <label for="cCap">计划人数<span class="req">*</span></label>
+              <input class="text" type="number" id="cCap" min="2" max="12" value="6" />
+              <span class="help">含你自己，2–12 人；招满后自动停止接受新申请。</span>
+            </div>
+            <div class="field">
+              <label>预算（元）</label>
+              <div class="two-col">
+                <input class="text" type="number" id="cBudgetMin" value="280" placeholder="下限" aria-label="预算下限" />
+                <input class="text" type="number" id="cBudgetMax" value="420" placeholder="上限" aria-label="预算上限" />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card form-card">
+          <h3>简单路线</h3>
+          <p class="card-sub">第一个点默认作为集合点，最后一个点作为收尾。</p>
+
+          <div class="field">
+            <label for="cStopInput">途经点<span class="req">*</span><span class="opt">至少两个</span></label>
+            <input class="text" id="cStopInput" placeholder="搜索地点名称，必须能在地图上搜到" />
+            <span class="help">从搜索候选中选择，最多添加 8 个点；也可以直接在地图上点选。</span>
+          </div>
+
+          <div class="tag-picker" id="cStops">
+            <button class="stop-chip" data-stop="大鹏所城集合"><span class="n">1</span>大鹏所城集合</button>
+            <button class="stop-chip" data-stop="东西涌穿越 12km"><span class="n">2</span>东西涌穿越 12km</button>
+            <button class="stop-chip" data-stop="天文台观景"><span class="n">3</span>天文台观景</button>
+            <button class="stop-chip" data-stop="民宿休整"><span class="n">4</span>民宿休整</button>
+            <button class="stop-chip" data-stop="次日杨梅坑骑行"><span class="n">5</span>次日杨梅坑骑行</button>
+          </div>
+
+          <div class="two-col" style="margin-top:14px">
+            <div class="field">
+              <label for="cMeeting">集合区域</label>
+              <input class="text" id="cMeeting" value="大鹏所城东门" placeholder="手输集合地点，最多 3 个" />
+              <span class="help">只写公共区域，不要写宿舍或家庭住址。</span>
+            </div>
+            <div class="field">
+              <label for="cMeetingTime">集合时间</label>
+              <input class="control" type="datetime-local" id="cMeetingTime" value="2026-11-23T08:30" />
+            </div>
+          </div>
+        </div>
+
+        <div class="card form-card">
+          <h3>兴趣标签<span class="opt">选填</span></h3>
+          <p class="card-sub">最多 5 个，每个不超过 12 字。标签会帮助同好找到你。</p>
+          <div class="tag-picker" id="cTags">
+            <button class="chip on" data-tag="徒步">徒步</button>
+            <button class="chip on" data-tag="海边">海边</button>
+            <button class="chip" data-tag="摄影">摄影</button>
+            <button class="chip" data-tag="美食">美食</button>
+            <button class="chip" data-tag="露营">露营</button>
+            <button class="chip" data-tag="历史">历史</button>
+            <button class="chip" data-tag="骑行">骑行</button>
+            <button class="chip" data-tag="夜景">夜景</button>
+          </div>
+          <div style="display:flex;gap:8px;margin-top:10px">
+            <input class="text" id="cTagInput" placeholder="自定义兴趣标签（最多 5 个）" maxlength="12" />
+            <button class="btn btn-ghost btn-sm" id="cTagAdd" style="flex:none;height:40px">添加标签</button>
+          </div>
+        </div>
+
+        <div class="card form-card">
+          <h3>补充说明<span class="opt">选填</span></h3>
+          <p class="card-sub">装备要求、体力门槛、会不会等日落，都可以写在这里。</p>
+          <div class="field">
+            <textarea class="text" id="cNote" rows="4" maxlength="200" placeholder="例如：需要能连续走 4 小时，鞋要抓地；日落后返程，请自备头灯。"></textarea>
+            <span class="count"><span id="cNoteCount">0</span> / 200</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="aside-sticky">
+        <div>
+          <div class="aside-label">实时预览 · 别人看到的样子</div>
+          <div class="trip-card preview-card">
+            <div class="tc-cover">
+              <svg viewBox="0 0 400 180" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+                <defs>
+                  <linearGradient id="pvSky" x1="0" y1="0" x2="1" y2="1">
+                    <stop offset="0" stop-color="#1b5a8a" /><stop offset=".55" stop-color="#2f9fe0" /><stop offset="1" stop-color="#0e8074" />
+                  </linearGradient>
+                </defs>
+                <rect width="400" height="180" fill="url(#pvSky)" />
+                <circle cx="268" cy="52" r="19" fill="#ffc23d" />
+                <path d="M-10 132c60-30 100 8 160-14s90-40 150-16 90 22 120 8v80H-10Z" fill="rgba(255,255,255,.16)" />
+                <path d="M-10 154c70-24 110 6 170-12s96-28 150-6 70 14 100 4v50H-10Z" fill="rgba(255,255,255,.12)" />
+                <path d="M20 126c50-6 70-30 120-34s84 20 124 8 66-30 104-30" stroke="rgba(255,255,255,.8)" stroke-width="2.4" stroke-dasharray="6 7" fill="none" stroke-linecap="round" />
+                <g fill="#fff">
+                  <circle cx="20" cy="126" r="4" /><circle cx="140" cy="92" r="4" /><circle cx="264" cy="100" r="4" /><circle cx="368" cy="70" r="5" />
+                </g>
+              </svg>
+              <span class="tc-city" id="pvCity">深圳市</span>
+              <span class="pill recruiting tc-status"><span class="dot"></span>招募中</span>
+            </div>
+            <div class="tc-body">
+              <div class="tc-title" id="pvTitle">深圳大鹏半岛海岸线徒步</div>
+              <div class="tc-meta">
+                <span id="pvDate">11月23日 周一出发</span><span>·</span><span id="pvDays">2 天</span><span>·</span><span id="pvCap">6 人</span>
+              </div>
+              <div class="tc-route"><b>路线</b><span id="pvStops">大鹏所城集合 → 东西涌穿越 12km → 天文台观景 → 民宿休整 → 次日杨梅坑骑行</span></div>
+              <div class="tc-tags" id="pvTags">
+                <span class="tag">徒步</span><span class="tag">海边</span>
+              </div>
+              <div class="tc-match">
+                <div class="ring">
+                  <svg width="36" height="36" viewBox="0 0 36 36" aria-hidden="true">
+                    <circle cx="18" cy="18" r="15" fill="none" stroke="rgba(255,183,3,.22)" stroke-width="4" />
+                    <circle cx="18" cy="18" r="15" fill="none" stroke="#ffb703" stroke-width="4" stroke-linecap="round"
+                      stroke-dasharray="86.7 94.2" />
+                  </svg>
+                  <span>92</span>
+                </div>
+                <div class="why">同城出发 · 兴趣重合<br />发布后即可查看匹配理由</div>
+              </div>
+              <div class="tc-foot">
+                <div class="tc-host">
+                  <span class="avatar av-xs" style="background:linear-gradient(140deg,#b45309,#ff9a3d)">夏</span>
+                  <span><b>林见夏</b> 发布</span>
+                </div>
+                <div class="cap">
+                  <span class="n">1 / <span id="pvCapNum">6</span></span>
+                  <span class="meter"><i style="width:16%"></i></span>
+                </div>
+              </div>
+            </div>
+          </div>
+          <p class="aside-label" style="margin-top:8px">预览只展示公开信息，不会显示你的联系方式。</p>
+        </div>
+
+        <div class="safety">
+          <h4>发布前提醒</h4>
+          <ul>
+            <li>只填写公共集合区域，不要公开电话、证件号码或精确住址。</li>
+            <li>把强度和要求写清楚，比事后劝退更省事。</li>
+            <li>接受申请前先看对方资料，你有完全的拒绝权。</li>
+          </ul>
+        </div>
+
+        <div style="display:grid;gap:8px">
+          <button class="btn btn-primary btn-block" id="cPublish">发布行程</button>
+          <a class="btn btn-ghost btn-block" href="#/mine">取消</a>
+          <p class="aside-label" style="text-align:center">发布后仍可在「我的旅行」里结束行程。</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ==================== MINE ==================== -->
+  <section class="screen" data-screen="mine">
+    <div class="page-head mine-head">
+      <div class="left">
+        <h1>我的旅行</h1>
+        <p class="page-sub">发布、申请、同行与已完成的行程都在这里。</p>
+      </div>
+      <div class="head-actions">
+        <a class="btn btn-primary btn-sm" href="#/trips/new">＋ 发布行程</a>
+      </div>
+    </div>
+
+    <div class="card profile-strip">
+      <span class="avatar av-lg" style="background:linear-gradient(140deg,#b45309,#ff9a3d)">夏</span>
+      <div class="who">
+        <b>林见夏 <span class="tag" style="margin-left:6px">资料已完善</span></b>
+        <span>深圳大学 · 视觉传达 · 大三 · 旅行兴趣：摄影 / 自然 / 城市漫步</span>
+      </div>
+      <div class="acts">
+        <a class="btn btn-ghost btn-sm" href="#/profile">查看主页</a>
+        <a class="btn btn-ghost btn-sm" href="#/profile">编辑资料</a>
+      </div>
+    </div>
+
+    <div class="warn-note" style="display:flex;align-items:center;gap:10px">
+      有新的同行申请等待处理
+      <a class="back-link" href="#/applications" style="margin-left:auto;color:var(--t-warn)">去处理 →</a>
+    </div>
+
+    <div class="seg" id="mineTabs" role="tablist" aria-label="我的旅行分组" style="margin:14px 0">
+      <button class="seg-btn on" data-mtab="published" role="tab" aria-selected="true">我发布的 <span class="badge-dot">2</span></button>
+      <button class="seg-btn" data-mtab="applied" role="tab" aria-selected="false">我申请的 <span class="badge-dot">1</span></button>
+      <button class="seg-btn" data-mtab="matched" role="tab" aria-selected="false">已匹配同行 <span class="badge-dot">1</span></button>
+      <button class="seg-btn" data-mtab="completed" role="tab" aria-selected="false">已完成旅行 <span class="badge-dot">1</span></button>
+    </div>
+
+    <div class="card" data-mpane="published" style="padding:14px 16px">
+      <div class="trip-rows" style="margin-top:0">
+        <div class="trip-row card" style="box-shadow:none">
+          <div class="tr-cover">
+            <svg viewBox="0 0 120 90" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+              <defs><linearGradient id="mc1" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#0e8074" /><stop offset="1" stop-color="#2f9fe0" /></linearGradient></defs>
+              <rect width="120" height="90" fill="url(#mc1)" /><circle cx="96" cy="20" r="10" fill="#ffc23d" />
+              <path d="M-6 72c22-12 34 4 54-4s30-14 46-6 20 8 30 4v28H-6Z" fill="rgba(255,255,255,.2)" />
+            </svg>
+            <span>珠海</span>
+          </div>
+          <div class="tr-main">
+            <div class="tr-title">
+              <a href="#/trips/8">珠海情侣路日落骑行</a>
+              <span class="pill ongoing"><span class="dot"></span>旅行中</span>
+            </div>
+            <div class="tr-meta"><span>11月17日 → 11月19日</span><span>·</span><span>3 / 6 人</span><span>·</span><span>集合：情侣路南段</span></div>
+            <div class="tr-note">行程进行中，结束后可以写下体验。</div>
+          </div>
+          <div class="tr-actions">
+            <a class="btn btn-ghost btn-sm" href="#/trips/8">查看</a>
+            <a class="btn btn-quiet btn-sm" href="#/applications">处理申请</a>
+            <button class="btn btn-danger btn-sm" data-end>结束行程</button>
+          </div>
+        </div>
+
+        <div class="trip-row card" style="box-shadow:none">
+          <div class="tr-cover">
+            <svg viewBox="0 0 120 90" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+              <defs><linearGradient id="mc2" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#1b5a8a" /><stop offset="1" stop-color="#4a7fd6" /></linearGradient></defs>
+              <rect width="120" height="90" fill="url(#mc2)" /><circle cx="26" cy="22" r="9" fill="#ffb703" />
+              <path d="M-6 66c26-8 36 8 58 0s32-16 48-8 18 10 26 6v34H-6Z" fill="rgba(255,255,255,.18)" />
+            </svg>
+            <span>广州</span>
+          </div>
+          <div class="tr-main">
+            <div class="tr-title">
+              <a href="#/trips/9">广州老城骑楼与早茶</a>
+              <span class="pill recruiting"><span class="dot"></span>招募中</span>
+            </div>
+            <div class="tr-meta"><span>11月29日 周日出发</span><span>·</span><span>2 / 5 人</span><span>·</span><span>集合：陈家祠地铁站</span></div>
+            <div class="tr-note">你还有 1 条申请等待处理。</div>
+          </div>
+          <div class="tr-actions">
+            <a class="btn btn-ghost btn-sm" href="#/trips/9">查看</a>
+            <a class="btn btn-quiet btn-sm" href="#/applications">处理申请</a>
+            <button class="btn btn-danger btn-sm" data-end>结束行程</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card" data-mpane="applied" style="padding:14px 16px" hidden>
+      <div class="trip-rows" style="margin-top:0">
+        <div class="trip-row card" style="box-shadow:none">
+          <div class="tr-cover">
+            <svg viewBox="0 0 120 90" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+              <defs><linearGradient id="mc3" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#b45309" /><stop offset="1" stop-color="#ff9a3d" /></linearGradient></defs>
+              <rect width="120" height="90" fill="url(#mc3)" /><circle cx="92" cy="24" r="11" fill="#ffe3a3" />
+              <path d="M-6 70c24-10 34 4 56-2s30-14 46-6 18 8 26 4v26H-6Z" fill="rgba(255,255,255,.22)" />
+            </svg>
+            <span>深圳</span>
+          </div>
+          <div class="tr-main">
+            <div class="tr-title">
+              <a href="#/trips/5">深圳大鹏半岛海岸线徒步</a>
+              <span class="pill recruiting"><span class="dot"></span>申请待处理</span>
+            </div>
+            <div class="tr-meta"><span>11月23日 → 11月24日</span><span>·</span><span>发起人：陈雨</span><span>·</span><span>1 / 6 人</span></div>
+            <div class="tr-note">提交于今天 09:12 · 等待发起人回应</div>
+          </div>
+          <div class="tr-actions">
+            <a class="btn btn-ghost btn-sm" href="#/trips/5">查看</a>
+            <button class="btn btn-danger btn-sm" id="withdrawRow">撤回</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card" data-mpane="matched" style="padding:14px 16px" hidden>
+      <div class="trip-rows" style="margin-top:0">
+        <div class="trip-row card" style="box-shadow:none">
+          <div class="tr-cover">
+            <svg viewBox="0 0 120 90" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+              <defs><linearGradient id="mc4" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#0b6b60" /><stop offset="1" stop-color="#149a63" /></linearGradient></defs>
+              <rect width="120" height="90" fill="url(#mc4)" /><circle cx="30" cy="22" r="9" fill="#ffc23d" />
+              <path d="M-6 68c22-8 36 8 58 0s30-12 46-4 18 8 26 4v26H-6Z" fill="rgba(255,255,255,.18)" />
+            </svg>
+            <span>佛山</span>
+          </div>
+          <div class="tr-main">
+            <div class="tr-title">
+              <a href="#/trips/6">佛山祖庙与岭南天地一日</a>
+              <span class="pill full"><span class="dot"></span>已匹配同行</span>
+            </div>
+            <div class="tr-meta"><span>11月20日 周五出发</span><span>·</span><span>4 / 4 人</span><span>·</span><span>集合：祖庙地铁站 C 口</span></div>
+            <div class="tr-note">已和发起人苏宁匹配，可以确认集合与安排。</div>
+          </div>
+          <div class="tr-actions">
+            <a class="btn btn-primary btn-sm" href="#/chat">聊天</a>
+            <button class="btn btn-quiet btn-sm" id="leaveTrip">退出同行</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card" data-mpane="completed" style="padding:14px 16px" hidden>
+      <div class="trip-rows" style="margin-top:0">
+        <div class="trip-row card" style="box-shadow:none">
+          <div class="tr-cover">
+            <svg viewBox="0 0 120 90" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+              <defs><linearGradient id="mc5" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#14335f" /><stop offset="1" stop-color="#4a7fd6" /></linearGradient></defs>
+              <rect width="120" height="90" fill="url(#mc5)" /><circle cx="94" cy="20" r="9" fill="#ffb703" />
+              <path d="M-6 70c24-8 34 6 56-2s32-12 48-4 18 8 26 4v24H-6Z" fill="rgba(255,255,255,.16)" />
+            </svg>
+            <span>上海</span>
+          </div>
+          <div class="tr-main">
+            <div class="tr-title">
+              <a href="#/trips/7">上海武康路咖啡散步</a>
+              <span class="pill completed"><span class="dot"></span>已结束</span>
+            </div>
+            <div class="tr-meta"><span>11月8日 周日出发</span><span>·</span><span>3 人同行</span><span>·</span><span>发起人：周野</span></div>
+            <div class="tr-note">行程已结束，还没有写下你的体验。</div>
+          </div>
+          <div class="tr-actions">
+            <a class="btn btn-ghost btn-sm" href="#/trips/7">查看</a>
+            <a class="btn btn-sun btn-sm" href="#/share">写下体验</a>
+          </div>
+        </div>
+
+        <div class="empty-state" style="padding:26px 16px 18px">
+          <span class="ico">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 5h16v14H4z"/><path d="M8 9h8M8 13h5"/></svg>
+          </span>
+          <b>写下真实强度和一条建议，闭环才算真正闭合</b>
+          <p>体验会出现在原行程与灵感首页，帮到下一位同学。</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ==================== APPLICATIONS ==================== -->
+  <section class="screen" data-screen="applications">
+    <div class="detail-wrap">
+      <a class="back-link" href="#/mine" style="margin-bottom:12px">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="m15 6-6 6 6 6"/></svg>
+        返回我的旅行
+      </a>
+
+      <div class="page-head" style="margin-top:12px">
+        <div class="left">
+          <h1>同行申请</h1>
+          <p class="page-sub">深圳大鹏半岛海岸线徒步 · 11月23日 → 11月24日 · 1 / 6 人已加入</p>
+        </div>
+        <div class="head-actions">
+          <a class="btn btn-ghost btn-sm" href="#/trips/5">查看行程</a>
+        </div>
+      </div>
+
+      <div class="seg" id="appTabs" role="tablist" aria-label="申请分组" style="margin-bottom:14px">
+        <button class="seg-btn on" data-atab="pending" role="tab" aria-selected="true">待处理 <span class="badge-dot">2</span></button>
+        <button class="seg-btn" data-atab="handled" role="tab" aria-selected="false">已处理 <span class="badge-dot">1</span></button>
+      </div>
+
+      <div class="card" id="appList">
+        <div class="app-row" data-app="1">
+          <span class="avatar av-lg" style="background:linear-gradient(140deg,#7c3aed,#4a7fd6)">宁</span>
+          <div class="who">
+            <div class="top">
+              <b>苏宁</b>
+              <span class="tag">徒步</span><span class="tag">历史</span>
+              <span class="muted" style="font-size:11px;margin-left:auto">今天 09:20 申请</span>
+            </div>
+            <div class="msg">佛山过来的，走过两次东西涌，体力没问题，可以帮忙带公共药品。</div>
+            <div class="muted" style="font-size:11px">佛山大学 · 汉语言 · 大三 · 资料已完善</div>
+          </div>
+          <div class="acts">
+            <button class="btn btn-primary btn-sm" data-accept>接受</button>
+            <button class="btn btn-ghost btn-sm" data-reject>拒绝</button>
+          </div>
+        </div>
+
+        <div class="app-row" data-app="2">
+          <span class="avatar av-lg" style="background:linear-gradient(140deg,#4a7fd6,#2f9fe0)">野</span>
+          <div class="who">
+            <div class="top">
+              <b>周野</b>
+              <span class="tag">摄影</span><span class="tag">海边</span>
+              <span class="muted" style="font-size:11px;margin-left:auto">今天 10:02 申请</span>
+            </div>
+            <div class="msg">想拍天文台的日落，可以负责全程记录，不拖队伍节奏。</div>
+            <div class="muted" style="font-size:11px">同济大学 · 建筑学 · 研一 · 资料已完善</div>
+          </div>
+          <div class="acts">
+            <button class="btn btn-primary btn-sm" data-accept>接受</button>
+            <button class="btn btn-ghost btn-sm" data-reject>拒绝</button>
+          </div>
+        </div>
+
+        <div class="app-row" data-app="3" data-state="accepted" hidden>
+          <span class="avatar av-lg" style="background:linear-gradient(140deg,#0e8074,#2f9fe0)">雨</span>
+          <div class="who">
+            <div class="top">
+              <b>陈雨</b>
+              <span class="tag">摄影</span><span class="tag">徒步</span>
+              <span class="muted" style="font-size:11px;margin-left:auto">昨天 20:14 申请</span>
+            </div>
+            <div class="msg">之前走过这条线，可以带路，也知道哪里补水。</div>
+            <div class="muted" style="font-size:11px">暨南大学 · 旅游管理 · 大三</div>
+          </div>
+          <div class="acts">
+            <span class="tag" style="height:32px">已接受</span>
+            <a class="btn btn-ghost btn-sm" href="#/chat">进入聊天</a>
+          </div>
+        </div>
+
+        <div class="app-row" data-app="4" data-state="rejected" hidden>
+          <span class="avatar av-lg" style="background:linear-gradient(140deg,#b45309,#ff9a3d)">林</span>
+          <div class="who">
+            <div class="top">
+              <b>林一</b>
+              <span class="tag grey">未填写说明</span>
+              <span class="muted" style="font-size:11px;margin-left:auto">昨天 18:40 申请</span>
+            </div>
+            <div class="msg muted">未填写申请说明</div>
+            <div class="muted" style="font-size:11px">资料未完善</div>
+          </div>
+          <div class="acts">
+            <span class="tag grey" style="height:32px">已拒绝</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="card empty-state" id="appEmpty" hidden>
+        <span class="ico">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="9" cy="8" r="3.2"/><path d="M3.5 19c.6-3 2.7-4.6 5.5-4.6s4.9 1.6 5.5 4.6"/><path d="M17 7v6M14 10h6"/></svg>
+        </span>
+        <b>还没有人申请这条行程</b>
+        <p>把行程发到同学群，或完善路线与标签，更容易被同路的人看到。</p>
+        <a class="btn btn-ghost btn-sm" href="#/trips/5">查看行程</a>
+      </div>
+
+      <div class="warn-note" style="margin-top:14px">
+        接受前先看对方资料，你有完全的拒绝权；接受后才会开放聊天。
+      </div>
+    </div>
+  </section>
+
+  <!-- ==================== CHAT ==================== -->
+  <section class="screen" data-screen="chat">
+    <div class="page-head">
+      <div class="left">
+        <h1>同行消息</h1>
+        <p class="page-sub">只有申请被接受、双方成为同行者后才能进入聊天。</p>
+      </div>
+      <div class="head-actions">
+        <span class="pill"><span class="dot" style="background:var(--jade)"></span>仅同行可见</span>
+      </div>
+    </div>
+
+    <div class="chat-grid">
+      <div class="card conv-list">
+        <div class="thread-head" style="border-bottom:1px solid var(--line)">
+          <div class="who"><b>会话</b><span>3 个进行中</span></div>
+          <div class="thread-acts">
+            <button class="icon-btn" title="刷新消息" id="chatRefresh" style="width:32px;height:32px">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 1 1-3-6.7"/><path d="M21 4v5h-5"/></svg>
+            </button>
+          </div>
+        </div>
+        <div class="conv-scroll" id="convList">
+          <button class="conv on" data-conv="0">
+            <span class="avatar" style="background:linear-gradient(140deg,#0e8074,#2f9fe0)">雨</span>
+            <span class="ci-body">
+              <span class="ci-name">陈雨</span>
+              <span class="ci-trip">深圳大鹏半岛海岸线徒步</span>
+              <span class="ci-last">那我们 8:30 在大鹏所城门口集合？</span>
+            </span>
+          </button>
+          <button class="conv" data-conv="1">
+            <span class="avatar" style="background:linear-gradient(140deg,#7c3aed,#4a7fd6)">宁</span>
+            <span class="ci-body">
+              <span class="ci-name">苏宁</span>
+              <span class="ci-trip">佛山祖庙与岭南天地一日</span>
+              <span class="ci-last">甜品店我已经拿号了，到点叫你。</span>
+            </span>
+          </button>
+          <button class="conv" data-conv="2">
+            <span class="avatar" style="background:linear-gradient(140deg,#4a7fd6,#2f9fe0)">野</span>
+            <span class="ci-body">
+              <span class="ci-name">周野</span>
+              <span class="ci-trip">上海武康路咖啡散步</span>
+              <span class="ci-last">照片我整理好发你。</span>
+            </span>
+          </button>
+        </div>
+        <div class="readonly-bar" style="border-top:1px solid var(--line);border-radius:0 0 var(--r-lg) var(--r-lg)">
+          待处理的申请还不能聊天
+        </div>
+      </div>
+
+      <div class="card thread">
+        <div class="thread-head">
+          <span class="avatar" id="chatAv" style="background:linear-gradient(140deg,#0e8074,#2f9fe0)">雨</span>
+          <div class="who">
+            <b id="chatName">陈雨</b>
+            <span id="chatTrip">深圳大鹏半岛海岸线徒步 · 11/23 → 11/24</span>
+          </div>
+          <div class="thread-acts">
+            <a class="btn btn-ghost btn-sm" href="#/profile" id="chatProfile">资料</a>
+            <a class="btn btn-ghost btn-sm" href="#/trips/5" id="chatTripLink">行程</a>
+          </div>
+        </div>
+
+        <div class="meeting-strip">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M12 21s7-6.2 7-12a7 7 0 1 0-14 0c0 5.8 7 12 7 12Z"/><circle cx="12" cy="9" r="2.4"/></svg>
+          <span id="meetingText">集合：<b>11-23 08:30</b> · 大鹏所城东门</span>
+          <button class="btn btn-quiet btn-sm" id="meetingEdit" style="margin-left:auto;height:26px">编辑集合信息</button>
+        </div>
+
+        <div class="msgs" id="msgs"></div>
+
+        <div class="composer">
+          <textarea id="chatInput" rows="1" placeholder="输入消息，Enter 发送，Shift + Enter 换行"></textarea>
+          <button class="btn btn-primary" id="chatSend" style="height:40px">发送</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ==================== PROFILE ==================== -->
+  <section class="screen" data-screen="profile">
+    <div class="detail-wrap">
+      <div class="page-head">
+        <div class="left">
+          <h1>个人主页</h1>
+          <p class="page-sub">同行者从行程卡、行程详情与游后体验的发布者入口进入这里。</p>
+        </div>
+        <div class="head-actions">
+          <a class="btn btn-ghost btn-sm" href="#/mine">返回我的旅行</a>
+        </div>
+      </div>
+
+      <div class="card" style="overflow:hidden">
+        <div class="profile-cover">
+          <svg viewBox="0 0 900 180" preserveAspectRatio="none" aria-hidden="true">
+            <defs>
+              <linearGradient id="pfCover" x1="0" y1="0" x2="1" y2="1">
+                <stop offset="0" stop-color="#14335f" /><stop offset=".5" stop-color="#1b5a8a" /><stop offset="1" stop-color="#0e8074" />
+              </linearGradient>
+            </defs>
+            <rect width="900" height="180" fill="url(#pfCover)" />
+            <circle cx="760" cy="40" r="26" fill="#ffc23d" opacity=".95" />
+            <circle cx="760" cy="40" r="52" fill="#ffc23d" opacity=".16" />
+            <path d="M-20 140c120-40 200 14 320-20s220-56 340-20 190 30 280 2v92H-20Z" fill="rgba(255,255,255,.10)" />
+            <path d="M40 120c90-6 130-36 210-38s130 28 210 10 130-40 210-40" stroke="rgba(255,255,255,.55)" stroke-width="2.2" stroke-dasharray="7 9" fill="none" />
+            <g fill="rgba(255,255,255,.9)"><circle cx="40" cy="120" r="4" /><circle cx="250" cy="82" r="4" /><circle cx="460" cy="92" r="4" /><circle cx="670" cy="52" r="5" /></g>
+          </svg>
+        </div>
+        <div class="profile-head" style="padding-top:0">
+          <span class="avatar av-xl" style="margin-top:-40px;position:relative;z-index:2;background:linear-gradient(140deg,#b45309,#ff9a3d)">夏</span>
+          <div class="who">
+            <h1>林见夏 <span class="tag">资料已完善</span></h1>
+            <div class="profile-meta">
+              <span>深圳大学 · 视觉传达 · 大三</span><span>·</span><span>深圳</span><span>·</span><span>旅行方式：慢慢走，拍拍照</span>
+            </div>
+            <div class="profile-chips">
+              <span class="tag">摄影</span><span class="tag" style="color:var(--t-surf);background:color-mix(in srgb,var(--surf) 12%,transparent)">自然</span>
+              <span class="tag warm">城市漫步</span><span class="tag grey">咖啡</span>
+            </div>
+          </div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap">
+            <button class="btn btn-ghost btn-sm" id="editProfileBtn">编辑资料</button>
+            <a class="btn btn-primary btn-sm" href="#/share">发表体验</a>
+          </div>
+        </div>
+
+        <div class="stat-strip" style="grid-template-columns:repeat(4,1fr);border-radius:0;border-left:0;border-right:0;border-bottom:0;margin-top:0">
+          <div><span>发布行程</span><b>2</b></div>
+          <div><span>同行次数</span><b>5</b></div>
+          <div><span>游后体验</span><b>1</b></div>
+          <div><span>同行评分</span><b>4.9</b></div>
+        </div>
+      </div>
+
+      <div class="profile-grid">
+        <div class="card detail-card" style="margin:0">
+          <div class="sec-title">关于 TA</div>
+          <p class="bio">视觉传达在读，习惯用走路认识一座城。喜欢清晨的海边和傍晚的老街，拍照很慢，但从不催队友。装备齐全，愿意帮第一次徒步的人分担公共物品。</p>
+          <div class="fact-grid">
+            <div><div class="k">学校与专业</div><div class="v">深圳大学 · 视觉传达</div></div>
+            <div><div class="k">所在城市</div><div class="v">广东 · 深圳</div></div>
+            <div><div class="k">MBTI</div><div class="v">INFP</div></div>
+            <div><div class="k">旅行方式</div><div class="v">慢慢走，拍拍照</div></div>
+          </div>
+        </div>
+
+        <div class="card detail-card" style="margin:0">
+          <div class="sec-title">旅行兴趣 <span class="hint">4 个</span></div>
+          <div class="profile-chips" style="margin-top:6px">
+            <span class="tag" style="height:30px">摄影</span>
+            <span class="tag sky" style="height:30px">自然</span>
+            <span class="tag warm" style="height:30px">城市漫步</span>
+            <span class="tag grey" style="height:30px">咖啡</span>
+          </div>
+          <div class="sec-title" style="margin-top:18px">发布者摘要</div>
+          <p class="bio" style="margin-top:6px">发布 2 条行程 · 已完成 1 次同行 · 资料与学校信息已完善。</p>
+          <div class="warn-note" style="margin-top:12px">不要在主页或聊天里公开电话、证件与精确住址。</div>
+        </div>
+      </div>
+
+      <div class="card detail-card" style="margin-top:14px">
+        <div class="sec-title">一起走过的行程 <span class="hint">最近 3 次</span></div>
+        <div class="trip-rows" style="margin-top:10px">
+          <div class="trip-row" style="padding:8px 0">
+            <div class="tr-cover" style="width:82px;min-height:60px">
+              <svg viewBox="0 0 120 90" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+                <defs><linearGradient id="ph1" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#0e8074" /><stop offset="1" stop-color="#2f9fe0" /></linearGradient></defs>
+                <rect width="120" height="90" fill="url(#ph1)" /><circle cx="94" cy="20" r="9" fill="#ffc23d" />
+                <path d="M-6 70c24-8 34 6 56-2s32-12 48-4 18 8 26 4v24H-6Z" fill="rgba(255,255,255,.2)" />
+              </svg>
+              <span>珠海</span>
+            </div>
+            <div class="tr-main">
+              <div class="tr-title"><a href="#/trips/8">珠海情侣路日落骑行</a><span class="pill ongoing"><span class="dot"></span>旅行中</span></div>
+              <div class="tr-meta"><span>11月17日 → 11月19日</span><span>·</span><span>3 人同行</span></div>
+            </div>
+            <a class="btn btn-quiet btn-sm" href="#/trips/8">查看</a>
+          </div>
+
+          <div class="trip-row" style="padding:8px 0;border-top:1px dashed var(--line-2)">
+            <div class="tr-cover" style="width:82px;min-height:60px">
+              <svg viewBox="0 0 120 90" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+                <defs><linearGradient id="ph2" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#14335f" /><stop offset="1" stop-color="#4a7fd6" /></linearGradient></defs>
+                <rect width="120" height="90" fill="url(#ph2)" /><circle cx="28" cy="20" r="8" fill="#ffb703" />
+                <path d="M-6 68c22-8 34 6 56-2s30-12 46-4 18 8 26 4v26H-6Z" fill="rgba(255,255,255,.16)" />
+              </svg>
+              <span>上海</span>
+            </div>
+            <div class="tr-main">
+              <div class="tr-title"><a href="#/trips/7">上海武康路咖啡散步</a><span class="pill completed"><span class="dot"></span>已结束</span></div>
+              <div class="tr-meta"><span>11月8日</span><span>·</span><span>3 人同行</span><span>·</span><span>已留下体验</span></div>
+            </div>
+            <a class="btn btn-quiet btn-sm" href="#/share">查看体验</a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ==================== SHARE ==================== -->
+  <section class="screen" data-screen="share">
+    <div class="detail-wrap">
+      <a class="back-link" href="#/mine" style="margin-bottom:12px">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="m15 6-6 6 6 6"/></svg>
+        返回我的旅行
+      </a>
+
+      <div class="page-head" style="margin-top:12px">
+        <div class="left">
+          <h1>把这次旅行留给下一个人</h1>
+          <p class="page-sub">真实的强度和建议，比美图更能帮到下一位同学。发布后会出现在原行程与灵感首页。</p>
+        </div>
+      </div>
+
+      <div class="card form-card" style="display:flex;align-items:center;gap:14px;margin-bottom:16px">
+        <div class="tr-cover" style="width:92px;min-height:64px">
+          <svg viewBox="0 0 120 90" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+            <defs><linearGradient id="shTrip" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#14335f" /><stop offset="1" stop-color="#4a7fd6" /></linearGradient></defs>
+            <rect width="120" height="90" fill="url(#shTrip)" /><circle cx="94" cy="20" r="9" fill="#ffb703" />
+            <path d="M-6 70c24-8 34 6 56-2s32-12 48-4 18 8 26 4v24H-6Z" fill="rgba(255,255,255,.18)" />
+          </svg>
+          <span>上海</span>
+        </div>
+        <div style="display:grid;gap:5px">
+          <b style="font-size:14px">上海武康路咖啡散步</b>
+          <span class="muted" style="font-size:12px">11月8日 周日 · 3 人同行 · 已结束</span>
+          <span class="tag grey" style="justify-self:start">体验来自已结束的真实行程</span>
+        </div>
+        <a class="btn btn-ghost btn-sm" href="#/trips/7" style="margin-left:auto">查看原行程</a>
+      </div>
+
+      <div class="form-grid">
+        <div class="form-stack">
+          <div class="card form-card">
+            <h3>真实感受<span class="req" style="color:var(--danger);margin-left:3px">*</span></h3>
+            <p class="card-sub">路况、强度、时间点、意料之外的情况……写具体的事，比“很好玩”有用得多。</p>
+            <div class="field">
+              <textarea class="text" id="shContent" rows="6" maxlength="400" placeholder="例如：武康大楼早上 9 点前人少，安福路的咖啡店 11 点开始排队。全程走下来 4 公里左右，路边梧桐树很遮阴。"></textarea>
+              <span class="count"><span id="shContentCount">0</span> / 400 · 至少 10 字</span>
+              <span class="err" id="shContentErr" hidden>至少写 10 个字，让后来的人有得参考</span>
+            </div>
+          </div>
+
+          <div class="card form-card">
+            <h3>路线强度<span class="req" style="color:var(--danger);margin-left:3px">*</span></h3>
+            <p class="card-sub">按你真实的体感选，不要按“应该很轻松”选。</p>
+            <div class="intensity" id="shIntensity">
+              <button type="button" data-int="relaxed">
+                <b>轻松</b><span>走走停停，半天足够</span>
+              </button>
+              <button type="button" class="on" data-int="moderate">
+                <b>适中</b><span>半天到一天，需要体力</span>
+              </button>
+              <button type="button" data-int="tiring">
+                <b>较累</b><span>全天，爬升或长距离</span>
+              </button>
+            </div>
+          </div>
+
+          <div class="card form-card">
+            <h3>如果只能提醒一件事<span class="req" style="color:var(--danger);margin-left:3px">*</span></h3>
+            <p class="card-sub">写给还没出发的人，一句话就够。</p>
+            <div class="field">
+              <textarea class="text" id="shAdvice" rows="3" maxlength="120" placeholder="例如：鞋一定要抓地，普通跑鞋会滑。"></textarea>
+              <span class="count"><span id="shAdviceCount">0</span> / 120</span>
+            </div>
+          </div>
+
+          <div style="display:grid;gap:8px">
+            <button class="btn btn-primary btn-block" id="shSubmit">发布体验</button>
+            <a class="btn btn-ghost btn-block" href="#/mine">取消</a>
+            <p class="aside-label" style="text-align:center">发布后仍可在「我的旅行」里修改或补充。</p>
+          </div>
+        </div>
+
+        <div class="aside-sticky">
+          <div>
+            <div class="aside-label">实时预览 · 别人看到的样子</div>
+            <div class="card exp-card preview-card" style="box-shadow:var(--sh-2)">
+              <div class="exp-cover">
+                <svg viewBox="0 0 400 100" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+                  <defs><linearGradient id="shCov" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#14335f" /><stop offset="1" stop-color="#4a7fd6" /></linearGradient></defs>
+                  <rect width="400" height="100" fill="url(#shCov)" />
+                  <circle cx="330" cy="24" r="14" fill="#ffb703" />
+                  <path d="M-10 74c50-20 80 4 130-8s80-26 130-10 90 14 150-2v60H-10Z" fill="rgba(255,255,255,.16)" />
+                </svg>
+                <span class="city">上海市</span>
+              </div>
+              <div class="exp-body">
+                <div class="exp-head">
+                  <span class="avatar av-xs" style="background:linear-gradient(140deg,#b45309,#ff9a3d)">夏</span>
+                  <span class="who"><b>林见夏</b><span>深圳大学 · 11月8日</span></span>
+                  <span class="tag" id="shPreviewInt" style="margin-left:auto">适中</span>
+                </div>
+                <div class="exp-quote" id="shPreviewContent">写下你的真实感受后，会在这里预览。</div>
+                <div class="exp-advice"><b>一条建议</b><br /><span id="shPreviewAdvice">还没填写。</span></div>
+                <div class="exp-foot">
+                  <span class="from">来自「上海武康路咖啡散步」</span>
+                </div>
+              </div>
+            </div>
+            <p class="aside-label" style="margin-top:8px">体验发布后不可删除，但可以修改。</p>
+          </div>
+
+          <div class="card form-card">
+            <h3>你的体验会去哪里</h3>
+            <ul style="margin:10px 0 0;padding-left:18px;display:grid;gap:8px;font-size:12px;line-height:1.6;color:var(--ink-2)">
+              <li>出现在这条行程的详情页，和原路线放在一起。</li>
+              <li>进入灵感首页的「旅行体验」列表，被还没决定去哪里的同学看到。</li>
+              <li>别人可以点「参考此行程发布」，把它变成自己的新计划。</li>
+            </ul>
+          </div>
+
+          <div class="safety">
+            <h4>分享边界</h4>
+            <ul>
+              <li>不要写入同行者的电话、学校班级或住宿地址。</li>
+              <li>只写你真实走过的部分，没走到的可以注明。</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<div class="modal" id="modal" hidden>
+  <div class="modal-card" role="dialog" aria-modal="true">
+    <div class="modal-head"><h3 id="modalTitle">标题</h3><button class="icon-btn" id="modalClose" aria-label="关闭">✕</button></div>
+    <div class="modal-body" id="modalBody"></div>
+    <div class="modal-foot" id="modalFoot"></div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+  /* ============ data ============ */
+  const ME = '林见夏';
+
+  const TRIPS = [
+    {
+      id: 5, city: '深圳市', province: '广东省', tone: 'amber', title: '深圳大鹏半岛海岸线徒步',
+      start: '2026-11-23', end: '2026-11-24', weekday: '周一出发',
+      stops: ['大鹏所城集合', '东西涌穿越 12km', '天文台观景', '民宿休整', '次日杨梅坑骑行'],
+      tags: ['徒步', '海边', '自然'], status: 'recruiting', joined: 1, capacity: 6,
+      host: '陈雨', hostAv: '#0e8074', hostSummary: '暨南大学 · 旅游管理 · 大三', hostInitial: '雨',
+      match: 92, reasons: ['目的地相同', '出发日期相同', '都喜欢徒步、海边'],
+      budget: '¥280–420', meetingArea: '大鹏所城东门', meetingTime: '11-23 08:30', intensity: '适中',
+      people: [
+        { name: '陈雨', initial: '雨', av: '#0e8074', meta: '发布者 · 暨南大学', tag: '发布者' },
+        { name: '苏宁', initial: '宁', av: '#7c3aed', meta: '佛山大学 · 汉语言' }
+      ]
+    },
+    {
+      id: 6, city: '佛山市', province: '广东省', tone: 'jade', title: '佛山祖庙与岭南天地一日',
+      start: '2026-11-20', end: '2026-11-20', weekday: '周五出发',
+      stops: ['祖庙地铁站集合', '祖庙', '岭南天地', '梁园', '甜品店收尾'],
+      tags: ['历史', '美食'], status: 'full', joined: 4, capacity: 4,
+      host: '苏宁', hostAv: '#7c3aed', hostSummary: '佛山大学 · 汉语言 · 大三', hostInitial: '宁',
+      match: 81, reasons: ['出发日期相同', '都喜欢历史、美食'],
+      budget: '¥120–200', meetingArea: '祖庙地铁站 C 口', meetingTime: '11-20 09:00', intensity: '轻松',
+      people: [
+        { name: '苏宁', initial: '宁', av: '#7c3aed', meta: '发布者 · 佛山大学', tag: '发布者' },
+        { name: '林见夏', initial: '夏', av: '#b45309', meta: '深圳大学 · 视觉传达' },
+        { name: '周野', initial: '野', av: '#4a7fd6', meta: '同济大学 · 建筑学' },
+        { name: '陈雨', initial: '雨', av: '#0e8074', meta: '暨南大学 · 旅游管理' }
+      ]
+    },
+    {
+      id: 7, city: '上海市', province: '上海市', tone: 'dusk', title: '上海武康路咖啡散步',
+      start: '2026-11-08', end: '2026-11-08', weekday: '周日出发',
+      stops: ['武康大楼', '安福路', '五原路', '永康路'],
+      tags: ['城市漫步', '咖啡', '摄影'], status: 'completed', joined: 3, capacity: 4,
+      host: '周野', hostAv: '#1668a0', hostSummary: '同济大学 · 建筑学 · 研一', hostInitial: '野',
+      match: 76, reasons: ['都喜欢摄影', '可作为新方向的灵感'],
+      budget: '¥80–150', meetingArea: '武康大楼门口', meetingTime: '11-08 10:00', intensity: '轻松',
+      people: [
+        { name: '周野', initial: '野', av: '#4a7fd6', meta: '发布者 · 同济大学', tag: '发布者' },
+        { name: '林见夏', initial: '夏', av: '#b45309', meta: '深圳大学 · 视觉传达' },
+        { name: '陈雨', initial: '雨', av: '#0e8074', meta: '暨南大学 · 旅游管理' }
+      ]
+    },
+    {
+      id: 8, city: '珠海市', province: '广东省', tone: 'lagoon', title: '珠海情侣路日落骑行',
+      start: '2026-11-17', end: '2026-11-19', weekday: '周二出发',
+      stops: ['情侣路南段', '珠海渔女', '香洲港', '日月贝', '野狸岛'],
+      tags: ['海边', '骑行', '夜景'], status: 'ongoing', joined: 3, capacity: 6,
+      host: '林见夏', hostAv: '#b45309', hostSummary: '深圳大学 · 视觉传达 · 大三', hostInitial: '夏',
+      match: 88, reasons: ['目的地相同', '出发日期相差一天'],
+      budget: '¥200–320', meetingArea: '情侣路南段', meetingTime: '11-17 15:30', intensity: '适中',
+      people: [
+        { name: '林见夏', initial: '夏', av: '#b45309', meta: '发布者 · 深圳大学', tag: '发布者' },
+        { name: '陈雨', initial: '雨', av: '#0e8074', meta: '暨南大学 · 旅游管理' },
+        { name: '苏宁', initial: '宁', av: '#7c3aed', meta: '佛山大学 · 汉语言' }
+      ]
+    },
+    {
+      id: 9, city: '广州市', province: '广东省', tone: 'lagoon', title: '广州老城骑楼与早茶',
+      start: '2026-11-29', end: '2026-11-29', weekday: '周日出发',
+      stops: ['陈家祠地铁站', '永庆坊', '上下九骑楼', '沙面岛', '珠江夜游码头'],
+      tags: ['历史', '美食', '城市漫步'], status: 'recruiting', joined: 2, capacity: 5,
+      host: '林见夏', hostAv: '#b45309', hostSummary: '深圳大学 · 视觉传达 · 大三', hostInitial: '夏',
+      match: 85, reasons: ['出发日期相同', '都喜欢历史、美食'],
+      budget: '¥150–260', meetingArea: '陈家祠地铁站 C 口', meetingTime: '11-29 09:30', intensity: '轻松',
+      people: [
+        { name: '林见夏', initial: '夏', av: '#b45309', meta: '发布者 · 深圳大学', tag: '发布者' },
+        { name: '周野', initial: '野', av: '#4a7fd6', meta: '同济大学 · 建筑学' }
+      ]
+    }
+  ];
+
+  const EXPERIENCES = [
+    {
+      id: 1, city: '上海市', tone: 'dusk', author: '林见夏', initial: '夏', av: '#b45309',
+      intensity: '适中', intensityTone: 'warn', date: '11月8日',
+      content: '武康大楼早上 9 点前人少，安福路的咖啡店 11 点开始排队。全程走下来 4 公里左右，路边梧桐树很遮阴，下午的光线最好拍。',
+      advice: '把咖啡店放在最后，排号时正好逛完五原路。',
+      trip: '上海武康路咖啡散步', tripId: 7
+    },
+    {
+      id: 2, city: '佛山市', tone: 'jade', author: '苏宁', initial: '宁', av: '#7c3aed',
+      intensity: '轻松', intensityTone: 'jade', date: '11月20日',
+      content: '祖庙到岭南天地这一段完全可以慢慢走，下午茶排了四十分钟队，建议先去拿号再逛梁园。',
+      advice: '把甜品店放在最后，排号时正好逛完梁园。',
+      trip: '佛山祖庙与岭南天地一日', tripId: 6
+    }
+  ];
+
+  const ROUTE = [
+    { name: '广州塔', meta: '海珠区 · 景点', addr: '阅江西路 222 号' },
+    { name: '沙面岛', meta: '荔湾区 · 景点', addr: '沙面南街 1 号' },
+    { name: '永庆坊', meta: '荔湾区 · 景点', addr: '恩宁路 99 号' },
+    { name: '珠江夜游码头', meta: '越秀区 · 交通', addr: '沿江东路 466 号' }
+  ];
+
+  const CANDIDATES = [
+    { name: '广州塔', meta: '海珠区 · 景点', addr: '阅江西路 222 号' },
+    { name: '沙面岛', meta: '荔湾区 · 景点', addr: '沙面南街 1 号' },
+    { name: '永庆坊', meta: '荔湾区 · 景点', addr: '恩宁路 99 号' },
+    { name: '珠江夜游码头', meta: '越秀区 · 交通', addr: '沿江东路 466 号' },
+    { name: '陈家祠', meta: '荔湾区 · 景点', addr: '中山七路恩龙里 34 号' },
+    { name: '北京路步行街', meta: '越秀区 · 街区', addr: '北京路 238 号' },
+    { name: '越秀公园', meta: '越秀区 · 公园', addr: '解放北路 988 号' },
+    { name: '石室圣心大教堂', meta: '越秀区 · 景点', addr: '一德路 56 号' }
+  ];
+
+  const CONVS = [
+    { id: 1, name: '陈雨', initial: '雨', av: 'linear-gradient(140deg,#0e8074,#2f9fe0)', trip: '深圳大鹏半岛海岸线徒步 · 11/23 → 11/24', tripId: 5, profileName: '陈雨',
+      messages: [
+        { from: 'them', text: '你好呀，看到你也走大鹏这条线，之前去过吗？', time: '今天 09:12' },
+        { from: 'me', text: '走过一半，东涌到西涌那段风景最好，就是碎石多。', time: '今天 09:15' },
+        { from: 'them', text: '那我带登山杖。你一般几点出发？', time: '今天 09:16' },
+        { from: 'me', text: '早点走，争取 8:30 集合，中午前过最晒那段。', time: '今天 09:18' },
+        { from: 'them', text: '那我们 8:30 在大鹏所城门口集合？', time: '今天 09:20' }
+      ] },
+    { id: 2, name: '苏宁', initial: '宁', av: 'linear-gradient(140deg,#7c3aed,#4a7fd6)', trip: '佛山祖庙与岭南天地一日 · 11/20', tripId: 6, profileName: '苏宁',
+      messages: [
+        { from: 'them', text: '甜品店我已经拿号了，到点叫你。', time: '昨天 18:40' },
+        { from: 'me', text: '好，我大概 9 点在祖庙 C 口到。', time: '昨天 18:42' }
+      ] },
+    { id: 3, name: '周野', initial: '野', av: 'linear-gradient(140deg,#4a7fd6,#2f9fe0)', trip: '上海武康路咖啡散步 · 11/08', tripId: 7, profileName: '周野',
+      messages: [
+        { from: 'them', text: '照片我整理好发你。', time: '11月9日 21:05' },
+        { from: 'me', text: '谢谢！那条线的体验我写好了。', time: '11月9日 21:10' }
+      ] }
+  ];
+</script>
+
+<script>
+  /* ============ helpers ============ */
+  const $ = (s, r = document) => r.querySelector(s);
+  const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
+  const MONTH_DAY = (iso) => {
+    const [, m, d] = iso.split('-').map(Number);
+    return `${m}月${d}日`;
+  };
+  const WEEKDAYS = ['周日', '周一', '周二', '周三', '周四', '周五', '周六'];
+  const weekdayOf = (iso) => `${WEEKDAYS[new Date(`${iso}T00:00:00`).getDay()]}出发`;
+  const daysOf = (a, b) => Math.max(1, Math.round((new Date(b) - new Date(a)) / 86400000) + 1);
+
+  let toastTimer = null;
+  function toast(message) {
+    const el = $('#toast');
+    el.textContent = message;
+    el.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => el.classList.remove('show'), 2400);
+  }
+
+  function openModal(title, body, foot) {
+    $('#modalTitle').textContent = title;
+    $('#modalBody').innerHTML = body;
+    $('#modalFoot').innerHTML = foot;
+    $('#modal').hidden = false;
+  }
+  function closeModal() { $('#modal').hidden = true; }
+
+  function ringSvg(pct, size = 36) {
+    const r = size / 2 - 3;
+    const c = 2 * Math.PI * r;
+    return `<svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}" aria-hidden="true">
+      <circle cx="${size / 2}" cy="${size / 2}" r="${r}" fill="none" stroke="rgba(255,183,3,.22)" stroke-width="4" />
+      <circle cx="${size / 2}" cy="${size / 2}" r="${r}" fill="none" stroke="#ffb703" stroke-width="4" stroke-linecap="round"
+        stroke-dasharray="${((c * pct) / 100).toFixed(1)} ${c.toFixed(1)}" />
+    </svg>`;
+  }
+
+  function coverSvg(tone, uid) {
+    const pairs = {
+      lagoon: ['#0e8074', '#2f9fe0'],
+      amber: ['#b45309', '#ff9a3d'],
+      jade: ['#0b6b60', '#149a63'],
+      dusk: ['#14335f', '#4a7fd6']
+    };
+    const [a, b] = pairs[tone] || pairs.lagoon;
+    return `<svg viewBox="0 0 400 180" preserveAspectRatio="xMidYMid slice" aria-hidden="true">
+      <defs><linearGradient id="cg${uid}" x1="0" y1="0" x2="1" y2="1">
+        <stop offset="0" stop-color="${a}" /><stop offset="1" stop-color="${b}" />
+      </linearGradient></defs>
+      <rect width="400" height="180" fill="url(#cg${uid})" />
+      <circle cx="258" cy="52" r="18" fill="#ffc23d" opacity=".95" />
+      <circle cx="258" cy="52" r="34" fill="#ffc23d" opacity=".15" />
+      <path d="M-10 128c60-28 100 8 160-14s92-40 152-16 90 22 118 8v80H-10Z" fill="rgba(255,255,255,.16)" />
+      <path d="M-10 152c70-24 110 6 170-12s96-28 150-6 70 14 100 4v52H-10Z" fill="rgba(255,255,255,.11)" />
+      <path d="M22 124c50-6 70-30 120-34s84 20 124 8 66-30 104-30" stroke="rgba(255,255,255,.7)" stroke-width="2.2" stroke-dasharray="6 7" fill="none" stroke-linecap="round" />
+      <g fill="#fff"><circle cx="22" cy="124" r="4" /><circle cx="142" cy="90" r="4" /><circle cx="266" cy="98" r="4" /><circle cx="370" cy="68" r="5" /></g>
+    </svg>`;
+  }
+
+  const STATUS = {
+    recruiting: { label: '招募中', cls: 'recruiting' },
+    full: { label: '已满员', cls: 'full' },
+    ongoing: { label: '旅行中', cls: 'ongoing' },
+    completed: { label: '已结束', cls: 'completed' }
+  };
+
+  /* ============ home ============ */
+  const state = { dest: '', from: '', to: '', sort: 'match', tags: new Set(), view: 'plans' };
+
+  function homeTrips() {
+    let list = TRIPS.filter((t) => t.status === 'recruiting' || t.status === 'full');
+    if (state.dest) list = list.filter((t) => t.city.replace(/市$/, '') === state.dest);
+    if (state.from) list = list.filter((t) => t.start >= state.from);
+    if (state.to) list = list.filter((t) => t.start <= state.to);
+    if (state.tags.size) list = list.filter((t) => t.tags.some((tag) => state.tags.has(tag)));
+    list = list.slice().sort((a, b) => {
+      if (state.sort === 'date') return a.start.localeCompare(b.start);
+      if (state.sort === 'new') return b.id - a.id;
+      return b.match - a.match;
+    });
+    return list;
+  }
+
+  function tripCard(t) {
+    const st = STATUS[t.status];
+    const joinedPct = Math.min(100, Math.round((t.joined / t.capacity) * 100));
+    return `<article class="trip-card" data-trip="${t.id}" tabindex="0" role="link" aria-label="${t.title}">
+      <div class="tc-cover">
+        ${coverSvg(t.tone, `t${t.id}`)}
+        <span class="tc-city">${t.city}</span>
+        <span class="pill ${st.cls} tc-status"><span class="dot"></span>${st.label}</span>
+      </div>
+      <div class="tc-body">
+        <div class="tc-title">${t.title}</div>
+        <div class="tc-meta">
+          <span>${MONTH_DAY(t.start)} ${t.weekday}</span><span>·</span>
+          <span>${daysOf(t.start, t.end)} 天</span><span>·</span>
+          <span>${t.capacity} 人计划</span>
+        </div>
+        <div class="tc-route"><b>路线</b>${t.stops.slice(0, 4).join(' → ')}${t.stops.length > 4 ? ' …' : ''}</div>
+        <div class="tc-tags">${t.tags.map((tag) => `<span class="tag">${tag}</span>`).join('')}</div>
+        <div class="tc-match">
+          <div class="ring">${ringSvg(t.match)}<span>${t.match}</span></div>
+          <div class="why"><b>${t.match}% 匹配</b>${t.reasons.join(' · ')}</div>
+        </div>
+        <div class="tc-foot">
+          <button class="tc-host" type="button" data-host="${t.host}">
+            <span class="avatar av-xs" style="background:linear-gradient(140deg,${t.hostAv},#2f9fe0)">${t.hostInitial}</span>
+            <span><b>${t.host}</b> 发布</span>
+          </button>
+          <div class="cap">
+            <span class="n">${t.joined} / ${t.capacity}</span>
+            <span class="meter ${t.joined >= t.capacity ? 'is-full' : ''}"><i style="width:${joinedPct}%"></i></span>
+          </div>
+        </div>
+      </div>
+    </article>`;
+  }
+
+  function renderHome() {
+    const list = homeTrips();
+    $('#tripGrid').innerHTML = list.map(tripCard).join('');
+    $('#plansEmpty').hidden = list.length > 0;
+    $('#tripGrid').hidden = list.length === 0;
+    $('#pagerTotal').textContent = `共 ${list.length} 条`;
+    $('#statPlans').textContent = String(TRIPS.filter((t) => t.status === 'recruiting' || t.status === 'full').length);
+    $('#statExps').textContent = String(EXPERIENCES.length);
+
+    const bits = [];
+    if (state.dest) bits.push(`目的地：${state.dest}`);
+    if (state.from) bits.push(`出发不早于 ${state.from}`);
+    if (state.to) bits.push(`出发不晚于 ${state.to}`);
+    if (state.tags.size) bits.push(`兴趣：${Array.from(state.tags).join('、')}`);
+    $('#filterSummary').textContent = bits.length ? bits.join(' · ') : '未设置筛选，展示全部公开内容';
+    $('#clearFilters').disabled = bits.length === 0;
+  }
+
+  function renderExperiences() {
+    $('#expGrid').innerHTML = EXPERIENCES.map((x) => `<article class="card exp-card">
+      <div class="exp-cover">
+        ${coverSvg(x.tone, `e${x.id}`)}
+        <span class="city">${x.city}</span>
+      </div>
+      <div class="exp-body">
+        <div class="exp-head">
+          <span class="avatar av-xs" style="background:linear-gradient(140deg,${x.av},#2f9fe0)">${x.initial}</span>
+          <span class="who"><b>${x.author}</b><span>${x.date} · ${x.city}</span></span>
+          <span class="tag ${x.intensityTone === 'jade' ? '' : 'warm'}" style="margin-left:auto">${x.intensity}</span>
+        </div>
+        <p class="exp-quote">${x.content}</p>
+        <div class="exp-advice"><b>一条建议</b><br />${x.advice}</div>
+        <div class="exp-foot">
+          <span class="from">来自「${x.trip}」</span>
+          <span class="acts">
+            <a class="btn btn-ghost btn-sm" href="#/trips/${x.tripId}">查看行程</a>
+            <a class="btn btn-quiet btn-sm" href="#/trips/new">参考此行程发布</a>
+          </span>
+        </div>
+      </div>
+    </article>`).join('');
+    const count = $('#expPane > div');
+    if (count) count.textContent = `${EXPERIENCES.length} 条体验`;
+  }
+
+  function syncFilters() {
+    $$('#fDest option').forEach((o) => { o.selected = o.value === state.dest; });
+    $('#fFrom').value = state.from;
+    $('#fTo').value = state.to;
+    $('#fSort').value = state.sort;
+    $$('.chip-row .chip').forEach((c) => c.classList.toggle('on', state.tags.has(c.dataset.tag)));
+    renderHome();
+  }
+
+  function wireHome() {
+    $('#fDest').addEventListener('change', (e) => { state.dest = e.target.value; renderHome(); });
+    $('#fFrom').addEventListener('change', (e) => { state.from = e.target.value; renderHome(); });
+    $('#fTo').addEventListener('change', (e) => { state.to = e.target.value; renderHome(); });
+    $('#fSort').addEventListener('change', (e) => { state.sort = e.target.value; renderHome(); });
+
+    $$('.chip-row .chip').forEach((chip) => chip.addEventListener('click', () => {
+      const tag = chip.dataset.tag;
+      if (state.tags.has(tag)) state.tags.delete(tag); else state.tags.add(tag);
+      chip.classList.toggle('on', state.tags.has(tag));
+      renderHome();
+    }));
+
+    const clearAll = () => {
+      state.dest = ''; state.from = ''; state.to = ''; state.sort = 'match'; state.tags.clear();
+      syncFilters();
+      toast('已清除全部筛选条件');
+    };
+    $('#clearFilters').addEventListener('click', clearAll);
+    $('#emptyClear').addEventListener('click', clearAll);
+
+    $$('#viewTabs .seg-btn').forEach((btn) => btn.addEventListener('click', () => {
+      state.view = btn.dataset.view;
+      $$('#viewTabs .seg-btn').forEach((b) => {
+        b.classList.toggle('on', b === btn);
+        b.setAttribute('aria-selected', String(b === btn));
+      });
+      const plans = state.view === 'plans';
+      $('#plansPane').hidden = !plans;
+      $('#expPane').hidden = plans;
+      $('.filters').hidden = !plans;
+    }));
+
+    $('#tripGrid').addEventListener('click', (e) => {
+      const host = e.target.closest('[data-host]');
+      if (host) { toast(`${host.dataset.host} 的主页 · 资料已完善`); return; }
+      const card = e.target.closest('.trip-card');
+      if (card) location.hash = `#/trips/${card.dataset.trip}`;
+    });
+    $('#tripGrid').addEventListener('keydown', (e) => {
+      if (e.key !== 'Enter') return;
+      const card = e.target.closest('.trip-card');
+      if (card) location.hash = `#/trips/${card.dataset.trip}`;
+    });
+
+    // 目的地选项按真实数据生成
+    const cities = Array.from(new Set(TRIPS.map((t) => t.city.replace(/市$/, ''))));
+    $('#fDest').innerHTML = '<option value="">全部目的地</option>' +
+      cities.map((c) => `<option value="${c}">${c === '上海' ? '上海市 · 上海市' : `广东省 · ${c}市`}</option>`).join('');
+  }
+
+  /* ============ detail ============ */
+  const applied = new Set();
+  let currentTripId = 5;
+
+  function fillDetail(id) {
+    const t = TRIPS.find((x) => x.id === id) || TRIPS[0];
+    currentTripId = t.id;
+    const st = STATUS[t.status];
+    const own = t.host === ME;
+
+    const statusEl = $('#detailStatus');
+    statusEl.className = `pill ${st.cls}`;
+    statusEl.innerHTML = `<span class="dot"></span>${st.label}`;
+
+    $('#dCity').textContent = `${t.province} · ${t.city}`;
+    $('#dTitle').textContent = t.title;
+    $('#dDate').textContent = MONTH_DAY(t.start);
+    $('#dWeekday').textContent = t.weekday;
+    $('#dCapacity').innerHTML = `<b>${t.joined} / ${t.capacity}</b> 人已加入`;
+    $('#dBudget').textContent = t.budget;
+    $('#dRouteHint').textContent = t.stops.join(' → ');
+    $('#dMeetingArea').textContent = t.meetingArea;
+    $('#dMeetingTime').textContent = t.meetingTime;
+    $('#dIntensity').textContent = t.intensity;
+    $('#dDayTag').textContent = `${daysOf(t.start, t.end)} 天`;
+    $('#dJoined').textContent = `${t.people.length} / ${t.capacity} 人`;
+    $('#dPlanCount').textContent = `含发起人共 ${t.capacity} 人`;
+
+    $('#dStops').innerHTML = t.stops
+      .map((s, i) => `<button class="stop-chip" type="button"><span class="n">${i + 1}</span>${s}</button>`)
+      .join('');
+
+    $('#dHostName').textContent = t.host;
+    $('#dHostMeta').textContent = t.hostSummary;
+    $('#dHostAv').textContent = t.hostInitial;
+    $('#dHostAv').style.background = `linear-gradient(140deg,${t.hostAv},#2f9fe0)`;
+
+    $('#dMatchRing').innerHTML = `${ringSvg(t.match, 58)}<span>${t.match}</span>`;
+    $('#dMatchWhy').innerHTML = `<b>${t.reasons.join(' · ')}</b> 集合成本低，节奏也接近；你可以先聊聊再决定。`;
+
+    $('#dPeople').innerHTML = t.people.map((p) => `<div class="person">
+      <span class="avatar av-xs" style="background:linear-gradient(140deg,${p.av},#2f9fe0)">${p.initial}</span>
+      <span style="display:grid;line-height:1.25"><b>${p.name}</b><span class="muted" style="font-size:11px">${p.meta}</span></span>
+      ${p.tag
+        ? `<span class="tag sky" style="margin-left:auto">${p.tag}</span>`
+        : '<a class="chat-link" href="#/chat">和 TA 聊聊</a>'}
+    </div>`).join('');
+
+    $('#dApplications').hidden = !own;
+    const ended = t.status === 'completed';
+
+    const exp = EXPERIENCES.find((x) => x.tripId === t.id);
+    $('#dExperience').innerHTML = exp
+      ? `<div class="exp-detail">
+          <div class="exp-head">
+            <span class="avatar av-xs" style="background:linear-gradient(140deg,${exp.av},#2f9fe0)">${exp.initial}</span>
+            <span class="who"><b>${exp.author}</b><span>${exp.date} · 已结束</span></span>
+            <span class="tag ${exp.intensityTone === 'jade' ? '' : 'warm'}" style="margin-left:auto">强度 ${exp.intensity}</span>
+          </div>
+          <p class="exp-quote">${exp.content}</p>
+          <div class="exp-advice"><b>一条建议</b><br />${exp.advice}</div>
+        </div>`
+      : `<div class="empty-state" style="padding:34px 16px">
+          <span class="ico">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a8.5 8.5 0 0 1-12.3 7.6L3 21l1.9-5.7A8.5 8.5 0 1 1 21 12Z"/></svg>
+          </span>
+          <b>${ended ? '还没有人写下这条行程的体验' : '行程结束后开放体验'}</b>
+          <p>${ended ? '参与过的同行者可以记录真实强度与一条建议。' : '走完之后，参与过的同行者可以记录真实强度与一条建议。'}</p>
+        </div>`;
+    $('#dExperienceCard .sec-title .hint').textContent = exp ? '来自真实同行者' : '行程结束后开放';
+
+    $('#dMatchCard').hidden = own || ended;
+    $('#ownerBar').hidden = !own;
+    $('#applyCard').hidden = own || ended || applied.has(t.id);
+
+    if (applied.has(t.id) && !own) {
+      $('#pendingNote').hidden = false;
+      $('#pendingNote').innerHTML = `申请已提交，等待 ${t.host} 回应。处理前你可以随时撤回。
+        <button class="btn btn-quiet btn-sm" id="withdrawBtn" style="margin-left:auto">撤回申请</button>`;
+    } else {
+      $('#pendingNote').hidden = true;
+    }
+
+    const applyBtn = $('#applyBtn');
+    if (t.status === 'full') {
+      applyBtn.disabled = true;
+      applyBtn.textContent = '人数已满';
+    } else if (t.status === 'ongoing') {
+      applyBtn.disabled = true;
+      applyBtn.textContent = '行程进行中';
+    } else {
+      applyBtn.disabled = false;
+      applyBtn.textContent = '提交同行申请';
+    }
+    $('#applyMsg').value = '';
+  }
+
+  function wireDetail() {
+    $('#applyBtn').addEventListener('click', () => {
+      const t = TRIPS.find((x) => x.id === currentTripId);
+      if (!t) return;
+      if (t.status === 'full') { toast('人数已满，暂时不能申请'); return; }
+      applied.add(t.id);
+      fillDetail(t.id);
+      toast('申请已提交，等待发布者回应');
+    });
+
+    $('#dHostProfile').addEventListener('click', () => { location.hash = '#/profile'; });
+    $('#reportBtn').addEventListener('click', openReport);
+
+    $('#endTripBtn').addEventListener('click', () => {
+      openModal('结束行程',
+        '<p class="note">结束后不可恢复；同行申请将关闭，待处理申请会自动取消。这次旅行的感受，可以在「发表旅行体验」里分享。</p>',
+        '<button class="btn btn-ghost" data-close>取消</button><button class="btn btn-danger" id="confirmEnd">结束行程</button>');
+      $('#confirmEnd').addEventListener('click', () => {
+        closeModal();
+        toast('行程已结束。这次旅行的感受，可以在「发表旅行体验」里分享。');
+      });
+    });
+
+    document.addEventListener('click', (e) => {
+      if (e.target.id !== 'withdrawBtn') return;
+      const t = TRIPS.find((x) => x.id === currentTripId);
+      if (!t) return;
+      applied.delete(t.id);
+      fillDetail(t.id);
+      toast('申请已取消');
+    });
+  }
+
+  function openReport() {
+    const reasons = ['骚扰或不当言行', '虚假信息', '安全风险', '其他'];
+    openModal('举报这条行程', `
+      <p class="note">举报对象：${$('#dTitle').textContent}</p>
+      <div class="tag-picker" id="reportReasons">
+        ${reasons.map((r, i) => `<button class="chip ${i === 0 ? 'on' : ''}" type="button">${r}</button>`).join('')}
+      </div>
+      <div class="field">
+        <label>补充说明（选填，200 字以内）</label>
+        <textarea class="text" rows="3" maxlength="200" placeholder="说说发生了什么，方便我们核实。"></textarea>
+      </div>
+      <p class="note">我们不会向对方透露你的身份。如果你正处于危险中，请先联系当地警方或学校保卫处。</p>`,
+      '<button class="btn btn-ghost" data-close>关闭</button><button class="btn btn-danger" id="reportSubmit">提交举报</button>');
+    $$('#reportReasons .chip').forEach((c) => c.addEventListener('click', () => {
+      $$('#reportReasons .chip').forEach((x) => x.classList.remove('on'));
+      c.classList.add('on');
+    }));
+    $('#reportSubmit').addEventListener('click', () => {
+      closeModal();
+      toast('已收到，我们会处理');
+    });
+  }
+
+  /* ============ map ============ */
+  const POS = [[180, 470], [350, 410], [500, 330], [690, 210], [790, 140], [830, 300], [120, 220], [560, 520]];
+  const MARK_COLORS = ['#0e8074', '#2f9fe0', '#4a7fd6', '#ff5347', '#149a63', '#ff9a3d', '#14335f', '#0e8074'];
+  const LEG_BASE = [13.8, 10.2, 8.6, 7.4, 6.2];
+  const MODES = {
+    driving: { label: '驾车', speed: 27, factor: 1 },
+    transit: { label: '公交', speed: 17, factor: 1.15 },
+    walking: { label: '步行', speed: 5, factor: 0.9 }
+  };
+  let waypoints = ROUTE.map((w) => ({ ...w }));
+  let mapMode = 'driving';
+  let zoom = 1;
+
+  function fmtDur(min) {
+    if (min >= 60) return `${Math.floor(min / 60)} 小时 ${min % 60} 分`;
+    return `${min} 分钟`;
+  }
+
+  function renderWaypoints() {
+    $('#wpCount').textContent = String(waypoints.length);
+    $('#wpList').innerHTML = waypoints.map((w, i) => `<div class="wp-item" data-wp="${i}">
+      <span class="wp-grip" title="拖拽排序">⠿</span>
+      <span class="wp-num">${i + 1}</span>
+      <span class="wp-name"><b>${w.name}</b><span>${w.meta}</span></span>
+      <div class="wp-tools">
+        <button type="button" data-op="up" title="上移" ${i === 0 ? 'disabled' : ''}>↑</button>
+        <button type="button" data-op="down" title="下移" ${i === waypoints.length - 1 ? 'disabled' : ''}>↓</button>
+        <button type="button" data-op="del" class="del" title="删除">✕</button>
+      </div>
+    </div>`).join('');
+    $('#routeWarn').hidden = waypoints.length >= 2;
+  }
+
+  function drawMap() {
+    const pts = waypoints.slice(0, POS.length).map((_, i) => POS[i]);
+    const str = pts.map((p) => p.join(',')).join(' ');
+    $('#mapRoute').setAttribute('points', str);
+    $('#mapRouteLine').setAttribute('points', str);
+    $('#mapMarkers').innerHTML = pts.map(([x, y], i) => {
+      const last = i === pts.length - 1;
+      const r = last ? 19 : 17;
+      return `<circle cx="${x}" cy="${y}" r="${r}" fill="${MARK_COLORS[i % MARK_COLORS.length]}" stroke="#fff" stroke-width="4" />
+        <text x="${x}" y="${y + 5}" fill="#fff">${i + 1}</text>`;
+    }).join('');
+  }
+
+  function computeRoute(randomize = false) {
+    const mode = MODES[mapMode];
+    $('#statStops').textContent = `${waypoints.length} 个`;
+    $('#routeMode').textContent = mode.label;
+    if (waypoints.length < 2) {
+      $('#statDist').textContent = '—';
+      $('#statDur').textContent = '—';
+      $('#legs').innerHTML = '<div class="leg"><span class="dot"></span><span class="txt"><span>至少选择两个途经点才能生成路线。</span></span></div>';
+      return;
+    }
+    let total = 0;
+    const legs = [];
+    for (let i = 0; i < waypoints.length - 1; i += 1) {
+      const jitter = randomize ? 0.96 + Math.random() * 0.08 : 1;
+      const d = Math.max(0.6, LEG_BASE[i % LEG_BASE.length] * mode.factor * jitter);
+      total += d;
+      legs.push({
+        from: waypoints[i].name,
+        to: waypoints[i + 1].name,
+        d,
+        mins: Math.max(3, Math.round((d / mode.speed) * 60))
+      });
+    }
+    const mins = legs.reduce((sum, l) => sum + l.mins, 0);
+    $('#statDist').textContent = `${total.toFixed(1)} km`;
+    $('#statDur').textContent = fmtDur(mins);
+    $('#legs').innerHTML = legs.map((l) => `<div class="leg">
+      <span class="dot"></span>
+      <span class="txt"><b>${l.from} → ${l.to}</b><span>${l.d.toFixed(1)} km · ${fmtDur(l.mins)}</span></span>
+    </div>`).join('');
+  }
+
+  function addWaypoint(c) {
+    if (waypoints.some((w) => w.name === c.name)) { toast('这个途经点已经在路线里了'); return; }
+    if (waypoints.length >= 8) { toast('一条路线最多 8 个途经点'); return; }
+    waypoints.push({ ...c });
+    renderWaypoints(); drawMap(); computeRoute();
+    toast(`已加入途经点：${c.name}`);
+  }
+
+  function wireMap() {
+    $('#wpList').addEventListener('click', (e) => {
+      const btn = e.target.closest('button[data-op]');
+      if (!btn) return;
+      const idx = Number(btn.closest('.wp-item').dataset.wp);
+      const op = btn.dataset.op;
+      if (op === 'del') waypoints.splice(idx, 1);
+      if (op === 'up' && idx > 0) [waypoints[idx - 1], waypoints[idx]] = [waypoints[idx], waypoints[idx - 1]];
+      if (op === 'down' && idx < waypoints.length - 1) [waypoints[idx + 1], waypoints[idx]] = [waypoints[idx], waypoints[idx + 1]];
+      renderWaypoints(); drawMap(); computeRoute();
+    });
+
+    $('#wpClear').addEventListener('click', () => {
+      waypoints = [];
+      renderWaypoints(); drawMap(); computeRoute();
+      toast('已清空途经点');
+    });
+
+    $('#wpAdd').addEventListener('click', () => {
+      $('#mapSearch').focus();
+      toast('输入地点名称，从候选中选择加入路线');
+    });
+
+    $$('#transportSeg button').forEach((btn) => btn.addEventListener('click', () => {
+      mapMode = btn.dataset.mode;
+      $$('#transportSeg button').forEach((b) => b.classList.toggle('on', b === btn));
+      computeRoute();
+      toast(`已切换为「${MODES[mapMode].label}」并重新计算`);
+    }));
+
+    $('#genRoute').addEventListener('click', () => {
+      computeRoute(true);
+      toast(`已按「${MODES[mapMode].label}」重新生成路线`);
+    });
+
+    const save = () => {
+      if (waypoints.length < 2) { toast('至少选择两个途经点才能保存路线'); return; }
+      toast('路线已保存，可在「发布行程」里继续填写');
+    };
+    $('#saveRoute').addEventListener('click', save);
+    $('#mapSaveTop').addEventListener('click', save);
+
+    $('#mapImport').addEventListener('click', () => {
+      const t = TRIPS.find((x) => x.id === 9);
+      waypoints = t.stops.map((name) => ({ name, meta: '广东省 · 广州市', addr: '' }));
+      renderWaypoints(); drawMap(); computeRoute();
+      toast('已导入「广州老城骑楼与早茶」的途经点');
+    });
+
+    $('#mapMatch').addEventListener('click', () => {
+      openModal('为什么推荐给你', `
+        <p class="note">规则可解释：目的地相同 50 分，日期相同 30 分、相差一天 20 分，每个共同兴趣 10 分（最多 20 分）。</p>
+        <div class="person"><span class="avatar av-xs" style="background:linear-gradient(140deg,#0e8074,#2f9fe0)">雨</span>
+          <span style="display:grid;line-height:1.3"><b>陈雨</b><span class="muted" style="font-size:11px">目的地相同 50 · 日期相差一天 20 · 共同兴趣 20</span></span>
+          <span class="tag warm" style="margin-left:auto">92%</span></div>
+        <div class="person"><span class="avatar av-xs" style="background:linear-gradient(140deg,#4a7fd6,#2f9fe0)">野</span>
+          <span style="display:grid;line-height:1.3"><b>周野</b><span class="muted" style="font-size:11px">目的地相同 50 · 日期相同 30 · 摄影 10</span></span>
+          <span class="tag warm" style="margin-left:auto">84%</span></div>`,
+        '<button class="btn btn-primary" data-close>知道了</button>');
+    });
+
+    const svg = $('.map-canvas > svg');
+    svg.style.transition = 'transform .25s ease';
+    svg.style.transformOrigin = 'center';
+    $('#zoomIn').addEventListener('click', () => {
+      zoom = Math.min(2, zoom + 0.15);
+      svg.style.transform = `scale(${zoom})`;
+    });
+    $('#zoomOut').addEventListener('click', () => {
+      zoom = Math.max(0.8, zoom - 0.15);
+      svg.style.transform = `scale(${zoom})`;
+    });
+    $('#recenter').addEventListener('click', () => {
+      zoom = 1;
+      svg.style.transform = 'scale(1)';
+      toast('已回到路线全景');
+    });
+
+    const input = $('#mapSearch');
+    input.addEventListener('input', () => {
+      const q = input.value.trim();
+      const box = $('#searchResults');
+      if (!q) { box.hidden = true; box.innerHTML = ''; return; }
+      const list = CANDIDATES.filter((c) => !waypoints.some((w) => w.name === c.name) &&
+        (c.name.includes(q) || c.addr.includes(q) || c.meta.includes(q))).slice(0, 6);
+      if (!list.length) {
+        box.innerHTML = '<div style="padding:10px 12px;font-size:12px;color:var(--ink-3)">没有找到匹配的地点，换个关键词试试。</div>';
+      } else {
+        box.innerHTML = list.map((c) => `<button type="button" data-cand="${c.name}">
+          <b>${c.name}</b><span>${c.meta} · ${c.addr}</span></button>`).join('');
+      }
+      box.hidden = false;
+    });
+    input.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') { $('#searchResults').hidden = true; input.blur(); }
+      if (e.key !== 'Enter') return;
+      const first = $('#searchResults [data-cand]');
+      if (first) first.click();
+    });
+    $('#searchResults').addEventListener('click', (e) => {
+      const btn = e.target.closest('[data-cand]');
+      if (!btn) return;
+      const c = CANDIDATES.find((x) => x.name === btn.dataset.cand);
+      if (!c) return;
+      addWaypoint(c);
+      input.value = '';
+      $('#searchResults').hidden = true;
+      input.focus();
+    });
+  }
+
+  /* ============ create ============ */
+  function syncPreview() {
+    const title = $('#cTitle').value.trim() || '你的行程标题';
+    const dest = $('#cDest').value.split(' · ').pop();
+    const start = $('#cStart').value;
+    const end = $('#cEnd').value;
+    const cap = Number($('#cCap').value) || 2;
+    const stops = $$('#cStops .stop-chip').map((c) => c.dataset.stop);
+
+    $('#pvTitle').textContent = title;
+    $('#pvCity').textContent = dest;
+    $('#pvDate').textContent = start ? `${MONTH_DAY(start)} ${weekdayOf(start)}` : '日期待定';
+    $('#pvDays').textContent = start && end ? `${daysOf(start, end)} 天` : '日期待定';
+    $('#pvCap').textContent = `${cap} 人计划`;
+    $('#pvCapNum').textContent = String(cap);
+    $('#pvStops').textContent = stops.length ? stops.join(' → ') : '至少写出两个途经点';
+    $('#pvTags').innerHTML = $$('#cTags .chip.on').map((c) => `<span class="tag">${c.dataset.tag}</span>`).join('') ||
+      '<span class="tag grey">还没有选择兴趣</span>';
+    $('#cTitleCount').textContent = String($('#cTitle').value.length);
+    $('#cNoteCount').textContent = String($('#cNote').value.length);
+  }
+
+  function renumberStops() {
+    $$('#cStops .stop-chip').forEach((chip, i) => { chip.querySelector('.n').textContent = String(i + 1); });
+  }
+
+  function wireCreate() {
+    ['#cTitle', '#cDest', '#cStart', '#cEnd', '#cCap', '#cNote'].forEach((sel) => {
+      $(sel).addEventListener('input', syncPreview);
+      $(sel).addEventListener('change', syncPreview);
+    });
+
+    $('#cStopInput').addEventListener('keydown', (e) => {
+      if (e.key !== 'Enter') return;
+      e.preventDefault();
+      const name = e.target.value.trim();
+      if (!name) return;
+      if ($$('#cStops .stop-chip').some((c) => c.dataset.stop === name)) { toast('这个途经点已经添加过了'); return; }
+      if ($$('#cStops .stop-chip').length >= 8) { toast('一条路线最多 8 个途经点'); return; }
+      const chip = document.createElement('button');
+      chip.type = 'button';
+      chip.className = 'stop-chip';
+      chip.dataset.stop = name;
+      chip.title = '点击移除';
+      chip.innerHTML = `<span class="n">0</span>${name}`;
+      $('#cStops').appendChild(chip);
+      e.target.value = '';
+      renumberStops();
+      syncPreview();
+    });
+
+    $('#cStops').addEventListener('click', (e) => {
+      const chip = e.target.closest('.stop-chip');
+      if (!chip) return;
+      chip.remove();
+      renumberStops();
+      syncPreview();
+    });
+
+    $('#cTags').addEventListener('click', (e) => {
+      const chip = e.target.closest('.chip');
+      if (!chip) return;
+      if (!chip.classList.contains('on') && $$('#cTags .chip.on').length >= 5) {
+        toast('最多选择 5 个兴趣标签');
+        return;
+      }
+      chip.classList.toggle('on');
+      syncPreview();
+    });
+
+    $('#cTagAdd').addEventListener('click', () => {
+      const input = $('#cTagInput');
+      const name = input.value.trim();
+      if (!name) { toast('请输入一个兴趣标签'); return; }
+      if (name.length > 12) { toast('每个兴趣标签最多 12 个字'); return; }
+      if ($$('#cTags .chip').some((c) => c.dataset.tag === name)) { toast('这个标签已经添加过了'); return; }
+      if ($$('#cTags .chip.on').length >= 5) { toast('最多选择 5 个兴趣标签'); return; }
+      const chip = document.createElement('button');
+      chip.type = 'button';
+      chip.className = 'chip on';
+      chip.dataset.tag = name;
+      chip.textContent = name;
+      $('#cTags').appendChild(chip);
+      input.value = '';
+      syncPreview();
+    });
+
+    $('#cPublish').addEventListener('click', () => {
+      const title = $('#cTitle').value.trim();
+      const stops = $$('#cStops .stop-chip');
+      if (!title) { toast('给这条路线起个名字（40 字以内）'); $('#cTitle').focus(); return; }
+      if (stops.length < 2) { toast('至少写出两个途经点，别人才看得懂路线'); return; }
+      if ($('#cStart').value && $('#cEnd').value && $('#cEnd').value < $('#cStart').value) {
+        toast('结束日期不能早于出发日期');
+        return;
+      }
+      toast('行程已发布，正在返回「我的旅行」');
+      setTimeout(() => { location.hash = '#/mine'; }, 700);
+    });
+  }
+
+  /* ============ mine ============ */
+  function wireMine() {
+    $$('#mineTabs .seg-btn').forEach((btn) => btn.addEventListener('click', () => {
+      $$('#mineTabs .seg-btn').forEach((b) => {
+        b.classList.toggle('on', b === btn);
+        b.setAttribute('aria-selected', String(b === btn));
+      });
+      $$('#view [data-mpane]').forEach((pane) => { pane.hidden = pane.dataset.mpane !== btn.dataset.mtab; });
+    }));
+
+    $$('#view [data-end]').forEach((btn) => btn.addEventListener('click', () => {
+      openModal('结束行程',
+        '<p class="note">结束后不可恢复；同行申请将关闭，待处理申请会自动取消。这次旅行的感受，可以在「发表旅行体验」里分享。</p>',
+        '<button class="btn btn-ghost" data-close>取消</button><button class="btn btn-danger" id="confirmEndMine">结束行程</button>');
+      $('#confirmEndMine').addEventListener('click', () => {
+        closeModal();
+        const row = btn.closest('.trip-row');
+        const pill = row.querySelector('.pill');
+        pill.className = 'pill completed';
+        pill.innerHTML = '<span class="dot"></span>已结束';
+        const note = row.querySelector('.tr-note');
+        if (note) note.textContent = '行程已结束，还没有写下你的体验。';
+        toast('行程已结束。这次旅行的感受，可以在「发表旅行体验」里分享。');
+      });
+    }));
+
+    $('#withdrawRow').addEventListener('click', () => {
+      const row = $('#withdrawRow').closest('.trip-row');
+      const holder = row.parentElement;
+      row.remove();
+      holder.innerHTML = `<div class="empty-state" style="padding:34px 16px">
+        <span class="ico"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.2-3.2"/></svg></span>
+        <b>你还没有申请过行程</b>
+        <p>在灵感首页找到目的地和日期相近的计划，留一句话就可以申请同行。</p>
+        <a class="btn btn-ghost btn-sm" href="#/">去看看行程</a>
+      </div>`;
+      toast('申请已取消，可以随时重新申请');
+    });
+
+    $('#leaveTrip').addEventListener('click', () => {
+      openModal('退出同行',
+        '<p class="note">退出后这条行程的聊天会保留，仍可继续和发布者沟通，确定退出吗？</p>',
+        '<button class="btn btn-ghost" data-close>取消</button><button class="btn btn-danger" id="confirmLeave">退出同行</button>');
+      $('#confirmLeave').addEventListener('click', () => {
+        closeModal();
+        toast('已退出这条行程，聊天记录保留，仍可继续沟通');
+      });
+    });
+  }
+
+  /* ============ applications ============ */
+  let appTab = 'pending';
+
+  function refreshApps() {
+    const rows = $$('#appList .app-row');
+    let pending = 0;
+    let handled = 0;
+    rows.forEach((r) => {
+      const s = r.dataset.state || 'pending';
+      if (s === 'pending') pending += 1; else handled += 1;
+      r.hidden = appTab === 'pending' ? s !== 'pending' : s === 'pending';
+    });
+    $$('#appTabs .seg-btn').forEach((b) => {
+      const dot = b.querySelector('.badge-dot');
+      if (dot) dot.textContent = String(b.dataset.atab === 'pending' ? pending : handled);
+    });
+    const shown = rows.filter((r) => !r.hidden).length;
+    const empty = $('#appEmpty');
+    empty.hidden = shown > 0;
+    if (!shown) {
+      empty.querySelector('b').textContent = appTab === 'pending' ? '没有待处理的申请' : '还没有已处理的申请';
+      empty.querySelector('p').textContent = appTab === 'pending'
+        ? '新的申请会出现在这里；接受前先看对方资料。'
+        : '接受或拒绝的申请会留在这里，方便回看。';
+    }
+  }
+
+  function wireApplications() {
+    $$('#appTabs .seg-btn').forEach((btn) => btn.addEventListener('click', () => {
+      appTab = btn.dataset.atab;
+      $$('#appTabs .seg-btn').forEach((b) => {
+        b.classList.toggle('on', b === btn);
+        b.setAttribute('aria-selected', String(b === btn));
+      });
+      refreshApps();
+    }));
+
+    $('#appList').addEventListener('click', (e) => {
+      const row = e.target.closest('.app-row');
+      if (!row) return;
+      if (e.target.closest('[data-accept]')) {
+        row.dataset.state = 'accepted';
+        row.querySelector('.acts').innerHTML = '<span class="tag" style="height:32px">已接受</span><a class="btn btn-ghost btn-sm" href="#/chat">进入聊天</a>';
+        toast('已接受该申请，可以进入聊天确认集合');
+      }
+      if (e.target.closest('[data-reject]')) {
+        row.dataset.state = 'rejected';
+        row.querySelector('.acts').innerHTML = '<span class="tag grey" style="height:32px">已拒绝</span>';
+        toast('已拒绝该申请');
+      }
+      refreshApps();
+    });
+  }
+
+  /* ============ chat ============ */
+  let currentConv = 0;
+
+  function renderMessages() {
+    const conv = CONVS[currentConv];
+    $('#msgs').innerHTML = conv.messages.map((m) => `<div class="msg ${m.from === 'me' ? 'me' : ''}">
+      ${m.from === 'me' ? '' : `<span class="avatar av-xs" style="background:${conv.av}">${conv.initial}</span>`}
+      <div class="msg-col">
+        <div class="bubble">${m.text}</div>
+        <div class="time">${m.time}</div>
+      </div>
+    </div>`).join('');
+    const box = $('#msgs');
+    box.scrollTop = box.scrollHeight;
+  }
+
+  function selectConv(i) {
+    currentConv = i;
+    const conv = CONVS[i];
+    $$('#convList .conv').forEach((c) => c.classList.toggle('on', Number(c.dataset.conv) === i));
+    $('#chatName').textContent = conv.name;
+    $('#chatAv').textContent = conv.initial;
+    $('#chatAv').style.background = conv.av;
+    $('#chatTrip').textContent = conv.trip;
+    $('#chatTripLink').href = `#/trips/${conv.tripId}`;
+    $('#chatProfile').setAttribute('href', '#/profile');
+    renderMessages();
+  }
+
+  function sendChat() {
+    const input = $('#chatInput');
+    const text = input.value.trim();
+    if (!text) return;
+    CONVS[currentConv].messages.push({ from: 'me', text, time: '刚刚' });
+    input.value = '';
+    input.style.height = '';
+    renderMessages();
+    const conv = $$('#convList .conv')[currentConv];
+    const last = conv && conv.querySelector('.ci-last');
+    if (last) last.textContent = text;
+  }
+
+  function wireChat() {
+    $$('#convList .conv').forEach((c) => c.addEventListener('click', () => selectConv(Number(c.dataset.conv))));
+
+    $('#chatSend').addEventListener('click', sendChat);
+    $('#chatInput').addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        sendChat();
+      }
+    });
+    $('#chatInput').addEventListener('input', (e) => {
+      e.target.style.height = 'auto';
+      e.target.style.height = `${Math.min(110, e.target.scrollHeight)}px`;
+    });
+    $('#chatRefresh').addEventListener('click', () => toast('消息已刷新'));
+
+    $('#meetingEdit').addEventListener('click', () => {
+      openModal('编辑集合信息', `
+        <p class="note">只修改集合区域与集合时间，其它信息不变。</p>
+        <div class="field"><label>集合区域</label><input class="text" id="meetArea" value="大鹏所城东门" maxlength="100" /></div>
+        <div class="field"><label>集合时间</label><input class="control" type="datetime-local" id="meetTime" value="2026-11-23T08:30" /></div>`,
+        '<button class="btn btn-ghost" data-close>取消</button><button class="btn btn-primary" id="meetSave">保存</button>');
+      $('#meetSave').addEventListener('click', () => {
+        const area = $('#meetArea').value.trim() || '集合区域待定';
+        const raw = $('#meetTime').value;
+        const time = raw ? `${raw.slice(5, 10).replace('-', '-')} ${raw.slice(11, 16)}` : '时间待定';
+        $('#meetingText').innerHTML = `集合：<b>${time}</b> · ${area}`;
+        closeModal();
+        toast('集合信息已更新');
+      });
+    });
+  }
+
+  /* ============ profile ============ */
+  function wireProfile() {
+    $('#editProfileBtn').addEventListener('click', () => {
+      openModal('编辑资料', `
+        <p class="note">修改会立即同步到你的个人主页与发布者入口。</p>
+        <div class="field"><label>昵称</label><input class="text" id="pfName" value="${ME}" maxlength="20" /></div>
+        <div class="two-col">
+          <div class="field"><label>学校</label><input class="text" id="pfSchool" value="深圳大学" /></div>
+          <div class="field"><label>专业</label><input class="text" id="pfMajor" value="视觉传达" /></div>
+        </div>
+        <div class="field"><label>个人简介</label><textarea class="text" rows="3" maxlength="500">视觉传达在读，习惯用走路认识一座城。喜欢清晨的海边和傍晚的老街。</textarea></div>`,
+        '<button class="btn btn-ghost" data-close>取消</button><button class="btn btn-primary" id="pfSave">保存资料</button>');
+      $('#pfSave').addEventListener('click', () => {
+        const name = $('#pfName').value.trim() || ME;
+        $$('.id-pill .who b, .rail-profile .who b').forEach((el) => { el.textContent = name; });
+        $('.profile-head h1').innerHTML = `${name} <span class="tag">资料已完善</span>`;
+        closeModal();
+        toast('资料已保存');
+      });
+    });
+  }
+
+  /* ============ share ============ */
+  function wireShare() {
+    const content = $('#shContent');
+    const advice = $('#shAdvice');
+    let intensity = '适中';
+
+    const sync = () => {
+      $('#shContentCount').textContent = String(content.value.length);
+      $('#shAdviceCount').textContent = String(advice.value.length);
+      $('#shPreviewContent').textContent = content.value.trim() || '写下你的真实感受后，会在这里预览。';
+      $('#shPreviewAdvice').textContent = advice.value.trim() || '还没填写。';
+      $('#shContentErr').hidden = content.value.length === 0 || content.value.length >= 10;
+    };
+    content.addEventListener('input', sync);
+    advice.addEventListener('input', sync);
+
+    $$('#shIntensity button').forEach((btn) => btn.addEventListener('click', () => {
+      $$('#shIntensity button').forEach((b) => b.classList.toggle('on', b === btn));
+      intensity = btn.querySelector('b').textContent;
+      $('#shPreviewInt').textContent = intensity;
+    }));
+
+    $('#shSubmit').addEventListener('click', () => {
+      if (content.value.trim().length < 10) {
+        $('#shContentErr').hidden = false;
+        toast('至少写 10 个字，让后来的人有得参考');
+        content.focus();
+        return;
+      }
+      if (!advice.value.trim()) {
+        toast('给后来者留一条具体建议');
+        advice.focus();
+        return;
+      }
+      toast('体验已发布，会出现在原行程与灵感首页');
+      setTimeout(() => { location.hash = '#/mine'; }, 700);
+    });
+
+    sync();
+  }
+
+  /* ============ shell / routing ============ */
+  const SCREEN_NAMES = ['home', 'map', 'detail', 'create', 'mine', 'applications', 'chat', 'profile', 'share'];
+
+  function showScreen(name) {
+    $$('.screen').forEach((s) => s.classList.toggle('on', s.dataset.screen === name));
+    const navKey = { home: 'home', map: 'map', create: 'create', mine: 'mine', applications: 'mine', share: 'mine', profile: 'mine', chat: 'chat', detail: null }[name];
+    $$('.nav-item').forEach((a) => a.classList.toggle('on', a.dataset.nav === navKey));
+    window.scrollTo(0, 0);
+  }
+
+  function route() {
+    const raw = location.hash.replace(/^#\/?/, '');
+    if (raw === '' || raw === '/') {
+      showScreen('home');
+    } else if (raw === 'map') {
+      showScreen('map');
+    } else if (raw === 'trips/new') {
+      showScreen('create');
+      syncPreview();
+    } else if (raw === 'mine') {
+      showScreen('mine');
+    } else if (raw === 'applications') {
+      showScreen('applications');
+      refreshApps();
+    } else if (raw === 'chat') {
+      showScreen('chat');
+      selectConv(currentConv);
+    } else if (raw === 'profile') {
+      showScreen('profile');
+    } else if (raw === 'share') {
+      showScreen('share');
+    } else if (/^trips\/\d+$/.test(raw)) {
+      showScreen('detail');
+      fillDetail(Number(raw.split('/')[1]));
+    } else {
+      showScreen('home');
+    }
+    closeModal();
+  }
+
+  function applyTheme(theme) {
+    document.documentElement.dataset.theme = theme;
+    const btn = $('#themeBtn');
+    if (theme === 'dark') {
+      btn.innerHTML = '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="4.2"/><path d="M12 2v2.6M12 19.4V22M4 12H1.4M22.6 12H20M5.6 5.6 3.8 3.8M20.2 20.2l-1.8-1.8M18.4 5.6l1.8-1.8M3.8 20.2l1.8-1.8"/></svg>';
+      btn.title = '切换到浅色模式';
+      btn.setAttribute('aria-label', '切换到浅色模式');
+    } else {
+      btn.innerHTML = '<svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.8A8.5 8.5 0 1 1 11.2 3a6.6 6.6 0 0 0 9.8 9.8Z"/></svg>';
+      btn.title = '切换到深色模式';
+      btn.setAttribute('aria-label', '切换到深色模式');
+    }
+  }
+
+  function wireShell() {
+    $('#themeBtn').addEventListener('click', () => {
+      const next = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark';
+      applyTheme(next);
+      try { localStorage.setItem('routeme.preview.theme', next); } catch (err) { /* file:// may block storage */ }
+    });
+
+    $('#idPill').addEventListener('click', () => {
+      openModal('账号菜单', `
+        <div class="publisher">
+          <span class="avatar av-lg" style="background:linear-gradient(140deg,#b45309,#ff9a3d)">夏</span>
+          <div class="who"><b>林见夏</b><p>已登录 · 深圳大学 · 视觉传达</p></div>
+        </div>
+        <p class="note">退出登录会结束本机会话并回到登录页。</p>`,
+        '<button class="btn btn-ghost" data-close>关闭</button><button class="btn btn-danger">退出登录</button>');
+      $('#modalFoot .btn-danger').addEventListener('click', (e) => {
+        e.preventDefault();
+        closeModal();
+        toast('已退出本机会话（演示不会真的登出）');
+      });
+    });
+
+    $('#railProfile').addEventListener('click', () => { location.hash = '#/profile'; });
+
+    $('#modalClose').addEventListener('click', closeModal);
+    $('#modal').addEventListener('click', (e) => { if (e.target.id === 'modal') closeModal(); });
+    document.addEventListener('click', (e) => {
+      if (e.target.closest('[data-close]')) closeModal();
+    });
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') { closeModal(); $('#searchResults').hidden = true; }
+    });
+  }
+
+  /* ============ init ============ */
+  function init() {
+    wireShell();
+    wireHome();
+    wireDetail();
+    wireMap();
+    wireCreate();
+    wireMine();
+    wireApplications();
+    wireChat();
+    wireProfile();
+    wireShare();
+
+    renderHome();
+    renderExperiences();
+    renderWaypoints();
+    drawMap();
+    computeRoute();
+    selectConv(0);
+    refreshApps();
+    syncPreview();
+
+    const params = new URLSearchParams(location.search);
+    let saved = params.get('theme') === 'dark' ? 'dark' : 'light';
+    if (!params.get('theme')) {
+      try { saved = localStorage.getItem('routeme.preview.theme') || 'light'; } catch (err) { /* ignore */ }
+    }
+    applyTheme(saved);
+
+    route();
+    if (params.get('tab') === 'experiences') {
+      const tab = $('#viewTabs [data-view="experiences"]');
+      if (tab) tab.click();
+    }
+    window.addEventListener('hashchange', route);
+  }
+
+  init();
+</script>
+</body>
+</html>

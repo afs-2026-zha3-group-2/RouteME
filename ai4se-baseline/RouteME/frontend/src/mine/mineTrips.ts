@@ -7,6 +7,7 @@ export type MineAction =
   | 'applications'
   | 'complete'
   | 'cancel'
+  | 'cancelTrip'
   | 'chat'
   | 'leave'
   | 'share';
@@ -72,9 +73,15 @@ export function dayLabel(iso: string): string {
 export function actionsFor(context: MineActionContext): MineAction[] {
   const { group, trip, application } = context;
   if (group === 'published') {
+    if (trip.status === 'cancelled') {
+      return ['view'];
+    }
     const actions: MineAction[] = ['view', 'applications'];
     if (trip.status === 'ongoing') {
       actions.push('complete');
+    }
+    if (trip.status === 'recruiting' || trip.status === 'full') {
+      actions.push('cancelTrip');
     }
     return actions;
   }
@@ -89,7 +96,7 @@ export function actionsFor(context: MineActionContext): MineAction[] {
     return actions;
   }
   if (group === 'matched') {
-    return ['chat', 'view', 'leave'];
+    return trip.status === 'cancelled' ? ['chat', 'view'] : ['chat', 'view', 'leave'];
   }
   return ['share', 'view'];
 }

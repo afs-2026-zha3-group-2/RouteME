@@ -343,3 +343,70 @@ test('sends on Enter and keeps a newline on Shift+Enter', async ({ page }) => {
   await expect(page.locator('.chat-body .msg .bubble').last()).toContainText('第一行');
   await expect(input).toHaveValue('');
 });
+
+test('cancelling closes pending applications, keeps accepted companions and freezes chat', async ({
+  page,
+}) => {
+  const title = `E2E 取消同行 ${Date.now()}`;
+  const created = await createTripViaApi(page, 2, title, { capacity: 3, daysFromToday: 7 });
+  await applyViaApi(page, 1, created.id, '待处理的申请');
+  await applyViaApi(page, 3, created.id, '会被接受的申请');
+  await acceptApplicationViaApi(page, 2, created.id, 3);
+
+  const cancelled = await page.request.post(`${API}/trips/${created.id}/cancel`, {
+    headers: { 'X-User-Id': '2', 'Content-Type': 'application/json' },
+    data: { reason: 'weather' },
+  });
+  expect(cancelled.ok()).toBeTruthy();
+
+  // PENDING 申请被自动取消。
+  const mine = await loadMyApplicationsViaApi(page, 1);
+  expect(mine.find((application) => application.trip_id === created.id)?.status).toBe('cancelled');
+
+  // 非同行者：只看到已取消，原因不可见（无「取消原因：」行），再申请 409。
+  await loginAs(page, 1);
+  await page.goto(`/#/trips/${created.id}`);
+  await expect(page.getByText('这条行程已取消')).toBeVisible();
+  await expect(page.locator('.detail-application .action-note')).toHaveText('行程已取消');
+  await expect(page.getByRole('button', { name: '提交同行申请' })).toHaveCount(0);
+  await expect(page.getByText(/^取消原因：/)).toHaveCount(0);
+
+  const reapply = await page.request.post(`${API}/trips/${created.id}/applications`, {
+    headers: { 'X-User-Id': '1', 'Content-Type': 'application/json' },
+    data: { message: '取消后再试一次' },
+  });
+  expect(reapply.status()).toBe(409);
+
+  // 已接受同行者保留：可见原因与历史聊天入口，但不能退出同行。
+  await switchUser(page, 3);
+  await page.goto(`/#/trips/${created.id}`);
+  await expect(page.getByText('这条行程已取消')).toBeVisible();
+  await expect(page.getByText('取消原因：天气或不可抗力原因')).toBeVisible();
+  await expect(page.locator('.detail-application .action-note')).toHaveText(
+    '行程已取消，历史聊天仍可查看。',
+  );
+  await expect(page.getByRole('button', { name: '退出同行' })).toHaveCount(0);
+  await page.getByRole('button', { name: '和 TA 聊聊' }).click();
+
+  // 聊天变为只读。
+  await expect(page.locator('.composer-closed')).toContainText('该行程已取消，只能查看历史消息。');
+  await expect(page.locator('.composer')).toHaveCount(0);
+  await expect(page.getByRole('button', { name: '退出同行' })).toHaveCount(0);
+
+  // 发布者：原因可见，所有变更操作关闭。
+  await switchUser(page, 2);
+  await page.goto(`/#/trips/${created.id}`);
+  await expect(page.getByText('取消原因：天气或不可抗力原因')).toBeVisible();
+  await expect(page.getByRole('button', { name: '取消行程' })).toHaveCount(0);
+  await expect(page.getByRole('button', { name: '结束行程' })).toHaveCount(0);
+  await expect(page.getByRole('button', { name: /查看同行的申请/ })).toHaveCount(0);
+
+  // 我的旅行：已匹配保留，取消后不能再退出。
+  await switchUser(page, 3);
+  await page.goto('/#/mine');
+  await page.locator('.ant-segmented-item', { hasText: '已匹配同行' }).click();
+  const row = page.locator('.mine-row', { hasText: title });
+  await expect(row.locator('[data-status="cancelled"]')).toContainText('已取消');
+  await expect(row.getByRole('button', { name: '与发起人沟通' })).toBeVisible();
+  await expect(row.getByRole('button', { name: '退出同行' })).toHaveCount(0);
+});

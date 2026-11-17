@@ -1,14 +1,17 @@
 /**
- * 高德地图容器：只负责脚本加载、Map 实例、通用控件与基础状态。
+ * 地图容器：栅格底图、通用控件与基础状态。
  *
  * 业务数据（途经点、路线、同行者）不进入本组件；通过 onReady 把地图实例交给
- * 上层，RouteLayer 等覆盖层再用独立数据模型绘制。
+ * 上层，RouteLayer 等覆盖层再用独立数据模型绘制。底图实现见 `rasterMap.ts`
+ * （高德矢量引擎在本仓库的网络环境里无法初始化，详见该文件说明）。
  */
 
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { Button, Spin, Typography } from 'antd';
-import { amapErrorMessage, resetProxyProbe } from './AmapService';
-import { loadAmap } from './loader';
+import { resetProxyProbe } from './AmapService';
+import { wgs84ToGcj02 } from './geoDatum';
+import { createRasterMap } from './rasterMap';
+import './rasterMap.css';
 import type { AmapMap, LngLat } from './types';
 
 type Props = {
@@ -24,8 +27,8 @@ type Props = {
   onMapClick?: (point: LngLat) => void;
 };
 
-const MIN_ZOOM = 4;
-const MAX_ZOOM = 19;
+/** 连续加载失败多少张瓦片后判定底图不可用（避免个别瓦片失败就报错）。 */
+const TILE_FAILURE_LIMIT = 4;
 
 export function AmapContainer({
   lng,
@@ -41,8 +44,10 @@ export function AmapContainer({
   const mapRef = useRef<AmapMap | null>(null);
   const onReadyRef = useRef(onReady);
   const onMapClickRef = useRef(onMapClick);
+  const viewRef = useRef({ lng, lat, zoom });
   onReadyRef.current = onReady;
   onMapClickRef.current = onMapClick;
+  viewRef.current = { lng, lat, zoom };
 
   const [map, setMap] = useState<AmapMap | null>(null);
   const [status, setStatus] = useState<'loading' | 'ready' | 'error'>('loading');
@@ -57,67 +62,39 @@ export function AmapContainer({
     if (host === null) {
       return;
     }
-    let active = true;
-    let instance: AmapMap | null = null;
-    const onCanvasClick = (event: { lnglat?: { getLng(): number; getLat(): number } }) => {
-      if (event.lnglat !== undefined) {
-        onMapClickRef.current?.([event.lnglat.getLng(), event.lnglat.getLat()]);
-      }
-    };
-
     setStatus('loading');
     setError(null);
-    loadAmap()
-      .then((AMap) => {
-        if (!active) {
-          return;
-        }
-        instance = new AMap.Map(host, {
-          zoom,
-          center: [lng, lat],
-          viewMode: '2D',
-          resizeEnable: true,
-          features: ['bg', 'road', 'building', 'point'],
-          showLabel: true,
-          mapStyle: 'amap://styles/normal',
-        });
-        instance.on('click', onCanvasClick);
-        mapRef.current = instance;
-        setMap(instance);
-        setStatus('ready');
-        onReadyRef.current?.(instance);
-      })
-      .catch((reason: unknown) => {
-        if (active) {
+
+    const view = viewRef.current;
+    const instance = createRasterMap(host, {
+      center: [view.lng, view.lat],
+      zoom: view.zoom,
+      onClick: (point) => onMapClickRef.current?.(point),
+      onTileStatus: ({ loaded, failed }) => {
+        if (loaded > 0) {
+          setStatus('ready');
+        } else if (failed >= TILE_FAILURE_LIMIT) {
           setStatus('error');
-          setError(amapErrorMessage(reason));
+          setError('底图瓦片加载失败，请检查网络后重试。');
         }
-      });
+      },
+    });
+    mapRef.current = instance;
+    setMap(instance);
+    onReadyRef.current?.(instance);
 
     return () => {
-      active = false;
-      if (instance !== null) {
-        instance.off('click', onCanvasClick);
-        instance.destroy();
-      }
+      instance.destroy();
       mapRef.current = null;
       setMap(null);
     };
-    // 只创建一次；中心点与缩放通过下面的同步 effect 更新。
+    // 只有「重新加载」需要重建实例；视野变化由下面的同步 effect 更新。
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [attempt]);
 
   useEffect(() => {
-    if (map === null) {
-      return;
-    }
-    map.setZoomAndCenter(zoom, [lng, lat]);
+    map?.setZoomAndCenter(zoom, [lng, lat]);
   }, [map, lng, lat, zoom]);
-
-  useEffect(() => {
-    const timer = window.setTimeout(() => mapRef.current?.resize(), 80);
-    return () => window.clearTimeout(timer);
-  }, [fullscreen, map]);
 
   const locate = () => {
     if (mapRef.current === null) {
@@ -132,10 +109,9 @@ export function AmapContainer({
     navigator.geolocation.getCurrentPosition(
       (position) => {
         setLocating(false);
-        mapRef.current?.setZoomAndCenter(15, [
-          position.coords.longitude,
-          position.coords.latitude,
-        ]);
+        // 浏览器给的是 WGS-84，底图是 GCJ-02：不纠偏会稳定偏出几百米。
+        const point = wgs84ToGcj02(position.coords.longitude, position.coords.latitude);
+        mapRef.current?.setZoomAndCenter(15, [point.lng, point.lat]);
       },
       () => {
         setLocating(false);
@@ -150,8 +126,7 @@ export function AmapContainer({
     if (instance === null) {
       return;
     }
-    const next = Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, instance.getZoom() + delta));
-    instance.setZoom(next);
+    instance.setZoom(instance.getZoom() + delta);
   };
 
   return (
@@ -163,13 +138,14 @@ export function AmapContainer({
       data-status={status}
       role="region"
       aria-label={ariaLabel}
+      aria-busy={status === 'loading'}
     >
       <div className="amap-canvas-host" ref={hostRef} />
 
       {status === 'loading' && (
         <div className="amap-state" role="status">
           <Spin size="small" />
-          <Typography.Text type="secondary">正在加载高德地图…</Typography.Text>
+          <Typography.Text type="secondary">正在加载地图…</Typography.Text>
         </div>
       )}
       {status === 'error' && (

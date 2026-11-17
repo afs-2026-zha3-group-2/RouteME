@@ -1,10 +1,10 @@
 openapi: 3.0.3
 info:
   title: RouteME API
-  version: 0.12.0
+  version: 0.17.0
   description: |
     RouteME 后端对外契约。本文件是前后端唯一事实源，字段名、类型、状态码与错误码只在这里定稿。
-        当前包含：脚手架问候语、演示账户与账号认证（注册/登录/会话/退出）、旅行计划（浏览/筛选/发布/详情/结束），同行匹配、申请、退出、聊天、我的旅行与举报，游后体验分享与参考发布所需数据，以及 AI 智能行程推荐（生成/天气/快照保存与读取）。
+        当前包含：脚手架问候语、演示账户与账号认证（注册/登录/会话/退出）、旅行计划（浏览/筛选/发布/详情/结束），同行匹配、申请、退出、聊天、我的旅行与举报，游后体验分享与参考发布所需数据，以及 AI 智能行程推荐（生成/快照保存与读取，天气复用目的地天气接口）。
         行程与体验列表按页返回：`page` 从 1 起，`size` 默认 20、上限 50。
         目的地为用户在地图地点库中搜索或点选的城市/地点名称，不再限定固定枚举。
 servers:
@@ -107,6 +107,57 @@ paths:
                 unexpected:
                   value:
                     code: INTERNAL_ERROR
+  /users/credits:
+    get:
+      operationId: loadUserCredits
+      summary: 批量读取信用状态
+      description: |
+        需携带 `X-User-Id`。供行程卡、申请列表与详情页发布者行一次取数；
+        `ids` 为逗号分隔的用户 id，最多 50 个；缺失信用账户的 id 按初始 80 分补齐。
+        只返回分数与等级码，不含任何加 / 扣分明细。
+      parameters:
+        - $ref: '#/components/parameters/DemoUserId'
+        - name: ids
+          in: query
+          required: true
+          description: 逗号分隔的用户 id，最多 50 个
+          schema:
+            type: string
+      responses:
+        '200':
+          description: 按请求顺序返回的信用状态
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/UserCreditEntry'
+              examples:
+                seeded:
+                  value:
+                    - user_id: 1
+                      credit_score: 80
+                      credit_level: good
+        '400':
+          description: ids 缺失、非数字或超过 50 个
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                invalid:
+                  value:
+                    code: INVALID_INPUT
+        '401':
+          description: 缺失或未知的 X-User-Id
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                missing:
+                  value:
+                    code: DEMO_USER_REQUIRED
   /users/{userId}/profile:
     get:
       operationId: loadUserProfile
@@ -700,6 +751,103 @@ paths:
                 $ref: '#/components/schemas/Error'
               examples:
                 alreadyCompleted:
+                  value:
+                    code: TRIP_NOT_OPEN
+        '500':
+          description: 未预期异常，响应不携带堆栈
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                unexpected:
+                  value:
+                    code: INTERNAL_ERROR
+  /trips/{tripId}/cancel:
+    post:
+      operationId: cancelTrip
+      summary: 取消行程
+      description: |
+        仅行程发布者且行程为 recruiting / full 时可调用。取消是终态：写入 cancelled_at 与原因，
+        待处理申请自动取消，已接受同行关系保留；行程不再出现在默认列表与匹配列表。
+        重复或并发取消只有一次成功，其他状态返回 409。
+      parameters:
+        - $ref: '#/components/parameters/DemoUserId'
+        - name: tripId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TripCancelRequest'
+            examples:
+              normal:
+                value:
+                  reason: personal
+              other:
+                value:
+                  reason: other
+                  note: 临时家里有事
+      responses:
+        '200':
+          description: 已取消的行程详情
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TripDetail'
+        '400':
+          description: 原因缺失、未知或说明不满足要求
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                missingReason:
+                  value:
+                    code: INVALID_INPUT
+        '401':
+          description: 缺少或未知的演示身份
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                missingUser:
+                  value:
+                    code: DEMO_USER_REQUIRED
+        '403':
+          description: 非发布者不能取消行程
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                forbidden:
+                  value:
+                    code: FORBIDDEN
+        '404':
+          description: 行程不存在
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                notFound:
+                  value:
+                    code: TRIP_NOT_FOUND
+        '409':
+          description: 行程不处于招募中 / 已满员，或已被并发取消
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                notOpen:
                   value:
                     code: TRIP_NOT_OPEN
         '500':
@@ -1382,6 +1530,190 @@ paths:
           $ref: '#/components/responses/NotFound'
         '500':
           $ref: '#/components/responses/Unexpected'
+  /trips/{tripId}/experiences/photos:
+    post:
+      operationId: uploadTripExperiencePhoto
+      summary: 上传游后体验图片
+      description: |
+        只能为已结束且自己参加过的行程上传；只接受 JPEG / PNG / WebP（按魔数判定，不信任声明类型与原始文件名），
+        单张不超过 5 MB；同一用户对同一行程最多 6 张（含已绑定与未绑定，第 7 张返回 400）。
+        上传成功返回未绑定的图片引用，随后随体验提交按 `photo_ids` 顺序绑定；
+        文件名由服务端生成，上传时剥离全部 EXIF 元数据。
+      parameters:
+        - $ref: '#/components/parameters/DemoUserId'
+        - name: tripId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [file]
+              properties:
+                file:
+                  type: string
+                  format: binary
+      responses:
+        '200':
+          description: 已保存的图片引用
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExperiencePhoto'
+        '400':
+          $ref: '#/components/responses/InvalidInput'
+        '401':
+          $ref: '#/components/responses/DemoUserRequired'
+        '403':
+          description: 行程未结束或当前用户不具备分享资格
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                notAllowed:
+                  value:
+                    code: EXPERIENCE_NOT_ALLOWED
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/Unexpected'
+  /experience-photos/{photoId}:
+    get:
+      operationId: loadExperiencePhoto
+      summary: 读取游后体验图片
+      description: |
+        公开只读图片端点；返回服务端保存的原图（已剥离 EXIF）。
+        缓存一天且不标记 immutable：图片被移除后服务端返回 404，浏览器缓存最多一天内自然失效。
+      parameters:
+        - name: photoId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: 体验图片
+          headers:
+            Cache-Control:
+              description: '`public, max-age=86400`'
+              schema:
+                type: string
+          content:
+            image/jpeg:
+              schema:
+                type: string
+                format: binary
+            image/png:
+              schema:
+                type: string
+                format: binary
+            image/webp:
+              schema:
+                type: string
+                format: binary
+        '404':
+          description: 图片不存在或已被移除
+  /weather/forecast:
+    get:
+      operationId: loadWeatherForecast
+      summary: 目的地日期天气（Open-Meteo）
+      description: |
+        按目的地与旅行日期返回 Open-Meteo 的真实天气与出行提醒。
+        `destination_code` 与 `lng`/`lat` 至少提供一组：携带坐标时优先使用（例如高德选点结果），
+        否则按 6 位区划码解析城市中心坐标，用户无需再次输入城市。
+        日期窗口为今天 ≤ date ≤ 今天 + 15（`Asia/Shanghai`）；越界返回 200 且 `available=false`（`reason=OUT_OF_RANGE`），
+        不返回任何天气数值与提醒。上游失败返回 502 `WEATHER_UPSTREAM_ERROR`，绝不伪造天气。
+      parameters:
+        - name: destination_code
+          in: query
+          required: false
+          description: 目的地 6 位行政区划代码；与 `lng`/`lat` 至少提供一组
+          schema:
+            type: string
+            pattern: '^[0-9]{6}$'
+            example: '440100'
+        - name: date
+          in: query
+          required: true
+          description: 旅行日期；今天 ≤ date ≤ 今天 + 15
+          schema:
+            type: string
+            format: date
+        - name: lng
+          in: query
+          required: false
+          description: 已有目的地经度（如高德选点结果）；必须与 `lat` 成对出现
+          schema:
+            type: number
+            format: double
+        - name: lat
+          in: query
+          required: false
+          description: 已有目的地纬度；必须与 `lng` 成对出现
+          schema:
+            type: number
+            format: double
+      responses:
+        '200':
+          description: 可用天气，或日期超出预报窗口的不可用状态
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WeatherForecast'
+              examples:
+                available:
+                  value:
+                    date: '2026-11-21'
+                    destination_code: '440100'
+                    city: 广州市
+                    lng: 113.2644
+                    lat: 23.1291
+                    available: true
+                    weather:
+                      weather_code: 61
+                      weather_text: 小雨
+                      temp_max_c: 24.0
+                      temp_min_c: 17.0
+                      precipitation_probability_pct: 80
+                      precipitation_mm: 5.2
+                      wind_speed_kmh: 18.0
+                      uv_index: 3.0
+                    reminders:
+                      - code: rain
+                        text: 降雨概率 80%，记得带伞和雨具，户外行程注意防雨。降雨明显，建议调整户外行程。
+                    source: open-meteo
+                outOfRange:
+                  value:
+                    date: '2026-12-20'
+                    destination_code: '440100'
+                    city: 广州市
+                    lng: null
+                    lat: null
+                    available: false
+                    reason: OUT_OF_RANGE
+                    reminders: []
+                    source: open-meteo
+        '400':
+          $ref: '#/components/responses/InvalidInput'
+        '500':
+          $ref: '#/components/responses/Unexpected'
+        '502':
+          description: Open-Meteo 或地理编码不可用，或没有请求当日的数据
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                upstream:
+                  value:
+                    code: WEATHER_UPSTREAM_ERROR
   /ai/itineraries/generate:
     post:
       operationId: generateAiItinerary
@@ -1467,52 +1799,6 @@ paths:
           $ref: '#/components/responses/InvalidInput'
         '401':
           $ref: '#/components/responses/DemoUserRequired'
-        '500':
-          $ref: '#/components/responses/Unexpected'
-  /weather/forecast:
-    get:
-      operationId: getWeatherForecast
-      summary: 目的地日期天气（Open-Meteo）
-      description: |
-        按坐标与日期取 Open-Meteo daily 预报并归一字段；日期窗口为今天 ≤ date ≤ 今天+15，
-        超窗 400；上游失败或无该日数据 502 WEATHER_UPSTREAM_ERROR，不伪造天气。
-      parameters:
-        - $ref: '#/components/parameters/DemoUserId'
-        - name: lng
-          in: query
-          required: true
-          schema:
-            type: number
-            format: double
-            minimum: -180
-            maximum: 180
-        - name: lat
-          in: query
-          required: true
-          schema:
-            type: number
-            format: double
-            minimum: -90
-            maximum: 90
-        - name: date
-          in: query
-          required: true
-          schema:
-            type: string
-            format: date
-      responses:
-        '200':
-          description: 归一后的当日天气摘要
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/WeatherForecast'
-        '400':
-          $ref: '#/components/responses/InvalidInput'
-        '401':
-          $ref: '#/components/responses/DemoUserRequired'
-        '502':
-          $ref: '#/components/responses/WeatherUpstream'
         '500':
           $ref: '#/components/responses/Unexpected'
 components:
@@ -1638,16 +1924,6 @@ components:
             weatherFailed:
               value:
                 code: WEATHER_UPSTREAM_ERROR
-    WeatherUpstream:
-      description: Open-Meteo 上游失败或无该日数据
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/Error'
-          examples:
-            weatherFailed:
-              value:
-                code: WEATHER_UPSTREAM_ERROR
   schemas:
     Greeting:
       type: object
@@ -1722,7 +1998,7 @@ components:
           description: 由必填字段派生的资料完善状态，不落库
     UserProfile:
       type: object
-      required: [id, nickname, avatar_initial, interests, profile_complete]
+      required: [id, nickname, avatar_initial, interests, profile_complete, credit_score, credit_level]
       properties:
         id:
           type: integer
@@ -1805,6 +2081,17 @@ components:
           type: boolean
           readOnly: true
           description: 六项必填同时成立时为 true；NULL / 空串 / 非法日期都算缺失
+        credit_score:
+          type: integer
+          minimum: 0
+          maximum: 100
+          readOnly: true
+          description: 当前信用分，0–100 闭区间；本人与他人视角均返回，不可由客户端修改
+        credit_level:
+          type: string
+          readOnly: true
+          enum: [excellent, good, fair, low, risk]
+          description: 由信用分实时派生：excellent 90–100 / good 80–89 / fair 60–79 / low 30–59 / risk 0–29
         joined_at:
           type: string
           format: date-time
@@ -1813,6 +2100,25 @@ components:
           description: 用户加入时间，UTC；仅读取端点返回
         stats:
           $ref: '#/components/schemas/ProfileStats'
+    UserCreditEntry:
+      type: object
+      required: [user_id, credit_score, credit_level]
+      properties:
+        user_id:
+          type: integer
+          format: int64
+          readOnly: true
+        credit_score:
+          type: integer
+          minimum: 0
+          maximum: 100
+          readOnly: true
+          description: 当前信用分，0–100 闭区间
+        credit_level:
+          type: string
+          readOnly: true
+          enum: [excellent, good, fair, low, risk]
+          description: 由信用分实时派生：excellent 90–100 / good 80–89 / fair 60–79 / low 30–59 / risk 0–29
     ProfileStats:
       type: object
       required: [published, completed, joined, shared]
@@ -2006,10 +2312,11 @@ components:
           description: 已加入人数，含发布者；由 trip-plans 维护
         status:
           type: string
-          enum: [recruiting, full, ongoing, completed]
+          enum: [recruiting, full, ongoing, completed, cancelled]
           readOnly: true
           description: |
-            四态：招募中 / 已满员 / 旅行中 / 已结束。优先级为已结束 > 旅行中 > 已满员 > 招募中；
+            五态：招募中 / 已满员 / 旅行中 / 已结束 / 已取消。
+            优先级为已取消 > 已结束 > 旅行中 > 已满员 > 招募中；
             到期未手动结束的行程在读取时物化为已结束。
         ending_soon:
           type: boolean
@@ -2074,6 +2381,24 @@ components:
               nullable: true
               readOnly: true
               description: 结束时间；非空表示已结束
+            cancelled_at:
+              type: string
+              format: date-time
+              nullable: true
+              readOnly: true
+              description: 取消时间；非空表示已取消
+            cancel_reason:
+              type: string
+              nullable: true
+              readOnly: true
+              enum: [personal, time_changed, plan_changed, not_enough_people, weather, illness, safety, other]
+              description: 取消原因；仅发布者与已接受同行者可见，其他请求为 null
+            cancel_note:
+              type: string
+              nullable: true
+              maxLength: 100
+              readOnly: true
+              description: 取消说明；仅「其他原因」必填，仅发布者与已接受同行者可见
     TripCreateRequest:
       type: object
       required: [title, destination_code, start_date, end_date, stops, capacity]
@@ -2150,6 +2475,19 @@ components:
           pattern: '^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$'
           description: 集合时间，本地墙上时间（无时区），日期部分不得晚于结束日期；未传或传 null 视为清空
           example: '2026-11-20T08:30'
+    TripCancelRequest:
+      type: object
+      required: [reason]
+      properties:
+        reason:
+          type: string
+          enum: [personal, time_changed, plan_changed, not_enough_people, weather, illness, safety, other]
+          description: 取消原因，8 项固定值
+        note:
+          type: string
+          nullable: true
+          maxLength: 100
+          description: 补充说明；选择 other 时必填，1–100 字
     Match:
       type: object
       required: [score, percentage, reasons, basis]
@@ -2357,6 +2695,18 @@ components:
         count:
           type: integer
           minimum: 1
+    ExperiencePhoto:
+      type: object
+      required: [id, url]
+      properties:
+        id:
+          type: integer
+          format: int64
+          readOnly: true
+        url:
+          type: string
+          description: 本站只读图片地址，形如 `/api/experience-photos/{id}`
+          example: /api/experience-photos/12
     ExperienceWriteRequest:
       type: object
       required: [content, intensity, advice]
@@ -2375,9 +2725,19 @@ components:
           minLength: 1
           maxLength: 120
           description: 给后来者的一条建议
+        photo_ids:
+          type: array
+          maxItems: 6
+          default: []
+          description: |
+            已上传图片的 id，按展示顺序排列；省略等同于空数组。
+            服务端去重后不得超过 6 个；只能引用本人上传且未绑定其它体验的图片。
+          items:
+            type: integer
+            format: int64
     Experience:
       type: object
-      required: [id, trip, author, content, intensity, advice, created_at, updated_at]
+      required: [id, trip, author, content, intensity, advice, photos, created_at, updated_at]
       properties:
         id:
           type: integer
@@ -2396,6 +2756,11 @@ components:
         advice:
           type: string
           maxLength: 120
+        photos:
+          type: array
+          description: 按提交顺序排列的图片；无图时为空数组
+          items:
+            $ref: '#/components/schemas/ExperiencePhoto'
         created_at:
           type: string
           format: date-time
@@ -2452,6 +2817,103 @@ components:
         received:
           type: boolean
           readOnly: true
+    WeatherForecast:
+      type: object
+      required: [date, available, reminders, source]
+      properties:
+        date:
+          type: string
+          format: date
+          readOnly: true
+        destination_code:
+          type: string
+          nullable: true
+          readOnly: true
+        city:
+          type: string
+          nullable: true
+          readOnly: true
+        lng:
+          type: number
+          format: double
+          nullable: true
+          description: 实际使用的经度；不可用时为 null
+          readOnly: true
+        lat:
+          type: number
+          format: double
+          nullable: true
+          description: 实际使用的纬度；不可用时为 null
+          readOnly: true
+        available:
+          type: boolean
+          readOnly: true
+          description: 该日期是否有可用的真实天气
+        reason:
+          type: string
+          nullable: true
+          readOnly: true
+          enum: [OUT_OF_RANGE]
+        weather:
+          type: object
+          nullable: true
+          description: 天气不可用（超出预报窗口）时为 null
+          allOf:
+            - $ref: '#/components/schemas/WeatherDaily'
+        reminders:
+          type: array
+          readOnly: true
+          description: 出行提醒，按降雨 → 高温 → 紫外线 → 低温 → 温差 → 强风 → 平稳的固定顺序
+          items:
+            $ref: '#/components/schemas/WeatherReminder'
+        source:
+          type: string
+          readOnly: true
+          enum: [open-meteo]
+    WeatherDaily:
+      type: object
+      required: [weather_text, temp_max_c, temp_min_c]
+      properties:
+        weather_code:
+          type: integer
+          nullable: true
+          description: WMO 4677 天气码
+        weather_text:
+          type: string
+          description: 天气码对应的中文文案；未收录时为「未知天气」
+        temp_max_c:
+          type: number
+          format: double
+        temp_min_c:
+          type: number
+          format: double
+        precipitation_probability_pct:
+          type: integer
+          nullable: true
+          description: 当日最大降雨概率（%）；上游缺省时为 null
+        precipitation_mm:
+          type: number
+          format: double
+          nullable: true
+        wind_speed_kmh:
+          type: number
+          format: double
+          nullable: true
+        uv_index:
+          type: number
+          format: double
+          nullable: true
+          description: 当日最大紫外线指数；上游缺省时为 null，前端不展示也不参与提醒
+    WeatherReminder:
+      type: object
+      required: [code, text]
+      properties:
+        code:
+          type: string
+          enum: [rain, heat, uv, cold, temperature_gap, wind, calm]
+        text:
+          type: string
+          description: 面向用户的完整文案，内含真实天气数值
     AiPlace:
       type: object
       required: [name, lng, lat]
@@ -2588,48 +3050,10 @@ components:
           description: 建议携带物品
         budget:
           $ref: '#/components/schemas/AiBudget'
-    WeatherForecast:
-      type: object
-      required: [date, temp_max_c, temp_min_c, precipitation_probability_pct, weather_code, weather_text, source]
-      properties:
-        date:
-          type: string
-          format: date
-        temp_max_c:
-          type: number
-          format: double
-        temp_min_c:
-          type: number
-          format: double
-        precipitation_probability_pct:
-          type: integer
-          minimum: 0
-          maximum: 100
-        precipitation_mm:
-          type: number
-          format: double
-          minimum: 0
-        weather_code:
-          type: integer
-          description: WMO 天气码
-        weather_text:
-          type: string
-          description: WMO 码对应的中文文案
-        wind_speed_kmh:
-          type: number
-          format: double
-        uv_index:
-          type: number
-          format: double
-          nullable: true
-          description: 上游不可用时为 null，前端不展示 UV 行
-        source:
-          type: string
-          example: open-meteo
     AiGenerateResponse:
       type: object
       required: [plan, weather]
-      description: weather 为本次生成实际注入提示词的权威天气摘要
+      description: weather 为本次生成实际注入提示词的权威天气摘要（add-trip-weather 契约）
       properties:
         plan:
           $ref: '#/components/schemas/AiPlan'
@@ -2766,8 +3190,8 @@ components:
           enum:
             [GREETING_NOT_FOUND, INVALID_INPUT, DEMO_USER_REQUIRED, FORBIDDEN, USER_NOT_FOUND, TRIP_NOT_FOUND, TRIP_NOT_OPEN,
              APPLICATION_NOT_FOUND, APPLICATION_NOT_PENDING, DUPLICATE_APPLICATION, CHAT_NOT_ALLOWED, CHAT_READ_ONLY,
-             EXPERIENCE_NOT_ALLOWED, USERNAME_TAKEN, INVALID_CREDENTIALS, SESSION_INVALID, INTERNAL_ERROR,
-             AI_NOT_CONFIGURED, AI_UPSTREAM_ERROR, AI_INVALID_OUTPUT, WEATHER_UPSTREAM_ERROR]
+             EXPERIENCE_NOT_ALLOWED, USERNAME_TAKEN, INVALID_CREDENTIALS, SESSION_INVALID, WEATHER_UPSTREAM_ERROR,
+             AI_NOT_CONFIGURED, AI_UPSTREAM_ERROR, AI_INVALID_OUTPUT, INTERNAL_ERROR]
         fields:
           type: object
           description: |

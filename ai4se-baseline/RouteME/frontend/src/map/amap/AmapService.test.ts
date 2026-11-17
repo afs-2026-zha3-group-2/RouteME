@@ -2,11 +2,22 @@ import { describe, expect, it, vi } from 'vitest';
 import {
   AmapApiError,
   amapErrorMessage,
+  catalogPlaceResult,
+  filterRelevantPlaces,
+  firstTransit,
   formatDistance,
   formatDuration,
+  haversineMeters,
+  isRelevantName,
+  longestCommonSubstring,
+  matchCatalogPlace,
+  normalizeName,
   parseTransitLeg,
-  firstTransit,
+  pickRegeocodeName,
   planRoute,
+  rankPlaces,
+  sortByDistance,
+  straightLineRoute,
   toPlaceResult,
   toRouteLeg,
 } from './AmapService';
@@ -153,6 +164,10 @@ describe('AmapService mapping', () => {
     const message = amapErrorMessage(new AmapApiError('PROXY_UNAVAILABLE', 'down'));
     expect(message).toContain('后端');
     expect(message).toContain('8080');
+  });
+
+  it('names the AMap upstream when the proxy forward fails', () => {
+    expect(amapErrorMessage(new AmapApiError('UPSTREAM_UNAVAILABLE', 'forward'))).toContain('上游');
   });
 });
 
@@ -318,5 +333,155 @@ describe('planRoute with the SDK stub', () => {
 
   it('still rejects fewer than two waypoints', async () => {
     await expect(planRoute('transit', waypoints.slice(0, 1), '广州市')).rejects.toThrow(AmapApiError);
+  });
+});
+
+describe('offline gazetteer fallback', () => {
+  it('resolves a city and its demo stop inside the trip city', () => {
+    expect(matchCatalogPlace('深圳', '深圳')?.name).toBe('深圳');
+    expect(matchCatalogPlace('大鹏所城', '深圳')?.name).toBe('大鹏所城');
+  });
+
+  it('tolerates itinerary suffixes around a catalog name', () => {
+    // 集合 / 穿越 12km / 观景 / 骑行 都是行程文案，不是地点名的一部分。
+    expect(matchCatalogPlace('大鹏所城集合', '深圳')?.name).toBe('大鹏所城');
+    expect(matchCatalogPlace('东西涌穿越 12km', '深圳')?.name).toBe('东西涌');
+    expect(matchCatalogPlace('天文台观景', '深圳')?.name).toBe('西涌天文台');
+    expect(matchCatalogPlace('次日杨梅坑骑行', '深圳')?.name).toBe('杨梅坑');
+    expect(matchCatalogPlace('情侣路骑行段', '珠海')?.name).toBe('情侣路');
+  });
+
+  it('prefers the longest matching name and skips the city node', () => {
+    expect(matchCatalogPlace('深圳湾公园日落', '深圳')?.name).toBe('深圳湾公园');
+  });
+
+  it('does not place a stop outside its trip city', () => {
+    expect(matchCatalogPlace('大鹏所城', '珠海')).toBeNull();
+    expect(matchCatalogPlace('大鹏所城集合', '拉萨')).toBeNull();
+  });
+
+  it('builds a place result with real coordinates', () => {
+    const place = catalogPlaceResult('海滨泳场日落机位', '珠海');
+    expect(place).toMatchObject({ name: '海滨泳场', city: '珠海', type: 'offline' });
+    expect(place?.lng).toBeCloseTo(113.586, 3);
+    expect(place?.lat).toBeCloseTo(22.2572, 3);
+  });
+});
+
+describe('straight-line route fallback', () => {
+  const waypoints = [
+    { id: 'a', name: '大鹏所城', lng: 114.5077, lat: 22.5979 },
+    { id: 'b', name: '东西涌', lng: 114.571, lat: 22.545 },
+    { id: 'c', name: '杨梅坑', lng: 114.5654, lat: 22.5481 },
+  ];
+
+  it('keeps the waypoint order and marks the plan as estimated', () => {
+    const plan = straightLineRoute('walking', waypoints);
+    expect(plan.estimated).toBe(true);
+    expect(plan.path).toEqual([
+      [114.5077, 22.5979],
+      [114.571, 22.545],
+      [114.5654, 22.5481],
+    ]);
+    expect(plan.legs.map((leg) => [leg.fromId, leg.toId])).toEqual([
+      ['a', 'b'],
+      ['b', 'c'],
+    ]);
+    expect(plan.distanceMeters).toBeGreaterThan(0);
+    expect(plan.durationSeconds).toBeGreaterThan(0);
+  });
+
+  it('estimates distance with the haversine formula', () => {
+    // 广州塔 → 海心沙约 1.5km。
+    const meters = haversineMeters([113.3245, 23.1064], [113.3245, 23.12]);
+    expect(meters).toBeGreaterThan(1400);
+    expect(meters).toBeLessThan(1600);
+
+    const plan = straightLineRoute('driving', waypoints);
+    expect(plan.distanceMeters).toBe(plan.legs.reduce((sum, leg) => sum + leg.distanceMeters, 0));
+  });
+
+  it('rejects a route with fewer than two waypoints', () => {
+    expect(() => straightLineRoute('walking', [waypoints[0]])).toThrow(AmapApiError);
+  });
+});
+describe('name relevance (guards against fuzzy matches)', () => {
+  const place = (name: string, address = '', lng = 0, lat = 0) => ({
+    id: `${name}-${lng}-${lat}`,
+    name,
+    address,
+    city: '',
+    district: '',
+    lng,
+    lat,
+    type: 'poi',
+  });
+
+  it('normalizes punctuation, brackets and admin suffixes', () => {
+    expect(normalizeName(' 广州塔（地铁站） ')).toBe('广州塔');
+    expect(normalizeName('淇澳岛风景区')).toBe('淇澳岛');
+  });
+
+  it('accepts containment but rejects shared prefixes', () => {
+    expect(isRelevantName('广州塔', '广州塔广场')).toBe(true);
+    expect(isRelevantName('海心沙', '海心沙亚运公园')).toBe(true);
+    // 高德在中山把「淇澳岛」模糊匹配成「淇澳服饰」：只有共同前缀，必须拒绝。
+    expect(isRelevantName('淇澳岛', '淇澳服饰')).toBe(false);
+    expect(isRelevantName('淇澳岛', '南方软件园')).toBe(false);
+  });
+
+  it('drops unrelated fuzzy matches and keeps the real one', () => {
+    const places = [
+      place('淇澳服饰', '大涌镇悦新路2号', 113.3039, 22.467),
+      place('淇澳岛', '唐家湾镇淇澳社区', 113.6357, 22.4151),
+    ];
+    const filtered = filterRelevantPlaces('淇澳岛', places);
+    expect(filtered.map((item) => item.name)).toEqual(['淇澳岛']);
+  });
+
+  it('returns nothing when every candidate is unrelated', () => {
+    expect(filterRelevantPlaces('淇澳岛', [place('南方软件园', '唐家湾镇')])).toEqual([]);
+  });
+
+  it('still accepts address matches (address search)', () => {
+    const places = [place('某某大厦', '阅江西路222号广州塔内', 113.32, 23.1)];
+    expect(filterRelevantPlaces('阅江西路', places)).toHaveLength(1);
+  });
+
+  it('ranks exact names before longer matches', () => {
+    const ranked = rankPlaces('广州塔', [
+      place('广州塔广场'),
+      place('广州塔'),
+      place('广州塔西登塔'),
+    ]);
+    expect(ranked[0].name).toBe('广州塔');
+    expect(ranked[2].name).toBe('广州塔西登塔');
+  });
+});
+
+describe('longest common substring', () => {
+  it('measures shared content', () => {
+    expect(longestCommonSubstring('香洲港集合', '香洲港客运码头')).toBe(3);
+    expect(longestCommonSubstring('淇澳岛', '南方软件园')).toBe(0);
+  });
+});
+
+describe('nearby distance helpers', () => {
+  it('sorts nearby results by distance from the click', () => {
+    const sorted = sortByDistance(
+      [
+        { id: 'far', name: '远处', address: '', city: '', district: '', lng: 113.65, lat: 22.43, type: 'poi' },
+        { id: 'near', name: '近处', address: '', city: '', district: '', lng: 113.6358, lat: 22.4152, type: 'poi' },
+      ],
+      113.6357,
+      22.4151,
+    );
+    expect(sorted.map((item) => item.id)).toEqual(['near', 'far']);
+    expect(sorted[0].distanceMeters).toBeLessThan(100);
+  });
+
+  it('takes a short name from a reverse-geocoded address', () => {
+    expect(pickRegeocodeName('广东省珠海市香洲区唐家湾镇淇澳社区')).toBe('淇澳社区');
+    expect(pickRegeocodeName('')).toBe('');
   });
 });

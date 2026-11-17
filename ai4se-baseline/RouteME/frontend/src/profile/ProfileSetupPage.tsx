@@ -21,6 +21,7 @@ import {
 import { tripMessages } from '../i18n/tripMessages';
 import { Avatar } from '../shell/Avatar';
 import type { DemoUser, UserProfile } from '../types';
+import { appDatePickerProps } from '../utils/datePickerProps';
 import { InterestPicker } from './InterestPicker';
 import {
   emptyProfileForm,
@@ -287,8 +288,7 @@ export function ProfileSetupPage({ currentUser, token, onSaved }: Props) {
               <DatePicker
                 id="profile-birthday"
                 className="profile-birthday"
-                classNames={{ popup: { root: 'profile-birthday-popup' } }}
-                getPopupContainer={(trigger) => trigger.parentElement ?? document.body}
+                {...appDatePickerProps}
                 value={values.birthday === '' ? null : dayjs(values.birthday)}
                 minDate={dayjs(MIN_BIRTHDAY)}
                 maxDate={dayjs(todayIso())}

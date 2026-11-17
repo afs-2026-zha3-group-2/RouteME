@@ -10,6 +10,7 @@ import type {
   DemoUser,
   Experience,
   ExperienceFilters,
+  ExperiencePhoto,
   ExperienceWriteRequest,
   MatchCandidate,
   MyTrips,
@@ -17,11 +18,13 @@ import type {
   Paging,
   ReportRequest,
   TripApplication,
+  TripCancelRequest,
   TripCreateRequest,
   TripDetail,
   TripFilters,
   TripMeetingRequest,
   TripSummary,
+  UserCreditEntry,
   UserProfile,
   UserProfileUpdateRequest,
   WeatherForecast,
@@ -95,6 +98,16 @@ export async function logoutAccount(token: string): Promise<void> {
     method: 'POST',
     headers: { Authorization: `Bearer ${token}` },
   });
+}
+
+/** 批量读取信用状态；用于行程卡、申请列表与详情页发布者行。 */
+export async function loadUserCredits(ids: number[], callerId: number): Promise<UserCreditEntry[]> {
+  if (ids.length === 0) {
+    return [];
+  }
+  const query = new URLSearchParams({ ids: ids.join(',') });
+  const response = await request(`/users/credits?${query.toString()}`, undefined, callerId);
+  return (await response.json()) as UserCreditEntry[];
 }
 
 /** 读取个人资料；本人读取时响应包含生日，他人读取时省略。 */
@@ -199,6 +212,23 @@ export async function createTrip(userId: number, body: TripCreateRequest): Promi
 
 export async function completeTrip(userId: number, tripId: number): Promise<TripDetail> {
   const response = await request(`/trips/${tripId}/complete`, { method: 'POST' }, userId);
+  return (await response.json()) as TripDetail;
+}
+
+export async function cancelTrip(
+  userId: number,
+  tripId: number,
+  body: TripCancelRequest,
+): Promise<TripDetail> {
+  const response = await request(
+    `/trips/${tripId}/cancel`,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    },
+    userId,
+  );
   return (await response.json()) as TripDetail;
 }
 
@@ -373,9 +403,39 @@ export async function shareExperience(
   return (await response.json()) as Experience;
 }
 
-/* ---------- AI 智能规划（契约 0.12.0） ---------- */
+export async function uploadExperiencePhoto(
+  userId: number,
+  tripId: number,
+  file: File,
+): Promise<ExperiencePhoto> {
+  const form = new FormData();
+  form.append('file', file);
+  const response = await request(
+    `/trips/${tripId}/experiences/photos`,
+    { method: 'POST', body: form },
+    userId,
+  );
+  return (await response.json()) as ExperiencePhoto;
+}
 
-/** AI 生成推荐行程；响应内 weather 为后端实际注入提示词的权威天气（L-02）。 */
+/** 目的地日期天气（Open-Meteo）；公开只读，失败由调用方展示可重试状态。 */
+export async function fetchWeatherForecast(
+  destinationCode: string,
+  date: string,
+  point?: { lng: number; lat: number },
+): Promise<WeatherForecast> {
+  const params = new URLSearchParams({ destination_code: destinationCode, date });
+  if (point !== undefined) {
+    params.set('lng', String(point.lng));
+    params.set('lat', String(point.lat));
+  }
+  const response = await request(`/weather/forecast?${params.toString()}`);
+  return (await response.json()) as WeatherForecast;
+}
+
+/* ---------- AI 智能规划（契约 0.17.0；天气复用 add-trip-weather） ---------- */
+
+/** AI 生成推荐行程；响应内 weather 为后端实际注入提示词的权威天气。 */
 export async function generateAiItinerary(
   userId: number,
   body: AiGenerateRequest,
@@ -390,18 +450,6 @@ export async function generateAiItinerary(
     userId,
   );
   return (await response.json()) as AiGenerateResponse;
-}
-
-/** 目的地日期天气（Open-Meteo）；预览路径，失败不阻断表单。 */
-export async function fetchWeatherForecast(
-  userId: number,
-  lng: number,
-  lat: number,
-  date: string,
-): Promise<WeatherForecast> {
-  const params = new URLSearchParams({ lng: String(lng), lat: String(lat), date });
-  const response = await request(`/weather/forecast?${params.toString()}`, undefined, userId);
-  return (await response.json()) as WeatherForecast;
 }
 
 /** 保存完整快照；resolved ≥ 2 且坐标为数值，否则后端 400。 */

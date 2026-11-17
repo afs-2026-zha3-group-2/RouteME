@@ -51,6 +51,8 @@ describe('hasPublicContent', () => {
     avatar_initial: '新',
     interests: [],
     profile_complete: false,
+    credit_score: 80,
+    credit_level: 'good',
   };
 
   it('is false when only the nickname exists', () => {
@@ -82,6 +84,8 @@ describe('profileToUser', () => {
       avatar_initial: '林',
       interests: ['摄影'],
       profile_complete: true,
+      credit_score: 80,
+      credit_level: 'good',
     });
     expect(user.avatar_initial).toBe('林');
     expect(user.avatar_url).toBeNull();

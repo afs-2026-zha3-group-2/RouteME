@@ -9,11 +9,37 @@ export type ShareIconName =
   | 'shield'
   | 'check'
   | 'send'
-  | 'left';
+  | 'left'
+  | 'camera'
+  | 'eye'
+  | 'x'
+  | 'right'
+  | 'plus';
 
 /** Shapes mirror the prototype icon set (`docs/prototype/ui.js`), 20×20 viewBox. */
 function shape(name: ShareIconName): ReactNode {
   switch (name) {
+    case 'camera':
+      return (
+        <>
+          <rect x="2.6" y="6" width="14.8" height="10.4" rx="2" />
+          <path d="M7 6l1.4-2.4h3.2L13 6" />
+          <circle cx="10" cy="11.2" r="3.2" />
+        </>
+      );
+    case 'eye':
+      return (
+        <>
+          <path d="M1.8 10S4.8 4.6 10 4.6 18.2 10 18.2 10 15.2 15.4 10 15.4 1.8 10 1.8 10Z" />
+          <circle cx="10" cy="10" r="2.4" />
+        </>
+      );
+    case 'x':
+      return <path d="M5 5l10 10M15 5 5 15" />;
+    case 'right':
+      return <path d="M7.6 4.6 13 10l-5.4 5.4" />;
+    case 'plus':
+      return <path d="M10 4.6v10.8M4.6 10h10.8" />;
     case 'spark':
       return (
         <>

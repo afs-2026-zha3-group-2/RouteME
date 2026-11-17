@@ -78,10 +78,11 @@ class AiItineraryControllerTest {
                 .andExpect(jsonPath("$.plan.budget.transport_cents").value(8000))
                 .andExpect(jsonPath("$.plan.budget.total_cents").value(46000))
                 .andExpect(jsonPath("$.weather.date").value("2026-11-21"))
-                .andExpect(jsonPath("$.weather.temp_max_c").value(24.0))
-                .andExpect(jsonPath("$.weather.temp_min_c").value(17.0))
-                .andExpect(jsonPath("$.weather.precipitation_probability_pct").value(20))
-                .andExpect(jsonPath("$.weather.weather_text").value("多云"))
+                .andExpect(jsonPath("$.weather.available").value(true))
+                .andExpect(jsonPath("$.weather.weather.temp_max_c").value(24.0))
+                .andExpect(jsonPath("$.weather.weather.temp_min_c").value(17.0))
+                .andExpect(jsonPath("$.weather.weather.precipitation_probability_pct").value(20))
+                .andExpect(jsonPath("$.weather.weather.weather_text").value("多云"))
                 .andExpect(jsonPath("$.weather.source").value("open-meteo"));
     }
 

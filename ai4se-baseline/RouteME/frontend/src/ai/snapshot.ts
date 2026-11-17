@@ -127,11 +127,11 @@ export function toTripPrefill(snapshot: AiItinerarySnapshot): TripPrefill {
         '（无真实价格来源）。',
     );
   }
-  if (snapshot.weather !== null) {
-    const weather = snapshot.weather;
+  if (snapshot.weather !== null && snapshot.weather.weather !== null) {
+    const daily = snapshot.weather.weather;
     noteParts.push(
-      `天气（${weather.source}）：${weather.weather_text} ${weather.temp_min_c}–${weather.temp_max_c}°C，` +
-        `降雨概率 ${weather.precipitation_probability_pct}%。`,
+      `天气（${snapshot.weather.source}）：${daily.weather_text} ${daily.temp_min_c}–${daily.temp_max_c}°C，` +
+        `降雨概率 ${daily.precipitation_probability_pct ?? '—'}%。`,
     );
   }
   if (snapshot.tips.length > 0) {

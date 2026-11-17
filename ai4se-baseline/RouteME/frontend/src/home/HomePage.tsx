@@ -3,6 +3,7 @@ import { Alert, Button, DatePicker, Segmented, Skeleton, Tag } from 'antd';
 import { ExperienceCard } from '../experiences/ExperienceCard';
 import { useExperiences } from '../experiences/useExperiences';
 import { tripMessages } from '../i18n/tripMessages';
+import { useUserCredits } from '../profiles/useUserCredits';
 import { EmptyState } from '../shell/EmptyState';
 import { SoftSelect } from '../shell/SoftSelect';
 import { Pager } from '../shell/Pager';
@@ -31,6 +32,8 @@ export function HomePage({ currentUser }: Props) {
   const [filters, setFilters] = useState<FilterState>(emptyFilterState);
   const { state, reload, setPage, setSize } = useMatches(currentUser.id, filters);
   const experiences = useExperiences(currentUser.id, filters);
+  const publisherIds = state.status === 'ready' ? state.matches.map(({ trip }) => trip.publisher.id) : [];
+  const credits = useUserCredits(publisherIds, currentUser.id);
   const resultsRef = useRef<HTMLDivElement>(null);
 
   const update = (patch: Partial<FilterState>) => {
@@ -219,7 +222,7 @@ export function HomePage({ currentUser }: Props) {
         <div ref={resultsRef} className="list-block">
           <div className="trip-grid">
             {state.matches.map(({ trip, match }) => (
-              <TripCard key={trip.id} trip={trip} match={match} />
+              <TripCard key={trip.id} trip={trip} match={match} credit={credits[trip.publisher.id]} />
             ))}
           </div>
           <Pager

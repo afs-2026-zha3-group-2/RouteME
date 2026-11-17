@@ -23,17 +23,21 @@ import routeme.exception.AiNotConfiguredException;
 import routeme.exception.AiUpstreamException;
 import routeme.exception.InvalidInputException;
 import routeme.mapper.AiItineraryMapper;
+import routeme.param.WeatherQuery;
 import routeme.pojo.AiGenerateResponse;
 import routeme.pojo.AiItinerarySaved;
 import routeme.pojo.AiItinerarySnapshot;
 import routeme.pojo.AiPlace;
 import routeme.pojo.AiPlan;
+import routeme.pojo.WeatherDaily;
 import routeme.pojo.WeatherForecast;
 import routeme.request.AiGenerateRequest;
 import routeme.service.AiItineraryService;
 import routeme.service.WeatherService;
 import tools.jackson.core.JacksonException;
 import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.PropertyNamingStrategies;
+import tools.jackson.databind.json.JsonMapper;
 
 /**
  * AI 行程实现：天气权威来自 Open-Meteo（generate 内自取注入），
@@ -70,7 +74,11 @@ public class AiItineraryServiceImpl extends AbstractServiceImpl<AiItineraryMappe
             "budget":{"transport_cents":0,"tickets_cents":0,"food_cents":0,"other_cents":0,"total_cents":0}}
             """;
 
-    private static final ObjectMapper MAPPER = new ObjectMapper();
+    // 与 Spring 主 ObjectMapper 一致采用 SNAKE_CASE：快照内嵌 add-trip-weather 的
+    // WeatherForecast/WeatherDaily 为 camelCase 组件，需该策略才能绑定 snake_case JSON。
+    private static final ObjectMapper MAPPER = JsonMapper.builder()
+            .propertyNamingStrategy(PropertyNamingStrategies.SNAKE_CASE)
+            .build();
 
     private final AiProperties properties;
     private final RestClient aiRestClient;
@@ -103,8 +111,14 @@ public class AiItineraryServiceImpl extends AbstractServiceImpl<AiItineraryMappe
         }
 
         // 天气先于 AI：失败即终止，不消耗 AI 配额，也不产出伪造天气。
+        // 天气权威由 add-trip-weather 的 WeatherService 提供（坐标 + 日期）；
+        // 超出预报窗口返回 available=false，AI 生成据此终止（INVALID_INPUT）。
+        LocalDate date = parseDate(request.date());
         WeatherForecast weather = weatherService.forecast(
-                request.destination().lng(), request.destination().lat(), request.date());
+                new WeatherQuery(null, date, request.destination().lng(), request.destination().lat()));
+        if (!weather.available()) {
+            throw new InvalidInputException("date is outside the forecast window");
+        }
 
         String content = callAi(buildUserPrompt(request, weather, duration, travelMode, pace));
         AiPlan plan = parseAndValidate(content);
@@ -119,6 +133,14 @@ public class AiItineraryServiceImpl extends AbstractServiceImpl<AiItineraryMappe
             throw new InvalidInputException(field + " must be one of " + allowed);
         }
         return value;
+    }
+
+    private static LocalDate parseDate(String date) {
+        try {
+            return LocalDate.parse(date);
+        } catch (DateTimeParseException exception) {
+            throw new InvalidInputException("date must be in yyyy-MM-dd");
+        }
     }
 
     private void requirePlace(AiPlace place, String field) {
@@ -156,19 +178,20 @@ public class AiItineraryServiceImpl extends AbstractServiceImpl<AiItineraryMappe
         } else {
             prompt.append("预算：未提供，给出合理估算即可。\n");
         }
+        WeatherDaily daily = weather.weather();
         prompt.append("目的地当天真实天气（Open-Meteo，必须纳入推荐）：")
-                .append("最高温度 ").append(weather.tempMaxC()).append("°C，")
-                .append("最低温度 ").append(weather.tempMinC()).append("°C，")
-                .append("降雨概率 ").append(weather.precipitationProbabilityPct()).append("%，");
-        if (weather.precipitationMm() != null) {
-            prompt.append("降水量 ").append(weather.precipitationMm()).append("mm，");
+                .append("最高温度 ").append(daily.tempMaxC()).append("°C，")
+                .append("最低温度 ").append(daily.tempMinC()).append("°C，")
+                .append("降雨概率 ").append(daily.precipitationProbabilityPct()).append("%，");
+        if (daily.precipitationMm() != null) {
+            prompt.append("降水量 ").append(daily.precipitationMm()).append("mm，");
         }
-        prompt.append("天气状态 ").append(weather.weatherText()).append("，");
-        if (weather.windSpeedKmh() != null) {
-            prompt.append("风速 ").append(weather.windSpeedKmh()).append("km/h，");
+        prompt.append("天气状态 ").append(daily.weatherText()).append("，");
+        if (daily.windSpeedKmh() != null) {
+            prompt.append("风速 ").append(daily.windSpeedKmh()).append("km/h，");
         }
-        if (weather.uvIndex() != null) {
-            prompt.append("UV 指数 ").append(weather.uvIndex()).append("，");
+        if (daily.uvIndex() != null) {
+            prompt.append("UV 指数 ").append(daily.uvIndex()).append("，");
         }
         prompt.append('\n')
                 .append("天气行为规则：降雨概率高或降水明显时优先室内景点（indoor=true），建议雨伞/防水鞋，减少长时间户外；")

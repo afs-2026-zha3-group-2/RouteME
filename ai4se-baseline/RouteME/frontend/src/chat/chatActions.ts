@@ -14,7 +14,11 @@ export type ChatHeaderContext = {
  * 不在其中，按钮自动隐藏，不需要额外的申请状态字段。</p>
  */
 export function canLeaveTrip(context: ChatHeaderContext): boolean {
-  if (context.isPublisher || context.tripStatus === 'completed') {
+  if (
+    context.isPublisher ||
+    context.tripStatus === 'completed' ||
+    context.tripStatus === 'cancelled'
+  ) {
     return false;
   }
   return context.participants.some((user) => user.id === context.currentUserId);

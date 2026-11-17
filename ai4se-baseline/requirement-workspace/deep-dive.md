@@ -822,3 +822,352 @@ MVP 无推送；以下为参考发布路径的 UI 展示面契约。
 - `applications` 页面已存在且带接受 / 拒绝，提醒与行内入口直接跳该路由，无需新页面。
 - `Leave` / `cancel` / `complete` 接口均返回可判定结果（成功 / 409 / 404），页内动作后 `reload()` 即可同步。
 - `{TBD}`：无。非阻塞项（轮询间隔、编辑 / 删除入口、参考发布）已在 REQ-015 §5 / §3 标注。
+
+## REQ-018 增补 — 游后体验图片上传（S16 增强项）
+
+### ① 数据契约（Data contract）
+
+| Concept | Grain | Field list | State transitions | Source |
+|---|---|---|---|---|
+| 游后体验（既有） | 一条 `(trip_id, author_id)`，upsert | `content` / `intensity` / `advice` + 新增有序图片集合（0–6） | 无变化；保存时整体替换图片绑定 | `V8__create_trip_experiences.sql`、`ExperienceServiceImpl.upsert` |
+| 体验图片 | 单张图片 | `id`、`experience_id`（绑定后非空）、`author_id`、`file_name`、`mime`、`bytes`、`sort_order`（0–5）、`created_at` | 上传 → 未绑定；体验保存 → 绑定；编辑移除 / 替换 → 解绑并清理；上传后未提交 → 孤儿待清理 | 头像先例 `AvatarFile` / `openapi.yaml:215-257` |
+| 图片引用（写侧） | 体验写请求中的有序列表 | 图片 id 列表，长度 0–6；首项为主图 | 提交时校验：存在、属于当前作者、未被其它体验占用 | 用户裁决 D1 / D2 |
+| 图片引用（读侧） | 体验响应中的有序列表 | `id` + 可读 URL（带缓存版本参数）+ `sort_order` | 按 `sort_order` 升序返回；无图为空数组 | 头像读取端点先例 |
+
+- 状态：`uploaded(unbound) → bound → removed(cleaned)`；**不引入**体验删除，故无「体验删除 → 图片删除」分支。
+- 容量：每篇体验 ≤6；单张 ≤5MB；MIME 仅 `image/jpeg`、`image/png`、`image/webp`（按魔数）。
+- `{TBD}`：无业务字段级未知；EXIF 剥离（D6）、懒清理（D7）、不生成缩略图（D5）已收口。
+
+### ② 边界归属（Boundary attribution）
+
+| Rule | Branch | In / Out | Rationale |
+|---|---|---|---|
+| 上传鉴权 | 未登录 | Out（401） | 复用会话校验 |
+| 上传鉴权 | 已登录 | In | 任何已登录用户可上传自己的图片；绑定仍需体验作者身份 |
+| 数量 | 第 1–6 张 | In | D2 |
+| 数量 | 第 7 张 | Out（400） | D2；前端先禁用入口，服务端兜底 |
+| 大小 | ≤5MB | In | D2 |
+| 大小 | >5MB | Out（400） | D2 |
+| 格式 | JPEG / PNG / WebP 魔数命中 | In | D2；不信任声明类型 |
+| 格式 | 其它 / 伪装扩展名 | Out（400） | D2 |
+| 绑定 | 引用图片全部属于当前作者 | In | 归属校验 |
+| 绑定 | 引用他人图片 / 不存在 id | Out（403 / 400） | 权限边界 |
+| 绑定 | 引用已被其它体验占用的图片 | Out（400） | 一张图片只属于一条体验 |
+| 编辑 | 保留 / 删除 / 重排 | In | D2 |
+| 编辑 | 移除后文件仍在磁盘 | Out（清理） | 服务端清理；读取端点返回 404 |
+| 提交失败 | 已上传图片保留 | In | 场景 #5，可重试 |
+| 历史数据 | 无图体验 | In（兼容） | 场景 #7；不写空记录 |
+| 首页 | 体验卡显示图片 | Out | D3 反向约束 |
+| 类别 | 行程发布 / 聊天 / 头像 | Out | D4 |
+| 元数据 | EXIF 全部剥离 | In | D6 |
+| 元数据 | 保留 EXIF | Out | D6 |
+| 孤儿图片 | >24 小时未绑定 → 下一次上传时清理 | In | D7 |
+| 缩略图 | 服务端生成缩略图 | Out | D5 |
+
+输入完整性分支（必填 / 提取失败 / 坏格式）均已覆盖：文字三字段校验不变；图片缺失不阻断发布（0 张合法）；坏格式与超限拒绝；上传接口失败可重试。
+
+### ③ 跨 REQ 一致性（Cross-REQ consistency）
+
+| Capability | REQ | Grain + fields | Aligned? | Anchor REQ if not |
+|---|---|---|---|---|
+| `trip-experiences` 发布 / 修改 | REQ-004 | 三字段 + 图片集合（可选） | 是（只增不改） | — |
+| 灵感首页体验视图 | REQ-005 | 卡片字段不变，仍用内置封面 | 是（D3 反向约束） | — |
+| 我的旅行分享入口 | REQ-015 | 入口与已分享标记不变 | 是 | — |
+| 头像上传 | REQ-008 | 复用 multipart / 魔数 / 本地落盘模式 | 是（不改端点） | — |
+| 参考此行程发布 | REQ-014 | 不复制图片，预填字段不变 | 是（明确 Out） | — |
+
+- 与 `trip-plans` 无字段交叉：详情页只新增展示位，不修改行程模型。
+- 归档顺序：`refine-experience-share` 尚未归档且同改 `trip-experiences`；本 change 归档必须排在其后（或与其串行），避免同一 Requirement 块并行修改。
+
+### ④ 通知 / 展示契约（Notification / display contract）
+
+| Surface | Recipient | Content + display fields | Channel | Cardinality | Source |
+|---|---|---|---|---|---|
+| 分享页图片上传位 | 体验作者 | 已选图片缩略图、序号、删除与排序控件、剩余可上传数（`n/6`）、失败可重试提示 | 应用内表单 | 每页 1 组，最多 6 张 | 场景 #1 / #2 / #5 |
+| 分享页已保存图片 | 体验作者（编辑态） | 按 `sort_order` 展示已保存图片，可删除 / 重排 | 应用内表单 | 同上 | 场景 #3 |
+| 详情页体验列表 | 浏览者 / 作者 | 首图缩略图 + 「查看全部 {n} 张」入口；无图不显示占位 | 应用内列表 | 每条体验 1 组 | 场景 #4 / #7 |
+| 图片查看层 | 浏览者 | 全部图片、当前序号、上一张 / 下一张、关闭 | 应用内浮层 | 每条体验 1 个 | 场景 #4 |
+| 首页体验卡 | 浏览者 | **不变**：内置色调封面 + 目的地名 | 应用内卡片 | 每卡 1 个 | 场景 #8 / D3 |
+| 我的旅行 | 作者 | **不变**：入口与已分享标记 | 应用内列表 | 每行 1 处 | REQ-015 |
+
+- 无通知类消息；无缺 display-fields 的展示面。
+- 列表与详情均加载原图并使用 `loading="lazy"`；不生成服务端缩略图（D5），首图仅用于列表缩略展示。
+
+## REQ-019 增补 — 信用分账户与等级展示（信用系统迭代 1）
+
+### ① 数据契约（Data contract）
+
+| # | 概念 | grain（粒度） | 字段清单 | 状态迁移 | 来源 |
+|---|---|---|---|---|---|
+| A | **信用账户** `user_credit_account` | 每用户 1 条（`user_id` 唯一） | `user_id`（PK，引用 `app_users.id`）、`score`（INT NOT NULL，0–100）、`created_at`、`updated_at` | 无记录 →（注册成功）80；无记录 →（迁移回填）80；n →（事件，经 0–100 裁断）m；分数只由记账服务写入 | 注册事务；迁移回填；记账服务 |
+| B | **信用记录** `credit_ledger` | 每次分数变化 1 条；append-only，不更新不删除 | `id`、`user_id`、`reason_code`、`applied_delta`（实际生效量）、`score_before`、`score_after`、`related_type`、`related_id`、`idempotency_key`（可空 + 唯一）、`occurred_at` | 只追加；不变量 `score_before + applied_delta = score_after` 且两端均在 0–100 | 记账服务（本切片无业务事件调用方） |
+| C | **信用等级**（派生值，不落库） | 每个分数 → 1 个等级；无独立表 | 无字段；仅展示标签 | 随分数变化即时重算：90–100 信用优秀 / 80–89 信用良好 / 60–79 信用一般 / 30–59 信用较低 / 0–29 信用风险 | 读取时派生 |
+
+- **唯一真相：** 当前分数只在 A 表；B 表是审计与回算依据，二者 MUST 同事务写入。
+- **不改动既有表：** `app_users` 不新增分数列（D3），避免「一份分数两处写」。
+- **初始值 80（D5）：** 注册路径与迁移回填使用同一常量，禁止两处各写一个字面量（P3 落常量或枚举）。
+- **零变化留痕（D11）：** 理论变化量在边界上被完全裁断（如已满 100 又收到 +5，实际生效 0）时，**仍写入一条 `applied_delta = 0` 的记录**（`score_before = score_after`，等式仍成立），用于保留事件痕迹与幂等键；该记录不改变分数。
+
+### ② 边界归属（Boundary attribution）
+
+| 规则 | 分支 | in / out | 理由 |
+|---|---|---|---|
+| 初始分 | 注册成功（同事务建账户置 80） | in | 故事 AC1；`C-1` / `C-2` |
+| 初始分 | 注册失败（重名 / 格式非法 / 密码非法） | in | 不得留下孤儿账户；`C-2` |
+| 初始分 | 变更上线前已存在的账号（4 个演示用户 + 已注册账号） | in | D5 统一回填 80；`C-3` |
+| 账户唯一 | 同一用户重复读取 / 重复登录 | in | 只读不写；`C-4` |
+| 边界裁断 | 变化后 > 100 | in | 停在 100，记录实际生效量；`C-13` |
+| 边界裁断 | 变化后 < 0 | in | 停在 0，记录实际生效量；`C-13` |
+| 边界裁断 | 实际生效量为 0 | in | D11：仍写一条 `applied_delta = 0` 的记录，分数不变；见 `C-15` |
+| 只读 | 客户端在资料保存等请求中携带分数 | in | 忽略且不改变分数；`C-10` |
+| 只读 | 任何面向客户端的写分端点 | in（禁止） | 不存在该端点；`C-10` |
+| 只读 | 管理员手工改分 | out | D2 管理端整体推迟 |
+| 展示 | 本人在自己主页读取 | in | D4；`C-7` |
+| 展示 | 他人在该用户主页读取 | in | D4；`C-8` |
+| 展示 | 加 / 扣分明细、原因、历史 | out（禁止展示） | D4；`C-8` |
+| 展示 | 资料未完善用户 | in | 信用状态与资料完整度解耦；`C-9` |
+| 展示 | 未登录访客 | out | 沿用壳层登录门 |
+| 缺失账户 | 读取时账户不存在 | in | 不得出现缺失值（`C-15`）；读取路径必须有确定性兜底（P3 定懒建或回填保证） |
+| 幂等 | 同一业务事件重复投递 | in（能力预留） | 账本幂等键唯一约束；本切片无调用方 |
+| 并发 | 两个事件同时写同一账户 | out（本切片） | 无业务事件调用方；P3 记账服务需保证单事务与一致性 |
+| 异常 | 用户不存在 | in | 沿用既有 `USER_NOT_FOUND`，行为不变；`C-15` |
+
+### ③ 跨 REQ 一致性（Cross-REQ consistency）
+
+| 能力 | 各 REQ 的 grain + 字段 | aligned? | anchor REQ |
+|---|---|---|---|
+| `user-profile`（REQ-008，未归档） | REQ-008 定义资料字段、必填规则与本人 / 他人差异（仅生日区分）；REQ-019 只在其响应上追加 `credit_score` / `credit_level` 两个只读字段 | ✓ aligned | REQ-008 / `add-user-profile` |
+| `user-profiles`（REQ-009，未归档） | REQ-009 在 `GET /api/users/{userId}/profile` 上追加 `joined_at` + `stats`；REQ-019 沿用同一端点与同一响应对象，不改变既有字段语义 | ✓ aligned | REQ-009 / `add-user-profiles` |
+| `user-auth`（REQ-006，Living） | REQ-006 收敛会话校验与退出；REQ-019 只涉及「注册成功后建信用账户」，注册校验规则本身不变 | ✓ aligned（D9：不改 `user-auth`） | REQ-006 / `add-user-logout` |
+| `design-system` | 展示沿用既有 `chip` / `badge` / `profile-fact` 令牌，不新增色板语义 | ✓ aligned | `openspec/specs/design-system/spec.md` |
+| 管理端能力 | 能力不存在（无角色列、无后台端点 / 页面）；AC3 / AC4 与 AC6 管理端一半由 D2 推迟 | n/a（能力不存在，推迟到新 REQ） | D2 裁决 |
+
+无未收敛的 ✗；A0 门 ⑪ 通过。
+
+### ④ 通知 / 展示契约（Notification / display contract）
+
+MVP 无推送、无通知；以下为信用状态的 UI 展示面契约。
+
+| trigger / surface（展示面） | recipient role | content + display fields | channel | cardinality | source |
+|---|---|---|---|---|---|
+| 个人主页 — 信用状态（本人） | 平台用户本人 | 分数 `credit_score` + 上限 `/ 100` + 等级文字（信用优秀 / 信用良好 / 信用一般 / 信用较低 / 信用风险）；只读 | 应用内页面 | 每页 1 处 | D4；`C-6` / `C-7` |
+| 个人主页 — 信用状态（他人） | 浏览者 / 已登录用户 | 与本人完全同口径：分数 + `/ 100` + 等级文字 | 应用内页面 | 每页 1 处 | D4；`C-8` |
+| 个人主页 — 加 / 扣分明细 | 所有人 | **不展示**：无流水列表、无原因、无时间、无历史入口 | —（不存在） | 0 处 | D4；`C-8` |
+| 个人主页 — 资料未完善态 | 本人 / 他人 | 信用状态照常展示，不因资料不完整而隐藏 | 应用内页面 | 每页 1 处 | `C-9` |
+
+#### ④ 增补（2026-11-17 展示面扩展）
+
+| trigger / surface | recipient role | content + display fields | channel | 取数来源 |
+|---|---|---|---|---|
+| 资料弹窗（`ProfileModal`） | 打开弹窗的用户 | 「信用分：{n} / 100 · {等级文字}」+ 色阶 | 应用内弹窗 | 复用 `GET /users/{id}/profile` 响应（零额外请求） |
+| 行程详情 — 发布者行 | 浏览者 / 本人 / 同行者 | 同上，紧凑一行 | 应用内页面 | `GET /users/credits?ids={publisherId}` |
+| 灵感首页 — 行程卡发布者行 | 浏览者 | 同上，紧凑一行 | 应用内卡片 | 当前页一次 `GET /users/credits?ids=...` |
+| 申请处理页 — 申请者行 | 发布者 | 同上，行内文本 | 应用内列表 | 当前页一次 `GET /users/credits?ids=...` |
+| 聊天页 / 顶栏 / 我的旅行资料卡 | — | **不展示** | — | 未列出界面约束（`C-21`） |
+
+- 批量端点：`GET /api/users/credits?ids=1,2,3`（≤50，需 `X-User-Id`），返回 `[{user_id, credit_score, credit_level}]`；缺账户的 id 按 80/good 补齐后返回。
+- 同口径：所有展示面共用 `creditDisplay` 文案与色阶；阈值仍只在服务端一处。
+
+无展示面缺 display-fields；A0 门 ⑫ 通过。
+
+### 探针记录（REQ-019 信用分账户）
+
+- **注册事务边界：** `AuthServiceImpl.register` 已是 `@Transactional`，用户名唯一性、密码校验与 `createAccount` 在同一事务内；信用账户初始化必须挂在该事务内，并在失败分支（`USERNAME_TAKEN` / `INVALID_INPUT`）之前不产生写入。
+- **响应序列化陷阱：** `UserProfileResponse` 标注了 `@JsonInclude(Include.NON_NULL)`，可空字段会被整键省略。信用分与等级 MUST 为非空值，否则 `C-15`（不得出现缺失键）在 JSON 层就会破。
+- **本人 / 他人差异：** 目前仅 `includeBirthday` 一处差异；信用字段在两种视角都返回，不新增分支。
+- **零额外往返：** `ProfilePage.tsx` 只有一次 `loadUserProfile`；若改为独立端点会多一次请求并引入两个加载态，D7 已否定。
+- **历史数据面：** `V3`（id 1–3）、`V12`（id 4 周野）为种子用户，`V14` / `V15` 给其中部分账号写了登录凭据；回填迁移必须以「全表」为准（`INSERT ... SELECT id FROM app_users WHERE ...`），不能只覆盖有凭据的账号。
+- **迁移号排他：** main 的 Flyway 头是 `V17`；`refine-trip-map`（REQ-016）与 `add-ai-itinerary`（REQ-017）分别声明 V17 / V18 且均未归档。本需求的迁移号必须在 P3 按合并顺序确认，不能假定 `V18` 或 `V19`。
+- **契约版本排他：** `openapi.yaml` 现为 0.11.0，REQ-017 已占用 0.12.0；本需求的次版本号同样在 P3 排他确认。
+- **管理端不可达：** `app_users` 无 role 列、无 admin 端点、前端无 admin 路由（grep 0 命中），因此 AC3 / AC4 不可能「顺手」实现；只能由 D2 明确推迟。
+- **E2E 影响：** 现有 `profile.spec.ts` / `profiles.spec.ts` 断言的是既有字段与文案，新增字段本身不会破坏断言；但 `C-1` 的展示串需要新增用例，且「他人视角看到分数」需要在未登录或另一账号视角下断言。
+- **原型缺口：** `docs/prototype` 没有信用分页面或组件，按 `@rule:prototype-ui-alignment`，P3 必须先补一个原型截点（个人主页信用状态的版式与文案位置），再由实现对齐。
+- `{TBD}`：无。非阻塞项（管理端形态、契约 / 迁移号、规则说明页）已在 REQ-019 §8 标 deferred；等级契约形态与零变化留痕已由 D10 / D11 裁定。
+- A0 门 ⑨–⑫：全部通过。
+
+## REQ-020 增补 — 灵感详情页同行者卡片化
+
+### ① 数据契约（Data contract）
+
+| # | 概念 | grain（粒度） | 字段清单 | 状态迁移 | 来源 |
+|---|---|---|---|---|---|
+| A | **同行者资料卡**（展示派生，不落库） | 每行程 × 每位已接受同行者 1 张卡 | 展示字段全部来自既有 `DemoUser`：`id`、`nickname`、`avatar_initial`、`avatar_url`、`school`、`major`、`job`、`city`、`bio`、`interests`；不新增存储字段 | 申请被接受 → 进入 `participants` → 出现卡片；退出 / 取消（不再 accepted）→ 从 `participants` 消失 → 卡片消失；发布者永不进入卡片列表 | `TripDetailResponse.participants`；`ApplicationServiceImpl.participants` |
+| B | **发布者资料卡**（既有，不变） | 每行程 1 张 | `trip.publisher` 的同一 `DemoUser` 字段 | 不随本需求变化 | `TripDetailResponse.publisher` |
+| C | **已加入人数**（既有，不变） | 每行程 1 个整数 | `joined_count`（含发布者）/ `capacity` | 接受 / 退出时由后端维护；本需求只读 | `TripDetailResponse.joinedCount` / `capacity` |
+
+- **唯一真相：** 同行者集合仍以 `participants` 为唯一真相；前端只做「过滤发布者 + 渲染卡片」，不复制、不缓存、不重排。
+- **无新字段：** 不新增资料字段、不新增同行者专用 DTO；卡片直接消费 `DemoUser`。
+- **人数口径：** `joined_count` 仍包含发布者；「当前同行者」列表排除发布者后，卡片数量 = `participants.length - 1`，与区标题的人数口径不要求相等（标题沿用「当前同行者 n/capacity」现状）。
+
+### ② 边界归属（Boundary attribution）
+
+| 规则 | 分支 | in / out | 理由 |
+|---|---|---|---|
+| 发布者过滤 | `participants` 中含发布者 | in | D1：发布者只在自己的资料卡出现；前端按 `trip.publisher.id` 过滤 |
+| 发布者过滤 | 只有发布者、无其他同行者 | in | 展示空态提示；不展示空列表或发布者姓名 |
+| 发布者过滤 | 发布者 id 与同行者 id 重复（脏数据） | in | 过滤后去重，不重复渲染同一 id |
+| 字段回退 | 有学校 + 专业 | in | 昵称后展示「学校 · 专业」（既有 `publisherSummary` 规则） |
+| 字段回退 | 无学校 / 专业、有职业 | in | 昵称后展示职业 |
+| 字段回退 | 无学校 / 专业 / 职业、有城市 | in | 昵称后展示城市 |
+| 字段回退 | 四者都为空 | in | 只展示头像与昵称；不出现悬空分隔符 |
+| 字段回退 | 无简介 / 无兴趣 | in | 对应节点不渲染；不出现空占位或 `undefined / null` |
+| 资料入口 | 点击卡片主体 | in | 调用 `openProfile(member.id)`；不跳转、不打开聊天 |
+| 资料入口 | 资料未完善用户 | in | 沿用 `ProfileModal` 的未完善展示；卡片仍可打开 |
+| 聊天入口 | 查看者为发布者 | in | 其他同行者卡片显示聊天入口 |
+| 聊天入口 | 查看者为已接受同行者 | in | 其他同行者卡片显示聊天入口（沿用现状） |
+| 聊天入口 | 查看者为本人 | out | 自己卡片不显示自我聊天 |
+| 聊天入口 | 查看者未申请 / 待处理 / 已拒绝 / 已取消 | out | 沿用现状，不显示聊天入口 |
+| 聊天入口 | 查看者已退出同行 | out（本需求不扩大） | 沿用「退出后仅与发布者保留会话」口径；不因卡片化新增入口 |
+| 排序 | 后端返回顺序 | in | 发布者在最前，其余按申请时间；前端仅过滤发布者，不重排 |
+| 人数 | 页头 `joined_count / capacity` | in | 保持包含发布者的现状口径 |
+| 接口 | 新增端点 / 字段 / 迁移 | out（禁止） | 纯展示层；`participants` 字段与顺序不变 |
+| 响应式 | 1440 / 1024 / 768 / 390 × 浅 / 深色 | in | 卡片换行 / 堆叠，不横向溢出 |
+
+### ③ 跨 REQ 一致性（Cross-REQ consistency）
+
+| 能力 | 各 REQ 的 grain + 字段 | aligned? | anchor REQ |
+|---|---|---|---|
+| `trip-plans`（Living） | Living Spec 要求详情页展示「当前同行者」，且「当前同行者至少包含发布者本人」；本需求 MODIFIED 展示口径为「发布者资料卡 + 同行者资料卡（不含发布者）」，人数统计不变 | ✓ aligned（以 Delta MODIFIED 替换该 Requirement 块） | `openspec/specs/trip-plans/spec.md:191-199` |
+| `trip-companions`（Living） | 接受申请后申请人进入 `participants`；退出后移出；本需求只读消费，不改状态机与人数 | ✓ aligned | `openspec/specs/trip-companions/spec.md:69-83` |
+| `user-profile`（REQ-008，未归档） | 资料字段与「学校 · 专业」派生规则；本需求复用 `publisherSummary`，不改字段与规则 | ✓ aligned | REQ-008 / `add-user-profile` |
+| `user-profiles`（REQ-009，未归档） | `GET /api/users/{userId}/profile` 与 `ProfileModal`；本需求只读复用 `openProfile`，不改端点 | ✓ aligned | REQ-009 / `add-user-profiles` |
+| `trip-experiences`（Living） | 体验作者也使用 `DemoUser` 摘要；本需求不触碰体验区与首页体验卡 | ✓ aligned | `openspec/specs/trip-experiences/spec.md` |
+| `design-system` | 卡片沿用现有 `avatar` / `publisher-row` / `tag` 令牌，不新增色板语义 | ✓ aligned | `openspec/specs/design-system/spec.md` |
+
+无未收敛的 ✗；A0 门 ⑪ 通过。
+
+### ④ 通知 / 展示契约（Notification / display contract）
+
+MVP 无推送、无通知；以下为详情页同行者展示面的 UI 契约。
+
+| trigger / surface（展示面） | recipient role | content + display fields | channel | cardinality | source |
+|---|---|---|---|---|---|
+| 行程详情 —「当前同行者」区 | 所有已登录用户 | 每位非发布者同行者 1 张资料卡：`Avatar lg` + 昵称 + `publisherSummary`（学校 · 专业 / 职业 / 城市）+ 简介（非空）+ 兴趣标签（非空）；卡片主体可打开资料弹窗 | 应用内页面 | 每位同行者 1 张 | `C-1` ~ `C-4`；`TripDetailResponse.participants` |
+| 行程详情 —「当前同行者」空态 | 所有已登录用户 | 可读提示「还没有其他同行者」；不展示空列表 / 发布者姓名 / 破损卡片 | 应用内空态 | 每行程 1 处（无其他同行者时） | `C-6`；D1 |
+| 行程详情 — 同行者卡片聊天入口 | 发布者 / 已接受同行者 | 文本「聊天」，点击进入 `#/chat/{tripId}/{memberId}`；本人卡片不显示 | 应用内链接 | 每位可见同行者 1 处 | `C-5`；既有聊天准入 |
+| 行程详情 — 发布者资料卡 | 所有已登录用户 | **不变**：头像 + 昵称 + 摘要 + 简介 + 兴趣，整卡打开资料弹窗 | 应用内页面 | 每行程 1 处 | 既有实现 |
+| 行程详情 — 页头人数 | 所有已登录用户 | **不变**：`joined_count / capacity`（含发布者） | 应用内文本 | 每页 1 处 | `C-7`；既有实现 |
+
+无展示面缺 display-fields；A0 门 ⑫ 通过。
+
+### 探针记录（REQ-020 同行者卡片）
+
+- **发布者重复来源：** `ApplicationServiceImpl.participants` 显式先加入 `publisherOf(trip)`（`ApplicationServiceImpl.java:193-202`），因此前端必须按 `trip.publisher.id` 过滤；不要在后端改 `participants` 语义。
+- **字段完整：** `DemoUserResponse` 已返回 `school` / `city` / `major` / `job` / `bio` / `interests` / `avatarUrl` / `profileComplete`（`DemoUserResponse.java:10-36`），卡片无需新增请求。
+- **摘要复用：** `publisherSummary` 的入参是 `PublisherFields`，对同行者同样适用（`profileDisplay.ts:26-28`）；它是「学校 · 专业 → 职业 → 城市 → 空串」的纯函数，可直接复用，无需改名即可满足语义。
+- **资料弹窗：** `ProfileProvider` 全应用共用 `openProfile(userId)`（`ProfileContext.tsx:27-41`）；`ProfileModal` 已处理未完善资料与加载失败态。
+- **可交互元素嵌套：** 发布者卡片是 `<button>`；同行者卡片若需要同时承载「整卡开资料」与「聊天链接」，必须拆成并列的 `<button>`（卡片主体）与 `<a>`（聊天），不能把链接嵌进按钮。
+- **E2E 依赖：** 仅 `chat-entry.spec.ts:78-84` 使用 `.detail-participants` 选择器；改动后必须同步更新，避免测试悬空。
+- **单测现状：** `frontend/src/trips` 下没有 `TripDetailPage` 的组件级测试；本需求至少用 E2E 覆盖卡片、资料弹窗、空态与聊天入口，是否补组件单测由 P3 决定。
+- **样式冲突风险：** `frontend/src/styles.css` 有两处 `.detail-participants` 规则（`1265-1268`、`2691-2707`），且该文件是多人并行修改热点；实现时删除 / 收敛旧规则，新增样式追加到文件末段，避免 merge 时整块丢失（见历史事故：chat 样式在 merge 中丢失）。
+- **原型现状：** `docs/prototype/ui.js:509-520` 的 `compPanel` 当前包含发布者并渲染紧凑 `.companion` 行；按 D1 / D2 需改为「过滤发布者 + 资料卡 + 空态」，并同步 `docs/prototype/styles.css:712-725`。
+- **响应式：** 详情页容器为 `.form-page` / `.detail-stack`；同行者卡片在 390 宽度下应单列堆叠，聊天入口不遮挡资料区。
+- **零后端：** 不新增端点、字段、迁移、契约版本；`openapi.yaml` 的 `participants` 描述保持现状。
+- `{TBD}`：无。非阻塞项（组件单测、故事点）已在 REQ-020 §8 标 deferred。
+- A0 门 ⑨–⑫：全部通过。
+
+## REQ-021 增补 — 取消行程（issue #28）
+
+> 编号说明：REQ-019 由 `add-credit-account` 占用、REQ-020 由并行 `refine-detail-companions` 预留；本需求顺延为 REQ-021，故事 S21。
+
+### ① 数据契约（Data contract）
+
+- **状态：** `TripStatus` 新增 `cancelled`（「已取消」），终态；判定优先级：`cancelledAt` 非空 → CANCELLED > `completedAt` 非空 / 到达结束时刻 → COMPLETED > 到达开始日期 → ONGOING > 人数满 → FULL > RECRUITING。
+- **取消字段（三列，均允许为空）：** 取消时间 `cancelled_at`、原因码 `cancel_reason`、说明 `cancel_note`。旧行程三列为空，读取与状态推导不受影响。
+- **原因码 8 值（wire）：** `personal` / `time_changed` / `plan_changed` / `not_enough_people` / `weather` / `illness` / `safety` / `other`；仅 `other` 时 `cancel_note` 必填 1–100 字，其余原因不写说明。
+- **取消端点：** `POST /api/trips/{tripId}/cancel`，请求体 `{ reason, note? }`，响应为取消后的行程详情；错误码：非发布者 403 `FORBIDDEN`；状态不可取消 409 `TRIP_NOT_OPEN`；原因非法 / 说明缺失或超长 400 `INVALID_INPUT`。
+- **响应字段：** 行程摘要与详情 `status` 可为 `cancelled`；详情新增 `cancelled_at` / `cancel_reason` / `cancel_note`，其中后两者仅对发布者与 ACCEPTED 同行者返回，其他请求人返回空。
+- **列表口径：** 灵感首页与匹配列表（`selectOpenPage` / `selectOpenList`）新增「`cancelled_at` 为空」条件；分页 `total` 同步排除取消行程。
+- **申请口径：** 取消事务内把该行程 PENDING 申请置为 CANCELLED；ACCEPTED 不变；新申请按 `TRIP_NOT_OPEN` 拒绝。
+- **聊天口径：** 取消后发送消息返回既有 `CHAT_READ_ONLY`；历史消息读取不变。
+- **统计口径：** 公开资料「发布行程」= 本人发布且未取消；「已完成」口径不变。
+- **版本：** 契约 0.13.0；迁移 V19（V18 由在途 `add-credit-account` / `add-ai-itinerary` 占用，按合并顺序串行）。
+
+### ② 边界归属（Boundary attribution）
+
+| 关注点 | 归属 | 说明 |
+|---|---|---|
+| 取消权限、可取消状态、原因字典、二次确认、终态 | `trip-cancellation`（ADDED） | 本需求新增；实现可落在 `TripPlanService`，规格归属新能力 |
+| 行程状态推导与列表查询 | `trip-plans` | 只增加「取消优先」与排除条件，不改既有 Requirement 块 |
+| 申请自动取消与新申请拒绝 | `trip-companions` | 复用申请状态机与 `TRIP_NOT_OPEN`，取消侧约束写在 `trip-cancellation` |
+| 聊天只读 | `trip-companions` | 复用 `CHAT_READ_ONLY`，新增「已取消」提示 |
+| 体验资格 | `trip-experiences` | 不改规则；取消天然不满足 `COMPLETED` |
+| 发布行程统计 | `user-profiles` | 只改聚合口径，不改接口形状 |
+| 我的旅行分组 | `trip-companions` | 四组不变，只补「已取消」文案与入口资格 |
+
+### ③ 跨 REQ 一致性（Cross-REQ consistency）
+
+- **与 REQ-002（浏览）：** `trip-plans` Living Spec 已要求「已结束与已取消行程 MUST NOT 出现在默认列表」；本需求让取消态可观测，不新增平行口径。
+- **与 REQ-003（申请/聊天）：** 取消触发的 PENDING 自动取消与聊天只读复用既有状态机与错误码，不新增申请状态。
+- **与 REQ-011（结束）：** 已结束与已取消互斥且均为终态；取消仅允许在招募中/已满员，结束仅允许在旅行中，不存在同一时刻两种操作都可用。
+- **与 REQ-015（我的旅行）：** 四组与待处理计数不变；取消行程留在「我发布的」/「已匹配同行」，不进入「已完成」。
+- **与 REQ-016（集合信息）：** 取消后不可编辑集合信息，复用 `TRIP_NOT_OPEN` 拒绝。
+- **与 REQ-009（公开资料统计）：** 「发布行程」排除取消，与 TODO.md:124 口径一致。
+- **与 REQ-004（体验）：** 取消不开放体验入口，后端按 `EXPERIENCE_NOT_ALLOWED` 拒绝。
+
+### ④ 通知 / 展示契约（Notification / display contract）
+
+| surface | recipient | content + display fields | channel | cardinality |
+|---|---|---|---|---|
+| 详情页状态徽标 | 所有可见者 | 「已取消」文字，不以颜色作为唯一表达 | 应用内文本 | 每页 1 处 |
+| 详情页取消原因 | 发布者 + ACCEPTED 同行者 | 原因标签；`other` 时追加说明 | 应用内文本 | 每页最多 1 处 |
+| 取消流程 | 发布者 | 8 项原因单选；选 `other` 时显示说明框（1–100 字） | 应用内表单 | 每次 1 处 |
+| 二次确认 | 发布者 | 「取消后不可恢复」+ 首页下架 / 申请关闭 / 同行者可见 | 应用内弹窗 | 每次 1 处 |
+| 我的旅行行 | 发布者 / ACCEPTED 同行者 | 「已取消」徽标；发布者行内保留「取消行程」仅在可取消时 | 应用内文本 / 按钮 | 每行最多 1 处 |
+| 聊天页 | 发布者 + ACCEPTED 同行者 | 「该行程已取消」；输入区只读 | 应用内提示 | 每会话 1 处 |
+
+无展示面缺 display-fields；A0 门 ⑪ 通过。
+
+### 探针记录（REQ-021 取消行程）
+
+- `TripPlan.status(now)` 当前只读 `completedAt` / 日期 / 人数；取消必须新增独立标记，否则无法与「旅行中」区分。
+- `TripPlanMapper.xml` 的开放列表与到期物化查询都只认 `completed_at`；取消行程若不排除，会同时出现在首页与「到期物化」扫描中。
+- `TripCompletedEvent` 监听器已能把 PENDING 申请批量置 CANCELLED；取消若复用同一事件，语义会误标为「已结束」，P3 需决定新增事件还是拆分原因。
+- `ChatServiceImpl` 只对 `COMPLETED` 抛 `CHAT_READ_ONLY`；取消需新增分支，但不能改变既有「该行程已结束」文案。
+- `MyTripsServiceImpl` 的 `published` 是「全部本人行程」、`matched` 是「非 COMPLETED 的 ACCEPTED」；取消行程会自然落入两组，前端只需按 `status` 显示「已取消」，无需改分组。
+- `UserProfileStatsServiceImpl` 的「发布行程」当前为 `publishedTrips.size()`；排除取消只改一行过滤，不改接口形状。
+- `ExperienceServiceImpl` 仅允许 `COMPLETED`；取消行程无需改资格规则，补回归断言防止未来放宽。
+- 原型 `store.js:240-248` 已定义「取消行程只取消 PENDING、ACCEPTED 保留」；与 REQ-021 的 D3 / D5 一致。
+- `{TBD}`：无。非阻塞项（原因码 wire 命名、事件复用、列类型）在 REQ-021 §8 OQ-10 / OQ-11 记为 Dev 后续。
+
+## REQ-022 增补 — 目的地天气与出行提醒
+
+### ① 数据契约
+
+| 事实 | 证据 | 约束 |
+|---|---|---|
+| 行程只有目的地**区划码**与名称，没有经纬度 | `TripPlan.java`、`TripCreateRequest.java`、`TripDetailResponse.java`、`V11__add_destination_area_code.sql` | 天气必须先把区划码解析成坐标，或使用调用方给的坐标 |
+| 支持 375 个城市 | `backend/src/main/resources/area/area-codes.json`（34 省级 / 375 城市） | 不能靠手工静态坐标表；必须解析 + 缓存 |
+| 目的地是省市级联，不是地图选点 | `TripCreatePage` 的 `AreaCascader`；`AmapPlacePicker` 只用于途经点与集合点 | 途经点坐标不能挪用为目的地坐标（地点会错位） |
+| Open-Meteo daily 变量与窗口 | 官方 `v1/forecast` 文档：`temperature_2m_max` / `temperature_2m_min` / `precipitation_probability_max` / `precipitation_sum` / `weather_code` / `wind_speed_10m_max` / `uv_index_max`；`timezone` 必填；`forecast_days` 0–16 | 窗口取「今天 ~ 今天 + 15」；UV 可空，不得补 0 |
+| 上游错误形态 | Open-Meteo 错误返回 HTTP 400 + `{"error":true,"reason":…}` | 上游失败统一归一为天气不可用，不向用户暴露原始 reason |
+
+### ② 边界归属
+
+| 关注点 | 归属 | 说明 |
+|---|---|---|
+| 天气数据 | Open-Meteo | 唯一数据源，RouteMe 不做估算 |
+| 坐标 | 高德选点结果优先 / 区划解析兜底 | 不做第三方地理编码，不做离线估算 |
+| 提醒 | RouteMe 后端固定规则 | 阈值可判定、可单测；不引入 AI |
+| 地图与路线 | 高德 | 本故事不改地图行为 |
+| AI 推荐 | `add-ai-itinerary` | 后续复用本故事的天气端点与提醒函数 |
+
+### ③ 跨 REQ 一致性
+
+| 相关 REQ | 关系 |
+|---|---|
+| REQ-017（AI 推荐） | 该 change 的天气代理在本 change 落地后应改为复用；提示词里的天气摘要口径与本 change 一致（真实数据 + `source` 标注） |
+| REQ-002 / REQ-006 / REQ-007（发布与浏览） | 发布页新增天气仅展示，不改变表单校验、发布契约与列表筛选 |
+| REQ-016（地图导航风） | 详情页新增天气区块不得破坏既有地图与路线区块布局 |
+| REQ-021（取消行程） | 不新增按状态隐藏天气的分支：日期已过自然落到「暂无该日期天气预报」；未发生的取消行程仍展示事实天气，不额外判断 |
+
+### ④ 展示契约 + 探针
+
+| 展示 | 口径 |
+|---|---|
+| 天气卡标题 | 「目的地天气」，副标注数据来源与日期 |
+| 必展示字段 | 天气状态、最高 / 最低温、降雨概率、降水量、风速 |
+| 条件字段 | UV（上游返回时展示） |
+| 提醒 | 每条一句，前置类别标签（雨 / 热 / 冷 / 风 / 平稳） |
+| 状态 | 未就绪（缺目的地或日期）、加载中、成功、暂无该日期天气预报、失败 + 重试 |
+| 探针 | `data-testid="weather-card"`、`weather-loading`、`weather-error`、`weather-retry`、`weather-reminder`、`weather-out-of-range` |

@@ -73,17 +73,34 @@ function planFixture(key: PlanKey) {
 }
 
 function weatherFixture(key: WeatherKey, date: string) {
-  const base = { date, precipitation_mm: 0, wind_speed_kmh: 12.5, source: 'open-meteo' };
+  const base = { precipitation_mm: 0, wind_speed_kmh: 12.5 };
+  let daily;
   switch (key) {
     case 'rainy':
-      return { ...base, temp_max_c: 22, temp_min_c: 18, precipitation_probability_pct: 80, precipitation_mm: 12.5, weather_code: 61, weather_text: '小雨', wind_speed_kmh: 18, uv_index: 2 };
+      daily = { ...base, temp_max_c: 22, temp_min_c: 18, precipitation_probability_pct: 80, precipitation_mm: 12.5, weather_code: 61, weather_text: '小雨', wind_speed_kmh: 18, uv_index: 2 };
+      break;
     case 'hot':
-      return { ...base, temp_max_c: 35, temp_min_c: 27, precipitation_probability_pct: 5, weather_code: 0, weather_text: '晴', wind_speed_kmh: 8, uv_index: 9 };
+      daily = { ...base, temp_max_c: 35, temp_min_c: 27, precipitation_probability_pct: 5, weather_code: 0, weather_text: '晴', wind_speed_kmh: 8, uv_index: 9 };
+      break;
     case 'cold':
-      return { ...base, temp_max_c: 14, temp_min_c: 8, precipitation_probability_pct: 10, weather_code: 2, weather_text: '多云', wind_speed_kmh: 20, uv_index: 3 };
+      daily = { ...base, temp_max_c: 14, temp_min_c: 8, precipitation_probability_pct: 10, weather_code: 2, weather_text: '多云', wind_speed_kmh: 20, uv_index: 3 };
+      break;
     default:
-      return { ...base, temp_max_c: 24, temp_min_c: 17, precipitation_probability_pct: 20, weather_code: 1, weather_text: '多云', uv_index: 6 };
+      daily = { ...base, temp_max_c: 24, temp_min_c: 17, precipitation_probability_pct: 20, weather_code: 1, weather_text: '多云', uv_index: 6 };
   }
+  // 契约 0.17.0：天气复用 add-trip-weather 嵌套形状（weather.daily + available + reminders）。
+  return {
+    date,
+    destination_code: '440100',
+    city: '广州市',
+    lng: 113.264,
+    lat: 23.129,
+    available: true,
+    reason: null,
+    weather: daily,
+    reminders: [],
+    source: 'open-meteo',
+  };
 }
 
 /* ---------- window.AMap 替身 ---------- */
@@ -224,9 +241,18 @@ async function installAmapStub(page: Page) {
       Riding: makeRouteService('bicycling'),
       Transfer: makeRouteService('transit'),
     };
+    // 底图为栅格瓦片（createRasterMap）：点击走宿主 pointerdown/up，按实例投影取像素。
     w.__amapClick = (lng: number, lat: number) => {
-      const map = w.__amapLastMap;
-      if (map) { (map.handlers.click ?? []).forEach((fn: (event: any) => void) => fn({ lnglat: ll(lng, lat) })); }
+      const host = document.querySelector('.amap-canvas-host') as (HTMLElement & { __rasterMap?: any }) | null;
+      const map = host?.__rasterMap;
+      if (!host || !map) { return; }
+      const rect = host.getBoundingClientRect();
+      const pixel = map.project([lng, lat]);
+      const clientX = rect.left + pixel.x;
+      const clientY = rect.top + pixel.y;
+      const init = { bubbles: true, button: 0, pointerId: 1, clientX, clientY };
+      host.dispatchEvent(new PointerEvent('pointerdown', init));
+      host.dispatchEvent(new PointerEvent('pointerup', init));
     };
   });
 }

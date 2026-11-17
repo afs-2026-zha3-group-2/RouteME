@@ -53,14 +53,23 @@ const route: RoutePlan = {
 
 const weather: WeatherForecast = {
   date: '2026-11-21',
-  temp_max_c: 24,
-  temp_min_c: 17,
-  precipitation_probability_pct: 20,
-  precipitation_mm: 0,
-  weather_code: 1,
-  weather_text: '多云',
-  wind_speed_kmh: 12.5,
-  uv_index: 6,
+  destination_code: '440100',
+  city: '广州市',
+  lng: 113.264,
+  lat: 23.129,
+  available: true,
+  reason: null,
+  weather: {
+    weather_code: 1,
+    weather_text: '多云',
+    temp_max_c: 24,
+    temp_min_c: 17,
+    precipitation_probability_pct: 20,
+    precipitation_mm: 0,
+    wind_speed_kmh: 12.5,
+    uv_index: 6,
+  },
+  reminders: [],
   source: 'open-meteo',
 };
 

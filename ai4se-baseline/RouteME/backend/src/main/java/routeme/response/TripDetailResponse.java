@@ -31,11 +31,15 @@ public record TripDetailResponse(
         DemoUserResponse publisher,
         List<DemoUserResponse> participants,
         Instant completedAt,
+        Instant cancelledAt,
+        String cancelReason,
+        String cancelNote,
         Instant createdAt,
         Long aiItineraryId) {
 
     public static TripDetailResponse from(
-            TripPlan trip, DemoUser publisher, List<DemoUser> participants, Instant now) {
+            TripPlan trip, DemoUser publisher, List<DemoUser> participants, Instant now,
+            boolean includeCancelDetail) {
         return new TripDetailResponse(
                 trip.id(),
                 trip.title(),
@@ -59,6 +63,9 @@ public record TripDetailResponse(
                 DemoUserResponse.from(publisher),
                 participants.stream().map(DemoUserResponse::from).toList(),
                 trip.completedAt(),
+                trip.cancelledAt(),
+                includeCancelDetail ? trip.cancelReason() : null,
+                includeCancelDetail ? trip.cancelNote() : null,
                 trip.createdAt(),
                 trip.aiItineraryId());
     }

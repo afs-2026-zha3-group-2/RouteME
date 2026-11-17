@@ -3,8 +3,9 @@ import { cityLabel } from '../area/areaOptions';
 import { tripMessages } from '../i18n/tripMessages';
 import { useProfile } from '../profiles/ProfileContext';
 import { publisherSummary } from '../profile/profileDisplay';
+import { creditLine, creditTone } from '../profile/creditDisplay';
 import { Avatar } from '../shell/Avatar';
-import type { Match, TripSummary } from '../types';
+import type { Match, TripSummary, UserCreditEntry } from '../types';
 import { coverTone } from './coverTone';
 import { StatusBadge } from './StatusBadge';
 import { formatMonthDay, weekdayLabel } from './tripDateFormat';
@@ -16,11 +17,13 @@ function dayLabel(iso: string): string {
 type Props = {
   trip: TripSummary;
   match?: Match;
+  /** 发布者信用状态；由页面层一次取数后下发，缺失时不展示。 */
+  credit?: UserCreditEntry;
   /** 发布页实时预览：不跳详情、不打开资料弹窗。 */
   preview?: boolean;
 };
 
-export function TripCard({ trip, match, preview = false }: Props) {
+export function TripCard({ trip, match, credit, preview = false }: Props) {
   const { openProfile } = useProfile();
   const joinedRate = trip.capacity === 0 ? 0 : Math.round((trip.joined_count / trip.capacity) * 100);
   const width = Math.min(100, Math.max(0, joinedRate));
@@ -96,6 +99,11 @@ export function TripCard({ trip, match, preview = false }: Props) {
                 {publisherSummary(trip.publisher) !== '' &&
                   ` · ${publisherSummary(trip.publisher)}`}
               </span>
+              {credit !== undefined && (
+                <span className={`profile-credit is-compact tc-credit ${creditTone(credit.credit_level)}`}>
+                  {creditLine(credit.credit_score, credit.credit_level)}
+                </span>
+              )}
             </button>
           )}
           <span className="tc-cap">

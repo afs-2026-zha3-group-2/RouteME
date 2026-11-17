@@ -50,6 +50,17 @@ describe('canLeaveTrip', () => {
     ).toBe(false);
   });
 
+  it('hides the action when the trip has been cancelled', () => {
+    expect(
+      canLeaveTrip({
+        currentUserId: 1,
+        isPublisher: false,
+        tripStatus: 'cancelled',
+        participants: [user(3), user(1)],
+      }),
+    ).toBe(false);
+  });
+
   it('hides the action for a companion who already left', () => {
     expect(
       canLeaveTrip({

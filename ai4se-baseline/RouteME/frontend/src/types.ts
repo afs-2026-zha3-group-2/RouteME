@@ -14,6 +14,16 @@ export type Paging = {
   size: number;
 };
 
+/** 信用等级：由后端按分数实时派生，前端只负责文案与配色映射。 */
+export type CreditLevel = 'excellent' | 'good' | 'fair' | 'low' | 'risk';
+
+/** 批量信用状态项（`GET /api/users/credits`）；不含任何明细。 */
+export type UserCreditEntry = {
+  user_id: number;
+  credit_score: number;
+  credit_level: CreditLevel;
+};
+
 /**
  * 用户摘要：身份门、行程发布者、体验作者与会话用户共用。
  * 资料未完善时 city / major / job 缺省，学校可为空串。
@@ -62,6 +72,9 @@ export type UserProfile = {
   travel_style?: string | null;
   bio?: string | null;
   profile_complete: boolean;
+  /** 信用分，0–100；本人与他人视角均返回。 */
+  credit_score: number;
+  credit_level: CreditLevel;
   joined_at?: string | null;
   stats?: ProfileStats;
 };
@@ -93,7 +106,7 @@ export type AuthRegisterRequest = {
   nickname: string;
 };
 
-export type TripStatus = 'recruiting' | 'full' | 'ongoing' | 'completed';
+export type TripStatus = 'recruiting' | 'full' | 'ongoing' | 'completed' | 'cancelled';
 
 export type TripSummary = {
   id: number;
@@ -124,6 +137,26 @@ export type TripDetail = TripSummary & {
   budget_max_cents: number | null;
   participants: DemoUser[];
   completed_at: string | null;
+  cancelled_at: string | null;
+  /** 仅发布者与已接受同行者可见；其他请求为 null。 */
+  cancel_reason: TripCancelReason | null;
+  /** 仅「其他原因」必填；仅发布者与已接受同行者可见。 */
+  cancel_note: string | null;
+};
+
+export type TripCancelReason =
+  | 'personal'
+  | 'time_changed'
+  | 'plan_changed'
+  | 'not_enough_people'
+  | 'weather'
+  | 'illness'
+  | 'safety'
+  | 'other';
+
+export type TripCancelRequest = {
+  reason: TripCancelReason;
+  note?: string | null;
 };
 
 export type TripCreateRequest = {
@@ -224,6 +257,11 @@ export type ReportRequest = {
 
 export type ExperienceIntensity = 'relaxed' | 'moderate' | 'tiring';
 
+export type ExperiencePhoto = {
+  id: number;
+  url: string;
+};
+
 export type Experience = {
   id: number;
   trip: TripSummary;
@@ -231,6 +269,7 @@ export type Experience = {
   content: string;
   intensity: ExperienceIntensity;
   advice: string;
+  photos: ExperiencePhoto[];
   created_at: string;
   updated_at: string;
 };
@@ -239,6 +278,7 @@ export type ExperienceWriteRequest = {
   content: string;
   intensity: ExperienceIntensity;
   advice: string;
+  photo_ids?: number[];
 };
 
 export type ExperienceFilters = {
@@ -248,7 +288,48 @@ export type ExperienceFilters = {
   tags?: string[];
 };
 
-/* ---------- AI 智能规划（add-ai-itinerary，契约 0.12.0） ---------- */
+/** Open-Meteo 单日天气；上游缺省的字段为 null，页面不展示对应项。 */
+export type WeatherDaily = {
+  weather_code: number | null;
+  weather_text: string;
+  temp_max_c: number;
+  temp_min_c: number;
+  precipitation_probability_pct: number | null;
+  precipitation_mm: number | null;
+  wind_speed_kmh: number | null;
+  uv_index: number | null;
+};
+
+/** 提醒类别：决定前端标签与色调，文案本身来自后端。 */
+export type WeatherReminderCode =
+  | 'rain'
+  | 'heat'
+  | 'uv'
+  | 'cold'
+  | 'temperature_gap'
+  | 'wind'
+  | 'calm';
+
+export type WeatherReminder = {
+  code: WeatherReminderCode;
+  text: string;
+};
+
+/** 目的地单日天气响应；`available=false` 时不携带任何天气数值。 */
+export type WeatherForecast = {
+  date: string;
+  destination_code: string | null;
+  city: string | null;
+  lng: number | null;
+  lat: number | null;
+  available: boolean;
+  reason: 'OUT_OF_RANGE' | null;
+  weather: WeatherDaily | null;
+  reminders: WeatherReminder[];
+  source: 'open-meteo';
+};
+
+/* ---------- AI 智能规划（add-ai-itinerary，契约 0.17.0；天气复用 add-trip-weather） ---------- */
 
 export type AiDuration = 'half_day' | 'one_day' | 'two_day';
 export type AiTravelMode = 'transit' | 'walking' | 'driving';
@@ -292,20 +373,6 @@ export type AiPlan = {
   budget: AiBudget;
 };
 
-/** Open-Meteo daily 预报归一字段；mm / 风速 / UV 上游缺省时可为 null。 */
-export type WeatherForecast = {
-  date: string;
-  temp_max_c: number;
-  temp_min_c: number;
-  precipitation_probability_pct: number;
-  precipitation_mm?: number | null;
-  weather_code: number;
-  weather_text: string;
-  wind_speed_kmh?: number | null;
-  uv_index?: number | null;
-  source: string;
-};
-
 export type AiGenerateRequest = {
   origin: AiPlace;
   destination: AiPlace;
@@ -318,7 +385,7 @@ export type AiGenerateRequest = {
   reduce_budget: boolean;
 };
 
-/** weather 为本次生成后端实际注入提示词的权威天气摘要（L-02）。 */
+/** weather 为本次生成后端实际注入提示词的权威天气摘要（add-trip-weather 嵌套契约）。 */
 export type AiGenerateResponse = {
   plan: AiPlan;
   weather: WeatherForecast;

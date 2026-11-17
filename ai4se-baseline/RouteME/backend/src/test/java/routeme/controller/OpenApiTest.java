@@ -45,6 +45,38 @@ class OpenApiTest {
     }
 
     @Test
+    void in_openApiFile_out_userCreditContractDeclared() throws IOException {
+        // Given
+        Map<String, Object> document = loadYaml(SPEC_PATH);
+        Map<String, Object> userProfile = schema(document, "UserProfile");
+        Map<String, Object> creditEntry = schema(document, "UserCreditEntry");
+
+        // When
+        Map<String, Object> creditScore = asMap(properties(userProfile).get("credit_score"));
+        Map<String, Object> creditLevel = asMap(properties(userProfile).get("credit_level"));
+
+        // Then
+        assertAll(
+                () -> assertTrue(
+                        required(userProfile).containsAll(List.of("credit_score", "credit_level")),
+                        "credit fields are required"),
+                () -> assertTrue(paths(document).containsKey("/users/credits"), "batch credit path declared"),
+                () -> assertTrue(
+                        required(creditEntry).containsAll(List.of("user_id", "credit_score", "credit_level")),
+                        "batch credit entry fields"),
+                () -> assertEquals("integer", creditScore.get("type"), "credit_score type"),
+                () -> assertEquals(0, creditScore.get("minimum"), "credit_score minimum"),
+                () -> assertEquals(100, creditScore.get("maximum"), "credit_score maximum"),
+                () -> assertEquals(Boolean.TRUE, creditScore.get("readOnly"), "credit_score readOnly"),
+                () -> assertEquals("string", creditLevel.get("type"), "credit_level type"),
+                () -> assertEquals(
+                        List.of("excellent", "good", "fair", "low", "risk"),
+                        creditLevel.get("enum"),
+                        "credit_level enum"),
+                () -> assertEquals(Boolean.TRUE, creditLevel.get("readOnly"), "credit_level readOnly"));
+    }
+
+    @Test
     void in_openApiFile_out_tripPlanContractDeclared() throws IOException {
         // Given
         Map<String, Object> document = loadYaml(SPEC_PATH);
@@ -60,7 +92,7 @@ class OpenApiTest {
 
         // Then
         assertAll(
-                () -> assertEquals("0.12.0", info.get("version"), "info.version"),
+                () -> assertEquals("0.17.0", info.get("version"), "info.version"),
                 () -> assertTrue(paths(document).containsKey("/users"), "/users declared"),
                 () -> assertTrue(paths(document).containsKey("/trips/{tripId}"), "detail path declared"),
                 () -> assertTrue(
@@ -79,7 +111,7 @@ class OpenApiTest {
                         "create required fields"),
                 () -> assertTrue(
                         enums(properties(tripPlan).get("status"))
-                                .containsAll(List.of("recruiting", "full", "ongoing", "completed")),
+                                .containsAll(List.of("recruiting", "full", "ongoing", "completed", "cancelled")),
                         "status enum"),
                 () -> assertTrue(properties(tripPlan).containsKey("ending_soon"), "ending_soon declared"),
                 () -> assertTrue(
@@ -96,6 +128,45 @@ class OpenApiTest {
                 () -> assertTrue(properties(tripPlan).containsKey("province_code"), "province_code declared"),
                 () -> assertTrue(properties(tripPlan).containsKey("province_name"), "province_name declared")
         );
+    }
+
+    @Test
+    void in_openApiFile_out_weatherContractDeclared() throws IOException {
+        // Given
+        Map<String, Object> document = loadYaml(SPEC_PATH);
+
+        // When
+        Map<String, Object> forecast = operation(document, "/weather/forecast", "get");
+        Map<String, Object> forecastSchema = schema(document, "WeatherForecast");
+        Map<String, Object> dailySchema = schema(document, "WeatherDaily");
+        Map<String, Object> reminderSchema = schema(document, "WeatherReminder");
+        Map<String, Object> errorSchema = schema(document, "Error");
+
+        // Then
+        assertAll(
+                () -> assertTrue(paths(document).containsKey("/weather/forecast"), "weather path declared"),
+                () -> assertTrue(
+                        parameterNames(document, forecast).containsAll(List.of("destination_code", "date", "lng", "lat")),
+                        "weather query parameters"),
+                () -> assertTrue(responses(forecast).containsKey("200"), "weather returns 200"),
+                () -> assertTrue(responses(forecast).containsKey("400"), "weather returns 400"),
+                () -> assertTrue(responses(forecast).containsKey("502"), "weather returns 502"),
+                () -> assertTrue(
+                        required(forecastSchema).containsAll(List.of("date", "available", "reminders", "source")),
+                        "weather required fields"),
+                () -> assertTrue(
+                        enums(properties(forecastSchema).get("source")).contains("open-meteo"), "weather source enum"),
+                () -> assertTrue(
+                        required(dailySchema).containsAll(List.of("weather_text", "temp_max_c", "temp_min_c")),
+                        "daily required fields"),
+                () -> assertTrue(properties(dailySchema).containsKey("uv_index"), "daily uv_index declared"),
+                () -> assertTrue(
+                        enums(properties(reminderSchema).get("code"))
+                                .containsAll(List.of("rain", "heat", "uv", "cold", "temperature_gap", "wind", "calm")),
+                        "reminder code enum"),
+                () -> assertTrue(
+                        enums(properties(errorSchema).get("code")).contains("WEATHER_UPSTREAM_ERROR"),
+                        "weather upstream error code"));
     }
 
     @Test
@@ -291,8 +362,12 @@ class OpenApiTest {
         // When
         Map<String, Object> getExperiences = operation(document, "/experiences", "get");
         Map<String, Object> postExperience = operation(document, "/trips/{tripId}/experiences", "post");
+        Map<String, Object> uploadPhoto = operation(document, "/trips/{tripId}/experiences/photos", "post");
+        Map<String, Object> loadPhoto = operation(document, "/experience-photos/{photoId}", "get");
         Map<String, Object> writeRequest = schema(document, "ExperienceWriteRequest");
         Map<String, Object> experience = schema(document, "Experience");
+        Map<String, Object> experiencePhoto = schema(document, "ExperiencePhoto");
+        Map<String, Object> tripPlan = schema(document, "TripPlan");
         Map<String, Object> errorSchema = schema(document, "Error");
 
         // Then
@@ -317,8 +392,32 @@ class OpenApiTest {
                         "intensity enum"),
                 () -> assertTrue(
                         required(experience)
-                                .containsAll(List.of("id", "trip", "author", "content", "intensity", "advice")),
+                                .containsAll(List.of("id", "trip", "author", "content", "intensity", "advice", "photos")),
                         "experience required fields"),
+                () -> assertTrue(
+                        properties(experience).containsKey("photos"),
+                        "experience photos field"),
+                () -> assertTrue(
+                        required(experiencePhoto).containsAll(List.of("id", "url")),
+                        "experience photo fields"),
+                () -> assertTrue(
+                        properties(writeRequest).containsKey("photo_ids"),
+                        "experience write photo_ids"),
+                () -> assertEquals(
+                        6, asMap(properties(writeRequest).get("photo_ids")).get("maxItems"),
+                        "photo_ids maxItems"),
+                () -> assertTrue(
+                        responses(uploadPhoto).containsKey("400")
+                                && responses(uploadPhoto).containsKey("401")
+                                && responses(uploadPhoto).containsKey("403"),
+                        "photo upload error statuses"),
+                () -> assertTrue(responses(loadPhoto).containsKey("404"), "photo read 404"),
+                () -> assertFalse(
+                        asMap(paths(document).get("/trips/{tripId}/experiences")).containsKey("delete"),
+                        "no experience delete endpoint"),
+                () -> assertFalse(
+                        properties(tripPlan).containsKey("photos"),
+                        "trip plan keeps no photos"),
                 () -> assertTrue(
                         enums(properties(errorSchema).get("code")).contains("EXPERIENCE_NOT_ALLOWED"),
                         "experience error code")
@@ -358,13 +457,50 @@ class OpenApiTest {
     }
 
     @Test
+    void in_openApiFile_out_tripCancellationContractDeclared() throws IOException {
+        // Given
+        Map<String, Object> document = loadYaml(SPEC_PATH);
+
+        // When
+        Map<String, Object> cancelTrip = operation(document, "/trips/{tripId}/cancel", "post");
+        Map<String, Object> cancelRequest = schema(document, "TripCancelRequest");
+        Map<String, Map<String, Object>> tripDetailProperties = allOfProperties(document, "TripDetail");
+
+        // Then
+        assertAll(
+                () -> assertTrue(responses(cancelTrip).containsKey("200"), "cancel returns 200"),
+                () -> assertTrue(responses(cancelTrip).containsKey("400"), "cancel returns 400"),
+                () -> assertTrue(responses(cancelTrip).containsKey("403"), "cancel returns 403"),
+                () -> assertTrue(responses(cancelTrip).containsKey("409"), "cancel returns 409"),
+                () -> assertTrue(
+                        parameterNames(document, cancelTrip).containsAll(List.of("X-User-Id", "tripId")),
+                        "cancel parameters"),
+                () -> assertTrue(required(cancelRequest).contains("reason"), "cancel reason required"),
+                () -> assertEquals(
+                        8, enums(properties(cancelRequest).get("reason")).size(), "cancel reason enum size"),
+                () -> assertTrue(
+                        enums(properties(cancelRequest).get("reason")).containsAll(List.of(
+                                "personal", "time_changed", "plan_changed", "not_enough_people",
+                                "weather", "illness", "safety", "other")),
+                        "cancel reason enum"),
+                () -> assertEquals(
+                        100, properties(cancelRequest).get("note").get("maxLength"), "cancel note maxLength"),
+                () -> assertTrue(tripDetailProperties.containsKey("cancelled_at"), "cancelled_at declared"),
+                () -> assertTrue(tripDetailProperties.containsKey("cancel_reason"), "cancel_reason declared"),
+                () -> assertTrue(tripDetailProperties.containsKey("cancel_note"), "cancel_note declared"),
+                () -> assertEquals(
+                        Boolean.TRUE, tripDetailProperties.get("cancel_reason").get("readOnly"),
+                        "cancel_reason readOnly")
+        );
+    }
+
+    @Test
     void in_openApiFile_out_aiItineraryContractDeclared() throws IOException {
         // Given
         Map<String, Object> document = loadYaml(SPEC_PATH);
 
         // When
         Map<String, Object> generate = operation(document, "/ai/itineraries/generate", "post");
-        Map<String, Object> forecast = operation(document, "/weather/forecast", "get");
         Map<String, Object> saveSnapshot = operation(document, "/ai/itineraries", "post");
         Map<String, Object> readSnapshot = operation(document, "/ai/itineraries/{id}", "get");
         Map<String, Object> generateRequest = schema(document, "AiGenerateRequest");
@@ -384,12 +520,6 @@ class OpenApiTest {
                 () -> assertTrue(responses(generate).containsKey("400"), "generate returns 400"),
                 () -> assertTrue(responses(generate).containsKey("502"), "generate returns 502"),
                 () -> assertTrue(responses(generate).containsKey("503"), "generate returns 503"),
-                () -> assertTrue(responses(forecast).containsKey("200"), "forecast returns 200"),
-                () -> assertTrue(responses(forecast).containsKey("400"), "forecast returns 400"),
-                () -> assertTrue(responses(forecast).containsKey("502"), "forecast returns 502"),
-                () -> assertTrue(
-                        parameterNames(document, forecast).containsAll(List.of("lng", "lat", "date")),
-                        "forecast query parameters"),
                 () -> assertTrue(responses(saveSnapshot).containsKey("201"), "snapshot save returns 201"),
                 () -> assertTrue(responses(saveSnapshot).containsKey("400"), "snapshot save returns 400"),
                 () -> assertTrue(responses(readSnapshot).containsKey("200"), "snapshot read returns 200"),
@@ -421,10 +551,8 @@ class OpenApiTest {
                                 .noneMatch(List.of("lng", "lat", "distance", "duration")::contains),
                         "plan stops must not carry map data"),
                 () -> assertTrue(
-                        required(weather).containsAll(List.of(
-                                "date", "temp_max_c", "temp_min_c", "precipitation_probability_pct",
-                                "weather_code", "weather_text", "source")),
-                        "weather required fields"),
+                        required(weather).containsAll(List.of("date", "available", "reminders", "source")),
+                        "weather required fields (add-trip-weather contract)"),
                 () -> assertTrue(
                         required(snapshot)
                                 .containsAll(List.of("origin", "destination", "date", "stops", "travel_mode")),

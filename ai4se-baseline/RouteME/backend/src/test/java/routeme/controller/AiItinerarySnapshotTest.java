@@ -49,10 +49,11 @@ class AiItinerarySnapshotTest {
               "route": { "mode": "transit", "distance_meters": 8200, "duration_seconds": 2700,
                          "legs": [ { "from_id": "poi-广州塔", "to_id": "poi-海心沙",
                                      "distance_meters": 8200, "duration_seconds": 2700 } ] },
-              "weather": { "date": "2026-11-21", "temp_max_c": 24, "temp_min_c": 17,
-                           "precipitation_probability_pct": 20, "precipitation_mm": 0.0,
-                           "weather_code": 1, "weather_text": "多云", "wind_speed_kmh": 12.5,
-                           "uv_index": 6.0, "source": "open-meteo" },
+              "weather": { "date": "2026-11-21", "city": "广州市", "lng": 113.264, "lat": 23.129,
+                           "available": true, "source": "open-meteo", "reminders": [],
+                           "weather": { "weather_code": 2, "weather_text": "多云", "temp_max_c": 24, "temp_min_c": 17,
+                                        "precipitation_probability_pct": 20, "precipitation_mm": 0.0,
+                                        "wind_speed_kmh": 12.5, "uv_index": 6.0 } },
               "tips": ["当天紫外线较强，注意防晒"],
               "packing": ["防晒霜", "帽子", "饮用水"],
               "ai_budget": { "transport_cents": 8000, "tickets_cents": 15000,
@@ -88,8 +89,8 @@ class AiItinerarySnapshotTest {
                 .andExpect(jsonPath("$.route.distance_meters").value(8200))
                 .andExpect(jsonPath("$.route.duration_seconds").value(2700))
                 .andExpect(jsonPath("$.route.legs[0].from_id").value("poi-广州塔"))
-                .andExpect(jsonPath("$.weather.temp_max_c").value(24))
-                .andExpect(jsonPath("$.weather.weather_text").value("多云"))
+                .andExpect(jsonPath("$.weather.weather.temp_max_c").value(24))
+                .andExpect(jsonPath("$.weather.weather.weather_text").value("多云"))
                 .andExpect(jsonPath("$.tips[0]").exists())
                 .andExpect(jsonPath("$.packing[0]").value("防晒霜"))
                 .andExpect(jsonPath("$.ai_budget.total_cents").value(46000));

@@ -44,6 +44,9 @@ public record TripPlan(
         Instant completedAt,
         Instant createdAt,
         Instant updatedAt,
+        Instant cancelledAt,
+        String cancelReason,
+        String cancelNote,
         Long aiItineraryId) {
 
     public Instant plannedStart() {
@@ -59,6 +62,9 @@ public record TripPlan(
      * 到达结束日期次日 00:00（Asia/Shanghai）即视为已结束，无需人工操作。
      */
     public TripStatusEnum status(Instant now) {
+        if (cancelledAt != null) {
+            return TripStatusEnum.CANCELLED;
+        }
         if (completedAt != null || !now.isBefore(plannedEnd())) {
             return TripStatusEnum.COMPLETED;
         }
@@ -86,7 +92,7 @@ public record TripPlan(
     public TripPlan withId(long newId) {
         return new TripPlan(newId, publisherId, title, destinationCode, destination, startDate, endDate, stops, meetingAreas,
                 meetingTime, note, budgetMinCents, budgetMaxCents, tags, capacity, joinedCount, completedAt, createdAt,
-                updatedAt, aiItineraryId);
+                updatedAt, cancelledAt, cancelReason, cancelNote, aiItineraryId);
     }
 
     /**
@@ -95,7 +101,7 @@ public record TripPlan(
     public TripPlan withMeetingInfo(List<String> newMeetingAreas, String newMeetingTime, Instant now) {
         return new TripPlan(id, publisherId, title, destinationCode, destination, startDate, endDate, stops,
                 newMeetingAreas, newMeetingTime, note, budgetMinCents, budgetMaxCents, tags, capacity, joinedCount,
-                completedAt, createdAt, now, aiItineraryId);
+                completedAt, createdAt, now, cancelledAt, cancelReason, cancelNote, aiItineraryId);
     }
 
     public static TripPlan create(TripPlanDraft draft, Instant now) {
@@ -153,7 +159,7 @@ public record TripPlan(
         }
         return new TripPlan(0, draft.publisherId(), title, destinationCode, destination, draft.startDate(), draft.endDate(),
                 stops, meetingAreas, meetingTime, note, budgetMin, budgetMax, tags, capacity, 1, null, now, now,
-                draft.aiItineraryId());
+                null, null, null, draft.aiItineraryId());
     }
 
     private static String requireText(String value, String field) {

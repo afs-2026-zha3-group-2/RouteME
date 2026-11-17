@@ -1,12 +1,13 @@
 import { tripMessages } from '../i18n/tripMessages';
 import type { TripApplication, TripDetail } from '../types';
 
-export type ApplicationEntryKind = 'publisher' | 'pending' | 'accepted' | 'apply' | 'unavailable';
+export type ApplicationEntryKind = 'publisher' | 'pending' | 'accepted' | 'cancelled' | 'apply' | 'unavailable';
 
 export type ApplicationEntry =
   | { kind: 'publisher' }
   | { kind: 'pending'; application: TripApplication }
   | { kind: 'accepted'; application: TripApplication }
+  | { kind: 'cancelled'; application: TripApplication }
   | { kind: 'apply' }
   | { kind: 'unavailable'; reason: string };
 
@@ -22,6 +23,12 @@ export function applicationEntryState(
 ): ApplicationEntry {
   if (trip.publisher.id === userId) {
     return { kind: 'publisher' };
+  }
+  if (trip.status === 'cancelled') {
+    if (application?.status === 'accepted') {
+      return { kind: 'cancelled', application };
+    }
+    return { kind: 'unavailable', reason: tripMessages.applyCancelledTrip };
   }
   if (application?.status === 'pending') {
     return { kind: 'pending', application };
@@ -48,6 +55,9 @@ export function applicationErrorMessage(code: string, trip: TripContext): string
   if (code === 'TRIP_NOT_OPEN') {
     if (trip.status === 'completed') {
       return tripMessages.applyEnded;
+    }
+    if (trip.status === 'cancelled') {
+      return tripMessages.applyCancelledTrip;
     }
     if (trip.status === 'full' || trip.joined_count >= trip.capacity) {
       return tripMessages.applyFull;

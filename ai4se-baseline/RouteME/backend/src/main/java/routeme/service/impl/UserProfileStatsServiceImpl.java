@@ -41,6 +41,7 @@ public class UserProfileStatsServiceImpl implements UserProfileStatsService {
         Instant now = clock.instant();
         var publishedTrips = tripPlanService.findAllTrips().stream()
                 .filter(trip -> trip.publisherId() == userId)
+                .filter(trip -> trip.status(now) != TripStatusEnum.CANCELLED)
                 .toList();
         int completed = (int) publishedTrips.stream()
                 .filter(trip -> trip.status(now) == TripStatusEnum.COMPLETED)

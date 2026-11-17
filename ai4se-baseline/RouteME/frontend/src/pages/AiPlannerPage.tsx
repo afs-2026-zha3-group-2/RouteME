@@ -195,7 +195,8 @@ export function AiPlannerPage({ currentUser }: Props) {
     const token = weatherTokenRef.current;
     setWeatherLoading(true);
     setWeatherError(false);
-    fetchWeatherForecast(currentUser.id, destination.lng, destination.lat, form.date)
+    // 目的地为地图自由选点（无区划码）：传空 code + 坐标，后端按坐标取 Open-Meteo。
+    fetchWeatherForecast('', form.date, { lng: destination.lng, lat: destination.lat })
       .then((forecast) => {
         if (token === weatherTokenRef.current) {
           setWeather(forecast);
@@ -209,7 +210,7 @@ export function AiPlannerPage({ currentUser }: Props) {
           setWeatherLoading(false);
         }
       });
-  }, [currentUser.id, form.destination, form.date]);
+  }, [form.destination, form.date]);
 
   useEffect(() => {
     loadWeatherPreview();
@@ -691,7 +692,9 @@ export function AiPlannerPage({ currentUser }: Props) {
           <Card className="panel ai-weather-card" data-testid="ai-weather-card">
             <h3 className="panel-title">
               {aiMessages.weatherTitle}
-              {weather !== null && <Tag className="ai-weather-source">{aiMessages.weatherSource}</Tag>}
+              {weather !== null && weather.available && (
+                <Tag className="ai-weather-source">{aiMessages.weatherSource}</Tag>
+              )}
             </h3>
             {weatherLoading ? (
               <div className="ai-card-loading" role="status">
@@ -709,33 +712,35 @@ export function AiPlannerPage({ currentUser }: Props) {
                   {aiMessages.retry}
                 </Button>
               </div>
-            ) : weather !== null ? (
+            ) : weather !== null && weather.available && weather.weather !== null ? (
               <>
                 <div className="ai-weather-main">
                   <span className="ai-weather-temp">
-                    {weather.temp_min_c}–{weather.temp_max_c}°C
+                    {weather.weather.temp_min_c}–{weather.weather.temp_max_c}°C
                   </span>
-                  <span className="ai-weather-text">{weather.weather_text}</span>
+                  <span className="ai-weather-text">{weather.weather.weather_text}</span>
                 </div>
                 <dl className="ai-weather-facts">
                   <div>
                     <dt>{aiMessages.precipitationProbability}</dt>
-                    <dd>{weather.precipitation_probability_pct}%</dd>
+                    <dd>{weather.weather.precipitation_probability_pct ?? '—'}%</dd>
                   </div>
-                  {weather.wind_speed_kmh !== null && weather.wind_speed_kmh !== undefined && (
+                  {weather.weather.wind_speed_kmh !== null && (
                     <div>
                       <dt>{aiMessages.windSpeed}</dt>
-                      <dd>{weather.wind_speed_kmh} km/h</dd>
+                      <dd>{weather.weather.wind_speed_kmh} km/h</dd>
                     </div>
                   )}
-                  {weather.uv_index !== null && weather.uv_index !== undefined && (
+                  {weather.weather.uv_index !== null && (
                     <div>
                       <dt>{aiMessages.uvIndex}</dt>
-                      <dd>{weather.uv_index}</dd>
+                      <dd>{weather.weather.uv_index}</dd>
                     </div>
                   )}
                 </dl>
               </>
+            ) : weather !== null && !weather.available ? (
+              <p className="form-hint">{aiMessages.weatherOutOfRange}</p>
             ) : (
               <p className="form-hint">{aiMessages.weatherEmpty}</p>
             )}

@@ -84,3 +84,50 @@
 - 偏差债务（本轮裁决）：map/trips 21 例旧 spec 红归 `refine-trip-map` 更新（§2.2 git 证据）；本 change 不修旧 spec。
 - 观察项：企业防火墙对 `api.open-meteo.com` 间歇拦截为环境因素，非产品缺陷；产品侧已按 L-02 天气失败终止生成、明确 Error/Retry，不伪造数据。
 - MVP 限制（产品口径）：预算无真实价格来源恒标「AI 估算」；POI 解析失败标「未定位」不伪造坐标；AI 不产出经纬度 / 路线 / 距离 / 时间（全部高德实测）。
+
+## 8. 合并集成 addendum（push 前 pull 触发 main 合并，2026-11-17 17:1x）
+
+P4 提交 `2e552fc` 后按发起人指令 `git pull --no-rebase --autostash --no-edit origin main`，触发与 main（`0979e916`，契约 0.16.0）的大规模合并：main已落地 `add-trip-weather` / `add-experience-photos` / `add-trip-cancel` / `add-credit-account` / `refine-detail-companions` / `refine-safety-report`，与本 change 的天气功能 / 地图 SDK 化 / 契约 / 迁移产生 28 文件冲突。**发起人裁决（AskUserQuestion 选项 A）：采用 main 天气为唯一权威，并集解决其余冲突，全量重验后提交推送，在 p4-verify/g2 记录契约偏离。**
+
+### 8.1 契约偏离（天气改由 add-trip-weather 提供）
+
+- **天气权威转移：** 本 change 原自带天气代理（flat `WeatherForecast` + `WeatherText` WMO 文案）与 main `add-trip-weather` 重复。裁决后**删除重复天气类**（`WeatherText.java` / `WeatherTextTest.java`），`AiItineraryServiceImpl` 重构为消费 main `WeatherService.forecast(WeatherQuery)`；天气形状改为 main **嵌套** `WeatherForecast{date,destination_code,city,lng,lat,available,reason,weather:WeatherDaily|null,reminders:WeatherReminder[],source}`。
+- **前端适配：** `fetchWeatherForecast` 改 main 新签名 `(destinationCode, date, point?)`（AiPlannerPage 以目的地坐标 point + 空 code 调用，后端 `DestinationLocator` 支持仅 point 解析）；`AiPlannerPage` 天气卡 / `snapshot.ts` buildSnapshot / `TripDetailPage` AI 摘要均改嵌套字段访问（`weather.weather.weather_text/temp_min_c/temp_max_c/precipitation_probability_pct`）+ `available`/out-of-range 分支；E2E `ai-planner.spec.ts` weatherFixture 改嵌套。
+- **契约版本：** `openapi.yaml` 以 main 0.16.0 为基叠加 AI 四接口 → **0.17.0**；`OpenApiTest` 拆两方法（天气断言改 main 嵌套形状 + AI 接口版本门禁）。
+- **迁移版本碰撞：** main V18(photos)/V19(cancel)/V20(credit) 占用 V18–V20；本 change `V18__ai_itineraries.sql` 经 `git mv` 重命名 **`V21__ai_itineraries.sql`**（fresh DB Flyway V1–V21 干净重建验证）。
+
+### 8.2 地图并集（main 栅格架构为权威 + transit 加性 port）
+
+- main 地图为**栅格瓦片底图**（`createRasterMap`/`rasterMap.css`/`geoDatum.wgs84ToGcj02`）+ **SVG overlay/portal**（`map.project/overlay/onChange/fitBounds`）+ 名称相关性 + 离线地名库，取代本 change HEAD 的 `AMap.Marker` 矢量方案（高德矢量引擎在本仓库网络环境无法初始化）。`AmapService.ts` 取 main 干净基（1043 行）+ port 本 change transit 附加（`TravelMode='transit'`/`firstTransit`/`parseTransitLeg`/`appendStepPath`/`MODE_SPEED_MPS.transit`/`ROUTE_SERVICES.Transfer`/`planRoute(mode,waypoints,city?)`/`loadSdk` window 检查）→ 1072 行；`AmapService.test.ts` 并集（main 纯函数 + transit 8 用例）。
+- `RouteLayer.tsx` 取 main SVG overlay + 接线本 change `numbers` 编号（`number = numbers?.[index] ?? index+1`，AC8 编号与 AI 列表一致）；`AmapContainer.tsx` imports 并集（resetProxyProbe + wgs84ToGcj02 + createRasterMap + rasterMap.css）。
+- `styles.css` 字节安全并集（main 完整 7082 行 + 本 change `.ai-planner-*` AI 块 617 行 EOF 追加 = 7699 行，LF/UTF-8 无 BOM）；`TripDetailPage.tsx` 并集（AI 徽标摘要嵌套天气 + main cancel/credit/photos/companions）。
+
+### 8.3 合并期发现与修复
+
+| # | 发现 | 修复 |
+|---|---|---|
+| 8-1 | **快照保存 400（AiItinerarySnapshotTest 2 例）**：`AiItineraryServiceImpl` 独立 `new ObjectMapper()` 无 SNAKE_CASE 策略，main 天气 POJO 用 camelCase 组件（`tempMaxC` 等）依赖应用级 `spring.jackson.property-naming-strategy=SNAKE_CASE`，独立 MAPPER 缺策略 → snake_case JSON 绑定失败 → unknown-property 400 | 独立 MAPPER 配置 `PropertyNamingStrategies.SNAKE_CASE`（AiPlan/AiItinerarySnapshot 组件本为字面 snake_case，加策略安全）；AI 两类复跑 8/8 + 14/14 绿 |
+| 8-2 | **E2E A1 地图点击候选面板失效**：main 栅格地图经 `.amap-canvas-host` 的 `pointerup` DOM 监听触发 `onClick`，本 change 旧 `__amapClick` 测试钩子驱动已废弃的 `AMap.Map` 矢量 stub | `rasterMap.ts` 在 host 暴露栅格实例（中性调试钩子）；`ai-planner.spec.ts` `__amapClick` 重写为按投影像素 dispatch 真实 pointer 事件；A1 复跑绿，ai-planner 12/12 |
+
+### 8.4 合并后全量重验（fresh DB，沙箱外后端）
+
+| 层 | 命令 | 结果 |
+|---|---|---|
+| 后端 | `.\mvnw.cmd -B -ntp verify`（backend/） | **364 tests / 0 failures / 0 errors**，BUILD SUCCESS（main 合并新增 credit/photos/cancel/weather 测试 + 本 change AI 测试并集） |
+| 前端单测 | `npm test`（frontend/） | **45 files / 363 tests passed**（含合并 AmapService 40 用例 + main weather/credit/companions 纯逻辑） |
+| 前端类型/构建 | `npm run build`（frontend/，含 tsc --noEmit） | 0 errors + 构建成功（rasterMap.ts 钩子改动后复验，仅既有主 chunk >500 kB 警告） |
+| E2E 全量 | `npx playwright test`（e2e/，fresh `routeme-merge-final.db` + 8080/5173） | **143 tests：121 passed / 22 failed**（10.8m，`e2e-merge-final.log`）；**ai-planner A1–A12 12/12**（首跑 pristine）；main 新增 credit/detail-companions/experience-photos/weather/weather-walkthrough 全绿 |
+| E2E 隔离证污染 | `npx playwright test profiles.spec.ts`（fresh `routeme-merge-profiles.db`） | **8/8 passed（18.6s）** |
+| 真实天气 | `GET /api/weather/forecast?destination_code=440100&date=2026-11-21` | **200** 真实 Open-Meteo 嵌套形状（weather_code 3 / 22.1–11.3°C / 降雨 2% / 风 8.4 / UV 4.x），合并后权威天气链路验证 |
+
+### 8.5 22 红分类（无本 change 回归）
+
+- **map.spec 9 + trips.spec 9 = 18 例 refine-trip-map 偏差：** 纯地图（offline coverage / zoom / pins / click-to-add）+ 发布表单依赖 main `china-map` 三级级联（`[data-testid="china-map"]` 不可见 → 发布/会议时间/会议地点用例连锁失败）。git 证据延续 §2.2（AMap SDK 化提交为 P0 切点祖先）；trips 红数由 run3 的 12 降为 9 因 main 合并更新了 trips.spec。**裁决延续：记录偏差，不修旧 spec，留 refine-trip-map 更新。**
+- **profiles.spec 4 例 = 债务 1 数据污染（非回归，已隔离证实）：** 全量共享 fresh DB 下，前序 ai-planner/companions/credit 等用例累积行程 → 首页种子卡「上海武康路咖啡散步」被挤出分页（profiles:51/88/102 等卡片超时）+ 发布者「参与同行」统计被前序加入行程污染（profiles:13 期望 0 实得 4）。**fresh DB 隔离复跑 profiles.spec 8/8 全绿**，确证为测试顺序状态污染而非合并代码回归。
+- **验收口径达成：** ai-planner 12/12 + 其余非地图套件隔离全绿（profiles 8/8 证实）；map/trips 18 红归 refine-trip-map，profiles 4 红归债务 1，均非本 change 回归。
+
+### 8.6 数据卫生与提交
+
+- 合并重验用 fresh DB（`routeme-merge-final.db` 全量 / `routeme-merge-profiles.db` 隔离），均 gitignore 不入库；旧 `routeme-merge-e2e.db`（污染）保留本地。后端日志 `backend-merge-*.log` / E2E `e2e-merge-final.log` 为本地证据不入库。
+- 排除项延续：工作区根 `.vscode/tasks.json`（本地 IDE 微调，unstaged 不入合并提交）、`t8-*.json` 冒烟证据（untracked 不入库）、preview 图片删除（并行会话未触碰）。
+- 合并提交：`git commit --no-edit`（merge，保留默认 merge message）→ push（pull 已先做）。

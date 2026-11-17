@@ -1788,8 +1788,11 @@ svg {
   position: relative;
   z-index: 2;
   display: flex;
+  flex: 1 1 auto;
+  flex-wrap: wrap;
   align-items: center;
   gap: 8px;
+  row-gap: 4px;
   min-width: 0;
 }
 
@@ -1945,8 +1948,10 @@ svg {
 
 .int-card {
   position: relative;
-  display: grid;
+  display: flex;
+  flex-direction: column;
   gap: 4px;
+  margin: 0;
   padding: 14px;
   border: 1.5px solid var(--line);
   border-radius: var(--r);
@@ -1955,6 +1960,21 @@ svg {
   font: inherit;
   cursor: pointer;
   transition: transform 0.18s var(--ease-out), border-color 0.18s, background 0.18s;
+}
+
+/* 卡片本身就是选项：把 antd 圆点铺满卡片并透明化，保留键盘与读屏可用的原生 radio */
+.int-card > .ant-radio {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  opacity: 0;
+}
+
+.int-card > span:not(.ant-radio) {
+  display: grid;
+  gap: 4px;
 }
 
 .int-card:hover {
@@ -1971,7 +1991,7 @@ svg {
   font-weight: 730;
 }
 
-.int-card span {
+.int-card > span:not(.ant-radio) > span {
   font-size: 11.5px;
   line-height: 1.45;
   color: var(--ink-3);
@@ -1995,18 +2015,8 @@ svg {
   color: var(--t-coral);
 }
 
-.int-card.on span {
+.int-card.on > span:not(.ant-radio) > span {
   color: var(--ink-2);
-}
-
-.int-radio {
-  position: absolute;
-  inset: 0;
-  width: 100%;
-  height: 100%;
-  margin: 0;
-  opacity: 0;
-  cursor: pointer;
 }
 
 .share-list {
@@ -2043,6 +2053,148 @@ svg {
 
 .share-action-error {
   margin-top: 12px;
+}
+
+/* ---------- 游后体验照片 ---------- */
+.share-photos {
+  display: grid;
+  gap: 12px;
+}
+
+.photo-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(104px, 1fr));
+  gap: 10px;
+}
+
+.photo-tile {
+  position: relative;
+  margin: 0;
+  aspect-ratio: 4 / 3;
+  border-radius: 12px;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  background: var(--surface-2);
+}
+
+.photo-tile img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.photo-tile.is-cover::after {
+  content: "首图";
+  position: absolute;
+  left: 7px;
+  top: 7px;
+  padding: 2px 7px;
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: 700;
+  color: #fff;
+  background: color-mix(in srgb, var(--dusk) 82%, #000);
+}
+
+.photo-actions {
+  position: absolute;
+  inset: auto 6px 6px auto;
+  display: flex;
+  gap: 4px;
+}
+
+.photo-actions button {
+  width: 26px;
+  height: 26px;
+  border-radius: 8px;
+  border: 0;
+  display: grid;
+  place-items: center;
+  color: var(--ink);
+  background: color-mix(in srgb, var(--surface) 88%, transparent);
+  backdrop-filter: blur(3px);
+  cursor: pointer;
+}
+
+.photo-actions button:hover {
+  color: var(--t-coral);
+}
+
+.photo-actions svg {
+  width: 14px;
+  height: 14px;
+}
+
+.photo-empty {
+  display: grid;
+  place-items: center;
+  gap: 6px;
+  padding: 22px 14px;
+  border-radius: var(--r);
+  border: 1.5px dashed var(--line-2);
+  background: var(--surface-2);
+  color: var(--ink-3);
+  font-size: 12.5px;
+  line-height: 1.55;
+  text-align: center;
+}
+
+.photo-empty svg {
+  width: 22px;
+  height: 22px;
+}
+
+.photo-note {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+  font-size: 11.5px;
+  color: var(--ink-3);
+}
+
+.photo-note .over {
+  color: var(--t-coral);
+  font-weight: 650;
+}
+
+.photo-error {
+  font-size: 11.5px;
+  color: var(--t-coral);
+}
+
+.experience-photos {
+  display: flex;
+  gap: 8px;
+  align-items: flex-end;
+  margin-top: 12px;
+  flex-wrap: wrap;
+}
+
+.experience-photos img {
+  width: 96px;
+  height: 72px;
+  object-fit: cover;
+  border-radius: 10px;
+  border: 1px solid var(--line);
+  display: block;
+}
+
+.experience-photos-more {
+  margin-left: auto;
+}
+
+.photo-viewer {
+  display: grid;
+  gap: 10px;
+}
+
+.photo-viewer img {
+  width: 100%;
+  border-radius: 12px;
+  border: 1px solid var(--line);
+  display: block;
 }
 
 .share-page .form-actions {
@@ -2272,15 +2424,9 @@ svg {
   color: var(--ink-3);
 }
 
-.pager-size .native-select {
-  width: auto;
-  height: 30px;
-  padding: 0 8px;
-  border-radius: 9px;
-  font-size: 12px;
-  font-weight: 650;
-  color: var(--ink-2);
-  cursor: pointer;
+/* 每页条数：antd Select，与分页条的紧凑高度对齐 */
+.pager-size .pager-size-select {
+  min-width: 84px;
 }
 
 /* ---------- 我的旅行：行式列表 ---------- */
@@ -3421,6 +3567,17 @@ svg {
   outline-offset: 2px;
 }
 
+/* 取消原因：原生 select，避免 antd 6.7 在 reduced-motion 下把弹层渲染到屏幕外 */
+.cancel-reason-select {
+  appearance: none;
+  padding-right: 34px;
+  cursor: pointer;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 8'%3E%3Cpath d='M1 1.5 6 6.5l5-5' fill='none' stroke='%237d949c' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 13px center;
+  background-size: 11px;
+}
+
 /* ---------- 柔和下拉（排序） ---------- */
 .soft-select {
   position: relative;
@@ -4242,19 +4399,6 @@ svg {
   position: relative;
 }
 
-/*
- * antd 6.7 keeps the picker popup at inset -1000vw when the OS asks for reduced motion
- * (the alignment effect depends on the appear motion). Anchor the popup to the field instead.
- */
-@media (prefers-reduced-motion: reduce) {
-  .profile-birthday-popup {
-    left: 0 !important;
-    right: auto !important;
-    top: calc(100% + 4px) !important;
-    bottom: auto !important;
-  }
-}
-
 .profile-field.wide {
   grid-column: 1 / -1;
 }
@@ -4320,6 +4464,79 @@ svg {
   margin: 0;
   font-size: 12.5px;
   color: var(--ink-3);
+}
+
+/* 信用状态：分数 + 等级文字同时出现，颜色只做辅助（五档低饱和） */
+.profile-credit {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  width: fit-content;
+  margin: 0;
+  padding: 3px 10px;
+  border-radius: var(--r-sm);
+  border: 1px solid var(--line);
+  background: var(--surface-2);
+  font-size: 12px;
+  font-weight: 650;
+  color: var(--ink-2);
+}
+
+.profile-credit::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.profile-credit.is-excellent {
+  color: var(--t-jade);
+  border-color: color-mix(in srgb, var(--jade) 30%, transparent);
+  background: color-mix(in srgb, var(--jade) 8%, transparent);
+}
+
+.profile-credit.is-good {
+  color: var(--t-lagoon);
+  border-color: color-mix(in srgb, var(--lagoon) 28%, transparent);
+  background: color-mix(in srgb, var(--lagoon) 7%, transparent);
+}
+
+.profile-credit.is-fair {
+  color: var(--t-warn);
+  border-color: color-mix(in srgb, var(--amber) 32%, transparent);
+  background: color-mix(in srgb, var(--amber) 9%, transparent);
+}
+
+.profile-credit.is-low {
+  color: var(--t-coral);
+  border-color: color-mix(in srgb, var(--coral) 30%, transparent);
+  background: color-mix(in srgb, var(--coral) 8%, transparent);
+}
+
+.profile-credit.is-risk {
+  color: var(--t-danger);
+  border-color: color-mix(in srgb, var(--danger) 28%, transparent);
+  background: color-mix(in srgb, var(--danger) 7%, transparent);
+}
+
+/* 列表 / 弹窗内的紧凑形态：不抢主信息 */
+.profile-credit.is-compact {
+  gap: 5px;
+  padding: 1px 8px;
+  font-size: 11px;
+}
+
+/* 卡片：信用行并进发布者行，排在头像与名字下方 */
+.tc-host .tc-credit {
+  flex-basis: 100%;
+  width: fit-content;
+  margin: 0;
+}
+
+/* 详情页：信用行在发布者卡片内部，跟在标签之后 */
+.publisher-credit {
+  margin: 0;
 }
 
 .profile-chips {
@@ -5691,14 +5908,37 @@ svg {
   bottom: 52px;
   z-index: 40;
   display: flex;
-  gap: 10px;
-  align-items: center;
-  max-width: min(360px, calc(100% - 24px));
+  flex-direction: column;
+  gap: 8px;
+  max-width: min(380px, calc(100% - 24px));
   padding: 10px 12px;
   border: 1px solid var(--line);
   border-radius: 12px;
   background: color-mix(in srgb, var(--surface) 96%, transparent);
   box-shadow: var(--sh-2);
+}
+
+/* 两行候选（精确点 / 最近景点）：左侧文本 + 右侧按钮。 */
+.amap-candidate-row {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.amap-candidate-row .ant-btn {
+  flex: none;
+}
+
+.amap-candidate-close {
+  position: absolute;
+  top: 2px;
+  right: 4px;
+  border: 0;
+  background: transparent;
+  color: var(--ink-3);
+  font-size: 14px;
+  line-height: 1;
+  cursor: pointer;
 }
 
 .amap-candidate.is-loading {
@@ -6673,6 +6913,172 @@ svg {
   .chat-main {
     min-height: 62vh;
   }
+}
+
+/* 目的地天气卡：发布页侧栏与行程详情页共用（真实数据 + 后端提醒，不伪造数值）。 */
+.weather-card .weather-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.weather-source {
+  border: none;
+  background: var(--lagoon-soft);
+  color: var(--t-lagoon);
+}
+
+.weather-loading {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--ink-3);
+  font-size: 13px;
+}
+
+.weather-error {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.weather-main {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  margin-top: 2px;
+}
+
+.weather-temp {
+  font-size: 24px;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.weather-text {
+  font-size: 14px;
+  color: var(--ink-2);
+}
+
+.weather-date {
+  margin: 2px 0 10px;
+  font-size: 12.5px;
+  color: var(--ink-3);
+}
+
+.weather-facts {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(88px, 1fr));
+  gap: 8px;
+  margin: 0 0 10px;
+}
+
+.weather-fact {
+  padding: 8px 6px;
+  border-radius: 10px;
+  background: var(--surface-2);
+  text-align: center;
+}
+
+.weather-fact dt {
+  margin: 0;
+  font-size: 11px;
+  color: var(--ink-3);
+}
+
+.weather-fact dd {
+  margin: 2px 0 0;
+  font-size: 13.5px;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.weather-reminders {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.weather-reminder {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 8px 10px;
+  border-radius: 10px;
+  background: var(--surface-2);
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--ink-2);
+}
+
+.weather-reminder-tag {
+  flex: 0 0 auto;
+  margin-inline-end: 0;
+  border: none;
+}
+
+.weather-reminder-info {
+  background: rgba(47, 159, 224, 0.12);
+}
+
+.weather-reminder-warning {
+  background: rgba(255, 183, 3, 0.16);
+}
+
+.weather-reminder-danger {
+  background: rgba(224, 72, 58, 0.12);
+}
+
+.weather-reminder-success {
+  background: rgba(20, 154, 99, 0.12);
+}
+
+@media (max-width: 640px) {
+  .weather-facts {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+/* ---------- 详情页同行者资料卡 ---------- */
+.detail-companions {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.companion-card {
+  display: grid;
+  gap: 6px;
+  padding: 10px;
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+  background: var(--surface-2);
+}
+
+.companion-card .publisher-button {
+  padding: 0;
+}
+
+.companion-card .publisher-button:hover {
+  background: color-mix(in srgb, var(--lagoon) 8%, transparent);
+}
+
+.companion-chat {
+  justify-self: end;
+  font-size: 12.5px;
+}
+
+.detail-companions-empty {
+  margin: 0;
+  font-size: 13px;
+  color: var(--ink-3);
 }
 
 /* ============================================================
