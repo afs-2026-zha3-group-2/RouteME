@@ -251,7 +251,10 @@ async function requestAmap(
 
   let response: Response;
   try {
-    response = await fetch(url, { headers: { Accept: 'application/json' } });
+    response = await fetch(url, {
+      headers: { Accept: 'application/json' },
+      cache: 'no-store',
+    });
   } catch {
     throw new AmapApiError('NETWORK', '无法连接高德服务，请检查网络后重试');
   }
