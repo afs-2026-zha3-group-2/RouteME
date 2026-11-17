@@ -1362,3 +1362,99 @@ REQ-010：聊天页按原型重构、聊天准入与退出语义调整、集合�
 - **不拆故事：** S21 一条故事覆盖两个入口与一次状态迁移；拆开会造成同一状态被两条故事重复验收。
 - **后续候选（均需另开需求）：** 信用分与信用记录、免扣分申请与管理员审核、删除行程、恢复/重新开启、取消原因申诉。
 - **质量自检（split-heuristics）：** 子目标一句话可说明 ✓；端到端可观察（发布者取消 → 首页下架 / 申请关闭 / 聊天只读 / 我的旅行保留）✓；可独立运行 ✓；capability 名真实 ✓；无依赖环 ✓。
+
+## 22. REQ-022 变更影响 — 退出同行扣分与低信用自动限制
+
+> 编号说明：REQ-021 已由 `add-trip-cancel` 占用、REQ-020 预留给并行 `refine-detail-companions`；本需求为 REQ-022，故事 S22（退出）与 S23（限制）。
+
+- **日期：** 2026-11-17 ｜ **触发：** `/sdd:p1`（用户卡片同时包含 Story 4 + Story 5）
+- **基线：** `main@ec360dc`；分支 `feature/add-credit-exit-restriction`
+- **粒度：** 应用架构（能力边界 / 数据所有权 / 契约 / 状态 / 展示面），非代码设计
+
+### 22.1 Requirement set
+
+- `requirement-workspace/requirements/REQ-022-exit-credit-restriction.md`（六字段 + 46 场景 + OQ + DoR）
+- `requirement-workspace/intents/REQ-022-exit-credit-restriction.md`
+- 故事：`requirement-workspace/stories/add-credit-exit-restriction-exit.story.md`（S22）与 `...-restriction.story.md`（S23）
+- 能力：`credit-enforcement`（ADDED）；依赖 `user-credit` / `trip-companions` / `trip-cancellation` / `trip-plans` / 体验 / 资料展示面。
+- **Delta：** `openspec/changes/add-credit-exit-restriction/specs/credit-enforcement/spec.md`（ADDED）。
+
+### 22.2 As-is asset inventory（evidence paths）
+
+| 资产 | 路径 | 现状 |
+|---|---|---|
+| 信用账户 / 账本 | `V20__add_credit_account.sql`、`UserCreditAccountEntity`、`CreditLedgerEntity`、`CreditServiceImpl` | 0–100、前后快照、幂等、零值留痕；无退出原因码与限制表 |
+| 信用展示 | `ProfilePage` / `ProfileModal` / `TripDetailPage` / `TripCard` / `ApplicationsPage`、`useUserCredits`、`creditDisplay.ts` | 五展示面；只有分数 + 等级；批量端点 `GET /api/users/credits` |
+| 退出后端 | `ApplicationServiceImpl.leave`、`ApplicationController`、`TripPlanService.removeCompanion` | ACCEPTED → LEFT；减人数；无原因/预览/记账/限制 |
+| 退出前端 | `TripDetailPage.tsx:694`、`MyTripsPage.tsx:492,507`、`ChatMain.tsx:70-74`、`ChatPage.tsx:127-140` | 三入口；详情/我的旅行 Modal；聊天 `window.confirm` |
+| 退出活规格 | `openspec/specs/trip-companions/spec.md:97-117`；`refine-trip-chat` 未归档 Delta | 活规格说退出关闭聊天；未归档 Delta 与代码保留聊天；本 change 不改该 Requirement |
+| 取消代码 | `TripPlanServiceImpl.cancel`、`TripCancelledEvent`、`ApplicationServiceImpl.onTripCancelled`、`TripCancelReasonEnum` | 仅发布者、仅 RECRUITING/FULL；8 原因；PENDING 自动取消 |
+| 取消规格 | `openspec/changes/add-trip-cancel/specs/trip-cancellation/spec.md` | 5 Requirement / 20 Scenario；未归档 |
+| 只读入口 | `TripPlanService.create`、`ApplicationServiceImpl.apply`、`ExperienceService`、`ChatServiceImpl`、`UserProfileServiceImpl.save` | 无信用限制判断 |
+| 管理端 | 全仓 grep `admin / 管理后台` | 0 命中；无角色、无端点、无页面 |
+| 契约 | `RouteME/openapi.yaml` | 0.14.0；已有 leave / credits / profile；无 `CREDIT_RESTRICTED`、无 `credit_restricted` |
+| 迁移 | `RouteME/backend/src/main/resources/db/migration` | V20 head；V21 未占用 |
+| 测试 | `CreditServiceImplTest`、`CreditMigrationSqliteTest`、`credit.spec.ts` | 记账单测 / 迁移双引擎 / 展示 E2E 8 条 |
+
+### 22.3 As-is → proposed delta
+
+| 资产 | As-is | Proposed delta |
+|---|---|---|
+| `credit-enforcement` | 不存在 | ADDED：退出原因/预计影响/扣分阶梯/月度翻倍/待核实/限制触发/只读守卫/自动清理/自动解除/限制展示 |
+| `user-credit` | 账户 + 账本 + 五展示面；无退出原因码 | 依赖复用；新增原因码与 `credit_restricted` 只读字段；不改其 Delta / 表结构 |
+| `trip-companions` | 退出 = LEFT；申请状态 5 种；聊天保留（代码/未归档 Delta） | 依赖复用；申请新增可空 `status_reason`；不修改「退出同行」Requirement |
+| `trip-cancellation` | 发布者取消 8 原因；仅 RECRUITING/FULL | 依赖复用；新增系统取消路径（含 ONGOING）与 `credit_restricted` 原因；不改其 Delta |
+| `trip-plans` | 状态四态 + CANCELLED；取消字段 | 系统取消写既有取消字段；状态推导不变 |
+| `trip-experiences` | 发布仅 COMPLETED；作者可编辑 | 限制守卫拦截发布/编辑；资格规则不变 |
+| `user-profile` / `user-profiles` | 展示分数 + 等级 | 五展示面追加 `credit_restricted` 徽标；本人主页追加原因与自动解除说明 |
+| `user-auth` | 会话 / 登录 / 退出 | 不受限制影响 |
+| 契约 | 0.14.0 | 升 0.15.0：新增限制字段、`CREDIT_RESTRICTED` 错误、`credit_restricted` 取消原因、退出预览/确认请求与响应 |
+| 迁移 | V20 | `V21`：`credit_exit_event` + `credit_restriction` + `trip_applications.status_reason` |
+
+### 22.4 Blast radius（应用架构）
+
+- **信用域：** `CreditService.book` 新增业务调用方（退出扣分 / 零值待核实）；新增限制执行服务；账户读取扩展限制字段。
+- **行程域：** 退出接口扩展原因/预览/确认；取消服务新增系统路径（含 ONGOING）；`TripCancelledEvent` 复用并带系统原因。
+- **同行域：** 退出/撤回/系统清退共享 `status_reason`；申请列表、我的旅行、聊天会话列表读取新字段。
+- **体验域：** 发布/编辑入口增加限制守卫。
+- **资料域：** 保存资料/头像增加限制守卫；个人主页与资料弹窗展示限制徽标/原因。
+- **聊天域：** 发送消息增加限制守卫；历史会话保留只读。
+- **契约 / 前端：** 三入口退出弹窗统一；五展示面徽标；被拦截操作提示；系统取消原因映射。
+
+### 22.5 Artifact impact
+
+- **OpenSpec：** 新增 `openspec/changes/add-credit-exit-restriction/`（proposal + `credit-enforcement` ADDED Delta + design + tasks）。
+- **需求工作区：** 意图 / Ready / deep-dive 增补 / impact §22 / 两故事 / registry / handoff。
+- **代码：** 后端信用、退出、取消、申请、聊天、资料、体验、契约；前端三入口、五展示面、拦截提示、i18n。
+- **迁移：** `V21` 双引擎（SQLite + H2）。
+- **测试：** 记账/退出/限制单测与集成；迁移双引擎；前端纯函数/组件；E2E 退出 + 限制 + 自动清理。
+- **文档 / 知识库：** P0–P4 阶段记录、质量报告、评审报告；不更新 Living Spec（P5 不执行）。
+
+### 22.6 Dual-track notes（OpenSpec vs agile）
+
+- **OpenSpec 轨：** 单 change `add-credit-exit-restriction`，单新能力 `credit-enforcement`；不改未归档 Delta，归档时新建 Living Spec。
+- **Agile 轨：** Story 4（S22，迭代 2 / P0 / 5 点）与 Story 5（S23，迭代 3 / P0 / 3 点）；两条故事共享同一 change，但验收分开：S22 看退出扣分与待核实，S23 看 <60 限制与自动清理/解除。
+- **场景数量：** 46 条 > 单 change 阈值；按用户 D1 合并且以「共享信用执行链」为理由；P2 若 Delta 过大，可在同一 change 内拆 Requirement 组，不拆 change。
+
+### 22.7 Risks & blockers
+
+| 级别 | 项 | 说明 / 缓解 |
+|---|---|---|
+| Risk | `user-credit` / `trip-cancellation` 未归档 | 新能力承载，不改其 Delta；归档顺序不影响本 change；P5 暂不执行 |
+| Risk | `trip-companions` 活规格与 `refine-trip-chat` 未归档 Delta 冲突 | 本 change 不修改「退出同行」Requirement；退出行为只加信用层，聊天语义沿用当前代码 |
+| Risk | 系统取消 ONGOING 与发布者取消规则冲突 | 新增系统取消路径，不复用发布者入口；`trip-cancellation` Delta 不改；P3 设计明确权限/状态 |
+| Risk | 自动清理跨域事务过大 | 同事务优先；P3 评估批量大小与索引；失败整体回滚；重试幂等 |
+| Risk | 限制原因泄漏给他人 | 契约按请求人裁剪；他人只拿 `credit_restricted` 布尔；E2E 断言他人视角无原因 |
+| Risk | 0 分裁断事件计数争议 | D14 已裁决按事件计入；P2 Delta 写明；单测覆盖 |
+| Risk | 无低信用演示数据 | P3 决定种子 / 夹具 / 直接记账；不新增管理员入口 |
+| Risk | 契约 / 迁移号撞号 | `add-ai-itinerary` 曾声明 0.15.0 + V21；本 change 暂定同号，P3 按实际落地顺序排他确认 |
+| Blocker | 无 | blocking OQ=0、DoR BLOCKER=0、A0 ⑨–⑫ 全过 |
+
+### 22.8 Suggested split boundaries（供 proposal-split / story-split）
+
+- **一个 change：** `add-credit-exit-restriction` ← REQ-022（S22 + S23）；用户 D1 明确。
+- **两个故事：** S22 退出扣分（原因/预览/六档/月度/待核实）；S23 限制（触发/只读/自动清理/展示/自动解除）。
+- **不并入：** 管理端核实与人工封禁、信用明细页、安全学习/客服入口、正向加分事件。
+- **依赖：** `user-credit`（账本/账户）、`trip-companions`（退出/申请）、`trip-cancellation`（取消事件）、五展示面。
+- **质量自检（split-heuristics）：** 子目标一句话 ✓；端到端可观察（48h 退出 -5 → 80→75；65→55 自动限制 → 只读/清退）✓；可独立运行 ✓；capability 名真实（`credit-enforcement`）✓；无依赖环 ✓；场景 46 条 > 阈值但按用户裁决合并，P2 可在同一 change 内拆 Requirement 组。
+
