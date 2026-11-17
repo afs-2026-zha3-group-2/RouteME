@@ -697,8 +697,7 @@ test('publisher cancels a recruiting trip from the detail page after confirming 
   await expect(dialog.getByText('请选择取消原因')).toBeVisible();
 
   // 「其他原因」必须补 1–100 字说明。
-  await dialog.locator('.ant-select').click();
-  await page.locator('.ant-select-item-option', { hasText: '其他原因' }).click();
+  await dialog.locator('[data-cancel-reason]').selectOption('other');
   await dialog.getByRole('button', { name: '确认取消' }).click();
   await expect(dialog.getByText('请填写 1–100 字的取消说明')).toBeVisible();
 
@@ -739,8 +738,7 @@ test('cancels a recruiting trip from my trips and keeps a read-only row', async 
   await row.getByRole('button', { name: '取消行程' }).click();
 
   const dialog = page.getByRole('dialog');
-  await dialog.locator('.ant-select').click();
-  await page.locator('.ant-select-item-option', { hasText: '天气或不可抗力原因' }).click();
+  await dialog.locator('[data-cancel-reason]').selectOption('weather');
   await dialog.getByRole('button', { name: '确认取消' }).click();
 
   await expect(row.locator('[data-status="cancelled"]')).toContainText('已取消');

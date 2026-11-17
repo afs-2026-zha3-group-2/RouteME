@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Input, Modal, Select, Typography, message } from 'antd';
+import { Input, Modal, Typography, message } from 'antd';
 import { ApiError, cancelTrip } from '../api';
 import { tripMessages } from '../i18n/tripMessages';
 import type { TripCancelReason, TripDetail } from '../types';
@@ -86,15 +86,30 @@ export function TripCancelModal({ open, userId, trip, onClose, onCancelled }: Pr
       <Typography.Paragraph type="warning">{tripMessages.cancelImpact}</Typography.Paragraph>
       <label className="field">
         <span className="label">{tripMessages.cancelReasonLabel}</span>
-        <Select<TripCancelReason>
-          value={reason}
-          placeholder={tripMessages.cancelReasonPlaceholder}
-          options={CANCEL_REASON_OPTIONS}
-          onChange={(value) => {
-            setReason(value);
+        {/*
+         * Native select on purpose: antd 6.7 renders its popup off-screen when the OS asks for
+         * reduced motion (`prefers-reduced-motion: reduce`), so the option list never shows.
+         */}
+        <select
+          className="native-select cancel-reason-select"
+          data-cancel-reason
+          value={reason ?? ''}
+          onChange={(event) => {
+            setReason(
+              event.target.value === '' ? undefined : (event.target.value as TripCancelReason),
+            );
             setError(null);
           }}
-        />
+        >
+          <option value="" disabled>
+            {tripMessages.cancelReasonPlaceholder}
+          </option>
+          {CANCEL_REASON_OPTIONS.map((option) => (
+            <option key={option.value} value={option.value}>
+              {option.label}
+            </option>
+          ))}
+        </select>
       </label>
       <label className="field">
         <span className="label">
