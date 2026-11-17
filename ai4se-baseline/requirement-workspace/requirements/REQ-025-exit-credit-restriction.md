@@ -1,10 +1,10 @@
-# REQ-024 — 退出同行扣分与低信用自动限制（Ready 需求草稿）
+# REQ-025 — 退出同行扣分与低信用自动限制（Ready 需求草稿）
 
 - **能力：** `credit-enforcement`（ADDED）；依赖 `user-credit`（账户 / 账本）、`trip-companions`（退出关系）、`trip-cancellation`（行程取消，未归档）
 - **对应 OpenSpec change：** `add-credit-exit-restriction`
 - **草稿日期：** 2026-11-17 ｜ **状态：** P1 drafted（blocking OQ 0，DoR BLOCKER 0）
 - **故事来源：** 用户当次会话 P0 卡片「[P0] 退出同行扣减信用分」；Story 4（信用系统迭代 2 / 5 点 / 详情页 + 我的旅行）与 Story 5（信用系统迭代 3 / 3 点 / 用户详情页 + 个人主页）
-- **证据：** `requirement-workspace/intents/REQ-024-exit-credit-restriction.md`；`docs/sdd/add-credit-exit-restriction/p0-baseline.md`
+- **证据：** `requirement-workspace/intents/REQ-025-exit-credit-restriction.md`；`docs/sdd/add-credit-exit-restriction/p0-baseline.md`
 
 ## Discovery Decision
 
@@ -14,12 +14,12 @@
 
 | 字段 | 内容 |
 |---|---|
-| id | REQ-024 |
+| id | REQ-025 |
 | statement | 系统 SHALL 在已接受同行者退出时要求选择原因、展示本次预计信用影响，并按「集合时间优先、否则开始日期 00:00（Asia/Shanghai）」计算出发前扣分（7 天以上 0 / 3–7 天 -3 / 24–72 小时 -5 / 12–24 小时 -8 / 12 小时内 -10；旅行中 -15），同一自然月第 2 次及之后的出发前退出翻倍，个人原因立即记账，不可抗力/安全原因暂不扣分并待核实；信用分低于 60 时 MUST 自动建立限制记录（原因 `CREDIT_SCORE_BELOW_60`），将账号置为只读、撤回全部待处理申请、解除全部未结束行程的已接受同行关系、自动取消全部未结束的已发布行程（不按退出扣分），并在分数回到 ≥60 时自动解除、不恢复原关系。 |
 | actors | 已接受同行者（退出者）；受限用户；其他用户 / 发布者 / 申请者（只读看到限制徽标）；系统内部信用执行；未来管理员核实（不在本 change，无入口）。 |
 | rationale | 当前退出同行是「一键退出、零成本」，临时退出对其他同行者没有约束；信用分只有账户与展示，没有任何扣分事件与限制能力。平台需要用可解释、可回算的信用后果降低临时退出与低信用用户带来的社交风险。 |
 | acceptance hints | 见 §4：S25-1 ~ S25-22（退出原因、预计影响、六档扣分、边界、月度翻倍、待核实、0 分裁断、幂等、三入口、集合时间优先）；S26-1 ~ S26-22（<60 触发、记录、只读范围、自动撤回/解除/取消、系统取消原因、自动解除、不恢复、无管理端、事务一致性）。 |
-| links to evidence | 见 §6 证据表与 `intents/REQ-024-exit-credit-restriction.md` 的证据锚点。 |
+| links to evidence | 见 §6 证据表与 `intents/REQ-025-exit-credit-restriction.md` 的证据锚点。 |
 
 ## 1. Intent
 
@@ -54,7 +54,7 @@
 - 系统取消原因：新增「信用分低于 60，账号受限」；发布者与已接受同行者可见，其他用户只看到「已取消」。
 - 限制展示：本人个人主页显示限制状态、原因、自动解除说明；五个信用展示面给他人显示「限制中」徽标，不显示原因。
 - 自动解除：分数回到 ≥60 时限制记录置为已解除；只读守卫解除；不恢复原申请与同行关系。
-- 合同与迁移：`openapi.yaml` 升次版本；新增 `V21` 迁移（限制表 + 退出事件/申请退出原因 + 必要索引）。
+- 合同与迁移：`openapi.yaml` 升次版本（最终 0.20.0）；新增 `V25` 迁移（限制表 + 退出事件/申请退出原因 + 必要索引）。
 - 测试：后端单元/集成/迁移双引擎；前端纯函数 + 组件；E2E 覆盖退出与限制主路径；OpenSpec strict 校验。
 
 **Out of scope**
@@ -137,7 +137,7 @@
 - **触发联动（D11）：** 撤回全部待处理申请、解除全部未结束已接受关系、取消全部未结束已发布行程；系统清退不扣分、不计入次数；已完成/已取消保留历史。
 - **系统取消原因（D13）：** 新增「信用分低于 60，账号受限」，发布者与已接受同行者可见。
 - **能力归属（D15）：** `credit-enforcement`（ADDED）；`user-credit` / `trip-companions` / `trip-cancellation` 只作依赖；不修改未归档 Delta。
-- **契约与迁移（D17）：** 当前 0.14.0 + V20；暂定 0.15.0 + V21，P3 排他确认。
+- **契约与迁移（D17）：** 起草时 0.14.0 + V20；合并 main 时按「后到者顺延」落 **0.20.0 + V25**（main 已占 0.16.0–0.19.0 与 V21–V24）。
 - **账本复用：** 退出扣分与待核实零值记录统一走 `CreditService.book`；幂等键至少包含用户 + 行程 + 退出事件；限制记录不写入账本，只引用触发账本。
 - **事务：** 扣分、限制记录、自动清理同事务；跨域清理失败整体回滚；重复触发幂等。
 - **不加分：** 本 change 不新增任何正向计分事件；自动解除只在未来加分/调整使分数 ≥60 时发生。
@@ -208,7 +208,7 @@
 | 6 Results verifiable | Pass | 分数、账本、状态、展示、错误码、计数均可断言。 |
 | 7 Dependencies / app-arch touchpoints | Pass | §5 / §7 列出 `user-credit` / `trip-companions` / `trip-cancellation` / `trip-plans` / 展示面；无未解决阻塞。 |
 | 8 Open-questions gate | Pass | blocking OQ 15 条全部 resolved；非阻塞 3 条 deferred + 1 条 resolved。 |
-| 9 Data contract decided | Pass | `deep-dive.md`「REQ-024 增补」①：退出事件、限制记录、申请退出原因、系统取消字段。 |
+| 9 Data contract decided | Pass | `deep-dive.md`「REQ-025 增补」①：退出事件、限制记录、申请退出原因、系统取消字段。 |
 | 10 Boundary enumerated | Pass | 同节 ② 覆盖退出 6 档边界、月度计数、待核实、0 分、限制 60/59、只读逐项、自动清理、事务/并发。 |
 | 11 Cross-REQ aligned | Pass | 同节 ③ 与 `user-credit` / `trip-companions` / `trip-cancellation` / `trip-plans` / 展示面全部 aligned。 |
 | 12 Notification / display contract decided | Pass | 同节 ④ 五个展示面、本人/他人、系统取消原因、拦截提示、无明细、无通知。 |
@@ -224,4 +224,4 @@
 
 ## 11. 用户裁决（摘要）
 
-D1–D17 见 `intents/REQ-024-exit-credit-restriction.md`「用户本次会话裁决」；P0 记录 `docs/sdd/add-credit-exit-restriction/p0-baseline.md` §2 为同一口径。
+D1–D17 见 `intents/REQ-025-exit-credit-restriction.md`「用户本次会话裁决」；P0 记录 `docs/sdd/add-credit-exit-restriction/p0-baseline.md` §2 为同一口径。

@@ -9,7 +9,7 @@
 
 | 工件 | 路径 | 结论 |
 |---|---|---|
-| 需求条目 | `requirement-workspace/requirements/REQ-024-exit-credit-restriction.md` | 46 场景（S25-1~22 / S26-1~24）；blocking OQ 15/15 resolved；DoR BLOCKER 0 |
+| 需求条目 | `requirement-workspace/requirements/REQ-025-exit-credit-restriction.md` | 46 场景（S25-1~22 / S26-1~24）；blocking OQ 15/15 resolved；DoR BLOCKER 0 |
 | 提案 | `openspec/changes/add-credit-exit-restriction/proposal.md` | Why / What Changes / Out of Scope / 决策 D1–D17 / 验收信号 / 残余风险齐备 |
 | Delta Spec | `openspec/changes/add-credit-exit-restriction/specs/credit-enforcement/spec.md` | ADDED 9 Requirement / 46 Scenario；`openspec validate --strict` valid |
 | AC / DoV 复核 | `openspec/changes/add-credit-exit-restriction/dov-ac-review.md` | AC 4/4 Pass；DoV 5/5 Pass；映射 46/46 |
@@ -34,7 +34,7 @@
 
 | 跟踪项 | 说明 | Owner |
 |---|---|---|
-| 契约版本号与迁移号 | `openapi.yaml` 现 0.14.0、Flyway 头 V20；本 change 暂定 0.19.0 + V25；`add-ai-itinerary` 曾声明同号，需 P3 排他确认；若先落则顺延 0.16.0 + V22 | Dev（Lewis Liu） |
+| 契约版本号与迁移号 | `openapi.yaml` 现 0.14.0、Flyway 头 V20；本 change 暂定 0.20.0 + V25；`add-ai-itinerary` 曾声明同号，需 P3 排他确认；若先落则顺延 0.16.0 + V22 | Dev（Lewis Liu） |
 | 服务端守卫清单 | 发布/编辑/取消/结束行程、申请/撤回/退出、发布/编辑体验、发消息、改资料/头像逐项加 `CREDIT_RESTRICTED`；P3 给出 guard 清单，P4 测试逐项覆盖 | Dev（Lewis Liu） |
 | 待核实领域行为 | 本 change 无管理端；P3 决定内部领域方法 + 单测，不暴露 controller / 页面 | Dev / SA |
 | 低信用测试数据 | 所有种子账号 80 分；P3 决定种子 / 夹具 / 直接记账，不新增管理员入口 | Dev |

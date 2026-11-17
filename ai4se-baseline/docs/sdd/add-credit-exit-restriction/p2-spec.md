@@ -1,6 +1,6 @@
 # P2 阶段记录 — add-credit-exit-restriction
 
-- **Change：** `add-credit-exit-restriction`（能力 `credit-enforcement` ADDED）｜ **需求：** REQ-024 ｜ **故事：** S25 + S26
+- **Change：** `add-credit-exit-restriction`（能力 `credit-enforcement` ADDED）｜ **需求：** REQ-025 ｜ **故事：** S25 + S26
 - **阶段：** P2（Spec align / G1）｜ **日期：** 2026-11-17
 - **记录人：** Lewis Liu（当前开发者）
 - **分支：** `feature/add-credit-exit-restriction`
@@ -44,7 +44,7 @@
 - 结论：**Pass**（无 G1 条件）。
 - 签署：IO=WAYNE（2026-11-17）、SA=Jacky（2026-11-17）。
 - 跟踪项（非条件）：
-  - 契约 / 迁移号：暂定 0.19.0 + V25，P3 排他确认。
+  - 契约 / 迁移号：暂定 0.20.0 + V25，P3 排他确认。
   - 服务端守卫清单：发布/编辑/取消/结束/申请/撤回/退出/体验/聊天/资料头像逐项 `CREDIT_RESTRICTED`。
   - 待核实领域行为：内部方法 + 单测，无 controller / 页面。
   - 低信用测试数据：种子 / 夹具 / 直接记账，P3 定。
@@ -75,12 +75,12 @@
 | 阶段 | 提交 | 说明 |
 |---|---|---|
 | P0 | `41c173d` | 基线 + 范围裁决 |
-| P1 | `13c63d8` | REQ-024 / 提案 / Delta 草稿 / 两故事 / P1 评审 |
+| P1 | `13c63d8` | REQ-025 / 提案 / Delta 草稿 / 两故事 / P1 评审 |
 | P2 | 本次提交 | Delta 定稿 / AC-DoV / consistency-lint / G1 / P2 报告 |
 
 ## 10. 准入 P3 的条件
 
-- 契约 / 迁移号排他确认（暂定 0.19.0 + V25）。
+- 契约 / 迁移号排他确认（暂定 0.20.0 + V25）。
 - 原型先行：退出原因/预计影响、限制徽标、本人限制说明、被拦截提示需先在 `docs/prototype/` 补截点。
 - 守卫清单与前端入口清单逐项列出。
 - 低信用测试数据路径确定（不得新增管理员入口）。

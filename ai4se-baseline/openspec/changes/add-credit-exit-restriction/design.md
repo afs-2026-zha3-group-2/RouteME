@@ -1,10 +1,10 @@
 # 技术设计 — add-credit-exit-restriction
 
-- **Change：** `add-credit-exit-restriction` ｜ **REQ：** REQ-024 ｜ **Delta：** `specs/credit-enforcement/spec.md`（ADDED 9 Requirement / 46 Scenario）
+- **Change：** `add-credit-exit-restriction` ｜ **REQ：** REQ-025 ｜ **Delta：** `specs/credit-enforcement/spec.md`（ADDED 9 Requirement / 46 Scenario）
 - **G1：** Pass（IO=WAYNE / SA=Jacky，2026-11-17，`g1-decision.md`）
 - **基线：** `main@ec360dc`；分支 `feature/add-credit-exit-restriction`
 - **阶段：** P3（Design & decompose）
-- **契约 / 迁移：** 暂定 `openapi.yaml` 0.19.0 + `V25__credit_enforcement.sql`，P4 落库前按实际合并顺序排他确认
+- **契约 / 迁移：** 已定稿 `openapi.yaml` 0.20.0 + `V25__credit_enforcement.sql`（P4 合并时按实际顺序排他）
 
 ## 0. 目标与非目标
 
@@ -212,7 +212,7 @@ service
 - 现有用户取消：`cancel` → `status_reason=USER_CANCEL`；`leave` → `USER_EXIT`；`reject` → `PUBLISHER_REJECT`；`onTripCompleted` → `TRIP_COMPLETED`。
 - `TripCancelReasonEnum.parse` 拒绝 `credit_restricted`；请求 enum 不含它；响应 enum 含它；前端 `cancelReasonLabel` 映射「信用分低于 60，账号受限」。
 
-## 7. 契约 0.19.0
+## 7. 契约 0.20.0
 
 | 变更 | 内容 |
 |---|---|
@@ -257,7 +257,7 @@ service
 | 系统原因被发布者伪造 | `systemOnly` + `parse` 拒绝；请求 enum 不含 |
 | 限制原因泄漏 | `UserProfileResponse` 仅本人带 reason；他人 `NON_NULL` 省略；E2E 断言 |
 | 低信用测试数据 | API 测试内 `CreditService.book`；E2E `page.route`；不新增管理员/写接口 |
-| 契约 / 迁移号 | 暂定 0.19.0 + V25；P4 落库前排他确认 |
+| 契约 / 迁移号 | 0.20.0 + V25；P4 落库前排他确认 |
 | 待核实核实无管理端 | 领域方法 `reviewExit` + 单测；无 controller；未来 change 接管理端 |
 | 无恢复关系 | 明确写进 Delta / 设计 / 文案；P4 反向断言 |
 

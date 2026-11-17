@@ -1,10 +1,10 @@
 # P4 阶段记录 — add-credit-exit-restriction
 
-- **Change：** `add-credit-exit-restriction`（能力 `credit-enforcement` ADDED）｜ **需求：** REQ-024 ｜ **故事：** S25 + S26
+- **Change：** `add-credit-exit-restriction`（能力 `credit-enforcement` ADDED）｜ **需求：** REQ-025 ｜ **故事：** S25 + S26
 - **阶段：** P4（Apply & verify）｜ **日期：** 2026-11-17
 - **记录人：** Lewis Liu（当前开发者）｜ **VL：** Neal（G2 待签）
 - **分支：** `feature/add-credit-exit-restriction`
-- **契约 / 迁移：** `openapi.yaml` **0.19.0** ｜ `V25__credit_enforcement.sql`
+- **契约 / 迁移：** `openapi.yaml` **0.20.0** ｜ `V25__credit_enforcement.sql`
 
 ## 1. 阶段目标
 
@@ -14,7 +14,7 @@
 
 | 层 | 交付 |
 |---|---|
-| 契约 | 0.19.0：`GET /trips/{tripId}/leave-preview`、`POST /trips/{tripId}/leave`（`{reason}` → `LeaveResult`）、`LeavePreview` / `LeaveRequest` / `LeaveResult`、`UserCreditEntry.credit_restricted`、`UserProfile.credit_restricted` + `credit_restriction_reason`、`TripDetail.cancel_reason` 新增系统值 `credit_restricted`、错误码 `CREDIT_RESTRICTED` |
+| 契约 | 0.20.0：`GET /trips/{tripId}/leave-preview`、`POST /trips/{tripId}/leave`（`{reason}` → `LeaveResult`）、`LeavePreview` / `LeaveRequest` / `LeaveResult`、`UserCreditEntry.credit_restricted`、`UserProfile.credit_restricted` + `credit_restriction_reason`、`TripDetail.cancel_reason` 新增系统值 `credit_restricted`、错误码 `CREDIT_RESTRICTED` |
 | 迁移 | `V25__credit_enforcement.sql`：`credit_exit_event`、`credit_restriction`（`active_flag` 唯一）、`trip_applications.status_reason`；SQLite / H2 双引擎 |
 | 领域 | `CreditExitReasonEnum` / `CreditExitPenaltyTier` / `CreditExitCalculator` / `CreditExitEvent` / `CreditRestriction`；六档左闭右开、集合时间优先、月度序号与翻倍、待核实与 0 分裁断 |
 | 服务 | `CreditEnforcementService.previewExit / leave / reviewExit`；`CreditService.book` 发布 `CreditChangedEvent`；`CreditEnforcementServiceImpl` 同事务触发/解除；`CreditRestrictionGuard` 叶子守卫 |
@@ -39,7 +39,7 @@ T1–T14 全部完成，`tasks.md` 复选框已勾选。T0（原型/预览）在
 | `playwright test credit-exit / credit-restriction / credit-cancel-reason / credit / mine`（隔离环境 8091 + 5181，`SqlLite/e2e-p4-credit.db`） | **23 / 23 passed** |
 | `playwright test`（全量，同一隔离库，123 条） | **99 passed / 24 failed**；失败均为既有债务（见 §5） |
 | 走查（1440 / 768 / 390 × 浅/深色） | 退出弹窗与受限本人主页共 8 组，`scrollWidth - clientWidth = 0`；截图存 `docs/sdd/add-credit-exit-restriction/preview/p4-*.png` |
-| 合并 `origin/main` 后复验 | 后端 **491** / 前端 **351** 全绿；契约 **0.19.0** + 迁移 **V25**；Redocly valid（0 error / 23 warnings，其中 6 个 `nullable+allOf` 为 main 管理后台遗留，已补 `type: object` 修复）；`openspec validate --strict` valid |
+| 合并 `origin/main` 后复验 | 后端 **491** / 前端 **351** 全绿；契约 **0.20.0** + 迁移 **V25**；Redocly valid（0 error / 23 warnings，其中 6 个 `nullable+allOf` 为 main 管理后台遗留，已补 `type: object` 修复）；`openspec validate --strict` valid |
 
 本地验证报告：`docs/ai4se-plugins/20261117-181500-local-verify-report.md`；P4 质量报告：`docs/ai4se-plugins/20261117-181500-quality-checklist-report.md`。
 
@@ -56,7 +56,7 @@ T1–T14 全部完成，`tasks.md` 复选框已勾选。T0（原型/预览）在
 |---|---|---|
 | 1 | 退出成功后额外 `refreshCredit()` | 详情 / 我的旅行 / 聊天三入口退出后刷新 `CreditProvider`，使跌破 60 时导航与入口立即进入只读态；不改变服务端口径 |
 | 2 | `AppShell` 发布导航以 `aria-disabled` + `preventDefault` 禁用 | 保持可见可读，不新增页面；与 `CreditRestrictedNotice` 文案一致 |
-| 3 | 旧用例按新契约更新 | `ChatControllerTest` / `TripCancellationApiTest` 的 `POST /leave` 由无 body → `{reason}`（旧 204 → 200）；`OpenApiTest` 版本 0.14.0 → 0.19.0 并新增信用执行契约断言 |
+| 3 | 旧用例按新契约更新 | `ChatControllerTest` / `TripCancellationApiTest` 的 `POST /leave` 由无 body → `{reason}`（旧 204 → 200）；`OpenApiTest` 版本 0.14.0 → 0.20.0 并新增信用执行契约断言 |
 
 ## 7. 残余风险
 
@@ -72,12 +72,12 @@ T1–T14 全部完成，`tasks.md` 复选框已勾选。T0（原型/预览）在
 | 阶段 | 提交 | 说明 |
 |---|---|---|
 | P0 | `41c173d` | 基线 + 范围裁决 |
-| P1 | `13c63d8` | REQ-024 / 提案 / Delta 草稿 / 两故事 / P1 评审 |
+| P1 | `13c63d8` | REQ-025 / 提案 / Delta 草稿 / 两故事 / P1 评审 |
 | P2 | `c790357` | Delta 定稿 / AC-DoV / consistency-lint / G1 |
 | P3 | `4a80f47` | ATDD / 设计 / 任务 / 原型 / 预览 / 评审 / P3 报告 |
-| P4 | `5780860` + `c2352b8` | 契约 / V25 / 后端 / 前端 / E2E / 回归 / P4 记录；`c2352b8` 按 main 已占号顺延为 REQ-024 / S25 / S26 |
-| 合并 | 本次合并 | `main` 已占 0.16.0–0.18.0 与 V21–V24；本 change 契约顺延 **0.19.0**、迁移顺延 **V25**；合并后后端 491 / 前端 351 / Redocly 0 error |
+| P4 | `5780860` + `c2352b8` | 契约 / V25 / 后端 / 前端 / E2E / 回归 / P4 记录；`c2352b8` 按 main 已占号顺延为 REQ-025 / S25 / S26 |
+| 合并 | 本次合并 | `main` 已占 0.16.0–0.18.0 与 V21–V24；本 change 契约顺延 **0.20.0**、迁移顺延 **V25**；合并后后端 491 / 前端 351 / Redocly 0 error |
 
 ## 9. 阶段结论
 
-**P4 Pass with documented debt（本地）。** T1–T14 完成，合并前后端 337 / 前端 293 / 新增 E2E 7 条与相关回归 23 条通过；合并 `origin/main` 后复验后端 491 / 前端 351 全绿，契约 0.19.0 + V25。全量 E2E 的 24 条失败均有干净库证据归因为既有地图渲染与共享库累积债务。G2 待 VL=Neal 签署；按用户要求不提交 P5、不归档。
+**P4 Pass with documented debt（本地）。** T1–T14 完成，合并前后端 337 / 前端 293 / 新增 E2E 7 条与相关回归 23 条通过；合并 `origin/main` 后复验后端 491 / 前端 351 全绿，契约 0.20.0 + V25。全量 E2E 的 24 条失败均有干净库证据归因为既有地图渲染与共享库累积债务。G2 待 VL=Neal 签署；按用户要求不提交 P5、不归档。

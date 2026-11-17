@@ -1,6 +1,6 @@
 # S25 — 退出同行扣减信用分
 
-- **Parent REQ：** REQ-024 `requirement-workspace/requirements/REQ-024-exit-credit-restriction.md`
+- **Parent REQ：** REQ-025 `requirement-workspace/requirements/REQ-025-exit-credit-restriction.md`
 - **Change：** `add-credit-exit-restriction`
 - **Priority：** P0 ｜ **Iteration：** 2（信用系统迭代 2）｜ **Points：** 5
 - **Page：** 行程详情页（退出入口）；我的旅行（退出入口）；聊天页（退出入口）
@@ -38,7 +38,7 @@
 
 ## Requirement traceability
 
-| Story AC | REQ-024 scenario | Change spec（P2 已定稿） |
+| Story AC | REQ-025 scenario | Change spec（P2 已定稿） |
 |---|---|---|
 | 原因必选 | S25-1 | `credit-enforcement` / 退出原因与预计影响 |
 | 48h -5 | S25-2 | `credit-enforcement` / 出发前退出扣分阶梯 |

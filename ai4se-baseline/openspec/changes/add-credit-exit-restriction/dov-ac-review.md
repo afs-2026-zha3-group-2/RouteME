@@ -2,7 +2,7 @@
 
 - **Change：** `add-credit-exit-restriction`
 - **Delta：** [`specs/credit-enforcement/spec.md`](specs/credit-enforcement/spec.md)（ADDED 9 Requirement / 46 Scenario）
-- **需求：** [`REQ-024-exit-credit-restriction.md`](../../requirement-workspace/requirements/REQ-024-exit-credit-restriction.md)（S25-1 ~ S25-22 / S26-1 ~ S26-24）
+- **需求：** [`REQ-025-exit-credit-restriction.md`](../../requirement-workspace/requirements/REQ-025-exit-credit-restriction.md)（S25-1 ~ S25-22 / S26-1 ~ S26-24）
 - **日期：** 2026-11-17 ｜ **阶段：** P2（delta-craft review）
 - **工具：** `openspec validate add-credit-exit-restriction --strict` → `Change 'add-credit-exit-restriction' is valid`
 
@@ -31,7 +31,7 @@
 
 ## Residual risks
 
-- 契约 / 迁移号暂定 0.19.0 + V25；`add-ai-itinerary` 曾声明同号，P3 排他确认。
+- 契约 / 迁移号暂定 0.20.0 + V25；`add-ai-itinerary` 曾声明同号，P3 排他确认。
 - 待核实退出的「核实」领域行为没有管理端入口；本 change 只保证 pending，未来核实 change 承接。
 - 低信用演示数据 / E2E 触发路径未定；P3 决定种子 / 夹具 / 直接记账。
 - 自动清理跨域事务较大；P3 需评估批量与索引，P4 用集成测试锁定「无半状态」。

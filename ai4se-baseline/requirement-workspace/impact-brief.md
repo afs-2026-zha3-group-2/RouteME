@@ -1625,9 +1625,9 @@ REQ-010：聊天页按原型重构、聊天准入与退出语义调整、集合�
 - **阶段：** 单阶段；P5 归档受在途 change 顺序约束（见 22.7）。
 - **质量自检（split-heuristics）：** 子目标一句话可说明 ✓；端到端可观察（点赞 → 跨档 → 作者分数 +1 → 账本一条）✓；可独立运行 ✓；capability 名真实（`trip-experiences` / `user-credit`）✓；无依赖环 ✓；场景 24 条，单 change 可承载 ✓。
 
-## 24. REQ-024 变更影响 — 退出同行扣分与低信用自动限制
+## 24. REQ-025 变更影响 — 退出同行扣分与低信用自动限制
 
-> 编号说明：起草时记为 REQ-022（当时 REQ-020 / REQ-021 已占用）；合并 `origin/main` 时 REQ-022 已由 `add-trip-weather`（行程天气）占用、REQ-023 由 `add-experience-like-credit`（体验点赞积分）占用，按「后到者顺延」改为 **REQ-024**，故事改为 S25（退出）与 S26（限制）；契约 / 迁移同步顺延为 **0.19.0 + V25**（main 已占 0.16.0–0.18.0 与 V21–V24）。
+> 编号说明：起草时记为 REQ-022（当时 REQ-020 / REQ-021 已占用）；合并 `origin/main` 时 REQ-022 已由 `add-trip-weather`（行程天气）占用、REQ-023 由 `add-experience-like-credit`（体验点赞积分）占用，按「后到者顺延」改为 **REQ-025**，故事改为 S25（退出）与 S26（限制）；契约 / 迁移同步顺延为 **0.20.0 + V25**（main 已占 0.16.0–0.18.0 与 V21–V24）。
 
 - **日期：** 2026-11-17 ｜ **触发：** `/sdd:p1`（用户卡片同时包含 Story 4 + Story 5）
 - **基线：** `main@ec360dc`；分支 `feature/add-credit-exit-restriction`
@@ -1635,8 +1635,8 @@ REQ-010：聊天页按原型重构、聊天准入与退出语义调整、集合�
 
 ### 24.1 Requirement set
 
-- `requirement-workspace/requirements/REQ-024-exit-credit-restriction.md`（六字段 + 46 场景 + OQ + DoR）
-- `requirement-workspace/intents/REQ-024-exit-credit-restriction.md`
+- `requirement-workspace/requirements/REQ-025-exit-credit-restriction.md`（六字段 + 46 场景 + OQ + DoR）
+- `requirement-workspace/intents/REQ-025-exit-credit-restriction.md`
 - 故事：`requirement-workspace/stories/add-credit-exit-restriction-exit.story.md`（S25）与 `...-restriction.story.md`（S26）
 - 能力：`credit-enforcement`（ADDED）；依赖 `user-credit` / `trip-companions` / `trip-cancellation` / `trip-plans` / 体验 / 资料展示面。
 - **Delta：** `openspec/changes/add-credit-exit-restriction/specs/credit-enforcement/spec.md`（ADDED）。
@@ -1654,7 +1654,7 @@ REQ-010：聊天页按原型重构、聊天准入与退出语义调整、集合�
 | 取消规格 | `openspec/changes/add-trip-cancel/specs/trip-cancellation/spec.md` | 5 Requirement / 20 Scenario；未归档 |
 | 只读入口 | `TripPlanService.create`、`ApplicationServiceImpl.apply`、`ExperienceService`、`ChatServiceImpl`、`UserProfileServiceImpl.save` | 无信用限制判断 |
 | 管理端 | 全仓 grep `admin / 管理后台` | 0 命中；无角色、无端点、无页面 |
-| 契约 | `RouteME/openapi.yaml` | 合并前 0.14.0；P4 合并后落 0.19.0；已有 leave / credits / profile；无 `CREDIT_RESTRICTED`、无 `credit_restricted` |
+| 契约 | `RouteME/openapi.yaml` | 合并前 0.14.0；P4 合并后落 0.20.0；已有 leave / credits / profile；无 `CREDIT_RESTRICTED`、无 `credit_restricted` |
 | 迁移 | `RouteME/backend/src/main/resources/db/migration` | 合并前 V20 head；P4 合并后落 V25（V21–V24 已被 main 占用） |
 | 测试 | `CreditServiceImplTest`、`CreditMigrationSqliteTest`、`credit.spec.ts` | 记账单测 / 迁移双引擎 / 展示 E2E 8 条 |
 
@@ -1670,7 +1670,7 @@ REQ-010：聊天页按原型重构、聊天准入与退出语义调整、集合�
 | `trip-experiences` | 发布仅 COMPLETED；作者可编辑 | 限制守卫拦截发布/编辑；资格规则不变 |
 | `user-profile` / `user-profiles` | 展示分数 + 等级 | 五展示面追加 `credit_restricted` 徽标；本人主页追加原因与自动解除说明 |
 | `user-auth` | 会话 / 登录 / 退出 | 不受限制影响 |
-| 契约 | 0.14.0 | 升 0.19.0：新增限制字段、`CREDIT_RESTRICTED` 错误、`credit_restricted` 取消原因、退出预览/确认请求与响应 |
+| 契约 | 0.14.0 | 升 0.20.0：新增限制字段、`CREDIT_RESTRICTED` 错误、`credit_restricted` 取消原因、退出预览/确认请求与响应 |
 | 迁移 | V20 | `V25__credit_enforcement.sql`：`credit_exit_event` + `credit_restriction` + `trip_applications.status_reason` |
 
 ### 24.4 Blast radius（应用架构）
@@ -1709,12 +1709,12 @@ REQ-010：聊天页按原型重构、聊天准入与退出语义调整、集合�
 | Risk | 限制原因泄漏给他人 | 契约按请求人裁剪；他人只拿 `credit_restricted` 布尔；E2E 断言他人视角无原因 |
 | Risk | 0 分裁断事件计数争议 | D14 已裁决按事件计入；P2 Delta 写明；单测覆盖 |
 | Risk | 无低信用演示数据 | P3 决定种子 / 夹具 / 直接记账；不新增管理员入口 |
-| Risk | 契约 / 迁移号撞号 | 已解决：合并时按「后到者顺延」落 0.19.0 + V25（main 已占 0.16.0–0.18.0 与 V21–V24） |
+| Risk | 契约 / 迁移号撞号 | 已解决：合并时按「后到者顺延」落 0.20.0 + V25（main 已占 0.16.0–0.18.0 与 V21–V24） |
 | Blocker | 无 | blocking OQ=0、DoR BLOCKER=0、A0 ⑨–⑫ 全过 |
 
 ### 24.8 Suggested split boundaries（供 proposal-split / story-split）
 
-- **一个 change：** `add-credit-exit-restriction` ← REQ-024（S25 + S26）；用户 D1 明确。
+- **一个 change：** `add-credit-exit-restriction` ← REQ-025（S25 + S26）；用户 D1 明确。
 - **两个故事：** S25 退出扣分（原因/预览/六档/月度/待核实）；S26 限制（触发/只读/自动清理/展示/自动解除）。
 - **不并入：** 管理端核实与人工封禁、信用明细页、安全学习/客服入口、正向加分事件。
 - **依赖：** `user-credit`（账本/账户）、`trip-companions`（退出/申请）、`trip-cancellation`（取消事件）、五展示面。

@@ -392,27 +392,27 @@
 
 ---
 
-# Story list — REQ-024（退出同行扣分与低信用自动限制）
+# Story list — REQ-025（退出同行扣分与低信用自动限制）
 
 - **来源：** 用户当次会话 P0 卡片「[P0] 退出同行扣减信用分」；Story 4（信用系统迭代 2 / 5 点）与 Story 5（信用系统迭代 3 / 3 点）
 - **Change：** `add-credit-exit-restriction`（`credit-enforcement` ADDED）
 - **口径：** 两条故事共享同一 change 与同一信用执行链；S25 负责退出扣分与待核实，S26 负责 <60 限制与自动清理/解除；验收分开。
-- **编号：** 起草时记为 S22 / S23、REQ-022；合并 main 时 REQ-022 / S22 已由 `add-trip-weather` 占用、REQ-023 由 `add-experience-like-credit` 占用，按「后到者顺延」改为 **REQ-024 / S25 / S26**。
+- **编号：** 起草时记为 S22 / S23、REQ-022；合并 main 时 REQ-022 / S22 已由 `add-trip-weather` 占用、REQ-023 由 `add-experience-like-credit` 占用，按「后到者顺延」改为 **REQ-025 / S25 / S26**。
 - **更新时间：** 2026-11-17
 
 | Story | Title | 角色 | Priority | Iteration | Points | Page | Parent REQ | Change | Status |
 |---|---|---|---|---|---|---|---|---|---|
-| S25 | 退出同行扣减信用分 | 已接受同行者 | P0 | 信用系统迭代 2 | 5 | 行程详情 / 我的旅行 / 聊天 | REQ-024 | `add-credit-exit-restriction` | P4 implemented（2026-11-17） |
-| S26 | 低信用分自动限制账号 | 受限用户 / 平台 | P0 | 信用系统迭代 3 | 3 | 个人主页 / 五展示面 / 被拦截提示 | REQ-024 | `add-credit-exit-restriction` | P4 implemented（2026-11-17） |
+| S25 | 退出同行扣减信用分 | 已接受同行者 | P0 | 信用系统迭代 2 | 5 | 行程详情 / 我的旅行 / 聊天 | REQ-025 | `add-credit-exit-restriction` | P4 implemented（2026-11-17） |
+| S26 | 低信用分自动限制账号 | 受限用户 / 平台 | P0 | 信用系统迭代 3 | 3 | 个人主页 / 五展示面 / 被拦截提示 | REQ-025 | `add-credit-exit-restriction` | P4 implemented（2026-11-17） |
 
-## Traceability（REQ-024）
+## Traceability（REQ-025）
 
 | Story | Requirement scenarios | Change spec | Story file |
 |---|---|---|---|
-| S25 | REQ-024 §4 S25-1 ~ S25-22 | `openspec/changes/add-credit-exit-restriction/specs/credit-enforcement/spec.md`（ADDED，P2 已定稿） | `requirement-workspace/stories/add-credit-exit-restriction-exit.story.md` |
-| S26 | REQ-024 §4 S26-1 ~ S26-24 | 同上 | `requirement-workspace/stories/add-credit-exit-restriction-restriction.story.md` |
+| S25 | REQ-025 §4 S25-1 ~ S25-22 | `openspec/changes/add-credit-exit-restriction/specs/credit-enforcement/spec.md`（ADDED，P2 已定稿） | `requirement-workspace/stories/add-credit-exit-restriction-exit.story.md` |
+| S26 | REQ-025 §4 S26-1 ~ S26-24 | 同上 | `requirement-workspace/stories/add-credit-exit-restriction-restriction.story.md` |
 
-## Notes（REQ-024）
+## Notes（REQ-025）
 
 - **不拆 change：** 用户 D1 明确一个 change 覆盖两个故事；退出扣分是限制的主要触发源，拆开无法在一次验收内看到「扣分 → <60 → 限制」。
 - **不拆 S25：** 原因 / 预计影响 / 六档扣分 / 月度 / 待核实是一条垂直切片；拆开会出现不可验收的半成品。

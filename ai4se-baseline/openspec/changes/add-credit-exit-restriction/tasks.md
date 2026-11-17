@@ -1,6 +1,6 @@
 # Tasks — add-credit-exit-restriction
 
-- **Change：** `add-credit-exit-restriction` ｜ **REQ：** REQ-024 ｜ **Delta：** `specs/credit-enforcement/spec.md`（ADDED 9 Requirement / 46 Scenario）
+- **Change：** `add-credit-exit-restriction` ｜ **REQ：** REQ-025 ｜ **Delta：** `specs/credit-enforcement/spec.md`（ADDED 9 Requirement / 46 Scenario）
 - **ATDD：** `atdd-design.md`（A1–A5 / E1–E3 / Defer UT）
 - **设计：** `design.md`（D1–D20）
 - **Owner：** Lewis Liu（当前开发者）
@@ -13,10 +13,10 @@
 - 新增 `preview/exit-credit.html`（1440 / 390，浅/深色；退出弹窗 + 本人限制 + 他人徽标 + 拦截提示 + 系统取消）。
 - **验证：** 浏览器打开预览，检查无横向溢出、原因/徽标/提示同时可见。
 
-## T1 — 契约 0.19.0
+## T1 — 契约 0.20.0
 
 - [x] **层：** contract ｜ **Owner：** Lewis Liu
-- `openapi.yaml` 升 0.19.0；新增 `GET /trips/{tripId}/leave-preview`、改 `POST /trips/{tripId}/leave`（body `{reason}`、200 `LeaveResult`）；新增 `LeavePreview` / `LeaveRequest` / `LeaveResult`；`UserCreditEntry.credit_restricted`；`UserProfile.credit_restricted` + `credit_restriction_reason`；`TripDetail.cancel_reason` 响应 enum 加 `credit_restricted`；错误 `CREDIT_RESTRICTED`；补成功/400/403/409 示例。
+- `openapi.yaml` 升 0.20.0；新增 `GET /trips/{tripId}/leave-preview`、改 `POST /trips/{tripId}/leave`（body `{reason}`、200 `LeaveResult`）；新增 `LeavePreview` / `LeaveRequest` / `LeaveResult`；`UserCreditEntry.credit_restricted`；`UserProfile.credit_restricted` + `credit_restriction_reason`；`TripDetail.cancel_reason` 响应 enum 加 `credit_restricted`；错误 `CREDIT_RESTRICTED`；补成功/400/403/409 示例。
 - **验证：** `cd ai4se-baseline/RouteME; npx.cmd -y @redocly/cli lint openapi.yaml`；`OpenApiTest`。
 
 ## T2 — 迁移 V25

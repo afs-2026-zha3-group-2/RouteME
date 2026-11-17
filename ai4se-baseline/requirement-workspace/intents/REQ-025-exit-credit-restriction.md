@@ -1,8 +1,8 @@
-# Intent capture — 退出同行扣分与低信用自动限制（REQ-024 / 信用系统迭代 2–3）
+# Intent capture — 退出同行扣分与低信用自动限制（REQ-025 / 信用系统迭代 2–3）
 
 - **捕获日期：** 2026-11-17
 - **来源：** 用户当次会话提供的 P0 卡片「[P0] 退出同行扣减信用分」，同时包含 Story 4（退出同行扣减信用分，信用系统迭代 2，5 点）与 Story 5（低信用分自动限制账号，信用系统迭代 3，3 点）
-- **候选编号：** REQ-024（起草时记为 REQ-022；合并 `origin/main` 时 REQ-022 / S22 已被 `add-trip-weather` 占用、REQ-023 被 `add-experience-like-credit` 占用，按「后到者顺延」改为 REQ-024）
+- **候选编号：** REQ-025（起草时记为 REQ-022；合并 `origin/main` 时 REQ-022 / S22 已被 `add-trip-weather` 占用、REQ-023 被 `add-experience-like-credit` 占用，按「后到者顺延」改为 REQ-025）
 - **能力 / change 候选：** `credit-enforcement`（ADDED）/ `add-credit-exit-restriction`
 - **状态：** Discovery — Go（light intake）
 
@@ -68,7 +68,7 @@
 
 | 编号 | 议题 | 裁决 |
 |---|---|---|
-| D1 | 卡片范围 | 一个 change 覆盖 Story 4 + Story 5；一个 REQ-024 + 两个故事文件。 |
+| D1 | 卡片范围 | 一个 change 覆盖 Story 4 + Story 5；一个 REQ-025 + 两个故事文件。 |
 | D2 | 自动限制与 D1 冲突 | 以 Story 5 为准，推翻 REQ-019 D1「本迭代不引入自动封禁（<60）」；本 change 正式实现。 |
 | D3 | 管理端 | 不做任何管理员能力；不可抗力/安全原因退出暂不扣分并记为「待核实」；管理员核实与人工封禁另开 change；接受核实前一直不扣分。 |
 | D4 | 用户可见信息 | 不展示加扣分明细；只展示当前分数、等级、限制状态与限制原因（原因仅本人可见）；不提供逐条流水。 |

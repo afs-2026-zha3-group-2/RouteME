@@ -1,8 +1,8 @@
 # 变更提案：add-credit-exit-restriction
 
-- **需求来源：** 用户 P0 卡片「[P0] 退出同行扣减信用分」Story 4（信用系统迭代 2 / 5 点）与 Story 5（信用系统迭代 3 / 3 点）｜ **需求条目：** `requirement-workspace/requirements/REQ-024-exit-credit-restriction.md`
+- **需求来源：** 用户 P0 卡片「[P0] 退出同行扣减信用分」Story 4（信用系统迭代 2 / 5 点）与 Story 5（信用系统迭代 3 / 3 点）｜ **需求条目：** `requirement-workspace/requirements/REQ-025-exit-credit-restriction.md`
 - **能力：** `credit-enforcement`（**ADDED**）；依赖 `user-credit`（账户 / 账本）、`trip-companions`（退出 / 申请）、`trip-cancellation`（取消，未归档）、`trip-plans`（状态）、`trip-experiences`（体验）、`user-profile` / `user-profiles`（展示面）
-- **规模：** M（新增 1 个能力 / 9 组 Requirement / 46 Scenario；新增 `V25` 迁移 + 契约 0.19.0；退出三入口 + 五个展示面 + 限制守卫 + 自动清理）
+- **规模：** M（新增 1 个能力 / 9 组 Requirement / 46 Scenario；新增 `V25` 迁移 + 契约 0.20.0；退出三入口 + 五个展示面 + 限制守卫 + 自动清理）
 - **规则：** `@rule:spec-first`、`@rule:api-contract`、`@rule:java-patterns`、`@rule:web-coding-style`、`@rule:security-baseline`、`@rule:tdd-cycle`、`@rule:prototype-ui-alignment`、`@rule:sdd-artifacts`
 
 ## Why
@@ -56,7 +56,7 @@ RouteME 已经有信用账户与账本（REQ-019），也有退出同行、取�
 | `UserCredit` / `UserCreditEntry` / `UserProfileResponse` | 追加 `credit_restricted`；本人主页追加限制原因 |
 | `frontend/src/trips` / `mine` / `chat` / `profile` / `profiles` | 三入口退出弹窗、五展示面徽标、拦截提示、自动解除说明 |
 | `frontend/src/i18n` / `styles.css` | 退出原因、预计影响、限制文案、系统取消原因、徽标样式 |
-| `openapi.yaml` | 0.19.0；退出请求/响应、限制字段、`CREDIT_RESTRICTED`、`credit_restricted` 原因 |
+| `openapi.yaml` | 0.20.0；退出请求/响应、限制字段、`CREDIT_RESTRICTED`、`credit_restricted` 原因 |
 | 测试 | 后端记账/退出/限制/迁移双引擎；前端纯函数/组件；E2E 退出 + 限制 + 自动清理 |
 | `openspec/changes/add-credit-exit-restriction/specs/credit-enforcement/spec.md` | ADDED 9 Requirement / 46 Scenario |
 
@@ -77,7 +77,7 @@ RouteME 已经有信用账户与账本（REQ-019），也有退出同行、取�
 | 触发联动 | 自动撤回/解除/取消；系统清退不扣分（用户 D11） | 只读账号不能留下未收口的同行关系与行程；系统清退不是用户退出，不二次惩罚。 |
 | 系统取消原因 | 新增「信用分低于 60，账号受限」（用户 D13） | 让发布者与同行者知道发生了什么；其他用户只看到已取消。 |
 | 规格承载 | 新增 `credit-enforcement`（ADDED），不改未归档 Delta（用户 D15） | 避免与 `user-credit` / `trip-cancellation` / `trip-companions` 抢同一 Requirement 块。 |
-| 契约/迁移 | 暂定 0.19.0 + V25，P3 排他确认（用户 D17） | `add-ai-itinerary` 曾声明同号；按实际落地顺序排他。 |
+| 契约/迁移 | 暂定 0.20.0 + V25，P3 排他确认（用户 D17） | `add-ai-itinerary` 曾声明同号；按实际落地顺序排他。 |
 
 ## 验收信号
 
@@ -102,5 +102,5 @@ RouteME 已经有信用账户与账本（REQ-019），也有退出同行、取�
 | 限制原因泄漏给他人 | 契约按请求人裁剪；他人只拿 `credit_restricted`；E2E 断言无原因。 |
 | 0 分裁断事件计数争议 | D14 已裁决按事件计入；P2 Delta 写明；单测覆盖。 |
 | 无低信用演示数据 | P3 决定种子 / 夹具 / 直接记账；不新增管理员入口。 |
-| 契约 / 迁移号撞号 | `add-ai-itinerary` 曾声明 0.19.0 + V25；P3 按实际落地顺序排他确认。 |
+| 契约 / 迁移号撞号 | `add-ai-itinerary` 曾声明 0.20.0 + V25；P3 按实际落地顺序排他确认。 |
 | 场景 46 条超过单 change 阈值 | 用户 D1 明确合并；P2 在同一 change 内拆 Requirement 组，不拆 change。 |

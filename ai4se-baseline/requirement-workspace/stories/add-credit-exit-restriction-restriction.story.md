@@ -1,6 +1,6 @@
 # S26 — 低信用分自动限制账号
 
-- **Parent REQ：** REQ-024 `requirement-workspace/requirements/REQ-024-exit-credit-restriction.md`
+- **Parent REQ：** REQ-025 `requirement-workspace/requirements/REQ-025-exit-credit-restriction.md`
 - **Change：** `add-credit-exit-restriction`
 - **Priority：** P0 ｜ **Iteration：** 3（信用系统迭代 3）｜ **Points：** 3
 - **Page：** 用户个人主页（本人原因 + 自动解除说明）；五个信用展示面（他人限制徽标）；被拦截操作提示
@@ -39,7 +39,7 @@
 
 ## Requirement traceability
 
-| Story AC | REQ-024 scenario | Change spec（P2 已定稿） |
+| Story AC | REQ-025 scenario | Change spec（P2 已定稿） |
 |---|---|---|
 | 触发与边界 | S26-1、S26-2 | `credit-enforcement` / 信用限制触发 |
 | 记录幂等与历史 | S26-3、S26-19、S26-20 | `credit-enforcement` / 限制记录 |

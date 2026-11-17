@@ -22,9 +22,9 @@
 
 | id | severity | phase | location | issue | suggested_fix | evidence | authority |
 |---|---|---|---|---|---|---|---|
-| S-1 | SUGGESTION | p2 | `proposal.md` Impact「openapi.yaml」/「迁移」行 | 契约 0.19.0 与迁移 V25 是暂定；`add-ai-itinerary` 曾声明同号 | P3 按实际落地顺序排他确认；若先落则顺延 0.16.0 + V22 | proposal Impact；P0 baseline D17 | [fact] |
+| S-1 | SUGGESTION | p2 | `proposal.md` Impact「openapi.yaml」/「迁移」行 | 契约 0.20.0 与迁移 V25 是暂定；`add-ai-itinerary` 曾声明同号 | P3 按实际落地顺序排他确认；若先落则顺延 0.16.0 + V22 | proposal Impact；P0 baseline D17 | [fact] |
 | S-2 | SUGGESTION | p2 | Delta「退出原因与预计信用影响」/「受限账号只读与保留能力」 | 本 Delta 不改「退出同行」聊天语义；活规格（关闭聊天）与未归档 `refine-trip-chat`（保留聊天）仍有已知差异 | 本 change 不触碰聊天；P5 归档前由 SA 对活规格与未归档 Delta 做具名追认 | `openspec/specs/trip-companions/spec.md:97-117`；`refine-trip-chat` Delta | [inference] |
-| S-3 | SUGGESTION | p2 | Delta「受限账号只读与保留能力」第 1 段 | 写操作用「……等其它写操作」兜底；P3 需要把服务端守卫清单与前端入口清单一一列出，避免漏拦 | P3 `design.md` 给出 guard 清单（发布/编辑/取消/结束/申请/撤回/退出/体验/聊天/资料头像）；P4 测试逐项覆盖 | Delta Req6；REQ-024 D9 | [fact] |
+| S-3 | SUGGESTION | p2 | Delta「受限账号只读与保留能力」第 1 段 | 写操作用「……等其它写操作」兜底；P3 需要把服务端守卫清单与前端入口清单一一列出，避免漏拦 | P3 `design.md` 给出 guard 清单（发布/编辑/取消/结束/申请/撤回/退出/体验/聊天/资料头像）；P4 测试逐项覆盖 | Delta Req6；REQ-025 D9 | [fact] |
 
 ## Proposal rules（P1–P4）
 

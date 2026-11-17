@@ -1,6 +1,6 @@
 # P3 阶段记录 — add-credit-exit-restriction
 
-- **Change：** `add-credit-exit-restriction`（能力 `credit-enforcement` ADDED）｜ **需求：** REQ-024 ｜ **故事：** S25 + S26
+- **Change：** `add-credit-exit-restriction`（能力 `credit-enforcement` ADDED）｜ **需求：** REQ-025 ｜ **故事：** S25 + S26
 - **阶段：** P3（Design & decompose）｜ **日期：** 2026-11-17
 - **记录人：** Lewis Liu（当前开发者）
 - **分支：** `feature/add-credit-exit-restriction`
@@ -14,7 +14,7 @@
 | 类型 | 路径 | 说明 |
 |---|---|---|
 | ATDD 设计 | `openspec/changes/add-credit-exit-restriction/atdd-design.md` | API A1–A5 / E2E E1–E3 / Defer UT / fixtures / gates / non-goals + 反向验证 |
-| 技术设计 | `openspec/changes/add-credit-exit-restriction/design.md` | D1–D20 + V25 数据模型 + 依赖图 + 退出/限制/系统取消 + 契约 0.19.0 + 前端 + 测试 + 风险 |
+| 技术设计 | `openspec/changes/add-credit-exit-restriction/design.md` | D1–D20 + V25 数据模型 + 依赖图 + 退出/限制/系统取消 + 契约 0.20.0 + 前端 + 测试 + 风险 |
 | 任务清单 | `openspec/changes/add-credit-exit-restriction/tasks.md` | T0–T14 + Owner + 复选框 + 验证命令 + 对齐自检 10/10 |
 | 原型 | `docs/prototype/main.js` / `store.js` / `ui.js` / `data.js` / `styles.css` | 退出原因 + 预计影响弹窗、限制徽标、本人原因、拦截提示、系统取消原因、模拟限制（原型专用） |
 | 预览 | `docs/sdd/add-credit-exit-restriction/preview/exit-credit.html` | 1440 / 390 × 浅/深色；退出弹窗 + 本人限制 + 他人徽标 + 拦截 + 系统取消 |
@@ -43,7 +43,7 @@
 
 | 组 | 任务 |
 |---|---|
-| 契约 / 迁移 | T1 契约 0.19.0；T2 V25 |
+| 契约 / 迁移 | T1 契约 0.20.0；T2 V25 |
 | 领域 / 服务 | T3 计算器；T4 事件与限制监听；T5 退出预览/编排/`reviewExit`；T6 系统取消与 status_reason |
 | 守卫 / 响应 | T7 只读守卫；T8 响应字段 |
 | 前端 / E2E | T9 类型/API/CreditProvider；T10 退出弹窗三入口；T11 五展示面与拦截；T12 系统取消与 E2E |
@@ -86,13 +86,13 @@
 | 阶段 | 提交 | 说明 |
 |---|---|---|
 | P0 | `41c173d` | 基线 + 范围裁决 |
-| P1 | `13c63d8` | REQ-024 / 提案 / Delta 草稿 / 两故事 / P1 评审 |
+| P1 | `13c63d8` | REQ-025 / 提案 / Delta 草稿 / 两故事 / P1 评审 |
 | P2 | `c790357` | Delta 定稿 / AC-DoV / consistency-lint / G1 |
 | P3 | 本次提交 | ATDD / design / tasks / 原型 / 预览 / design+tasks 评审 / P3 报告 |
 
 ## 11. 准入 P4 的条件
 
-- 契约 0.19.0 + V25 排他确认；若 `add-ai-itinerary` 先落则顺延 0.16.0 + V22。
+- 契约 0.20.0 + V25 排他确认；若 `add-ai-itinerary` 先落则顺延 0.16.0 + V22。
 - 先写 Red：A1–A5 API 测试 / E1–E3 E2E / `CreditExitCalculatorTest` / `CreditRestrictionGuardTest`。
 - `CreditService.book` 事件监听器 Spring 上下文启动验证；无循环依赖。
 - 自动清理事务与并发集成测试；系统清退不扣分。

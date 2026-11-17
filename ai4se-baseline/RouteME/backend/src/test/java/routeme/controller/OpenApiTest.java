@@ -78,7 +78,7 @@ class OpenApiTest {
 
         // Then
         assertAll(
-                () -> assertEquals("0.19.0", info.get("version"), "info.version"),
+                () -> assertEquals("0.20.0", info.get("version"), "info.version"),
                 () -> assertTrue(responses(likeExperience).containsKey("201"), "first like returns 201"),
                 () -> assertTrue(responses(likeExperience).containsKey("200"), "duplicate like returns 200"),
                 () -> assertTrue(responses(likeExperience).containsKey("403"), "self like returns 403"),
@@ -155,7 +155,7 @@ class OpenApiTest {
 
         // Then
         assertAll(
-                () -> assertEquals("0.19.0", info.get("version"), "info.version"),
+                () -> assertEquals("0.20.0", info.get("version"), "info.version"),
                 () -> assertTrue(paths(document).containsKey("/users"), "/users declared"),
                 () -> assertTrue(paths(document).containsKey("/trips/{tripId}"), "detail path declared"),
                 () -> assertTrue(
@@ -642,7 +642,7 @@ class OpenApiTest {
 
         // Then
         assertAll(
-                () -> assertEquals("0.19.0", info.get("version"), "info.version"),
+                () -> assertEquals("0.20.0", info.get("version"), "info.version"),
                 () -> assertTrue(paths(document).keySet().containsAll(ADMIN_CONSOLE_PATHS), "admin console paths"),
                 () -> assertEquals(16L, adminOperations, "admin console operations"),
                 () -> assertTrue(

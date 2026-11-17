@@ -1,7 +1,7 @@
 # G2 decision — add-credit-exit-restriction
 
 - **Gate：** G2（Verify）
-- **Change：** `add-credit-exit-restriction`（capability `credit-enforcement` ADDED，REQ-024 / S25 + S26）
+- **Change：** `add-credit-exit-restriction`（capability `credit-enforcement` ADDED，REQ-025 / S25 + S26）
 - **Timestamp：** 2026-11-17T18:15+0800
 - **Recorded by：** Lewis Liu（SM / current developer）
 
@@ -12,7 +12,7 @@
 | Local verify report | [`docs/ai4se-plugins/20261117-181500-local-verify-report.md`](../../../docs/ai4se-plugins/20261117-181500-local-verify-report.md) | Pass with documented debt |
 | P4 stage record | [`docs/sdd/add-credit-exit-restriction/p4-verify.md`](../../../docs/sdd/add-credit-exit-restriction/p4-verify.md) | T1–T14 完成 |
 | Quality report | [`docs/ai4se-plugins/20261117-181500-quality-checklist-report.md`](../../../docs/ai4se-plugins/20261117-181500-quality-checklist-report.md) | Pass with documented debt |
-| Contract / migration | `openapi.yaml` 0.19.0 ｜ `V25__credit_enforcement.sql` | Redocly 0 error；双引擎迁移通过 |
+| Contract / migration | `openapi.yaml` 0.20.0 ｜ `V25__credit_enforcement.sql` | Redocly 0 error；双引擎迁移通过 |
 | Delta Spec | [`specs/credit-enforcement/spec.md`](specs/credit-enforcement/spec.md) | 9 Requirement / 46 Scenario |
 | ATDD / Design / Tasks | [`atdd-design.md`](atdd-design.md)、[`design.md`](design.md)、[`tasks.md`](tasks.md) | T0–T14 完成；P5 / 归档按要求暂不执行 |
 
@@ -39,7 +39,7 @@
 
 **Pass with documented debt**
 
-依据：T1–T14 全部完成；合并 `origin/main` 后后端 491 / 前端 351 / 契约 0.19.0 + V25 / Redocly 0 error / openspec valid；新增退出与限制链路 API 测试与 E2E 全绿。全量 E2E 的 24 条失败均有干净库 A/B 证据归因为既有债务（`china-map` 地图元素缺失 17 条；共享库累积行程导致首页顺序 7 条），不属于本 change 的实现缺陷。
+依据：T1–T14 全部完成；合并 `origin/main` 后后端 491 / 前端 351 / 契约 0.20.0 + V25 / Redocly 0 error / openspec valid；新增退出与限制链路 API 测试与 E2E 全绿。全量 E2E 的 24 条失败均有干净库 A/B 证据归因为既有债务（`china-map` 地图元素缺失 17 条；共享库累积行程导致首页顺序 7 条），不属于本 change 的实现缺陷。
 
 ## Waivers / conditions + owners
 
@@ -56,7 +56,7 @@
 |---|---|---|---|
 | VL | Neal | 复核本地验证与干净库 A/B 证据，G2 Pass with documented debt | 2026-11-17 |
 | IO | WAYNE | Delta `credit-enforcement` ADDED / G1 通过 | 2026-11-17 |
-| SA | Jacky | 契约 0.19.0 与退出/限制口径一致 | 2026-11-17 |
+| SA | Jacky | 契约 0.20.0 与退出/限制口径一致 | 2026-11-17 |
 | AO | Lewis Liu | 交付实现与回归结果 | 2026-11-17 |
 | SM | Lewis | 阶段提交链 P0–P4 完整 | 2026-11-17 |
 
