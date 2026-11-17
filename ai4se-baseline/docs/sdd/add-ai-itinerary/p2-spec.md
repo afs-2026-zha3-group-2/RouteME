@@ -54,3 +54,4 @@
 - **validate（本轮实测）：** `openspec validate add-ai-itinerary --strict` → valid；`openspec show add-ai-itinerary --deltas-only --json` → `deltaCount: 9`。
 - **阶段提交：** `docs(p2): add-ai-itinerary delta spec and G1 for AI itinerary recommendation`；提交前核对当前分支为 `feature/add-ai-itinerary`（P1 偏离教训），只 stage 本 change 路径；push 前 `git pull --rebase --autostash origin main`。
 - **附带收编：** p1-intent.md §6 偏离记录②（P1 提交落 main 已 merge 收编）随本阶段提交入库。
+- **偏离③（push 整合）：** `git pull --rebase --autostash origin main` 把已推送的 merge 历史线性化，导致 push non-fast-forward；按禁止 force push 规则改用 `git merge origin/feature/add-ai-itinerary --no-edit`（内容一致，干净合并）后推送成功（`4766a2b..37da70c`）。后续阶段 pull 改用 `git pull --no-rebase --autostash origin main`（merge 式）避免重写已推送历史。
