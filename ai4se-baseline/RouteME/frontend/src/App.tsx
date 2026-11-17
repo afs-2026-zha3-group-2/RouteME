@@ -177,7 +177,6 @@ export function App() {
       <ProfileProvider currentUser={currentUser}>
         <AppShell
           currentUser={currentUser}
-          isAuthenticated={authToken !== null}
           onLogout={logout}
           route={route}
           mode={mode}
@@ -197,7 +196,7 @@ export function App() {
             <ApplicationsPage currentUser={currentUser} tripId={route.tripId} />
           )}
           {route.name === 'mine' && (
-            <MyTripsPage currentUser={currentUser} isAuthenticated={authToken !== null} />
+            <MyTripsPage currentUser={currentUser} />
           )}
           {route.name === 'map' && (
             <MapExplorerPage provinceCode={route.provinceCode} cityCode={route.cityCode} />

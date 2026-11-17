@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, type KeyboardEvent as ReactKeyboardEvent, type ReactNode } from 'react';
 import { loadUserProfile } from '../api';
 import { adminMessages } from '../i18n/adminMessages';
+import { GateScene } from '../identity/GateScene';
 import { tripMessages } from '../i18n/tripMessages';
 import { AccountStatusBanner } from '../profile/AccountStatusBanner';
 import { publisherSummary } from '../profile/profileDisplay';
@@ -137,7 +138,6 @@ function NavIcon({ name }: { name: NavKey }) {
 
 type Props = {
   currentUser: DemoUser;
-  isAuthenticated: boolean;
   onLogout: () => void;
   route: Route;
   mode: ColorMode;
@@ -147,7 +147,6 @@ type Props = {
 
 export function AppShell({
   currentUser,
-  isAuthenticated,
   onLogout,
   route,
   mode,
@@ -155,9 +154,6 @@ export function AppShell({
   children,
 }: Props) {
   const active = activeKey(route);
-  const [identityOpen, setIdentityOpen] = useState(false);
-  const identityRef = useRef<HTMLDivElement>(null);
-  const identityTriggerRef = useRef<HTMLButtonElement>(null);
 
   const [accountOpen, setAccountOpen] = useState(false);
   const [accountMenuAnchor, setAccountMenuAnchor] = useState<{ top: number; left: number } | null>(
@@ -248,31 +244,12 @@ export function AppShell({
     items[(current + offset + items.length) % items.length].focus();
   };
 
-  useEffect(() => {
-    if (!identityOpen) {
-      return;
-    }
-    const closeOnOutside = (event: MouseEvent) => {
-      if (identityRef.current !== null && !identityRef.current.contains(event.target as Node)) {
-        setIdentityOpen(false);
-      }
-    };
-    const closeOnEscape = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') {
-        setIdentityOpen(false);
-        identityTriggerRef.current?.focus();
-      }
-    };
-    document.addEventListener('mousedown', closeOnOutside);
-    document.addEventListener('keydown', closeOnEscape);
-    return () => {
-      document.removeEventListener('mousedown', closeOnOutside);
-      document.removeEventListener('keydown', closeOnEscape);
-    };
-  }, [identityOpen]);
-
   return (
     <div className="app-shell">
+      <div className="app-backdrop" aria-hidden="true">
+        <GateScene />
+      </div>
+
       <a className="skip-link" href="#main-content">
         跳到主要内容
       </a>
@@ -319,80 +296,6 @@ export function AppShell({
             </svg>
           )}
         </button>
-
-        <div className="id-switch" ref={identityRef}>
-          <button
-            ref={identityTriggerRef}
-            type="button"
-            className="id-switch-btn"
-            aria-haspopup="dialog"
-            aria-expanded={identityOpen}
-            aria-label={`${tripMessages.accountMenu}：${currentUser.nickname}`}
-            onClick={() => setIdentityOpen((previous) => !previous)}
-          >
-            <Avatar user={currentUser} size="sm" />
-            <span className="id-switch-text">
-              <span className="id-switch-name">{currentUser.nickname}</span>
-              {isAuthenticated && (
-                <span className="id-switch-label">{tripMessages.authLoggedIn}</span>
-              )}
-            </span>
-            <svg
-              className="id-switch-caret"
-              viewBox="0 0 12 12"
-              aria-hidden="true"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="1.6"
-              strokeLinecap="round"
-            >
-              <path d="m3 4.5 3 3 3-3" />
-            </svg>
-          </button>
-
-          {identityOpen && (
-            <div className="id-panel" role="dialog" aria-label={tripMessages.accountMenu}>
-              {isAuthenticated && (
-                <div className="id-current">
-                  <Avatar user={currentUser} size="sm" />
-                  <span className="id-option-text">
-                    <b>{currentUser.nickname}</b>
-                    <i>{publisherSummary(currentUser) || tripMessages.profileIncompleteShort}</i>
-                  </span>
-                  <span className="id-option-flag">{tripMessages.authLoggedIn}</span>
-                </div>
-              )}
-              <div className="id-divider" role="separator" />
-              <button
-                type="button"
-                className="id-logout"
-                onClick={() => {
-                  setIdentityOpen(false);
-                  onLogout();
-                }}
-              >
-                <svg
-                  viewBox="0 0 20 20"
-                  aria-hidden="true"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="1.7"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                >
-                  <path d="M8 4H5.5A1.5 1.5 0 0 0 4 5.5v9A1.5 1.5 0 0 0 5.5 16H8" />
-                  <path d="M12 6.5 15.5 10 12 13.5M8.5 10h7" />
-                </svg>
-                <span>{tripMessages.authLogout}</span>
-              </button>
-              <p className="id-panel-note">
-                {isAuthenticated
-                  ? '退出登录会结束本机会话并回到登录页。'
-                  : '退出登录会清除本机身份并回到登录页。'}
-              </p>
-            </div>
-          )}
-        </div>
       </header>
 
       <aside className="rail" aria-label="主导航">

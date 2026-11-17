@@ -1,6 +1,7 @@
 import { cityLabel } from '../area/areaOptions';
 import { tripMessages } from '../i18n/tripMessages';
 import { Avatar } from '../shell/Avatar';
+import { cityPhoto } from '../trips/cityPhotos';
 import { coverTone } from '../trips/coverTone';
 import { StatusBadge } from '../trips/StatusBadge';
 import { intensityLabel } from './experienceForm';
@@ -18,6 +19,7 @@ type Props = {
 
 export function ExperienceCard({ experience }: Props) {
   const destination = cityLabel(experience.trip.destination_code) || experience.trip.destination;
+  const photo = cityPhoto(destination, experience.trip.destination);
 
   return (
     <article className="exp-card">
@@ -25,7 +27,11 @@ export function ExperienceCard({ experience }: Props) {
         className={`exp-cover cover-${coverTone(experience.trip.destination_code)}`}
         aria-hidden="true"
       >
-        {destination}
+        {photo !== null && (
+          <img className="exp-photo" src={photo} alt="" loading="lazy" />
+        )}
+        <span className="exp-cover-shade" aria-hidden="true" />
+        <span className="exp-cover-dest">{destination}</span>
       </div>
 
       <div className="exp-head">

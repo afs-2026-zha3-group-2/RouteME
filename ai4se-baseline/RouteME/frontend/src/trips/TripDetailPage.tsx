@@ -29,6 +29,7 @@ import {
 } from '../api';
 import { tripMessages } from '../i18n/tripMessages';
 import { intensityLabel } from '../experiences/experienceForm';
+import { ShareIcon } from '../experiences/shareIcons';
 import { meetingAreaText, meetingTimeText } from '../chat/chatMeeting';
 import { AmapTripMap } from '../map/amap/AmapTripMap';
 import { AmapPlacePicker } from '../map/amap/AmapPlacePicker';
@@ -370,8 +371,13 @@ export function TripDetailPage({ currentUser, tripId }: Props) {
   return (
     <main className="form-page">
       <div className="detail-stack">
-        <a href="#/" className="detail-back">
-          {tripMessages.backHome}
+        <a
+          href="#/"
+          className="detail-back-btn"
+          aria-label={tripMessages.backHome}
+          title={tripMessages.backHome}
+        >
+          <ShareIcon name="left" />
         </a>
 
         <Card className="panel detail-card">
