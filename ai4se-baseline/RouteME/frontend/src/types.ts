@@ -298,8 +298,19 @@ export type Experience = {
   intensity: ExperienceIntensity;
   advice: string;
   photos: ExperiencePhoto[];
+  /** 当前体验的点赞记录数；无记录为 0。 */
+  like_count: number;
+  /** 当前请求用户是否已点赞；自己的体验恒为 false。 */
+  is_liked: boolean;
   created_at: string;
   updated_at: string;
+};
+
+/** 点赞 / 取消点赞后的最新状态（`POST /api/experiences/{id}/likes`）。 */
+export type ExperienceLikeResult = {
+  experience_id: number;
+  like_count: number;
+  is_liked: boolean;
 };
 
 export type ExperienceWriteRequest = {

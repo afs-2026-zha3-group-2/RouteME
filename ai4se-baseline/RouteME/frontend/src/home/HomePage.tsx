@@ -276,7 +276,12 @@ export function HomePage({ currentUser }: Props) {
           <div className="list-block">
             <div className="experience-grid">
               {experiences.state.experiences.map((experience) => (
-                <ExperienceCard key={experience.id} experience={experience} />
+                <ExperienceCard
+                  key={experience.id}
+                  experience={experience}
+                  currentUserId={currentUser.id}
+                  onLikeChange={experiences.updateExperience}
+                />
               ))}
             </div>
             <Pager

@@ -1,4 +1,4 @@
-# REQ-023 — 安全学习恢复信用分（Ready 需求）
+# REQ-024 — 安全学习恢复信用分（Ready 需求）
 
 - **能力：** `user-credit`（ADDED Requirements；既有 Requirement 由未归档 `add-credit-account` 提供）
 - **对应 OpenSpec change：** `add-credit-recovery`
@@ -14,7 +14,7 @@
 
 | 字段 | 内容 |
 |---|---|
-| id | REQ-023 |
+| id | REQ-024 |
 | statement | 系统 SHALL 允许信用分低于 60 的受限用户参加安全学习：从 20 题题库抽 10 题作答，答对 8 题及以上通过，通过后信用分 MUST 恢复至 60（不超 60）；每自然月 MUST 最多 2 次考试、最多 1 次成功恢复；恢复 MUST 以原因码 `SAFETY_LEARNING_RECOVERY` 写入信用记录并关联本次考试；信用分低于 60 时发布行程 MUST 被拒绝并返回 `CREDIT_SCORE_BELOW_60`，恢复至 60 后 MUST 自动放行。 |
 | actors | 受限用户（信用分 < 60，参加学习与答题）；正常用户（≥ 60，无资格）；平台（出题、判分、记账、派生限制状态）。 |
 | rationale | 信用账户与记账已在 `add-credit-account` 落地，但链路只到「看得见分数」：低于 60 没有任何自救通道，也没有限制拦截点。没有恢复段，扣分事件一旦上线，用户会被永久锁死。 |
@@ -113,7 +113,7 @@
 - **次数真相分离：** 恢复次数看 `credit_ledger`，考试次数看考试会话；会话表不存分数（D3 / D5）。
 - **时区：** 自然月按 `Asia/Shanghai` 计算（D4）。
 - **题库：** 服务端资源文件 20 题、每次抽 10 题、答案不下发（D7）。
-- **契约与迁移排他：** `openapi.yaml` 当前 `0.14.0`、Flyway 头 `V20`；`handoff.md` 已记 `add-ai-itinerary`（REQ-017）顺延 `0.15.0 + V21`，本变更不能直接用 V21，预计顺延 `0.18.0 + V24`，P3 按合并顺序排他确认。
+- **契约与迁移排他：** `openapi.yaml` 当前 `0.14.0`、Flyway 头 `V20`；`handoff.md` 已记 `add-ai-itinerary`（REQ-017）顺延 `0.15.0 + V21`，本变更不能直接用 V21，预计顺延 `0.19.0 + V25`，P3 按合并顺序排他确认。
 - **前置依赖：** 能造成分数低于 60 的扣分事件（#29–#31）尚未实现；演示需造分。
 - **原型缺口：** `docs/prototype` 无安全学习页，P3 先补截点。
 

@@ -11,8 +11,8 @@
 
 | 工件 | 路径 | 结论 |
 |---|---|---|
-| 需求条目 | `requirement-workspace/requirements/REQ-023-credit-recovery.md` | 27 场景；blocking OQ 6/6 resolved；DoR BLOCKER 0 / WARNING 1 |
-| 意图捕获 | `requirement-workspace/intents/REQ-023-credit-recovery.md` | 原始意图、用户裁决 D1–D7、现状核对表 |
+| 需求条目 | `requirement-workspace/requirements/REQ-024-credit-recovery.md` | 27 场景；blocking OQ 6/6 resolved；DoR BLOCKER 0 / WARNING 1 |
+| 意图捕获 | `requirement-workspace/intents/REQ-024-credit-recovery.md` | 原始意图、用户裁决 D1–D7、现状核对表 |
 | 提案 | `openspec/changes/add-credit-recovery/proposal.md` | 范围 / 决策 D1–D7 / 影响面 / 残余风险齐备；P3 已回填（单表口径、OQ-5/6/7 resolved、DoR 12/12 Pass） |
 | Delta Spec | `openspec/changes/add-credit-recovery/specs/user-credit/spec.md` | ADDED 7 Requirement / 29 Scenario；`openspec validate --strict` valid |
 | AC / DoV 复核 | `openspec/changes/add-credit-recovery/dov-ac-review.md` | AC 4/4 Pass；DoV 5/5 Pass；映射 27/27 |
@@ -28,7 +28,7 @@
 | 维度 | 结论 | 说明 |
 |---|---|---|
 | Scope | Pass | 单一 capability `user-credit`（ADDED）；提案 In scope 11 条与 Delta 7 Requirement 一一对应；Out of scope 7 条无对应 Requirement。低分限制按 D1 / D6 只落在「发布行程」，其余功能以 R1 场景 4 显式声明不限制。 |
-| Ambiguity | Pass | blocking 6 条全部由 D1–D4 / D6 / D7 裁定；OQ-5（学习进度）→ P3-D2「只存完成标记 + 结果」，OQ-6（路由 / 入口）→ P3-D3/P3-D4「`#/credit/learning` + 仅拦截提示」，OQ-7（号位）→ P3-D5「`0.18.0 + V24`」；仅 OQ-8（人工封禁）deferred 且有依赖说明。 |
+| Ambiguity | Pass | blocking 6 条全部由 D1–D4 / D6 / D7 裁定；OQ-5（学习进度）→ P3-D2「只存完成标记 + 结果」，OQ-6（路由 / 入口）→ P3-D3/P3-D4「`#/credit/learning` + 仅拦截提示」，OQ-7（号位）→ P3-D5「`0.19.0 + V25`」；仅 OQ-8（人工封禁）deferred 且有依赖说明。 |
 | Conflict | Pass | 与 `add-credit-account` 不冲突（本包只追加 ADDED，不改既有 Requirement 语义）；与 #29–#31 分工明确（事件写分 / 本包只消费 `< 60` 状态）；Delta 内部「开始即计次」冲突已在 L-01 收口；R6 的「MUST 立即展示」与实现口径冲突已在 spec 评审 F-1 收口为「进入 / 重新进入时取数」。 |
 | Baseline | N/A | 纯 ADDED，未覆盖任何 Living Spec 既有 Requirement。**但** `user-credit` Living Spec 尚不存在，归档顺序 MUST 为 `add-credit-account` → `add-credit-recovery`（consistency-lint L-06）。 |
 
@@ -41,7 +41,7 @@
 | 恢复口径确认（D2 / D3 / D4） | IO 复核 10 题 / ≥ 8 通过、每月 2 考 1 恢复、`Asia/Shanghai` | IO=WAYNE |
 | OQ-5 学习进度持久化 | P3-D2：只存完成标记 + 结果，不建逐题明细表 | SA=Jacky（随 P3 裁定） |
 | OQ-6 路由与入口 | P3-D3/D4：`#/credit/learning` 独立页；入口仅「发布行程被拦截提示」 | IO=WAYNE |
-| OQ-7 契约与迁移号 | P3-D5：`0.18.0` + `V24`（`0.15.0 + V21` 由 `add-ai-itinerary` 占用） | Dev |
+| OQ-7 契约与迁移号 | P3-D5：`0.19.0` + `V25`（`0.15.0 + V21` 由 `add-ai-itinerary` 占用） | Dev |
 
 ## Conditions + owners
 
@@ -51,7 +51,7 @@
 
 | 跟踪项 | 说明 | Owner |
 |---|---|---|
-| 号位复核 | 合并前确认 `add-ai-itinerary` 是否仍占用 `0.15.0 + V21`；若放弃则 V24 出现空号，需在 P4 报告注明 | Dev（Lewis Liu） |
+| 号位复核 | 合并前确认 `add-ai-itinerary` 是否仍占用 `0.15.0 + V21`；若放弃则 V25 出现空号，需在 P4 报告注明 | Dev（Lewis Liu） |
 | 演示造分 | 扣分事件（#29–#31）未落地，P4 需以种子账号造分（< 60）证明链路 | Dev / IO |
 | 并发口径 | A29 只断言「账本 1 条 + 终值 60」，不断言单请求 `recovery_applied` | Dev |
 | E2E 不在 CI | `credit-learning.spec.ts` 只能本地证明，报告需附环境与原文 | Dev |
@@ -69,4 +69,4 @@
 - 本记录只落地人工裁决，不替代 P3 设计与任务分解。
 - P3 曾在 `Pending` 期间按用户裁定以「起草态」推进；`Decision: Pass` 后该偏差关闭，P3 工件按已签状态生效。
 - 管理端题库维护、人工封禁解封不在本 change（OQ-8 deferred），归档说明需引用，避免被读成遗漏。
-- 下一阶段：`/sdd:atdd-apply`（P4），从 T1 契约（`0.18.0`）先红开始。
+- 下一阶段：`/sdd:atdd-apply`（P4），从 T1 契约（`0.19.0`）先红开始。

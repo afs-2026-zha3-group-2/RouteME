@@ -1,10 +1,10 @@
-# 意图捕获 — REQ-023 安全学习恢复信用分（issue #32）
+# 意图捕获 — REQ-024 安全学习恢复信用分（issue #32）
 
 - **候选能力：** `user-credit`（ADDED Requirements，追加恢复段）
 - **来源：** GitHub Issue [#32](https://github.com/afs-2026-zha3-group-2/RouteME/issues/32)「[P0] 安全学习恢复信用分」（`afs-2026-zha3-group-2/RouteME`，2026-11-17 读取）；Story 6 / 信用系统迭代 3 / 5 点；落点页面「安全学习页」
 - **捕获日期：** 2026-11-17 ｜ **记录人：** Qoder（当前开发者）
 - **分支：** `feature/add-credit-recovery`（从 `origin/main@ec360dc` 切出；`docs/prototype` 的 6 处 WIP 改动已 stash 为 `wip-prototype-before-credit-recovery`，未带入本分支）
-- **编号说明：** REQ-019 由 `add-credit-account` 占用、REQ-020 由并行 `refine-detail-companions` 预留、REQ-021 为 `add-trip-cancel`；本需求按「后到者顺延」登记为 **REQ-023**。
+- **编号说明：** REQ-019 由 `add-credit-account` 占用、REQ-020 由并行 `refine-detail-companions` 预留、REQ-021 为 `add-trip-cancel`，REQ-022 / S22 由 `add-trip-weather` 占用，REQ-023 / 0.18.0 / V24 由同步 `origin/main` 时的 `add-experience-like-credit` 占用；本需求按「后到者顺延」最终登记为 **REQ-024**。
 - **范围说明：** #32 的故事把「因信用分低于 60 被限制」当作既成前提，但该限制在代码里并不存在（`CREDIT_SCORE_BELOW_60` 全仓 0 命中）。用户 2026-11-17 裁定（OQ-1）：**限制端在本变更内一并落地**，否则「恢复」不可验证。
 
 ## 原始意图（一句话）

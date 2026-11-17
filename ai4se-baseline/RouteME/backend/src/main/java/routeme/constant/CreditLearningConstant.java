@@ -3,7 +3,7 @@ package routeme.constant;
 import java.util.List;
 
 /**
- * 安全学习恢复信用分的边界值（REQ-023）。
+ * 安全学习恢复信用分的边界值（REQ-024）。
  *
  * <p>恢复目标分 60 只在这里定义：拦截面与恢复端一律引用本常量，不写字面量。</p>
  */

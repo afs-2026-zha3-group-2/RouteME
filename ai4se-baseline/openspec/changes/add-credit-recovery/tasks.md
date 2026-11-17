@@ -3,16 +3,16 @@
 - **依据：** [`specs/user-credit/spec.md`](specs/user-credit/spec.md)（7 Requirement / 29 Scenario）、[`atdd-design.md`](atdd-design.md)（A1–A29）、[`design.md`](design.md)（D1–D14）
 - **Owner：** Lewis Liu（当前开发者）｜ **第二签署：** Jay（design / tasks 共用同一签署位）
 - **顺序：** T1 → T2 → T3 → T4 → T5 → T6 → T7；T8 → T9 → T10 → T11；T12 依赖 T7 + T11；T13 最后。
-- **契约：** `0.18.0`（`0.15.0` 已被 `add-ai-itinerary` 登记）；3 端点 / 4 schema / 6 错误码；`OpenApiTest` 为门禁。
-- **迁移：** `V24__add_credit_learning.sql`（`V21` 已被 `add-ai-itinerary` 登记）。
+- **契约：** `0.19.0`（`0.15.0` 已被 `add-ai-itinerary` 登记）；3 端点 / 4 schema / 6 错误码；`OpenApiTest` 为门禁。
+- **迁移：** `V25__add_credit_learning.sql`（`V21` 已被 `add-ai-itinerary` 登记）。
 - **视觉基准：** [`docs/prototype/credit-learning.html`](../../../docs/prototype/credit-learning.html)（四态 + 深色，已先行）。
 - **前置：** G1 **Pass（无条件，2026-11-17，IO=WAYNE / SA=Jacky）**，本文件与 `design.md` 已通过工件评审（第二签署 Jay 已签，BLOCKER 0）；P4 已按 T1 起推进。每条任务开工前先写/扩展对应测试类，先红后绿。
 
 ## 任务清单
 
-### T1 [contract] 契约 0.18.0
+### T1 [contract] 契约 0.19.0
 
-- [x] `openapi.yaml`：`info.version` → `0.18.0`。
+- [x] `openapi.yaml`：`info.version` → `0.19.0`。
 - [x] 新增 3 个 path：`POST /api/credit/learning/sessions`、`POST /api/credit/learning/sessions/{sessionId}/lessons/complete`、`POST /api/credit/learning/sessions/{sessionId}/submission`；均带 `X-User-Id` 参数与 `Error` 错误体（仓库错误 schema 实名 `Error`）。
 - [x] 新增 schema：`LearningQuestion`（`required: [id, category, question, options]`）、`LearningSession`、`LearningResult`、`LearningAnswerDetail`；**题面与明细均不含答案或判分依据字段**。
 - [x] `Error.code` enum 追加 6 项；`POST /api/trips` 的 responses 补 `'403': CREDIT_SCORE_BELOW_60`。
@@ -22,11 +22,11 @@
 **覆盖：** A10（契约半）、A1 的 403 声明、`@rule:api-contract`
 **P4 结果：** `OpenApiTest` 10/10 绿；Redocly `valid` + 19 warnings（17 条基线 + 2 条故意非法的 409 拒绝示例）。
 
-### T2 [backend] 迁移 V24 与迁移测试
+### T2 [backend] 迁移 V25 与迁移测试
 
-- [x] 新增 `V24__add_credit_learning.sql`：`credit_learning_session` + 四条 CHECK（状态枚举、`score` 0–10、`passed` 0/1、状态与字段共变）+ `ix_credit_learning_user_month`。
+- [x] 新增 `V25__add_credit_learning.sql`：`credit_learning_session` + 四条 CHECK（状态枚举、`score` 0–10、`passed` 0/1、状态与字段共变）+ `ix_credit_learning_user_month`。
 - [x] 只用 SQLite 与 H2 都支持的语法：不出现 `FOR UPDATE`、生成列、`strftime`、JSON 函数。
-- [x] 新增 `CreditLearningMigrationSqliteTest`（先 red）：全新库 V1–V24 建表成功；旧库（V20）升级后新表存在、`user_credit_account` / `credit_ledger` 行数与分数不变；`app_users` 列集合不变、无 `*_restriction*` 表。
+- [x] 新增 `CreditLearningMigrationSqliteTest`（先 red）：全新库 V1–V25 建表成功；旧库（V20）升级后新表存在、`user_credit_account` / `credit_ledger` 行数与分数不变；`app_users` 列集合不变、无 `*_restriction*` 表。
 - [x] 同一测试内做一次 `status` / `passed` / `score` 的写读往返（证明 INTEGER ↔ Java `Boolean` / `Integer` 在 SQLite 与 H2 两边都正确）。
 
 **验证：** `cd RouteME/backend; .\mvnw.cmd -B -ntp -Dtest=CreditLearningMigrationSqliteTest test`
@@ -151,12 +151,12 @@
 
 ### T13 [docs] 登记回填
 
-- [x] `requirement-workspace/registry.md`：REQ-023 行状态 → `p4-pass`，notes 补 P4 段（T1–T13 结论 + 门禁数字 + `p4-apply.md`）。
-- [x] `requirement-workspace/stories.md`：REQ-023 段 Status → `P4 Pass（2026-11-17）`，Notes 追加「P4 产出」条（T1–T13 关键结论与测试数字）。
-- [x] `requirement-workspace/handoff.md`：REQ-023 的 P1/P2/P3 状态 bullet 追加 P4 段与带入 local-verify / G2 的 6 条跟踪项。
+- [x] `requirement-workspace/registry.md`：REQ-024 行状态 → `p4-pass`，notes 补 P4 段（T1–T13 结论 + 门禁数字 + `p4-apply.md`）。
+- [x] `requirement-workspace/stories.md`：REQ-024 段 Status → `P4 Pass（2026-11-17）`，Notes 追加「P4 产出」条（T1–T13 关键结论与测试数字）。
+- [x] `requirement-workspace/handoff.md`：REQ-024 的 P1/P2/P3 状态 bullet 追加 P4 段与带入 local-verify / G2 的 6 条跟踪项。
 - [x] `docs/sdd/add-credit-recovery/p4-apply.md`：阶段记录（产出表 / 本阶段裁决 P4-D1..D6 / 校验 / 待签 / 跟踪项 / 提交记录）。
 
-**P4 结果：** `registry.md` REQ-023 → `p4-pass`（notes 追加 P4 段：契约 `0.18.0` / `V24` / 题库与判分 / 会话记账配额 / 发布拦截 / 前端五态与拦截入口 / E2E 3/3 + 门禁数字 + 待 local-verify 与 G2）；`stories.md` S25 Status → `P4 Pass（2026-11-17）` 并在 Notes 追加「P4 产出」条（含测试数字）；`handoff.md` 新增「P4 状态（REQ-023）」bullet（含带入 local-verify / G2 的 6 条跟踪项）；阶段记录 `docs/sdd/add-credit-recovery/p4-apply.md`（7 节：产出 / 裁决 P4-D1..D6 / 校验 / 待签 VL 与 IO+SA G2 / 跟踪项 / 未提交记录）。本阶段**未代签**任何评审位。
+**P4 结果：** `registry.md` REQ-024 → `p4-pass`（notes 追加 P4 段：契约 `0.19.0` / `V25` / 题库与判分 / 会话记账配额 / 发布拦截 / 前端五态与拦截入口 / E2E 3/3 + 门禁数字 + 待 local-verify 与 G2）；`stories.md` S25 Status → `P4 Pass（2026-11-17）` 并在 Notes 追加「P4 产出」条（含测试数字）；`handoff.md` 新增「P4 状态（REQ-024）」bullet（含带入 local-verify / G2 的 6 条跟踪项）；阶段记录 `docs/sdd/add-credit-recovery/p4-apply.md`（7 节：产出 / 裁决 P4-D1..D6 / 校验 / 待签 VL 与 IO+SA G2 / 跟踪项 / 未提交记录）。本阶段**未代签**任何评审位。
 
 **验证：** `cd ai4se-baseline; npx --no-install openspec validate add-credit-recovery --strict`
 **覆盖：** `@rule:documentation`
@@ -185,5 +185,15 @@
 | 每条有验证命令 | Pass：13/13 |
 | 29 Scenario 全覆盖 | Pass：覆盖映射 29/29，无孤儿任务 |
 | 设计决策全覆盖 | Pass：D1–D14 均有落点（D14 → T6 `CreditReason`） |
-| 迁移与契约号排他 | Pass：`0.18.0 + V24`，与 `add-ai-itinerary`（`0.15.0 + V21`）不冲突 |
+| 迁移与契约号排他 | Pass：`0.19.0 + V25`，与 `add-ai-itinerary`（`0.15.0 + V21`）不冲突 |
 | G1 前置 | Pass：T1 提交前必须取得具名签署 |
+
+## 合并与号位重排（2026-11-17）
+
+| 项 | 结论 |
+|---|---|
+| 合并方向 | 用户裁决：`feature/add-credit-recovery` 直接合入 `main`（未开 PR） |
+| 基线偏差 | 合并开始时本地 `main` 落后 `origin/main` 9 个提交（含 `add-experience-like-credit`） |
+| 号位（二次顺延） | REQ-024 / S25 / 契约 0.19.0 / `V25__add_credit_learning.sql` |
+| 门禁 | 后端 502/502；前端 366（49 文件）+ `typecheck` + `build`；openspec valid；Redocly 6 error（均 base）+ 23 warning；本 change E2E 3/3 + 受影响回归 27/27 |
+| 未签 | G2（VL）、E3；记录见 `docs/sdd/add-credit-recovery/p4-apply.md` §8 |

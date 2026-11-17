@@ -292,6 +292,10 @@ export const tripMessages = {
   experienceEditEntry: '修改我的体验',
   experienceSectionTitle: '游后真实体验',
   experienceSectionEmpty: '还没有人写下这条行程的体验',
+  experienceLike: '点赞',
+  experienceLiked: '已点赞',
+  experienceLikeFailed: '点赞失败，请稍后重试',
+  experienceLikeCountUnit: '赞',
   experienceBoundaryTitle: '分享边界',
   experienceBoundaryItems: [
     '不要写入同行者的电话、学校班级或住宿地址。',
@@ -459,7 +463,7 @@ export const tripMessages = {
   profileNotFound: '用户不存在',
   mineProfileIncomplete: '资料未完善',
 
-  // 安全学习信用恢复（REQ-023）
+  // 安全学习信用恢复（REQ-024）
   creditLearningTitle: '安全学习',
   creditLearningSubtitle:
     '完成学习并答题通过，信用分补回 60，立即可再次发布行程。每月最多考 2 次，最多恢复 1 次。',

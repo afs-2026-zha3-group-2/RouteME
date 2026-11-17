@@ -1,6 +1,6 @@
 # ATDD 设计 — add-credit-recovery
 
-- **Change：** `add-credit-recovery`（REQ-023 / S25 安全学习恢复信用分）
+- **Change：** `add-credit-recovery`（REQ-024 / S25 安全学习恢复信用分）
 - **输入：** `specs/user-credit/spec.md`（ADDED 7 Requirement / 29 Scenario）、`g1-decision.md`（**Pass**）、`proposal.md`（D1–D7）
 - **日期：** 2026-11-17 ｜ **作者：** Lewis Liu（当前开发者）
 - **前置：** G1 **Pass（无条件，2026-11-17，IO=WAYNE / SA=Jacky）**；本设计与 `tasks.md` 已于 2026-11-17 通过工件评审（BLOCKER 0），P4 按 T1 起推进。
@@ -8,7 +8,7 @@
 
 ## 1. ATDD 层次划分
 
-用例 ID `A1–A29` 按 Delta 顺序编号，与 REQ-023 的 `R-1 ~ R-27` **不是同一编号体系**（Delta 比需求多 2 条拆分场景）。
+用例 ID `A1–A29` 按 Delta 顺序编号，与 REQ-024 的 `R-1 ~ R-27` **不是同一编号体系**（Delta 比需求多 2 条拆分场景）。
 
 | ID | Delta Requirement | Scenario | Layer | 附加层 | 依据 |
 |---|---|---|---|---|---|
@@ -56,7 +56,7 @@
    - `CreditLearningRecoveryApiTest`：A15 / A16 / A18 / A20 / A22 / A26 / A27（恢复记账与配额）。
    - `CreditLearningQuotaApiTest`：A19 / A21（考试次数与跨月；固定 `Clock`）。
    - `CreditPublishGuardApiTest`：A1 / A2 / A3 / A4 / A7 / A8 / A28（拦截面 + 权限）。
-   - `CreditLearningMigrationSqliteTest`：沿用 `*MigrationSqliteTest` 命名；全新库 V1–V24 建会话表；旧库（V20）升级后表存在且既有 `user_credit_account` / `credit_ledger` 数据不变，并做一次 `status` / `passed` / `score` 写读往返。
+   - `CreditLearningMigrationSqliteTest`：沿用 `*MigrationSqliteTest` 命名；全新库 V1–V25 建会话表；旧库（V20）升级后表存在且既有 `user_credit_account` / `credit_ledger` 数据不变，并做一次 `status` / `passed` / `score` 写读往返。
 
 3. **E2E（先红）**
    - `e2e/tests/credit-learning.spec.ts`：45 分账号发布行程 → 看到 `CREDIT_SCORE_BELOW_60` 提示与「去安全学习」→ 进入 `#/credit/learning` → 完成学习 → 10 题作答（固定 8 对）→ 结果「通过」→ 回发布页成功；再看个人主页为「60 / 100 · 信用一般」。

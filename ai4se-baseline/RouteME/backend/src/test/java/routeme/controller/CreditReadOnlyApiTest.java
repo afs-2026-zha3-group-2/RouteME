@@ -30,6 +30,8 @@ class CreditReadOnlyApiTest {
 
     @Test
     void in_creditEndpoints_out_notFound() throws Exception {
+        mockMvc.perform(get("/api/users/{userId}/credit/ledger", 1L).header("X-User-Id", 1L))
+                .andExpect(status().isNotFound());
         mockMvc.perform(put("/api/users/me/credit")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"credit_score\":100}"))

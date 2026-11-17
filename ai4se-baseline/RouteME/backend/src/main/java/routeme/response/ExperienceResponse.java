@@ -15,6 +15,8 @@ public record ExperienceResponse(
         String intensity,
         String advice,
         List<ExperiencePhotoResponse> photos,
+        int likeCount,
+        boolean isLiked,
         Instant createdAt,
         Instant updatedAt) {
 
@@ -24,7 +26,9 @@ public record ExperienceResponse(
             DemoUser publisher,
             DemoUser author,
             Instant now,
-            List<ExperiencePhotoResponse> photos) {
+            List<ExperiencePhotoResponse> photos,
+            int likeCount,
+            boolean isLiked) {
         return new ExperienceResponse(
                 experience.id(),
                 TripSummaryResponse.from(trip, publisher, now),
@@ -33,6 +37,8 @@ public record ExperienceResponse(
                 experience.intensity().wireValue(),
                 experience.advice(),
                 photos == null ? List.of() : photos,
+                likeCount,
+                isLiked,
                 experience.createdAt(),
                 experience.updatedAt());
     }

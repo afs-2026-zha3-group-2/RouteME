@@ -18,8 +18,8 @@
 
 | 工件 | 未产出原因 | 建议落点 |
 |---|---|---|
-| 意图捕获 `intents/REQ-023-credit-recovery.md` | 未获授权新增需求条目；且 OQ-1 未定会改变范围 | OQ-1 裁定后补齐 |
-| Ready 需求 `requirements/REQ-023-credit-recovery.md` | 同上，DoR 尚有 4 条 BLOCKER | blocking OQ 清零后 |
+| 意图捕获 `intents/REQ-024-credit-recovery.md` | 未获授权新增需求条目；且 OQ-1 未定会改变范围 | OQ-1 裁定后补齐 |
+| Ready 需求 `requirements/REQ-024-credit-recovery.md` | 同上，DoR 尚有 4 条 BLOCKER | blocking OQ 清零后 |
 | Delta 草稿 `specs/user-credit/spec.md` | P1 门槛只要求 proposal；4 条 blocking OQ 未定，此时写 Delta 会把未定口径固化成验收场景 | P2 |
 | `stories.md` / `registry.md` / `handoff.md` 登记 | 需求编号与 capability 归属未最终确认 | P1 收尾或 P2 入口 |
 | 提案评审记录 / 质量报告 | 提案本身尚未签署 | 提案裁定后 |

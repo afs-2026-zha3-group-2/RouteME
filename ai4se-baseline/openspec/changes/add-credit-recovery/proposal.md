@@ -1,10 +1,10 @@
 # 变更提案：add-credit-recovery
 
-- **需求来源：** GitHub Issue [#32](https://github.com/afs-2026-zha3-group-2/RouteME/issues/32)「[P0] 安全学习恢复信用分」（Story 6 / 信用系统迭代 3 / 5 点 / 落点 安全学习页）｜ **需求条目：** `requirement-workspace/requirements/REQ-023-credit-recovery.md`（27 条验收场景）
+- **需求来源：** GitHub Issue [#32](https://github.com/afs-2026-zha3-group-2/RouteME/issues/32)「[P0] 安全学习恢复信用分」（Story 6 / 信用系统迭代 3 / 5 点 / 落点 安全学习页）｜ **需求条目：** `requirement-workspace/requirements/REQ-024-credit-recovery.md`（27 条验收场景）
 - **能力：** `user-credit`（ADDED Requirements：追加 7 个 Requirement / 29 Scenario）；既有 Requirement 由未归档 change `add-credit-account` 提供，本变更 MUST 晚于其归档
 - **规模：** M（1 个新页面 + 1 组学习会话端点 + 1 条恢复记账 + 月度配额判定 + 1 次迁移 + 契约升版）
 - **规则：** `@rule:spec-first`、`@rule:sdd-artifacts`、`@rule:api-contract`、`@rule:java-patterns`、`@rule:web-coding-style`、`@rule:security-baseline`、`@rule:tdd-cycle`、`@rule:prototype-ui-alignment`
-- **本回合状态：** P1 提案定稿（D1–D7）；P2 Delta Spec 通过 `openspec validate --strict`（7 Requirement / 29 Scenario）；P3 已完成原型截点、ATDD 设计（A1–A29）、技术设计（D1–D14 技术决策）与任务清单（T1–T13），契约 / 迁移排他为 `0.18.0 + V24`；未改业务代码、未提交。
+- **本回合状态：** P1 提案定稿（D1–D7）；P2 Delta Spec 通过 `openspec validate --strict`（7 Requirement / 29 Scenario）；P3 已完成原型截点、ATDD 设计（A1–A29）、技术设计（D1–D14 技术决策）与任务清单（T1–T13），契约 / 迁移排他为 `0.19.0 + V25`；未改业务代码、未提交。
 
 ## 问题
 
@@ -30,7 +30,7 @@
 - **数据**：新增安全学习考试会话（单表承载会话、抽中题号、作答、判定与 `month_key`；不建作答明细表——OQ-5 已裁定只存完成标记与结果）；`user_credit_account` / `credit_ledger` 结构不改。
 - **前端**：新增安全学习页（题库呈现、逐题作答、提交与结果态、已恢复态、无资格态），并在受限提示处给出入口。
 - **契约**：`openapi.yaml` 升次版本并新增学习会话端点；同步前端类型与后端契约测试。
-- **登记**：`stories.md` / `registry.md` / `handoff.md` 登记 REQ-023 → `add-credit-recovery`。
+- **登记**：`stories.md` / `registry.md` / `handoff.md` 登记 REQ-024 → `add-credit-recovery`。
 
 **Out of scope**
 
@@ -46,7 +46,7 @@
 
 | 位置 | 改动 |
 |---|---|
-| `backend/src/main/resources/db/migration/V24__add_credit_learning.sql`（新增） | `credit_learning_session` 单表（会话 / 抽中题号 / 作答 / 判定 / `month_key`）+ 月度索引；不建限制表，不改账户表 |
+| `backend/src/main/resources/db/migration/V25__add_credit_learning.sql`（新增） | `credit_learning_session` 单表（会话 / 抽中题号 / 作答 / 判定 / `month_key`）+ 月度索引；不建限制表，不改账户表 |
 | 后端 `controller/` | 新增学习会话端点（开始 / 提交），沿用既有会话与错误码风格 |
 | 后端 `service/`、`service/impl/` | 新增 `CreditLearningService`：资格校验、取题、判分、月度配额、调用 `CreditService.book` |
 | 后端拦截面入口 | 在「发布行程」接口接入低分限制，统一返回 `CREDIT_SCORE_BELOW_60`；阈值只在一处实现（D6） |
@@ -141,7 +141,7 @@
 - **次数真相分两处且不交叉：** 恢复次数以 `credit_ledger` 为准（D5）；考试次数以学习会话记录为准（D3）；会话表不存分数。
 - **题库边界：** 题库为服务端资源文件共 20 题，每次考试抽 10 题（D7）；题目与答案都在服务端，前端只拿题干与选项。
 - **数据契约：** 不改 `user_credit_account` / `credit_ledger` 结构；新增表只在需要承载会话、作答与 `related_id` 时建立。
-- **契约与迁移排他：** `openapi.yaml` 当前 `0.14.0`，Flyway 头为 `V20__add_credit_account.sql`；本变更 P3 已排他为 **`0.18.0` + `V24`**（`0.15.0 + V21` 已由在途 `add-ai-itinerary` 登记），合并前复核一次。
+- **契约与迁移排他：** `openapi.yaml` 当前 `0.14.0`，Flyway 头为 `V20__add_credit_account.sql`；本变更 P3 已排他为 **`0.19.0` + `V25`**（`0.15.0 + V21` 已由在途 `add-ai-itinerary` 登记），合并前复核一次。
 - **原型缺口：** `docs/prototype` 无安全学习页骨架（grep `安全学习` 0 命中），按 `@rule:prototype-ui-alignment` 需在 P3 先补原型截点再实现对齐。
 - **业务规则不可自行推断：** 题库形态与拦截面清单按 OQ-4 / OQ-10 处理，不得在实现中临时决定；其余口径以 D1–D5 为准。
 
@@ -180,7 +180,7 @@
 | blocking | **resolved（D7）** | OQ-4 题库形态与最小题量 | SA / Dev | 服务端资源文件，20 题，每次抽 10 题 |
 | non-blocking | **resolved（P3-D2）** | OQ-5 学习进度是否需要持久化（中途退出后是否续答） | SA | 只存完成标记 + 结果；不建逐题明细；刷新不额外扣次数 |
 | non-blocking | **resolved（P3-D3 / P3-D4）** | OQ-6 页面路由与入口位置 | IO | `#/credit/learning` 独立页；入口仅「发布行程被拦截提示」 |
-| non-blocking | **resolved（P3-D5）** | OQ-7 契约版本号与迁移号 | Dev | `0.18.0` + `V24` |
+| non-blocking | **resolved（P3-D5）** | OQ-7 契约版本号与迁移号 | Dev | `0.19.0` + `V25` |
 | non-blocking | deferred | OQ-8 人工封禁与学习恢复的关系 | IO | 依赖封禁模型（#23）先落地 |
 | non-blocking | **resolved（D3）** | OQ-9 未通过后的重考次数上限 | IO | 每月最多 2 次考试，不限通过与否；本期不设冷却间隔 |
 

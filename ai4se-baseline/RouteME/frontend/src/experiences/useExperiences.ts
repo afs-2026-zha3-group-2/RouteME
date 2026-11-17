@@ -59,5 +59,16 @@ export function useExperiences(userId: number, filters: FilterState) {
     reload();
   }, [reload]);
 
-  return { state, reload, page, size, setPage, setSize };
+  const updateExperience = useCallback((next: Experience) => {
+    setState((previous) =>
+      previous.status === 'ready'
+        ? {
+            ...previous,
+            experiences: previous.experiences.map((item) => (item.id === next.id ? next : item)),
+          }
+        : previous,
+    );
+  }, []);
+
+  return { state, reload, page, size, setPage, setSize, updateExperience };
 }

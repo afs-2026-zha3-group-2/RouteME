@@ -54,9 +54,9 @@
 
 ---
 
-# Story list — REQ-023（issue #32 安全学习恢复信用分）
+# Story list — REQ-024（issue #32 安全学习恢复信用分）
 
-> 编号说明：REQ-019 / S19 由 `add-credit-account` 占用、REQ-020 由并行 `refine-detail-companions` 预留、REQ-021 / S21 为 `add-trip-cancel`；本故事顺延为 **REQ-023 / S25**。
+> 编号说明：REQ-019 / S19 由 `add-credit-account` 占用、REQ-020 由并行 `refine-detail-companions` 预留、REQ-021 / S21 为 `add-trip-cancel`，REQ-022 / S22 由 `add-trip-weather` 占用，REQ-023 由同步 `origin/main` 时的 `add-experience-like-credit` 占用；本故事最终顺延为 **REQ-024 / S25**。
 
 - **来源：** issue #32 `[P0] 安全学习恢复信用分`（信用系统迭代 3 / Story 6 / 5 点 / 落点页面：安全学习页）
 - **Change：** `add-credit-recovery`（`user-credit` ADDED Requirements，追加恢复段）
@@ -66,15 +66,15 @@
 
 | Story | Title | 角色 | Priority | Iteration | Points | Page | Parent REQ | Change | Status |
 |---|---|---|---|---|---|---|---|---|---|
-| S25 | 安全学习恢复信用分（< 60 → 60） | 受限用户（信用分 < 60） | P0 | 信用系统迭代 3 | 5 | 安全学习页 | REQ-023 | `add-credit-recovery` | P3 Pass（2026-11-17，G1 Pass）；P4 Pass（2026-11-17） |
+| S25 | 安全学习恢复信用分（< 60 → 60） | 受限用户（信用分 < 60） | P0 | 信用系统迭代 3 | 5 | 安全学习页 | REQ-024 | `add-credit-recovery` | P3 Pass（2026-11-17，G1 Pass）；P4 Pass（2026-11-17） |
 
-## Traceability（REQ-023）
+## Traceability（REQ-024）
 
 | Story | Requirement scenarios | Change spec | Story file |
 |---|---|---|---|
-| S25 | REQ-023 §4 R-1 ~ R-27 | `openspec/changes/add-credit-recovery/specs/user-credit/spec.md`（ADDED：7 Requirement / 29 Scenario） | 无独立故事文件：以意图 + proposal + Delta 承接（与 REQ-012 / REQ-019 同口径） |
+| S25 | REQ-024 §4 R-1 ~ R-27 | `openspec/changes/add-credit-recovery/specs/user-credit/spec.md`（ADDED：7 Requirement / 29 Scenario） | 无独立故事文件：以意图 + proposal + Delta 承接（与 REQ-012 / REQ-019 同口径） |
 
-## Notes（REQ-023）
+## Notes（REQ-024）
 
 - **不拆子故事：** 「参加考试 → 判分通过 → 补到 60 → 限制解除」是同一垂直切片；拆开会出现「能考试但不能恢复」或「能恢复但没被拦过」的不可验收半成品。
 - **限制端必须同包交付（D1）：** 故事把「低于 60 被限制」当作前提，但该限制在代码中不存在（`CREDIT_SCORE_BELOW_60` 全仓 0 命中）；若只做恢复端，验收时无法证明分数恢复带来了能力恢复。
@@ -85,7 +85,7 @@
 - **P3 产出（2026-11-17）：** 原型截点 `docs/prototype/credit-learning.html`（四态 + 深色 + 三组演示场景）、`atdd-design.md`（A1–A29：API 24 / 仅 E2E 2 / Defer UT 3）、`design.md`（D1–D14）、`tasks.md`（T1–T13，契约 T1 在最前，覆盖 29/29）；阶段记录 `docs/sdd/add-credit-recovery/p3-design.md`。
 - **P3 工件评审（2026-11-17）：** `docs/reviews/20261117-add-credit-recovery-{proposal,spec,design,tasks}-review.md` 四份均 **Pass**（BLOCKER 0 / WARNING 10 全已收口）；评审中修正 2 处事实错误（T2 的 `V21` 升级基线、Maven `-Dtest` 的 `+` 分隔符）、1 处规格与实现冲突（R6「MUST 立即展示」→「进入 / 重新进入时取数」）、3 处设计缺口（先配额后资格、阈值单点、原因码文案归属 D14）；报告已由 WAYNE + Lewis Liu 签署，工件第二签署 Jay 已签（2026-11-17）。
 - **P3 裁决：** G1 期间按起草态推进，2026-11-17 已补签为 Pass（IO=WAYNE / SA=Jacky）并进入 P4；OQ-5 只存完成标记 + 结果（不建逐题明细表）；OQ-6 用 `#/credit/learning` 独立页、入口仅「发布行程被拦截提示」；并发不引入 `SELECT ... FOR UPDATE`（SQLite 无行锁语法，改用 `credit_ledger` 幂等键唯一索引 + `recorded(key)` 预判）。
-- **P4 产出（2026-11-17，`/sdd:atdd-apply`）：** T1–T13 全绿。契约 `0.18.0`（3 端点 / 4 schema / 6 错误码 / `POST /api/trips` 403 `CREDIT_SCORE_BELOW_60`）+ `V24__add_credit_learning.sql`（单表 + `(user_id, month_key)` 索引，双引擎、旧库 V20 升级覆盖）；后端 `CreditLearningService`（会话 / 学习完成 / 判分）+ `CreditReason`（D14）+ `CreditGateService.assertCanPublish`（仅 `TripController.create` 调用）；前端 `credit/learningState.ts`（`phase` / `toViewModel` / `quizProgress` / `errorMessage`）+ `credit/LearningPage.tsx`（五态 `intro/quiz/result/done/eligible`，`sessionStorage` 续考）+ `trips/publishGuard.ts`（`creditGuard` / `generic` 分流 + 专用 Alert「去安全学习」）；E2E `credit-learning.spec.ts` 3/3（45 → 拦截 → 学习 → 60 → 放行全闭环 / 62 无需恢复 / 45 分遍历首页、我的、聊天无入口）。门禁：后端 **348/348**、前端 **308/308（40 文件）**、`typecheck` + `build` 通过、`openspec validate --strict` valid、Redocly 0 error / 19 warning；阶段记录 `docs/sdd/add-credit-recovery/p4-apply.md`；待 `/sdd:local-verify` 与 G2。
+- **P4 产出（2026-11-17，`/sdd:atdd-apply`）：** T1–T13 全绿。契约 `0.19.0`（3 端点 / 4 schema / 6 错误码 / `POST /api/trips` 403 `CREDIT_SCORE_BELOW_60`）+ `V25__add_credit_learning.sql`（单表 + `(user_id, month_key)` 索引，双引擎、旧库 V20 升级覆盖）；后端 `CreditLearningService`（会话 / 学习完成 / 判分）+ `CreditReason`（D14）+ `CreditGateService.assertCanPublish`（仅 `TripController.create` 调用）；前端 `credit/learningState.ts`（`phase` / `toViewModel` / `quizProgress` / `errorMessage`）+ `credit/LearningPage.tsx`（五态 `intro/quiz/result/done/eligible`，`sessionStorage` 续考）+ `trips/publishGuard.ts`（`creditGuard` / `generic` 分流 + 专用 Alert「去安全学习」）；E2E `credit-learning.spec.ts` 3/3（45 → 拦截 → 学习 → 60 → 放行全闭环 / 62 无需恢复 / 45 分遍历首页、我的、聊天无入口）。门禁：后端 **348/348**、前端 **308/308（40 文件）**、`typecheck` + `build` 通过、`openspec validate --strict` valid、Redocly 0 error / 19 warning；阶段记录 `docs/sdd/add-credit-recovery/p4-apply.md`；待 `/sdd:local-verify` 与 G2。
 - 未接入外部 ALM；ALM Sync 状态记为 Pending。
 
 ---
@@ -368,7 +368,39 @@
 - **依赖：** `user-profile` / `user-profiles` 尚未归档；本故事只追加只读字段，不改其 Requirement 语义。
 - 未接入外部 ALM；本表为仓库内权威故事清单，ALM Sync 状态记为 Pending。
 
-## REQ-022 — 目的地天气与出行提醒（迭代 2 / P1）
+---
+
+# Story list — REQ-023（原 REQ-022；issue #30 旅行体验获赞增加信用分）
+
+- **来源：** GitHub issue #30 `[P0] 旅行体验获赞增加信用分`（正文：优先级 P1 / 信用系统迭代 2 / Story 3 / 5 点 / 落点页面：旅行体验 / 信用记录）
+- **Change：** `add-experience-like-credit`（`trip-experiences` ADDED：体验点赞；`user-credit` ADDED：体验获赞阶梯加分）
+- **口径：** 一条故事 = 两个点赞展示面（首页体验卡 / 详情游后体验区）+ 两份能力增量（点赞数据与接口 + 获赞信用结算）+ 一次可观察的分数变化
+- **编号说明：** 本故事来自信用系统迭代 2 的 Story 3（issue #30），不属于原型 S01–S17；为避免与 issue #22「S22 AI 推荐路线」等既有编号冲突，本表不新造 S 编号，使用「信用迭代2-S3」。
+- **优先级说明：** issue 标题为 `[P0]`，正文写「优先级 P1」；本表并列记录两者，不单方面改写 issue。
+- **需求编号说明：** P1 起草时登记为 REQ-022；合并 main 时该号已被 `add-trip-weather` 占用，按「后到者顺延」改为 **REQ-023**（2026-11-17）。
+
+| Story | Title | 角色 | Priority | Iteration | Points | Page | Parent REQ | Change | Status |
+|---|---|---|---|---|---|---|---|---|---|
+| 信用迭代2-S3 | 旅行体验获赞增加信用分 | 体验作者（受益）/ 已登录用户（点赞） | P0（标题）/ P1（正文） | 信用系统迭代 2 | 5 | 旅行体验（点赞）/ 信用记录（按 D2 不做可见明细） | REQ-023 | `add-experience-like-credit` | P4 Pass（2026-11-17；后端 342 / 前端 306 / 受影响 E2E 12 全绿；合并 main 后顺延契约 0.18.0 + V24；本地验证 Pass，G2 待 Neal） |
+
+## Traceability（REQ-023）
+
+| Story | Requirement scenarios | Change spec | Story file |
+|---|---|---|---|
+| 信用迭代2-S3 | REQ-023 §4 L-1 ~ L-8 / T-1 ~ T-10 / D-1 ~ D-3 / E-1 ~ E-3 | `openspec/changes/add-experience-like-credit/specs/trip-experiences/spec.md`、`specs/user-credit/spec.md`（均为 ADDED） | 无独立故事文件：以 proposal + Delta 承接（与 REQ-012 / REQ-014 同口径） |
+
+## Notes（REQ-023）
+
+- **不拆子故事：** 点赞与结算必须同批交付；只有点赞无法验收 T 组场景，只有结算没有触发源（用户裁决 D1）。
+- **信用记录落点：** issue 写「旅行体验 / 信用记录」；按用户裁决 D2，信用加分明细不做可见面，分数变化在既有五个信用展示面体现。
+- **不并入扣分故事：** issue #29（举报扣分）、#31（退出同行扣分）、#32（安全学习恢复）属信用系统迭代 2 的其他 Story，另开 change。
+- **月度口径：** Asia/Shanghai 自然月（D3），按实发消耗（D4），截断不结转。
+- **归档顺序：** `user-credit` 与 `trip-experiences` 的 Living Spec 尚未包含 `add-credit-account` / `add-experience-photos` 等在途 delta；本故事归档需排在其后。
+- 未接入外部 ALM；本表为仓库内权威故事清单，ALM Sync 状态记为 Pending。
+
+---
+
+# Story list — REQ-022 — 目的地天气与出行提醒（迭代 2 / P1）
 
 - **故事：** S22 目的地天气与出行提醒（发起人 2026-11-17 用户故事；优先级 P1；迭代 2；3 点；落点页面：路线创建页 / 行程详情页）
 - **需求编号说明：** `main` 已占用 REQ-001 ~ REQ-021（REQ-020 由并行 `refine-detail-companions` 占用），本需求按「后到者顺延」登记为 **REQ-022**。
