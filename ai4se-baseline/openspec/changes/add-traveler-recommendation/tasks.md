@@ -16,7 +16,7 @@
 | T7 | 前端纯函数 Red：`trips/recommendation.ts`（`formatScore` / `breakdownText` / `referenceText` / `emptyRecommendationText`） | frontend | T1 | F1–F4 全绿；先见 Red | C3 |
 | T8 | 前端请求与组件：`types.ts`、`api.loadTripRecommendations`、`useRecommendations`（防竞态 + 重试）、`TravelerRecommendationPanel`（四态 + 探针） | frontend | T7 | 组件可渲染四态 | C3 |
 | T9 | 挂载与样式：`TripDetailPage` 推荐区块；`styles.css` 推荐样式 | frontend | T8 | 详情页可见；390px 无溢出 | C3 / C4 |
-| T10 | E2E：`e2e/tests/traveler-recommendation.spec.ts`（E1–E6，`page.route` 注入） | e2e | T9 | 6 条全绿 | C4 |
+| T10 | E2E：`e2e/tests/traveler-recommendation.spec.ts`（E1–E7，`page.route` 注入） | e2e | T9 | 7 条全绿 | C4 |
 | T11 | 文档收口：`docs/knowledge/interfaces/README.md` 登记接口；`_LOG.md` 追加；架构计数与 `docs/sdd` 索引 | docs | T6 / T9 | 接口表含新行；索引链接可点开 | C5 |
 | T12 | 回归与走查：后端全量、前端 build + 单测、E2E 全量、1440 / 768 / 390 × 浅 / 深色 | verify | T10 / T11 | 全绿；截图 6 张 | C6 |
 
@@ -27,7 +27,7 @@
 | C1 | `cd ai4se-baseline/RouteME/backend; .\mvnw.cmd -B -ntp test -Dtest=OpenApiTest`；`npx @redocly/cli lint openapi.yaml` | 测试通过；0 error |
 | C2 | `cd ai4se-baseline/RouteME/backend; .\mvnw.cmd -B -ntp test` | 全绿；新增用例数与 ATDD §3 一致 |
 | C3 | `cd ai4se-baseline/RouteME/frontend; npm run build; npm test` | 构建通过；单测全绿 |
-| C4 | `cd ai4se-baseline/RouteME/e2e; npx playwright test tests/traveler-recommendation.spec.ts` | 6/6 |
+| C4 | `cd ai4se-baseline/RouteME/e2e; npx playwright test tests/traveler-recommendation.spec.ts` | 7/7 |
 | C5 | `cd ai4se-baseline; openspec validate add-traveler-recommendation --strict` | valid |
 | C6 | `cd ai4se-baseline/RouteME/e2e; npx playwright test` | 与基线对比，无新增失败 |
 
@@ -71,15 +71,15 @@
 
 ## 5. 执行清单（openspec 任务追踪）
 
-- [ ] **T1 契约：0.19.0 + 推荐路径与 schema**
-- [ ] **T2 规则纯函数：`TravelerMatch`**
-- [ ] **T3 排序纯函数：`TravelerRecommendationRanker`**
-- [ ] **T4 响应模型：枚举 / 分项 / 推荐项 / 参照**
-- [ ] **T5 服务：参照、候选、过滤、去重、排序**
-- [ ] **T6 控制器：身份与错误映射**
-- [ ] **T7 前端纯函数：分数字符串、分项文本、参照文本**
-- [ ] **T8 前端请求与组件：`useRecommendations` + `TravelerRecommendationPanel`**
-- [ ] **T9 挂载与样式：详情页推荐区块**
-- [ ] **T10 E2E：推荐四态与后端分值**
-- [ ] **T11 文档：接口表、变更日志、SDD 索引**
-- [ ] **T12 回归与走查：后端全量、前端 build + 单测、E2E、三档 × 深浅色**
+- [x] **T1 契约：0.19.0 + 推荐路径与 schema**
+- [x] **T2 规则纯函数：`TravelerMatch`**
+- [x] **T3 排序纯函数：`TravelerRecommendationRanker`**
+- [x] **T4 响应模型：枚举 / 分项 / 推荐项 / 参照**
+- [x] **T5 服务：参照、候选、过滤、去重、排序**
+- [x] **T6 控制器：身份与错误映射**
+- [x] **T7 前端纯函数：分数字符串、分项文本、参照文本**
+- [x] **T8 前端请求与组件：`useRecommendations` + `TravelerRecommendationPanel`**
+- [x] **T9 挂载与样式：详情页推荐区块**
+- [x] **T10 E2E：推荐四态与后端分值（7 条）**
+- [x] **T11 文档：接口表、变更日志、SDD 索引**
+- [x] **T12 回归与走查：后端全量、前端 build + 单测、E2E、390px 无溢出**

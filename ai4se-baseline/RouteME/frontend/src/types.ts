@@ -225,6 +225,39 @@ export type MatchCandidate = {
   match: Match;
 };
 
+/** 推荐分项维度：目的地 / 日期 / 共同兴趣。 */
+export type RecommendationDimension = 'destination' | 'date' | 'interest';
+
+/** 推荐分项：标签与得分均由后端返回，前端只负责展示。 */
+export type RecommendationBreakdown = {
+  dimension: RecommendationDimension;
+  label: string;
+  points: number;
+};
+
+/** 推荐参照：当前行程的目的地、出发日期与当前用户兴趣。 */
+export type RecommendationReference = {
+  trip_id: number;
+  destination: string;
+  start_date: string;
+  interests: string[];
+};
+
+/** 一条同行者推荐：用户 + 关联行程 + 后端算好的分值与解释。 */
+export type TravelerRecommendation = {
+  user: DemoUser;
+  trip: TripSummary;
+  score: number;
+  reasons: string[];
+  breakdown: RecommendationBreakdown[];
+  shared_interests: string[];
+};
+
+export type RecommendationList = {
+  reference: RecommendationReference;
+  items: TravelerRecommendation[];
+};
+
 export type ApplicationStatus = 'pending' | 'accepted' | 'rejected' | 'cancelled' | 'left';
 
 export type TripApplication = {

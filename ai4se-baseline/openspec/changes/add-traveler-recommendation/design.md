@@ -223,7 +223,7 @@ export type RecommendationList = {
 | 后端接口 | `RecommendationControllerTest`（`@SpringBootTest` + `FixedClockTestConfig`）：排序、排除本人、分项格式、空列表、401、404 |
 | 契约 | `OpenApiTest` 新增路径与 4 schema、版本 0.19.0 |
 | 前端纯函数 | `recommendation.test.ts`：`formatScore` / `breakdownText` / `referenceText` |
-| E2E | `traveler-recommendation.spec.ts`：成功列表、空状态、失败重试、无硬编码（断言分值来自 mock 响应） |
+| E2E | `traveler-recommendation.spec.ts`：成功列表、空状态、失败重试、分值来自后端、切换行程重算、390px 无横向溢出 |
 
 ## 7. 风险与回退
 

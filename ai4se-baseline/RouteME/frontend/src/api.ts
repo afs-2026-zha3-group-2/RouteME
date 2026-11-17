@@ -20,6 +20,7 @@ import type {
   MyTrips,
   Page,
   Paging,
+  RecommendationList,
   ReportRequest,
   ServiceMessage,
   ServiceSessionDetail,
@@ -201,6 +202,14 @@ export async function loadMatches(
 export async function loadMatch(userId: number, tripId: number): Promise<MatchCandidate> {
   const response = await request(`/matches/${tripId}`, undefined, userId);
   return (await response.json()) as MatchCandidate;
+}
+
+export async function loadTripRecommendations(
+  userId: number,
+  tripId: number,
+): Promise<RecommendationList> {
+  const response = await request(`/trips/${tripId}/recommendations`, undefined, userId);
+  return (await response.json()) as RecommendationList;
 }
 
 export async function loadTrip(userId: number, tripId: number): Promise<TripDetail> {
