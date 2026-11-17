@@ -1,6 +1,8 @@
 import { useEffect, useRef, useState } from 'react';
 import { Alert, Button, Card, Input, Radio, Skeleton, Space, Typography, message } from 'antd';
 import { loadTrip, loadTripExperiences, shareExperience, uploadExperiencePhoto } from '../api';
+import { CreditRestrictedNotice } from '../credit/CreditRestrictedNotice';
+import { useMyCredit } from '../credit/CreditContext';
 import { tripMessages } from '../i18n/tripMessages';
 import { SafetyNote } from '../safety/SafetyNote';
 import { cityPhoto } from '../trips/cityPhotos';
@@ -32,6 +34,7 @@ type Props = {
 };
 
 export function ShareExperiencePage({ currentUser, tripId }: Props) {
+  const { restricted } = useMyCredit();
   const [trip, setTrip] = useState<TripDetail | null>(null);
   const [draft, setDraft] = useState<ExperienceDraft>(emptyExperienceDraft);
   const [errors, setErrors] = useState<ExperienceErrors>({});
@@ -359,7 +362,7 @@ export function ShareExperiencePage({ currentUser, tripId }: Props) {
                 </span>
               )}
               <div>
-                <Button size="small" loading={uploading} onClick={() => photoInputRef.current?.click()}>
+                <Button size="small" loading={uploading} disabled={restricted} onClick={() => photoInputRef.current?.click()}>
                   <ShareIcon name="plus" />
                   {tripMessages.experiencePhotoAdd}
                 </Button>
@@ -433,6 +436,8 @@ export function ShareExperiencePage({ currentUser, tripId }: Props) {
 
             <SafetyNote />
 
+            {restricted && <CreditRestrictedNotice />}
+
             {actionError !== null && (
               <Alert
                 className="share-action-error"
@@ -444,7 +449,7 @@ export function ShareExperiencePage({ currentUser, tripId }: Props) {
             )}
 
             <Space className="form-actions">
-              <Button type="primary" loading={submitting} disabled={uploading} onClick={submit}>
+              <Button type="primary" loading={submitting} disabled={restricted || uploading} onClick={submit}>
                 <ShareIcon name="send" />
                 {editing ? tripMessages.experienceSave : tripMessages.experienceSubmit}
               </Button>

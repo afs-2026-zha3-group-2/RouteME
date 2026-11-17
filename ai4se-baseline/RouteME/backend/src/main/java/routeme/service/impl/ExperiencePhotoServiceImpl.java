@@ -18,6 +18,7 @@ import routeme.mapper.TripExperiencePhotoMapper;
 import routeme.pojo.ExperiencePhotoFile;
 import routeme.pojo.TripPlan;
 import routeme.response.ExperiencePhotoResponse;
+import routeme.service.CreditRestrictionGuard;
 import routeme.service.ExperienceEligibility;
 import routeme.service.ExperiencePhotoService;
 import routeme.service.TripPlanService;
@@ -38,22 +39,26 @@ public class ExperiencePhotoServiceImpl
     private final TripPlanService tripPlanService;
     private final ExperienceEligibility eligibility;
     private final ExperiencePhotoStorage storage;
+    private final CreditRestrictionGuard creditRestrictionGuard;
     private final Clock clock;
 
     public ExperiencePhotoServiceImpl(
             TripPlanService tripPlanService,
             ExperienceEligibility eligibility,
             ExperiencePhotoStorage storage,
+            CreditRestrictionGuard creditRestrictionGuard,
             Clock clock) {
         this.tripPlanService = tripPlanService;
         this.eligibility = eligibility;
         this.storage = storage;
+        this.creditRestrictionGuard = creditRestrictionGuard;
         this.clock = clock;
     }
 
     @Override
     @Transactional
     public ExperiencePhotoResponse upload(long tripId, long authorId, MultipartFile file) {
+        creditRestrictionGuard.requireNotRestricted(authorId);
         TripPlan trip = tripPlanService.requireCurrent(tripId);
         eligibility.requireCanShare(trip, authorId);
 

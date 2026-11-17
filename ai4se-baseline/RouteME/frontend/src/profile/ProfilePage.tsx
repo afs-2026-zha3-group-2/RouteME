@@ -11,7 +11,7 @@ import {
   publisherSummary,
   schoolMajor,
 } from './profileDisplay';
-import { creditLine, creditTone } from './creditDisplay';
+import { creditLine, creditRestrictionNote, creditRestrictedBadge, creditTone } from './creditDisplay';
 import { interestLabel } from './profileOptions';
 
 type Props = {
@@ -112,7 +112,17 @@ export function ProfilePage({ currentUser, userId, canEdit }: Props) {
           </p>
           <p className={`profile-credit ${creditTone(profile.credit_level)}`}>
             {creditLine(profile.credit_score, profile.credit_level)}
+            {profile.credit_restricted && (
+              <span className="badge danger credit-restricted-badge">
+                {creditRestrictedBadge(profile.credit_restricted)}
+              </span>
+            )}
           </p>
+          {isSelf && profile.credit_restricted && (
+            <p className="restriction-note">
+              {creditRestrictionNote(profile.credit_restriction_reason)}
+            </p>
+          )}
           {(schoolAndMajor !== '' ||
             (profile.job ?? '') !== '' ||
             (profile.mbti ?? '') !== '' ||

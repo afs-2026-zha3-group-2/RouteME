@@ -10,13 +10,21 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import routeme.enums.CreditExitReasonEnum;
 import routeme.request.ApplicationCreateRequest;
+import routeme.request.LeaveRequest;
+import routeme.response.LeavePreviewResponse;
+import routeme.response.LeaveResultResponse;
 import routeme.response.TripApplicationResponse;
+import routeme.pojo.CreditExitPreview;
+import routeme.pojo.CreditExitResult;
 import routeme.pojo.DemoUser;
 import routeme.pojo.TripApplication;
 import routeme.service.ApplicationService;
+import routeme.service.CreditEnforcementService;
 import routeme.service.DemoUserService;
 
 @RestController
@@ -25,10 +33,15 @@ public class ApplicationController {
 
     private final DemoUserService demoUserService;
     private final ApplicationService applicationService;
+    private final CreditEnforcementService creditEnforcementService;
 
-    public ApplicationController(DemoUserService demoUserService, ApplicationService applicationService) {
+    public ApplicationController(
+            DemoUserService demoUserService,
+            ApplicationService applicationService,
+            CreditEnforcementService creditEnforcementService) {
         this.demoUserService = demoUserService;
         this.applicationService = applicationService;
+        this.creditEnforcementService = creditEnforcementService;
     }
 
     @PostMapping("/trips/{tripId}/applications")
@@ -88,12 +101,25 @@ public class ApplicationController {
                 return applicationService.describe(rejected);
             }
 
-            @PostMapping("/trips/{tripId}/leave")
-            public ResponseEntity<Void> leave(
+            @GetMapping("/trips/{tripId}/leave-preview")
+            public LeavePreviewResponse previewLeave(
                     @RequestHeader(value = "X-User-Id", required = false) Long userId,
-                    @PathVariable long tripId) {
+                    @PathVariable long tripId,
+                    @RequestParam(value = "reason", required = false) String reason) {
                 DemoUser companion = demoUserService.require(userId);
-                applicationService.leave(tripId, companion.id());
-                return ResponseEntity.noContent().build();
+                CreditExitPreview preview = creditEnforcementService.previewExit(
+                        tripId, companion.id(), CreditExitReasonEnum.parse(reason));
+                return LeavePreviewResponse.from(preview);
+            }
+
+            @PostMapping("/trips/{tripId}/leave")
+            public ResponseEntity<LeaveResultResponse> leave(
+                    @RequestHeader(value = "X-User-Id", required = false) Long userId,
+                    @PathVariable long tripId,
+                    @RequestBody(required = false) LeaveRequest request) {
+                DemoUser companion = demoUserService.require(userId);
+                CreditExitResult result = creditEnforcementService.leave(
+                        tripId, companion.id(), CreditExitReasonEnum.parse(request == null ? null : request.reason()));
+                return ResponseEntity.ok(LeaveResultResponse.from(result));
             }
         }

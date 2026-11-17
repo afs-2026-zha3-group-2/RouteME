@@ -9060,6 +9060,85 @@ svg {
   }
 }
 
+/* 信用限制：徽标 / 本人原因 / 退出影响预览 / 统一拦截提示 */
+.credit-restricted-badge {
+  margin-left: 6px;
+  vertical-align: 1px;
+}
+
+.restriction-note {
+  display: block;
+  margin-top: 6px;
+  font-size: 12px;
+  line-height: 1.55;
+  color: var(--t-warn);
+}
+
+.blocked-notice {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  margin: 0 0 14px;
+  padding: 12px 14px;
+  border: 1px solid color-mix(in srgb, var(--danger) 24%, transparent);
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--danger) 6%, transparent);
+  font-size: 12.5px;
+  line-height: 1.6;
+  color: var(--ink-2);
+}
+
+.composer-closed .blocked-notice {
+  margin: 0;
+  border: 0;
+  padding: 0;
+  background: transparent;
+  text-align: left;
+}
+
+.leave-preview {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 12px 0;
+  padding: 12px 14px;
+  border: 1px solid color-mix(in srgb, var(--warn) 32%, transparent);
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--warn) 7%, transparent);
+}
+
+.leave-preview-label {
+  font-size: 11.5px;
+  letter-spacing: 0.04em;
+  color: var(--ink-3);
+}
+
+.leave-preview b {
+  font-size: 15px;
+  color: var(--ink);
+}
+
+.leave-preview .hint {
+  font-size: 11.5px;
+  color: var(--ink-3);
+}
+
+.leave-reason-select {
+  margin-top: 6px;
+}
+
+/* 受限账号的「发布行程」导航入口：仍可见，但不可点开 */
+.rail-link.is-disabled,
+.tab-link.is-disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.rail-link.is-disabled:hover {
+  background: transparent;
+  color: inherit;
+}
+
 /* 同行者推荐：分值与分项全部来自后端，这里只负责排版。 */
 .recommendation-list {
   display: grid;

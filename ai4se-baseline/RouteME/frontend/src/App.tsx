@@ -10,6 +10,7 @@ import { AdminUserDetailPage } from './admin/users/AdminUserDetailPage';
 import { AdminUsersPage } from './admin/users/AdminUsersPage';
 import { loadSessionUser, loadUsers, logoutAccount } from './api';
 import { ChatPage } from './chat/ChatPage';
+import { CreditProvider } from './credit/CreditContext';
 import { ShareExperiencePage } from './experiences/ShareExperiencePage';
 import { HelpPage } from './help/HelpPage';
 import { HomePage } from './home/HomePage';
@@ -176,103 +177,105 @@ export function App() {
 
     return (
       <ProfileProvider currentUser={currentUser}>
-        <AppShell
-          currentUser={currentUser}
-          onLogout={logout}
-          route={route}
-          mode={mode}
-          onToggleMode={toggleMode}
-        >
-          {route.name === 'home' && <HomePage currentUser={currentUser} />}
-          {route.name === 'create' && (
-            <TripCreatePage
-              currentUser={currentUser}
-              fromTripId={route.fromTripId}
-              aiItineraryId={route.aiItineraryId}
-            />
-          )}
-          {route.name === 'aiPlanner' && <AiPlannerPage currentUser={currentUser} />}
-          {route.name === 'share' && (
-            <ShareExperiencePage currentUser={currentUser} tripId={route.tripId} />
-          )}
-          {route.name === 'detail' && (
-            <TripDetailPage currentUser={currentUser} tripId={route.tripId} />
-          )}
-          {route.name === 'applications' && (
-            <ApplicationsPage currentUser={currentUser} tripId={route.tripId} />
-          )}
-          {route.name === 'mine' && (
-            <MyTripsPage currentUser={currentUser} />
-          )}
-          {route.name === 'map' && (
-            <MapExplorerPage provinceCode={route.provinceCode} cityCode={route.cityCode} />
-          )}
-          {route.name === 'profileSetup' && (
-            <ProfileSetupPage
-              currentUser={currentUser}
-              token={authToken}
-              onSaved={handleProfileSaved}
-            />
-          )}
-          {route.name === 'userProfile' && (
-            <ProfilePage
-              currentUser={currentUser}
-              userId={route.userId}
-              canEdit={authToken !== null}
-            />
-          )}
-          {route.name === 'chat' && (
-            <ChatPage
-              currentUser={currentUser}
-              tripId={route.tripId}
-              otherUserId={route.userId}
-            />
-          )}
-          {route.name === 'help' && <HelpPage currentUser={currentUser} token={authToken} />}
-          {route.name === 'adminUsers' && (
-            <AdminGuard currentUser={currentUser} token={authToken}>
-              {(token) => <AdminUsersPage token={token} />}
-            </AdminGuard>
-          )}
-          {route.name === 'adminUserDetail' && (
-            <AdminGuard currentUser={currentUser} token={authToken}>
-              {(token) => (
-                <AdminUserDetailPage
-                  token={token}
-                  userId={route.userId}
-                  currentUser={currentUser}
-                />
-              )}
-            </AdminGuard>
-          )}
-          {route.name === 'adminReports' && (
-            <AdminGuard currentUser={currentUser} token={authToken}>
-              {(token) => <AdminReportsPage token={token} />}
-            </AdminGuard>
-          )}
-          {route.name === 'adminReportDetail' && (
-            <AdminGuard currentUser={currentUser} token={authToken}>
-              {(token) => <AdminReportDetailPage token={token} reportId={route.reportId} />}
-            </AdminGuard>
-          )}
-          {route.name === 'adminService' && (
-            <AdminGuard currentUser={currentUser} token={authToken}>
-              {(token) => <AdminServicePage token={token} currentUser={currentUser} />}
-            </AdminGuard>
-          )}
-          {route.name === 'adminServiceDetail' && (
-            <AdminGuard currentUser={currentUser} token={authToken}>
-              {(token) => (
-                <AdminServiceDetailPage
-                  token={token}
-                  currentUser={currentUser}
-                  sessionId={route.sessionId}
-                />
-              )}
-            </AdminGuard>
-          )}
-          {route.name === 'notFound' && <PlaceholderPage text={tripMessages.detailNotFound} />}
-        </AppShell>
+        <CreditProvider currentUser={currentUser}>
+          <AppShell
+            currentUser={currentUser}
+            onLogout={logout}
+            route={route}
+            mode={mode}
+            onToggleMode={toggleMode}
+          >
+            {route.name === 'home' && <HomePage currentUser={currentUser} />}
+            {route.name === 'create' && (
+              <TripCreatePage
+                currentUser={currentUser}
+                fromTripId={route.fromTripId}
+                aiItineraryId={route.aiItineraryId}
+              />
+            )}
+            {route.name === 'aiPlanner' && <AiPlannerPage currentUser={currentUser} />}
+            {route.name === 'share' && (
+              <ShareExperiencePage currentUser={currentUser} tripId={route.tripId} />
+            )}
+            {route.name === 'detail' && (
+              <TripDetailPage currentUser={currentUser} tripId={route.tripId} />
+            )}
+            {route.name === 'applications' && (
+              <ApplicationsPage currentUser={currentUser} tripId={route.tripId} />
+            )}
+            {route.name === 'mine' && (
+              <MyTripsPage currentUser={currentUser} />
+            )}
+            {route.name === 'map' && (
+              <MapExplorerPage provinceCode={route.provinceCode} cityCode={route.cityCode} />
+            )}
+            {route.name === 'profileSetup' && (
+              <ProfileSetupPage
+                currentUser={currentUser}
+                token={authToken}
+                onSaved={handleProfileSaved}
+              />
+            )}
+            {route.name === 'userProfile' && (
+              <ProfilePage
+                currentUser={currentUser}
+                userId={route.userId}
+                canEdit={authToken !== null}
+              />
+            )}
+            {route.name === 'chat' && (
+              <ChatPage
+                currentUser={currentUser}
+                tripId={route.tripId}
+                otherUserId={route.userId}
+              />
+            )}
+            {route.name === 'help' && <HelpPage currentUser={currentUser} token={authToken} />}
+            {route.name === 'adminUsers' && (
+              <AdminGuard currentUser={currentUser} token={authToken}>
+                {(token) => <AdminUsersPage token={token} />}
+              </AdminGuard>
+            )}
+            {route.name === 'adminUserDetail' && (
+              <AdminGuard currentUser={currentUser} token={authToken}>
+                {(token) => (
+                  <AdminUserDetailPage
+                    token={token}
+                    userId={route.userId}
+                    currentUser={currentUser}
+                  />
+                )}
+              </AdminGuard>
+            )}
+            {route.name === 'adminReports' && (
+              <AdminGuard currentUser={currentUser} token={authToken}>
+                {(token) => <AdminReportsPage token={token} />}
+              </AdminGuard>
+            )}
+            {route.name === 'adminReportDetail' && (
+              <AdminGuard currentUser={currentUser} token={authToken}>
+                {(token) => <AdminReportDetailPage token={token} reportId={route.reportId} />}
+              </AdminGuard>
+            )}
+            {route.name === 'adminService' && (
+              <AdminGuard currentUser={currentUser} token={authToken}>
+                {(token) => <AdminServicePage token={token} currentUser={currentUser} />}
+              </AdminGuard>
+            )}
+            {route.name === 'adminServiceDetail' && (
+              <AdminGuard currentUser={currentUser} token={authToken}>
+                {(token) => (
+                  <AdminServiceDetailPage
+                    token={token}
+                    currentUser={currentUser}
+                    sessionId={route.sessionId}
+                  />
+                )}
+              </AdminGuard>
+            )}
+            {route.name === 'notFound' && <PlaceholderPage text={tripMessages.detailNotFound} />}
+          </AppShell>
+        </CreditProvider>
       </ProfileProvider>
     );
   };

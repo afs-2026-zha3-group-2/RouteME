@@ -235,6 +235,7 @@ describe('profileToForm', () => {
         profile_complete: false,
         credit_score: 80,
         credit_level: 'good',
+        credit_restricted: false,
       }),
     ).toEqual({
       ...emptyProfileForm,

@@ -6,6 +6,8 @@ import 'dayjs/locale/zh-cn';
 import { ApiError, createTrip, loadAiItinerary, loadTrip } from '../api';
 import { aiMessages } from '../ai/aiMessages';
 import { toTripPrefill } from '../ai/snapshot';
+import { CreditRestrictedNotice } from '../credit/CreditRestrictedNotice';
+import { useMyCredit } from '../credit/CreditContext';
 import { AreaCascader } from '../area/AreaCascader';
 import { cityLabel } from '../area/areaOptions';
 import { tripMessages } from '../i18n/tripMessages';
@@ -51,6 +53,7 @@ type Props = {
 
 export function TripCreatePage({ currentUser, fromTripId, aiItineraryId }: Props) {
   // AI 预填失败时保留 initialTripForm（今天日期），用户仍可手动填写发布（A12 / L-04）。
+  const { restricted } = useMyCredit();
   const [values, setValues] = useState<TripFormValues>(() =>
     fromTripId === undefined ? initialTripForm() : emptyTripForm,
   );
@@ -557,6 +560,8 @@ export function TripCreatePage({ currentUser, fromTripId, aiItineraryId }: Props
               />
             </Field>
 
+            {restricted && <CreditRestrictedNotice />}
+
             {submitError !== null && (
               <Alert
                 type="error"
@@ -567,7 +572,7 @@ export function TripCreatePage({ currentUser, fromTripId, aiItineraryId }: Props
             )}
 
             <div className="form-actions">
-              <Button type="primary" loading={submitting} onClick={submit}>
+              <Button type="primary" loading={submitting} disabled={restricted} onClick={submit}>
                 {tripMessages.createSubmit}
               </Button>
               <Button onClick={() => (window.location.hash = '#/')}>

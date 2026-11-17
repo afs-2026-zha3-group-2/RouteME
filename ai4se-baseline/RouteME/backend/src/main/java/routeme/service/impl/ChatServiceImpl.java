@@ -29,6 +29,7 @@ import routeme.response.ChatPartnerResponse;
 import routeme.service.ApplicationService;
 import routeme.service.AccountStatusService;
 import routeme.service.ChatService;
+import routeme.service.CreditRestrictionGuard;
 import routeme.service.DemoUserService;
 import routeme.service.TripPlanService;
 
@@ -58,6 +59,7 @@ public class ChatServiceImpl extends AbstractServiceImpl<ChatMessageMapper, Chat
     private final TripPlanService tripPlanService;
     private final ApplicationService applicationService;
     private final DemoUserService demoUserService;
+    private final CreditRestrictionGuard creditRestrictionGuard;
     private final Clock clock;
     private final AccountStatusService accountStatusService;
 
@@ -65,11 +67,13 @@ public class ChatServiceImpl extends AbstractServiceImpl<ChatMessageMapper, Chat
             TripPlanService tripPlanService,
             ApplicationService applicationService,
             DemoUserService demoUserService,
+            CreditRestrictionGuard creditRestrictionGuard,
             Clock clock,
             AccountStatusService accountStatusService) {
         this.tripPlanService = tripPlanService;
         this.applicationService = applicationService;
         this.demoUserService = demoUserService;
+        this.creditRestrictionGuard = creditRestrictionGuard;
         this.clock = clock;
         this.accountStatusService = accountStatusService;
     }
@@ -122,6 +126,7 @@ public class ChatServiceImpl extends AbstractServiceImpl<ChatMessageMapper, Chat
         TripPlan trip = tripPlanService.requireCurrent(tripId);
         long receiverId = request == null ? 0 : request.receiverId();
         requireAccess(trip, senderId, receiverId);
+        creditRestrictionGuard.requireNotRestricted(senderId);
         if (trip.status(clock.instant()) == TripStatusEnum.COMPLETED
                 || trip.status(clock.instant()) == TripStatusEnum.CANCELLED) {
             throw new ChatReadOnlyException(tripId);

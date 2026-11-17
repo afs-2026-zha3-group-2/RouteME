@@ -80,3 +80,13 @@ P4 提交 `2e552fc` 后 pull 触发与 main（`0979e916`，0.16.0）28 文件冲
 - **重验证据：** 后端 **514/514** EXIT=0；前端 **406/406**（53 files）+ build 绿；E2E 全量 **161：129/32**，**ai-planner 12/12** + **traveler-recommendation 7/7**；profiles 隔离 fresh DB 7/8（4 污染转绿）；openspec strict **valid** + redocly **0 error / 21 warnings**。
 - **债务更新：** 新增「main traveler-recommendation E2E 偏差 1 例（profiles:37：spec 第三波切点==main 字节相同，main 详情页 recommendation 块致 `查看 阿岚 的资料` 按钮双元素 strict mode violation，隔离两次均红；E2E 不在 CI，main 自身即红）」；main E2E 债务合计 10 例（auth 7 + profile 2 + profiles:37）；偏差债务 map9+trips9=18 延续；债务 1/2 延续。32 红均非本 change 回归。
 - **G2 结论维持 Pass with documented debts**（原签署不变；不替代 G3，不执行 P5/不归档）。下一步：`git commit --no-edit`（第四波 merge）→ push 前再 pull 核对 → push。
+
+## Addendum 5：第五波合并（merge 提交 7b7706a 后 push 前再 pull，2026-11-17 20:3x）
+
+第四波 merge 提交 `7b7706a` 后 push 前再 pull，main 推进到 `8fdb4e4`（add-credit-exit-restriction REQ-025），6 文件 16 冲突区沿用 standing ruling 解决。本 addendum 不改动上方原 G2 签署与 Addendum 1/2/3/4。明细见 verify report §12 / p4-verify §10。
+
+- **契约再演进：** main credit-exit 也占 0.20.0 → 合并后 **0.21.0**（OpenApiTest 14 门禁方法完整、4 处版本断言同步）；迁移 `V25__ai_itineraries` → **`V26__ai_itineraries`**（main `V25__credit_enforcement` 碰撞，fresh DB Flyway V1–V26 验证）；TripPlanServiceImpl `AiItineraryService` + `CreditRestrictionGuard` 并存（create 三守卫）；styles.css `.ai-planner-*` + credit + `.recommendation-*` 并集（9218 行）。技术边界不变：Open-Meteo 真实天气仍实际参与推荐，AI 不伪造天气/经纬度/路线/距离/时间/价格。
+- **合并期修复（auto-merge fallout）：** main credit-exit 新测试 2 处构造调用基于旧 record，补 `aiItineraryId` 尾参 null（CreditExitCalculatorTest/CreditExitApiTest）。
+- **重验证据：** 后端 **540/540** EXIT=0；前端 **406/406**（53 files）+ build 绿；E2E 全量 **168：134/34**，**ai-planner 12/12** + **credit-exit/restriction/cancel-reason 7/7** + **traveler-recommendation 7/7**；profiles 单跑 fresh DB **7/8**（仅 :37）；openspec strict **valid** + redocly **0 error / 23 warnings**。
+- **债务更新：** 偏差债务 map9+trips9=18 延续；main E2E 债务 10 例延续（auth 7 + profile 2 + profiles:37 traveler-rec 稳定偏差）；污染由 4 增为 6（新增 detail-companions:122 与 safety-report:148，隔离均转绿；detail-companions:122 失败模式同 :37 推荐双按钮但数据依赖）；债务 1/2 延续。**34 红均非本 change 回归**；main credit-exit 新功能 E2E 7/7 全绿证合并未破坏共享功能。
+- **G2 结论维持 Pass with documented debts**（原签署不变；不替代 G3，不执行 P5/不归档）。下一步：`git commit --no-edit`（第五波 merge）→ push 前再 pull 核对 → push。

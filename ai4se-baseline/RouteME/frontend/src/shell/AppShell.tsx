@@ -1,10 +1,12 @@
 import { useEffect, useRef, useState, type KeyboardEvent as ReactKeyboardEvent, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import { loadUserProfile } from '../api';
+import { useMyCredit } from '../credit/CreditContext';
 import { adminMessages } from '../i18n/adminMessages';
 import { GateScene } from '../identity/GateScene';
 import { tripMessages } from '../i18n/tripMessages';
 import { AccountStatusBanner } from '../profile/AccountStatusBanner';
+import { creditRestrictedActionMessage } from '../profile/creditDisplay';
 import { publisherSummary } from '../profile/profileDisplay';
 import type { Route } from '../route';
 import type { ColorMode } from '../theme';
@@ -201,6 +203,10 @@ export function AppShell({
   children,
 }: Props) {
   const active = activeKey(route);
+  const { restricted } = useMyCredit();
+  const navBlockedTitle = (item: NavItem) =>
+    restricted && item.key === 'create' ? creditRestrictedActionMessage() : undefined;
+
 
   const [accountOpen, setAccountOpen] = useState(false);
   const [accountMenuAnchor, setAccountMenuAnchor] = useState<{
@@ -404,9 +410,21 @@ export function AppShell({
               {group.items.map((item) => (
                 <a
                   key={item.key}
-                  className={active === item.key ? 'rail-link active' : 'rail-link'}
+                  className={[
+                    active === item.key ? 'rail-link active' : 'rail-link',
+                    navBlockedTitle(item) !== undefined ? 'is-disabled' : '',
+                  ]
+                    .filter((name) => name !== '')
+                    .join(' ')}
                   href={item.href}
                   aria-current={active === item.key ? 'page' : undefined}
+                  aria-disabled={navBlockedTitle(item) !== undefined || undefined}
+                  title={navBlockedTitle(item)}
+                  onClick={(event) => {
+                    if (navBlockedTitle(item) !== undefined) {
+                      event.preventDefault();
+                    }
+                  }}
                 >
                   <NavIcon name={item.key} />
                   <span>{item.label}</span>
@@ -513,9 +531,21 @@ export function AppShell({
         {NAV_ITEMS.filter((item) => item.key !== 'aiPlanner').map((item) => (
           <a
             key={item.key}
-            className={active === item.key ? 'tab-link active' : 'tab-link'}
+            className={[
+              active === item.key ? 'tab-link active' : 'tab-link',
+              navBlockedTitle(item) !== undefined ? 'is-disabled' : '',
+            ]
+              .filter((name) => name !== '')
+              .join(' ')}
             href={item.href}
             aria-current={active === item.key ? 'page' : undefined}
+            aria-disabled={navBlockedTitle(item) !== undefined || undefined}
+            title={navBlockedTitle(item)}
+            onClick={(event) => {
+              if (navBlockedTitle(item) !== undefined) {
+                event.preventDefault();
+              }
+            }}
           >
             <NavIcon name={item.key} />
             <span>{item.label}</span>

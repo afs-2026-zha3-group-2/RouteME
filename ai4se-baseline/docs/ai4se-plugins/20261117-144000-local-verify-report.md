@@ -255,3 +255,48 @@ P4 提交 `2e552fc` 后按发起人指令 `git pull --no-rebase --autostash --no
 
 - styles.css 并集 + 0.20.0 + OpenApiTest 断言 + 3 测试构造修复 staged；三报告 addendum staged；排除项延续。
 - `git commit --no-edit`（第四波 merge）→ push 前再 pull 核对 → push。
+
+## 12. 第五波合并 addendum（第四波 merge 提交后 push 前再 pull，2026-11-17 20:3x）
+
+第四波 merge 提交 `7b7706a` 后 push 前再 pull，main 又推进到 **`8fdb4e4`**（`add-credit-exit-restriction` REQ-025：退出信用惩罚 + 低信用限制，契约也占 0.20.0，新增 `V25__credit_enforcement`）。**6 文件 16 冲突区**（TripPlanServiceImpl 4 + App.tsx 1 + TripCreatePage 2 + TripDetailPage 2 + openapi 6 + styles.css 1），其余 auto-merge；沿用 standing ruling（main 共享权威 + AI 特定并集 + 全量重验）。
+
+### 12.1 冲突解决与版本再演进
+
+- **TripPlanServiceImpl（4 区）：** `AiItineraryService` + `CreditRestrictionGuard` 并存（构造器 6 参）；`create` 三守卫 `assertCanWrite` + `requireNotRestricted`（main）+ `requireOwnedSnapshot`（本 change AI 链接校验）。
+- **App.tsx（1 区）：** main `CreditProvider` 包裹 + 本 change `aiPlanner` 路由 + `TripCreatePage` 携 `aiItineraryId` prop 并集。
+- **TripCreatePage（2 区）：** imports（ApiError/loadAiItinerary/aiMessages/toTripPrefill + CreditRestrictedNotice/useMyCredit）与签名（`aiItineraryId` + `const { restricted } = useMyCredit()`）并集。
+- **TripDetailPage（2 区）：** import 取 main 已移除的 unused `leaveTrip`（`TripLeaveModal` 内部自调 API）之删除 + 保留本 change `loadAiItinerary`；body `aiSummary` 摘要块 + main `CreditRestrictedNotice` 并集。
+- **openapi（6 区）：** 均为第二波 nullable-type-sibling 修复的**键序碰撞**——ours 已把 `type:object/nullable:true` 置于 `allOf` 之前（冲突区外 auto-merge），theirs 想在 `allOf` 之后再追加一份 → 取 ours（删冲突块）避免重复键；6 处 admin schema（status_updated_by/trip/publisher/reported_user/context/processed_by）。
+- **styles.css（1 区）：** node 字节并集——公共前缀 8445 行 + HEAD `.ai-planner-*` 615 行 + **补 `}` 闭合 `@media(768px)`** + main credit 块 77 行 + 共享 `}`（闭合 `.rail-link.is-disabled:hover`）+ 公共后缀 `.recommendation-*` 79 行 = **9218 行**；`.recommendation-*` 仅一份（公共后缀，不重复）；括号平衡 **1321/1321**，0 冲突标记。
+- **契约版本：** main credit-exit 也占 0.20.0 → 合并后 **0.21.0**；`OpenApiTest` 4 处版本断言同步（14 门禁方法完整）。
+- **迁移：** main `V25__credit_enforcement` 碰撞 → 本 change `V25__ai_itineraries` 经 `git mv` 重命名 **`V26__ai_itineraries`**（fresh DB Flyway **V1–V26** 干净重建验证；target/classes 已同步无 stale V25 残留）。
+
+### 12.2 合并期发现与修复（auto-merge fallout）
+
+| # | 发现 | 修复 |
+|---|---|---|
+| 12-1 | **main credit-exit 新测试构造调用缺尾参（testCompile 2 处）**：基于无 `aiItineraryId` 的旧 record 编写，auto-merge 后与并集 record（TripPlan 24 参 / TripCreateRequest 14 参）不匹配 | `CreditExitCalculatorTest`（TripPlan 23→24 补尾 null）、`CreditExitApiTest`（TripCreateRequest 13→14 补 null）各 1 处；复跑 verify EXIT=0（同第一/二/四波 union 口径） |
+
+### 12.3 第五波合并后全量重验（fresh DB V1–V26，沙箱外后端）
+
+| 层 | 命令 | 结果 |
+|---|---|---|
+| 后端 | `.\mvnw.cmd verify`（清 SPRING_DATASOURCE_URL） | **540 tests / 0 failures / 0 errors** EXIT=0（main credit-exit 测试并入 + 12-1 修复，较第四波 514 增长） |
+| 前端单测 | `npm test` | **53 files / 406 tests passed** |
+| 前端类型/构建 | `npm run build`（含 tsc --noEmit） | 0 errors + 构建成功（styles.css 并集后） |
+| E2E 全量 | `npx playwright test`（fresh `routeme-m5-final.db`） | **168 tests：134 passed / 34 failed**（16.6m，`e2e-m5.log`）；**ai-planner A1–A12 12/12**；main 新增 **credit-exit 4/4 + credit-restriction 2/2 + credit-cancel-reason 1/1 = 7/7** + **traveler-recommendation 7/7** 全绿 |
+| E2E 隔离 | `npx playwright test profiles.spec.ts`（fresh `routeme-m5-profiles2.db`，单跑） | **7/8**：仅 **:37** main 债务仍红，13/51/88/102 全转绿 |
+| 契约门禁 | `openspec validate add-ai-itinerary --strict` / `redocly lint` | **valid** / **0 error / 23 warnings**（0.21.0；main credit-exit 新增 2 warnings） |
+
+### 12.4 34 红分类（无本 change 回归）
+
+- **map.spec 9 + trips.spec 9 = 18 例 refine-trip-map 偏差**（延续原裁决，不修旧 spec）。
+- **auth.spec 7 + profile.spec 2 = 9 例 main UI refresh 既有 E2E 偏差**（延续 §9.4 git 证据）。
+- **profiles.spec:37 = 1 例 main traveler-recommendation 稳定债务**（单跑 fresh DB 仍红：`查看 阿岚 的资料` 按钮双元素 publisher-row + recommendation-user → strict mode violation；延续 §11.4 git 证据，本 change 未动详情页 publisher 按钮）。
+- **污染 6 例（隔离均转绿）：** profiles 13/51/88/102（4，profiles 单跑 7/8 证实）+ **detail-companions:122**（1，隔离转绿；全量运行内累积数据触发推荐引擎把已加入同行者再推荐 → `查看 林见夏 的资料` 双按钮，同 :37 根因但数据依赖）+ **safety-report:148**（1，隔离转绿；chat 气泡计数 `messagesBefore` 受运行内聊天污染）。
+- **验收口径达成：** ai-planner 12/12 + credit-exit/restriction/cancel-reason 7/7 + traveler-recommendation 7/7 + 非地图套件隔离全绿（除 main 自身 :37）；**34 红均非本 change 回归**（18 refine-trip-map + 10 main E2E 债务 + 6 污染）。main credit-exit 新功能 E2E 7/7 全绿证合并未破坏共享功能。
+
+### 12.5 提交
+
+- 6 文件冲突解决 + 0.21.0 + OpenApiTest 断言 + V26 重命名 + 2 测试构造修复 staged；三报告 addendum staged；排除项延续（t8-*.json / 日志 / fresh DB 均 gitignored 或不入库）。
+- `git commit --no-edit`（第五波 merge）→ push 前再 pull 核对 → push。

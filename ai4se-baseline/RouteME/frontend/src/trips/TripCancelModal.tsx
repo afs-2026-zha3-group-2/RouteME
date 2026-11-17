@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { Input, Modal, Typography, message } from 'antd';
 import { ApiError, cancelTrip } from '../api';
 import { tripMessages } from '../i18n/tripMessages';
-import type { TripCancelReason, TripDetail } from '../types';
+import type { TripDetail, UserTripCancelReason } from '../types';
 import { CANCEL_REASON_OPTIONS } from './tripCancel';
 
 type Props = {
@@ -20,7 +20,7 @@ const MAX_NOTE_LENGTH = 100;
  * 提交前展示不可恢复与申请 / 同行者影响。
  */
 export function TripCancelModal({ open, userId, trip, onClose, onCancelled }: Props) {
-  const [reason, setReason] = useState<TripCancelReason | undefined>(undefined);
+  const [reason, setReason] = useState<UserTripCancelReason | undefined>(undefined);
   const [note, setNote] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -96,7 +96,7 @@ export function TripCancelModal({ open, userId, trip, onClose, onCancelled }: Pr
           value={reason ?? ''}
           onChange={(event) => {
             setReason(
-              event.target.value === '' ? undefined : (event.target.value as TripCancelReason),
+              event.target.value === '' ? undefined : (event.target.value as UserTripCancelReason),
             );
             setError(null);
           }}

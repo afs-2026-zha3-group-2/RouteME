@@ -23,7 +23,8 @@
     PENDING: { label: '待处理', tone: 'amber' },
     ACCEPTED: { label: '已接受', tone: 'jade' },
     REJECTED: { label: '已拒绝', tone: 'danger' },
-    CANCELLED: { label: '已取消', tone: 'muted' }
+    CANCELLED: { label: '已取消', tone: 'muted' },
+    LEFT: { label: '已退出', tone: 'muted' }
   };
 
   var CANCEL_REASONS = [
@@ -34,7 +35,8 @@
     { value: 'weather', label: '天气或不可抗力原因' },
     { value: 'illness', label: '突发疾病或受伤' },
     { value: 'safety', label: '安全原因' },
-    { value: 'other', label: '其他原因' }
+    { value: 'other', label: '其他原因' },
+    { value: 'credit_restricted', label: '信用分低于 60，账号受限', systemOnly: true }
   ];
 
   var TERRAIN = {

@@ -136,7 +136,10 @@ test('leaves a matched trip from my trips', async ({ page }) => {
   const row = page.locator('.mine-row', { hasText: title });
   await expect(row.getByRole('button', { name: '退出同行' })).toBeVisible();
   await row.getByRole('button', { name: '退出同行' }).click();
-  await page.getByRole('dialog').getByRole('button', { name: '退出同行' }).click();
+  const leaveDialog = page.getByRole('dialog');
+  await leaveDialog.locator('[data-leave-reason]').selectOption('force_majeure');
+  await expect(leaveDialog.locator('[data-leave-preview]')).toContainText('暂不扣分，待核实');
+  await leaveDialog.getByRole('button', { name: '退出同行' }).click();
   await expect(page.locator('.mine-row', { hasText: title })).toHaveCount(0);
 });
 

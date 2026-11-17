@@ -36,6 +36,8 @@ export type UserCreditEntry = {
   user_id: number;
   credit_score: number;
   credit_level: CreditLevel;
+  /** 分数低于 60 时为 true；五个展示面据此显示「限制中」徽标。 */
+  credit_restricted: boolean;
 };
 
 /**
@@ -92,6 +94,10 @@ export type UserProfile = {
   /** 信用分，0–100；本人与他人视角均返回。 */
   credit_score: number;
   credit_level: CreditLevel;
+  /** 当前是否处于信用限制。 */
+  credit_restricted: boolean;
+  /** 限制原因；仅本人个人主页返回，他人响应省略。 */
+  credit_restriction_reason?: 'CREDIT_SCORE_BELOW_60' | null;
   joined_at?: string | null;
   stats?: ProfileStats;
   /** 账号状态：SUSPENDED 只回 status；BANNED 同时回理由与解封时间。 */
@@ -179,11 +185,53 @@ export type TripCancelReason =
   | 'weather'
   | 'illness'
   | 'safety'
-  | 'other';
+  | 'other'
+  | 'credit_restricted';
+
+/** 发布者可选的 8 项；credit_restricted 只由系统写入。 */
+export type UserTripCancelReason = Exclude<TripCancelReason, 'credit_restricted'>;
 
 export type TripCancelRequest = {
-  reason: TripCancelReason;
+  reason: UserTripCancelReason;
   note?: string | null;
+};
+
+/** 退出同行的原因。 */
+export type LeaveReason = 'personal' | 'force_majeure' | 'safety';
+
+export type LeaveStatus = 'not_required' | 'pending' | 'verified_true' | 'verified_false';
+
+export type LeaveMessageCode =
+  | 'penalty'
+  | 'penalty_doubled'
+  | 'no_penalty'
+  | 'during_trip'
+  | 'pending_review'
+  | 'at_floor';
+
+export type LeavePreview = {
+  reason: LeaveReason;
+  departure_at: string;
+  penalty_tier: 'ge7d' | 'd3to7d' | 'h24to72' | 'h12to24' | 'lt12h' | 'during';
+  theoretical_delta: number;
+  applied_delta: number;
+  monthly_ordinal: number;
+  monthly_doubled: boolean;
+  counted: boolean;
+  review_status: LeaveStatus;
+  resulting_score: number;
+  message_code: LeaveMessageCode;
+};
+
+export type LeaveResult = {
+  credit_score: number;
+  credit_level: CreditLevel;
+  credit_restricted: boolean;
+  theoretical_delta: number;
+  applied_delta: number;
+  monthly_ordinal: number;
+  review_status: LeaveStatus;
+  message_code: LeaveMessageCode;
 };
 
 export type TripCreateRequest = {

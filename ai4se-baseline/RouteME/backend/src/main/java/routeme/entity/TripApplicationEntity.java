@@ -26,6 +26,9 @@ public class TripApplicationEntity {
 
     private String status;
 
+    /** 状态原因：USER_CANCEL / USER_EXIT / PUBLISHER_REJECT / TRIP_CANCELLED / TRIP_COMPLETED / CREDIT_RESTRICTION。 */
+    private String statusReason;
+
     private String createdAt;
 
     private String decidedAt;
@@ -91,6 +94,14 @@ public class TripApplicationEntity {
 
     public void setStatus(String status) {
         this.status = status;
+    }
+
+    public String getStatusReason() {
+        return statusReason;
+    }
+
+    public void setStatusReason(String statusReason) {
+        this.statusReason = statusReason;
     }
 
     public String getCreatedAt() {

@@ -133,10 +133,13 @@ test('lists conversations, keeps history readable and still chats after leaving'
     .getByRole('button', { name: /^关\s*闭$/ })
     .click();
 
-  // 退出同行：聊天保留且仍可继续
+  // 退出同行：聊天保留且仍可继续（原因必选，弹窗先给预计信用影响）
   await page.goto(`/#/trips/${created.id}`);
   await page.getByRole('button', { name: '退出同行' }).click();
-  await page.getByRole('dialog').getByRole('button', { name: '退出同行' }).click();
+  const leaveDialog = page.getByRole('dialog');
+  await leaveDialog.locator('[data-leave-reason]').selectOption('force_majeure');
+  await expect(leaveDialog.locator('[data-leave-preview]')).toContainText('暂不扣分，待核实');
+  await leaveDialog.getByRole('button', { name: '退出同行' }).click();
   await expect(page.getByText('已加入 1/3人')).toBeVisible();
   await expect(page.getByRole('button', { name: '提交同行申请' })).toBeVisible();
 
