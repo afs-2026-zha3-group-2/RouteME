@@ -18,8 +18,8 @@
 | deep-dive | `requirement-workspace/deep-dive.md`「REQ-018 增补」 | ①–④ 全部有行、无 `{TBD}`；A0 Pass |
 | 影响面 | `requirement-workspace/impact-brief.md` §18 | 单 change；无 blocker；归档顺序约束已记录 |
 | 提案 | `openspec/changes/add-experience-photos/proposal.md` | Why / What Changes / 范围 / 影响面 / 决策 / 验收信号 / 残余风险 |
-| Delta 草稿 | `openspec/changes/add-experience-photos/specs/trip-experiences/spec.md` | ADDED 1 + MODIFIED 3；20 Scenario（基线保留 11 + 新增 9） |
-| 工具校验 | `openspec validate add-experience-photos --strict`；`show --deltas-only` | `valid`；`deltaCount: 4` |
+| Delta 草稿 | `openspec/changes/add-experience-photos/specs/trip-experiences/spec.md` | P1：ADDED 1 + MODIFIED 3，20 Scenario；P2 收敛为 ADDED 2 + MODIFIED 3，23 Scenario（基线保留 11 + 新增 12） |
+| 工具校验 | `openspec validate add-experience-photos --strict`；`show --deltas-only` | `valid`；P1 `deltaCount: 4`；P2 收敛后 `deltaCount: 5` |
 
 ## 3. 用户裁决（2026-11-17）
 

@@ -17,7 +17,7 @@ S16 的主干（资格校验、发布 / 修改、两处展示、纯文字 + 三�
 
 ## What Changes
 
-- `trip-experiences`（ADDED）：「游后体验图片的上传、保存与生命周期」——两步上传、0–6 张、≤5 MB、JPEG/PNG/WebP 魔数、归属校验、EXIF 全量剥离、编辑增删排序、>24h 未绑定懒清理。
+- `trip-experiences`（ADDED）：「游后体验图片的上传与校验」与「游后体验图片的元数据与清理」——两步上传、0–6 张、≤5 MB、JPEG/PNG/WebP 魔数、归属校验、EXIF 全量剥离、编辑增删排序、>24h 未绑定懒清理。
 - `trip-experiences`（MODIFIED）：「游后体验的内容口径与纯文字降级」把图片写为**可选增强**，纯文字仍然合法；「游后体验在原计划详情页展示」增加首图缩略图与查看全部；「灵感首页的旅行体验视图」明确体验卡继续使用内置色调封面、不加载体验图片（D3）。
 - 前端：`ShareExperiencePage` 增加图片上传位（预览 / 删除 / 排序 / 失败重试）；`TripDetailPage` 体验列表增加首图缩略图与查看全部浮层；`ExperienceCard` **不改**；`tripMessages` / `styles.css` / `types.ts` / `api.ts` 同步。
 - 后端：新增 multipart 上传端点、公开只读图片读取端点、图片归属校验与懒清理；`ExperienceWriteRequest` / `ExperienceResponse` 增加有序图片集合。
@@ -60,6 +60,7 @@ S16 的主干（资格校验、发布 / 修改、两处展示、纯文字 + 三�
 | `RouteME/frontend/src/{i18n/tripMessages.ts,styles.css,types.ts,api.ts}` | 文案、样式令牌、类型与 API 客户端 |
 | `RouteME/e2e/tests/experiences.spec.ts` | 反向断言改正向；新增上传 / 编辑 / 展示 / 权限 / 历史兼容 |
 | `docs/prototype/{prototype.html,ui.js,styles.css}` | 上传位、预览 / 排序、详情页图片展示（原型先行） |
+| `trip-plans` / `user-profile`（上游，只读） | **不变**：详情页只新增体验图片展示位，不改行程模型与发布校验；上传模式只参考头像，不改端点与字段 |
 | `openspec/specs/trip-experiences/spec.md` | 归档阶段合并本 change 的 Delta |
 | `requirement-workspace/{registry,handoff,stories,deep-dive,impact-brief}.md` | 已登记 REQ-018 / §18 / D1–D8 |
 
@@ -75,7 +76,7 @@ S16 的主干（资格校验、发布 / 修改、两处展示、纯文字 + 三�
 | EXIF | 上传时全部剥离（D6） | 隐私优先；避免 GPS 精确位置泄露 |
 | 孤儿清理 | 每次上传时懒清理 >24h 未绑定（D7） | 不引入定时任务与调度设施 |
 | 内容审核 | 不做自动审核，沿用举报入口（D8） | MVP 范围最小；记为残余风险 |
-| capability 粒度 | 单一 `trip-experiences`（ADDED 1 + MODIFIED 3） | 上传 / 展示 / 首页反向约束同属该能力 |
+| capability 粒度 | 单一 `trip-experiences`（ADDED 2 + MODIFIED 3） | 上传 / 校验、元数据 / 清理、展示与首页反向约束同属该能力；P2 将 ADDED 由 1 拆 2，不扩范围 |
 
 ## 验收信号
 
