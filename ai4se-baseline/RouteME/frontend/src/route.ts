@@ -8,6 +8,7 @@ export type Route =
   | { name: 'share'; tripId: number }
   | { name: 'profileSetup' }
   | { name: 'userProfile'; userId: number }
+  | { name: 'creditLearning' }
   | { name: 'map'; provinceCode?: string; cityCode?: string }
   | { name: 'help' }
   | { name: 'adminUsers' }
@@ -66,6 +67,10 @@ export function parseRoute(hash: string): Route {
   const adminServiceDetail = /^\/admin\/service\/(\d+)$/.exec(path);
   if (adminServiceDetail) {
     return { name: 'adminServiceDetail', sessionId: Number(adminServiceDetail[1]) };
+  }
+  // 安全学习独立页：入口只在发布行程被拦截时出现，但页面可直接深链。（REQ-023 / OQ-6）
+  if (path === '/credit/learning') {
+    return { name: 'creditLearning' };
   }
   const profile = /^\/users\/(\d+)$/.exec(path);
   if (profile) {
@@ -137,6 +142,9 @@ export function routeToHash(route: Route): string {
   }
   if (route.name === 'adminServiceDetail') {
     return `#/admin/service/${route.sessionId}`;
+  }
+  if (route.name === 'creditLearning') {
+    return '#/credit/learning';
   }
   if (route.name === 'userProfile') {
     return `#/users/${route.userId}`;

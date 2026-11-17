@@ -1,10 +1,10 @@
 openapi: 3.0.3
 info:
   title: RouteME API
-  version: 0.17.0
+  version: 0.18.0
   description: |
     RouteME 后端对外契约。本文件是前后端唯一事实源，字段名、类型、状态码与错误码只在这里定稿。
-        当前包含：脚手架问候语、演示账户与账号认证（注册/登录/会话/退出）、旅行计划（浏览/筛选/发布/详情/结束），同行匹配、申请、退出、聊天、我的旅行与举报，游后体验分享与参考发布所需数据，以及管理后台（用户管理 / 举报处置 / 人工客服）与用户侧帮助入口。
+        当前包含：脚手架问候语、演示账户与账号认证（注册/登录/会话/退出）、旅行计划（浏览/筛选/发布/详情/结束），同行匹配、申请、退出、聊天、我的旅行与举报，游后体验分享与参考发布所需数据，以及管理后台（用户管理 / 举报处置 / 人工客服）与用户侧帮助入口、目的地天气提醒、信用分账户与安全学习恢复信用分的考试会话与判分。
         行程与体验列表按页返回：`page` 从 1 起，`size` 默认 20、上限 50。
         目的地为用户在地图地点库中搜索或点选的城市/地点名称，不再限定固定枚举。
 servers:
@@ -634,6 +634,16 @@ paths:
                 missingUser:
                   value:
                     code: DEMO_USER_REQUIRED
+        '403':
+          description: 当前身份信用分低于 60，不允许发布行程
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                creditBelowSixty:
+                  value:
+                    code: CREDIT_SCORE_BELOW_60
         '500':
           description: 未预期异常，响应不携带堆栈
           content:
@@ -1761,27 +1771,6 @@ paths:
             format: int64
       responses:
         '200':
-          description: 体验图片
-          headers:
-            Cache-Control:
-              description: '`public, max-age=86400`'
-              schema:
-                type: string
-          content:
-            image/jpeg:
-              schema:
-                type: string
-                format: binary
-            image/png:
-              schema:
-                type: string
-                format: binary
-            image/webp:
-              schema:
-                type: string
-                format: binary
-        '404':
-          description: 图片不存在或已被移除
           description: 举报上下文与处置历史
           content:
             application/json:
@@ -2190,6 +2179,323 @@ paths:
                 upstream:
                   value:
                     code: WEATHER_UPSTREAM_ERROR
+  /credit/learning/sessions:
+    post:
+      operationId: startCreditLearningSession
+      summary: 开始一次安全学习考试
+      description: |
+        只对当前信用分低于 60 的本人开放，分值为 60 及以上返回 409 `LEARNING_NOT_ELIGIBLE`。
+        每次考试 10 题，覆盖旅行安全 / 陌生人同行 / 平台行为规范 / 隐私保护四类；题面不含答案，判分只在服务端。
+        开始即计次：每自然月（北京时间）最多 2 次，超限返回 429 `LEARNING_EXAM_QUOTA_EXCEEDED`。
+      parameters:
+        - $ref: '#/components/parameters/DemoUserId'
+      responses:
+        '201':
+          description: 已建立考试会话并下发 10 道题
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LearningSession'
+              examples:
+                lowScore:
+                  value:
+                    session_id: 12
+                    questions:
+                      - id: Q01
+                        category: travel_safety
+                        question: 夜间抵达陌生城市，第一件应该做的事是？
+                        options:
+                          - 先去网红点拍照，再慢慢找住处
+                          - 先把住处与同行信息告知一位熟人
+                          - 直接在路边随机找人问路
+                          - 让出租车司机推荐住处
+                      - id: Q06
+                        category: stranger_companion
+                        question: 首次与网友反向同行，出发前最该做的确认是？
+                        options:
+                          - 直接交换行程截图
+                          - 核实对方真实身份并告知朋友行程
+                          - 先到目的地再联系
+                          - 只通过对方提供的电话沟通
+                      - id: Q11
+                        category: platform_rules
+                        question: 同行集合迟到超过一小时且未告知，按平台规范应？
+                        options:
+                          - 不必理会
+                          - 主动告知同行者与发布者
+                          - 重新发布一条新行程
+                          - 取消行程不告知
+                      - id: Q16
+                        category: privacy
+                        question: 在群聊里分享住宿凭证时，应该怎么做？
+                        options:
+                          - 直接发送完整凭证原图
+                          - 遮挡证件号与二维码后发送
+                          - 把凭证发到公开社交平台
+                          - 用凭证截图做头像
+                      - id: Q03
+                        category: travel_safety
+                        question: 山区徒步遇到突降大雨，优先选择是？
+                        options:
+                          - 继续沿原路线前进
+                          - 就近下撤到安全地带并告知同行者
+                          - 在树下避雨等雨停
+                          - 打开手机直播求助
+                      - id: Q08
+                        category: stranger_companion
+                        question: 同行者要求临时改变已约定的集合点时，应该？
+                        options:
+                          - 立刻单独前往新集合点
+                          - 重新协商并在公开群聊里确认
+                          - 自行取消且不告知
+                          - 把定位只发给对方
+                      - id: Q13
+                        category: platform_rules
+                        question: 发现同行帖包含虚假信息时，应该？
+                        options:
+                          - 私下转发提醒朋友
+                          - 使用平台举报入口并保留凭据
+                          - 在评论区公开对方隐私
+                          - 忽视即可
+                      - id: Q18
+                        category: privacy
+                        question: 向同行者发送个人身份证照前，应当？
+                        options:
+                          - 直接发送未处理的原图
+                          - 确认必要性并对号码与住址打码
+                          - 发到群里让更多人看到
+                          - 用他人证件代替
+                      - id: Q04
+                        category: travel_safety
+                        question: 海边游玩看到离岸流提示旗，应该？
+                        options:
+                          - 只要会游泳就可以下水
+                          - 不下水并劝阻同行者
+                          - 走到浪花最深处拍视频
+                          - 单独沿岸边远端下水
+                      - id: Q19
+                        category: privacy
+                        question: 行程页展示住宿地址时，可以公开到什么粒度？
+                        options:
+                          - 公开门牌号与房间号
+                          - 公开到街区或集合区域即可
+                          - 公开房东联系方式
+                          - 公开入住凭证截图
+                    exam_used: 1
+                    exam_limit: 2
+                    month: '2026-11'
+                    learning_completed: false
+        '401':
+          $ref: '#/components/responses/DemoUserRequired'
+        '404':
+          description: 用户不存在
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                userNotFound:
+                  value:
+                    code: USER_NOT_FOUND
+        '409':
+          description: 当前信用分不满足恢复条件
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                notEligible:
+                  value:
+                    code: LEARNING_NOT_ELIGIBLE
+        '429':
+          description: 本月考试次数已用尽
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                quotaExceeded:
+                  value:
+                    code: LEARNING_EXAM_QUOTA_EXCEEDED
+        '500':
+          $ref: '#/components/responses/Unexpected'
+  /credit/learning/sessions/{sessionId}/lessons/complete:
+    post:
+      operationId: completeCreditLearningLessons
+      summary: 标记本次学习内容已完成
+      description: |
+        幂等写：已写入的完成时间不覆盖。未完成学习时提交作答返回 409 `LEARNING_NOT_COMPLETED`。
+        只能操作本人会话，他人或不存在返回 404 `LEARNING_SESSION_NOT_FOUND`。
+      parameters:
+        - $ref: '#/components/parameters/DemoUserId'
+        - name: sessionId
+          in: path
+          required: true
+          description: 考试会话标识
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: 会话当前状态（`learning_completed` 为 true）
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LearningSession'
+        '401':
+          $ref: '#/components/responses/DemoUserRequired'
+        '404':
+          description: 会话不存在或非本人
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                sessionNotFound:
+                  value:
+                    code: LEARNING_SESSION_NOT_FOUND
+        '500':
+          $ref: '#/components/responses/Unexpected'
+  /credit/learning/sessions/{sessionId}/submission:
+    post:
+      operationId: submitCreditLearningAnswers
+      summary: 提交作答并返回判分与恢复结果
+      description: |
+        需先完成学习内容；答对 8 题及以上为通过，通过且本自然月未恢复过时把信用分补到 60（`delta = 60 - before`）。
+        未通过不改分、不占当月恢复次数；已提交的会话重复提交直接返回既有结果。
+      parameters:
+        - $ref: '#/components/parameters/DemoUserId'
+        - name: sessionId
+          in: path
+          required: true
+          description: 考试会话标识
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [answers]
+              properties:
+                answers:
+                  type: array
+                  description: 按题面顺序作答，长度 10，每项 0-3 为选项下标
+                  minItems: 10
+                  maxItems: 10
+                  items:
+                    type: integer
+                    minimum: 0
+                    maximum: 3
+            examples:
+              recovered:
+                value:
+                  answers: [1, 1, 1, 1, 1, 1, 1, 1, 0, 0]
+              invalid:
+                value:
+                  answers: [8, 1]
+      responses:
+        '200':
+          description: 判分结果；通过且恢复成功时 `recovery_applied` 为 true
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LearningResult'
+              examples:
+                recovered:
+                  value:
+                    session_id: 12
+                    passed: true
+                    score: 8
+                    pass_line: 8
+                    details:
+                      - question_id: Q01
+                        correct: true
+                      - question_id: Q06
+                        correct: true
+                      - question_id: Q11
+                        correct: true
+                      - question_id: Q16
+                        correct: true
+                      - question_id: Q03
+                        correct: true
+                      - question_id: Q08
+                        correct: true
+                      - question_id: Q13
+                        correct: true
+                      - question_id: Q18
+                        correct: true
+                      - question_id: Q04
+                        correct: false
+                      - question_id: Q19
+                        correct: false
+                    recovery_applied: true
+                    credit_score: 60
+                    credit_level: fair
+                failed:
+                  value:
+                    session_id: 13
+                    passed: false
+                    score: 7
+                    pass_line: 8
+                    details:
+                      - question_id: Q02
+                        correct: true
+                      - question_id: Q07
+                        correct: false
+                      - question_id: Q12
+                        correct: true
+                      - question_id: Q17
+                        correct: true
+                      - question_id: Q05
+                        correct: true
+                      - question_id: Q09
+                        correct: false
+                      - question_id: Q14
+                        correct: true
+                      - question_id: Q20
+                        correct: true
+                      - question_id: Q04
+                        correct: false
+                      - question_id: Q19
+                        correct: false
+                    recovery_applied: false
+                    credit_score: 45
+                    credit_level: low
+        '400':
+          $ref: '#/components/responses/InvalidInput'
+        '401':
+          $ref: '#/components/responses/DemoUserRequired'
+        '404':
+          description: 会话不存在或非本人
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                sessionNotFound:
+                  value:
+                    code: LEARNING_SESSION_NOT_FOUND
+        '409':
+          description: 未完成学习 / 本月已恢复 / 分数已不满足恢复条件
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                notCompleted:
+                  value:
+                    code: LEARNING_NOT_COMPLETED
+                alreadyRecovered:
+                  value:
+                    code: LEARNING_RECOVERY_QUOTA_EXCEEDED
+                notEligible:
+                  value:
+                    code: LEARNING_NOT_ELIGIBLE
+        '500':
+          $ref: '#/components/responses/Unexpected'
 components:
   parameters:
     DemoUserId:
@@ -3983,6 +4289,127 @@ components:
         text:
           type: string
           description: 面向用户的完整文案，内含真实天气数值
+    LearningQuestion:
+      type: object
+      required: [id, category, question, options]
+      properties:
+        id:
+          type: string
+          readOnly: true
+          description: 题目编号，来自服务端预置题库
+        category:
+          type: string
+          readOnly: true
+          description: 题目分类，四类各至少一题
+          enum: [travel_safety, stranger_companion, platform_rules, privacy]
+        question:
+          type: string
+          readOnly: true
+          description: 题面；不含答案或判分依据
+        options:
+          type: array
+          readOnly: true
+          description: 4 个选项，顺序即作答下标
+          minItems: 4
+          maxItems: 4
+          items:
+            type: string
+    LearningSession:
+      type: object
+      required: [session_id, questions, exam_used, exam_limit, month, learning_completed]
+      properties:
+        session_id:
+          type: integer
+          format: int64
+          readOnly: true
+          description: 考试会话标识
+        questions:
+          type: array
+          readOnly: true
+          description: 本次抽中的 10 道题，顺序即作答下标
+          minItems: 10
+          maxItems: 10
+          items:
+            $ref: '#/components/schemas/LearningQuestion'
+        exam_used:
+          type: integer
+          readOnly: true
+          description: 本月已用考试次数（含本次）
+          minimum: 1
+          maximum: 2
+        exam_limit:
+          type: integer
+          readOnly: true
+          description: 每自然月考试次数上限
+          enum: [2]
+        month:
+          type: string
+          readOnly: true
+          description: 北京时间自然月 `YYYY-MM`，与恢复幂等键同源
+          pattern: '^[0-9]{4}-[0-9]{2}$'
+        learning_completed:
+          type: boolean
+          readOnly: true
+          description: 本次学习内容是否已完成；未完成时提交作答返回 409
+    LearningAnswerDetail:
+      type: object
+      required: [question_id, correct]
+      properties:
+        question_id:
+          type: string
+          readOnly: true
+          description: 题目编号，对应下发的 `questions[i].id`
+        correct:
+          type: boolean
+          readOnly: true
+          description: 该题是否答对；正确答案不下发
+    LearningResult:
+      type: object
+      required: [session_id, passed, score, pass_line, details, recovery_applied, credit_score, credit_level]
+      properties:
+        session_id:
+          type: integer
+          format: int64
+          readOnly: true
+          description: 考试会话标识
+        passed:
+          type: boolean
+          readOnly: true
+          description: 是否通过（答对题数不小于 `pass_line`）
+        score:
+          type: integer
+          readOnly: true
+          description: 本次答对题数
+          minimum: 0
+          maximum: 10
+        pass_line:
+          type: integer
+          readOnly: true
+          description: 通过线
+          enum: [8]
+        details:
+          type: array
+          readOnly: true
+          description: 逐题对错，顺序与提交的作答一致
+          minItems: 10
+          maxItems: 10
+          items:
+            $ref: '#/components/schemas/LearningAnswerDetail'
+        recovery_applied:
+          type: boolean
+          readOnly: true
+          description: 本次请求是否把分数改到 60；并发下可能为 false，前端不重复播报
+        credit_score:
+          type: integer
+          readOnly: true
+          description: 判分后的当前信用分
+          minimum: 0
+          maximum: 100
+        credit_level:
+          type: string
+          readOnly: true
+          description: 判分后的当前等级（与 `UserProfile.credit_level` 同口径）
+          enum: [excellent, good, fair, low, risk]
     Error:
       type: object
       required: [code]
@@ -3996,7 +4423,9 @@ components:
              EXPERIENCE_NOT_ALLOWED, USERNAME_TAKEN, INVALID_CREDENTIALS, SESSION_INVALID, WEATHER_UPSTREAM_ERROR,
              INTERNAL_ERROR, ADMIN_REQUIRED, ACCOUNT_SUSPENDED, ACCOUNT_BANNED, INVALID_STATUS_TRANSITION,
              CANNOT_TARGET_SELF, REPORT_NOT_FOUND, REPORT_NOT_PENDING, REPORT_NOT_PROCESSING, EMAIL_TAKEN,
-             SESSION_ALREADY_HANDLING, SESSION_NOT_HANDLING, SESSION_CLOSED]
+             SESSION_ALREADY_HANDLING, SESSION_NOT_HANDLING, SESSION_CLOSED,
+             CREDIT_SCORE_BELOW_60, LEARNING_NOT_ELIGIBLE, LEARNING_EXAM_QUOTA_EXCEEDED,
+             LEARNING_RECOVERY_QUOTA_EXCEEDED, LEARNING_NOT_COMPLETED, LEARNING_SESSION_NOT_FOUND]
         fields:
           type: object
           description: |

@@ -15,6 +15,8 @@ import type {
   ExperiencePhoto,
   ExperienceWriteRequest,
   HelpReports,
+  LearningResult,
+  LearningSession,
   MatchCandidate,
   MyTrips,
   Page,
@@ -623,4 +625,41 @@ export async function fetchWeatherForecast(
   }
   const response = await request(`/weather/forecast?${params.toString()}`);
   return (await response.json()) as WeatherForecast;
+}
+
+/** 开始一次安全学习考试；分数 ≥ 60 或本月次数已用尽时抛 {@link ApiError}。 */
+export async function startLearningSession(userId: number): Promise<LearningSession> {
+  const response = await request('/credit/learning/sessions', { method: 'POST' }, userId);
+  return (await response.json()) as LearningSession;
+}
+
+/** 标记学习内容已完成；未完成时提交作答会被拒（409）。 */
+export async function completeLearningLessons(
+  userId: number,
+  sessionId: number,
+): Promise<LearningSession> {
+  const response = await request(
+    `/credit/learning/sessions/${sessionId}/lessons/complete`,
+    { method: 'POST' },
+    userId,
+  );
+  return (await response.json()) as LearningSession;
+}
+
+/** 提交作答并取判分结果；正确答案只在服务端，前端只能拿到逐题对错。 */
+export async function submitLearningAnswers(
+  userId: number,
+  sessionId: number,
+  answers: number[],
+): Promise<LearningResult> {
+  const response = await request(
+    `/credit/learning/sessions/${sessionId}/submission`,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ answers }),
+    },
+    userId,
+  );
+  return (await response.json()) as LearningResult;
 }

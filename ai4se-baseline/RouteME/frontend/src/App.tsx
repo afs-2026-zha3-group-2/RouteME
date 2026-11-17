@@ -10,6 +10,7 @@ import { AdminUserDetailPage } from './admin/users/AdminUserDetailPage';
 import { AdminUsersPage } from './admin/users/AdminUsersPage';
 import { loadSessionUser, loadUsers, logoutAccount } from './api';
 import { ChatPage } from './chat/ChatPage';
+import { LearningPage } from './credit/LearningPage';
 import { ShareExperiencePage } from './experiences/ShareExperiencePage';
 import { HelpPage } from './help/HelpPage';
 import { HomePage } from './home/HomePage';
@@ -198,6 +199,7 @@ export function App() {
           {route.name === 'mine' && (
             <MyTripsPage currentUser={currentUser} />
           )}
+          {route.name === 'creditLearning' && <LearningPage currentUser={currentUser} />}
           {route.name === 'map' && (
             <MapExplorerPage provinceCode={route.provinceCode} cityCode={route.cityCode} />
           )}

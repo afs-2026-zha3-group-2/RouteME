@@ -1,0 +1,680 @@
+/* ============================================================
+   安全学习页（#/credit/learning）
+   令牌与原型一致：--lagoon / --coral / --grad-shore / --sh-2 / --r-lg；
+   只补布局与状态样式，深浅色统一由令牌翻转，不写死浅色底。
+   ============================================================ */
+.cl-page {
+  width: 100%;
+  max-width: 1120px;
+  margin: 0 auto;
+  display: grid;
+  gap: 18px;
+}
+
+/* ---------- 页头 ---------- */
+.cl-head {
+  display: flex;
+  align-items: flex-end;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.cl-head h1 {
+  margin: 0;
+  font-size: clamp(1.5rem, 3vw, 2.05rem);
+  font-weight: 800;
+  letter-spacing: -0.032em;
+  line-height: 1.14;
+  color: var(--ink);
+}
+
+.cl-head p {
+  margin: 6px 0 0;
+  font-size: 13.5px;
+  line-height: 1.7;
+  color: var(--ink-3);
+  max-width: 62ch;
+}
+
+.cl-quota {
+  margin-left: auto;
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.cl-quota span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 12px;
+  border-radius: 999px;
+  font-size: 12.5px;
+  font-weight: 650;
+  color: var(--ink-2);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  box-shadow: var(--sh-1);
+}
+
+.cl-quota b {
+  font-family: var(--font-num);
+  font-weight: 800;
+  color: var(--ink);
+}
+
+.cl-quota span.is-spent b {
+  color: var(--t-warn);
+}
+
+.cl-alert {
+  border-radius: var(--r);
+}
+
+/* ---------- 两栏 ---------- */
+.cl-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 312px;
+  gap: 18px;
+  align-items: start;
+}
+
+.cl-card {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+  box-shadow: var(--sh-1);
+}
+
+.cl-main {
+  padding: 22px;
+  display: grid;
+  gap: 18px;
+  animation: clRise 0.42s var(--ease-out) both;
+}
+
+@keyframes clRise {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cl-main {
+    animation: none;
+  }
+}
+
+/* ---------- 状态标题 ---------- */
+.cl-kicker {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 10.5px;
+  font-weight: 800;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--t-lagoon);
+}
+
+.cl-kicker::before {
+  content: '';
+  width: 22px;
+  height: 2px;
+  border-radius: 2px;
+  background: var(--grad-sunset);
+}
+
+.cl-title {
+  margin: 8px 0 0;
+  font-size: 1.28rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  line-height: 1.28;
+  color: var(--ink);
+}
+
+.cl-lede {
+  margin: 8px 0 0;
+  font-size: 13.5px;
+  line-height: 1.72;
+  color: var(--ink-2);
+  max-width: 62ch;
+}
+
+/* ---------- 学习要点 ---------- */
+.cl-points {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.cl-point {
+  padding: 13px 14px;
+  border-radius: var(--r);
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  transition: border-color 0.18s var(--ease), box-shadow 0.18s var(--ease);
+}
+
+.cl-point:hover {
+  border-color: var(--line-2);
+  box-shadow: var(--sh-1);
+}
+
+.cl-point h3 {
+  margin: 0;
+  font-size: 12.5px;
+  font-weight: 750;
+  color: var(--ink);
+  display: flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.cl-point h3 i {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--surf);
+  flex: none;
+}
+
+.cl-point p {
+  margin: 5px 0 0;
+  font-size: 12.5px;
+  line-height: 1.66;
+  color: var(--ink-3);
+}
+
+/* ---------- 答题进度 ---------- */
+.cl-steps {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.cl-bar {
+  flex: 1 1 220px;
+  display: flex;
+  gap: 3px;
+  min-width: 160px;
+}
+
+.cl-bar i {
+  flex: 1;
+  height: 7px;
+  border-radius: 99px;
+  background: var(--surface-3);
+  transition: background 0.2s var(--ease);
+}
+
+.cl-bar i.is-done {
+  background: var(--lagoon);
+}
+
+.cl-bar i.is-now {
+  background: var(--coral);
+}
+
+.cl-step-num {
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--ink-2);
+  white-space: nowrap;
+}
+
+.cl-step-num b {
+  font-family: var(--font-num);
+  font-size: 15px;
+  color: var(--ink);
+}
+
+/* ---------- 题卡 ---------- */
+.cl-q {
+  margin: 0;
+  font-size: 15.5px;
+  font-weight: 700;
+  line-height: 1.55;
+  letter-spacing: -0.01em;
+  color: var(--ink);
+}
+
+.cl-q-cat {
+  display: inline-block;
+  margin-bottom: 8px;
+  padding: 3px 9px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 750;
+  letter-spacing: 0.06em;
+  color: var(--t-surf);
+  background: rgba(47, 159, 224, 0.12);
+}
+
+.cl-opts {
+  display: grid;
+  gap: 9px;
+}
+
+.cl-opt {
+  display: flex;
+  align-items: flex-start;
+  gap: 11px;
+  width: 100%;
+  padding: 13px 14px;
+  border-radius: var(--r);
+  border: 1.5px solid var(--line);
+  background: var(--surface);
+  color: var(--ink);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 0.18s var(--ease), background 0.18s, transform 0.18s var(--ease),
+    box-shadow 0.18s;
+}
+
+.cl-opt:hover {
+  border-color: var(--line-2);
+  background: var(--surface-2);
+  transform: translateY(-1px);
+}
+
+.cl-opt:focus-visible {
+  outline: none;
+  box-shadow: var(--ring);
+  border-color: var(--lagoon);
+}
+
+.cl-opt-dot {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 2px solid var(--line-2);
+  flex: none;
+  margin-top: 1px;
+  display: grid;
+  place-items: center;
+  transition: border-color 0.18s, background 0.18s;
+}
+
+.cl-opt-dot::after {
+  content: '';
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--surface);
+  transform: scale(0);
+  transition: transform 0.16s var(--ease-out);
+}
+
+.cl-opt-text {
+  font-size: 13.5px;
+  line-height: 1.6;
+}
+
+.cl-opt.is-checked {
+  border-color: var(--lagoon);
+  background: var(--lagoon-soft);
+}
+
+.cl-opt.is-checked .cl-opt-dot {
+  border-color: var(--lagoon);
+  background: var(--lagoon);
+}
+
+.cl-opt.is-checked .cl-opt-dot::after {
+  transform: scale(1);
+}
+
+/* ---------- 操作区 ---------- */
+.cl-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  padding-top: 14px;
+  border-top: 1px solid var(--line);
+}
+
+.cl-hint {
+  margin-right: auto;
+  font-size: 12px;
+  line-height: 1.6;
+  color: var(--ink-3);
+}
+
+/* ---------- 结果 ---------- */
+.cl-result {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 16px;
+  border-radius: var(--r);
+  border: 1px solid var(--line);
+  background: var(--surface-2);
+}
+
+.cl-result h2 {
+  margin: 0;
+  font-size: 1rem;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  color: var(--ink);
+}
+
+.cl-result p {
+  margin: 3px 0 0;
+  font-size: 12.8px;
+  line-height: 1.66;
+  color: var(--ink-2);
+}
+
+.cl-result-badge {
+  width: 52px;
+  height: 52px;
+  border-radius: 16px;
+  display: grid;
+  place-items: center;
+  flex: none;
+  font-family: var(--font-num);
+  font-size: 15px;
+  font-weight: 800;
+  color: var(--on-deep);
+}
+
+.cl-result.is-pass .cl-result-badge {
+  background: var(--grad-shore);
+}
+
+.cl-result.is-fail .cl-result-badge {
+  background: linear-gradient(140deg, var(--coral), var(--coral-deep));
+}
+
+.cl-details {
+  padding: 12px 0 0;
+  border: 0;
+  background: none;
+  box-shadow: none;
+}
+
+.cl-rule.is-right b {
+  color: var(--t-jade);
+}
+
+.cl-rule.is-wrong b {
+  color: var(--t-danger);
+}
+
+/* ---------- 恢复完成 ---------- */
+.cl-done {
+  display: grid;
+  gap: 12px;
+  padding: 18px;
+  border-radius: var(--r-lg);
+  border: 1px solid var(--line);
+  background: linear-gradient(150deg, var(--surface-2), var(--surface));
+}
+
+.cl-done-score {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+}
+
+.cl-done-score b {
+  font-family: var(--font-num);
+  font-size: 2.35rem;
+  font-weight: 800;
+  letter-spacing: -0.04em;
+  line-height: 1;
+  color: var(--t-jade);
+}
+
+.cl-done-score span {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink-3);
+}
+
+.cl-done-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--t-jade);
+  background: rgba(20, 154, 99, 0.12);
+}
+
+.cl-done p {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.7;
+  color: var(--ink-2);
+}
+
+/* ---------- 侧栏 ---------- */
+.cl-side {
+  display: grid;
+  gap: 14px;
+}
+
+.cl-credit {
+  padding: 18px;
+  display: grid;
+  gap: 10px;
+}
+
+.cl-credit-top {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.cl-credit-top h2 {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.11em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+
+.cl-credit-num {
+  margin: 0 0 0 auto;
+  font-family: var(--font-num);
+  font-size: 1.55rem;
+  font-weight: 800;
+  letter-spacing: -0.03em;
+  line-height: 1;
+  color: var(--ink);
+}
+
+.cl-credit-num small {
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0;
+  color: var(--ink-3);
+}
+
+.cl-credit-level {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--ink-2);
+}
+
+.cl-credit-track {
+  position: relative;
+  height: 8px;
+  border-radius: 99px;
+  background: var(--surface-3);
+  overflow: hidden;
+}
+
+.cl-credit-track i {
+  position: absolute;
+  inset: 0 auto 0 0;
+  border-radius: 99px;
+  background: linear-gradient(90deg, var(--coral), var(--amber));
+  transition: width 0.5s var(--ease-out);
+}
+
+.cl-credit-track u {
+  position: absolute;
+  top: -3px;
+  bottom: -3px;
+  left: 60%;
+  width: 2px;
+  background: var(--ink-3);
+  opacity: 0.7;
+}
+
+.cl-credit-scale {
+  display: flex;
+  justify-content: space-between;
+  font-family: var(--font-num);
+  font-size: 11px;
+  color: var(--ink-3);
+}
+
+.cl-credit.is-fair .cl-credit-num,
+.cl-credit.is-fair .cl-credit-level {
+  color: var(--t-warn);
+}
+
+.cl-credit.is-fair .cl-credit-track i {
+  background: linear-gradient(90deg, var(--amber), var(--surf));
+}
+
+.cl-credit.is-good .cl-credit-num,
+.cl-credit.is-good .cl-credit-level,
+.cl-credit.is-excellent .cl-credit-num,
+.cl-credit.is-excellent .cl-credit-level {
+  color: var(--t-jade);
+}
+
+.cl-credit.is-good .cl-credit-track i,
+.cl-credit.is-excellent .cl-credit-track i {
+  background: linear-gradient(90deg, var(--surf), var(--jade));
+}
+
+.cl-credit.is-low .cl-credit-num,
+.cl-credit.is-low .cl-credit-level,
+.cl-credit.is-risk .cl-credit-num,
+.cl-credit.is-risk .cl-credit-level {
+  color: var(--t-danger);
+}
+
+.cl-credit.is-low .cl-credit-track i,
+.cl-credit.is-risk .cl-credit-track i {
+  background: linear-gradient(90deg, var(--coral-deep), var(--coral));
+}
+
+.cl-rules {
+  padding: 18px;
+  display: grid;
+  gap: 11px;
+}
+
+.cl-rules h2 {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.11em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+
+.cl-rule {
+  display: grid;
+  grid-template-columns: 22px minmax(0, 1fr);
+  gap: 9px;
+  align-items: start;
+}
+
+.cl-rule b {
+  font-family: var(--font-num);
+  font-size: 12px;
+  font-weight: 800;
+  color: var(--t-lagoon);
+}
+
+.cl-rule p {
+  margin: 0;
+  font-size: 12.5px;
+  line-height: 1.64;
+  color: var(--ink-2);
+}
+
+.cl-note {
+  margin: 0;
+  padding: 11px 12px;
+  border-radius: var(--r-sm);
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  font-size: 11.8px;
+  line-height: 1.62;
+  color: var(--ink-3);
+}
+
+.cl-loading {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 26px 4px;
+  font-size: 13px;
+  color: var(--ink-2);
+}
+
+/* ---------- 回退：单栏 ---------- */
+@media (max-width: 940px) {
+  .cl-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .cl-quota {
+    margin-left: 0;
+  }
+
+  .cl-main {
+    padding: 18px;
+  }
+}
+
+@media (max-width: 620px) {
+  .cl-points {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .cl-actions > .ant-btn {
+    flex: 1 1 auto;
+    min-height: 40px;
+  }
+
+  .cl-hint {
+    flex-basis: 100%;
+  }
+}
+
+/* 深色下提亮半透明语义底，避免在深面上发灰 */
+[data-theme='dark'] .cl-done-tag {
+  background: rgba(53, 201, 138, 0.16);
+}
+
+[data-theme='dark'] .cl-q-cat {
+  background: rgba(86, 184, 240, 0.16);
+}
+
+[data-theme='dark'] .cl-opt.is-checked {
+  background: rgba(47, 201, 168, 0.14);
+}

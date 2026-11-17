@@ -111,7 +111,7 @@ class OpenApiTest {
 
         // Then
         assertAll(
-                () -> assertEquals("0.17.0", info.get("version"), "info.version"),
+                () -> assertEquals("0.18.0", info.get("version"), "info.version"),
                 () -> assertTrue(paths(document).containsKey("/users"), "/users declared"),
                 () -> assertTrue(paths(document).containsKey("/trips/{tripId}"), "detail path declared"),
                 () -> assertTrue(
@@ -566,7 +566,7 @@ class OpenApiTest {
 
         // Then
         assertAll(
-                () -> assertEquals("0.17.0", info.get("version"), "info.version"),
+                () -> assertEquals("0.18.0", info.get("version"), "info.version"),
                 () -> assertTrue(paths(document).keySet().containsAll(ADMIN_CONSOLE_PATHS), "admin console paths"),
                 () -> assertEquals(16L, adminOperations, "admin console operations"),
                 () -> assertTrue(
@@ -650,6 +650,85 @@ class OpenApiTest {
                                 "EMAIL_TAKEN", "SESSION_ALREADY_HANDLING", "SESSION_NOT_HANDLING",
                                 "SESSION_CLOSED")),
                         "admin console error codes")
+        );
+    }
+
+    @Test
+    void in_openApiFile_out_creditRecoveryContractDeclared() throws IOException {
+        // Given
+        Map<String, Object> document = loadYaml(SPEC_PATH);
+
+        // When
+        Map<String, Object> startSession = operation(document, "/credit/learning/sessions", "post");
+        Map<String, Object> completeLessons =
+                operation(document, "/credit/learning/sessions/{sessionId}/lessons/complete", "post");
+        Map<String, Object> submitAnswers =
+                operation(document, "/credit/learning/sessions/{sessionId}/submission", "post");
+        Map<String, Object> postTrips = operation(document, "/trips", "post");
+        Map<String, Object> question = schema(document, "LearningQuestion");
+        Map<String, Object> session = schema(document, "LearningSession");
+        Map<String, Object> result = schema(document, "LearningResult");
+        Map<String, Object> answerDetail = schema(document, "LearningAnswerDetail");
+        Map<String, Object> errorSchema = schema(document, "Error");
+
+        // Then
+        assertAll(
+                () -> assertEquals("0.18.0", asMap(document.get("info")).get("version"), "info.version"),
+                () -> assertTrue(responses(startSession).containsKey("201"), "session start returns 201"),
+                () -> assertTrue(
+                        responses(startSession).keySet().containsAll(List.of("401", "404", "409", "429")),
+                        "session start error statuses"),
+                () -> assertTrue(responses(completeLessons).containsKey("200"), "lessons complete returns 200"),
+                () -> assertTrue(
+                        responses(completeLessons).keySet().containsAll(List.of("401", "404")),
+                        "lessons complete error statuses"),
+                () -> assertTrue(responses(submitAnswers).containsKey("200"), "submission returns 200"),
+                () -> assertTrue(
+                        responses(submitAnswers).keySet().containsAll(List.of("400", "401", "404", "409")),
+                        "submission error statuses"),
+                () -> assertTrue(
+                        parameterNames(document, startSession).contains("X-User-Id"),
+                        "session start identity header"),
+                () -> assertTrue(
+                        parameterNames(document, completeLessons).containsAll(List.of("X-User-Id", "sessionId")),
+                        "lessons complete parameters"),
+                () -> assertTrue(
+                        parameterNames(document, submitAnswers).containsAll(List.of("X-User-Id", "sessionId")),
+                        "submission parameters"),
+                () -> assertTrue(responses(postTrips).containsKey("403"), "trip create returns 403"),
+                () -> assertTrue(
+                        required(question).containsAll(List.of("id", "category", "question", "options")),
+                        "learning question fields"),
+                () -> assertEquals(4, asMap(properties(question).get("options")).get("minItems"), "options size"),
+                () -> assertFalse(
+                        properties(question).keySet().stream()
+                                .anyMatch(name -> name.contains("answer") || name.contains("correct")),
+                        "question leaks no answer"),
+                () -> assertTrue(
+                        required(session).containsAll(List.of(
+                                "session_id", "questions", "exam_used", "exam_limit", "month", "learning_completed")),
+                        "learning session fields"),
+                () -> assertTrue(
+                        required(result).containsAll(List.of(
+                                "session_id", "passed", "score", "pass_line", "details",
+                                "recovery_applied", "credit_score", "credit_level")),
+                        "learning result fields"),
+                () -> assertTrue(
+                        required(answerDetail).containsAll(List.of("question_id", "correct")),
+                        "answer detail fields"),
+                () -> assertFalse(
+                        properties(answerDetail).keySet().stream()
+                                .anyMatch(name -> name.contains("answer") || name.contains("correct_answer")),
+                        "answer detail leaks no correct answer"),
+                () -> assertTrue(
+                        enums(properties(errorSchema).get("code")).containsAll(List.of(
+                                "CREDIT_SCORE_BELOW_60",
+                                "LEARNING_NOT_ELIGIBLE",
+                                "LEARNING_EXAM_QUOTA_EXCEEDED",
+                                "LEARNING_RECOVERY_QUOTA_EXCEEDED",
+                                "LEARNING_NOT_COMPLETED",
+                                "LEARNING_SESSION_NOT_FOUND")),
+                        "credit recovery error codes")
         );
     }
 

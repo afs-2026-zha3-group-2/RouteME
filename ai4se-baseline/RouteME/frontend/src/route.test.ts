@@ -34,6 +34,12 @@ describe('parseRoute', () => {
       expect(parseRoute('#/users/abc')).toEqual({ name: 'notFound' });
     });
 
+    it('maps the credit learning path and keeps it out of the fallback', () => {
+      expect(parseRoute('#/credit/learning')).toEqual({ name: 'creditLearning' });
+      expect(parseRoute('#/credit')).toEqual({ name: 'notFound' });
+      expect(parseRoute('#/credit/learning/extra')).toEqual({ name: 'notFound' });
+    });
+
     it('falls back to notFound for unknown paths', () => {
       expect(parseRoute('#/trips/abc')).toEqual({ name: 'notFound' });
       expect(parseRoute('#/settings')).toEqual({ name: 'notFound' });
@@ -78,6 +84,7 @@ describe('parseRoute', () => {
         { name: 'adminReportDetail' as const, reportId: 7 },
         { name: 'adminService' as const },
         { name: 'adminServiceDetail' as const, sessionId: 7 },
+        { name: 'creditLearning' as const },
       ];
       expect(routes.map((route) => parseRoute(routeToHash(route)))).toEqual(routes);
     });
