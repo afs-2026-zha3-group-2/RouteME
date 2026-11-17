@@ -44,9 +44,12 @@ async function setMeetingTime(scope: Page | Locator, value: string) {
 
 /** 前序用例会创建行程，切到每页 45 条避免 seed 卡片被挤到第二页。 */
 async function expandPageSize(page: Page) {
-  const select = page.getByLabel('每页条数');
+  const select = page.locator('.pager-size .ant-select');
   if ((await select.count()) > 0) {
-    await select.selectOption('45');
+    await select.click();
+    await page.locator('.ant-select-item-option', { hasText: '45 条' }).click();
+    // 切到 45 条后列表常常只剩一页，分页条自身会卸载；等浮层收起即可。
+    await expect(page.locator('.ant-select-dropdown:visible')).toHaveCount(0);
   }
 }
 
