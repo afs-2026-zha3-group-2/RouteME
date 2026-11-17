@@ -26,12 +26,8 @@ export const amapConfig: AmapConfig = {
   proxyPath: normalizeProxyPath(readEnv('VITE_AMAP_PROXY_PATH')),
 };
 
-/** 高德 JS API 的 serviceHost：同源代理，Web 服务 Key 由后端补上。 */
+/** 高德 JS API 的 serviceHost：同源代理，安全密钥由后端补上。 */
 export function amapServiceHost(): string {
   // 高德安全模式要求代理服务以 _AMapService 作为一级路由（例如 /_AMapService）。
   return `${window.location.origin}/_AMapService`;
-}
-
-export function amapProxyUrl(path: string): string {
-  return `${amapConfig.proxyPath}/${path.replace(/^\/+/, '')}`;
 }

@@ -1,6 +1,7 @@
 export type Route =
   | { name: 'home' }
-  | { name: 'create'; fromTripId?: number }
+  | { name: 'create'; fromTripId?: number; aiItineraryId?: number }
+  | { name: 'aiPlanner' }
   | { name: 'detail'; tripId: number }
   | { name: 'applications'; tripId: number }
   | { name: 'mine' }
@@ -20,10 +21,18 @@ export function parseRoute(hash: string): Route {
     return { name: 'home' };
   }
   if (path === '/trips/new') {
+    // AI 快照来源优先于参考行程来源（design §4.4）。
+    const ai = Number(params.get('ai'));
+    if (Number.isInteger(ai) && ai > 0) {
+      return { name: 'create', aiItineraryId: ai };
+    }
     const source = Number(params.get('from'));
     return Number.isInteger(source) && source > 0
       ? { name: 'create', fromTripId: source }
       : { name: 'create' };
+  }
+  if (path === '/ai-planner') {
+    return { name: 'aiPlanner' };
   }
   if (path === '/mine') {
     return { name: 'mine' };
@@ -64,7 +73,13 @@ export function parseRoute(hash: string): Route {
 
 export function routeToHash(route: Route): string {
   if (route.name === 'create') {
+    if (route.aiItineraryId !== undefined) {
+      return `#/trips/new?ai=${route.aiItineraryId}`;
+    }
     return route.fromTripId === undefined ? '#/trips/new' : `#/trips/new?from=${route.fromTripId}`;
+  }
+  if (route.name === 'aiPlanner') {
+    return '#/ai-planner';
   }
   if (route.name === 'mine') {
     return '#/mine';

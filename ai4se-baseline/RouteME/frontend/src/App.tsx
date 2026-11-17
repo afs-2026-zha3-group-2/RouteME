@@ -9,6 +9,7 @@ import { tripMessages } from './i18n/tripMessages';
 import { IdentityGate } from './identity/IdentityGate';
 import { MyTripsPage } from './mine/MyTripsPage';
 import { MapExplorerPage } from './pages/MapExplorerPage';
+import { AiPlannerPage } from './pages/AiPlannerPage';
 import { ProfilePage } from './profile/ProfilePage';
 import { ProfileProvider } from './profiles/ProfileContext';
 import { profileToUser } from './profile/profileDisplay';
@@ -177,8 +178,13 @@ export function App() {
         >
           {route.name === 'home' && <HomePage currentUser={currentUser} />}
           {route.name === 'create' && (
-            <TripCreatePage currentUser={currentUser} fromTripId={route.fromTripId} />
+            <TripCreatePage
+              currentUser={currentUser}
+              fromTripId={route.fromTripId}
+              aiItineraryId={route.aiItineraryId}
+            />
           )}
+          {route.name === 'aiPlanner' && <AiPlannerPage currentUser={currentUser} />}
           {route.name === 'share' && (
             <ShareExperiencePage currentUser={currentUser} tripId={route.tripId} />
           )}

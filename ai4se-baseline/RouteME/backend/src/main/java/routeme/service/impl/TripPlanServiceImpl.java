@@ -34,6 +34,7 @@ import routeme.entity.TripPlanEntity;
 import routeme.request.TripCreateRequest;
 import routeme.request.TripMeetingRequest;
 import routeme.request.TripQuery;
+import routeme.service.AiItineraryService;
 import routeme.service.DemoUserService;
 import routeme.service.TripCompletedEvent;
 import routeme.service.TripPlanService;
@@ -47,12 +48,17 @@ public class TripPlanServiceImpl extends AbstractServiceImpl<TripPlanMapper, Tri
         implements TripPlanService {
 
     private final DemoUserService demoUserService;
+    private final AiItineraryService aiItineraryService;
     private final Clock clock;
     private final ApplicationEventPublisher events;
 
     public TripPlanServiceImpl(
-            DemoUserService demoUserService, Clock clock, ApplicationEventPublisher events) {
+            DemoUserService demoUserService,
+            AiItineraryService aiItineraryService,
+            Clock clock,
+            ApplicationEventPublisher events) {
         this.demoUserService = demoUserService;
+        this.aiItineraryService = aiItineraryService;
         this.clock = clock;
         this.events = events;
     }
@@ -61,6 +67,10 @@ public class TripPlanServiceImpl extends AbstractServiceImpl<TripPlanMapper, Tri
     @Transactional
     public TripPlan create(TripCreateRequest request, long publisherId) {
         Instant now = clock.instant();
+        // AI 链接校验：快照必须存在且归属发布人，否则 INVALID_INPUT（B9 / B10）。
+        if (request.aiItineraryId() != null) {
+            aiItineraryService.requireOwnedSnapshot(request.aiItineraryId(), publisherId);
+        }
         TripPlanDraft draft = new TripPlanDraft(
                 publisherId,
                 request.title(),
@@ -74,7 +84,8 @@ public class TripPlanServiceImpl extends AbstractServiceImpl<TripPlanMapper, Tri
                 request.budgetMinCents(),
                 request.budgetMaxCents(),
                 request.tags(),
-                request.capacity());
+                request.capacity(),
+                request.aiItineraryId());
         TripPlan validated = TripPlan.create(draft, now);
         TripPlan saved = validated.withId(nextId(TripPlanEntity::getId));
         save(TripPlanEntity.from(saved));

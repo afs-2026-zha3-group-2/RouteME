@@ -22,6 +22,7 @@ import routeme.exception.InvalidInputException;
 
 /**
  * 旅行计划（领域对象）。状态不存储，由 completedAt 与人数推导。
+ * {@code aiItineraryId} 可空：来自 AI 推荐快照的行程携带链接，普通发布为 null。
  */
 public record TripPlan(
         long id,
@@ -42,7 +43,8 @@ public record TripPlan(
         int joinedCount,
         Instant completedAt,
         Instant createdAt,
-        Instant updatedAt) {
+        Instant updatedAt,
+        Long aiItineraryId) {
 
     public Instant plannedStart() {
         return startDate.atStartOfDay(TripTimeZoneConstant.ZONE).toInstant();
@@ -83,7 +85,8 @@ public record TripPlan(
 
     public TripPlan withId(long newId) {
         return new TripPlan(newId, publisherId, title, destinationCode, destination, startDate, endDate, stops, meetingAreas,
-                meetingTime, note, budgetMinCents, budgetMaxCents, tags, capacity, joinedCount, completedAt, createdAt, updatedAt);
+                meetingTime, note, budgetMinCents, budgetMaxCents, tags, capacity, joinedCount, completedAt, createdAt,
+                updatedAt, aiItineraryId);
     }
 
     /**
@@ -92,7 +95,7 @@ public record TripPlan(
     public TripPlan withMeetingInfo(List<String> newMeetingAreas, String newMeetingTime, Instant now) {
         return new TripPlan(id, publisherId, title, destinationCode, destination, startDate, endDate, stops,
                 newMeetingAreas, newMeetingTime, note, budgetMinCents, budgetMaxCents, tags, capacity, joinedCount,
-                completedAt, createdAt, now);
+                completedAt, createdAt, now, aiItineraryId);
     }
 
     public static TripPlan create(TripPlanDraft draft, Instant now) {
@@ -149,7 +152,8 @@ public record TripPlan(
             throw new InvalidInputException("note is too long");
         }
         return new TripPlan(0, draft.publisherId(), title, destinationCode, destination, draft.startDate(), draft.endDate(),
-                stops, meetingAreas, meetingTime, note, budgetMin, budgetMax, tags, capacity, 1, null, now, now);
+                stops, meetingAreas, meetingTime, note, budgetMin, budgetMax, tags, capacity, 1, null, now, now,
+                draft.aiItineraryId());
     }
 
     private static String requireText(String value, String field) {

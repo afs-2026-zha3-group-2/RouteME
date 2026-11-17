@@ -1,10 +1,10 @@
 openapi: 3.0.3
 info:
   title: RouteME API
-  version: 0.11.0
+  version: 0.12.0
   description: |
     RouteME 后端对外契约。本文件是前后端唯一事实源，字段名、类型、状态码与错误码只在这里定稿。
-        当前包含：脚手架问候语、演示账户与账号认证（注册/登录/会话/退出）、旅行计划（浏览/筛选/发布/详情/结束），同行匹配、申请、退出、聊天、我的旅行与举报，以及游后体验分享与参考发布所需数据。
+        当前包含：脚手架问候语、演示账户与账号认证（注册/登录/会话/退出）、旅行计划（浏览/筛选/发布/详情/结束），同行匹配、申请、退出、聊天、我的旅行与举报，游后体验分享与参考发布所需数据，以及 AI 智能行程推荐（生成/天气/快照保存与读取）。
         行程与体验列表按页返回：`page` 从 1 起，`size` 默认 20、上限 50。
         目的地为用户在地图地点库中搜索或点选的城市/地点名称，不再限定固定枚举。
 servers:
@@ -1382,6 +1382,139 @@ paths:
           $ref: '#/components/responses/NotFound'
         '500':
           $ref: '#/components/responses/Unexpected'
+  /ai/itineraries/generate:
+    post:
+      operationId: generateAiItinerary
+      summary: AI 生成推荐行程
+      description: |
+        结合用户条件、后端自取的 Open-Meteo 真实天气与 DeepSeek 生成推荐方案。
+        AI 只产出名称/顺序/理由/时间/估算；坐标、路线、距离与交通时间由前端从高德获取，
+        响应内不得出现地图数据。非法输出不自动重试（502 AI_INVALID_OUTPUT）。
+      parameters:
+        - $ref: '#/components/parameters/DemoUserId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AiGenerateRequest'
+      responses:
+        '200':
+          description: 生成成功；weather 为本次生成实际使用的权威天气摘要
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AiGenerateResponse'
+        '400':
+          $ref: '#/components/responses/InvalidInput'
+        '401':
+          $ref: '#/components/responses/DemoUserRequired'
+        '502':
+          $ref: '#/components/responses/AiUpstream'
+        '503':
+          $ref: '#/components/responses/AiNotConfigured'
+        '500':
+          $ref: '#/components/responses/Unexpected'
+  /ai/itineraries:
+    post:
+      operationId: saveAiItinerary
+      summary: 保存 AI 行程快照
+      description: |
+        完整快照落库并归属当前用户；已解析（resolved=true）景点至少 2 个且坐标必须为数值，
+        否则 400。保存成功即为用户资产，后续发布失败不回收快照（两段式非事务）。
+      parameters:
+        - $ref: '#/components/parameters/DemoUserId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AiItinerarySnapshot'
+      responses:
+        '201':
+          description: 快照已保存
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AiItinerarySaved'
+        '400':
+          $ref: '#/components/responses/InvalidInput'
+        '401':
+          $ref: '#/components/responses/DemoUserRequired'
+        '500':
+          $ref: '#/components/responses/Unexpected'
+  /ai/itineraries/{id}:
+    get:
+      operationId: readAiItinerary
+      summary: 读取 AI 行程快照
+      description: 快照原样返回，供发布页预填与详情页摘要；不存在或非本人快照一律 400 INVALID_INPUT。
+      parameters:
+        - $ref: '#/components/parameters/DemoUserId'
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: 快照全字段
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AiItinerarySnapshot'
+        '400':
+          $ref: '#/components/responses/InvalidInput'
+        '401':
+          $ref: '#/components/responses/DemoUserRequired'
+        '500':
+          $ref: '#/components/responses/Unexpected'
+  /weather/forecast:
+    get:
+      operationId: getWeatherForecast
+      summary: 目的地日期天气（Open-Meteo）
+      description: |
+        按坐标与日期取 Open-Meteo daily 预报并归一字段；日期窗口为今天 ≤ date ≤ 今天+15，
+        超窗 400；上游失败或无该日数据 502 WEATHER_UPSTREAM_ERROR，不伪造天气。
+      parameters:
+        - $ref: '#/components/parameters/DemoUserId'
+        - name: lng
+          in: query
+          required: true
+          schema:
+            type: number
+            format: double
+            minimum: -180
+            maximum: 180
+        - name: lat
+          in: query
+          required: true
+          schema:
+            type: number
+            format: double
+            minimum: -90
+            maximum: 90
+        - name: date
+          in: query
+          required: true
+          schema:
+            type: string
+            format: date
+      responses:
+        '200':
+          description: 归一后的当日天气摘要
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WeatherForecast'
+        '400':
+          $ref: '#/components/responses/InvalidInput'
+        '401':
+          $ref: '#/components/responses/DemoUserRequired'
+        '502':
+          $ref: '#/components/responses/WeatherUpstream'
+        '500':
+          $ref: '#/components/responses/Unexpected'
 components:
   parameters:
     DemoUserId:
@@ -1479,6 +1612,42 @@ components:
             unexpected:
               value:
                 code: INTERNAL_ERROR
+    AiNotConfigured:
+      description: AI 服务尚未配置密钥
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          examples:
+            notConfigured:
+              value:
+                code: AI_NOT_CONFIGURED
+    AiUpstream:
+      description: AI 上游失败、超时或输出非法（不自动重试）
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          examples:
+            upstream:
+              value:
+                code: AI_UPSTREAM_ERROR
+            invalidOutput:
+              value:
+                code: AI_INVALID_OUTPUT
+            weatherFailed:
+              value:
+                code: WEATHER_UPSTREAM_ERROR
+    WeatherUpstream:
+      description: Open-Meteo 上游失败或无该日数据
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          examples:
+            weatherFailed:
+              value:
+                code: WEATHER_UPSTREAM_ERROR
   schemas:
     Greeting:
       type: object
@@ -1853,6 +2022,12 @@ components:
           format: date-time
           readOnly: true
           description: 创建时间，UTC
+        ai_itinerary_id:
+          type: integer
+          format: int64
+          nullable: true
+          readOnly: true
+          description: 来源 AI 行程快照 id；普通发布为 null
     TripDetail:
       allOf:
         - $ref: '#/components/schemas/TripPlan'
@@ -1953,6 +2128,11 @@ components:
         note:
           type: string
           maxLength: 500
+        ai_itinerary_id:
+          type: integer
+          format: int64
+          nullable: true
+          description: 可选 AI 行程快照链接；非空时校验快照存在且归属当前用户，否则 400
     TripMeetingRequest:
       type: object
       properties:
@@ -2272,6 +2452,310 @@ components:
         received:
           type: boolean
           readOnly: true
+    AiPlace:
+      type: object
+      required: [name, lng, lat]
+      properties:
+        name:
+          type: string
+          maxLength: 100
+        lng:
+          type: number
+          format: double
+          minimum: -180
+          maximum: 180
+        lat:
+          type: number
+          format: double
+          minimum: -90
+          maximum: 90
+      description: 地点（名称 + 高德坐标）；坐标只能来自高德搜索/定位/选点，不得由 AI 产出
+    AiGenerateRequest:
+      type: object
+      required: [origin, destination, date]
+      properties:
+        origin:
+          $ref: '#/components/schemas/AiPlace'
+        destination:
+          $ref: '#/components/schemas/AiPlace'
+        date:
+          type: string
+          format: date
+          description: 旅行日期；今天 ≤ date ≤ 今天+15（Open-Meteo 预报窗口）
+        duration:
+          type: string
+          enum: [half_day, one_day, two_day]
+          default: one_day
+        budget_cents:
+          type: integer
+          minimum: 0
+          nullable: true
+          description: 预算，整数分；选填
+        travel_mode:
+          type: string
+          enum: [transit, walking, driving]
+          default: transit
+        interests:
+          type: array
+          maxItems: 7
+          items:
+            type: string
+        pace:
+          type: string
+          enum: [relaxed, moderate, compact]
+          default: moderate
+        reduce_budget:
+          type: boolean
+          default: false
+          description: 「AI 帮我降低预算」时为 true，提示词要求合计不超预算
+    AiPlanStop:
+      type: object
+      required: [name, reason, arrival, stay_minutes, indoor]
+      properties:
+        name:
+          type: string
+          maxLength: 100
+          description: POI 名称；必须真实存在、高德可搜；前端只取名称，坐标另行解析
+        reason:
+          type: string
+          maxLength: 300
+        arrival:
+          type: string
+          pattern: '^\d{2}:\d{2}$'
+          description: 建议到达时间 HH:mm
+        stay_minutes:
+          type: integer
+          minimum: 1
+        indoor:
+          type: boolean
+          description: 是否室内活动；雨天推荐优先室内
+      description: AI 推荐景点；不得携带经纬度/路线/距离/交通时间等地图字段
+    AiPlanDay:
+      type: object
+      required: [day, stops]
+      properties:
+        day:
+          type: integer
+          minimum: 1
+        stops:
+          type: array
+          minItems: 1
+          items:
+            $ref: '#/components/schemas/AiPlanStop'
+    AiBudget:
+      type: object
+      required: [transport_cents, tickets_cents, food_cents, other_cents, total_cents]
+      properties:
+        transport_cents:
+          type: integer
+          minimum: 0
+        tickets_cents:
+          type: integer
+          minimum: 0
+        food_cents:
+          type: integer
+          minimum: 0
+        other_cents:
+          type: integer
+          minimum: 0
+        total_cents:
+          type: integer
+          minimum: 0
+          description: 四项之和；AI 输出不一致时后端重算
+      description: 费用全部为 AI 估算，无真实价格来源；前端恒标「AI 估算」
+    AiPlan:
+      type: object
+      required: [title, days, tips, packing, budget]
+      properties:
+        title:
+          type: string
+          maxLength: 40
+        days:
+          type: array
+          minItems: 1
+          items:
+            $ref: '#/components/schemas/AiPlanDay'
+          description: 按天分组；全部 stops 合计至少 2 个
+        tips:
+          type: array
+          items:
+            type: string
+          description: 基于真实天气的出行建议
+        packing:
+          type: array
+          items:
+            type: string
+          description: 建议携带物品
+        budget:
+          $ref: '#/components/schemas/AiBudget'
+    WeatherForecast:
+      type: object
+      required: [date, temp_max_c, temp_min_c, precipitation_probability_pct, weather_code, weather_text, source]
+      properties:
+        date:
+          type: string
+          format: date
+        temp_max_c:
+          type: number
+          format: double
+        temp_min_c:
+          type: number
+          format: double
+        precipitation_probability_pct:
+          type: integer
+          minimum: 0
+          maximum: 100
+        precipitation_mm:
+          type: number
+          format: double
+          minimum: 0
+        weather_code:
+          type: integer
+          description: WMO 天气码
+        weather_text:
+          type: string
+          description: WMO 码对应的中文文案
+        wind_speed_kmh:
+          type: number
+          format: double
+        uv_index:
+          type: number
+          format: double
+          nullable: true
+          description: 上游不可用时为 null，前端不展示 UV 行
+        source:
+          type: string
+          example: open-meteo
+    AiGenerateResponse:
+      type: object
+      required: [plan, weather]
+      description: weather 为本次生成实际注入提示词的权威天气摘要
+      properties:
+        plan:
+          $ref: '#/components/schemas/AiPlan'
+        weather:
+          $ref: '#/components/schemas/WeatherForecast'
+    AiSnapshotStop:
+      type: object
+      required: [name, order, reason, arrival, stay_minutes, indoor, resolved]
+      properties:
+        name:
+          type: string
+          maxLength: 100
+        lng:
+          type: number
+          format: double
+          nullable: true
+        lat:
+          type: number
+          format: double
+          nullable: true
+        order:
+          type: integer
+          minimum: 1
+          description: 列表顺序号，与地图编号 Marker 一致
+        reason:
+          type: string
+        arrival:
+          type: string
+          pattern: '^\d{2}:\d{2}$'
+        stay_minutes:
+          type: integer
+          minimum: 1
+        indoor:
+          type: boolean
+        resolved:
+          type: boolean
+          description: 高德解析成功为 true，此时 lng/lat 必须为数值；未解析不伪造坐标
+    AiRouteLeg:
+      type: object
+      required: [from_id, to_id, distance_meters, duration_seconds]
+      properties:
+        from_id:
+          type: string
+        to_id:
+          type: string
+        distance_meters:
+          type: integer
+          minimum: 0
+        duration_seconds:
+          type: integer
+          minimum: 0
+    AiSnapshotRoute:
+      type: object
+      required: [mode, distance_meters, duration_seconds, legs]
+      properties:
+        mode:
+          type: string
+          enum: [transit, walking, driving]
+        distance_meters:
+          type: integer
+          minimum: 0
+        duration_seconds:
+          type: integer
+          minimum: 0
+        legs:
+          type: array
+          items:
+            $ref: '#/components/schemas/AiRouteLeg'
+      description: 高德真实路线结果；距离/时间只能来自高德，不得由 AI 产出
+    AiItinerarySnapshot:
+      type: object
+      required: [origin, destination, date, stops, travel_mode]
+      description: 完整快照；route / weather / ai_budget 在对应服务失败时可为 null，不伪造数据
+      properties:
+        origin:
+          $ref: '#/components/schemas/AiPlace'
+        destination:
+          $ref: '#/components/schemas/AiPlace'
+        date:
+          type: string
+          format: date
+        duration:
+          type: string
+          enum: [half_day, one_day, two_day]
+        travel_mode:
+          type: string
+          enum: [transit, walking, driving]
+        interests:
+          type: array
+          items:
+            type: string
+        pace:
+          type: string
+          enum: [relaxed, moderate, compact]
+        budget_cents:
+          type: integer
+          minimum: 0
+          nullable: true
+        stops:
+          type: array
+          minItems: 2
+          items:
+            $ref: '#/components/schemas/AiSnapshotStop'
+          description: 已解析（resolved=true）至少 2 个且坐标为数值，否则 400
+        route:
+          $ref: '#/components/schemas/AiSnapshotRoute'
+        weather:
+          $ref: '#/components/schemas/WeatherForecast'
+        tips:
+          type: array
+          items:
+            type: string
+        packing:
+          type: array
+          items:
+            type: string
+        ai_budget:
+          $ref: '#/components/schemas/AiBudget'
+    AiItinerarySaved:
+      type: object
+      required: [id]
+      properties:
+        id:
+          type: integer
+          format: int64
+          readOnly: true
     Error:
       type: object
       required: [code]
@@ -2282,7 +2766,8 @@ components:
           enum:
             [GREETING_NOT_FOUND, INVALID_INPUT, DEMO_USER_REQUIRED, FORBIDDEN, USER_NOT_FOUND, TRIP_NOT_FOUND, TRIP_NOT_OPEN,
              APPLICATION_NOT_FOUND, APPLICATION_NOT_PENDING, DUPLICATE_APPLICATION, CHAT_NOT_ALLOWED, CHAT_READ_ONLY,
-             EXPERIENCE_NOT_ALLOWED, USERNAME_TAKEN, INVALID_CREDENTIALS, SESSION_INVALID, INTERNAL_ERROR]
+             EXPERIENCE_NOT_ALLOWED, USERNAME_TAKEN, INVALID_CREDENTIALS, SESSION_INVALID, INTERNAL_ERROR,
+             AI_NOT_CONFIGURED, AI_UPSTREAM_ERROR, AI_INVALID_OUTPUT, WEATHER_UPSTREAM_ERROR]
         fields:
           type: object
           description: |

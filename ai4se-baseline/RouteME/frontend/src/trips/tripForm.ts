@@ -97,7 +97,8 @@ export function validateTripForm(values: TripFormValues): TripFieldErrors {
   return errors;
 }
 
-export function toCreateRequest(values: TripFormValues): TripCreateRequest {
+/** aiItineraryId 非空时携带 AI 快照链接（后端校验归属）；普通发布不带该键。 */
+export function toCreateRequest(values: TripFormValues, aiItineraryId?: number): TripCreateRequest {
   return {
     title: values.title.trim(),
     destination_code: values.destinationCode.trim(),
@@ -111,6 +112,7 @@ export function toCreateRequest(values: TripFormValues): TripCreateRequest {
     budget_max_cents: toCents(values.budgetMax),
     tags: values.tags,
     capacity: Number(values.capacity),
+    ...(aiItineraryId !== undefined ? { ai_itinerary_id: aiItineraryId } : {}),
   };
 }
 

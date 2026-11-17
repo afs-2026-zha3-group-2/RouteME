@@ -7,7 +7,7 @@ import type { DemoUser } from '../types';
 import { Avatar } from './Avatar';
 import { BrandMark } from './BrandMark';
 
-type NavKey = 'discover' | 'map' | 'create' | 'mine' | 'chat';
+type NavKey = 'discover' | 'map' | 'create' | 'aiPlanner' | 'mine' | 'chat';
 
 type NavItem = { key: NavKey; label: string; href: string };
 
@@ -15,13 +15,15 @@ const NAV_ITEMS: NavItem[] = [
   { key: 'discover', label: tripMessages.homeTitle, href: '#/' },
   { key: 'map', label: '旅行地图', href: '#/map' },
   { key: 'create', label: tripMessages.publish, href: '#/trips/new' },
+  { key: 'aiPlanner', label: 'AI 规划', href: '#/ai-planner' },
   { key: 'mine', label: tripMessages.mineTitle, href: '#/mine' },
   { key: 'chat', label: tripMessages.chatNav, href: '#/chat' },
 ];
 
 const NAV_GROUPS: Array<{ title: string; items: NavItem[] }> = [
   { title: '浏览', items: NAV_ITEMS.filter((item) => item.key === 'discover' || item.key === 'map') },
-  { title: '我的', items: NAV_ITEMS.filter((item) => item.key !== 'discover' && item.key !== 'map') },
+  { title: '规划', items: NAV_ITEMS.filter((item) => item.key === 'create' || item.key === 'aiPlanner') },
+  { title: '我的', items: NAV_ITEMS.filter((item) => item.key === 'mine' || item.key === 'chat') },
 ];
 
 function activeKey(route: Route): NavKey | null {
@@ -33,6 +35,9 @@ function activeKey(route: Route): NavKey | null {
   }
   if (route.name === 'create' || route.name === 'share') {
     return 'create';
+  }
+  if (route.name === 'aiPlanner') {
+    return 'aiPlanner';
   }
   if (route.name === 'mine') {
     return 'mine';
@@ -79,6 +84,22 @@ function NavIcon({ name }: { name: NavKey }) {
         strokeLinecap="round"
       >
         <path d="M10 4.5v11M4.5 10h11" />
+      </svg>
+    );
+  }
+  if (name === 'aiPlanner') {
+    return (
+      <svg
+        viewBox="0 0 20 20"
+        aria-hidden="true"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.7"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      >
+        <path d="M10 3.2 11.6 8l4.8 1.6-4.8 1.6L10 16l-1.6-4.8L3.6 9.6 8.4 8Z" />
+        <path d="M15.6 3v3M14.1 4.5h3" />
       </svg>
     );
   }
@@ -445,7 +466,7 @@ export function AppShell({
       </div>
 
       <nav className="tabbar" aria-label="底部导航">
-        {NAV_ITEMS.map((item) => (
+        {NAV_ITEMS.filter((item) => item.key !== 'aiPlanner').map((item) => (
           <a
             key={item.key}
             className={active === item.key ? 'tab-link active' : 'tab-link'}

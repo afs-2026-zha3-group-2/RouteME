@@ -26,7 +26,8 @@ public record TripSummaryResponse(
         String status,
         boolean endingSoon,
         DemoUserResponse publisher,
-        Instant createdAt) {
+        Instant createdAt,
+        Long aiItineraryId) {
 
     public static TripSummaryResponse from(TripPlan trip, DemoUser publisher, Instant now) {
         return new TripSummaryResponse(
@@ -47,6 +48,7 @@ public record TripSummaryResponse(
                 trip.status(now).wireValue(),
                 trip.endingSoon(now),
                 DemoUserResponse.from(publisher),
-                trip.createdAt());
+                trip.createdAt(),
+                trip.aiItineraryId());
     }
 }

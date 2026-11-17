@@ -33,18 +33,39 @@ export type CompanionMatch = TravelCompanion & {
 };
 
 function normalize(name: string): string {
-  return name.replace(/\s+/g, '').trim();
+  return name.replace(/[\s·・（）()\-—,，。]/g, '').trim();
 }
 
-/** 按当前路线筛选并排序同行者；无共同景点时不展示。 */
+/** 名称是否指向同一地点（相同，或一方包含另一方，如「海心沙亚运公园」vs「海心沙」）。 */
+function samePlace(left: string, right: string): boolean {
+  const a = normalize(left);
+  const b = normalize(right);
+  if (a === '' || b === '') {
+    return false;
+  }
+  if (a === b) {
+    return true;
+  }
+  return a.length >= 2 && b.length >= 2 && (a.includes(b) || b.includes(a));
+}
+
+/**
+ * 按当前路线筛选并排序同行者；无共同景点时不展示。
+ * 同行者的共同景点沿用当前路线上的名称，保证与地图/列表一致。
+ */
 export function matchCompanions(
   routeNames: string[],
   companions: TravelCompanion[],
 ): CompanionMatch[] {
-  const current = new Set(routeNames.map(normalize));
   return companions
     .map((companion) => {
-      const matchedStops = companion.sharedStops.filter((stop) => current.has(normalize(stop)));
+      const matchedStops: string[] = [];
+      for (const expected of companion.sharedStops) {
+        const actual = routeNames.find((name) => samePlace(name, expected));
+        if (actual !== undefined && !matchedStops.includes(actual)) {
+          matchedStops.push(actual);
+        }
+      }
       const ratio =
         companion.sharedStops.length === 0 ? 0 : matchedStops.length / companion.sharedStops.length;
       return {

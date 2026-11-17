@@ -31,7 +31,8 @@ public record TripDetailResponse(
         DemoUserResponse publisher,
         List<DemoUserResponse> participants,
         Instant completedAt,
-        Instant createdAt) {
+        Instant createdAt,
+        Long aiItineraryId) {
 
     public static TripDetailResponse from(
             TripPlan trip, DemoUser publisher, List<DemoUser> participants, Instant now) {
@@ -58,6 +59,7 @@ public record TripDetailResponse(
                 DemoUserResponse.from(publisher),
                 participants.stream().map(DemoUserResponse::from).toList(),
                 trip.completedAt(),
-                trip.createdAt());
+                trip.createdAt(),
+                trip.aiItineraryId());
     }
 }

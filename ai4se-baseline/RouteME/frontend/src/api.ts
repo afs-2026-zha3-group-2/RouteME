@@ -1,4 +1,8 @@
 import type {
+  AiGenerateRequest,
+  AiGenerateResponse,
+  AiItinerarySaved,
+  AiItinerarySnapshot,
   AuthRegisterRequest,
   AuthSession,
   ChatMessage,
@@ -20,6 +24,7 @@ import type {
   TripSummary,
   UserProfile,
   UserProfileUpdateRequest,
+  WeatherForecast,
 } from './types';
 
 /**
@@ -28,12 +33,15 @@ import type {
 export class ApiError extends Error {
   readonly code: string;
   readonly fields?: Record<string, string>;
+  /** 后端 ErrorResponse.message 的可读文案；展示层优先于稳定错误码。 */
+  readonly detail?: string;
 
-  constructor(code: string, fields?: Record<string, string>) {
+  constructor(code: string, fields?: Record<string, string>, detail?: string) {
     super(code);
     this.name = 'ApiError';
     this.code = code;
     this.fields = fields;
+    this.detail = detail;
   }
 }
 
@@ -45,10 +53,9 @@ export async function request(path: string, init?: RequestInit, userId?: number)
   const requestInit = init === undefined && userId === undefined ? undefined : { ...init, headers };
   const response = await fetch(`/api${path}`, requestInit);
   if (!response.ok) {
-    const body: { code?: string; fields?: Record<string, string> } | null = await response
-      .json()
-      .catch(() => null);
-    throw new ApiError(body?.code || `HTTP ${response.status}`, body?.fields);
+    const body: { code?: string; message?: string; fields?: Record<string, string> } | null =
+      await response.json().catch(() => null);
+    throw new ApiError(body?.code || `HTTP ${response.status}`, body?.fields, body?.message);
   }
   return response;
 }
@@ -364,4 +371,61 @@ export async function shareExperience(
     userId,
   );
   return (await response.json()) as Experience;
+}
+
+/* ---------- AI 智能规划（契约 0.12.0） ---------- */
+
+/** AI 生成推荐行程；响应内 weather 为后端实际注入提示词的权威天气（L-02）。 */
+export async function generateAiItinerary(
+  userId: number,
+  body: AiGenerateRequest,
+): Promise<AiGenerateResponse> {
+  const response = await request(
+    '/ai/itineraries/generate',
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    },
+    userId,
+  );
+  return (await response.json()) as AiGenerateResponse;
+}
+
+/** 目的地日期天气（Open-Meteo）；预览路径，失败不阻断表单。 */
+export async function fetchWeatherForecast(
+  userId: number,
+  lng: number,
+  lat: number,
+  date: string,
+): Promise<WeatherForecast> {
+  const params = new URLSearchParams({ lng: String(lng), lat: String(lat), date });
+  const response = await request(`/weather/forecast?${params.toString()}`, undefined, userId);
+  return (await response.json()) as WeatherForecast;
+}
+
+/** 保存完整快照；resolved ≥ 2 且坐标为数值，否则后端 400。 */
+export async function saveAiItinerary(
+  userId: number,
+  snapshot: AiItinerarySnapshot,
+): Promise<AiItinerarySaved> {
+  const response = await request(
+    '/ai/itineraries',
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(snapshot),
+    },
+    userId,
+  );
+  return (await response.json()) as AiItinerarySaved;
+}
+
+/** 读取快照（原样返回）；不存在或非本人一律 400 INVALID_INPUT。 */
+export async function loadAiItinerary(
+  userId: number,
+  itineraryId: number,
+): Promise<AiItinerarySnapshot> {
+  const response = await request(`/ai/itineraries/${itineraryId}`, undefined, userId);
+  return (await response.json()) as AiItinerarySnapshot;
 }

@@ -18,9 +18,11 @@ type Props = {
   route: RoutePlan | null;
   focusId: string | null;
   onFocus?: (id: string) => void;
+  /** 显式编号（列表顺序号）；缺省回退 index+1。未定位 POI 不渲染但保留序号。 */
+  numbers?: number[];
 };
 
-function markerContent(index: number, total: number, active: boolean): string {
+function markerContent(index: number, total: number, active: boolean, number?: number): string {
   const isStart = index === 0;
   const isEnd = index === total - 1;
   const tag = isStart ? '起' : isEnd ? '终' : '';
@@ -28,13 +30,13 @@ function markerContent(index: number, total: number, active: boolean): string {
     `<div class="amap-stop-pin${isStart ? ' is-start' : ''}${isEnd ? ' is-end' : ''}${
       active ? ' is-active' : ''
     }">`,
-    `<span class="amap-stop-number">${index + 1}</span>`,
+    `<span class="amap-stop-number">${number ?? index + 1}</span>`,
     tag === '' ? '' : `<span class="amap-stop-tag">${tag}</span>`,
     '</div>',
   ].join('');
 }
 
-export function RouteLayer({ map, waypoints, route, focusId, onFocus }: Props) {
+export function RouteLayer({ map, waypoints, route, focusId, onFocus, numbers }: Props) {
   const polylinesRef = useRef<AmapPolyline[]>([]);
   const markersRef = useRef<AmapMarker[]>([]);
   const onFocusRef = useRef(onFocus);
@@ -93,7 +95,7 @@ export function RouteLayer({ map, waypoints, route, focusId, onFocus }: Props) {
     const markers = waypoints.map((waypoint, index) => {
       const marker = new AMap.Marker({
         position: [waypoint.lng, waypoint.lat] as LngLat,
-        content: markerContent(index, waypoints.length, focusId === waypoint.id),
+        content: markerContent(index, waypoints.length, focusId === waypoint.id, numbers?.[index]),
         offset: new AMap.Pixel(-18, -18),
         title: waypoint.name,
         zIndex: focusId === waypoint.id ? 130 : 120,
@@ -108,7 +110,7 @@ export function RouteLayer({ map, waypoints, route, focusId, onFocus }: Props) {
         map.setFitView(markers, false, [90, 90, 90, 90], 15);
       }
     }
-  }, [map, waypoints, focusId, route]);
+  }, [map, waypoints, focusId, route, numbers]);
 
   // 聚焦列表项 / Marker 时把地图移到对应点位。
   useEffect(() => {

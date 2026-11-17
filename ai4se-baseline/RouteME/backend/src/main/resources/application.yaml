@@ -1,10 +1,14 @@
 spring:
   application:
     name: routeme-backend
-  # 本地开发可把 AMAP_WEB_SERVICE_KEY 放进 backend/amap-local.yml（已 gitignore），
-  # 不提交真实 Key；生产环境用环境变量注入。
+  # 本地开发密钥写在 backend/application-local.yml（已 gitignore，勿提交）：
+  # AMAP_WEB_SERVICE_KEY / AMAP_SECURITY_JS_CODE / DEEPSEEK_API_KEY。
+  # 旧的 amap-local.yml / ai-local.yml 仍按可选文件导入，兼容尚未迁移的本地环境。
   config:
-    import: optional:file:./amap-local.yml
+    import:
+      - optional:file:./application-local.yml
+      - optional:file:./amap-local.yml
+      - optional:file:./ai-local.yml
   jackson:
     property-naming-strategy: SNAKE_CASE
   datasource:
@@ -22,6 +26,14 @@ spring:
       max-file-size: 2MB
       max-request-size: 3MB
 routeme:
+  ai:
+    # DeepSeek（OpenAI 兼容）Key：只允许后端代理使用，不下发到浏览器；空白时 generate 返回 503。
+    api-key: ${DEEPSEEK_API_KEY:}
+    # 测试替身或私有网关可覆盖；默认 DeepSeek 正式服务。
+    base-url: ${DEEPSEEK_BASE_URL:https://api.deepseek.com}
+    model: ${DEEPSEEK_MODEL:deepseek-chat}
+    # 连接与读取超时秒数；超时按上游失败（502）处理。
+    timeout-seconds: ${DEEPSEEK_TIMEOUT_SECONDS:60}
   profile:
     # 头像落盘目录；从 backend 目录启动时指向 RouteME/SqlLite/uploads/avatars。
     avatar-dir: ${ROUTEME_AVATAR_DIR:../SqlLite/uploads/avatars}
@@ -32,6 +44,9 @@ routeme:
     security-js-code: ${AMAP_SECURITY_JS_CODE:}
     # 私有网关或测试替身可覆盖；默认高德正式服务。
     base-url: ${AMAP_REST_BASE_URL:https://restapi.amap.com}
+  weather:
+    # Open-Meteo 无需 Key；测试替身或私有网关可覆盖，默认正式服务。
+    base-url: ${OPEN_METEO_BASE_URL:https://api.open-meteo.com}
 mybatis-plus:
   # 自定义分页查询的 XML 位置；其余查询由 BaseMapper 与 LambdaQueryWrapper 生成。
   mapper-locations: classpath*:mapper/**/*.xml

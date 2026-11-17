@@ -50,3 +50,4 @@
 - **validate（本轮实测）：** `openspec validate add-ai-itinerary --strict` → valid；`deltaCount: 9`。
 - **阶段提交：** `docs(p3): add-ai-itinerary design, atdd and tasks for AI itinerary recommendation`；提交前核对分支 `feature/add-ai-itinerary`，只 stage 本 change 路径；push 前 `git pull --no-rebase --autostash origin main`（P2 偏离③口径，避免重写已推送历史）。
 - **附带收编：** p2-spec.md §6 偏离③（push 整合记录）随本阶段提交入库。
+- **偏离④（merge 编辑器）：** `git pull --no-rebase` 触发 vim 交互阻塞；结束编辑器进程后以 `git commit --no-edit` 完成 merge（`3f70ae5`）并推送（`9bb41b0..3f70ae5`）。后续 pull 统一加 `--no-edit`（或 `GIT_EDITOR=true`）避免交互。工作区剩余 AMap / preview 改动属并行会话，未 stage、未触碰。

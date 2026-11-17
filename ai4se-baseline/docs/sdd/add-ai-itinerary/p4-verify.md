@@ -1,0 +1,51 @@
+# P4 验证记录 — add-ai-itinerary
+
+- **Change：** `add-ai-itinerary`（REQ-017 / AI 智能行程推荐：基于地点、预算和天气生成游玩路线）｜ **阶段：** P4（实现 / 本地验证 / G2）
+- **日期：** 2026-11-17｜ **记录人：** Jay（AO）（第二签署人 Neal（VL）；IO WAYNE 复核需求口径）
+
+## 1. 阶段目标
+
+把 P3 设计（design / atdd / tasks）按 T1–T8 落成可运行实现并完成本地验证：TDD red → green；技术边界诚实性（高德管地图/路线、Open-Meteo 管天气、AI 管推荐，不伪造数据）；契约 0.12.0 门禁；G2（VL Neal）签署。T9（P5 归档前收口）按发起人指示不执行、不归档。
+
+## 2. 产出
+
+| 工件 | 结论 |
+|---|---|
+| 后端实现 | 天气代理（WeatherProperties/Config/Service/Controller，Open-Meteo daily 归一 + WMO 文案 + 日期窗口）；AI 生成代理（AiProperties/Config/Service/Controller，generate 内自取天气先于 AI、失败即终止，DeepSeek 调用 + JSON 校验 + reduce_budget）；快照保存与归属（AiItineraryEntity/mapper/pojo + POST/GET）；`trip_plans.ai_itinerary_id` 链接（V18 + TripPlanServiceImpl 发布校验）；`/_AMapService/v3/log/init` JSONP 包裹 |
+| 前端实现 | `AiPlannerPage.tsx` 三栏（条件表单三方式选点 + 门控生成 + 分服务 Loading/Error/Retry + 天气/预算/Tips 卡 + 时间轴编辑 + 编号 Marker + 保存闭环）；纯逻辑 `ai/`（plannerForm/budgetMath/poiResolve/itineraryEdit/snapshot/aiMessages）；`AmapService` transit 三结构兼容 + `appendStepPath`；`route.ts` `?ai=` 解析；TripCreatePage 预填 + TripDetailPage 徽标摘要；App/AppShell 路由与 rail；styles.css `.ai-planner-*` 令牌 |
+| 契约 / 迁移 | `openapi.yaml` 0.12.0 四接口 + schema + `ai_itinerary_id` 可空 + 错误码枚举；`V18__ai_itineraries.sql`；`OpenApiTest` 门禁断言 |
+| 测试 | 后端 `mvnw verify` **288/288**（含 proxy JSONP 2 用例）；前端 **298/298**（含 transit 三结构 8 用例）+ typecheck 0 errors + build 成功；E2E `ai-planner.spec.ts` A1–A12 **12/12**（fresh DB 终复跑） |
+| `docs/ai4se-plugins/20261117-144000-local-verify-report.md` | 命令/结果/偏差裁决/走查明细/七项发现修复/冒烟/数据卫生/债务 |
+| `openspec/changes/add-ai-itinerary/g2-decision.md` | **Pass with documented debts**（AO Jay / VL Neal / IO WAYNE 签署） |
+| `docs/preview/add-ai-itinerary/` | 9 张走查截图（1440/768/390 × 浅/深 + 预填 + 详情）+ `walkthrough-report.json` |
+| `tasks.md` | T1–T8 全勾选；T9 保留未执行 |
+
+## 3. 关键验证决策（摘要）
+
+1. **验收口径（发起人裁决）：** 本 change G2 验收 = ai-planner A1–A12 全数 Pass（12/12）+ 其余非地图套件全绿无回归；全量 run3 中 map/trips 21 红为 `refine-trip-map` 并行既有破坏（git 证据 `cf8a00a`/`b9e4f42` 为 P0 切点祖先），记录偏差、不修旧 spec，留给 `refine-trip-map` 更新。
+2. **transit 根因闭环（D-02 兑现）：** 真实 SDK 2.0 `Transfer` 回调交付 `plans[]`（path LngLat[] / time / 数值 cost），非旧 `routes[0].transits` 亦非 REST `route.transits`；回调拦截 + 响应体 dump + node 模拟解析定位；`firstTransit`/`parseTransitLeg` 三结构兼容，+8 单测先 red 后 green；走查 run5 transit 17 公里/1h54m 高德实测验证。
+3. **诚实性（技术边界）：** 距离/时间全部高德实测并标注来源；天气 Open-Meteo 真实预报实际参与推荐（雨天室内优先 + 装备建议）；预算无真实价格恒标「AI 估算」；POI 解析失败标「未定位」不伪造坐标；天气/AI 失败即终止 + Error/Retry 不伪造（L-02）。
+4. **保存闭环（L-01/L-05）：** 快照为用户资产保留，发布失败携 `?ai={id}` 重试；详情徽标 + 摘要加性渲染失败只隐藏；非本人快照 400。
+5. **数据卫生：** 本地全量需 fresh SQLite（债务 1）；本轮两次 fresh（备份 t8-walk / t8-final 后删库 Flyway V1–V18 重建）；走查/诊断临时脚本用毕删除（沿用 r2 `tmp-r2-shots.mjs` 先例）；真实 key 仅 gitignore 本地文件，冒烟证据 json/log 不入库。
+6. **环境：** 后端须沙箱外运行（真实 key 经 `application-local.yml` 注入）；企业防火墙对 `api.open-meteo.com` 间歇拦截为环境因素非产品缺陷，走查安排在放行窗口。
+
+## 4. 签署
+
+| 对象 | 签署位 | 批准人 | 日期 |
+|---|---|---|---|
+| g2-decision.md | G2 AO | Jay（AO） | 2026-11-17 |
+| g2-decision.md | G2 VL | Neal（VL） | 2026-11-17 |
+| g2-decision.md | G2 IO | WAYNE（IO） | 2026-11-17 |
+
+批准来源：发起人 2026-11-17 弹窗确认「批准 G2（Jay+Neal+WAYNE）」，授权代签本轮 G2 全部 3 个签署位。
+
+**阶段结论：G2 Pass。** 按发起人指示不执行 P5、不归档。下一步：P4 阶段提交 → pull → push。
+
+## 5. 提交与验证记录
+
+- **validate（本轮实测）：** `openspec validate add-ai-itinerary --strict` → valid（tasks.md 勾选改动后复核）；`@redocly/cli lint openapi.yaml` → 0 error / 15 warnings（既有口径）。
+- **build（plans 修复后终复跑）：** `npm run build` 成功 11.1s，仅既有主 chunk >500 kB 警告。
+- **E2E 终复跑：** fresh DB 上 `npx playwright test ai-planner` → 12 passed（2.7m，`e2e-t8-ai-final2.log`）。
+- **阶段提交：** `feat(p4): add-ai-itinerary AI recommendation, weather proxy and snapshot save loop`；提交前核对分支 `feature/add-ai-itinerary`，只 stage 本 change + 收编路径（并行 AMap SDK 化在途改动按发起人裁决收编）；排除工作区根 `../.gitignore` / `../.vscode/tasks.json`、preview 图片删除（D 不 stage）、t8-*.json/log 证据、备份 db。
+- **push 前 pull：** `git pull --no-rebase --autostash --no-edit origin main`（P2 偏离③口径，禁 rebase/force push；`--no-edit` 防 vim 交互阻塞，偏离④教训）。
+- **收编说明：** 并行会话 AMap SDK 化在途文件（AmapConfig/AmapProxyController/TripPlan* 契约字段/application.yaml/README/backend/.gitignore 等）随本阶段提交入库；preview 图片删除属并行会话未触碰。

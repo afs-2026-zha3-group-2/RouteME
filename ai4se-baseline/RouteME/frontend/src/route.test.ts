@@ -28,6 +28,17 @@ describe('parseRoute', () => {
       expect(parseRoute('#/trips/new')).toEqual({ name: 'create' });
     });
 
+    it('maps the AI planner page', () => {
+      expect(parseRoute('#/ai-planner')).toEqual({ name: 'aiPlanner' });
+    });
+
+    it('keeps the AI snapshot source when creating from a plan', () => {
+      expect(parseRoute('#/trips/new?ai=12')).toEqual({ name: 'create', aiItineraryId: 12 });
+      expect(parseRoute('#/trips/new?from=3&ai=12')).toEqual({ name: 'create', aiItineraryId: 12 });
+      expect(parseRoute('#/trips/new?ai=abc')).toEqual({ name: 'create' });
+      expect(parseRoute('#/trips/new?ai=0')).toEqual({ name: 'create' });
+    });
+
     it('maps the profile setup and public profile paths', () => {
       expect(parseRoute('#/profile/setup')).toEqual({ name: 'profileSetup' });
       expect(parseRoute('#/users/12')).toEqual({ name: 'userProfile', userId: 12 });
@@ -45,6 +56,8 @@ describe('parseRoute', () => {
         { name: 'home' as const },
         { name: 'create' as const },
         { name: 'create' as const, fromTripId: 7 },
+        { name: 'create' as const, aiItineraryId: 12 },
+        { name: 'aiPlanner' as const },
         { name: 'detail' as const, tripId: 7 },
         { name: 'applications' as const, tripId: 7 },
         { name: 'mine' as const },

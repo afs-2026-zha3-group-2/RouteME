@@ -19,5 +19,6 @@ public record TripPlanDraft(
         Integer budgetMinCents,
         Integer budgetMaxCents,
         List<String> tags,
-        Integer capacity) {
+        Integer capacity,
+        Long aiItineraryId) {
 }

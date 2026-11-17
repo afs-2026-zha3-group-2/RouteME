@@ -7,6 +7,8 @@ import java.util.List;
  * 发布行程请求。字段与契约 TripCreateRequest 一一对应。
  *
  * <p>目的地只接受 6 位行政区划二级代码，名称由后端按字典生成。</p>
+ *
+ * <p>{@code aiItineraryId} 可空；非空时后端校验快照存在且归属当前用户。</p>
  */
 public record TripCreateRequest(
         String title,
@@ -20,5 +22,6 @@ public record TripCreateRequest(
         Integer budgetMinCents,
         Integer budgetMaxCents,
         List<String> tags,
-        Integer capacity) {
+        Integer capacity,
+        Long aiItineraryId) {
 }

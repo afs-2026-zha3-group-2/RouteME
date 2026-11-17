@@ -60,7 +60,7 @@ class OpenApiTest {
 
         // Then
         assertAll(
-                () -> assertEquals("0.11.0", info.get("version"), "info.version"),
+                () -> assertEquals("0.12.0", info.get("version"), "info.version"),
                 () -> assertTrue(paths(document).containsKey("/users"), "/users declared"),
                 () -> assertTrue(paths(document).containsKey("/trips/{tripId}"), "detail path declared"),
                 () -> assertTrue(
@@ -354,6 +354,102 @@ class OpenApiTest {
                 () -> assertTrue(tripDetailProperties.containsKey("meeting_time"), "trip detail meeting_time"),
                 () -> assertTrue(createProperties.containsKey("meeting_areas"), "create request meeting_areas"),
                 () -> assertTrue(createProperties.containsKey("meeting_time"), "create request meeting_time")
+        );
+    }
+
+    @Test
+    void in_openApiFile_out_aiItineraryContractDeclared() throws IOException {
+        // Given
+        Map<String, Object> document = loadYaml(SPEC_PATH);
+
+        // When
+        Map<String, Object> generate = operation(document, "/ai/itineraries/generate", "post");
+        Map<String, Object> forecast = operation(document, "/weather/forecast", "get");
+        Map<String, Object> saveSnapshot = operation(document, "/ai/itineraries", "post");
+        Map<String, Object> readSnapshot = operation(document, "/ai/itineraries/{id}", "get");
+        Map<String, Object> generateRequest = schema(document, "AiGenerateRequest");
+        Map<String, Object> plan = schema(document, "AiPlan");
+        Map<String, Object> planStop = schema(document, "AiPlanStop");
+        Map<String, Object> weather = schema(document, "WeatherForecast");
+        Map<String, Object> snapshot = schema(document, "AiItinerarySnapshot");
+        Map<String, Object> budget = schema(document, "AiBudget");
+        Map<String, Object> createRequest = schema(document, "TripCreateRequest");
+        Map<String, Object> tripPlan = schema(document, "TripPlan");
+        Map<String, Map<String, Object>> tripDetailProperties = allOfProperties(document, "TripDetail");
+        Map<String, Object> errorSchema = schema(document, "Error");
+
+        // Then
+        assertAll(
+                () -> assertTrue(responses(generate).containsKey("200"), "generate returns 200"),
+                () -> assertTrue(responses(generate).containsKey("400"), "generate returns 400"),
+                () -> assertTrue(responses(generate).containsKey("502"), "generate returns 502"),
+                () -> assertTrue(responses(generate).containsKey("503"), "generate returns 503"),
+                () -> assertTrue(responses(forecast).containsKey("200"), "forecast returns 200"),
+                () -> assertTrue(responses(forecast).containsKey("400"), "forecast returns 400"),
+                () -> assertTrue(responses(forecast).containsKey("502"), "forecast returns 502"),
+                () -> assertTrue(
+                        parameterNames(document, forecast).containsAll(List.of("lng", "lat", "date")),
+                        "forecast query parameters"),
+                () -> assertTrue(responses(saveSnapshot).containsKey("201"), "snapshot save returns 201"),
+                () -> assertTrue(responses(saveSnapshot).containsKey("400"), "snapshot save returns 400"),
+                () -> assertTrue(responses(readSnapshot).containsKey("200"), "snapshot read returns 200"),
+                () -> assertTrue(responses(readSnapshot).containsKey("400"), "snapshot read returns 400"),
+                () -> assertTrue(
+                        required(generateRequest).containsAll(List.of("origin", "destination", "date")),
+                        "generate required fields"),
+                () -> assertTrue(
+                        enums(properties(generateRequest).get("duration"))
+                                .containsAll(List.of("half_day", "one_day", "two_day")),
+                        "duration enum"),
+                () -> assertTrue(
+                        enums(properties(generateRequest).get("travel_mode"))
+                                .containsAll(List.of("transit", "walking", "driving")),
+                        "travel mode enum"),
+                () -> assertTrue(
+                        enums(properties(generateRequest).get("pace"))
+                                .containsAll(List.of("relaxed", "moderate", "compact")),
+                        "pace enum"),
+                () -> assertTrue(
+                        required(plan).containsAll(List.of("title", "days", "tips", "packing", "budget")),
+                        "plan required fields"),
+                () -> assertTrue(
+                        required(planStop)
+                                .containsAll(List.of("name", "reason", "arrival", "stay_minutes", "indoor")),
+                        "plan stop required fields"),
+                () -> assertTrue(
+                        properties(planStop).keySet().stream()
+                                .noneMatch(List.of("lng", "lat", "distance", "duration")::contains),
+                        "plan stops must not carry map data"),
+                () -> assertTrue(
+                        required(weather).containsAll(List.of(
+                                "date", "temp_max_c", "temp_min_c", "precipitation_probability_pct",
+                                "weather_code", "weather_text", "source")),
+                        "weather required fields"),
+                () -> assertTrue(
+                        required(snapshot)
+                                .containsAll(List.of("origin", "destination", "date", "stops", "travel_mode")),
+                        "snapshot required fields"),
+                () -> assertTrue(
+                        required(budget).containsAll(List.of(
+                                "transport_cents", "tickets_cents", "food_cents", "other_cents", "total_cents")),
+                        "budget required fields"),
+                () -> assertTrue(properties(createRequest).containsKey("ai_itinerary_id"), "create ai link"),
+                () -> assertFalse(required(createRequest).contains("ai_itinerary_id"), "ai link stays optional"),
+                () -> assertEquals(
+                        Boolean.TRUE,
+                        properties(createRequest).get("ai_itinerary_id").get("nullable"),
+                        "create ai link nullable"),
+                () -> assertTrue(properties(tripPlan).containsKey("ai_itinerary_id"), "trip plan ai link"),
+                () -> assertEquals(
+                        Boolean.TRUE,
+                        properties(tripPlan).get("ai_itinerary_id").get("nullable"),
+                        "trip plan ai link nullable"),
+                () -> assertTrue(tripDetailProperties.containsKey("ai_itinerary_id"), "trip detail ai link"),
+                () -> assertTrue(
+                        enums(properties(errorSchema).get("code")).containsAll(List.of(
+                                "AI_NOT_CONFIGURED", "AI_UPSTREAM_ERROR", "AI_INVALID_OUTPUT",
+                                "WEATHER_UPSTREAM_ERROR")),
+                        "ai / weather error codes")
         );
     }
 
