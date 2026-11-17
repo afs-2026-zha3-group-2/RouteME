@@ -68,6 +68,23 @@ export async function applyViaApi(
   return (await response.json()) as { id: number };
 }
 
+/** 发布页目的地级联：先点开「目的地」，再依次选省、市。 */
+export async function pickDestination(page: Page, province: string, city: string) {
+  await page.getByRole('button', { name: '目的地', exact: true }).click();
+  await page.locator('.area-option', { hasText: province }).first().click();
+  await page.locator('.area-option', { hasText: city }).first().click();
+}
+
+/** 途经点 / 集合地点的离线地名选择：输入后等候选出现，再点中匹配项。 */
+export async function pickPlace(page: Page, field: string, name: string) {
+  const input = page.getByRole('textbox', { name: new RegExp(field) });
+  await input.fill(name);
+  const option = page.locator('.amap-search-item', { hasText: name }).first();
+  await expect(option).toBeVisible();
+  await option.click();
+  await expect(page.locator('.place-chip-name', { hasText: name }).first()).toBeVisible();
+}
+
 export async function acceptApplicationViaApi(
   page: Page,
   publisherId: number,

@@ -54,6 +54,42 @@
 
 ---
 
+# Story list — REQ-022（issue #32 安全学习恢复信用分）
+
+> 编号说明：REQ-019 / S19 由 `add-credit-account` 占用、REQ-020 由并行 `refine-detail-companions` 预留、REQ-021 / S21 为 `add-trip-cancel`；本故事顺延为 **REQ-022 / S22**。
+
+- **来源：** issue #32 `[P0] 安全学习恢复信用分`（信用系统迭代 3 / Story 6 / 5 点 / 落点页面：安全学习页）
+- **Change：** `add-credit-recovery`（`user-credit` ADDED Requirements，追加恢复段）
+- **口径：** 一条故事 = 一个新页面（安全学习）+ 一组考试端点 + 一次分数迁移（< 60 → 60）+ 一个拦截点（发布行程）
+- **范围：** 含恢复段与低分限制端（用户裁决 D1 / D6）；扣分 / 加分事件（#29–#31）、自动封禁、人工封禁解封、管理后台题库维护（#23）不在本故事内。
+- **更新时间：** 2026-11-17
+
+| Story | Title | 角色 | Priority | Iteration | Points | Page | Parent REQ | Change | Status |
+|---|---|---|---|---|---|---|---|---|---|
+| S22 | 安全学习恢复信用分（< 60 → 60） | 受限用户（信用分 < 60） | P0 | 信用系统迭代 3 | 5 | 安全学习页 | REQ-022 | `add-credit-recovery` | P3 Pass（2026-11-17，G1 Pass）；P4 Pass（2026-11-17） |
+
+## Traceability（REQ-022）
+
+| Story | Requirement scenarios | Change spec | Story file |
+|---|---|---|---|
+| S22 | REQ-022 §4 R-1 ~ R-27 | `openspec/changes/add-credit-recovery/specs/user-credit/spec.md`（ADDED：7 Requirement / 29 Scenario） | 无独立故事文件：以意图 + proposal + Delta 承接（与 REQ-012 / REQ-019 同口径） |
+
+## Notes（REQ-022）
+
+- **不拆子故事：** 「参加考试 → 判分通过 → 补到 60 → 限制解除」是同一垂直切片；拆开会出现「能考试但不能恢复」或「能恢复但没被拦过」的不可验收半成品。
+- **限制端必须同包交付（D1）：** 故事把「低于 60 被限制」当作前提，但该限制在代码中不存在（`CREDIT_SCORE_BELOW_60` 全仓 0 命中）；若只做恢复端，验收时无法证明分数恢复带来了能力恢复。
+- **限制范围仅「发布行程」（D6）：** 与故事「旅行社交功能受限」的直觉口径不完全一致；Delta R1 显式写「提交申请 / 聊天 / 改资料 MUST NOT 被拒绝」，扩展拦截面需另开 change。
+- **配额双真相：** 考试次数看考试会话（每月 2 次，开始即计次）、恢复次数看 `credit_ledger`（每月 1 次），不建计数表（D3 / D5）；自然月按 `Asia/Shanghai`（D4）。
+- **前置依赖：** 扣分事件（#29–#31）未落地，演示需种子账号造分；原型无安全学习页，P3 先补截点（`@rule:prototype-ui-alignment`）。
+- **归档顺序：** `openspec/specs/` 尚无 `user-credit`，本 change MUST 排在 `add-credit-account` 之后归档。
+- **P3 产出（2026-11-17）：** 原型截点 `docs/prototype/credit-learning.html`（四态 + 深色 + 三组演示场景）、`atdd-design.md`（A1–A29：API 24 / 仅 E2E 2 / Defer UT 3）、`design.md`（D1–D14）、`tasks.md`（T1–T13，契约 T1 在最前，覆盖 29/29）；阶段记录 `docs/sdd/add-credit-recovery/p3-design.md`。
+- **P3 工件评审（2026-11-17）：** `docs/reviews/20261117-add-credit-recovery-{proposal,spec,design,tasks}-review.md` 四份均 **Pass**（BLOCKER 0 / WARNING 10 全已收口）；评审中修正 2 处事实错误（T2 的 `V21` 升级基线、Maven `-Dtest` 的 `+` 分隔符）、1 处规格与实现冲突（R6「MUST 立即展示」→「进入 / 重新进入时取数」）、3 处设计缺口（先配额后资格、阈值单点、原因码文案归属 D14）；报告已由 WAYNE + Lewis Liu 签署，工件第二签署 Jay 已签（2026-11-17）。
+- **P3 裁决：** G1 期间按起草态推进，2026-11-17 已补签为 Pass（IO=WAYNE / SA=Jacky）并进入 P4；OQ-5 只存完成标记 + 结果（不建逐题明细表）；OQ-6 用 `#/credit/learning` 独立页、入口仅「发布行程被拦截提示」；并发不引入 `SELECT ... FOR UPDATE`（SQLite 无行锁语法，改用 `credit_ledger` 幂等键唯一索引 + `recorded(key)` 预判）。
+- **P4 产出（2026-11-17，`/sdd:atdd-apply`）：** T1–T13 全绿。契约 `0.16.0`（3 端点 / 4 schema / 6 错误码 / `POST /api/trips` 403 `CREDIT_SCORE_BELOW_60`）+ `V22__add_credit_learning.sql`（单表 + `(user_id, month_key)` 索引，双引擎、旧库 V20 升级覆盖）；后端 `CreditLearningService`（会话 / 学习完成 / 判分）+ `CreditReason`（D14）+ `CreditGateService.assertCanPublish`（仅 `TripController.create` 调用）；前端 `credit/learningState.ts`（`phase` / `toViewModel` / `quizProgress` / `errorMessage`）+ `credit/LearningPage.tsx`（五态 `intro/quiz/result/done/eligible`，`sessionStorage` 续考）+ `trips/publishGuard.ts`（`creditGuard` / `generic` 分流 + 专用 Alert「去安全学习」）；E2E `credit-learning.spec.ts` 3/3（45 → 拦截 → 学习 → 60 → 放行全闭环 / 62 无需恢复 / 45 分遍历首页、我的、聊天无入口）。门禁：后端 **348/348**、前端 **308/308（40 文件）**、`typecheck` + `build` 通过、`openspec validate --strict` valid、Redocly 0 error / 19 warning；阶段记录 `docs/sdd/add-credit-recovery/p4-apply.md`；待 `/sdd:local-verify` 与 G2。
+- 未接入外部 ALM；ALM Sync 状态记为 Pending。
+
+---
+
 # Story list — REQ-008（S18 完善个人资料并生成个人主页）
 
 - **来源：** 用户提供的故事与 16 条验收标准（2026-11-16）；扩展原型 S02「查看他人的昵称、简介与旅行兴趣」

@@ -26,6 +26,7 @@ import {
   type TripFormValues,
 } from './tripForm';
 import { addMeetingArea } from './meetingForm';
+import { describePublishFailure } from './publishGuard';
 import {
   INTEREST_TAGS,
   MAX_MEETING_AREAS,
@@ -55,6 +56,7 @@ export function TripCreatePage({ currentUser, fromTripId }: Props) {
   const [tagError, setTagError] = useState<string | null>(null);
   const [meetingDraft, setMeetingDraft] = useState('');
   const [meetingDraftError, setMeetingDraftError] = useState<string | null>(null);
+  const failure = describePublishFailure(submitError);
 
   useEffect(() => {
     if (fromTripId === undefined) {
@@ -480,12 +482,32 @@ export function TripCreatePage({ currentUser, fromTripId }: Props) {
               />
             </Field>
 
-            {submitError !== null && (
+            {failure?.kind === 'creditGuard' && (
+              <Alert
+                className="publish-guard"
+                type="warning"
+                showIcon
+                title={tripMessages.publishGuardTitle}
+                description={
+                  <>
+                    <p className="publish-guard-body">{tripMessages.publishGuardBody}</p>
+                    <p className="publish-guard-note">{tripMessages.publishGuardRemaining}</p>
+                  </>
+                }
+                action={
+                  <Button type="primary" href="#/credit/learning">
+                    {tripMessages.publishGuardAction}
+                  </Button>
+                }
+              />
+            )}
+
+            {failure?.kind === 'generic' && (
               <Alert
                 type="error"
                 showIcon
                 title={tripMessages.failedTitle}
-                description={submitError}
+                description={failure.code}
               />
             )}
 

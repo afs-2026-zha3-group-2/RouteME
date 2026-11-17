@@ -283,3 +283,42 @@ export type ExperienceFilters = {
   date_to?: string;
   tags?: string[];
 };
+
+/** 安全学习题库的四类题材，与契约 `LearningQuestion.category` 同值。 */
+export type LearningCategory = 'travel_safety' | 'stranger_companion' | 'platform_rules' | 'privacy';
+
+/** 下发的题目：选项顺序即作答下标，响应不含正确答案。 */
+export type LearningQuestion = {
+  id: string;
+  category: LearningCategory;
+  question: string;
+  options: string[];
+};
+
+/** 考试会话（`LearningSession`）：`learning_completed` 为 false 时提交作答会被拒。 */
+export type LearningSession = {
+  session_id: number;
+  questions: LearningQuestion[];
+  exam_used: number;
+  exam_limit: number;
+  month: string;
+  learning_completed: boolean;
+};
+
+/** 逐题对错：`question_id` 对应下发题目，正确答案不下发。 */
+export type LearningAnswerDetail = {
+  question_id: string;
+  correct: boolean;
+};
+
+/** 判分结果（`LearningResult`）：`recovery_applied` 为 false 时不得播报「已恢复」。 */
+export type LearningResult = {
+  session_id: number;
+  passed: boolean;
+  score: number;
+  pass_line: number;
+  details: LearningAnswerDetail[];
+  recovery_applied: boolean;
+  credit_score: number;
+  credit_level: CreditLevel;
+};

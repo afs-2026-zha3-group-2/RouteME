@@ -116,6 +116,21 @@ public class CreditServiceImpl extends AbstractServiceImpl<CreditLedgerMapper, C
         return UserCredit.of(booking.userId(), after);
     }
 
+    @Override
+    public boolean recorded(String idempotencyKey) {
+        return idempotencyKey != null && !idempotencyKey.isBlank() && ledgerExists(idempotencyKey);
+    }
+
+    @Override
+    public boolean recorded(String idempotencyKey, String relatedId) {
+        if (idempotencyKey == null || idempotencyKey.isBlank()) {
+            return false;
+        }
+        return baseMapper.selectCount(Wrappers.<CreditLedgerEntity>lambdaQuery()
+                .eq(CreditLedgerEntity::getIdempotencyKey, idempotencyKey)
+                .eq(CreditLedgerEntity::getRelatedId, relatedId)) > 0;
+    }
+
     private UserCreditAccountEntity requireAccount(long userId) {
         UserCreditAccountEntity account = accountMapper.selectById(userId);
         if (account != null) {

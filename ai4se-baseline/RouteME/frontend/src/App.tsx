@@ -3,6 +3,7 @@ import { Alert, Button, ConfigProvider, Space, Spin, Typography, message } from 
 import zhCN from 'antd/locale/zh_CN';
 import { loadSessionUser, loadUsers, logoutAccount } from './api';
 import { ChatPage } from './chat/ChatPage';
+import { LearningPage } from './credit/LearningPage';
 import { ShareExperiencePage } from './experiences/ShareExperiencePage';
 import { HomePage } from './home/HomePage';
 import { tripMessages } from './i18n/tripMessages';
@@ -191,6 +192,7 @@ export function App() {
           {route.name === 'mine' && (
             <MyTripsPage currentUser={currentUser} isAuthenticated={authToken !== null} />
           )}
+          {route.name === 'creditLearning' && <LearningPage currentUser={currentUser} />}
           {route.name === 'map' && (
             <MapExplorerPage provinceCode={route.provinceCode} cityCode={route.cityCode} />
           )}

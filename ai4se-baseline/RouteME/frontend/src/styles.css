@@ -1185,6 +1185,32 @@ svg {
   border-radius: var(--r);
 }
 
+/* 发布被信用分拦截：唯一的“去安全学习”入口（A1 / D6），其余页面不得出现 */
+.publish-guard.ant-alert {
+  margin-bottom: 4px;
+  border-radius: var(--r);
+  border-color: rgba(217, 134, 19, 0.34);
+  background: linear-gradient(120deg, rgba(255, 183, 3, 0.12), rgba(255, 122, 69, 0.08));
+}
+
+.publish-guard .publish-guard-body {
+  margin: 4px 0 0;
+  font-size: 12.8px;
+  line-height: 1.66;
+  color: var(--ink-2);
+}
+
+.publish-guard .publish-guard-note {
+  margin: 4px 0 0;
+  font-size: 11.8px;
+  line-height: 1.6;
+  color: var(--t-warn);
+}
+
+.publish-guard .ant-alert-action {
+  align-self: center;
+}
+
 .publish-panel .form-actions {
   padding-top: 4px;
   border-top: 0;
