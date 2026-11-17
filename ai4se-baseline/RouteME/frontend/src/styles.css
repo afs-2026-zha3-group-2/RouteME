@@ -6935,14 +6935,6 @@ svg {
   height: clamp(220px, 42vw, 300px);
 }
 
-.amap-picker-map .amap-canvas-host {
-  cursor: grab;
-}
-
-.amap-picker-map .amap-canvas-host.is-dragging {
-  cursor: grabbing;
-}
-
 /* 选中位置信息卡：钉在点击点上，随地图移动。 */
 .amap-point-callout {
   position: absolute;

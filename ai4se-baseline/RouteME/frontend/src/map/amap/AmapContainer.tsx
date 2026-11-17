@@ -24,6 +24,11 @@ type Props = {
   className?: string;
   onReady?: (map: AmapMap) => void;
   onMapClick?: (point: LngLat) => void;
+  /**
+   * 鼠标指针语义：可选点的地图用 crosshair（十字准星，指向哪里就选哪里）；
+   * 只读地图用 grab（可以拖动查看）。默认 crosshair。
+   */
+  cursor?: 'crosshair' | 'grab';
 };
 
 /** 连续加载失败多少张瓦片后判定底图不可用（避免个别瓦片失败就报错）。 */
@@ -38,6 +43,7 @@ export function AmapContainer({
   className,
   onReady,
   onMapClick,
+  cursor = 'crosshair',
 }: Props) {
   const hostRef = useRef<HTMLDivElement | null>(null);
   const mapRef = useRef<AmapMap | null>(null);
@@ -108,6 +114,7 @@ export function AmapContainer({
         .join(' ')}
       data-testid="amap-container"
       data-status={status}
+      data-cursor={cursor}
       role="region"
       aria-label={ariaLabel}
       aria-busy={status === 'loading'}
