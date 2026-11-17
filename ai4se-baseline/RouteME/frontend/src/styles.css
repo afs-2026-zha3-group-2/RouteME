@@ -3481,8 +3481,8 @@ svg {
   border-radius: 14px;
   background: var(--surface);
   box-shadow:
-    0 4px 14px -8px rgba(6, 35, 43, 0.25),
-    0 18px 40px -24px rgba(6, 35, 43, 0.45);
+    0 4px 14px -8px rgba(20, 51, 95, 0.25),
+    0 18px 40px -24px rgba(20, 51, 95, 0.45);
 }
 
 .soft-select-option {
@@ -6217,7 +6217,7 @@ svg {
 .amap-companion-percent {
   padding: 3px 8px;
   border-radius: 99px;
-  background: color-mix(in srgb, #7b5cff 14%, transparent);
+  background: color-mix(in srgb, var(--dusk) 14%, transparent);
   color: var(--t-dusk);
   font-size: 12px;
   font-weight: 800;
