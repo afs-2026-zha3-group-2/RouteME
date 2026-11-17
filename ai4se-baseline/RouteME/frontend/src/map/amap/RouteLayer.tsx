@@ -9,7 +9,7 @@ import { useEffect, useRef } from 'react';
 import type { AmapMap, AmapMarker, AmapPolyline, LngLat } from './types';
 import type { RoutePlan, RouteWaypoint } from './AmapService';
 
-const ROUTE_COLOR = '#6C5CE7';
+const ROUTE_COLOR = '#2f9fe0';
 const ROUTE_CASING = '#FFFFFF';
 
 type Props = {

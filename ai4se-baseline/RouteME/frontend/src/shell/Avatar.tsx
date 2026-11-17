@@ -1,6 +1,7 @@
 import { useState, type CSSProperties } from 'react';
 
-const HUES = [186, 22, 268, 152, 206, 44];
+// 色相取自品牌色族：松石绿 / 珊瑚橙 / 海军蓝 / Jade / 天蓝 / 琥珀
+const HUES = [174, 18, 210, 152, 199, 42];
 
 type AvatarUser = {
   id: number;

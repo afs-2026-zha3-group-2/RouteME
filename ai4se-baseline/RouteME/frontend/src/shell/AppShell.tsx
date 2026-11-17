@@ -233,7 +233,9 @@ export function AppShell({
         <a className="brand" href="#/" aria-label="RouteMe 路觅首页">
           <BrandMark />
           <span className="brand-text">
-            <b>RouteMe</b>
+            <b>
+              Route<span className="brand-me">Me</span>
+            </b>
             <i>路觅</i>
           </span>
         </a>
