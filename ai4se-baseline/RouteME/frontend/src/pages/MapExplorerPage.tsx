@@ -34,6 +34,7 @@ import { TravelerMatchPanel } from '../map/amap/TravelerMatchPanel';
 import { WaypointPanel } from '../map/amap/WaypointPanel';
 import { matchCompanions, topCompanionMatch } from '../map/amap/companions';
 import { MOCK_COMPANIONS } from '../map/amap/mockCompanions';
+import { buildSavedRoute, saveRoute } from '../map/amap/savedRoutes';
 import type { AmapMap, LngLat } from '../map/amap/types';
 
 type Props = {
@@ -70,6 +71,7 @@ export function MapExplorerPage({ provinceCode, cityCode }: Props) {
   const [routeError, setRouteError] = useState<string | null>(null);
   const [candidate, setCandidate] = useState<PlaceResult | null>(null);
   const [candidateLoading, setCandidateLoading] = useState(false);
+  const [savedLabel, setSavedLabel] = useState<string | null>(null);
   const [dateRange, setDateRange] = useState<[string, string]>([
     dayjs().add(3, 'day').format('YYYY-MM-DD'),
     dayjs().add(5, 'day').format('YYYY-MM-DD'),
@@ -168,6 +170,10 @@ export function MapExplorerPage({ provinceCode, cityCode }: Props) {
     }
   }, [waypoints.length]);
 
+  useEffect(() => {
+    setSavedLabel(null);
+  }, [waypoints, mode, dateRange]);
+
   const reorder = (from: number, to: number) => {
     setWaypoints((previous) => {
       const next = [...previous];
@@ -210,6 +216,21 @@ export function MapExplorerPage({ provinceCode, cityCode }: Props) {
 
   const focusWaypoint = (id: string) => {
     setFocusId(id);
+  };
+
+  const save = () => {
+    if (route === null) {
+      return;
+    }
+    const saved = buildSavedRoute(waypoints, route, {
+      start: dateRange[0],
+      end: dateRange[1],
+    });
+    saveRoute(saved);
+    setSavedLabel(
+      `已保存 ${saved.stops.length} 个途经点 · ${formatDistance(saved.distanceMeters)}`,
+    );
+    message.success('路线已保存到本机');
   };
 
   return (
@@ -348,6 +369,17 @@ export function MapExplorerPage({ provinceCode, cityCode }: Props) {
             focusId={focusId}
             onFocus={focusWaypoint}
           />
+
+          {route !== null && (
+            <Button block onClick={save}>
+              保存路线
+            </Button>
+          )}
+          {savedLabel !== null && (
+            <Typography.Text type="secondary" className="amap-side-hint">
+              {savedLabel}
+            </Typography.Text>
+          )}
 
           <TravelerMatchPanel
             matches={matches}

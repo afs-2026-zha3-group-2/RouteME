@@ -7,6 +7,41 @@
 - **契约** [openapi.yaml](openapi.yaml)（v0.5.0，前后端唯一事实源）
 - **规格** [openspec/specs](../openspec/specs)（hello-world / trip-plans / trip-companions / trip-experiences）
 
+## 旅行地图（高德 JS API 2.0）
+
+地图、搜索、规划与同行者展示已从离线 SVG 切换到高德 JS API 2.0；全国城市与景点由高德数据提供，不再维护中国/省/市 SVG。
+
+| 位置 | 组件 / 服务 | 职责 |
+|---|---|---|
+| `frontend/src/map/amap` | `AmapContainer` | 加载 JS API、Map 实例、缩放/定位/全屏 |
+| | `PlaceSearchBox` | 城市、景点、地址搜索（加载/空/错误状态） |
+| | `WaypointPanel` + `ItineraryPanel` | 途经点拖拽排序、删除、清空、出行方式、距离与时间 |
+| | `RouteLayer` | 高德路线折线 + 起终点/编号 Marker，与列表联动 |
+| | `TravelerMatchPanel` | 85% 同路 / 3 位同行者的聚合与详情弹窗 |
+| | `AmapService` | 搜索、逆地理、步行/驾车/骑行路线（RouteMe 数据模型） |
+| | `companions` + `mockCompanions` | 同行者 Mock 数据模型与重合度计算（UI 不写死百分比） |
+| backend | `AmapProxyController` | `/api/amap/**` 与 `/_AMapService/**` 同源代理，补 Web 服务 Key / 安全密钥 |
+
+### 环境变量
+
+| 变量 | 位置 | 说明 |
+|---|---|---|
+| `VITE_AMAP_JS_KEY` | `frontend/.env.local` | 高德 **Web 端（JS API）** Key，会出现在浏览器脚本中 |
+| `VITE_AMAP_SECURITY_CODE` | 可选 | 仅在 `VITE_AMAP_PROXY_PATH=off` 直连时使用；推荐留空走代理 |
+| `VITE_AMAP_PROXY_PATH` | 可选，默认 `/api/amap` | 前端 REST 代理前缀；`/_AMapService` 固定作为 JS API 安全代理一级路由 |
+| `AMAP_WEB_SERVICE_KEY` | 后端环境变量或 `backend/amap-local.yml` | 高德 **Web 服务** Key（或配合安全密钥使用的 JS Key） |
+| `AMAP_SECURITY_JS_CODE` | 后端环境变量或 `backend/amap-local.yml` | 高德 JS API 安全密钥 `securityJsCode`，只在后端使用 |
+
+`backend/amap-local.yml` 与 `frontend/.env.local` 已被 git 忽略；示例见 `frontend/.env.example`。生产环境不要把 Web 服务 Key 或 `securityJsCode` 写进前端产物。
+
+> 若高德控制台提示 `USERKEY_PLAT_NOMATCH` / `INVALID_USER_SCODE`，说明 Key 平台与用途不匹配或缺少安全密钥：请使用 Web 服务 Key，或把该 JS Key 对应的 `securityJsCode` 配到 `AMAP_SECURITY_JS_CODE`。
+
+### Mock 边界
+
+- 真实：地图瓦片、地点搜索、地理编码、步行/驾车/骑行路线、距离与预计时间。
+- Mock：同行者资料、日期、偏好、共同景点与重合度（`mockCompanions.ts`，由 `companions.ts` 计算并收窄）；路线生成本身不依赖 Mock。
+- 保存路线当前写入浏览器 `localStorage`（`savedRoutes.ts`），字段包含 POI ID、名称、经纬度、顺序、出行方式、日期、距离与预计时间；接入后端后替换 `saveRoute` 即可。
+
 ## 后端结构
 
 ```text
@@ -53,11 +88,14 @@ ai4se-baseline/RouteME/
 ```powershell
 # 1) 后端（必须从 backend 目录启动，数据库相对路径才是 ../SqlLite/）
 cd ai4se-baseline/RouteME/backend
+# 地图环境变量：可写进 backend/amap-local.yml（已忽略）或直接 export
+# AMAP_WEB_SERVICE_KEY / AMAP_SECURITY_JS_CODE
 .\mvnw.cmd spring-boot:run          # http://localhost:8080
 
 # 2) 前端
 cd ai4se-baseline/RouteME/frontend
 npm install                          # 不要用 npm ci，见「常见问题」
+# 地图环境变量：把 .env.example 复制为 .env.local 并填 VITE_AMAP_JS_KEY
 npm run dev                          # http://localhost:5173，/api 代理到 8080
 ```
 
