@@ -1,4 +1,5 @@
 import { CITY_NAMES } from '../map/placeCatalog';
+import type { TripTravelMode } from '../types';
 
 /**
  * Destination suggestions come from the offline map gazetteer, so the filter
@@ -28,4 +29,14 @@ export const MAX_TAG_LENGTH = 12;
 export const MAX_TITLE_LENGTH = 40;
 export const MIN_STOPS = 2;
 export const MAX_STOPS = 8;
-export const MAX_MEETING_AREAS = 3;
+/** 集合地点只保留一个（历史行程可能仍有多个，只读展示不报错）。 */
+export const MAX_MEETING_AREAS = 1;
+
+/** 发布表单的出行方式选项：自驾 / 骑行 / 公共交通。 */
+export const TRIP_TRAVEL_MODES: readonly TripTravelMode[] = ['driving', 'bicycling', 'transit'];
+
+export const TRIP_TRAVEL_MODE_LABELS: Record<TripTravelMode, string> = {
+  driving: '自驾',
+  bicycling: '骑行',
+  transit: '公共交通',
+};

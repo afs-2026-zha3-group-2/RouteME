@@ -130,6 +130,9 @@ export type AuthRegisterRequest = {
 
 export type TripStatus = 'recruiting' | 'full' | 'ongoing' | 'completed' | 'cancelled';
 
+/** 发布时可选的出行方式：自驾 / 骑行 / 公共交通（契约 0.15.0 起）。 */
+export type TripTravelMode = 'driving' | 'bicycling' | 'transit';
+
 export type TripSummary = {
   id: number;
   title: string;
@@ -142,6 +145,8 @@ export type TripSummary = {
   stops: string[];
   meeting_areas: string[];
   meeting_time: string | null;
+  /** 出行方式；0.15.0 之前发布的行程为 null（视为未填写）。 */
+  travel_mode: TripTravelMode | null;
   tags: string[];
   capacity: number;
   joined_count: number;
@@ -187,6 +192,7 @@ export type TripCreateRequest = {
   stops: string[];
   meeting_areas?: string[] | null;
   meeting_time?: string | null;
+  travel_mode?: TripTravelMode | null;
   note?: string | null;
   budget_min_cents?: number | null;
   budget_max_cents?: number | null;

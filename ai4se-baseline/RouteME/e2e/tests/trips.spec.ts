@@ -473,8 +473,8 @@ test('publish map cascade picks the destination without writing stops', async ({
   await expect(page.locator('.place-chip-name')).toHaveCount(0);
 });
 
-test('publishes multiple meeting areas and adds a third from the edit dialog', async ({ page }) => {
-  const title = `E2E 多集合区域 ${Date.now()}`;
+test('publishes a single meeting area and replaces it from the edit dialog', async ({ page }) => {
+  const title = `E2E 单一集合点 ${Date.now()}`;
   await loginAs(page, 1);
   await page.goto('/#/trips/new');
   await page.getByLabel('标题').fill(title);
@@ -483,44 +483,49 @@ test('publishes multiple meeting areas and adds a third from the edit dialog', a
   await pickPlace(page, '途经点', '情侣路');
 
   const draft = page.getByLabel(/集合区域/);
+  const meetingPicker = page.locator('.publish-panel').nth(2).locator('.place-picker');
   await draft.fill('香洲港客运站');
   await draft.press('Enter');
+  await expect(meetingPicker.locator('.place-chip-name')).toHaveCount(1);
   await draft.fill('情侣路驿站');
   await draft.press('Enter');
-  await expect(page.locator('.place-chip-name', { hasText: '香洲港客运站' })).toBeVisible();
-  await expect(page.locator('.place-chip-name', { hasText: '情侣路驿站' })).toBeVisible();
+  await expect(meetingPicker.locator('.place-chip-name')).toHaveCount(1);
+  await expect(meetingPicker.locator('.place-chip-name', { hasText: '情侣路驿站' })).toBeVisible();
   await page.getByRole('button', { name: /^发\s*布$/ }).click();
 
   await expect(page.getByRole('heading', { name: title })).toBeVisible();
-  await expect(page.locator('.detail-facts')).toContainText('香洲港客运站、情侣路驿站');
+  await expect(page.locator('.detail-facts')).toContainText('情侣路驿站');
+  await expect(page.locator('.detail-facts')).not.toContainText('香洲港客运站');
 
   await page.getByRole('button', { name: '编辑集合信息' }).click();
   const dialog = page.getByRole('dialog');
-  await expect(dialog.locator('.place-chip-name')).toHaveCount(2);
+  await expect(dialog.locator('.place-chip-name')).toHaveCount(1);
   await dialog.getByLabel('集合区域').fill('拱北口岸');
   await dialog.getByLabel('集合区域').press('Enter');
   await dialog.getByRole('button', { name: /保\s*存/ }).click();
   await expect(page.getByText('集合信息已更新')).toBeVisible();
-  await expect(page.locator('.detail-facts')).toContainText('香洲港客运站、情侣路驿站、拱北口岸');
+  await expect(page.locator('.detail-facts')).toContainText('拱北口岸');
 });
 
-test('rejects a fourth meeting area and overlong area text on the publish form', async ({ page }) => {
+test('rejects overlong meeting text and keeps a single meeting point', async ({ page }) => {
   await loginAs(page, 1);
   await page.goto('/#/trips/new');
 
   const draft = page.getByLabel(/集合区域/);
-  // 超长先于上限校验：空列表时 101 字被拒绝。
+  const meetingPicker = page.locator('.publish-panel').nth(2).locator('.place-picker');
+  // 超长先于替换校验：空列表时 101 字被拒绝。
   await draft.fill('长'.repeat(101));
   await draft.press('Enter');
   await expect(page.getByText('集合区域最多 100 字')).toBeVisible();
 
-  for (const area of ['甲集合点', '乙集合点', '丙集合点']) {
-    await draft.fill(area);
-    await draft.press('Enter');
-  }
-  await draft.fill('丁集合点');
+  await draft.fill('甲集合点');
   await draft.press('Enter');
-  await expect(page.getByText('最多选择 3 个集合区域')).toBeVisible();
+  await expect(meetingPicker.locator('.place-chip-name')).toHaveCount(1);
+  await draft.fill('乙集合点');
+  await draft.press('Enter');
+  await expect(meetingPicker.locator('.place-chip-name')).toHaveCount(1);
+  await expect(meetingPicker.locator('.place-chip-name', { hasText: '乙集合点' })).toBeVisible();
+  await expect(page.getByText('集合区域最多 100 字')).toHaveCount(0);
 });
 
 test('detail page renders the route map with numbered pins and a route strip', async ({ page }) => {
@@ -590,28 +595,28 @@ test('detail page keeps the map and warns when a stop is off the gazetteer', asy
   await expect(page.locator('.detail-stops')).toContainText('不存在的地点XYZ');
 });
 
-test('meeting edit syncs multiple areas and the API guards limit and ownership', async ({ page }) => {
+test('meeting edit replaces the single area and the API guards limit and ownership', async ({ page }) => {
   const title = `E2E 集合守护 ${Date.now()}`;
   const created = await createTripViaApi(page, title, todayIso(), todayIso(), {
-    meetingAreas: ['香洲港客运站', '情侣路驿站'],
+    meetingAreas: ['香洲港客运站'],
   });
   await loginAs(page, 1);
   await page.goto(`/#/trips/${created.id}`);
-  await expect(page.locator('.detail-facts')).toContainText('香洲港客运站、情侣路驿站');
+  await expect(page.locator('.detail-facts')).toContainText('香洲港客运站');
 
   await page.getByRole('button', { name: '编辑集合信息' }).click();
   const dialog = page.getByRole('dialog');
-  await expect(dialog.locator('.place-chip-name')).toHaveCount(2);
-  await dialog.getByRole('button', { name: '移除 情侣路驿站' }).click();
+  await expect(dialog.locator('.place-chip-name')).toHaveCount(1);
   await dialog.getByLabel('集合区域').fill('拱北口岸');
   await dialog.getByLabel('集合区域').press('Enter');
+  await expect(dialog.locator('.place-chip-name')).toHaveCount(1);
   await dialog.getByRole('button', { name: /保\s*存/ }).click();
   await expect(page.getByText('集合信息已更新')).toBeVisible();
-  await expect(page.locator('.detail-facts')).toContainText('香洲港客运站、拱北口岸');
+  await expect(page.locator('.detail-facts')).toContainText('拱北口岸');
 
   const tooMany = await page.request.put(`${API}/trips/${created.id}/meeting`, {
     headers: { 'X-User-Id': '1', 'Content-Type': 'application/json' },
-    data: { meeting_areas: ['一', '二', '三', '四'], meeting_time: null },
+    data: { meeting_areas: ['一', '二'], meeting_time: null },
   });
   expect(tooMany.status()).toBe(400);
 
