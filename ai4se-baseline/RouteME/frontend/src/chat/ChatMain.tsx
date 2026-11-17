@@ -48,7 +48,7 @@ export function ChatMain({
   return (
     <section className="chat-main">
       <div className="chat-head">
-        <Avatar user={other} size="lg" />
+        <Avatar user={other} />
         <span className="chat-head-info">
           <span className="chat-head-name">{other.nickname}</span>
           <span className="chat-head-trip">
