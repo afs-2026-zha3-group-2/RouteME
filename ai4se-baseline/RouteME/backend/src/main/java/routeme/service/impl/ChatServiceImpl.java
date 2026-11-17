@@ -111,7 +111,8 @@ public class ChatServiceImpl extends AbstractServiceImpl<ChatMessageMapper, Chat
         TripPlan trip = tripPlanService.requireCurrent(tripId);
         long receiverId = request == null ? 0 : request.receiverId();
         requireAccess(trip, senderId, receiverId);
-        if (trip.status(clock.instant()) == TripStatusEnum.COMPLETED) {
+        if (trip.status(clock.instant()) == TripStatusEnum.COMPLETED
+                || trip.status(clock.instant()) == TripStatusEnum.CANCELLED) {
             throw new ChatReadOnlyException(tripId);
         }
         ChatMessage message = new ChatMessage(

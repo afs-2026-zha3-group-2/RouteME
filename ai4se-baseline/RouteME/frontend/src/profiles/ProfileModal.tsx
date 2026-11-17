@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Alert, Button, Modal, Space, Spin, Typography } from 'antd';
 import { loadUserProfile } from '../api';
 import { profileMessages } from '../i18n/profileMessages';
+import { creditLine, creditTone } from '../profile/creditDisplay';
 import { Avatar } from '../shell/Avatar';
 import type { DemoUser, UserProfile } from '../types';
 import { formatJoinedAt, sharedInterests } from './profileFormat';
@@ -101,6 +102,9 @@ function ProfileBody({ currentUser, profile }: { currentUser: DemoUser; profile:
             {isMe && <span className="badge dusk no-dot">{profileMessages.thisIsYou}</span>}
           </span>
           {identity !== '' && <span className="profile-modal-meta">{identity}</span>}
+          <span className={`profile-credit is-compact ${creditTone(profile.credit_level)}`}>
+            {creditLine(profile.credit_score, profile.credit_level)}
+          </span>
           {profile.joined_at !== null && profile.joined_at !== undefined && (
             <span className="profile-modal-joined">
               {profileMessages.joinedPrefix} {formatJoinedAt(profile.joined_at, new Date())}

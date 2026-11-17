@@ -1,7 +1,7 @@
 openapi: 3.0.3
 info:
   title: RouteME API
-  version: 0.11.0
+  version: 0.14.0
   description: |
     RouteME 后端对外契约。本文件是前后端唯一事实源，字段名、类型、状态码与错误码只在这里定稿。
         当前包含：脚手架问候语、演示账户与账号认证（注册/登录/会话/退出）、旅行计划（浏览/筛选/发布/详情/结束），同行匹配、申请、退出、聊天、我的旅行与举报，以及游后体验分享与参考发布所需数据。
@@ -107,6 +107,57 @@ paths:
                 unexpected:
                   value:
                     code: INTERNAL_ERROR
+  /users/credits:
+    get:
+      operationId: loadUserCredits
+      summary: 批量读取信用状态
+      description: |
+        需携带 `X-User-Id`。供行程卡、申请列表与详情页发布者行一次取数；
+        `ids` 为逗号分隔的用户 id，最多 50 个；缺失信用账户的 id 按初始 80 分补齐。
+        只返回分数与等级码，不含任何加 / 扣分明细。
+      parameters:
+        - $ref: '#/components/parameters/DemoUserId'
+        - name: ids
+          in: query
+          required: true
+          description: 逗号分隔的用户 id，最多 50 个
+          schema:
+            type: string
+      responses:
+        '200':
+          description: 按请求顺序返回的信用状态
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/UserCreditEntry'
+              examples:
+                seeded:
+                  value:
+                    - user_id: 1
+                      credit_score: 80
+                      credit_level: good
+        '400':
+          description: ids 缺失、非数字或超过 50 个
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                invalid:
+                  value:
+                    code: INVALID_INPUT
+        '401':
+          description: 缺失或未知的 X-User-Id
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                missing:
+                  value:
+                    code: DEMO_USER_REQUIRED
   /users/{userId}/profile:
     get:
       operationId: loadUserProfile
@@ -700,6 +751,103 @@ paths:
                 $ref: '#/components/schemas/Error'
               examples:
                 alreadyCompleted:
+                  value:
+                    code: TRIP_NOT_OPEN
+        '500':
+          description: 未预期异常，响应不携带堆栈
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                unexpected:
+                  value:
+                    code: INTERNAL_ERROR
+  /trips/{tripId}/cancel:
+    post:
+      operationId: cancelTrip
+      summary: 取消行程
+      description: |
+        仅行程发布者且行程为 recruiting / full 时可调用。取消是终态：写入 cancelled_at 与原因，
+        待处理申请自动取消，已接受同行关系保留；行程不再出现在默认列表与匹配列表。
+        重复或并发取消只有一次成功，其他状态返回 409。
+      parameters:
+        - $ref: '#/components/parameters/DemoUserId'
+        - name: tripId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TripCancelRequest'
+            examples:
+              normal:
+                value:
+                  reason: personal
+              other:
+                value:
+                  reason: other
+                  note: 临时家里有事
+      responses:
+        '200':
+          description: 已取消的行程详情
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TripDetail'
+        '400':
+          description: 原因缺失、未知或说明不满足要求
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                missingReason:
+                  value:
+                    code: INVALID_INPUT
+        '401':
+          description: 缺少或未知的演示身份
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                missingUser:
+                  value:
+                    code: DEMO_USER_REQUIRED
+        '403':
+          description: 非发布者不能取消行程
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                forbidden:
+                  value:
+                    code: FORBIDDEN
+        '404':
+          description: 行程不存在
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                notFound:
+                  value:
+                    code: TRIP_NOT_FOUND
+        '409':
+          description: 行程不处于招募中 / 已满员，或已被并发取消
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                notOpen:
                   value:
                     code: TRIP_NOT_OPEN
         '500':
@@ -1382,6 +1530,96 @@ paths:
           $ref: '#/components/responses/NotFound'
         '500':
           $ref: '#/components/responses/Unexpected'
+  /trips/{tripId}/experiences/photos:
+    post:
+      operationId: uploadTripExperiencePhoto
+      summary: 上传游后体验图片
+      description: |
+        只能为已结束且自己参加过的行程上传；只接受 JPEG / PNG / WebP（按魔数判定，不信任声明类型与原始文件名），
+        单张不超过 5 MB；同一用户对同一行程最多 6 张（含已绑定与未绑定，第 7 张返回 400）。
+        上传成功返回未绑定的图片引用，随后随体验提交按 `photo_ids` 顺序绑定；
+        文件名由服务端生成，上传时剥离全部 EXIF 元数据。
+      parameters:
+        - $ref: '#/components/parameters/DemoUserId'
+        - name: tripId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [file]
+              properties:
+                file:
+                  type: string
+                  format: binary
+      responses:
+        '200':
+          description: 已保存的图片引用
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExperiencePhoto'
+        '400':
+          $ref: '#/components/responses/InvalidInput'
+        '401':
+          $ref: '#/components/responses/DemoUserRequired'
+        '403':
+          description: 行程未结束或当前用户不具备分享资格
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                notAllowed:
+                  value:
+                    code: EXPERIENCE_NOT_ALLOWED
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/Unexpected'
+  /experience-photos/{photoId}:
+    get:
+      operationId: loadExperiencePhoto
+      summary: 读取游后体验图片
+      description: |
+        公开只读图片端点；返回服务端保存的原图（已剥离 EXIF）。
+        缓存一天且不标记 immutable：图片被移除后服务端返回 404，浏览器缓存最多一天内自然失效。
+      parameters:
+        - name: photoId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: 体验图片
+          headers:
+            Cache-Control:
+              description: '`public, max-age=86400`'
+              schema:
+                type: string
+          content:
+            image/jpeg:
+              schema:
+                type: string
+                format: binary
+            image/png:
+              schema:
+                type: string
+                format: binary
+            image/webp:
+              schema:
+                type: string
+                format: binary
+        '404':
+          description: 图片不存在或已被移除
 components:
   parameters:
     DemoUserId:
@@ -1553,7 +1791,7 @@ components:
           description: 由必填字段派生的资料完善状态，不落库
     UserProfile:
       type: object
-      required: [id, nickname, avatar_initial, interests, profile_complete]
+      required: [id, nickname, avatar_initial, interests, profile_complete, credit_score, credit_level]
       properties:
         id:
           type: integer
@@ -1636,6 +1874,17 @@ components:
           type: boolean
           readOnly: true
           description: 六项必填同时成立时为 true；NULL / 空串 / 非法日期都算缺失
+        credit_score:
+          type: integer
+          minimum: 0
+          maximum: 100
+          readOnly: true
+          description: 当前信用分，0–100 闭区间；本人与他人视角均返回，不可由客户端修改
+        credit_level:
+          type: string
+          readOnly: true
+          enum: [excellent, good, fair, low, risk]
+          description: 由信用分实时派生：excellent 90–100 / good 80–89 / fair 60–79 / low 30–59 / risk 0–29
         joined_at:
           type: string
           format: date-time
@@ -1644,6 +1893,25 @@ components:
           description: 用户加入时间，UTC；仅读取端点返回
         stats:
           $ref: '#/components/schemas/ProfileStats'
+    UserCreditEntry:
+      type: object
+      required: [user_id, credit_score, credit_level]
+      properties:
+        user_id:
+          type: integer
+          format: int64
+          readOnly: true
+        credit_score:
+          type: integer
+          minimum: 0
+          maximum: 100
+          readOnly: true
+          description: 当前信用分，0–100 闭区间
+        credit_level:
+          type: string
+          readOnly: true
+          enum: [excellent, good, fair, low, risk]
+          description: 由信用分实时派生：excellent 90–100 / good 80–89 / fair 60–79 / low 30–59 / risk 0–29
     ProfileStats:
       type: object
       required: [published, completed, joined, shared]
@@ -1837,10 +2105,11 @@ components:
           description: 已加入人数，含发布者；由 trip-plans 维护
         status:
           type: string
-          enum: [recruiting, full, ongoing, completed]
+          enum: [recruiting, full, ongoing, completed, cancelled]
           readOnly: true
           description: |
-            四态：招募中 / 已满员 / 旅行中 / 已结束。优先级为已结束 > 旅行中 > 已满员 > 招募中；
+            五态：招募中 / 已满员 / 旅行中 / 已结束 / 已取消。
+            优先级为已取消 > 已结束 > 旅行中 > 已满员 > 招募中；
             到期未手动结束的行程在读取时物化为已结束。
         ending_soon:
           type: boolean
@@ -1899,6 +2168,24 @@ components:
               nullable: true
               readOnly: true
               description: 结束时间；非空表示已结束
+            cancelled_at:
+              type: string
+              format: date-time
+              nullable: true
+              readOnly: true
+              description: 取消时间；非空表示已取消
+            cancel_reason:
+              type: string
+              nullable: true
+              readOnly: true
+              enum: [personal, time_changed, plan_changed, not_enough_people, weather, illness, safety, other]
+              description: 取消原因；仅发布者与已接受同行者可见，其他请求为 null
+            cancel_note:
+              type: string
+              nullable: true
+              maxLength: 100
+              readOnly: true
+              description: 取消说明；仅「其他原因」必填，仅发布者与已接受同行者可见
     TripCreateRequest:
       type: object
       required: [title, destination_code, start_date, end_date, stops, capacity]
@@ -1970,6 +2257,19 @@ components:
           pattern: '^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$'
           description: 集合时间，本地墙上时间（无时区），日期部分不得晚于结束日期；未传或传 null 视为清空
           example: '2026-11-20T08:30'
+    TripCancelRequest:
+      type: object
+      required: [reason]
+      properties:
+        reason:
+          type: string
+          enum: [personal, time_changed, plan_changed, not_enough_people, weather, illness, safety, other]
+          description: 取消原因，8 项固定值
+        note:
+          type: string
+          nullable: true
+          maxLength: 100
+          description: 补充说明；选择 other 时必填，1–100 字
     Match:
       type: object
       required: [score, percentage, reasons, basis]
@@ -2177,6 +2477,18 @@ components:
         count:
           type: integer
           minimum: 1
+    ExperiencePhoto:
+      type: object
+      required: [id, url]
+      properties:
+        id:
+          type: integer
+          format: int64
+          readOnly: true
+        url:
+          type: string
+          description: 本站只读图片地址，形如 `/api/experience-photos/{id}`
+          example: /api/experience-photos/12
     ExperienceWriteRequest:
       type: object
       required: [content, intensity, advice]
@@ -2195,9 +2507,19 @@ components:
           minLength: 1
           maxLength: 120
           description: 给后来者的一条建议
+        photo_ids:
+          type: array
+          maxItems: 6
+          default: []
+          description: |
+            已上传图片的 id，按展示顺序排列；省略等同于空数组。
+            服务端去重后不得超过 6 个；只能引用本人上传且未绑定其它体验的图片。
+          items:
+            type: integer
+            format: int64
     Experience:
       type: object
-      required: [id, trip, author, content, intensity, advice, created_at, updated_at]
+      required: [id, trip, author, content, intensity, advice, photos, created_at, updated_at]
       properties:
         id:
           type: integer
@@ -2216,6 +2538,11 @@ components:
         advice:
           type: string
           maxLength: 120
+        photos:
+          type: array
+          description: 按提交顺序排列的图片；无图时为空数组
+          items:
+            $ref: '#/components/schemas/ExperiencePhoto'
         created_at:
           type: string
           format: date-time

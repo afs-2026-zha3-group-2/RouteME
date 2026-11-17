@@ -237,11 +237,15 @@
     return { ok: true, trip: t };
   }
 
-  function cancelTrip(id) {
+  function cancelTrip(id, reason, note) {
     var t = trip(id);
     if (!t || t.creatorId !== state.currentUserId) return false;
+    if (t.status !== 'RECRUITING' && t.status !== 'FULL') return false;
     snapshot('取消行程《' + t.title + '》');
     t.status = 'CANCELLED';
+    t.cancelledAt = Date.now();
+    t.cancelReason = reason || '';
+    t.cancelNote = note || '';
     appsOf(id).forEach(function (a) { if (a.status === 'PENDING') a.status = 'CANCELLED'; });
     commit();
     return true;
@@ -382,13 +386,14 @@
       existing.content = p.content.trim();
       existing.intensity = p.intensity;
       existing.advice = p.advice.trim();
+      existing.photos = (p.photos || []).slice(0, 6);
       existing.createdAt = Date.now();
       commit();
       return { ok: true, experience: existing, updated: true };
     }
     var e = {
       id: nextId('e'), tripId: tripId, authorId: state.currentUserId,
-      content: p.content.trim(), intensity: p.intensity, advice: p.advice.trim(), createdAt: Date.now()
+      content: p.content.trim(), intensity: p.intensity, advice: p.advice.trim(), photos: (p.photos || []).slice(0, 6), createdAt: Date.now()
     };
     state.experiences.unshift(e);
     commit();

@@ -5,6 +5,7 @@ import {
   Button,
   Card,
   DatePicker,
+  Image,
   Input,
   Modal,
   Progress,
@@ -33,6 +34,8 @@ import { AmapTripMap } from '../map/amap/AmapTripMap';
 import { AmapPlacePicker } from '../map/amap/AmapPlacePicker';
 import { shareEligibility } from '../experiences/shareEligibility';
 import { publisherSummary } from '../profile/profileDisplay';
+import { creditLine, creditTone } from '../profile/creditDisplay';
+import { useUserCredits } from '../profiles/useUserCredits';
 import { ReportModal } from '../safety/ReportModal';
 import { Avatar } from '../shell/Avatar';
 import type { DemoUser, Experience, MatchCandidate, TripApplication } from '../types';
@@ -52,6 +55,8 @@ import {
 } from './meetingForm';
 import { MAX_MEETING_AREAS } from './tripOptions';
 import { statusColor, statusLabel } from './tripStatus';
+import { TripCancelModal } from './TripCancelModal';
+import { cancelReasonLabel } from './tripCancel';
 import { useTrip } from './useTrip';
 import { useProfile } from '../profiles/ProfileContext';
 import { appDateTimePickerProps } from '../utils/datePickerProps';
@@ -84,6 +89,8 @@ function pickLatestApplication(
 export function TripDetailPage({ currentUser, tripId }: Props) {
   const { state, reload } = useTrip(currentUser.id, tripId);
   const { openProfile } = useProfile();
+  const publisherId = state.status === 'ready' ? state.trip.publisher.id : 0;
+  const publisherCredits = useUserCredits(publisherId > 0 ? [publisherId] : [], currentUser.id);
   const [feedback, setFeedback] = useState<Feedback | null>(null);
   const [completing, setCompleting] = useState(false);
   const [myApplication, setMyApplication] = useState<TripApplication | null>(null);
@@ -98,12 +105,15 @@ export function TripDetailPage({ currentUser, tripId }: Props) {
   >(null);
   const [reportOpen, setReportOpen] = useState(false);
   const [experiences, setExperiences] = useState<Experience[] | null>(null);
+  const [previewExperienceId, setPreviewExperienceId] = useState<number | null>(null);
+  const [previewIndex, setPreviewIndex] = useState(0);
   const [meetingOpen, setMeetingOpen] = useState(false);
   const [meetingForm, setMeetingForm] = useState<MeetingFormValues>(emptyMeetingForm());
   const [meetingErrors, setMeetingErrors] = useState<MeetingFieldErrors>({});
   const [meetingSaving, setMeetingSaving] = useState(false);
   const [meetingDraft, setMeetingDraft] = useState('');
   const [meetingDraftError, setMeetingDraftError] = useState<string | null>(null);
+  const [cancelOpen, setCancelOpen] = useState(false);
   const [focusStop, setFocusStop] = useState<string | null>(null);
   const mapSectionRef = useRef<HTMLDivElement | null>(null);
 
@@ -264,6 +274,7 @@ export function TripDetailPage({ currentUser, tripId }: Props) {
   const entry = applicationEntryState(trip, currentUser.id, myApplication);
   const isPublisher = entry.kind === 'publisher';
   const isCompleted = trip.status === 'completed';
+  const isCancelled = trip.status === 'cancelled';
   const participant = trip.participants.some((member) => member.id === currentUser.id);
   const companions = tripCompanions(trip.participants, trip.publisher.id);
   const canShare = shareEligibility(trip, currentUser.id).kind === 'ready';
@@ -391,6 +402,21 @@ export function TripDetailPage({ currentUser, tripId }: Props) {
             <Alert type="warning" showIcon title={tripMessages.detailEndingSoon} />
           )}
 
+          {isCancelled && (
+            <Alert
+              type="warning"
+              showIcon
+              title={tripMessages.detailCancelled}
+              description={
+                trip.cancel_reason
+                  ? `${tripMessages.detailCancelReason}：${cancelReasonLabel(trip.cancel_reason)}${
+                      trip.cancel_note ? ` · ${trip.cancel_note}` : ''
+                    }`
+                  : undefined
+              }
+            />
+          )}
+
           <section className="detail-section">
             <h3 className="section-title">{tripMessages.detailStops}</h3>
             {hasStops && (
@@ -456,7 +482,7 @@ export function TripDetailPage({ currentUser, tripId }: Props) {
             {isMeetingIncomplete(trip) && (
               <p className="detail-meta">{tripMessages.meetingEmptyHint}</p>
             )}
-            {isPublisher && !isCompleted && (
+            {isPublisher && !isCompleted && !isCancelled && (
               <div className="detail-actions">
                 <Button
                   size="small"
@@ -492,6 +518,18 @@ export function TripDetailPage({ currentUser, tripId }: Props) {
                         {interest}
                       </span>
                     ))}
+                  </span>
+                )}
+                {publisherCredits[trip.publisher.id] !== undefined && (
+                  <span
+                    className={`profile-credit is-compact publisher-credit ${creditTone(
+                      publisherCredits[trip.publisher.id].credit_level,
+                    )}`}
+                  >
+                    {creditLine(
+                      publisherCredits[trip.publisher.id].credit_score,
+                      publisherCredits[trip.publisher.id].credit_level,
+                    )}
                   </span>
                 )}
               </span>
@@ -540,6 +578,42 @@ export function TripDetailPage({ currentUser, tripId }: Props) {
                       <b>{tripMessages.experienceAdviceLabel}：</b>
                       {experience.advice}
                     </p>
+                    {experience.photos.length > 0 && (
+                      <div className="experience-photos">
+                        <Image.PreviewGroup
+                          items={experience.photos.map((photo) => photo.url)}
+                          preview={{
+                            open: previewExperienceId === experience.id,
+                            current: previewIndex,
+                            onChange: (current) => setPreviewIndex(current),
+                            onOpenChange: (open) => {
+                              setPreviewExperienceId(open ? experience.id : null);
+                              if (!open) {
+                                setPreviewIndex(0);
+                              }
+                            },
+                          }}
+                        >
+                          <Image
+                            src={experience.photos[0].url}
+                            alt={tripMessages.experiencePhotoAlt}
+                          />
+                        </Image.PreviewGroup>
+                        {experience.photos.length > 1 && (
+                          <Button
+                            size="small"
+                            className="experience-photos-more"
+                            onClick={() => {
+                              setPreviewIndex(0);
+                              setPreviewExperienceId(experience.id);
+                            }}
+                          >
+                            {tripMessages.experiencePhotoViewAll} {experience.photos.length}{' '}
+                            {tripMessages.experiencePhotoCountSuffix}
+                          </Button>
+                        )}
+                      </div>
+                    )}
                   </li>
                 ))}
               </ul>
@@ -616,11 +690,25 @@ export function TripDetailPage({ currentUser, tripId }: Props) {
                     >
                       {`与 ${trip.publisher.nickname} 沟通`}
                     </Button>
-                    {!isCompleted && (
+                    {!isCompleted && !isCancelled && (
                       <Button block danger loading={leaving} onClick={() => setConfirmAction('leave')}>
                         {tripMessages.leaveTrip}
                       </Button>
                     )}
+                  </>
+                )}
+
+                {entry.kind === 'cancelled' && (
+                  <>
+                    <p className="action-note">
+                      {`${tripMessages.applyCancelledTrip}，历史聊天仍可查看。`}
+                    </p>
+                    <Button
+                      block
+                      onClick={() => (window.location.hash = `#/chat/${trip.id}/${trip.publisher.id}`)}
+                    >
+                      {tripMessages.chatEntry}
+                    </Button>
                   </>
                 )}
                 {myApplication?.status === 'left' && (
@@ -670,10 +758,17 @@ export function TripDetailPage({ currentUser, tripId }: Props) {
                   {tripMessages.detailCompleteTrip}
                 </Button>
               )}
-              <Button onClick={() => (window.location.hash = `#/trips/${trip.id}/applications`)}>
-                {tripMessages.applicationsEntry}
-                {pendingCount > 0 ? `（${pendingCount}）` : ''}
-              </Button>
+              {!isCancelled && (
+                <Button onClick={() => (window.location.hash = `#/trips/${trip.id}/applications`)}>
+                  {tripMessages.applicationsEntry}
+                  {pendingCount > 0 ? `（${pendingCount}）` : ''}
+                </Button>
+              )}
+              {(trip.status === 'recruiting' || trip.status === 'full') && (
+                <Button danger onClick={() => setCancelOpen(true)}>
+                  {tripMessages.detailCancelTrip}
+                </Button>
+              )}
               <span className="badge dusk">{tripMessages.applyEntryOwn}</span>
             </div>
           )}
@@ -780,6 +875,16 @@ export function TripDetailPage({ currentUser, tripId }: Props) {
         </Space>
       </Modal>
 
+
+      <TripCancelModal
+        open={cancelOpen}
+        userId={currentUser.id}
+        trip={trip}
+        onClose={() => setCancelOpen(false)}
+        onCancelled={() => {
+          reload();
+        }}
+      />
 
       <ReportModal
         userId={currentUser.id}

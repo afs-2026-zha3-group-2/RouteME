@@ -59,6 +59,14 @@ function StatusIcon({ status }: { status: TripStatus }) {
       </svg>
     );
   }
+  if (status === 'cancelled') {
+    return (
+      <svg {...ICON_PROPS} data-status-icon={status}>
+        <circle cx="8" cy="8" r="5.6" />
+        <path d="m6.2 6.2 3.6 3.6M9.8 6.2l-3.6 3.6" />
+      </svg>
+    );
+  }
   return (
     <svg {...ICON_PROPS} data-status-icon={status}>
       <circle cx="6" cy="5.6" r="2.2" />

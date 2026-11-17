@@ -7,7 +7,8 @@ public enum TripStatusEnum {
     RECRUITING("recruiting", "招募中"),
     FULL("full", "已满员"),
     ONGOING("ongoing", "旅行中"),
-    COMPLETED("completed", "已结束");
+    COMPLETED("completed", "已结束"),
+    CANCELLED("cancelled", "已取消");
 
     private final String wireValue;
     private final String label;

@@ -2,6 +2,8 @@ import { useCallback, useEffect, useState } from 'react';
 import { Alert, Button, Card, Skeleton, Space, Tag, Typography, message } from 'antd';
 import { acceptApplication, loadTrip, loadTripApplications, rejectApplication } from '../api';
 import { tripMessages } from '../i18n/tripMessages';
+import { creditLine, creditTone } from '../profile/creditDisplay';
+import { useUserCredits } from '../profiles/useUserCredits';
 import type { DemoUser, TripApplication, TripDetail } from '../types';
 import { applicationLabel } from './applicationStatus';
 import { statusColor, statusLabel } from '../trips/tripStatus';
@@ -16,6 +18,8 @@ export function ApplicationsPage({ currentUser, tripId }: Props) {
   const [trip, setTrip] = useState<TripDetail | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busyId, setBusyId] = useState<number | null>(null);
+  const applicantIds = applications?.map((application) => application.applicant.id) ?? [];
+  const credits = useUserCredits(applicantIds, currentUser.id);
 
   const reload = useCallback(() => {
     setError(null);
@@ -120,6 +124,18 @@ export function ApplicationsPage({ currentUser, tripId }: Props) {
                         <Typography.Text strong>
                           {application.applicant.nickname} · {application.applicant.school}
                         </Typography.Text>
+                        {credits[application.applicant.id] !== undefined && (
+                          <span
+                            className={`profile-credit is-compact ${creditTone(
+                              credits[application.applicant.id].credit_level,
+                            )}`}
+                          >
+                            {creditLine(
+                              credits[application.applicant.id].credit_score,
+                              credits[application.applicant.id].credit_level,
+                            )}
+                          </span>
+                        )}
                         <Tag>{applicationLabel(application.status)}</Tag>
                       </Space>
                       <Typography.Text className="application-message">

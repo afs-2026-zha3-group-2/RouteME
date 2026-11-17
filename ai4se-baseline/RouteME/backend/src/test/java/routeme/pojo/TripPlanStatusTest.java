@@ -54,6 +54,15 @@ class TripPlanStatusTest {
     }
 
     @Test
+    void in_cancelledAt_out_cancelledWinsOverDateAndPeople() {
+        TripPlan cancelled = cancelledTrip(Instant.parse("2026-11-10T00:00:00Z"));
+
+        assertEquals(TripStatusEnum.CANCELLED, cancelled.status(at("2026-11-09T00:00:00Z")));
+        assertEquals(TripStatusEnum.CANCELLED, cancelled.status(at("2026-11-16T09:00:00Z")));
+        assertFalse(cancelled.endingSoon(at("2026-11-16T15:00:00Z")));
+    }
+
+    @Test
     void in_endingWindow_out_threeHoursBeforePlannedEnd() {
         TripPlan trip = trip(LocalDate.of(2026, 11, 16), LocalDate.of(2026, 11, 16), 1, 4, null);
 
@@ -95,6 +104,14 @@ class TripPlanStatusTest {
         return new TripPlan(
                 1L, 1L, "测试行程", "440400", "珠海市", start, end,
                 List.of("香洲港", "情侣路"), null, null, null, null, null, List.of(),
-                capacity, joined, completedAt, CREATED, CREATED);
+                capacity, joined, completedAt, CREATED, CREATED, null, null, null);
+    }
+
+    private static TripPlan cancelledTrip(Instant cancelledAt) {
+        return new TripPlan(
+                1L, 1L, "测试行程", "440400", "珠海市",
+                LocalDate.of(2026, 11, 16), LocalDate.of(2026, 11, 16),
+                List.of("香洲港", "情侣路"), null, null, null, null, null, List.of(),
+                4, 1, null, CREATED, CREATED, cancelledAt, "personal", null);
     }
 }

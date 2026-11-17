@@ -21,6 +21,9 @@ import {
   formatDuration,
   geocodePlace,
   planRoute,
+  reverseGeocode,
+  straightLineRoute,
+  type NearbyPlace,
   type PlaceResult,
   type RoutePlan,
   type RouteWaypoint,
@@ -69,8 +72,11 @@ export function MapExplorerPage({ provinceCode, cityCode }: Props) {
   const [routeRequested, setRouteRequested] = useState(false);
   const [planning, setPlanning] = useState(false);
   const [routeError, setRouteError] = useState<string | null>(null);
-  const [candidate, setCandidate] = useState<PlaceResult | null>(null);
+  const [estimateNote, setEstimateNote] = useState<string | null>(null);
+  const [candidate, setCandidate] = useState<NearbyPlace | null>(null);
   const [candidateLoading, setCandidateLoading] = useState(false);
+  /** 点击位置本身（坐标精确等于点击点，仅用逆地理取名称）。 */
+  const [clickedPoint, setClickedPoint] = useState<PlaceResult | null>(null);
   const [savedLabel, setSavedLabel] = useState<string | null>(null);
   const [dateRange, setDateRange] = useState<[string, string]>([
     dayjs().add(3, 'day').format('YYYY-MM-DD'),
@@ -122,13 +128,18 @@ export function MapExplorerPage({ provinceCode, cityCode }: Props) {
 
   const handleMapClick = (point: LngLat) => {
     setCandidate(null);
+    setClickedPoint(null);
     setCandidateLoading(true);
+    // 两条并行信息：点击点本身（坐标永不偏移）+ 最近的 POI（便于命名景点）。
+    reverseGeocode(point[0], point[1])
+      .then((place) => setClickedPoint(place))
+      .catch(() => undefined);
     aroundPlaces(point[0], point[1], 500)
       .then((places) => {
         if (places.length === 0) {
-          message.info('附近没有找到可加入的景点，试试直接搜索名称。');
           return;
         }
+        // aroundPlaces 已按距离排序：只推荐最近的一个，避免远处 POI 抢占。
         setCandidate(places[0]);
       })
       .catch((reason: unknown) => {
@@ -140,11 +151,13 @@ export function MapExplorerPage({ provinceCode, cityCode }: Props) {
   useEffect(() => {
     if (!routeRequested || waypoints.length < 2) {
       setRoute(null);
+      setEstimateNote(null);
       return;
     }
     let active = true;
     setPlanning(true);
     setRouteError(null);
+    setEstimateNote(null);
     planRoute(mode, waypoints)
       .then((plan) => {
         if (active) {
@@ -153,9 +166,19 @@ export function MapExplorerPage({ provinceCode, cityCode }: Props) {
         }
       })
       .catch((reason: unknown) => {
-        if (active) {
+        if (!active) {
+          return;
+        }
+        // 路线服务不可用时仍按直线展示途经点顺序，避免整块地图空白。
+        setPlanning(false);
+        try {
+          setRoute(straightLineRoute(mode, waypoints));
+          setRouteError(null);
+          setEstimateNote(
+            `高德路线服务不可用（${amapErrorMessage(reason)}），已按直线显示途经点顺序，距离与时间为本地估算。`,
+          );
+        } catch {
           setRoute(null);
-          setPlanning(false);
           setRouteError(amapErrorMessage(reason));
         }
       });
@@ -261,36 +284,66 @@ export function MapExplorerPage({ provinceCode, cityCode }: Props) {
 
             {candidateLoading && (
               <div className="amap-candidate is-loading" role="status">
-                正在查找附近景点…
+                正在解析点击位置…
               </div>
             )}
-            {candidate !== null && !candidateLoading && (
-              <div className="amap-candidate" role="dialog" aria-label="附近景点">
-                <div className="amap-candidate-text">
-                  <b>{candidate.name}</b>
-                  <span>
-                    {[candidate.district, candidate.address].filter((item) => item !== '').join(' · ')}
-                  </span>
-                </div>
-                <div className="amap-candidate-actions">
-                  <Button
-                    size="small"
-                    type="primary"
-                    onClick={() => {
-                      addPlace(candidate);
-                      setCandidate(null);
-                    }}
-                  >
-                    加入途经点
-                  </Button>
-                  <button
-                    type="button"
-                    aria-label="关闭附近景点提示"
-                    onClick={() => setCandidate(null)}
-                  >
-                    ×
-                  </button>
-                </div>
+            {!candidateLoading && (clickedPoint !== null || candidate !== null) && (
+              <div className="amap-candidate" role="dialog" aria-label="地图选点">
+                {clickedPoint !== null && (
+                  <div className="amap-candidate-row">
+                    <div className="amap-candidate-text">
+                      <b>{clickedPoint.name}</b>
+                      <span>{clickedPoint.address === '' ? '你点击的精确位置' : clickedPoint.address}</span>
+                    </div>
+                    <Button
+                      size="small"
+                      type="primary"
+                      onClick={() => {
+                        addPlace(clickedPoint);
+                        setClickedPoint(null);
+                        setCandidate(null);
+                      }}
+                    >
+                      使用该位置
+                    </Button>
+                  </div>
+                )}
+                {candidate !== null && (
+                  <div className="amap-candidate-row">
+                    <div className="amap-candidate-text">
+                      <b>{candidate.name}</b>
+                      <span>
+                        {[
+                          `附近约 ${formatDistance(candidate.distanceMeters)}`,
+                          candidate.address,
+                        ]
+                          .filter((item) => item !== '')
+                          .join(' · ')}
+                      </span>
+                    </div>
+                    <Button
+                      size="small"
+                      onClick={() => {
+                        addPlace(candidate);
+                        setCandidate(null);
+                        setClickedPoint(null);
+                      }}
+                    >
+                      用这个景点
+                    </Button>
+                  </div>
+                )}
+                <button
+                  type="button"
+                  className="amap-candidate-close"
+                  aria-label="关闭地图选点提示"
+                  onClick={() => {
+                    setCandidate(null);
+                    setClickedPoint(null);
+                  }}
+                >
+                  ×
+                </button>
               </div>
             )}
 
@@ -361,6 +414,9 @@ export function MapExplorerPage({ provinceCode, cityCode }: Props) {
 
           {routeError !== null && (
             <Alert type="error" showIcon title="路线规划失败" description={routeError} />
+          )}
+          {estimateNote !== null && (
+            <Alert type="info" showIcon title="已按直线显示路线" description={estimateNote} />
           )}
 
           <ItineraryPanel

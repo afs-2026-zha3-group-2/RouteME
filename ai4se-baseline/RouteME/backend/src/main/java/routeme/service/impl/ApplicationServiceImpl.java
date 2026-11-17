@@ -31,6 +31,7 @@ import routeme.response.TripApplicationResponse;
 import routeme.service.ApplicationService;
 import routeme.service.DemoUserService;
 import routeme.service.TripCompletedEvent;
+import routeme.service.TripCancelledEvent;
 import routeme.service.TripPlanService;
 
 /**
@@ -212,7 +213,7 @@ public class ApplicationServiceImpl
         }
         Instant now = clock.instant();
         TripStatusEnum status = trip.status(now);
-        if (status == TripStatusEnum.COMPLETED) {
+        if (status == TripStatusEnum.COMPLETED || status == TripStatusEnum.CANCELLED) {
             throw new TripNotOpenException(trip.id());
         }
         if (next == ApplicationStatusEnum.ACCEPTED) {
@@ -241,6 +242,12 @@ public class ApplicationServiceImpl
     @Transactional
     public void onTripCompleted(TripCompletedEvent event) {
         cancelPending(event.tripId(), event.completedAt());
+    }
+
+    @EventListener
+    @Transactional
+    public void onTripCancelled(TripCancelledEvent event) {
+        cancelPending(event.tripId(), event.cancelledAt());
     }
 
     private List<TripApplication> findByTrip(long tripId) {

@@ -12,6 +12,13 @@
 
 import { amapServiceHost } from './config';
 import { loadAmap } from './loader';
+import {
+  PLACES,
+  findPlaceByName,
+  placesInCity,
+  searchPlaces as catalogSearchPlaces,
+  type Place,
+} from '../placeCatalog';
 import type { LngLat } from './types';
 
 export type TravelMode = 'walking' | 'driving' | 'bicycling';
@@ -27,6 +34,9 @@ export type PlaceResult = {
   type: string;
 };
 
+/** 附近搜索候选：在 PlaceResult 上补充与点击位置的距离。 */
+export type NearbyPlace = PlaceResult & { distanceMeters: number };
+
 export type RouteWaypoint = {
   id: string;
   name: string;
@@ -40,6 +50,8 @@ export type RoutePlan = {
   distanceMeters: number;
   durationSeconds: number;
   path: LngLat[];
+  /** 高德路线不可用时按直线估算，UI 用虚线区分。 */
+  estimated?: boolean;
   legs: Array<{
     fromId: string;
     toId: string;
@@ -116,6 +128,16 @@ type RouteServiceLike = {
 
 type GeocoderLike = {
   getLocation(address: string, callback: (status: string, result: SdkGeocodeResult) => void): void;
+  getAddress(
+    location: LngLat,
+    callback: (status: string, result: SdkAddressResult) => void,
+  ): void;
+};
+
+type SdkAddressResult = {
+  info?: string;
+  infocode?: string;
+  regeocode?: { formattedAddress?: string };
 };
 
 type SdkCtor<T> = new (options?: Record<string, unknown>) => T;
@@ -263,6 +285,285 @@ export function toRouteLeg(
   };
 }
 
+/* ---------- 名称相关性（防止模糊匹配把地点定位到别处） ---------- */
+
+/**
+ * 名称归一化：去掉空白、标点、括号补充说明与常见行政后缀。
+ *
+ * <p>用于判断「搜索结果是不是用户要找的那个地点」，因此只保留对判断有意义的字。
+ */
+export function normalizeName(value: string): string {
+  return value
+    .toLowerCase()
+    .replace(/[（(][^)）]*[)）]/g, '')
+    .replace(/[\s·・\-—_.,，。;；:：'"“”‘’/\\|]/g, '')
+    .replace(/(特别行政区|自治区|自治州|自治县|街道|社区|景区|风景区)$/g, '')
+    .trim();
+}
+
+/** 最长公共子串长度（地名都很短，直接 O(n·m) 比较）。 */
+export function longestCommonSubstring(left: string, right: string): number {
+  if (left === '' || right === '') {
+    return 0;
+  }
+  let best = 0;
+  const previous = new Array<number>(right.length + 1).fill(0);
+  for (let i = 1; i <= left.length; i += 1) {
+    let diagonal = 0;
+    for (let j = 1; j <= right.length; j += 1) {
+      const saved = previous[j];
+      previous[j] = left[i - 1] === right[j - 1] ? diagonal + 1 : 0;
+      diagonal = saved;
+      if (previous[j] > best) {
+        best = previous[j];
+      }
+    }
+  }
+  return best;
+}
+
+/**
+ * 名称是否指向同一地点：归一化后相等，或一方是另一方的子串。
+ *
+ * <p>高德在「城市限定 + 关键词对不上」时会返回模糊匹配结果，例如在中山搜
+ * 「淇澳岛」会回「淇澳服饰」（大涌镇，偏离 40 公里）。只共享前缀不算匹配，
+ * 必须有包含关系，才能避免把同名前缀的商户当成景点。
+ */
+export function isRelevantName(keyword: string, name: string): boolean {
+  const key = normalizeName(keyword);
+  const target = normalizeName(name);
+  if (key === '' || target === '') {
+    return false;
+  }
+  if (key === target) {
+    return true;
+  }
+  if (key.length < 2) {
+    return false;
+  }
+  return target.includes(key) || key.includes(target);
+}
+
+/** 搜索结果是否相关：名称相关，或地址里出现关键词（支持按地址搜索）。 */
+export function isRelevantPlace(keyword: string, place: PlaceResult): boolean {
+  if (isRelevantName(keyword, place.name)) {
+    return true;
+  }
+  const key = normalizeName(keyword);
+  return key.length >= 2 && normalizeName(place.address).includes(key);
+}
+
+/** 相关性排序：完全一致 → 名称前缀 → 包含关系 → 名称更短（更具体）优先。 */
+export function rankPlaces(keyword: string, places: PlaceResult[]): PlaceResult[] {
+  const key = normalizeName(keyword);
+  const score = (place: PlaceResult): number => {
+    const name = normalizeName(place.name);
+    if (name === key) {
+      return 4;
+    }
+    if (name.startsWith(key)) {
+      return 3;
+    }
+    if (name.includes(key) || key.includes(name)) {
+      return 2;
+    }
+    return 1;
+  };
+  return [...places].sort(
+    (left, right) => score(right) - score(left) || left.name.length - right.name.length,
+  );
+}
+
+/**
+ * 过滤掉高德返回的模糊匹配结果，并按相关性排序。
+ *
+ * <p>全部不相关时返回空数组：让 UI 显示「没有找到」，而不是把一个无关地点
+ * 放到地图上造成很大的定位误差。
+ */
+export function filterRelevantPlaces(keyword: string, places: PlaceResult[]): PlaceResult[] {
+  const seen = new Set<string>();
+  const relevant = places.filter((place) => {
+    if (!isRelevantPlace(keyword, place)) {
+      return false;
+    }
+    const key = place.id === '' ? `${place.name}@${place.lng},${place.lat}` : place.id;
+    if (seen.has(key)) {
+      return false;
+    }
+    seen.add(key);
+    return true;
+  });
+  return rankPlaces(keyword, relevant);
+}
+
+/* ---------- 离线地名库兜底 ---------- */
+
+function normalizePlaceName(value: string): string {
+  return value.trim().toLowerCase().replace(/\s+/g, '');
+}
+
+/**
+ * 限定在行程城市内的候选地名。
+ *
+ * <p>城市名解析不到时返回空数组：宁可少定位，也不把外地同名景点放到地图上。
+ */
+function catalogPool(city?: string): Place[] {
+  const raw = city?.trim() ?? '';
+  if (raw === '') {
+    return PLACES;
+  }
+  const cityPlace = findPlaceByName(raw);
+  if (cityPlace === undefined) {
+    return [];
+  }
+  return placesInCity(cityPlace.kind === 'city' ? cityPlace.name : cityPlace.city);
+}
+
+/**
+ * 名称 → 离线地名库条目。
+ *
+ * <p>先按名称/别名精确匹配；再退化为「行程文案包含地名」，例如
+ * 「大鹏所城集合」命中「大鹏所城」、「东西涌穿越 12km」命中「东西涌」。
+ * 多个候选时取最长的地名，避免短名抢先；城市节点本身不参与包含匹配。
+ */
+export function matchCatalogPlace(name: string, city?: string): Place | null {
+  const value = normalizePlaceName(name);
+  if (value === '') {
+    return null;
+  }
+  const pool = catalogPool(city);
+  if (pool.length === 0) {
+    return null;
+  }
+
+  const exact = pool.find(
+    (place) =>
+      normalizePlaceName(place.name) === value ||
+      place.aliases.some((alias) => normalizePlaceName(alias) === value),
+  );
+  if (exact !== undefined) {
+    return exact;
+  }
+
+  let best: { place: Place; length: number } | null = null;
+  for (const place of pool) {
+    if (place.kind === 'city') {
+      continue;
+    }
+    for (const candidate of [place.name, ...place.aliases]) {
+      const needle = normalizePlaceName(candidate);
+      if (needle.length < 2 || !value.includes(needle)) {
+        continue;
+      }
+      if (best === null || needle.length > best.length) {
+        best = { place, length: needle.length };
+      }
+    }
+  }
+  return best?.place ?? null;
+}
+
+/** 离线地名库 → RouteMe 地点（高德搜索/地理编码不可用时兜底）。 */
+export function catalogPlaceResult(name: string, city?: string): PlaceResult | null {
+  const place = matchCatalogPlace(name, city);
+  return place === null ? null : placeToResult(place);
+}
+
+function placeToResult(place: Place): PlaceResult {
+  return {
+    id: place.id,
+    name: place.name,
+    // 离线条目没有街道地址；城市已由 city 字段展示，避免搜索面板重复出现。
+    address: '',
+    city: place.city,
+    district: '',
+    lng: place.lng,
+    lat: place.lat,
+    type: 'offline',
+  };
+}
+
+/** 关键词 → 离线地名库结果（限定城市时只保留该城条目）。 */
+function catalogSearchResults(keyword: string, city?: string): PlaceResult[] {
+  const scoped = city?.trim() ?? '';
+  const pool = scoped === '' ? PLACES : catalogPool(scoped);
+  if (pool.length === 0) {
+    return [];
+  }
+  const allowed = new Set(pool.map((place) => place.id));
+  return catalogSearchPlaces(keyword, { kinds: ['city', 'poi'], limit: 50 })
+    .filter((place) => allowed.has(place.id))
+    .slice(0, 10)
+    .map(placeToResult);
+}
+
+/** 地图点击位置附近的离线景点（按球面距离筛选，单位米）。 */
+function catalogNearbyResults(lng: number, lat: number, radius: number): NearbyPlace[] {
+  return sortByDistance(
+    PLACES.filter((place) => place.kind === 'poi').map(placeToResult),
+    lng,
+    lat,
+  )
+    .filter((place) => place.distanceMeters <= radius)
+    .slice(0, 5);
+}
+
+/* ---------- 直线兜底路线 ---------- */
+
+/** 各出行方式的平均速度（米/秒），仅用于离线估算。 */
+const MODE_SPEED_MPS: Record<TravelMode, number> = {
+  walking: 1.2,
+  bicycling: 4.2,
+  driving: 8.3,
+};
+
+/** 两点间大圆距离（米）。 */
+export function haversineMeters(from: LngLat, to: LngLat): number {
+  const earthRadius = 6371008.8;
+  const toRad = (degrees: number) => (degrees * Math.PI) / 180;
+  const lat1 = toRad(from[1]);
+  const lat2 = toRad(to[1]);
+  const deltaLat = lat2 - lat1;
+  const deltaLng = toRad(to[0] - from[0]);
+  const a =
+    Math.sin(deltaLat / 2) ** 2 + Math.cos(lat1) * Math.cos(lat2) * Math.sin(deltaLng / 2) ** 2;
+  return 2 * earthRadius * Math.asin(Math.min(1, Math.sqrt(a)));
+}
+
+/**
+ * 直线兜底路线：保留途经点顺序，用球面距离与平均速度估算。
+ *
+ * <p>高德路线服务不可用（未配置安全密钥、代理不可达）时仍能画出行程顺序，
+ * 调用方需要用 {@link RoutePlan.estimated} 向用户说明这是估算值。
+ */
+export function straightLineRoute(mode: TravelMode, waypoints: RouteWaypoint[]): RoutePlan {
+  if (waypoints.length < 2) {
+    throw new AmapApiError('INVALID_WAYPOINTS', '至少需要两个途经点才能规划路线');
+  }
+  const speed = MODE_SPEED_MPS[mode];
+  const path: LngLat[] = waypoints.map((waypoint): LngLat => [waypoint.lng, waypoint.lat]);
+  const legs: RoutePlan['legs'] = [];
+  let distanceMeters = 0;
+  let durationSeconds = 0;
+
+  for (let index = 0; index < waypoints.length - 1; index += 1) {
+    const start = waypoints[index];
+    const end = waypoints[index + 1];
+    const legDistance = Math.round(haversineMeters([start.lng, start.lat], [end.lng, end.lat]));
+    const legDuration = Math.round(legDistance / speed);
+    distanceMeters += legDistance;
+    durationSeconds += legDuration;
+    legs.push({
+      fromId: start.id,
+      toId: end.id,
+      distanceMeters: legDistance,
+      durationSeconds: legDuration,
+    });
+  }
+
+  return { mode, distanceMeters, durationSeconds, path, estimated: true, legs };
+}
+
 /** 高德 SDK 失败结果 → 统一错误（含配额 / Key / 安全密钥 / 代理）。 */
 function sdkError(
   status: string,
@@ -397,6 +698,22 @@ export async function searchPlaces(keyword: string, city?: string): Promise<Plac
   if (keywords === '') {
     return [];
   }
+  try {
+    const remote = await remoteSearchPlaces(keywords, city);
+    const relevant = filterRelevantPlaces(keywords, remote);
+    // 高德有结果但没有一条与关键词相关时按「没有找到」处理：
+    // 这类模糊匹配（如中山搜淇澳岛 → 淇澳服饰）会把地点定位到几十公里外。
+    if (remote.length > 0 && relevant.length === 0) {
+      return [];
+    }
+    return relevant;
+  } catch {
+    // 高德不可用（未配置安全密钥 / 代理不可达）时退回离线地名库。
+    return catalogSearchResults(keywords, city);
+  }
+}
+
+async function remoteSearchPlaces(keywords: string, city?: string): Promise<PlaceResult[]> {
   const sdk = await loadSdk();
   const scopedCity = city?.trim() ?? '';
   const service = new sdk.PlaceSearch({
@@ -428,6 +745,99 @@ export async function aroundPlaces(
   lng: number,
   lat: number,
   radius = 500,
+): Promise<NearbyPlace[]> {
+  try {
+    const remote = await remoteAroundPlaces(lng, lat, radius);
+    return sortByDistance(remote, lng, lat).filter((place) => place.distanceMeters <= radius);
+  } catch {
+    return catalogNearbyResults(lng, lat, radius);
+  }
+}
+
+/** 把候选地点按与给定点的距离排序（高德 nearby 结果不保证按距离返回）。 */
+export function sortByDistance(
+  places: PlaceResult[],
+  lng: number,
+  lat: number,
+): NearbyPlace[] {
+  return places
+    .map((place) => ({
+      ...place,
+      distanceMeters: Math.round(haversineMeters([lng, lat], [place.lng, place.lat])),
+    }))
+    .sort((left, right) => left.distanceMeters - right.distanceMeters);
+}
+
+/**
+ * 逆地理编码：把「用户点在地图上的点」变成可读名称。
+ *
+ * <p>坐标始终等于点击位置，只借地址生成名称——这样「点哪儿就是哪儿」，不会像
+ * 取附近 POI 那样把途经点挪到别的地方。
+ */
+export async function reverseGeocode(lng: number, lat: number): Promise<PlaceResult> {
+  const fallback: PlaceResult = {
+    id: `point-${lng.toFixed(6)},${lat.toFixed(6)}`,
+    name: `地图选点 ${lng.toFixed(4)}, ${lat.toFixed(4)}`,
+    address: '',
+    city: '',
+    district: '',
+    lng,
+    lat,
+    type: 'point',
+  };
+  try {
+    const sdk = await loadSdk();
+    const geocoder = new sdk.Geocoder({ radius: 200, extensions: 'base' });
+    const named = await new Promise<PlaceResult | null>((resolve) => {
+      geocoder.getAddress([lng, lat], (status, result) => {
+        if (status !== 'complete') {
+          resolve(null);
+          return;
+        }
+        const geocode = result?.regeocode;
+        const address = geocode?.formattedAddress ?? '';
+        if (address === '') {
+          resolve(null);
+          return;
+        }
+        const point = pickRegeocodeName(address);
+        resolve({
+          ...fallback,
+          name: point === '' ? fallback.name : point,
+          address,
+          // 行政区划字段缺失时保留空串，避免伪造城市。
+          city: '',
+          district: '',
+        });
+      });
+    });
+    return named ?? fallback;
+  } catch {
+    return fallback;
+  }
+}
+
+/** 从逆地理地址里取一个短名：取最后一个行政区划之后的部分。 */
+export function pickRegeocodeName(address: string): string {
+  const trimmed = address.trim();
+  if (trimmed === '') {
+    return '';
+  }
+  // 「社区 / 小区 / 园区」里的「区」不是行政区划分隔符，先临时保护再还原。
+  const protectedAddress = trimmed.replace(/(社区|小区|园区|景区|街区|校区)/g, (unit) =>
+    unit.replace('区', '\u0001'),
+  );
+  const tail = protectedAddress.replace(/^.*[省市县区镇乡]/, '').replace(/\u0001/g, '区');
+  const name = tail.length >= 2 ? tail : trimmed;
+  // 「广东省珠海市香洲区唐家湾镇淇澳社区」→「淇澳社区」；
+  // 「珠海市香洲区情侣中路」→「情侣中路」。
+  return name.slice(0, 24);
+}
+
+async function remoteAroundPlaces(
+  lng: number,
+  lat: number,
+  radius: number,
 ): Promise<PlaceResult[]> {
   const sdk = await loadSdk();
   const service = new sdk.PlaceSearch({ pageSize: 5, pageIndex: 1, extensions: 'base' });
@@ -448,12 +858,23 @@ export async function aroundPlaces(
   });
 }
 
-/** 名称 → 坐标：先用地点搜索，失败再走地理编码。 */
+/**
+ * 名称 → 坐标：先用高德地点搜索，失败再走地理编码，最后兜底离线地名库。
+ *
+ * <p>高德服务未配置或不可达时（本仓库的默认开发环境），城市与 Demo 途经点
+ * 仍能通过 `map/data` 的离线索引定位，地图不至于整块空白。
+ */
 export async function geocodePlace(name: string, city?: string): Promise<PlaceResult | null> {
   const value = name.trim();
   if (value === '') {
     return null;
   }
+  const remote = await remoteGeocode(value, city).catch(() => null);
+  return remote ?? catalogPlaceResult(value, city);
+}
+
+async function remoteGeocode(value: string, city?: string): Promise<PlaceResult | null> {
+  // searchPlaces 已做相关性过滤：模糊命中的无关地点不会进入候选。
   const found = await searchPlaces(value, city).catch(() => [] as PlaceResult[]);
   if (found.length > 0) {
     return found[0];
@@ -477,12 +898,20 @@ export async function geocodePlace(name: string, city?: string): Promise<PlaceRe
         resolve(null);
         return;
       }
+      // 地理编码可能把不知道的地址解析到无关位置；只有地址与输入共享足够长的
+      // 片段时才采用，否则宁可不定位，也不把 Marker 放到错误的城市。
+      const address = geocode.formattedAddress ?? readText(geocode.province);
+      const required = Math.min(3, normalizeName(value).length);
+      if (required > 0 && longestCommonSubstring(normalizeName(value), normalizeName(address)) < required) {
+        resolve(null);
+        return;
+      }
       const lng = location.getLng();
       const lat = location.getLat();
       resolve({
         id: `geo-${lng}-${lat}`,
         name: value,
-        address: geocode.formattedAddress ?? readText(geocode.province),
+        address,
         city: readText(geocode.city),
         district: readText(geocode.district),
         lng,

@@ -10,6 +10,7 @@ import { EmptyState } from '../shell/EmptyState';
 import { applicationLabel } from '../trips/applicationStatus';
 import { coverTone } from '../trips/coverTone';
 import { StatusBadge } from '../trips/StatusBadge';
+import { TripCancelModal } from '../trips/TripCancelModal';
 import type { DemoUser, Experience, MyTrips, TripApplication, TripSummary } from '../types';
 import {
   actionsFor,
@@ -42,6 +43,7 @@ export function MyTripsPage({ currentUser, isAuthenticated }: Props) {
   const [error, setError] = useState<string | null>(null);
   const [busyKey, setBusyKey] = useState<string | null>(null);
   const [confirmAction, setConfirmAction] = useState<ConfirmAction | null>(null);
+  const [cancelTarget, setCancelTarget] = useState<TripSummary | null>(null);
   const inFlight = useRef<Promise<void> | null>(null);
 
   const reload = useCallback(
@@ -129,6 +131,10 @@ export function MyTripsPage({ currentUser, isAuthenticated }: Props) {
       setConfirmAction({ kind: action, trip });
       return;
     }
+    if (action === 'cancelTrip') {
+      setCancelTarget(trip);
+      return;
+    }
     if (action === 'cancel' && application !== undefined) {
       setBusyKey(`cancel-${application.id}`);
       try {
@@ -195,6 +201,7 @@ export function MyTripsPage({ currentUser, isAuthenticated }: Props) {
         view: tripMessages.mineView,
         complete: tripMessages.mineCompleteTrip,
         cancel: tripMessages.mineCancelApplication,
+        cancelTrip: tripMessages.detailCancelTrip,
         chat: tab === 'applied' ? tripMessages.mineChat : tripMessages.mineContactHost,
         leave: tripMessages.mineLeave,
         share: shared ? tripMessages.experienceEditEntry : tripMessages.experienceShareEntry,
@@ -303,6 +310,8 @@ export function MyTripsPage({ currentUser, isAuthenticated }: Props) {
             let note: string | null = null;
             if (trip.status === 'ongoing') {
               note = tripMessages.mineNoteOngoing;
+            } else if (trip.status === 'cancelled') {
+              note = '行程已取消，不再展示在灵感首页。';
             } else if (trip.status === 'completed') {
               note = sharedTripIds.has(trip.id)
                 ? tripMessages.mineNoteShared
@@ -463,6 +472,17 @@ export function MyTripsPage({ currentUser, isAuthenticated }: Props) {
         {data === null && <Skeleton active paragraph={{ rows: 4 }} />}
         {data !== null && renderRows()}
       </div>
+
+      <TripCancelModal
+        open={cancelTarget !== null}
+        userId={currentUser.id}
+        trip={cancelTarget ?? { id: 0, title: '' }}
+        onClose={() => setCancelTarget(null)}
+        onCancelled={() => {
+          setCancelTarget(null);
+          void reload(true);
+        }}
+      />
 
       <Modal
         open={confirmAction !== null}

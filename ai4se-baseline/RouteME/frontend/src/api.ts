@@ -6,6 +6,7 @@ import type {
   DemoUser,
   Experience,
   ExperienceFilters,
+  ExperiencePhoto,
   ExperienceWriteRequest,
   MatchCandidate,
   MyTrips,
@@ -13,11 +14,13 @@ import type {
   Paging,
   ReportRequest,
   TripApplication,
+  TripCancelRequest,
   TripCreateRequest,
   TripDetail,
   TripFilters,
   TripMeetingRequest,
   TripSummary,
+  UserCreditEntry,
   UserProfile,
   UserProfileUpdateRequest,
 } from './types';
@@ -88,6 +91,16 @@ export async function logoutAccount(token: string): Promise<void> {
     method: 'POST',
     headers: { Authorization: `Bearer ${token}` },
   });
+}
+
+/** 批量读取信用状态；用于行程卡、申请列表与详情页发布者行。 */
+export async function loadUserCredits(ids: number[], callerId: number): Promise<UserCreditEntry[]> {
+  if (ids.length === 0) {
+    return [];
+  }
+  const query = new URLSearchParams({ ids: ids.join(',') });
+  const response = await request(`/users/credits?${query.toString()}`, undefined, callerId);
+  return (await response.json()) as UserCreditEntry[];
 }
 
 /** 读取个人资料；本人读取时响应包含生日，他人读取时省略。 */
@@ -192,6 +205,23 @@ export async function createTrip(userId: number, body: TripCreateRequest): Promi
 
 export async function completeTrip(userId: number, tripId: number): Promise<TripDetail> {
   const response = await request(`/trips/${tripId}/complete`, { method: 'POST' }, userId);
+  return (await response.json()) as TripDetail;
+}
+
+export async function cancelTrip(
+  userId: number,
+  tripId: number,
+  body: TripCancelRequest,
+): Promise<TripDetail> {
+  const response = await request(
+    `/trips/${tripId}/cancel`,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    },
+    userId,
+  );
   return (await response.json()) as TripDetail;
 }
 
@@ -364,4 +394,19 @@ export async function shareExperience(
     userId,
   );
   return (await response.json()) as Experience;
+}
+
+export async function uploadExperiencePhoto(
+  userId: number,
+  tripId: number,
+  file: File,
+): Promise<ExperiencePhoto> {
+  const form = new FormData();
+  form.append('file', file);
+  const response = await request(
+    `/trips/${tripId}/experiences/photos`,
+    { method: 'POST', body: form },
+    userId,
+  );
+  return (await response.json()) as ExperiencePhoto;
 }

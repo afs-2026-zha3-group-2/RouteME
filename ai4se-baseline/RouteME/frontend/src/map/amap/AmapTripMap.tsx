@@ -2,7 +2,8 @@
  * 行程详情只读地图：按途经点名称做高德地理编码，再绘制步行路线。
  *
  * 与发布/探索页共用 AmapContainer + RouteLayer；不修改行程数据，也不提供
- * 编辑操作。解析失败时保留地图与其他途经点，并给出可读错误。
+ * 编辑操作。高德服务不可用时依次降级：离线地名库定位 → 直线估算路线，
+ * 并把降级结果如实告诉用户。
  */
 
 import { useEffect, useState } from 'react';
@@ -11,6 +12,7 @@ import {
   amapErrorMessage,
   geocodePlace,
   planRoute,
+  straightLineRoute,
   type RoutePlan,
   type RouteWaypoint,
 } from './AmapService';
@@ -34,13 +36,15 @@ export function AmapTripMap({ city, stops, focusStop, onFocusStop }: Props) {
   const [waypoints, setWaypoints] = useState<RouteWaypoint[]>([]);
   const [route, setRoute] = useState<RoutePlan | null>(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [locationNote, setLocationNote] = useState<string | null>(null);
+  const [estimateNote, setEstimateNote] = useState<string | null>(null);
   const stopsKey = stops.join('\u0001');
 
   useEffect(() => {
     let active = true;
     setLoading(true);
-    setError(null);
+    setLocationNote(null);
+    setEstimateNote(null);
     setWaypoints([]);
     setRoute(null);
 
@@ -72,13 +76,11 @@ export function AmapTripMap({ city, stops, focusStop, onFocusStop }: Props) {
       }
       setWaypoints(resolved);
       if (resolved.length < stops.length) {
-        setError(
+        setLocationNote(
           resolved.length === 0
-            ? '未能解析途经点坐标，请检查高德 JS Key 与后端安全密钥配置。'
-            : `有 ${stops.length - resolved.length} 个途经点未能定位，路线可能不完整。`,
+            ? '高德服务当前不可用，离线地名库也没有收录这些地点，暂时无法在地图上标出途经点。'
+            : `有 ${stops.length - resolved.length} 个途经点未能定位，路线只连接已定位的点。`,
         );
-      } else {
-        setError(null);
       }
 
       if (resolved.length >= 2) {
@@ -88,8 +90,12 @@ export function AmapTripMap({ city, stops, focusStop, onFocusStop }: Props) {
             setRoute(plan);
           }
         } catch (reason: unknown) {
+          // 路线服务不可用时仍展示途经点顺序与距离估算，避免整块地图空白。
           if (active) {
-            setError(amapErrorMessage(reason));
+            setRoute(straightLineRoute('walking', resolved));
+            setEstimateNote(
+              `高德路线服务不可用（${amapErrorMessage(reason)}），已按直线显示途经点顺序，距离与时间为本地估算。`,
+            );
           }
         }
       }
@@ -137,13 +143,22 @@ export function AmapTripMap({ city, stops, focusStop, onFocusStop }: Props) {
           }
         }}
       />
-      {error !== null && (
+      {locationNote !== null && (
         <Alert
           className="amap-trip-alert"
           type="warning"
           showIcon
-          title="路线暂时无法生成"
-          description={error}
+          title="途经点未能全部定位"
+          description={locationNote}
+        />
+      )}
+      {estimateNote !== null && (
+        <Alert
+          className="amap-trip-alert"
+          type="info"
+          showIcon
+          title="已按直线显示行程"
+          description={estimateNote}
         />
       )}
     </div>

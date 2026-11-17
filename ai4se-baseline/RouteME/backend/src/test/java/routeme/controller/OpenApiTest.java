@@ -45,6 +45,38 @@ class OpenApiTest {
     }
 
     @Test
+    void in_openApiFile_out_userCreditContractDeclared() throws IOException {
+        // Given
+        Map<String, Object> document = loadYaml(SPEC_PATH);
+        Map<String, Object> userProfile = schema(document, "UserProfile");
+        Map<String, Object> creditEntry = schema(document, "UserCreditEntry");
+
+        // When
+        Map<String, Object> creditScore = asMap(properties(userProfile).get("credit_score"));
+        Map<String, Object> creditLevel = asMap(properties(userProfile).get("credit_level"));
+
+        // Then
+        assertAll(
+                () -> assertTrue(
+                        required(userProfile).containsAll(List.of("credit_score", "credit_level")),
+                        "credit fields are required"),
+                () -> assertTrue(paths(document).containsKey("/users/credits"), "batch credit path declared"),
+                () -> assertTrue(
+                        required(creditEntry).containsAll(List.of("user_id", "credit_score", "credit_level")),
+                        "batch credit entry fields"),
+                () -> assertEquals("integer", creditScore.get("type"), "credit_score type"),
+                () -> assertEquals(0, creditScore.get("minimum"), "credit_score minimum"),
+                () -> assertEquals(100, creditScore.get("maximum"), "credit_score maximum"),
+                () -> assertEquals(Boolean.TRUE, creditScore.get("readOnly"), "credit_score readOnly"),
+                () -> assertEquals("string", creditLevel.get("type"), "credit_level type"),
+                () -> assertEquals(
+                        List.of("excellent", "good", "fair", "low", "risk"),
+                        creditLevel.get("enum"),
+                        "credit_level enum"),
+                () -> assertEquals(Boolean.TRUE, creditLevel.get("readOnly"), "credit_level readOnly"));
+    }
+
+    @Test
     void in_openApiFile_out_tripPlanContractDeclared() throws IOException {
         // Given
         Map<String, Object> document = loadYaml(SPEC_PATH);
@@ -60,7 +92,7 @@ class OpenApiTest {
 
         // Then
         assertAll(
-                () -> assertEquals("0.11.0", info.get("version"), "info.version"),
+                () -> assertEquals("0.14.0", info.get("version"), "info.version"),
                 () -> assertTrue(paths(document).containsKey("/users"), "/users declared"),
                 () -> assertTrue(paths(document).containsKey("/trips/{tripId}"), "detail path declared"),
                 () -> assertTrue(
@@ -79,7 +111,7 @@ class OpenApiTest {
                         "create required fields"),
                 () -> assertTrue(
                         enums(properties(tripPlan).get("status"))
-                                .containsAll(List.of("recruiting", "full", "ongoing", "completed")),
+                                .containsAll(List.of("recruiting", "full", "ongoing", "completed", "cancelled")),
                         "status enum"),
                 () -> assertTrue(properties(tripPlan).containsKey("ending_soon"), "ending_soon declared"),
                 () -> assertTrue(
@@ -291,8 +323,12 @@ class OpenApiTest {
         // When
         Map<String, Object> getExperiences = operation(document, "/experiences", "get");
         Map<String, Object> postExperience = operation(document, "/trips/{tripId}/experiences", "post");
+        Map<String, Object> uploadPhoto = operation(document, "/trips/{tripId}/experiences/photos", "post");
+        Map<String, Object> loadPhoto = operation(document, "/experience-photos/{photoId}", "get");
         Map<String, Object> writeRequest = schema(document, "ExperienceWriteRequest");
         Map<String, Object> experience = schema(document, "Experience");
+        Map<String, Object> experiencePhoto = schema(document, "ExperiencePhoto");
+        Map<String, Object> tripPlan = schema(document, "TripPlan");
         Map<String, Object> errorSchema = schema(document, "Error");
 
         // Then
@@ -317,8 +353,32 @@ class OpenApiTest {
                         "intensity enum"),
                 () -> assertTrue(
                         required(experience)
-                                .containsAll(List.of("id", "trip", "author", "content", "intensity", "advice")),
+                                .containsAll(List.of("id", "trip", "author", "content", "intensity", "advice", "photos")),
                         "experience required fields"),
+                () -> assertTrue(
+                        properties(experience).containsKey("photos"),
+                        "experience photos field"),
+                () -> assertTrue(
+                        required(experiencePhoto).containsAll(List.of("id", "url")),
+                        "experience photo fields"),
+                () -> assertTrue(
+                        properties(writeRequest).containsKey("photo_ids"),
+                        "experience write photo_ids"),
+                () -> assertEquals(
+                        6, asMap(properties(writeRequest).get("photo_ids")).get("maxItems"),
+                        "photo_ids maxItems"),
+                () -> assertTrue(
+                        responses(uploadPhoto).containsKey("400")
+                                && responses(uploadPhoto).containsKey("401")
+                                && responses(uploadPhoto).containsKey("403"),
+                        "photo upload error statuses"),
+                () -> assertTrue(responses(loadPhoto).containsKey("404"), "photo read 404"),
+                () -> assertFalse(
+                        asMap(paths(document).get("/trips/{tripId}/experiences")).containsKey("delete"),
+                        "no experience delete endpoint"),
+                () -> assertFalse(
+                        properties(tripPlan).containsKey("photos"),
+                        "trip plan keeps no photos"),
                 () -> assertTrue(
                         enums(properties(errorSchema).get("code")).contains("EXPERIENCE_NOT_ALLOWED"),
                         "experience error code")
@@ -354,6 +414,44 @@ class OpenApiTest {
                 () -> assertTrue(tripDetailProperties.containsKey("meeting_time"), "trip detail meeting_time"),
                 () -> assertTrue(createProperties.containsKey("meeting_areas"), "create request meeting_areas"),
                 () -> assertTrue(createProperties.containsKey("meeting_time"), "create request meeting_time")
+        );
+    }
+
+    @Test
+    void in_openApiFile_out_tripCancellationContractDeclared() throws IOException {
+        // Given
+        Map<String, Object> document = loadYaml(SPEC_PATH);
+
+        // When
+        Map<String, Object> cancelTrip = operation(document, "/trips/{tripId}/cancel", "post");
+        Map<String, Object> cancelRequest = schema(document, "TripCancelRequest");
+        Map<String, Map<String, Object>> tripDetailProperties = allOfProperties(document, "TripDetail");
+
+        // Then
+        assertAll(
+                () -> assertTrue(responses(cancelTrip).containsKey("200"), "cancel returns 200"),
+                () -> assertTrue(responses(cancelTrip).containsKey("400"), "cancel returns 400"),
+                () -> assertTrue(responses(cancelTrip).containsKey("403"), "cancel returns 403"),
+                () -> assertTrue(responses(cancelTrip).containsKey("409"), "cancel returns 409"),
+                () -> assertTrue(
+                        parameterNames(document, cancelTrip).containsAll(List.of("X-User-Id", "tripId")),
+                        "cancel parameters"),
+                () -> assertTrue(required(cancelRequest).contains("reason"), "cancel reason required"),
+                () -> assertEquals(
+                        8, enums(properties(cancelRequest).get("reason")).size(), "cancel reason enum size"),
+                () -> assertTrue(
+                        enums(properties(cancelRequest).get("reason")).containsAll(List.of(
+                                "personal", "time_changed", "plan_changed", "not_enough_people",
+                                "weather", "illness", "safety", "other")),
+                        "cancel reason enum"),
+                () -> assertEquals(
+                        100, properties(cancelRequest).get("note").get("maxLength"), "cancel note maxLength"),
+                () -> assertTrue(tripDetailProperties.containsKey("cancelled_at"), "cancelled_at declared"),
+                () -> assertTrue(tripDetailProperties.containsKey("cancel_reason"), "cancel_reason declared"),
+                () -> assertTrue(tripDetailProperties.containsKey("cancel_note"), "cancel_note declared"),
+                () -> assertEquals(
+                        Boolean.TRUE, tripDetailProperties.get("cancel_reason").get("readOnly"),
+                        "cancel_reason readOnly")
         );
     }
 

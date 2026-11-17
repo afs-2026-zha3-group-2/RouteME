@@ -42,7 +42,10 @@ public record TripPlan(
         int joinedCount,
         Instant completedAt,
         Instant createdAt,
-        Instant updatedAt) {
+        Instant updatedAt,
+        Instant cancelledAt,
+        String cancelReason,
+        String cancelNote) {
 
     public Instant plannedStart() {
         return startDate.atStartOfDay(TripTimeZoneConstant.ZONE).toInstant();
@@ -57,6 +60,9 @@ public record TripPlan(
      * 到达结束日期次日 00:00（Asia/Shanghai）即视为已结束，无需人工操作。
      */
     public TripStatusEnum status(Instant now) {
+        if (cancelledAt != null) {
+            return TripStatusEnum.CANCELLED;
+        }
         if (completedAt != null || !now.isBefore(plannedEnd())) {
             return TripStatusEnum.COMPLETED;
         }
@@ -83,7 +89,8 @@ public record TripPlan(
 
     public TripPlan withId(long newId) {
         return new TripPlan(newId, publisherId, title, destinationCode, destination, startDate, endDate, stops, meetingAreas,
-                meetingTime, note, budgetMinCents, budgetMaxCents, tags, capacity, joinedCount, completedAt, createdAt, updatedAt);
+                meetingTime, note, budgetMinCents, budgetMaxCents, tags, capacity, joinedCount, completedAt, createdAt, updatedAt,
+                cancelledAt, cancelReason, cancelNote);
     }
 
     /**
@@ -92,7 +99,7 @@ public record TripPlan(
     public TripPlan withMeetingInfo(List<String> newMeetingAreas, String newMeetingTime, Instant now) {
         return new TripPlan(id, publisherId, title, destinationCode, destination, startDate, endDate, stops,
                 newMeetingAreas, newMeetingTime, note, budgetMinCents, budgetMaxCents, tags, capacity, joinedCount,
-                completedAt, createdAt, now);
+                completedAt, createdAt, now, cancelledAt, cancelReason, cancelNote);
     }
 
     public static TripPlan create(TripPlanDraft draft, Instant now) {
@@ -149,7 +156,8 @@ public record TripPlan(
             throw new InvalidInputException("note is too long");
         }
         return new TripPlan(0, draft.publisherId(), title, destinationCode, destination, draft.startDate(), draft.endDate(),
-                stops, meetingAreas, meetingTime, note, budgetMin, budgetMax, tags, capacity, 1, null, now, now);
+                stops, meetingAreas, meetingTime, note, budgetMin, budgetMax, tags, capacity, 1, null, now, now,
+                null, null, null);
     }
 
     private static String requireText(String value, String field) {
