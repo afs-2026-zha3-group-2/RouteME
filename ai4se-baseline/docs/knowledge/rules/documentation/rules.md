@@ -176,6 +176,7 @@ openspec/
 | 验证报告 | `docs/ai4se-plugins/<时间戳>-<技能名>-report.md` | `20261110-104848-local-verify-report.md` |
 | 检查点记录 | `docs/ai4se-plugins/<时间戳>-<技能名>-checkpoints.md` | `20261110-104848-rules-govern-checkpoints.md` |
 | 工件评审报告 | `docs/reviews/<yyyymmdd>-<change-id>-<artifact>-review.md` | `20261116-add-user-auth-proposal-review.md` |
+| 走查截图 / 设计参考 | `docs/preview/<change-id 或 topic>/<screen>-<viewport>-<theme>.png` | `preview/add-ai-itinerary/ai-planner-1440-light.png` |
 | 需求交接 | `requirement-workspace/handoff.md` | 预规格阶段的入口 |
 
 - `<change-id>` 与分支名、PR 标题中的 change-id 完全相同，从提交能一路追到规格。
@@ -183,6 +184,18 @@ openspec/
 - 决策记录不写 `G1决策-最终.md`、`g1-decision-final-v2.md` 这类变体，固定名 + 版本管理即历史。
 - 工件语言：正文中文；`SHALL` / `MUST` 等结构关键词保留英文；标题层级与 OpenSpec 模板一致。
 - 工件评审报告统一放 `docs/reviews/`，文件名固定为 `日期-change-id-工件-review.md`，不用时间戳、不混入 `docs/ai4se-plugins/`；四份工件（proposal / spec / design / tasks）各一份。
+
+### 走查截图与设计参考（`docs/preview/`）
+
+**一个目录只放一个变更的图。** 根目录散图无法判断属于哪个 change，也无法在归档后清理。
+
+- 目录：`docs/preview/<change-id>/`，目录名与 change-id 完全一致；尚无 change 的主题用 kebab-case 的 `<topic>/`，并在根 `README.md` 登记「待补 change」。
+- 根目录只允许 `README.md`（索引表：目录 / 对应 change 或 REQ / 维护人 / 最近更新）。禁止在 `docs/preview/` 根直接放 `*.png`。
+- 命名：走查截图 `<screen>-<viewport>-<theme>.png`，多状态插在 screen 之后：`<screen>-<state>-<viewport>-<theme>.png`；`<viewport>` 取 `390` / `768` / `1440`，`<theme>` 取 `light` / `dark`，多页长图加 `-long`。
+- 设计参考稿（截图或设计板）用 `ref-` 前缀：`ref-<topic>.png`；同一目录多张时 `ref-<topic>-<n>.png`。参考稿与走查截图的用途不同，不得混名。
+- 一次性的临时截图（`_tmp-*`、`tmp-*`）、调试脚本（`e2e/tmp-*.mjs`）不入库，用后删除；`.gitignore` 已覆盖这两类。
+- change 归档后 `docs/preview/<change-id>/` 保持原地不移动（与 `changes/archive/` 解耦），索引表把该行标注「已归档」。
+- 单张图超过 2 MB 时改用引用稿的分辨率裁剪或压为 webp，避免仓库膨胀。
 
 ### 工件职责边界
 
@@ -227,6 +240,9 @@ openspec/
 | 决策记录是否为 `g1/g2/g3-decision.md` 固定名 | 归档前 |
 | 一个 change 是否只改一个 capability | 归档前 |
 | 验证报告是否位于 `docs/ai4se-plugins/<时间戳>-<技能名>-report.md` 且含真实输出 | pr-merge |
+| 走查截图是否在 `docs/preview/<change-id>/` 下，根目录无散图 | pr-merge |
+| 截图名是否为 `<screen>-<viewport>-<theme>.png`、参考稿是否为 `ref-*` | pr-merge |
+| 是否无 `_tmp-*` / `tmp-*` 临时截图与调试脚本入库 | pr-merge |
 | 归档后 `changes/archive/<change-id>/` 是否保持不可变 | 归档前 |
 | 记录前与 approve 前是否已询问并确认本次实际开发者姓名（未用名册默认值或角色词占位） | pr-merge |
 | 工件与评审报告是否按 `@rule:artifact-review-gate` 的签署人矩阵签齐（含 2 人签署位的独立性） | pr-merge |

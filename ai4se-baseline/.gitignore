@@ -36,6 +36,12 @@ coverage/
 playwright-report/
 test-results/
 
+# Preview assets: temporary screenshots and debug scripts never get committed
+# (permanent walkthrough shots live in docs/preview/<change-id>/ — see @rule:sdd-artifacts)
+docs/preview/**/_tmp-*
+docs/preview/**/tmp-*
+RouteME/e2e/tmp-*.mjs
+
 # .agents/ IS tracked on purpose: team members share the installed agents,
 # commands and skills so everyone runs the same SDD behaviour. Re-run the
 # AI4SE installer only when the bundled pack version changes.
