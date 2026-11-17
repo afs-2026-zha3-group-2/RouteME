@@ -1,6 +1,8 @@
 package routeme.service;
 
+import java.time.Instant;
 import java.util.List;
+import java.util.Optional;
 
 import com.baomidou.mybatisplus.spring.service.IService;
 
@@ -36,12 +38,24 @@ public interface ApplicationService extends IService<TripApplicationEntity> {
     TripApplication cancel(long applicationId, long userId);
 
     /**
-     * 已接受同行者退出该行程：人数 -1 并把申请置为「已退出」（left）。
-     *
-     * @param tripId 行程 id
-     * @param userId 当前身份 id，不能是发布者且必须是已接受同行者
+     * 取某人在该行程上已接受的申请；没有则返回空。
      */
-    void leave(long tripId, long userId);
+    Optional<TripApplication> findAccepted(long tripId, long userId);
+
+    /**
+     * 某人全部已接受的同行关系（跨行程）；用于信用限制自动解除。
+     */
+    List<TripApplication> acceptedByUser(long userId);
+
+    /**
+     * 把申请置为「已退出」（left），并记录状态原因；系统清退与用户退出共用。
+     */
+    void markLeft(long applicationId, String statusReason, Instant at);
+
+    /**
+     * 撤回某人的全部待处理申请；用于信用限制自动清退。
+     */
+    void cancelPendingByUser(long userId, String statusReason, Instant at);
 
     /**
      * 判断某个用户在该行程上是否已被接受为同行者。
@@ -132,10 +146,11 @@ public interface ApplicationService extends IService<TripApplicationEntity> {
     List<DemoUser> participants(long tripId);
 
     /**
-     * 行程进入已结束时，把该行程所有待处理申请批量置为已取消。
+     * 行程进入已结束/已取消时，把该行程所有待处理申请批量置为已取消。
      *
-     * @param tripId 行程 id
-     * @param now    取消时间
+     * @param tripId       行程 id
+     * @param statusReason 状态原因：TRIP_COMPLETED / TRIP_CANCELLED / CREDIT_RESTRICTION
+     * @param now          取消时间
      */
-    void cancelPending(long tripId, java.time.Instant now);
+    void cancelPending(long tripId, String statusReason, Instant now);
 }

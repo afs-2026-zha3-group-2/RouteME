@@ -1284,30 +1284,28 @@ svg {
   border-radius: var(--r);
 }
 
-/* 发布被信用分拦截：唯一的“去安全学习”入口（A1 / D6），其余页面不得出现 */
-.publish-guard.ant-alert {
-  margin-bottom: 4px;
+/* 发布被信用限制：在共用受限提示下方补「去安全学习」入口（A1 / D6） */
+.publish-guard-note {
+  margin: 4px 0 12px;
+  padding: 10px 14px;
   border-radius: var(--r);
-  border-color: rgba(217, 134, 19, 0.34);
+  border: 1px solid rgba(217, 134, 19, 0.34);
   background: linear-gradient(120deg, rgba(255, 183, 3, 0.12), rgba(255, 122, 69, 0.08));
-}
-
-.publish-guard .publish-guard-body {
-  margin: 4px 0 0;
-  font-size: 12.8px;
-  line-height: 1.66;
-  color: var(--ink-2);
-}
-
-.publish-guard .publish-guard-note {
-  margin: 4px 0 0;
   font-size: 11.8px;
-  line-height: 1.6;
+  line-height: 1.7;
   color: var(--t-warn);
 }
 
-.publish-guard .ant-alert-action {
-  align-self: center;
+.publish-guard-note .publish-guard-entry {
+  margin-right: 8px;
+  font-weight: 600;
+  color: var(--sea-deep, var(--t-warn));
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.publish-guard-note .publish-guard-entry:hover {
+  opacity: 0.82;
 }
 
 .publish-panel .form-actions {
@@ -8467,4 +8465,777 @@ svg {
   margin: 0;
   font-size: 13px;
   color: var(--ink-3);
+}
+
+/* ============================================================
+   AI 智能规划（add-ai-itinerary）：左条件 / 中地图 / 右结果三栏。
+   只用既有令牌；≤1100px 右栏下移，≤768px 单列堆叠。
+   ============================================================ */
+.ai-planner-page {
+  width: 100%;
+  max-width: 1440px;
+  margin: 0 auto;
+  padding-bottom: 88px;
+}
+
+.ai-planner-grid {
+  display: grid;
+  grid-template-columns: 320px minmax(0, 1fr) 360px;
+  gap: 18px;
+  align-items: start;
+}
+
+.ai-form,
+.ai-result {
+  min-width: 0;
+}
+
+.ai-result {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.ai-map {
+  min-width: 0;
+}
+
+.ai-map-container {
+  min-height: 480px;
+  height: clamp(480px, 72vh, 780px);
+}
+
+/* ---------- 左栏：地点与条件 ---------- */
+.ai-selected-place {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 6px;
+}
+
+.ai-place-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 10px;
+  border-radius: 999px;
+  background: var(--lagoon-soft);
+  color: var(--t-lagoon);
+  font-size: 12.5px;
+  font-weight: 650;
+}
+
+.ai-place-coords {
+  font-family: var(--font-num);
+  font-size: 11px;
+  color: var(--ink-3);
+}
+
+.ai-inline-error {
+  margin-top: 6px;
+  font-size: 12px;
+  color: var(--t-danger);
+}
+
+.ai-pick-panel {
+  display: grid;
+  gap: 8px;
+  margin-top: 10px;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-sm);
+  background: var(--surface-2);
+}
+
+/* ---------- 地图选点候选面板 ---------- */
+.ai-map-candidates {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  z-index: 30;
+  width: min(300px, calc(100% - 24px));
+  max-height: 62%;
+  overflow: auto;
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+  background: var(--surface);
+  box-shadow: var(--sh-3);
+}
+
+.ai-candidates-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--line);
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.ai-candidates-head button {
+  padding: 0 2px;
+  border: none;
+  background: none;
+  font-size: 16px;
+  line-height: 1;
+  color: var(--ink-3);
+  cursor: pointer;
+}
+
+.ai-candidates-head button:hover {
+  color: var(--t-danger);
+}
+
+.ai-candidates-state {
+  display: flex;
+  justify-content: center;
+  margin: 0;
+  padding: 14px;
+  font-size: 12.5px;
+  color: var(--ink-3);
+}
+
+.ai-candidates-list {
+  display: grid;
+  gap: 4px;
+  margin: 0;
+  padding: 6px;
+  list-style: none;
+}
+
+.ai-candidates-list button {
+  display: grid;
+  gap: 2px;
+  width: 100%;
+  padding: 8px 10px;
+  border: 1px solid transparent;
+  border-radius: var(--r-sm);
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+  transition: background 0.15s var(--ease), border-color 0.15s var(--ease);
+}
+
+.ai-candidates-list button:hover {
+  border-color: var(--line);
+  background: var(--surface-2);
+}
+
+.ai-candidate-name {
+  font-size: 12.5px;
+  font-weight: 650;
+  color: var(--ink);
+}
+
+.ai-candidate-meta {
+  font-size: 11px;
+  color: var(--ink-3);
+}
+
+/* ---------- 分服务错误面板（文案 + 重试兄弟节点） ---------- */
+.ai-error-panel {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 14px;
+  border: 1px solid color-mix(in srgb, var(--danger) 35%, var(--line));
+  border-radius: var(--r-sm);
+  background: color-mix(in srgb, var(--danger) 8%, var(--surface));
+  color: var(--t-danger);
+  font-size: 13px;
+  line-height: 1.5;
+}
+
+.ai-map .ai-error-panel {
+  margin-top: 10px;
+}
+
+/* ---------- 右栏：加载 / 天气 / Tips / 预算 ---------- */
+.ai-loading {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 18px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+  background: var(--surface);
+  box-shadow: var(--sh-1);
+}
+
+.ai-loading-text {
+  margin: 0;
+  font-size: 13.5px;
+  font-weight: 650;
+  color: var(--ink);
+}
+
+.ai-card-loading {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 0;
+  font-size: 12.5px;
+  color: var(--ink-3);
+}
+
+.ai-weather-source,
+.ai-estimate-tag,
+.ai-indoor-tag,
+.ai-unresolved-tag,
+.ai-source-badge {
+  margin-inline-end: 0;
+  border-radius: 999px;
+  font-size: 10.5px;
+  line-height: 1.6;
+}
+
+.ai-weather-source,
+.ai-estimate-tag {
+  border-color: transparent;
+  background: var(--lagoon-soft);
+  color: var(--t-lagoon);
+}
+
+.ai-indoor-tag {
+  border-color: transparent;
+  background: color-mix(in srgb, var(--surf) 14%, var(--surface));
+  color: var(--t-surf);
+}
+
+.ai-unresolved-tag {
+  border-color: transparent;
+  background: color-mix(in srgb, var(--warn) 16%, var(--surface));
+  color: var(--t-warn);
+}
+
+.ai-source-badge {
+  border-color: transparent;
+  background: var(--grad-meadow);
+  color: var(--on-deep);
+  font-weight: 650;
+}
+
+.ai-weather-main {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.ai-weather-temp {
+  font-family: var(--font-num);
+  font-size: 26px;
+  font-weight: 800;
+  color: var(--ink);
+}
+
+.ai-weather-text {
+  font-size: 13px;
+  font-weight: 650;
+  color: var(--ink-2);
+}
+
+.ai-weather-facts {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(88px, 1fr));
+  gap: 8px;
+  margin: 0;
+}
+
+.ai-weather-facts > div {
+  padding: 8px 10px;
+  border-radius: var(--r-sm);
+  background: var(--surface-2);
+}
+
+.ai-weather-facts dt {
+  font-size: 10.5px;
+  color: var(--ink-3);
+}
+
+.ai-weather-facts dd {
+  margin: 2px 0 0;
+  font-family: var(--font-num);
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.ai-tips-list {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding-left: 18px;
+  font-size: 12.5px;
+  line-height: 1.55;
+  color: var(--ink-2);
+}
+
+.ai-packing-title {
+  margin: 12px 0 8px;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+
+.ai-packing-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.ai-packing-tag {
+  margin-inline-end: 0;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--surface-2);
+  color: var(--ink-2);
+}
+
+.ai-budget-rows {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+}
+
+.ai-budget-rows > div {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.ai-budget-rows dt {
+  font-size: 12.5px;
+  color: var(--ink-2);
+}
+
+.ai-budget-rows dd {
+  margin: 0;
+  font-family: var(--font-num);
+  font-size: 13px;
+  font-weight: 650;
+  color: var(--ink);
+}
+
+.ai-budget-total {
+  padding-top: 8px;
+  border-top: 1px solid var(--line);
+}
+
+.ai-budget-total dd {
+  font-size: 15px;
+  color: var(--t-lagoon);
+}
+
+.ai-budget-user dd {
+  color: var(--t-surf);
+}
+
+.ai-over-budget {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-top: 10px;
+  padding: 10px 12px;
+  border: 1px solid color-mix(in srgb, var(--warn) 40%, var(--line));
+  border-radius: var(--r-sm);
+  background: color-mix(in srgb, var(--warn) 12%, var(--surface));
+  color: var(--t-warn);
+  font-size: 12.5px;
+  font-weight: 650;
+}
+
+/* ---------- 右栏：时间轴与编辑 ---------- */
+.ai-plan-title {
+  margin: 0 0 10px;
+  font-size: 14px;
+  font-weight: 750;
+  color: var(--ink);
+}
+
+.ai-min-stops {
+  margin: 0 0 8px;
+  font-size: 12.5px;
+  font-weight: 650;
+  color: var(--t-warn);
+}
+
+.ai-timeline {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.ai-stop-row {
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-sm);
+  background: var(--surface);
+  transition: border-color 0.2s var(--ease), box-shadow 0.2s var(--ease);
+}
+
+.ai-stop-row.is-active {
+  border-color: var(--lagoon);
+  box-shadow: var(--ring);
+}
+
+.ai-stop-row.is-unresolved {
+  border-style: dashed;
+}
+
+.ai-day-label {
+  margin-bottom: 6px;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  color: var(--t-surf);
+}
+
+.ai-stop-line {
+  display: grid;
+  grid-template-columns: 26px minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: start;
+}
+
+.ai-stop-chip {
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: var(--grad-meadow);
+  color: var(--on-deep);
+  font-family: var(--font-num);
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.ai-stop-main {
+  min-width: 0;
+}
+
+.ai-stop-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.ai-stop-arrival {
+  font-family: var(--font-num);
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--t-surf);
+}
+
+.ai-stop-name {
+  padding: 0;
+  border: none;
+  background: none;
+  font-size: 13.5px;
+  font-weight: 700;
+  color: var(--ink);
+  text-align: left;
+  cursor: pointer;
+}
+
+.ai-stop-name:hover {
+  color: var(--t-lagoon);
+  text-decoration: underline;
+}
+
+.ai-stop-reason {
+  margin: 4px 0 2px;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--ink-2);
+}
+
+.ai-stop-stay {
+  font-size: 11px;
+  color: var(--ink-3);
+}
+
+.ai-stop-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 0;
+}
+
+.ai-replace-panel {
+  display: grid;
+  gap: 8px;
+  margin-top: 10px;
+  padding: 10px;
+  border: 1px dashed var(--line-2);
+  border-radius: var(--r-sm);
+  background: var(--surface-2);
+}
+
+/* ---------- 右栏：统计与动作 ---------- */
+.ai-stats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+  background: var(--surface);
+  box-shadow: var(--sh-1);
+}
+
+.ai-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.ai-stat-label {
+  font-size: 10.5px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+
+.ai-stat strong {
+  font-family: var(--font-num);
+  font-size: 16px;
+  color: var(--t-lagoon);
+}
+
+.ai-stats-source,
+.ai-stats .form-hint {
+  grid-column: 1 / -1;
+  font-size: 11px;
+  color: var(--ink-3);
+}
+
+.ai-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.ai-actions .ant-btn:last-child {
+  flex: 1;
+}
+
+/* ---------- 详情页 AI 摘要 ---------- */
+.ai-summary .ai-estimate-tag {
+  margin-inline-start: 6px;
+}
+
+.ai-summary-tips {
+  display: grid;
+  gap: 4px;
+  margin: 10px 0 0;
+  padding-left: 18px;
+  font-size: 12.5px;
+  line-height: 1.55;
+  color: var(--ink-2);
+}
+
+/* ---------- 响应式降级 ---------- */
+@media (max-width: 1100px) {
+  .ai-planner-grid {
+    grid-template-columns: 300px minmax(0, 1fr);
+  }
+
+  .ai-result {
+    grid-column: 1 / -1;
+  }
+
+  .ai-map-container {
+    min-height: 420px;
+    height: clamp(420px, 60vh, 640px);
+  }
+}
+
+@media (max-width: 768px) {
+  .ai-planner-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .ai-map-container {
+    min-height: 320px;
+    height: clamp(320px, 52vh, 460px);
+  }
+
+  .ai-stop-line {
+    grid-template-columns: 26px minmax(0, 1fr);
+  }
+
+  .ai-stop-actions {
+    grid-column: 2;
+    flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: flex-start;
+  }
+}
+
+/* 信用限制：徽标 / 本人原因 / 退出影响预览 / 统一拦截提示 */
+.credit-restricted-badge {
+  margin-left: 6px;
+  vertical-align: 1px;
+}
+
+.restriction-note {
+  display: block;
+  margin-top: 6px;
+  font-size: 12px;
+  line-height: 1.55;
+  color: var(--t-warn);
+}
+
+.blocked-notice {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  margin: 0 0 14px;
+  padding: 12px 14px;
+  border: 1px solid color-mix(in srgb, var(--danger) 24%, transparent);
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--danger) 6%, transparent);
+  font-size: 12.5px;
+  line-height: 1.6;
+  color: var(--ink-2);
+}
+
+.composer-closed .blocked-notice {
+  margin: 0;
+  border: 0;
+  padding: 0;
+  background: transparent;
+  text-align: left;
+}
+
+.leave-preview {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 12px 0;
+  padding: 12px 14px;
+  border: 1px solid color-mix(in srgb, var(--warn) 32%, transparent);
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--warn) 7%, transparent);
+}
+
+.leave-preview-label {
+  font-size: 11.5px;
+  letter-spacing: 0.04em;
+  color: var(--ink-3);
+}
+
+.leave-preview b {
+  font-size: 15px;
+  color: var(--ink);
+}
+
+.leave-preview .hint {
+  font-size: 11.5px;
+  color: var(--ink-3);
+}
+
+.leave-reason-select {
+  margin-top: 6px;
+}
+
+/* 受限账号的「发布行程」导航入口：仍可见，但不可点开 */
+.rail-link.is-disabled,
+.tab-link.is-disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.rail-link.is-disabled:hover {
+  background: transparent;
+  color: inherit;
+}
+
+/* 同行者推荐：分值与分项全部来自后端，这里只负责排版。 */
+.recommendation-list {
+  display: grid;
+  gap: 10px;
+  margin: 10px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.recommendation-row {
+  display: grid;
+  gap: 8px;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+  background: var(--surface-2);
+}
+
+.recommendation-user {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
+}
+
+.recommendation-user:hover .publisher-name {
+  text-decoration: underline;
+}
+
+.recommendation-user-body {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.recommendation-trip {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 8px;
+  font-size: 13px;
+}
+
+.recommendation-score {
+  display: grid;
+  gap: 4px;
+}
+
+.recommendation-score-value {
+  font-family: var(--font-num);
+  font-size: 18px;
+  font-weight: 800;
+  color: var(--t-warn);
+}
+
+.recommendation-reasons {
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--ink-2);
+}
+
+.recommendation-interest {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+@media (max-width: 900px) {
+  .recommendation-row {
+    padding: 10px;
+  }
 }

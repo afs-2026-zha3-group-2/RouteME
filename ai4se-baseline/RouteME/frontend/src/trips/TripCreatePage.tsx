@@ -3,7 +3,11 @@ import { Alert, Button, Card, DatePicker, Input, InputNumber, Segmented, Space, 
 import zhCN from 'antd/es/locale/zh_CN';
 import dayjs from 'dayjs';
 import 'dayjs/locale/zh-cn';
-import { createTrip, loadTrip } from '../api';
+import { ApiError, createTrip, loadAiItinerary, loadTrip } from '../api';
+import { aiMessages } from '../ai/aiMessages';
+import { toTripPrefill } from '../ai/snapshot';
+import { CreditRestrictedNotice } from '../credit/CreditRestrictedNotice';
+import { useMyCredit } from '../credit/CreditContext';
 import { AreaCascader } from '../area/AreaCascader';
 import { cityLabel } from '../area/areaOptions';
 import { tripMessages } from '../i18n/tripMessages';
@@ -27,7 +31,6 @@ import {
   type TripFormValues,
 } from './tripForm';
 import { addMeetingArea } from './meetingForm';
-import { describePublishFailure } from './publishGuard';
 import {
   INTEREST_TAGS,
   MAX_STOPS,
@@ -45,20 +48,24 @@ dayjs.locale('zh-cn');
 type Props = {
   currentUser: DemoUser;
   fromTripId?: number;
+  aiItineraryId?: number;
 };
 
-export function TripCreatePage({ currentUser, fromTripId }: Props) {
+export function TripCreatePage({ currentUser, fromTripId, aiItineraryId }: Props) {
+  // AI 预填失败时保留 initialTripForm（今天日期），用户仍可手动填写发布（A12 / L-04）。
+  const { restricted } = useMyCredit();
   const [values, setValues] = useState<TripFormValues>(() =>
     fromTripId === undefined ? initialTripForm() : emptyTripForm,
   );
   const [errors, setErrors] = useState<TripFieldErrors>({});
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
+  const [prefillReady, setPrefillReady] = useState(false);
+  const [prefillError, setPrefillError] = useState(false);
   const [tagDraft, setTagDraft] = useState('');
   const [tagError, setTagError] = useState<string | null>(null);
   const [meetingDraft, setMeetingDraft] = useState('');
   const [meetingDraftError, setMeetingDraftError] = useState<string | null>(null);
-  const failure = describePublishFailure(submitError);
 
   useEffect(() => {
     if (fromTripId === undefined) {
@@ -83,6 +90,29 @@ export function TripCreatePage({ currentUser, fromTripId }: Props) {
       active = false;
     };
   }, [currentUser.id, fromTripId]);
+
+  useEffect(() => {
+    if (aiItineraryId === undefined) {
+      return;
+    }
+    let active = true;
+    loadAiItinerary(currentUser.id, aiItineraryId)
+      .then((snapshot) => {
+        if (!active) {
+          return;
+        }
+        setValues({ ...emptyTripForm, ...toTripPrefill(snapshot) });
+        setPrefillReady(true);
+      })
+      .catch(() => {
+        if (active) {
+          setPrefillError(true);
+        }
+      });
+    return () => {
+      active = false;
+    };
+  }, [currentUser.id, aiItineraryId]);
 
   const update = (patch: Partial<TripFormValues>) => {
     setValues((previous) => ({ ...previous, ...patch }));
@@ -142,10 +172,17 @@ export function TripCreatePage({ currentUser, fromTripId }: Props) {
     setSubmitting(true);
     setSubmitError(null);
     try {
-      const created = await createTrip(currentUser.id, toCreateRequest(values));
+      const created = await createTrip(currentUser.id, toCreateRequest(values, aiItineraryId));
       window.location.hash = `#/trips/${created.id}`;
     } catch (error: unknown) {
-      setSubmitError(error instanceof Error ? error.message : 'UNKNOWN_ERROR');
+      // 后端业务错误（如 AI 快照不属于当前用户）优先展示 message，而非错误码。
+      setSubmitError(
+        error instanceof ApiError
+          ? (error.detail ?? error.code)
+          : error instanceof Error
+            ? error.message
+            : 'UNKNOWN_ERROR',
+      );
     } finally {
       setSubmitting(false);
     }
@@ -160,6 +197,9 @@ export function TripCreatePage({ currentUser, fromTripId }: Props) {
           </Typography.Title>
           <p className="page-sub">{tripMessages.createSubtitle}</p>
         </div>
+        <a className="ghost-link" href="#/ai-planner">
+          {aiMessages.tryAiLink}
+        </a>
         <Button className="page-back" onClick={() => (window.location.hash = '#/')}>
           {tripMessages.backHome}
         </Button>
@@ -171,6 +211,28 @@ export function TripCreatePage({ currentUser, fromTripId }: Props) {
           type="info"
           showIcon
           title={tripMessages.referenceHint}
+        />
+      )}
+
+      {aiItineraryId !== undefined && prefillReady && (
+        <Alert
+          className="prefill-banner"
+          data-testid="ai-prefill-banner"
+          type="info"
+          showIcon
+          title={aiMessages.prefillBanner}
+          description={
+            values.destinationCode === '' ? aiMessages.prefillDestinationHint : undefined
+          }
+        />
+      )}
+      {aiItineraryId !== undefined && prefillError && (
+        <Alert
+          className="prefill-banner"
+          data-testid="ai-prefill-error"
+          type="warning"
+          showIcon
+          title={aiMessages.prefillError}
         />
       )}
 
@@ -498,37 +560,27 @@ export function TripCreatePage({ currentUser, fromTripId }: Props) {
               />
             </Field>
 
-            {failure?.kind === 'creditGuard' && (
-              <Alert
-                className="publish-guard"
-                type="warning"
-                showIcon
-                title={tripMessages.publishGuardTitle}
-                description={
-                  <>
-                    <p className="publish-guard-body">{tripMessages.publishGuardBody}</p>
-                    <p className="publish-guard-note">{tripMessages.publishGuardRemaining}</p>
-                  </>
-                }
-                action={
-                  <Button type="primary" href="#/credit/learning">
-                    {tripMessages.publishGuardAction}
-                  </Button>
-                }
-              />
+            {restricted && <CreditRestrictedNotice />}
+            {restricted && (
+              <p className="publish-guard-note">
+                <a className="publish-guard-entry" href="#/credit/learning">
+                  {tripMessages.publishGuardAction}
+                </a>
+                {tripMessages.publishGuardRemaining}
+              </p>
             )}
 
-            {failure?.kind === 'generic' && (
+            {submitError !== null && (
               <Alert
                 type="error"
                 showIcon
                 title={tripMessages.failedTitle}
-                description={failure.code}
+                description={submitError}
               />
             )}
 
             <div className="form-actions">
-              <Button type="primary" loading={submitting} onClick={submit}>
+              <Button type="primary" loading={submitting} disabled={restricted} onClick={submit}>
                 {tripMessages.createSubmit}
               </Button>
               <Button onClick={() => (window.location.hash = '#/')}>

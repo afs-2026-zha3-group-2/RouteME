@@ -14,7 +14,6 @@ import org.springframework.web.client.RestClientException;
 
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
-
 import routeme.config.AmapProperties;
 
 /**
@@ -68,7 +67,14 @@ public class AmapProxyController {
     public ResponseEntity<String> proxy(HttpServletRequest request) {
         String path = normalizePath(request.getRequestURI());
         // 高德 JS API 会发埋点请求（v3/log/init）；直接回成功，避免控制台 404 噪音。
+        // SDK 以 JSONP 方式加载（callback 包裹），回纯 JSON 会触发 SyntaxError。
         if (path.startsWith("v3/log")) {
+            String callback = request.getParameter("callback");
+            if (callback != null && callback.matches("[A-Za-z0-9_.]+")) {
+                return ResponseEntity.ok()
+                        .contentType(MediaType.valueOf("application/javascript"))
+                        .body(callback + "(" + OK_BODY + ")");
+            }
             return ResponseEntity.ok().contentType(MediaType.APPLICATION_JSON).body(OK_BODY);
         }
         if (!isAllowed(path)) {

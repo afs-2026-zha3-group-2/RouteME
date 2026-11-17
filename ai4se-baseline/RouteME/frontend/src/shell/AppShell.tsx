@@ -1,10 +1,12 @@
 import { useEffect, useRef, useState, type KeyboardEvent as ReactKeyboardEvent, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import { loadUserProfile } from '../api';
+import { useMyCredit } from '../credit/CreditContext';
 import { adminMessages } from '../i18n/adminMessages';
 import { GateScene } from '../identity/GateScene';
 import { tripMessages } from '../i18n/tripMessages';
 import { AccountStatusBanner } from '../profile/AccountStatusBanner';
+import { creditRestrictedActionMessage } from '../profile/creditDisplay';
 import { publisherSummary } from '../profile/profileDisplay';
 import type { Route } from '../route';
 import type { ColorMode } from '../theme';
@@ -12,7 +14,7 @@ import type { DemoUser, UserProfile } from '../types';
 import { Avatar } from './Avatar';
 import { BrandMark } from './BrandMark';
 
-type NavKey = 'discover' | 'map' | 'create' | 'mine' | 'chat' | 'help' | 'admin';
+type NavKey = 'discover' | 'map' | 'create' | 'aiPlanner' | 'mine' | 'chat' | 'help' | 'admin';
 
 type NavItem = { key: NavKey; label: string; href: string };
 
@@ -20,6 +22,7 @@ const NAV_ITEMS: NavItem[] = [
   { key: 'discover', label: tripMessages.homeTitle, href: '#/' },
   { key: 'map', label: '旅行地图', href: '#/map' },
   { key: 'create', label: tripMessages.publish, href: '#/trips/new' },
+  { key: 'aiPlanner', label: 'AI 规划', href: '#/ai-planner' },
   { key: 'mine', label: tripMessages.mineTitle, href: '#/mine' },
   { key: 'chat', label: tripMessages.chatNav, href: '#/chat' },
 ];
@@ -32,7 +35,8 @@ const RAIL_ITEMS: NavItem[] = [
 
 const NAV_GROUPS: Array<{ title: string; items: NavItem[] }> = [
   { title: '浏览', items: RAIL_ITEMS.filter((item) => item.key === 'discover' || item.key === 'map') },
-  { title: '我的', items: RAIL_ITEMS.filter((item) => item.key !== 'discover' && item.key !== 'map') },
+  { title: '规划', items: RAIL_ITEMS.filter((item) => item.key === 'create' || item.key === 'aiPlanner') },
+  { title: '我的', items: RAIL_ITEMS.filter((item) => item.key === 'mine' || item.key === 'chat' || item.key === 'help' || item.key === 'admin') },
 ];
 
 function activeKey(route: Route): NavKey | null {
@@ -44,6 +48,9 @@ function activeKey(route: Route): NavKey | null {
   }
   if (route.name === 'create' || route.name === 'share') {
     return 'create';
+  }
+  if (route.name === 'aiPlanner') {
+    return 'aiPlanner';
   }
   if (route.name === 'mine') {
     return 'mine';
@@ -96,6 +103,22 @@ function NavIcon({ name }: { name: NavKey }) {
         strokeLinecap="round"
       >
         <path d="M10 4.5v11M4.5 10h11" />
+      </svg>
+    );
+  }
+  if (name === 'aiPlanner') {
+    return (
+      <svg
+        viewBox="0 0 20 20"
+        aria-hidden="true"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.7"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      >
+        <path d="M10 3.2 11.6 8l4.8 1.6-4.8 1.6L10 16l-1.6-4.8L3.6 9.6 8.4 8Z" />
+        <path d="M15.6 3v3M14.1 4.5h3" />
       </svg>
     );
   }
@@ -180,6 +203,10 @@ export function AppShell({
   children,
 }: Props) {
   const active = activeKey(route);
+  const { restricted } = useMyCredit();
+  const navBlockedTitle = (item: NavItem) =>
+    restricted && item.key === 'create' ? creditRestrictedActionMessage() : undefined;
+
 
   const [accountOpen, setAccountOpen] = useState(false);
   const [accountMenuAnchor, setAccountMenuAnchor] = useState<{
@@ -383,9 +410,21 @@ export function AppShell({
               {group.items.map((item) => (
                 <a
                   key={item.key}
-                  className={active === item.key ? 'rail-link active' : 'rail-link'}
+                  className={[
+                    active === item.key ? 'rail-link active' : 'rail-link',
+                    navBlockedTitle(item) !== undefined ? 'is-disabled' : '',
+                  ]
+                    .filter((name) => name !== '')
+                    .join(' ')}
                   href={item.href}
                   aria-current={active === item.key ? 'page' : undefined}
+                  aria-disabled={navBlockedTitle(item) !== undefined || undefined}
+                  title={navBlockedTitle(item)}
+                  onClick={(event) => {
+                    if (navBlockedTitle(item) !== undefined) {
+                      event.preventDefault();
+                    }
+                  }}
                 >
                   <NavIcon name={item.key} />
                   <span>{item.label}</span>
@@ -489,12 +528,24 @@ export function AppShell({
       </div>
 
       <nav className="tabbar" aria-label="底部导航">
-        {NAV_ITEMS.map((item) => (
+        {NAV_ITEMS.filter((item) => item.key !== 'aiPlanner').map((item) => (
           <a
             key={item.key}
-            className={active === item.key ? 'tab-link active' : 'tab-link'}
+            className={[
+              active === item.key ? 'tab-link active' : 'tab-link',
+              navBlockedTitle(item) !== undefined ? 'is-disabled' : '',
+            ]
+              .filter((name) => name !== '')
+              .join(' ')}
             href={item.href}
             aria-current={active === item.key ? 'page' : undefined}
+            aria-disabled={navBlockedTitle(item) !== undefined || undefined}
+            title={navBlockedTitle(item)}
+            onClick={(event) => {
+              if (navBlockedTitle(item) !== undefined) {
+                event.preventDefault();
+              }
+            }}
           >
             <NavIcon name={item.key} />
             <span>{item.label}</span>

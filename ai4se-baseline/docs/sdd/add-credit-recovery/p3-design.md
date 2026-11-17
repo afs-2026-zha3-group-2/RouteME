@@ -1,9 +1,11 @@
 # P3 阶段记录 — add-credit-recovery
 
-- **Change：** `add-credit-recovery`（REQ-024 / S25 安全学习恢复信用分）｜ **阶段：** P3（Design & decompose）
+- **Change：** `add-credit-recovery`（REQ-026 / S27 安全学习恢复信用分）｜ **阶段：** P3（Design & decompose）
 - **日期：** 2026-11-17 ｜ **记录人：** Lewis Liu（当前开发者）
 - **基点：** 分支 `feature/add-credit-recovery`（基于 `origin/main@ec360dc`）
 - **前置偏差：** ~~**G1 为 Pending**~~ → **2026-11-17 已签：G1 Pass（无条件，IO=WAYNE / SA=Jacky）**。P3 曾在 Pending 期间按用户裁定以「起草态」推进，现已关闭该偏差。
+
+> **过程快照：** 需求 / 故事编号、契约与迁移号、403 错误码已随 P4 合并 `origin/main@acf1b1f` 统一为 REQ-026 / S27 / `0.22.0` / `V27` / `CREDIT_RESTRICTED`；本文保留 P3 当时口径（自建 `CreditGateService`），变更明细见 `p4-apply.md` §8。
 
 ## 1. 阶段目标
 
@@ -15,7 +17,7 @@
 |---|---|---|
 | 原型截点 | [`docs/prototype/credit-learning.html`](../../../docs/prototype/credit-learning.html)（408 行） | 独立页，四态（学习 / 答题 / 结果 / 已恢复）+ 无需恢复态；三组演示场景可切；深色模式；样式内联，**未触碰 stash 中的 6 个 prototype 文件** |
 | ATDD 设计 | [`atdd-design.md`](../../../openspec/changes/add-credit-recovery/atdd-design.md) | A1–A29 与 Delta 29 Scenario 一一对应（API 24 / 仅 E2E 2 / Defer UT 3，A18 兼 UT）；含 6 个后端测试类 + 1 个 E2E spec 的先红清单、门禁表、夹具策略、8 行 Non-goals 反向验证 |
-| 技术设计 | [`design.md`](../../../openspec/changes/add-credit-recovery/design.md) | D1–D14 决策总览（每条含否决理由）+ V25 建表 SQL + 后端分层落点 + 4 段流程伪代码 + 契约 0.19.0 + 前端文件表 + 6 条风险 + 6 项对齐自检 |
+| 技术设计 | [`design.md`](../../../openspec/changes/add-credit-recovery/design.md) | D1–D14 决策总览（每条含否决理由）+ V27 建表 SQL + 后端分层落点 + 4 段流程伪代码 + 契约 0.22.0 + 前端文件表 + 6 条风险 + 6 项对齐自检 |
 | 任务清单 | [`tasks.md`](../../../openspec/changes/add-credit-recovery/tasks.md) | T1–T13（contract 1 / backend 6 / frontend 4 / e2e 1 / docs 1），每任务 `- [ ]` + 验证命令 + A 编号；覆盖映射 29/29 无孤儿任务 |
 | 工件评审 | `docs/reviews/20261117-add-credit-recovery-{proposal,spec,design,tasks}-review.md` | 4 份均 **Pass**（BLOCKER 0）；共 20 条 findings（WARNING 10 全已收口 / SUGGESTION 10）；修正 2 处事实错误（`V21` 基线、`-Dtest` 分隔符）与 1 处规格-实现冲突（R6「立即展示」） |
 
@@ -27,7 +29,7 @@
 | P3-D2 | 学习进度持久化（OQ-5） | **只存完成标记 + 结果**：`learning_completed_at`、抽中题号、作答、得分、判定；刷新不额外扣次数 | 用户裁定；不建逐题明细表（design D1） |
 | P3-D3 | 页面路由（OQ-6 前半） | **`#/credit/learning` 独立页**，沿用既有 hash 路由 | 用户裁定 |
 | P3-D4 | 页面入口（OQ-6 后半） | **仅「发布行程被拦截时的提示」**；不在首页、个人主页信用行、左侧导航加入口 | 用户裁定；对应 design D12 |
-| P3-D5 | 契约与迁移号 | **`0.19.0 + V25`**（`0.15.0 + V21` 已被 `add-ai-itinerary` 登记）；合并前若前者放弃则复核一次 | design D10 + §1 号位说明 |
+| P3-D5 | 契约与迁移号 | **`0.22.0 + V27`**（`0.15.0 + V21` 已被 `add-ai-itinerary` 登记）；合并前若前者放弃则复核一次 | design D10 + §1 号位说明 |
 | P3-D6 | 并发控制手法 | **不引入 `SELECT ... FOR UPDATE`**：SQLite 无行锁语法，V20 已定「单份 SQL 兼容 SQLite/H2」；改用 `credit_ledger.idempotency_key` 唯一索引 + `recorded(key)` 预判 | design D8；R7 的并发场景仍可满足 |
 
 ## 4. 关键技术结论（详见 `design.md`）
@@ -43,7 +45,7 @@
 
 - `npx --no-install openspec validate add-credit-recovery --strict` → **valid**（评审中修订 Delta R6 的取数时机限定句后重跑通过）。
 - 对齐自检：Spec 29 ↔ ATDD 29 ↔ Tasks 覆盖 29/29 ↔ Design D1–D14，7 项全 Pass（见 `tasks.md` 末节）。
-- 号位排他：`0.19.0 + V25` 与 `add-ai-itinerary`（`0.15.0 + V21`）不冲突；`openspec/changes/` 下 23 个目录中仅二者涉及信用/契约号。
+- 号位排他：`0.22.0 + V27` 与 `add-ai-itinerary`（`0.15.0 + V21`）不冲突；`openspec/changes/` 下 23 个目录中仅二者涉及信用/契约号。
 - 原型未触碰 `stash@{0}`（`wip-prototype-before-credit-recovery`，6 个文件），合并时不会产生冲突。
 
 ## 6. 签署
@@ -63,7 +65,7 @@
 |---|---|
 | G1 补签 | 最高优先：未取得具名签署前不得提交 T1 契约改动 |
 | T1 契约先红 | `OpenApiTest` 必须先断言 4 schema 与 6 错误码，再改后端 |
-| 迁移双路径 | `CreditLearningMigrationSqliteTest` 覆盖全新库 V1–V25 与旧库（V20）升级 |
+| 迁移双路径 | `CreditLearningMigrationSqliteTest` 覆盖全新库 V1–V27 与旧库（V20）升级 |
 | 时区边界 | A21 / A23 用 `2026-11-30T23:30Z`（北京 12-01 07:30）与 `2026-11-30T16:00Z` 两组 |
 | 并发用例 | A29 在 H2 双线程跑；SQLite 侧只做结构断言（库级锁不适合并发单测） |
 | E2E 不在 CI | 沿用既有残余风险；`credit-learning.spec.ts` 在 P4 本地全量回归 |

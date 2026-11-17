@@ -36,6 +36,8 @@ export type UserCreditEntry = {
   user_id: number;
   credit_score: number;
   credit_level: CreditLevel;
+  /** 分数低于 60 时为 true；五个展示面据此显示「限制中」徽标。 */
+  credit_restricted: boolean;
 };
 
 /**
@@ -92,6 +94,10 @@ export type UserProfile = {
   /** 信用分，0–100；本人与他人视角均返回。 */
   credit_score: number;
   credit_level: CreditLevel;
+  /** 当前是否处于信用限制。 */
+  credit_restricted: boolean;
+  /** 限制原因；仅本人个人主页返回，他人响应省略。 */
+  credit_restriction_reason?: 'CREDIT_SCORE_BELOW_60' | null;
   joined_at?: string | null;
   stats?: ProfileStats;
   /** 账号状态：SUSPENDED 只回 status；BANNED 同时回理由与解封时间。 */
@@ -154,6 +160,8 @@ export type TripSummary = {
   ending_soon: boolean;
   publisher: DemoUser;
   created_at: string;
+  /** 来源 AI 行程快照 id；非 AI 发布的行程为 null（契约 0.12.0 加性字段）。 */
+  ai_itinerary_id?: number | null;
 };
 
 export type TripDetail = TripSummary & {
@@ -177,11 +185,53 @@ export type TripCancelReason =
   | 'weather'
   | 'illness'
   | 'safety'
-  | 'other';
+  | 'other'
+  | 'credit_restricted';
+
+/** 发布者可选的 8 项；credit_restricted 只由系统写入。 */
+export type UserTripCancelReason = Exclude<TripCancelReason, 'credit_restricted'>;
 
 export type TripCancelRequest = {
-  reason: TripCancelReason;
+  reason: UserTripCancelReason;
   note?: string | null;
+};
+
+/** 退出同行的原因。 */
+export type LeaveReason = 'personal' | 'force_majeure' | 'safety';
+
+export type LeaveStatus = 'not_required' | 'pending' | 'verified_true' | 'verified_false';
+
+export type LeaveMessageCode =
+  | 'penalty'
+  | 'penalty_doubled'
+  | 'no_penalty'
+  | 'during_trip'
+  | 'pending_review'
+  | 'at_floor';
+
+export type LeavePreview = {
+  reason: LeaveReason;
+  departure_at: string;
+  penalty_tier: 'ge7d' | 'd3to7d' | 'h24to72' | 'h12to24' | 'lt12h' | 'during';
+  theoretical_delta: number;
+  applied_delta: number;
+  monthly_ordinal: number;
+  monthly_doubled: boolean;
+  counted: boolean;
+  review_status: LeaveStatus;
+  resulting_score: number;
+  message_code: LeaveMessageCode;
+};
+
+export type LeaveResult = {
+  credit_score: number;
+  credit_level: CreditLevel;
+  credit_restricted: boolean;
+  theoretical_delta: number;
+  applied_delta: number;
+  monthly_ordinal: number;
+  review_status: LeaveStatus;
+  message_code: LeaveMessageCode;
 };
 
 export type TripCreateRequest = {
@@ -198,6 +248,8 @@ export type TripCreateRequest = {
   budget_max_cents?: number | null;
   tags: string[];
   capacity: number;
+  /** 关联的 AI 行程快照 id；后端校验归属，非本人快照 400。 */
+  ai_itinerary_id?: number | null;
 };
 
 export type TripMeetingRequest = {
@@ -223,6 +275,39 @@ export type Match = {
 export type MatchCandidate = {
   trip: TripSummary;
   match: Match;
+};
+
+/** 推荐分项维度：目的地 / 日期 / 共同兴趣。 */
+export type RecommendationDimension = 'destination' | 'date' | 'interest';
+
+/** 推荐分项：标签与得分均由后端返回，前端只负责展示。 */
+export type RecommendationBreakdown = {
+  dimension: RecommendationDimension;
+  label: string;
+  points: number;
+};
+
+/** 推荐参照：当前行程的目的地、出发日期与当前用户兴趣。 */
+export type RecommendationReference = {
+  trip_id: number;
+  destination: string;
+  start_date: string;
+  interests: string[];
+};
+
+/** 一条同行者推荐：用户 + 关联行程 + 后端算好的分值与解释。 */
+export type TravelerRecommendation = {
+  user: DemoUser;
+  trip: TripSummary;
+  score: number;
+  reasons: string[];
+  breakdown: RecommendationBreakdown[];
+  shared_interests: string[];
+};
+
+export type RecommendationList = {
+  reference: RecommendationReference;
+  items: TravelerRecommendation[];
 };
 
 export type ApplicationStatus = 'pending' | 'accepted' | 'rejected' | 'cancelled' | 'left';
@@ -613,3 +698,112 @@ export type LearningResult = {
   credit_score: number;
   credit_level: CreditLevel;
 };
+/* ---------- AI 智能规划（add-ai-itinerary，契约 0.17.0；天气复用 add-trip-weather） ---------- */
+
+export type AiDuration = 'half_day' | 'one_day' | 'two_day';
+export type AiTravelMode = 'transit' | 'walking' | 'driving';
+export type AiPace = 'relaxed' | 'moderate' | 'compact';
+
+/** 出发地 / 目的地：坐标必须来自高德（搜索 / 定位 / 地图点击），AI 不得虚构。 */
+export type AiPlace = {
+  name: string;
+  lng: number;
+  lat: number;
+};
+
+/** AI 只产出名称 / 理由 / 时间 / 估算；坐标由前端另行经高德解析。 */
+export type AiPlanStop = {
+  name: string;
+  reason: string;
+  arrival: string;
+  stay_minutes: number;
+  indoor: boolean;
+};
+
+export type AiPlanDay = {
+  day: number;
+  stops: AiPlanStop[];
+};
+
+/** 预算四项均为 AI 估算（整数分）；合计不信任 AI 字段，展示前重算。 */
+export type AiBudget = {
+  transport_cents: number;
+  tickets_cents: number;
+  food_cents: number;
+  other_cents: number;
+  total_cents: number;
+};
+
+export type AiPlan = {
+  title: string;
+  days: AiPlanDay[];
+  tips: string[];
+  packing: string[];
+  budget: AiBudget;
+};
+
+export type AiGenerateRequest = {
+  origin: AiPlace;
+  destination: AiPlace;
+  date: string;
+  duration: AiDuration;
+  budget_cents: number | null;
+  travel_mode: AiTravelMode;
+  interests: string[];
+  pace: AiPace;
+  reduce_budget: boolean;
+};
+
+/** weather 为本次生成后端实际注入提示词的权威天气摘要（add-trip-weather 嵌套契约）。 */
+export type AiGenerateResponse = {
+  plan: AiPlan;
+  weather: WeatherForecast;
+};
+
+/** 快照景点：resolved=true 时 lng/lat 必须为数值；未解析不伪造坐标。 */
+export type AiSnapshotStop = AiPlanStop & {
+  order: number;
+  resolved: boolean;
+  lng?: number | null;
+  lat?: number | null;
+};
+
+export type AiRouteLeg = {
+  from_id: string;
+  to_id: string;
+  distance_meters: number;
+  duration_seconds: number;
+};
+
+/** 高德真实路线结果；距离 / 时间只能来自高德，不得由 AI 产出。 */
+export type AiSnapshotRoute = {
+  mode: AiTravelMode;
+  distance_meters: number;
+  duration_seconds: number;
+  legs: AiRouteLeg[];
+};
+
+/** 完整快照；route / weather / ai_budget 在对应服务失败时可为 null，不伪造数据。 */
+export type AiItinerarySnapshot = {
+  origin: AiPlace;
+  destination: AiPlace;
+  date: string;
+  duration: AiDuration;
+  travel_mode: AiTravelMode;
+  interests: string[];
+  pace: AiPace;
+  budget_cents: number | null;
+  stops: AiSnapshotStop[];
+  route: AiSnapshotRoute | null;
+  weather: WeatherForecast | null;
+  tips: string[];
+  packing: string[];
+  ai_budget: AiBudget | null;
+};
+
+export type AiItinerarySaved = {
+  id: number;
+};
+
+/** 地图数据模型统一从 types 取用，业务层不直接依赖 AmapService 路径。 */
+export type { PlaceResult, RoutePlan, RouteWaypoint, TravelMode } from './map/amap/AmapService';

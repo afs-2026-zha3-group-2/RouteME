@@ -30,7 +30,6 @@ import routeme.pojo.TripPlan;
 import routeme.param.PageParam;
 import routeme.param.TripQueryParam;
 import routeme.service.ApplicationService;
-import routeme.service.CreditGateService;
 import routeme.service.DemoUserService;
 import routeme.service.TripPlanService;
 
@@ -41,19 +40,16 @@ public class TripController {
     private final DemoUserService demoUserService;
     private final TripPlanService tripPlanService;
     private final ApplicationService applicationService;
-    private final CreditGateService creditGateService;
     private final Clock clock;
 
     public TripController(
             DemoUserService demoUserService,
             TripPlanService tripPlanService,
             ApplicationService applicationService,
-            CreditGateService creditGateService,
             Clock clock) {
         this.demoUserService = demoUserService;
         this.tripPlanService = tripPlanService;
         this.applicationService = applicationService;
-        this.creditGateService = creditGateService;
         this.clock = clock;
     }
 
@@ -94,7 +90,7 @@ public class TripController {
             @RequestHeader(value = "X-User-Id", required = false) Long userId,
             @RequestBody TripCreateRequest request) {
         DemoUser publisher = demoUserService.require(userId);
-        creditGateService.assertCanPublish(publisher.id());
+        // 信用限制统一由 TripPlanServiceImpl.create 的 CreditRestrictionGuard 守卫（403 CREDIT_RESTRICTED）。
         TripPlan saved = tripPlanService.create(request, publisher.id());
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(TripDetailResponse.from(saved, publisher, List.of(publisher), clock.instant(), true));

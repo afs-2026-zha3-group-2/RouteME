@@ -39,6 +39,7 @@ import routeme.response.ExperiencePhotoResponse;
 import routeme.response.ExperienceResponse;
 import routeme.response.ExperienceSaveResponse;
 import routeme.service.AccountStatusService;
+import routeme.service.CreditRestrictionGuard;
 import routeme.service.DemoUserService;
 import routeme.service.ExperienceEligibility;
 import routeme.service.ExperienceLikeService;
@@ -62,6 +63,7 @@ public class ExperienceServiceImpl
     private final ExperiencePhotoStorage photoStorage;
     private final ExperienceEligibility eligibility;
     private final ExperienceLikeService experienceLikeService;
+    private final CreditRestrictionGuard creditRestrictionGuard;
     private final Clock clock;
     private final AccountStatusService accountStatusService;
 
@@ -72,6 +74,7 @@ public class ExperienceServiceImpl
             ExperiencePhotoStorage photoStorage,
             ExperienceEligibility eligibility,
             ExperienceLikeService experienceLikeService,
+            CreditRestrictionGuard creditRestrictionGuard,
             Clock clock,
             AccountStatusService accountStatusService) {
         this.tripPlanService = tripPlanService;
@@ -80,6 +83,7 @@ public class ExperienceServiceImpl
         this.photoStorage = photoStorage;
         this.eligibility = eligibility;
         this.experienceLikeService = experienceLikeService;
+        this.creditRestrictionGuard = creditRestrictionGuard;
         this.clock = clock;
         this.accountStatusService = accountStatusService;
     }
@@ -88,6 +92,7 @@ public class ExperienceServiceImpl
     @Transactional
     public ExperienceSaveResponse upsert(long tripId, long authorId, ExperienceWriteRequest request) {
         accountStatusService.assertCanWrite(authorId, WriteScopeEnum.BUSINESS);
+        creditRestrictionGuard.requireNotRestricted(authorId);
         TripPlan trip = tripPlanService.requireCurrent(tripId);
         eligibility.requireCanShare(trip, authorId);
         List<Long> photoIds = normalizePhotoIds(request.photoIdsOrDefault());

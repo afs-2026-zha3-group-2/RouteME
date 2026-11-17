@@ -104,7 +104,10 @@ class TripCancellationApiTest {
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.code").value("APPLICATION_NOT_PENDING"));
 
-        mockMvc.perform(post("/api/trips/6/leave").header("X-User-Id", "2"))
+        mockMvc.perform(post("/api/trips/6/leave")
+                        .header("X-User-Id", "2")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"reason\":\"personal\"}"))
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.code").value("TRIP_NOT_OPEN"));
 

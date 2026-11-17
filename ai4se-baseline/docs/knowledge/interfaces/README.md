@@ -18,6 +18,7 @@ API、事件与集成契约。字段一律 snake_case；时间字段为 RFC3339 
 | POST | `/trips/{id}/complete` | 发布者标记已结束 |
 | GET | `/matches` | 候选行程 + `match{score, percentage, reasons[], basis}`；筛选同 `/trips`（`destination_code`/日期/标签）；`sort=match`（默认）\|`date`\|`new`；`page`、`size` |
 | GET | `/matches/{tripId}` | 单条行程相对我的匹配信息 |
+| GET | `/trips/{tripId}/recommendations` | 同行者推荐：以该行程目的地 / 出发日期与我的兴趣为参照，返回 `reference` + `items[{user, trip, score, reasons[], breakdown[], shared_interests[]}]`；排除本人、已取消 / 已结束与 0 分候选；同发布者只保留最高分行程 |
 | POST | `/trips/{tripId}/applications` | 提交同行申请（`message` 选填 ≤120，201） |
 | GET | `/trips/{tripId}/applications` | 发布者查看该行程申请 |
 | GET | `/me/applications` | 我的申请（含状态与行程摘要） |

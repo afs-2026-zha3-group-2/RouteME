@@ -16,7 +16,7 @@ import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.jdbc.datasource.DriverManagerDataSource;
 
 /**
- * V25：新增 credit_learning_session 一张空表。
+ * V27：新增 credit_learning_session 一张空表。
  * 覆盖全新库与「已停在 V20 再升级」两条路径，并确认信用账户 / 账本与 app_users 结构不变。
  */
 class CreditLearningMigrationSqliteTest {
@@ -28,7 +28,7 @@ class CreditLearningMigrationSqliteTest {
     void in_emptySqliteFile_out_learningSessionTableCreated() {
         // Given
         String jdbcUrl = jdbcUrl("fresh.db");
-        migrate(jdbcUrl, "23");
+        migrate(jdbcUrl, "26");
         List<String> userColumnsBefore = JdbcClient.create(new DriverManagerDataSource(jdbcUrl))
                 .sql("SELECT name FROM pragma_table_info('app_users')")
                 .query(String.class)
@@ -55,12 +55,12 @@ class CreditLearningMigrationSqliteTest {
                 .query(String.class)
                 .list();
         int restrictionTables = jdbcClient
-                .sql("SELECT COUNT(*) FROM sqlite_master WHERE type = 'table' AND name LIKE '%restriction%'")
+                .sql("SELECT COUNT(*) FROM sqlite_master WHERE type = 'table' AND name = 'credit_restriction'")
                 .query(Integer.class)
                 .single();
         int applied = jdbcClient.sql("""
                 SELECT COUNT(*) FROM flyway_schema_history
-                 WHERE success = 1 AND version = '25'
+                 WHERE success = 1 AND version = '27'
                 """).query(Integer.class).single();
 
         // Then
@@ -80,8 +80,8 @@ class CreditLearningMigrationSqliteTest {
                 () -> assertTrue(userColumns.contains("travel_style"), "app_users columns stay unchanged"),
                 () -> assertFalse(userColumns.contains("score"), "app_users keeps no score column"),
                 () -> assertFalse(userColumns.contains("restricted"), "app_users keeps no restriction column"),
-                () -> assertEquals(0, restrictionTables, "no restriction table"),
-                () -> assertEquals(1, applied, "V25 applied once"));
+                () -> assertEquals(1, restrictionTables, "restriction table still comes from V25"),
+                () -> assertEquals(1, applied, "V27 applied once"));
     }
 
     @Test

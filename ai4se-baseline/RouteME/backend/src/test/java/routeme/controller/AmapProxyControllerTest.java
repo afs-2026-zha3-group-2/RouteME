@@ -3,8 +3,13 @@ package routeme.controller;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-
 import org.junit.jupiter.api.Test;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+
+import jakarta.servlet.http.HttpServletRequest;
 
 class AmapProxyControllerTest {
 
@@ -28,5 +33,35 @@ class AmapProxyControllerTest {
         assertTrue(AmapProxyController.isAllowed("v4/direction/bicycling"));
         assertFalse(AmapProxyController.isAllowed("v3/unknown"));
         assertFalse(AmapProxyController.isAllowed(""));
+    }
+
+    /** 埋点请求不转发上游，RestClient / 配置传 null 即可。 */
+    private static HttpServletRequest logRequest(String callback) {
+        HttpServletRequest request = mock(HttpServletRequest.class);
+        when(request.getRequestURI()).thenReturn("/_AMapService/v3/log/init");
+        when(request.getParameter("callback")).thenReturn(callback);
+        return request;
+    }
+
+    @Test
+    void logInitWrapsBodyInJsonpCallback() {
+        AmapProxyController controller = new AmapProxyController(null, null);
+        ResponseEntity<String> response = controller.proxy(logRequest("jsonp_123_"));
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+        assertEquals("application/javascript", String.valueOf(response.getHeaders().getContentType()));
+        assertEquals(
+                "jsonp_123_({\"status\":\"1\",\"info\":\"OK\",\"infocode\":\"10000\"})",
+                response.getBody());
+    }
+
+    @Test
+    void logInitFallsBackToJsonWithoutSafeCallback() {
+        AmapProxyController controller = new AmapProxyController(null, null);
+        for (String callback : new String[] {null, "", "alert(1)//", "cb;evil"}) {
+            ResponseEntity<String> response = controller.proxy(logRequest(callback));
+            assertEquals(HttpStatus.OK, response.getStatusCode());
+            assertEquals("application/json", String.valueOf(response.getHeaders().getContentType()));
+            assertEquals("{\"status\":\"1\",\"info\":\"OK\",\"infocode\":\"10000\"}", response.getBody());
+        }
     }
 }

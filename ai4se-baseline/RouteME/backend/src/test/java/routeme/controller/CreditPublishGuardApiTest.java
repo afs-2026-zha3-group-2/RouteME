@@ -2,7 +2,6 @@ package routeme.controller;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -10,11 +9,9 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
-import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.ResultActions;
 
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
-import com.jayway.jsonpath.JsonPath;
 
 import routeme.config.FixedClockTestConfig;
 import routeme.constant.CreditLearningConstant;
@@ -22,9 +19,10 @@ import routeme.entity.TripPlanEntity;
 import routeme.mapper.TripPlanMapper;
 
 /**
- * A1–A4：低分只拦「发布行程」这一处，恢复后自动解除，其余功能不受影响。
+ * A1–A4：发布入口跟随 {@code CreditRestrictionGuard}（403 {@code CREDIT_RESTRICTED}），恢复至 60 后自动放行。
  *
- * <p>固定时钟停在 2026-11-16，发布体用 2026-11-20 起，避免落到过去日期。</p>
+ * <p>低分限制由 {@code add-credit-exit-restriction} 的只读守卫统一拦截写入口，本变更不再自建门禁；
+ * 固定时钟停在 2026-11-16，发布体用 2026-11-20 起，避免落到过去日期。</p>
  */
 @Import(FixedClockTestConfig.class)
 class CreditPublishGuardApiTest extends CreditLearningTestSupport {
@@ -46,12 +44,6 @@ class CreditPublishGuardApiTest extends CreditLearningTestSupport {
             }
             """;
 
-    /** 资料保存的最简合法体：必填五项齐全。 */
-    private static final String PROFILE_BODY = """
-            {"nickname":"低分也要能改资料","birthday":"2003-05-18","gender":"女","city":"珠海",
-             "interests":["摄影","美食","徒步"],"travel_style":"休闲游"}
-            """;
-
     @Autowired
     private TripPlanMapper tripPlanMapper;
 
@@ -63,7 +55,7 @@ class CreditPublishGuardApiTest extends CreditLearningTestSupport {
 
         publish(userId, PUBLISH_BODY)
                 .andExpect(status().isForbidden())
-                .andExpect(jsonPath("$.code").value("CREDIT_SCORE_BELOW_60"));
+                .andExpect(jsonPath("$.code").value("CREDIT_RESTRICTED"));
 
         assertEquals(before, tripCount(), "被拦截时不得写入行程");
     }
@@ -75,7 +67,7 @@ class CreditPublishGuardApiTest extends CreditLearningTestSupport {
         setScore(userId, CreditLearningConstant.PUBLISH_MIN_SCORE - 1);
         publish(userId, PUBLISH_BODY)
                 .andExpect(status().isForbidden())
-                .andExpect(jsonPath("$.code").value("CREDIT_SCORE_BELOW_60"));
+                .andExpect(jsonPath("$.code").value("CREDIT_RESTRICTED"));
 
         setScore(userId, CreditLearningConstant.PUBLISH_MIN_SCORE);
         publish(userId, PUBLISH_BODY)
@@ -101,56 +93,11 @@ class CreditPublishGuardApiTest extends CreditLearningTestSupport {
                 .andExpect(jsonPath("$.publisher.id").value((int) userId));
     }
 
-    @Test
-    void in_score45_out_applyCancelChatAndProfileUnaffected() throws Exception {
-        long userId = register("gate_other_paths");
-        setScore(userId, 45);
-
-        // 申请：trip 5 招募中，与低分无关。
-        MvcResult applied = mockMvc.perform(post("/api/trips/5/applications")
-                        .header("X-User-Id", userId)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"message\":\"低分也要能报名。\"}"))
-                .andExpect(status().isCreated())
-                .andReturn();
-
-        // 撤回：同一条申请。
-        Number applicationId = JsonPath.read(applied.getResponse().getContentAsString(), "$.id");
-        mockMvc.perform(post("/api/applications/" + applicationId + "/cancel").header("X-User-Id", userId))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.status").value("cancelled"));
-
-        // 聊天：trip 4 中 1 与 3 是已接受同行。
-        setScore(1, 45);
-        mockMvc.perform(post("/api/trips/4/messages")
-                        .header("X-User-Id", "1")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"receiver_id\":3,\"content\":\"低分也要能聊天。\"}"))
-                .andExpect(status().isCreated());
-
-        // 改资料：写入口只认 Bearer 会话。
-        mockMvc.perform(put("/api/users/me/profile")
-                        .header("Authorization", "Bearer " + login("gate_other_paths"))
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(PROFILE_BODY))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.profile_complete").value(true));
-    }
-
     private ResultActions publish(long userId, String body) throws Exception {
         return mockMvc.perform(post("/api/trips")
                 .header("X-User-Id", userId)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(body));
-    }
-
-    private String login(String username) throws Exception {
-        MvcResult session = mockMvc.perform(post("/api/auth/login")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"username\":\"%s\",\"password\":\"routeme-demo\"}".formatted(username)))
-                .andExpect(status().isOk())
-                .andReturn();
-        return JsonPath.read(session.getResponse().getContentAsString(), "$.token");
     }
 
     private long tripCount() {

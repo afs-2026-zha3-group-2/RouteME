@@ -9,6 +9,7 @@ import {
 } from '../api';
 import { tripMessages } from '../i18n/tripMessages';
 import { creditLabel, creditTone } from '../profile/creditDisplay';
+import { useMyCredit } from './CreditContext';
 import './learningPage.css';
 import type { DemoUser, LearningResult, LearningSession, UserCreditEntry } from '../types';
 import {
@@ -65,6 +66,8 @@ type Props = {
  * 正常入口只在发布行程被 403 拦截时出现；其余功能不会跳转到这里（proposal D6）。
  */
 export function LearningPage({ currentUser }: Props) {
+  // 恢复后同步全局受限状态：回到发布页时按钮应直接恢复可用。
+  const { refresh: refreshGlobalCredit } = useMyCredit();
   const [credit, setCredit] = useState<UserCreditEntry | null>(null);
   const [session, setSession] = useState<LearningSession | null>(null);
   const [result, setResult] = useState<LearningResult | null>(null);
@@ -165,6 +168,7 @@ export function LearningPage({ currentUser }: Props) {
         // 同上：清不掉也不影响判分结果。
       }
       await refreshCredit().catch(() => undefined);
+      refreshGlobalCredit();
     } catch (cause: unknown) {
       setError(describeError(cause));
     } finally {

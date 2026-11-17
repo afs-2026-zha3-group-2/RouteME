@@ -32,6 +32,7 @@ import routeme.pojo.UserCredit;
 import routeme.pojo.UserProfile;
 import routeme.request.UserProfileUpdateRequest;
 import routeme.service.AccountStatusService;
+import routeme.service.CreditRestrictionGuard;
 import routeme.service.CreditService;
 import routeme.service.DemoUserService;
 import routeme.service.UserProfileService;
@@ -50,6 +51,7 @@ public class UserProfileServiceImpl implements UserProfileService {
     private final DemoUserService demoUserService;
     private final AccountStatusService accountStatusService;
     private final CreditService creditService;
+    private final CreditRestrictionGuard creditRestrictionGuard;
     private final Clock clock;
     private final Path avatarDirectory;
 
@@ -57,11 +59,13 @@ public class UserProfileServiceImpl implements UserProfileService {
             DemoUserService demoUserService,
             AccountStatusService accountStatusService,
             CreditService creditService,
+            CreditRestrictionGuard creditRestrictionGuard,
             Clock clock,
             @Value("${routeme.profile.avatar-dir:../SqlLite/uploads/avatars}") String avatarDirectory) {
         this.demoUserService = demoUserService;
         this.accountStatusService = accountStatusService;
         this.creditService = creditService;
+        this.creditRestrictionGuard = creditRestrictionGuard;
         this.clock = clock;
         this.avatarDirectory = Path.of(avatarDirectory).toAbsolutePath().normalize();
         try {
@@ -79,6 +83,7 @@ public class UserProfileServiceImpl implements UserProfileService {
     @Override
     @Transactional
     public UserProfile save(long userId, UserProfileUpdateRequest request) {
+        creditRestrictionGuard.requireNotRestricted(userId);
         Map<String, String> fields = ProfileRules.validate(request, clock);
         if (!fields.isEmpty()) {
             throw new InvalidProfileException(fields);
@@ -120,6 +125,7 @@ public class UserProfileServiceImpl implements UserProfileService {
     @Override
     @Transactional
     public UserProfile uploadAvatar(long userId, MultipartFile file) {
+        creditRestrictionGuard.requireNotRestricted(userId);
         UserEntity entity = requireEntity(userId);
         byte[] content = readBytes(file);
         if (content.length == 0) {
@@ -181,7 +187,10 @@ public class UserProfileServiceImpl implements UserProfileService {
         return entity;
     }
 
-    private UserProfile toProfile(UserEntity entity, boolean includeBirthday) {
+    /**
+     * @param includePrivate 本人视角：生日与限制原因只对本人返回；他人视角省略。
+     */
+    private UserProfile toProfile(UserEntity entity, boolean includePrivate) {
         List<String> interests = JsonListUtils.parse(entity.getInterests());
         boolean complete = ProfileRules.complete(
                 entity.getNickname(),
@@ -198,12 +207,13 @@ public class UserProfileServiceImpl implements UserProfileService {
         String banReasonCode = banned ? entity.getBanReasonCode() : null;
         String banExpiresAt = banned ? entity.getBanExpiresAt() : null;
         UserCredit credit = creditService.read(entity.getId());
+        boolean restricted = credit.score() < 60;
         return new UserProfile(
                 entity.getId(),
                 entity.getNickname(),
                 entity.getAvatarInitial(),
                 entity.getAvatarUrl(),
-                includeBirthday ? entity.getBirthday() : null,
+                includePrivate ? entity.getBirthday() : null,
                 ProfileRules.age(entity.getBirthday(), clock),
                 ProfileRules.zodiac(entity.getBirthday()),
                 entity.getGender(),
@@ -218,6 +228,8 @@ public class UserProfileServiceImpl implements UserProfileService {
                 complete,
                 credit.score(),
                 credit.level(),
+                restricted,
+                restricted && includePrivate ? "CREDIT_SCORE_BELOW_60" : null,
                 status,
                 banReasonCode,
                 banExpiresAt);

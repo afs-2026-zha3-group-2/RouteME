@@ -1260,3 +1260,100 @@ MVP 无推送、无通知；以下为点赞与信用状态的展示面契约。
 | 提醒 | 每条一句，前置类别标签（雨 / 热 / 冷 / 风 / 平稳） |
 | 状态 | 未就绪（缺目的地或日期）、加载中、成功、暂无该日期天气预报、失败 + 重试 |
 | 探针 | `data-testid="weather-card"`、`weather-loading`、`weather-error`、`weather-retry`、`weather-reminder`、`weather-out-of-range` |
+
+## REQ-025 增补 — 退出同行扣分与低信用自动限制
+
+### ① 数据契约（Data contract）
+
+| 概念 | grain | 字段 | 状态迁移 | 来源 |
+|---|---|---|---|---|
+| 退出事件（`credit_exit_event`） | 一次退出动作 = 用户 × 行程 × 事件 | `id` / `user_id` / `trip_id` / `exit_reason`（`personal` / `force_majeure` / `safety`）/ `exit_at` / `departure_basis_at` / `penalty_tier`（`ge7d` / `d3to7d` / `h24to72` / `h12to24` / `lt12h` / `during`）/ `theoretical_delta` / `applied_delta` / `monthly_ordinal` / `review_status`（`not_required` / `pending` / `verified_true` / `verified_false`）/ `reviewed_at` / `ledger_id` / `idempotency_key` | 新建 → `not_required`（个人/≥7 天）或 `pending`（不可抗力/安全）；`pending` → `verified_true` / `verified_false`（未来核实）；不删除、不改写已结算行 | 退出确认 + `CreditService.book` |
+| 限制记录（`credit_restriction`） | 一段限制期 = 用户 × 触发；同一用户最多 1 条 `active` | `id` / `user_id` / `type`（本 change 仅 `AUTO_CREDIT`）/ `trigger_reason`（`CREDIT_SCORE_BELOW_60`）/ `trigger_score` / `triggered_at` / `status`（`active` / `lifted`）/ `lifted_at` / `lift_reason`（`SCORE_RECOVERED_TO_60`）/ `trigger_ledger_id` | 新建 `active` → 分数 ≥60 时 `lifted`；再次跌破 → 新建一条 `active`；历史保留 | 分数变化后的信用执行服务 |
+| 申请状态原因（`trip_applications.status_reason`） | 每条申请 | 可空字符串：`USER_CANCEL` / `USER_EXIT` / `PUBLISHER_REJECT` / `TRIP_CANCELLED` / `TRIP_COMPLETED` / `CREDIT_RESTRICTION` | 既有状态迁移时写入；历史行可空；不改变既有状态枚举 | `ApplicationServiceImpl` |
+| 系统取消（复用 `trip_plans` 取消字段） | 每条行程 | `cancelled_at` / `cancel_reason`（新增 `credit_restricted`）/ `cancel_note`（固定说明）/ `updated_at` | 未结束（招募中/已满员/旅行中）→ 已取消；已完成/已取消不变 | 系统限制触发 + `TripCancelledEvent` |
+| 信用账本（复用 `credit_ledger`） | 每次分数变化 | 既有字段；新增原因码：`EXIT_BEFORE_TRIP` / `EXIT_DURING_TRIP` / `EXIT_BEFORE_TRIP_NO_PENALTY` / `EXIT_FORCE_MAJEURE_PENDING` / `EXIT_SAFETY_PENDING`；`related_type = TRIP`，`related_id = trip_id`；幂等键 `exit:{userId}:{tripId}` | append-only；零值合法；重复幂等键不再变化 | `CreditService.book` |
+
+- **退出事件唯一键：** `(user_id, trip_id, idempotency_key)`；同一退出动作重复提交只产生一条事件与一条账本。
+- **限制与账本分离：** 限制记录不写账本；它引用触发本次限制的账本行 `trigger_ledger_id`，便于回算「哪一次扣分导致限制」。
+- **系统清退不写退出账本：** 自动撤回/解除/取消只写 `status_reason` / 行程取消字段 / 限制记录，不写退出扣分账本，不增加月度次数。
+- **0 分裁断：** 账本 `applied_delta = 0` 仍合法；退出事件的 `theoretical_delta` 保留理论值，月度计数按事件计入。
+- **历史兼容：** `status_reason` 可空；旧申请读取不受影响；`credit_restricted` 原因只由系统写入。
+
+### ② 边界归属（Boundary attribution）
+
+| 规则 | 分支 | 归属 | 说明 |
+|---|---|---|---|
+| 退出原因 | `personal` / `force_majeure` / `safety` | in | 必选；安全原因退出后引导既有举报入口 |
+| 退出原因 | 缺失 / 未知值 | out | 400 `INVALID_INPUT`；不退出、不记账 |
+| 退出权限 | 发布者 / 非 ACCEPTED / 已完成 / 已取消 | out | 沿用既有 403 / 409；不记账 |
+| 出发基准 | `meeting_time` 有值 | in | 以该日期时间为准 |
+| 出发基准 | `meeting_time` 为空 | in | `start_date` 00:00（Asia/Shanghai） |
+| 时间阶梯 | 恰好 7d / 3d / 72h / 24h / 12h | in | 左闭右开：0 / -3 / -3 / -5 / -8 |
+| 时间阶梯 | 少 1 秒 / 旅行中 | in | 进入下一档 / -15 |
+| 月度计数 | 已生效出发前扣分 | in | 计入；第 2 次起翻倍 |
+| 月度计数 | 旅行中 / ≥7 天免责 / 待核实 | out | 不计入 |
+| 月度计数 | 0 分下限裁断为实际 0 | in | 按事件计入 |
+| 待核实 | 核实为真 | in | 不扣分、不计数、标记 `verified_true` |
+| 待核实 | 核实不属实 | in | 按实际退出时间补扣；按核实当时次数取下一序号；不追溯其他已结算退出 |
+| 幂等 | 重复 / 并发退出 | in | 一次关系解除、一条账本、一次分数变化 |
+| 限制触发 | 分数 =60 | out | 不触发 |
+| 限制触发 | 分数 <60 | in | 自动建立 `active` 记录；无需管理员 |
+| 限制记录 | 已 active 时再次 <60 | in | 不新增 active；保持原记录 |
+| 只读 | 发布新行程 / 申请 / 发布或编辑体验 / 编辑行程 / 发消息 / 改资料头像 | in | 403 `CREDIT_RESTRICTED` |
+| 只读 | 查看 / 聊天历史 / 举报 / 安全入口 / 登录退出 | out | 保留 |
+| 自动清理 | 待处理申请 | in | 全部撤回；`status_reason = CREDIT_RESTRICTION` |
+| 自动清理 | 未结束已接受同行关系 | in | 全部解除；人数 -1；满员回退招募中；不扣分 |
+| 自动清理 | 未结束已发布行程（招募中/已满员/旅行中） | in | 全部系统取消；原因 `credit_restricted`；不扣分 |
+| 自动清理 | 已完成 / 已取消 | out | 保持历史原样 |
+| 自动解除 | 分数 ≥60 | in | 限制置 `lifted`；守卫解除；不恢复关系/申请 |
+| 自动解除 | 分数仍 <60 | out | 保持 active |
+| 人工核实 / 人工封禁 | 任意 | out | 本 change 无入口；未来 change 独立类型 |
+| 事务 | 扣分 + 限制 + 清理 | in | 同事务；任一步失败整体回滚；重试幂等 |
+| 并发 | 限制触发同时有写请求 | in | 以服务端当前限制状态拒绝；不放行 |
+
+### ③ 跨 REQ 一致性（Cross-REQ consistency）
+
+| 能力 | per-REQ grain + fields | aligned? | anchor REQ |
+|---|---|---|---|
+| `user-credit` | 账户 1 条/用户；账本 append-only；原因码 + 前后快照 + 幂等键 | ✓ 复用，不新增字段 | REQ-019 |
+| `trip-companions` | 申请状态 `pending/accepted/rejected/cancelled/left`；退出 = `left`；新增可空 `status_reason` | ✓ 不改变状态枚举；只补原因 | REQ-003 / REQ-013 / REQ-015 |
+| `trip-cancellation` | 取消字段 + 8 项原因 + PENDING 自动取消 | ✓ 复用；系统原因新增在 `credit-enforcement` | REQ-021 |
+| `trip-plans` | 状态由日期 / 人数 / `cancelledAt` / `completedAt` 推导 | ✓ 系统取消写 `cancelledAt`，状态优先级不变 | REQ-002 / REQ-011 / REQ-021 |
+| `trip-experiences` | 体验发布仅 `COMPLETED`；作者可编辑 | ✓ 限制守卫在入口拦截，不改变资格规则 | REQ-004 / REQ-018 |
+| `user-profile` / `user-profiles` | 个人主页/资料弹窗/详情发布者/行程卡/申请者行五展示面 | ✓ 追加限制徽标；原因仅本人主页 | REQ-008 / REQ-009 / REQ-019 |
+| `user-auth` | 登录/退出/会话 | ✓ 不受限制影响 | REQ-006 |
+
+- **未收敛 ✗：** 无。
+
+### ④ 通知 / 展示契约（Notification / display contract）
+
+| surface | recipient | content + display fields | channel | cardinality |
+|---|---|---|---|---|
+| 个人主页（本人） | 受限用户本人 | 分数 `/ 100` + 等级 + 「限制中」+ 原因「信用分低于 60」+「分数回到 60 分及以上自动解除」 | 应用内文本 | 每页 1 处 |
+| 个人主页（他人） | 任意已登录用户 | 分数 + 等级 + 「限制中」徽标；不显示原因 | 应用内文本 | 每页 1 处 |
+| 资料弹窗 | 查看者 | 分数 + 等级 + 「限制中」徽标；不显示原因 | 应用内文本 | 每次 1 处 |
+| 详情发布者行 | 查看者 | 同上 | 应用内文本 | 每页 1 处 |
+| 行程卡发布者行 | 查看者 | 同上；列表一次批量取数 | 应用内文本 | 每卡 1 处 |
+| 申请者行 | 发布者 | 同上；列表一次批量取数 | 应用内文本 | 每行 1 处 |
+| 被拦截操作 | 受限用户 | 「信用分低于 60，当前账号仅可查看；分数回到 60 分及以上自动解除」 | 应用内弹窗/行内提示 | 每次操作 1 处 |
+| 自动取消原因 | 发布者 + 已接受同行者 | 「信用分低于 60，账号受限」；其他用户只看到「已取消」 | 详情页文本 | 每行程 1 处 |
+| 聊天页（受限） | 受限用户 | 历史可读；输入区提示限制原因与自动解除说明 | 应用内提示 | 每会话 1 处 |
+| 加扣分明细 | 任何人 | MUST NOT 展示 | — | 0 |
+| 通知 / 推送 / 邮件 | 任何人 | 本 change 不发送 | — | 0 |
+
+- **展示字段完整性：** 五个信用展示面均有分数、等级、限制徽标三个字段；原因只出现在本人个人主页与被拦截提示。
+- **无 notification：** 本 change 不新增站内信、推送、邮件；自动取消/解除只通过页面状态可见。
+
+### 探针记录（REQ-025 退出扣分与低信用限制）
+
+- `CreditService.book` 已具备 0–100 裁断、实际生效量、零值留痕、幂等键；退出扣分可直接调用，无需改账本表结构。
+- `credit_ledger` 的 `reason_code` 当前是自由字符串；新增退出原因码不需要迁移，但需要契约/单测锁定取值。
+- `trip_applications` 目前只有 `status`，无法区分「用户主动退出」与「系统因限制解除」；新增可空 `status_reason` 是最小改动，避免新增状态枚举。
+- `TripPlanServiceImpl.cancel` 仅允许 `RECRUITING` / `FULL`，且只允许发布者；系统自动取消 `ONGOING` 需要新增系统方法，不能复用发布者入口。
+- `TripCancelReasonEnum` 当前 8 项；新增 `credit_restricted` 需要同步后端枚举、`openapi.yaml`、前端原因映射与 E2E。
+- `ApplicationServiceImpl.onTripCancelled` 已批量取消 PENDING；系统取消可复用该事件，但需要确保 `status_reason = CREDIT_RESTRICTION`（而不是普通取消）。
+- `ChatServiceImpl` 只对 `COMPLETED` / `CANCELLED` 抛 `CHAT_READ_ONLY`；限制状态需要独立错误 `CREDIT_RESTRICTED`，不能混用行程终态。
+- 五个展示面的 `UserCreditEntry` 目前只有 `user_id` / `credit_score` / `credit_level`；新增 `credit_restricted` 布尔字段即可支持徽标，原因只在个人主页响应按本人裁剪。
+- `ProfilePage` 的 hero 信用行与 `creditDisplay.ts` 只派生分数 + 等级；限制徽标与原因说明需要新增纯函数与 i18n 文案。
+- 所有种子账号 80 分，没有低信用演示数据；P3 需要决定 E2E 是新增种子、测试夹具还是直接调用记账服务。
+- `{TBD}`：无。非阻塞项（低信用测试数据、限制记录表名、系统取消方法命名）在 P1 §8 标 deferred / P3 设计定。

@@ -479,5 +479,8 @@ class RasterTileMap implements AmapMap {
 }
 
 export function createRasterMap(host: HTMLElement, options: RasterMapOptions): AmapMap {
-  return new RasterTileMap(host, options);
+  const map = new RasterTileMap(host, options);
+  // 调试 / E2E 钩子：把实例挂在宿主上，便于按经纬度投影模拟点击（不影响渲染）。
+  (host as HTMLElement & { __rasterMap?: AmapMap }).__rasterMap = map;
+  return map;
 }

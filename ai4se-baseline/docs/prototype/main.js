@@ -382,6 +382,8 @@
       modalRoot.innerHTML = scrim + '<div class="modal-wrap">' + UI.confirmModal(App.confirm) + '</div>';
     } else if (o.kind === 'cancelTrip') {
       modalRoot.innerHTML = scrim + '<div class="modal-wrap">' + UI.cancelTripModal(S.trip(o.id)) + '</div>';
+    } else if (o.kind === 'leaveTrip') {
+      modalRoot.innerHTML = scrim + '<div class="modal-wrap">' + UI.leaveTripModal(o.id) + '</div>';
     }
     /* 首次打开时把焦点送进浮层面板（不是遮罩），Esc 与键盘导航才可靠 */
     if (changed) {
@@ -668,9 +670,23 @@
 
       /* --- S13 / S15 行程生命周期 --- */
       case 'leave-trip':
-        askConfirm({ title: '退出这次同行？', ok: '退出同行', danger: true, body: '退出后名额会释放，聊天将关闭，你不再是这条行程的同行者。若行程仍在招募中，你可以重新申请。' }, function () {
-          if (S.leaveTrip(id)) { go('#/mine/matched'); render(); toast('已退出同行，名额已释放', 'ok', true); }
-        });
+        App.overlay = { kind: 'leaveTrip', id: id };
+        renderOverlay();
+        return;
+      case 'confirm-leave': {
+        var select = document.querySelector('[data-leave-reason]');
+        var reason = select ? select.value : 'personal';
+        var result = S.leaveTrip(id, reason);
+        if (!result) { toast('当前状态不能退出，或账号已受限', 'warn'); return; }
+        closeOverlay();
+        go('#/mine/matched');
+        render();
+        var msg = result.delta === 0 ? '已退出同行，本次不扣分（仅记录）' : '已退出同行，信用分 ' + result.before + ' → ' + result.score;
+        toast(msg, 'ok', true);
+        return;
+      }
+      case 'simulate-restriction':
+        if (S.simulateRestriction()) { closeOverlay(); render(); toast('已演示信用限制：55 分，仅可查看', 'warn', true); }
         return;
       case 'complete-trip':
         askConfirm({ title: '标记为已结束？', ok: '结束行程', body: '结束后不再接受新申请，待处理的申请会被拒绝，参加者可以发表游后体验。演示时用它模拟旅行完成。' }, function () {
@@ -908,6 +924,16 @@
   /* ---------------- 跨标签同步 ---------------- */
   global.addEventListener('storage', function (e) {
     if (e.key === 'routeme.mvp.v1') { global.location.reload(); }
+  });
+
+  /* ---------------- 退出原因实时预览 ---------------- */
+  document.addEventListener('change', function (event) {
+    var target = event.target;
+    if (!target || !target.matches || !target.matches('[data-leave-reason]')) return;
+    var tripId = target.getAttribute('data-trip-id');
+    var preview = S.creditExitPreview(tripId, target.value);
+    var box = document.querySelector('[data-leave-preview]');
+    if (box && preview) box.outerHTML = UI.leaveTripPreview(preview);
   });
 
   /* ---------------- 启动 ---------------- */

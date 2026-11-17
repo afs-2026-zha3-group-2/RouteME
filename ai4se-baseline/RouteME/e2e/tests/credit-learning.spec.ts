@@ -6,7 +6,7 @@ import { expect, test, type Page } from '@playwright/test';
 import { pickDestination, pickPlace } from './support';
 
 /**
- * REQ-024 / add-credit-recovery 的端到端口径（A1 / A6 / A24 / A25 / D6）。
+ * REQ-026 / add-credit-recovery 的端到端口径（A1 / A6 / A24 / A25 / D6）。
  *
  * 造分：产品侧没有扣分入口（扣分事件是 non-goal），所以按 atdd-design §4 用 SQL
  * 直接改 `user_credit_account.score`，并补一条 `SYSTEM_ADJUST` 账本行保证
@@ -122,13 +122,13 @@ test('45 分发布被拦 → 安全学习通过 → 同页恢复后发布成功'
 
   const title = `信用恢复行程 ${Date.now()}`;
   await page.goto('/#/trips/new');
-  await fillPublishForm(page, title);
-  await page.getByRole('button', { name: /^发\s*布$/ }).click();
 
-  const guard = page.locator('.publish-guard');
-  await expect(guard).toBeVisible();
-  await expect(guard).toContainText('信用分低于 60，暂时不能发布行程');
+  const notice = page.locator('.blocked-notice');
+  await expect(notice).toBeVisible();
+  await expect(notice).toContainText('信用分低于 60，当前账号仅可查看');
+  const guard = page.locator('.publish-guard-note');
   await expect(guard).toContainText('未通过不占用恢复次数，分数不变。');
+  await expect(page.getByRole('button', { name: /^发\s*布$/ })).toBeDisabled();
   await expect(page).toHaveURL(/#\/trips\/new$/);
 
   await guard.getByRole('link', { name: '去安全学习' }).click();

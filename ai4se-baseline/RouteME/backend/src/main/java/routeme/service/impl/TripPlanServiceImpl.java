@@ -37,6 +37,8 @@ import routeme.request.TripCreateRequest;
 import routeme.request.TripCancelRequest;
 import routeme.request.TripMeetingRequest;
 import routeme.request.TripQuery;
+import routeme.service.AiItineraryService;
+import routeme.service.CreditRestrictionGuard;
 import routeme.service.DemoUserService;
 import routeme.service.TripCancelledEvent;
 import routeme.service.AccountStatusService;
@@ -54,16 +56,22 @@ public class TripPlanServiceImpl extends AbstractServiceImpl<TripPlanMapper, Tri
     private static final int MAX_CANCEL_NOTE_LENGTH = 100;
 
     private final DemoUserService demoUserService;
+    private final AiItineraryService aiItineraryService;
+    private final CreditRestrictionGuard creditRestrictionGuard;
     private final Clock clock;
     private final ApplicationEventPublisher events;
     private final AccountStatusService accountStatusService;
 
     public TripPlanServiceImpl(
             DemoUserService demoUserService,
+            AiItineraryService aiItineraryService,
+            CreditRestrictionGuard creditRestrictionGuard,
             Clock clock,
             ApplicationEventPublisher events,
             AccountStatusService accountStatusService) {
         this.demoUserService = demoUserService;
+        this.aiItineraryService = aiItineraryService;
+        this.creditRestrictionGuard = creditRestrictionGuard;
         this.clock = clock;
         this.events = events;
         this.accountStatusService = accountStatusService;
@@ -73,7 +81,12 @@ public class TripPlanServiceImpl extends AbstractServiceImpl<TripPlanMapper, Tri
     @Transactional
     public TripPlan create(TripCreateRequest request, long publisherId) {
         accountStatusService.assertCanWrite(publisherId, WriteScopeEnum.BUSINESS);
+        creditRestrictionGuard.requireNotRestricted(publisherId);
         Instant now = clock.instant();
+        // AI 链接校验：快照必须存在且归属发布人，否则 INVALID_INPUT（B9 / B10）。
+        if (request.aiItineraryId() != null) {
+            aiItineraryService.requireOwnedSnapshot(request.aiItineraryId(), publisherId);
+        }
         TripPlanDraft draft = new TripPlanDraft(
                 publisherId,
                 request.title(),
@@ -88,7 +101,8 @@ public class TripPlanServiceImpl extends AbstractServiceImpl<TripPlanMapper, Tri
                 request.budgetMinCents(),
                 request.budgetMaxCents(),
                 request.tags(),
-                request.capacity());
+                request.capacity(),
+                request.aiItineraryId());
         TripPlan validated = TripPlan.create(draft, now);
         TripPlan saved = validated.withId(nextId(TripPlanEntity::getId));
         save(TripPlanEntity.from(saved));
@@ -208,6 +222,7 @@ public class TripPlanServiceImpl extends AbstractServiceImpl<TripPlanMapper, Tri
     @Override
     @Transactional
     public TripPlan cancel(long tripId, long publisherId, TripCancelRequest request) {
+        creditRestrictionGuard.requireNotRestricted(publisherId);
         TripPlan trip = requireCurrent(tripId);
         if (trip.publisherId() != publisherId) {
             throw new ForbiddenActionException("only the publisher can cancel trip " + tripId);
@@ -231,13 +246,59 @@ public class TripPlanServiceImpl extends AbstractServiceImpl<TripPlanMapper, Tri
         if (!updated) {
             throw new TripNotOpenException(tripId);
         }
-        events.publishEvent(new TripCancelledEvent(tripId, now));
+        events.publishEvent(new TripCancelledEvent(tripId, now, reason.wireValue()));
         return require(tripId);
     }
 
     @Override
     @Transactional
+    public TripPlan cancelByCreditRestriction(long tripId, Instant now) {
+        TripPlan trip = require(tripId);
+        if (trip.cancelledAt() != null || trip.completedAt() != null) {
+            return trip;
+        }
+        TripStatusEnum status = trip.status(now);
+        if (status != TripStatusEnum.RECRUITING
+                && status != TripStatusEnum.FULL
+                && status != TripStatusEnum.ONGOING) {
+            return trip;
+        }
+        boolean updated = lambdaUpdate()
+                .eq(TripPlanEntity::getId, tripId)
+                .isNull(TripPlanEntity::getCancelledAt)
+                .isNull(TripPlanEntity::getCompletedAt)
+                .set(TripPlanEntity::getCancelledAt, now.toString())
+                .set(TripPlanEntity::getCancelReason, TripCancelReasonEnum.CREDIT_RESTRICTED.wireValue())
+                .set(TripPlanEntity::getCancelNote, "信用分低于 60，账号受限")
+                .set(TripPlanEntity::getUpdatedAt, now.toString())
+                .update();
+        if (updated) {
+            events.publishEvent(new TripCancelledEvent(
+                    tripId, now, TripCancelReasonEnum.CREDIT_RESTRICTED.wireValue()));
+        }
+        return require(tripId);
+    }
+
+    @Override
+    @Transactional
+    public void cancelUnfinishedByPublisher(long publisherId, Instant now) {
+        for (TripPlan trip : findAllTrips()) {
+            if (trip.publisherId() != publisherId) {
+                continue;
+            }
+            TripStatusEnum status = trip.status(now);
+            if (status == TripStatusEnum.RECRUITING
+                    || status == TripStatusEnum.FULL
+                    || status == TripStatusEnum.ONGOING) {
+                cancelByCreditRestriction(trip.id(), now);
+            }
+        }
+    }
+
+    @Override
+    @Transactional
     public TripPlan complete(long tripId, long userId) {
+        creditRestrictionGuard.requireNotRestricted(userId);
         TripPlan trip = requireCurrent(tripId);
         if (trip.publisherId() != userId) {
             throw new ForbiddenActionException("only the publisher can complete trip " + tripId);
@@ -291,6 +352,7 @@ public class TripPlanServiceImpl extends AbstractServiceImpl<TripPlanMapper, Tri
     @Override
     @Transactional
     public TripPlan updateMeeting(long tripId, long publisherId, TripMeetingRequest request) {
+        creditRestrictionGuard.requireNotRestricted(publisherId);
         TripPlan trip = require(tripId);
         if (trip.publisherId() != publisherId) {
             throw new ForbiddenActionException("only the publisher can edit meeting info of trip " + tripId);

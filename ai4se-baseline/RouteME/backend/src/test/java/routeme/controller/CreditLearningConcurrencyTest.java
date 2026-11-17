@@ -17,14 +17,18 @@ import java.util.concurrent.TimeUnit;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.annotation.Import;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 
+import routeme.config.FixedClockTestConfig;
 import routeme.entity.CreditLearningSessionEntity;
 import routeme.entity.CreditLedgerEntity;
+import routeme.entity.CreditRestrictionEntity;
 import routeme.exception.LearningRecoveryQuotaExceededException;
+import routeme.mapper.CreditRestrictionMapper;
 import routeme.response.LearningResultResponse;
 import routeme.service.CreditLearningService;
 
@@ -34,7 +38,11 @@ import routeme.service.CreditLearningService;
  * <p>真并发无法共享测试事务，故本用例关闭测试事务直连服务层，并在结束时删除自己造的行。
  * 只会出现两种结果：一侧写账本成功，另一侧要么读到已恢复（配额拒绝）、
  * 要么被唯一索引兜底后返回既有分数——两种都不产生第二条恢复记录。</p>
+ *
+ * <p>必须固定时钟：提交式用例会真实刷新「到期行程」（{@code materializeExpired} 用注入时钟取当天），
+ * 若用系统时钟（晚于种子行程结束日）就会把共享库里的种子行程写成已完成，污染后续所有用例。</p>
  */
+@Import(FixedClockTestConfig.class)
 class CreditLearningConcurrencyTest extends CreditLearningTestSupport {
 
     private static final long USER_ID = 990001L;
@@ -42,12 +50,17 @@ class CreditLearningConcurrencyTest extends CreditLearningTestSupport {
     @Autowired
     private CreditLearningService creditLearningService;
 
+    @Autowired
+    private CreditRestrictionMapper restrictionMapper;
+
     @AfterEach
     void cleanUp() {
         sessionMapper.delete(Wrappers.<CreditLearningSessionEntity>lambdaQuery()
                 .eq(CreditLearningSessionEntity::getUserId, USER_ID));
         ledgerMapper.delete(Wrappers.<CreditLedgerEntity>lambdaQuery()
                 .eq(CreditLedgerEntity::getUserId, USER_ID));
+        restrictionMapper.delete(Wrappers.<CreditRestrictionEntity>lambdaQuery()
+                .eq(CreditRestrictionEntity::getUserId, USER_ID));
         accountMapper.deleteById(USER_ID);
     }
 

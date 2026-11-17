@@ -3,7 +3,7 @@
 - **Change:** `add-credit-recovery`
 - **Phase:** `p2`（Delta Spec 复核，G1 输入）
 - **Delta 路径:** `openspec/changes/add-credit-recovery/specs/user-credit/spec.md`（ADDED：7 Requirement / 29 Scenario）
-- **Requirement 来源:** `requirement-workspace/requirements/REQ-024-credit-recovery.md` §4（R-1 ~ R-27）
+- **Requirement 来源:** `requirement-workspace/requirements/REQ-026-credit-recovery.md` §4（R-1 ~ R-27）
 - **Proposal:** `openspec/changes/add-credit-recovery/proposal.md`（§2 场景 R-1 ~ R-25）
 - **Timestamp:** 2026-11-17T00:00+08:00
 - **Artifact level:** 2（proposal + 1 Delta Spec；无 `design.md` / `tasks.md`）
@@ -20,7 +20,7 @@
 | Item | Result | Evidence | Notes |
 |---|---|---|---|
 | AC-1 每条 Requirement 至少一个可测 AC | Pass | 7/7 Requirement 均含 ≥2 个 Scenario（最少 2、最多 6） | 每个 Requirement 都至少有一条可断言的数值或码值 |
-| AC-2 AC 可观察 | Pass | `CREDIT_SCORE_BELOW_60`、`SAFETY_LEARNING_RECOVERY`、`applied_delta = +15 / +1 / +60`、「60 / 100 · 信用一般」、10 题 / 答对 8 题 | 无「正常工作」「合理提示」类模糊表述 |
+| AC-2 AC 可观察 | Pass | `CREDIT_RESTRICTED`、`SAFETY_LEARNING_RECOVERY`、`applied_delta = +15 / +1 / +60`、「60 / 100 · 信用一般」、10 题 / 答对 8 题 | 无「正常工作」「合理提示」类模糊表述 |
 | AC-3 高风险处有负向 / 边界场景 | Pass | 恰好 60 不拦截、59 只补到 60、0 分、未通过不变分、次数用尽、当月已恢复再通过被拒、重复提交幂等、并发只生效一次、无账户按 80 处理、用户不存在沿用 `USER_NOT_FOUND` | 覆盖「越权改分」「超额恢复」「并发累加」「边界差一」四类风险 |
 | AC-4 不把实现细节伪装成 AC | Pass | Delta 只约束可观察结果；「同事务」「单一写分入口」写成可验证的原子性与唯一性，不指定表名 / 类名 / 字段名 | 迁移号、表结构、`CreditLearningService` 只出现在提案影响面，Delta 不绑定 |
 
@@ -34,7 +34,7 @@
 | DoV-4 未主张已实现业务 | Pass | P2 无代码 / 契约 / 迁移变更；`openapi.yaml` 仍 `0.14.0`、Flyway 头仍 `V20` | 实现属 P3 / P4 |
 | DoV-5 Requirement 可追溯到提案 / 已批准需求 | Pass | 27/27 需求场景全部映射（下表），无孤儿 Requirement、无未覆盖 AC | Delta 29 场景 = 27 需求场景 + 2 处拆分 |
 
-## 编号体系口径（proposal 25 / REQ-024 27 / Delta 29）
+## 编号体系口径（proposal 25 / REQ-026 27 / Delta 29）
 
 三处编号不完全等长，属**预期内的粒度差异**，不是覆盖缺口：
 
@@ -46,9 +46,9 @@
 
 **P3 收口要求：** 以 Delta 的 Requirement / Scenario 为唯一真相；§4 场景清单若要再引用编号，统一改用 `Requirement + Scenario 名`，不再逐条对齐 R-编号，避免第三个编号体系继续漂移。
 
-## Requirement 映射（REQ-024 → Delta）
+## Requirement 映射（REQ-026 → Delta）
 
-| REQ-024 场景 | Delta Requirement | Delta Scenario |
+| REQ-026 场景 | Delta Requirement | Delta Scenario |
 |---|---|---|
 | R-1 低于 60 可参加 | R2 安全学习的参加资格 | 低于 60 可以开始考试 |
 | R-2 达到 60 不可参加 | R2 安全学习的参加资格 | 达到 60 分拒绝参加 |
@@ -91,8 +91,8 @@
 
 | 关注点 | 归属 | 说明 |
 |---|---|---|
-| 契约版本号与迁移号 | SA / Dev | `openapi.yaml` 为 `0.14.0`、Flyway 头 `V20`；`handoff.md` 已记 `add-ai-itinerary`（REQ-017）顺延 **0.15.0 + V21**，故本变更不能直接用 V21，P3 需按合并顺序确认（预计 0.19.0 + V25） |
-| 拦截提示文案与学习入口位置 | IO / Dev | D6 只定了「仅发布行程」，OQ-6 仍 open：`CREDIT_SCORE_BELOW_60` 的前端提示串与安全学习页路由待 P3 |
+| 契约版本号与迁移号 | SA / Dev | `openapi.yaml` 为 `0.14.0`、Flyway 头 `V20`；`handoff.md` 已记 `add-ai-itinerary`（REQ-017）顺延 **0.15.0 + V21**，故本变更不能直接用 V21，P3 需按合并顺序确认（预计 0.22.0 + V27） |
+| 拦截提示文案与学习入口位置 | IO / Dev | D6 只定了「仅发布行程」，OQ-6 仍 open：`CREDIT_RESTRICTED` 的前端提示串与安全学习页路由待 P3 |
 | 学习进度持久化 | SA | OQ-5 仍 open：会话表是否存中途进度，直接影响迁移字段数；P3 `design.md` 前必须关掉 |
 | 演示造分路径 | Dev / IO | 扣分事件（#29–#31）未落地，线上无自然入口；演示需种子账号造分，Delta 已允许「因其他事件再次低于 60」的前置（R5 场景 2） |
 | 原型缺口 | Dev / IO | `docs/prototype` 无安全学习页（grep `安全学习` 0 命中）；按 `@rule:prototype-ui-alignment` P3 先补截点 |

@@ -14,7 +14,7 @@ import routeme.constant.CreditLearningConstant;
 import routeme.entity.CreditLedgerEntity;
 
 /**
- * 恢复记账与月度恢复配额（REQ-024 R4 / R5 / R7）：
+ * 恢复记账与月度恢复配额（REQ-026 R4 / R5 / R7）：
  * 实际变化量 = 60 − 恢复前分数，同月只恢复一次，未通过不占恢复次数。
  */
 class CreditLearningRecoveryApiTest extends CreditLearningTestSupport {

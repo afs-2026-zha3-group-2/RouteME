@@ -1,14 +1,13 @@
 package routeme.pojo;
 
-import static org.junit.jupiter.api.Assertions.assertAll;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.List;
 
+import static org.junit.jupiter.api.Assertions.assertAll;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import org.junit.jupiter.api.Test;
 
 class TripMatchTest {
@@ -132,6 +131,6 @@ class TripMatchTest {
                 id, 1, title, code, name, LocalDate.parse(startDate), LocalDate.parse(startDate),
                 List.of("集合", "终点"), null, null, null, null, null, null, tags, 4, 1, null,
                 Instant.parse("2026-11-01T10:00:00Z"), Instant.parse("2026-11-01T10:00:00Z"),
-                null, null, null);
+                null, null, null, null);
     }
 }

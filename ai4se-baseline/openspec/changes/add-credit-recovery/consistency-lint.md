@@ -2,7 +2,7 @@
 
 - **Change:** `add-credit-recovery`
 - **Phase:** `p2`
-- **Focus:** full change（`openspec/changes/add-credit-recovery/` + `requirement-workspace/` REQ-024 相关条目）
+- **Focus:** full change（`openspec/changes/add-credit-recovery/` + `requirement-workspace/` REQ-026 相关条目）
 - **Timestamp:** 2026-11-17T00:00+08:00
 - **Artifact level:** 2（`proposal.md` + 1 Delta Spec；无 `design.md` / `tasks.md`）
 - **Tooling:** `openspec` CLI 可用；`openspec validate add-credit-recovery --strict` → `Change 'add-credit-recovery' is valid`
@@ -23,10 +23,10 @@
 | id | Severity | Phase | Location | Issue | Suggested fix | Evidence | Authority | Type |
 |---|---|---|---|---|---|---|---|---|
 | L-01 | WARNING（已收口） | p2 | Delta R3「未完成学习不能提交」↔ R5「当月第 3 次考试被拒绝」 | 原场景写「考试次数不被消耗」，与 R5「每自然月最多开始 2 次考试，无论通过与否都计次」直接冲突：开始即计次，提交被拒时不可能是「未消耗」 | 已改为「该次考试已在开始时计次，MUST NOT 因本次拒绝而退还次数；不占用当月恢复次数」，`validate --strict` 复跑仍 valid | Delta R3 / R5 原文 | spec | [fact] |
-| L-02 | SUGGESTION | p2 | `REQ-024` §5「契约与迁移排他」↔ `handoff.md` / `registry.md` | REQ-024 原写「P3 确认版本号与 V21」，但 `handoff.md` 已记 `add-ai-itinerary`（REQ-017）顺延 **0.15.0 + V21**；若照原措辞落地会撞号 | REQ-024 已改为「V21 已被 `add-ai-itinerary` 登记，本变更预计顺延 0.19.0 + V25，P3 排他确认」；P3 `design.md` 必须写下确认结论 | `handoff.md` 「`add-ai-itinerary` 顺延 0.15.0 + V21」；`registry.md` REQ-017 行 | spec | [fact] |
-| L-03 | SUGGESTION | p2 | `proposal.md` §2（25 条）↔ `REQ-024` §4（27 条）↔ Delta（29 Scenario） | 三层编号不等长，且 REQ-024 中 `R-24` 排在 `R-16` 之后（按主题分组重排），逐条对号容易误读为「有场景丢失」 | 已在 `dov-ac-review.md`「编号体系口径」写清 25 = 27 − 2 新增（R-26 / R-27）、29 = 27 + 2 拆分（R-8 / R-17）；P3 起引用一律用 `Requirement + Scenario 名` | 三份文件实际条数 | spec | [fact] |
-| L-04 | SUGGESTION | p2 | `REQ-024` §8 OQ-5 ↔ 提案影响面「新增学习会话表 + 作答记录表」 | 学习进度是否持久化未决，直接决定会话表是否需要「当前题序 / 已完成学习标记」等字段；若 P3 才决定，迁移可能返工 | P3 `design.md` 第一件事关掉 OQ-5（建议：只存「学习完成时间戳 + 最终结果」，不存中途题序） | 需求 §8；提案影响面第 1 行 | spec | [inference] |
-| L-05 | SUGGESTION | p2 | `REQ-024` §8 OQ-6 ↔ Delta R1「响应可用于引导用户进入安全学习页」 | Delta 要求拦截响应「可用于引导」，但提示文案与安全学习页路由未定，P4 前若不定会出现「后端给码值、前端无入口」 | P3 定路由（建议 `/credit/learning`）+ `tripMessages` 文案；E2E 断言码值到页面的完整跳转 | Delta R1 场景 1 | spec | [inference] |
+| L-02 | SUGGESTION | p2 | `REQ-026` §5「契约与迁移排他」↔ `handoff.md` / `registry.md` | REQ-026 原写「P3 确认版本号与 V21」，但 `handoff.md` 已记 `add-ai-itinerary`（REQ-017）顺延 **0.15.0 + V21**；若照原措辞落地会撞号 | REQ-026 已改为「V21 已被 `add-ai-itinerary` 登记，本变更预计顺延 0.22.0 + V27，P3 排他确认」；P3 `design.md` 必须写下确认结论 | `handoff.md` 「`add-ai-itinerary` 顺延 0.15.0 + V21」；`registry.md` REQ-017 行 | spec | [fact] |
+| L-03 | SUGGESTION | p2 | `proposal.md` §2（25 条）↔ `REQ-026` §4（27 条）↔ Delta（29 Scenario） | 三层编号不等长，且 REQ-026 中 `R-24` 排在 `R-16` 之后（按主题分组重排），逐条对号容易误读为「有场景丢失」 | 已在 `dov-ac-review.md`「编号体系口径」写清 25 = 27 − 2 新增（R-26 / R-27）、29 = 27 + 2 拆分（R-8 / R-17）；P3 起引用一律用 `Requirement + Scenario 名` | 三份文件实际条数 | spec | [fact] |
+| L-04 | SUGGESTION | p2 | `REQ-026` §8 OQ-5 ↔ 提案影响面「新增学习会话表 + 作答记录表」 | 学习进度是否持久化未决，直接决定会话表是否需要「当前题序 / 已完成学习标记」等字段；若 P3 才决定，迁移可能返工 | P3 `design.md` 第一件事关掉 OQ-5（建议：只存「学习完成时间戳 + 最终结果」，不存中途题序） | 需求 §8；提案影响面第 1 行 | spec | [inference] |
+| L-05 | SUGGESTION | p2 | `REQ-026` §8 OQ-6 ↔ Delta R1「响应可用于引导用户进入安全学习页」 | Delta 要求拦截响应「可用于引导」，但提示文案与安全学习页路由未定，P4 前若不定会出现「后端给码值、前端无入口」 | P3 定路由（建议 `/credit/learning`）+ `tripMessages` 文案；E2E 断言码值到页面的完整跳转 | Delta R1 场景 1 | spec | [inference] |
 | L-06 | SUGGESTION | p2 | Delta R6「既有五个展示面」↔ `openspec/specs/` | `openspec/specs/` 下没有 `user-credit`，五个展示面由未归档的 `add-credit-account`（其 r2 将展示面 1 → 5）提供；本 Delta 以「既有」引用，归档时可能指向不存在的基线 | 归档顺序 MUST 为 `add-credit-account` → `add-credit-recovery`；P5 归档说明引用本条 | `openspec/specs/` 目录清单；`registry.md` REQ-019 r2 记录 | spec | [fact] |
 
 ## Checklist coverage
@@ -63,7 +63,7 @@
 
 1. **无 BLOCKER。**
 2. **WARNING L-01 已在 P2 当场修正**（Delta R3 场景 3），修正后 `openspec validate add-credit-recovery --strict` 复跑仍为 valid。
-3. SUGGESTION：L-02 已在 REQ-024 §5 改措辞；L-03 ~ L-06 全部带入 P3 `design.md` / `tasks.md`，不阻断 G1。
+3. SUGGESTION：L-02 已在 REQ-026 §5 改措辞；L-03 ~ L-06 全部带入 P3 `design.md` / `tasks.md`，不阻断 G1。
 
 ## Residual risks
 

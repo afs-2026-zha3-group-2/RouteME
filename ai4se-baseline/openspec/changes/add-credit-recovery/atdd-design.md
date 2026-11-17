@@ -1,6 +1,6 @@
 # ATDD 设计 — add-credit-recovery
 
-- **Change：** `add-credit-recovery`（REQ-024 / S25 安全学习恢复信用分）
+- **Change：** `add-credit-recovery`（REQ-026 / S27 安全学习恢复信用分）
 - **输入：** `specs/user-credit/spec.md`（ADDED 7 Requirement / 29 Scenario）、`g1-decision.md`（**Pass**）、`proposal.md`（D1–D7）
 - **日期：** 2026-11-17 ｜ **作者：** Lewis Liu（当前开发者）
 - **前置：** G1 **Pass（无条件，2026-11-17，IO=WAYNE / SA=Jacky）**；本设计与 `tasks.md` 已于 2026-11-17 通过工件评审（BLOCKER 0），P4 按 T1 起推进。
@@ -8,14 +8,14 @@
 
 ## 1. ATDD 层次划分
 
-用例 ID `A1–A29` 按 Delta 顺序编号，与 REQ-024 的 `R-1 ~ R-27` **不是同一编号体系**（Delta 比需求多 2 条拆分场景）。
+用例 ID `A1–A29` 按 Delta 顺序编号，与 REQ-026 的 `R-1 ~ R-27` **不是同一编号体系**（Delta 比需求多 2 条拆分场景）。
 
 | ID | Delta Requirement | Scenario | Layer | 附加层 | 依据 |
 |---|---|---|---|---|---|
 | A1 | R1 低分限制与自动解除 | 低于 60 发布行程被拒绝 | **API + E2E** | 安全 | API 断言码值 403 与「行程数不变」；E2E 断言提示与「去安全学习」入口 |
 | A2 | R1 低分限制与自动解除 | 恰好 60 分不被拦截 | **API** | 边界 | 差一断言：59 拦 / 60 放行 |
 | A3 | R1 低分限制与自动解除 | 恢复至 60 后自动放行 | **API** | — | 同一账号先被拒，考试通过后同请求成功 |
-| A4 | R1 低分限制与自动解除 | 其他功能不因低分被限制 | **API** | 回归 / 安全 | 申请、撤回、聊天、改资料在 45 分下均不返回该码 |
+| A4 | R1 低分限制与自动解除 | 受限账号只能读 | **API** | 回归 / 安全 | 45 分下申请 / 聊天 / 发布体验均返回 403 `CREDIT_RESTRICTED`；浏览、详情、举报、改本人资料正常 |
 | A5 | R2 安全学习的参加资格 | 低于 60 可以开始考试 | **API** | — | 建会话并返回 10 题 |
 | A6 | R2 安全学习的参加资格 | 达到 60 分拒绝参加 | **API + E2E** | 边界 | API 断言 `LEARNING_NOT_ELIGIBLE`；E2E 断言「当前无需恢复」文案 |
 | A7 | R2 安全学习的参加资格 | 未登录拒绝 | **API** | 安全 | 缺 `X-User-Id` 沿用既有未登录码；不建会话 |
@@ -49,17 +49,17 @@
 ## 2. 在生产代码前先写的验收检查
 
 1. **契约（最先）**
-   - `OpenApiTest`：新增三个端点与 `LearningSession` / `LearningQuestion` / `LearningResult` / `LearningAnswerDetail` 四个 schema；`LearningQuestion` 的属性集合**不含**答案类字段；错误码 enum 含 5 个 `LEARNING_*` 与 `CREDIT_SCORE_BELOW_60`。
+   - `OpenApiTest`：新增三个端点与 `LearningSession` / `LearningQuestion` / `LearningResult` / `LearningAnswerDetail` 四个 schema；`LearningQuestion` 的属性集合**不含**答案类字段；错误码 enum 含 5 个 `LEARNING_*` 与 `CREDIT_RESTRICTED`。
 
 2. **API（先红）**
    - `CreditLearningApiTest`：A5 / A6 / A9 / A10 / A11 / A12 / A13 / A14（会话与判分）。
    - `CreditLearningRecoveryApiTest`：A15 / A16 / A18 / A20 / A22 / A26 / A27（恢复记账与配额）。
    - `CreditLearningQuotaApiTest`：A19 / A21（考试次数与跨月；固定 `Clock`）。
-   - `CreditPublishGuardApiTest`：A1 / A2 / A3 / A4 / A7 / A8 / A28（拦截面 + 权限）。
-   - `CreditLearningMigrationSqliteTest`：沿用 `*MigrationSqliteTest` 命名；全新库 V1–V25 建会话表；旧库（V20）升级后表存在且既有 `user_credit_account` / `credit_ledger` 数据不变，并做一次 `status` / `passed` / `score` 写读往返。
+   - `CreditPublishGuardApiTest`：A1 / A2 / A3（拦截面 + 恢复后放行）；A4 由既有 `CreditRestrictionApiTest` 覆盖。
+   - `CreditLearningMigrationSqliteTest`：沿用 `*MigrationSqliteTest` 命名；全新库 V1–V27 建会话表；旧库（V20）升级后表存在且既有 `user_credit_account` / `credit_ledger` 数据不变，并做一次 `status` / `passed` / `score` 写读往返。
 
 3. **E2E（先红）**
-   - `e2e/tests/credit-learning.spec.ts`：45 分账号发布行程 → 看到 `CREDIT_SCORE_BELOW_60` 提示与「去安全学习」→ 进入 `#/credit/learning` → 完成学习 → 10 题作答（固定 8 对）→ 结果「通过」→ 回发布页成功；再看个人主页为「60 / 100 · 信用一般」。
+   - `e2e/tests/credit-learning.spec.ts`：45 分账号发布行程 → 看到 `CREDIT_RESTRICTED` 提示与「去安全学习」→ 进入 `#/credit/learning` → 完成学习 → 10 题作答（固定 8 对）→ 结果「通过」→ 回发布页成功；再看个人主页为「60 / 100 · 信用一般」。
    - 62 分账号直接深链 `#/credit/learning` → 「当前无需恢复」，无「开始答题」按钮。
 
 ## 3. 本地与 CI 门禁

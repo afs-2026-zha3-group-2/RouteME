@@ -18,6 +18,8 @@ import {
   saveMyProfile,
   uploadAvatar,
 } from '../api';
+import { CreditRestrictedNotice } from '../credit/CreditRestrictedNotice';
+import { useMyCredit } from '../credit/CreditContext';
 import { tripMessages } from '../i18n/tripMessages';
 import { Avatar } from '../shell/Avatar';
 import type { DemoUser, UserProfile } from '../types';
@@ -64,6 +66,7 @@ type Props = {
  * 首次完善显示「跳过」，已完善显示「取消」；保存成功后进入本人主页。
  */
 export function ProfileSetupPage({ currentUser, token, onSaved }: Props) {
+  const { restricted } = useMyCredit();
   const [loading, setLoading] = useState(true);
   const [profileComplete, setProfileComplete] = useState(currentUser.profile_complete);
   const [values, setValues] = useState<ProfileFormValues>({
@@ -238,6 +241,7 @@ export function ProfileSetupPage({ currentUser, token, onSaved }: Props) {
               <Button
                 size="small"
                 loading={uploading}
+                disabled={restricted}
                 onClick={() => fileRef.current?.click()}
               >
                 {avatarUrl === null
@@ -442,8 +446,10 @@ export function ProfileSetupPage({ currentUser, token, onSaved }: Props) {
           />
         )}
 
+        {restricted && <CreditRestrictedNotice />}
+
         <footer className="profile-form-foot">
-          <Button type="primary" htmlType="submit" loading={saving}>
+          <Button type="primary" htmlType="submit" loading={saving} disabled={restricted}>
             {tripMessages.profileSave}
           </Button>
           {profileComplete ? (

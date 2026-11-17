@@ -48,3 +48,21 @@ export function creditTone(level: CreditLevel | string | null | undefined): stri
 export function creditLine(score: number | null | undefined, level: CreditLevel | string | null | undefined): string {
   return `${tripMessages.creditPrefix}：${normalizeCreditScore(score)} / 100 · ${creditLabel(level)}`;
 }
+
+/** 五个展示面共用的「限制中」徽标；未受限返回空串。 */
+export function creditRestrictedBadge(restricted: boolean | null | undefined): string {
+  return restricted === true ? tripMessages.creditRestrictedBadge : '';
+}
+
+/** 本人主页的限制原因 + 自动解除说明；他人不调用。 */
+export function creditRestrictionNote(reason: string | null | undefined): string {
+  if (reason !== 'CREDIT_SCORE_BELOW_60') {
+    return '';
+  }
+  return `${tripMessages.creditRestrictionReason}${tripMessages.creditRestrictionAutoLift}`;
+}
+
+/** 被拦截操作的统一提示。 */
+export function creditRestrictedActionMessage(): string {
+  return tripMessages.creditRestrictedAction;
+}
