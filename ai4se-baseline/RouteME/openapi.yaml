@@ -1041,6 +1041,37 @@ paths:
           $ref: '#/components/responses/NotFound'
         '500':
           $ref: '#/components/responses/Unexpected'
+  /trips/{tripId}/recommendations:
+    get:
+      operationId: loadTripRecommendations
+      summary: 推荐与当前行程相近的其他旅行者
+      description: |
+        以当前行程的目的地与出发日期为参照、以当前用户的旅行兴趣为兴趣集合，
+        从开放行程中筛选其他旅行者并按固定规则打分：目的地相同 50、出发日期相同 30、
+        相差一天 20、共同兴趣每项 10 且合计不超过 20。结果按总分倒序，
+        同分优先旅行日期更接近；同一发布者只保留匹配分最高的一条行程。
+        没有候选时返回空数组，不以虚假推荐填充。
+      parameters:
+        - $ref: '#/components/parameters/DemoUserId'
+        - name: tripId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: 参照说明与推荐列表
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RecommendationList'
+        '401':
+          $ref: '#/components/responses/DemoUserRequired'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/Unexpected'
   /trips/{tripId}/applications:
     get:
       operationId: loadTripApplications
@@ -3234,6 +3265,82 @@ components:
         total_pages:
           type: integer
           minimum: 0
+    RecommendationReference:
+      type: object
+      required: [trip_id, destination, start_date, interests]
+      properties:
+        trip_id:
+          type: integer
+          format: int64
+          readOnly: true
+        destination:
+          type: string
+          readOnly: true
+        start_date:
+          type: string
+          format: date
+          readOnly: true
+        interests:
+          type: array
+          items:
+            type: string
+          readOnly: true
+    RecommendationBreakdown:
+      type: object
+      required: [dimension, label, points]
+      properties:
+        dimension:
+          type: string
+          enum: [destination, date, interest]
+          readOnly: true
+        label:
+          type: string
+          readOnly: true
+          description: 可读维度文案，例如「目的地相同」「共同兴趣摄影」
+        points:
+          type: integer
+          minimum: 0
+          maximum: 50
+          readOnly: true
+    TravelerRecommendation:
+      type: object
+      required: [user, trip, score, reasons, breakdown, shared_interests]
+      properties:
+        user:
+          $ref: '#/components/schemas/DemoUser'
+        trip:
+          $ref: '#/components/schemas/TripPlan'
+        score:
+          type: integer
+          minimum: 0
+          maximum: 100
+          readOnly: true
+        reasons:
+          type: array
+          items:
+            type: string
+          readOnly: true
+          description: 逐项原因，例如「目的地相同 +50」
+        breakdown:
+          type: array
+          items:
+            $ref: '#/components/schemas/RecommendationBreakdown'
+          readOnly: true
+        shared_interests:
+          type: array
+          items:
+            type: string
+          readOnly: true
+    RecommendationList:
+      type: object
+      required: [reference, items]
+      properties:
+        reference:
+          $ref: '#/components/schemas/RecommendationReference'
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/TravelerRecommendation'
     ApplicationCreateRequest:
       type: object
       properties:

@@ -2,7 +2,7 @@
 
 - **捕获日期：** 2026-11-17
 - **来源：** 用户当次会话提供的 P0 卡片「[P0] 退出同行扣减信用分」，同时包含 Story 4（退出同行扣减信用分，信用系统迭代 2，5 点）与 Story 5（低信用分自动限制账号，信用系统迭代 3，3 点）
-- **候选编号：** REQ-025（起草时记为 REQ-022；合并 `origin/main` 时 REQ-022 / S22 已被 `add-trip-weather` 占用、REQ-023 被 `add-experience-like-credit` 占用，按「后到者顺延」改为 REQ-025）
+- **候选编号：** REQ-025（起草时记为 REQ-022；合并 `origin/main` 时 REQ-022 / S22 已被 `add-trip-weather` 占用、REQ-023 被 `add-experience-like-credit` 占用，先顺延为 REQ-024；随后 `add-traveler-recommendation` 先合入并占用 REQ-024，再次按「后到者顺延」改为 REQ-025）
 - **能力 / change 候选：** `credit-enforcement`（ADDED）/ `add-credit-exit-restriction`
 - **状态：** Discovery — Go（light intake）
 

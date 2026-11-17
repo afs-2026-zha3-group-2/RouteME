@@ -729,6 +729,45 @@ class OpenApiTest {
         );
     }
 
+    @Test
+    void in_openApiFile_out_travelerRecommendationContractDeclared() throws IOException {
+        // Given
+        Map<String, Object> document = loadYaml(SPEC_PATH);
+        Map<String, Object> info = asMap(document.get("info"));
+
+        // When
+        Map<String, Object> operation = operation(document, "/trips/{tripId}/recommendations", "get");
+        Map<String, Object> list = schema(document, "RecommendationList");
+        Map<String, Object> item = schema(document, "TravelerRecommendation");
+        Map<String, Object> breakdown = schema(document, "RecommendationBreakdown");
+        Map<String, Object> reference = schema(document, "RecommendationReference");
+
+        // Then
+        assertAll(
+                () -> assertEquals("0.20.0", info.get("version"), "info.version"),
+                () -> assertTrue(responses(operation).containsKey("200"), "200 response"),
+                () -> assertTrue(responses(operation).containsKey("401"), "401 response"),
+                () -> assertTrue(responses(operation).containsKey("404"), "404 response"),
+                () -> assertTrue(required(list).containsAll(List.of("reference", "items")), "list required fields"),
+                () -> assertTrue(
+                        required(item).containsAll(
+                                List.of("user", "trip", "score", "reasons", "breakdown", "shared_interests")),
+                        "item required fields"),
+                () -> assertEquals("integer", properties(item).get("score").get("type"), "score type"),
+                () -> assertEquals(0, properties(item).get("score").get("minimum"), "score minimum"),
+                () -> assertEquals(100, properties(item).get("score").get("maximum"), "score maximum"),
+                () -> assertTrue(
+                        required(breakdown).containsAll(List.of("dimension", "label", "points")),
+                        "breakdown required fields"),
+                () -> assertEquals(
+                        List.of("destination", "date", "interest"),
+                        enums(properties(breakdown).get("dimension")),
+                        "dimension enum"),
+                () -> assertTrue(
+                        required(reference).containsAll(List.of("trip_id", "destination", "start_date", "interests")),
+                        "reference required fields"));
+    }
+
     private Map<String, Object> loadYaml(Path specPath) throws IOException {
         return new Yaml().load(Files.readString(specPath));
     }

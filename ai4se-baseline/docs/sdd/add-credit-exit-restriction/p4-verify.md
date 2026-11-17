@@ -39,7 +39,7 @@ T1–T14 全部完成，`tasks.md` 复选框已勾选。T0（原型/预览）在
 | `playwright test credit-exit / credit-restriction / credit-cancel-reason / credit / mine`（隔离环境 8091 + 5181，`SqlLite/e2e-p4-credit.db`） | **23 / 23 passed** |
 | `playwright test`（全量，同一隔离库，123 条） | **99 passed / 24 failed**；失败均为既有债务（见 §5） |
 | 走查（1440 / 768 / 390 × 浅/深色） | 退出弹窗与受限本人主页共 8 组，`scrollWidth - clientWidth = 0`；截图存 `docs/sdd/add-credit-exit-restriction/preview/p4-*.png` |
-| 合并 `origin/main` 后复验 | 后端 **491** / 前端 **351** 全绿；契约 **0.20.0** + 迁移 **V25**；Redocly valid（0 error / 23 warnings，其中 6 个 `nullable+allOf` 为 main 管理后台遗留，已补 `type: object` 修复）；`openspec validate --strict` valid |
+| 合并 `origin/main` 后复验 | 后端 **510** / 前端 **356** 全绿；契约 **0.20.0** + 迁移 **V25**；Redocly valid（0 error / 23 warnings，其中 6 个 `nullable+allOf` 为 main 管理后台遗留，已补 `type: object` 修复）；`openspec validate --strict` valid |
 
 本地验证报告：`docs/ai4se-plugins/20261117-181500-local-verify-report.md`；P4 质量报告：`docs/ai4se-plugins/20261117-181500-quality-checklist-report.md`。
 
@@ -76,8 +76,8 @@ T1–T14 全部完成，`tasks.md` 复选框已勾选。T0（原型/预览）在
 | P2 | `c790357` | Delta 定稿 / AC-DoV / consistency-lint / G1 |
 | P3 | `4a80f47` | ATDD / 设计 / 任务 / 原型 / 预览 / 评审 / P3 报告 |
 | P4 | `5780860` + `c2352b8` | 契约 / V25 / 后端 / 前端 / E2E / 回归 / P4 记录；`c2352b8` 按 main 已占号顺延为 REQ-025 / S25 / S26 |
-| 合并 | 本次合并 | `main` 已占 0.16.0–0.18.0 与 V21–V24；本 change 契约顺延 **0.20.0**、迁移顺延 **V25**；合并后后端 491 / 前端 351 / Redocly 0 error |
+| 合并 | 本次合并 | `main` 已占 0.16.0–0.19.0 与 V21–V24；本 change 契约顺延 **0.20.0**、迁移顺延 **V25**；合并后后端 510 / 前端 356 / Redocly 0 error |
 
 ## 9. 阶段结论
 
-**P4 Pass with documented debt（本地）。** T1–T14 完成，合并前后端 337 / 前端 293 / 新增 E2E 7 条与相关回归 23 条通过；合并 `origin/main` 后复验后端 491 / 前端 351 全绿，契约 0.20.0 + V25。全量 E2E 的 24 条失败均有干净库证据归因为既有地图渲染与共享库累积债务。G2 待 VL=Neal 签署；按用户要求不提交 P5、不归档。
+**P4 Pass with documented debt（本地）。** T1–T14 完成，合并前后端 337 / 前端 293 / 新增 E2E 7 条与相关回归 23 条通过；合并 `origin/main`（两次）后复验后端 510 / 前端 356 全绿，契约 0.20.0 + V25。全量 E2E 的 24 条失败均有干净库证据归因为既有地图渲染与共享库累积债务。G2 待 VL=Neal 签署；按用户要求不提交 P5、不归档。

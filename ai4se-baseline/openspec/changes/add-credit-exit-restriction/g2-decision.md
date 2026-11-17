@@ -20,7 +20,7 @@
 
 | 维度 | 结果 | 说明 |
 |---|---|---|
-| build | Pass | 合并后后端 `verify`（491 tests）；前端 `npm run build`、`npm test`（351 tests） |
+| build | Pass | 合并后后端 `verify`（510 tests）；前端 `npm run build`、`npm test`（356 tests） |
 | scan | Pass | Redocly lint valid（0 error / 19 既有 warning）；`openspec validate --strict` valid |
 | review | Pass | P3 工件评审（design / tasks）+ P4 本地验证；无 CRITICAL |
 | evidence | Pass | 退出 / 待核实 / 月度边界 / 限制触发与清退 / 自动解除 / 系统取消原因均有 API + E2E 断言；新增 E2E 7 条、相关回归 23 条全绿 |
@@ -39,7 +39,7 @@
 
 **Pass with documented debt**
 
-依据：T1–T14 全部完成；合并 `origin/main` 后后端 491 / 前端 351 / 契约 0.20.0 + V25 / Redocly 0 error / openspec valid；新增退出与限制链路 API 测试与 E2E 全绿。全量 E2E 的 24 条失败均有干净库 A/B 证据归因为既有债务（`china-map` 地图元素缺失 17 条；共享库累积行程导致首页顺序 7 条），不属于本 change 的实现缺陷。
+依据：T1–T14 全部完成；合并 `origin/main`（两次）后后端 510 / 前端 356 / 契约 0.20.0 + V25 / Redocly 0 error / openspec valid；新增退出与限制链路 API 测试与 E2E 全绿。全量 E2E 的 24 条失败均有干净库 A/B 证据归因为既有债务（`china-map` 地图元素缺失 17 条；共享库累积行程导致首页顺序 7 条），不属于本 change 的实现缺陷。
 
 ## Waivers / conditions + owners
 
