@@ -19,7 +19,7 @@
 
 ## What Changes
 
-- **`trip-recommendations`（ADDED，7 Requirement / 16 Scenario）：**
+- **`trip-recommendations`（ADDED，7 Requirement / 19 Scenario）：**
   1. 按行程推荐同行者：以当前行程的目的地与出发日期为参照，以当前用户兴趣为兴趣集合。
   2. 候选筛选：只取开放行程，排除本人、排除参照行程自身、排除 0 分候选。
   3. 可解释评分：目的地 50 / 日期相同 30 / 差一天 20 / 共同兴趣每项 10（合计 ≤20），总分 ≤100，并返回分项得分。
@@ -79,7 +79,7 @@
 
 | 位置 | 改动 |
 |---|---|
-| `openspec/specs/trip-recommendations/spec.md` | 归档时新增该能力（7 Requirement / 16 Scenario） |
+| `openspec/specs/trip-recommendations/spec.md` | 归档时新增该能力（7 Requirement / 19 Scenario） |
 | `openspec/specs/trip-companions/spec.md` | 不改写；既有匹配需求保持原样 |
 | `RouteME/backend/.../controller/RecommendationController.java` | `GET /api/trips/{tripId}/recommendations` |
 | `RouteME/backend/.../service/RecommendationService.java`、`impl/RecommendationServiceImpl.java` | 取参照行程、开放候选、规则评分、去重排序、组装用户摘要 |
