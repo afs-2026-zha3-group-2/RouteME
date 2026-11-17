@@ -48,3 +48,6 @@ ai4se-baseline/RouteME/backend/data/
 
 # Build output that CI copies the frontend dist into
 ai4se-baseline/RouteME/backend/src/main/resources/static/
+
+# Local AMap web-service key for the backend proxy (never commit real keys)
+ai4se-baseline/RouteME/backend/amap-local.yml
