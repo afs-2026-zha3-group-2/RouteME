@@ -769,3 +769,50 @@ export type AiItinerarySaved = {
 
 /** 地图数据模型统一从 types 取用，业务层不直接依赖 AmapService 路径。 */
 export type { PlaceResult, RoutePlan, RouteWaypoint, TravelMode } from './map/amap/AmapService';
+
+/** 管理后台概览（`GET /admin/dashboard`）：一次请求一个时刻的只读快照。 */
+export type AdminDashboardUsers = {
+  total: number;
+  by_role: Record<AccountRole, number>;
+  by_status: Record<AccountStatus, number>;
+  new_last_7_days: number;
+  new_last_30_days: number;
+};
+
+export type AdminDashboardTrips = {
+  total: number;
+  by_status: Record<TripStatus, number>;
+  new_last_7_days: number;
+  new_last_30_days: number;
+};
+
+export type AdminDashboardApplications = {
+  total: number;
+  by_status: Record<ApplicationStatus, number>;
+};
+
+export type AdminDashboardExperiences = {
+  total: number;
+  new_last_7_days: number;
+  new_last_30_days: number;
+};
+
+export type AdminDashboardReports = {
+  total: number;
+  by_status: Record<ReportStatus, number>;
+};
+
+export type AdminDashboardServiceSessions = {
+  total: number;
+  by_status: Record<ServiceSessionStatus, number>;
+};
+
+export type AdminDashboard = {
+  users: AdminDashboardUsers;
+  trips: AdminDashboardTrips;
+  applications: AdminDashboardApplications;
+  experiences: AdminDashboardExperiences;
+  reports: AdminDashboardReports;
+  service_sessions: AdminDashboardServiceSessions;
+  generated_at: string;
+};

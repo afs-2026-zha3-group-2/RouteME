@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Alert, Button, ConfigProvider, Space, Spin, Typography, message } from 'antd';
 import zhCN from 'antd/locale/zh_CN';
+import { AdminDashboardPage } from './admin/dashboard/AdminDashboardPage';
 import { AdminGuard } from './admin/AdminGuard';
 import { AdminReportDetailPage } from './admin/reports/AdminReportDetailPage';
 import { AdminReportsPage } from './admin/reports/AdminReportsPage';
@@ -231,6 +232,11 @@ export function App() {
               />
             )}
             {route.name === 'help' && <HelpPage currentUser={currentUser} token={authToken} />}
+            {route.name === 'adminDashboard' && (
+              <AdminGuard currentUser={currentUser} token={authToken}>
+                {(token) => <AdminDashboardPage token={token} />}
+              </AdminGuard>
+            )}
             {route.name === 'adminUsers' && (
               <AdminGuard currentUser={currentUser} token={authToken}>
                 {(token) => <AdminUsersPage token={token} />}

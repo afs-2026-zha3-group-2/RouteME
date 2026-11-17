@@ -1,7 +1,7 @@
 openapi: 3.0.3
 info:
   title: RouteME API
-  version: 0.21.0
+  version: 0.22.0
   description: |
     RouteME 后端对外契约。本文件是前后端唯一事实源，字段名、类型、状态码与错误码只在这里定稿。
         当前包含：脚手架问候语、演示账户与账号认证（注册/登录/会话/退出）、旅行计划（浏览/筛选/发布/详情/结束），同行匹配、申请、退出、聊天、我的旅行与举报，游后体验分享与参考发布所需数据，管理后台（用户管理 / 举报处置 / 人工客服）与用户侧帮助入口，以及 AI 智能行程推荐（生成/快照保存与读取，天气复用目的地天气接口）。
@@ -2155,6 +2155,83 @@ paths:
           $ref: '#/components/responses/Conflict'
         '500':
           $ref: '#/components/responses/Unexpected'
+  /admin/dashboard:
+    get:
+      operationId: getAdminDashboard
+      summary: 管理后台概览统计
+      description: >-
+        只读聚合。每次请求即时计算，六组计数共用同一时刻；`by_*` 的键固定返回，
+        计数为 0 时返回 0 而不是省略。响应不含昵称、邮箱、头像或任何明细字段。
+      parameters:
+        - $ref: '#/components/parameters/BearerToken'
+      responses:
+        '200':
+          description: 六组计数与统计生成时刻
+          headers:
+            Cache-Control:
+              description: 恒为 `no-store`；概览不缓存。
+              schema:
+                type: string
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdminDashboard'
+              examples:
+                overview:
+                  value:
+                    users:
+                      total: 6
+                      by_role:
+                        USER: 5
+                        ADMIN: 1
+                      by_status:
+                        ACTIVE: 6
+                        SUSPENDED: 0
+                        BANNED: 0
+                      new_last_7_days: 6
+                      new_last_30_days: 6
+                    trips:
+                      total: 5
+                      by_status:
+                        recruiting: 2
+                        full: 1
+                        ongoing: 0
+                        completed: 1
+                        cancelled: 1
+                      new_last_7_days: 5
+                      new_last_30_days: 5
+                    applications:
+                      total: 3
+                      by_status:
+                        pending: 1
+                        accepted: 1
+                        rejected: 0
+                        cancelled: 1
+                        left: 0
+                    experiences:
+                      total: 1
+                      new_last_7_days: 1
+                      new_last_30_days: 1
+                    reports:
+                      total: 1
+                      by_status:
+                        PENDING: 1
+                        PROCESSING: 0
+                        RESOLVED: 0
+                        REJECTED: 0
+                    service_sessions:
+                      total: 1
+                      by_status:
+                        WAITING: 1
+                        HANDLING: 0
+                        CLOSED: 0
+                    generated_at: '2026-11-17T09:00:00Z'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/AdminRequired'
+        '500':
+          $ref: '#/components/responses/Unexpected'
   /help/reports:
     get:
       operationId: listMyHelpReports
@@ -4005,6 +4082,228 @@ components:
           format: int64
         total_pages:
           type: integer
+    AdminDashboard:
+      type: object
+      required: [users, trips, applications, experiences, reports, service_sessions, generated_at]
+      additionalProperties: false
+      properties:
+        users:
+          $ref: '#/components/schemas/AdminDashboardUsers'
+        trips:
+          $ref: '#/components/schemas/AdminDashboardTrips'
+        applications:
+          $ref: '#/components/schemas/AdminDashboardApplications'
+        experiences:
+          $ref: '#/components/schemas/AdminDashboardExperiences'
+        reports:
+          $ref: '#/components/schemas/AdminDashboardReports'
+        service_sessions:
+          $ref: '#/components/schemas/AdminDashboardServiceSessions'
+        generated_at:
+          type: string
+          format: date-time
+          readOnly: true
+          description: 本次统计的统一时刻（RFC3339 UTC）。
+    AdminDashboardUsers:
+      type: object
+      required: [total, by_role, by_status, new_last_7_days, new_last_30_days]
+      additionalProperties: false
+      properties:
+        total:
+          type: integer
+          minimum: 0
+          readOnly: true
+          description: 全部账号，含 ADMIN。
+        by_role:
+          type: object
+          required: [USER, ADMIN]
+          additionalProperties: false
+          properties:
+            USER:
+              type: integer
+              minimum: 0
+              readOnly: true
+            ADMIN:
+              type: integer
+              minimum: 0
+              readOnly: true
+        by_status:
+          type: object
+          required: [ACTIVE, SUSPENDED, BANNED]
+          additionalProperties: false
+          description: 有效状态；到期封禁计入 ACTIVE。
+          properties:
+            ACTIVE:
+              type: integer
+              minimum: 0
+              readOnly: true
+            SUSPENDED:
+              type: integer
+              minimum: 0
+              readOnly: true
+            BANNED:
+              type: integer
+              minimum: 0
+              readOnly: true
+        new_last_7_days:
+          type: integer
+          minimum: 0
+          readOnly: true
+        new_last_30_days:
+          type: integer
+          minimum: 0
+          readOnly: true
+    AdminDashboardTrips:
+      type: object
+      required: [total, by_status, new_last_7_days, new_last_30_days]
+      additionalProperties: false
+      properties:
+        total:
+          type: integer
+          minimum: 0
+          readOnly: true
+          description: 含已取消行程。
+        by_status:
+          type: object
+          required: [recruiting, full, ongoing, completed, cancelled]
+          additionalProperties: false
+          description: 复用用户侧五态推导；已取消优先于其它状态。
+          properties:
+            recruiting:
+              type: integer
+              minimum: 0
+              readOnly: true
+            full:
+              type: integer
+              minimum: 0
+              readOnly: true
+            ongoing:
+              type: integer
+              minimum: 0
+              readOnly: true
+            completed:
+              type: integer
+              minimum: 0
+              readOnly: true
+            cancelled:
+              type: integer
+              minimum: 0
+              readOnly: true
+        new_last_7_days:
+          type: integer
+          minimum: 0
+          readOnly: true
+        new_last_30_days:
+          type: integer
+          minimum: 0
+          readOnly: true
+    AdminDashboardApplications:
+      type: object
+      required: [total, by_status]
+      additionalProperties: false
+      properties:
+        total:
+          type: integer
+          minimum: 0
+          readOnly: true
+        by_status:
+          type: object
+          required: [pending, accepted, rejected, cancelled, left]
+          additionalProperties: false
+          properties:
+            pending:
+              type: integer
+              minimum: 0
+              readOnly: true
+            accepted:
+              type: integer
+              minimum: 0
+              readOnly: true
+            rejected:
+              type: integer
+              minimum: 0
+              readOnly: true
+            cancelled:
+              type: integer
+              minimum: 0
+              readOnly: true
+            left:
+              type: integer
+              minimum: 0
+              readOnly: true
+    AdminDashboardExperiences:
+      type: object
+      required: [total, new_last_7_days, new_last_30_days]
+      additionalProperties: false
+      properties:
+        total:
+          type: integer
+          minimum: 0
+          readOnly: true
+        new_last_7_days:
+          type: integer
+          minimum: 0
+          readOnly: true
+        new_last_30_days:
+          type: integer
+          minimum: 0
+          readOnly: true
+    AdminDashboardReports:
+      type: object
+      required: [total, by_status]
+      additionalProperties: false
+      properties:
+        total:
+          type: integer
+          minimum: 0
+          readOnly: true
+        by_status:
+          type: object
+          required: [PENDING, PROCESSING, RESOLVED, REJECTED]
+          additionalProperties: false
+          properties:
+            PENDING:
+              type: integer
+              minimum: 0
+              readOnly: true
+            PROCESSING:
+              type: integer
+              minimum: 0
+              readOnly: true
+            RESOLVED:
+              type: integer
+              minimum: 0
+              readOnly: true
+            REJECTED:
+              type: integer
+              minimum: 0
+              readOnly: true
+    AdminDashboardServiceSessions:
+      type: object
+      required: [total, by_status]
+      additionalProperties: false
+      properties:
+        total:
+          type: integer
+          minimum: 0
+          readOnly: true
+        by_status:
+          type: object
+          required: [WAITING, HANDLING, CLOSED]
+          additionalProperties: false
+          properties:
+            WAITING:
+              type: integer
+              minimum: 0
+              readOnly: true
+            HANDLING:
+              type: integer
+              minimum: 0
+              readOnly: true
+            CLOSED:
+              type: integer
+              minimum: 0
+              readOnly: true
     AdminUserStatusRequest:
       type: object
       required: [action]

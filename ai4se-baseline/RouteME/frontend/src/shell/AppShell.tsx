@@ -437,7 +437,7 @@ export function AppShell({
               <span className="rail-group-title">管理</span>
               <a
                 className={active === 'admin' ? 'rail-link active' : 'rail-link'}
-                href="#/admin/users"
+                href="#/admin"
                 aria-current={active === 'admin' ? 'page' : undefined}
               >
                 <NavIcon name="admin" />
@@ -554,7 +554,7 @@ export function AppShell({
         {currentUser.role === 'ADMIN' && (
           <a
             className={active === 'admin' ? 'tab-link active' : 'tab-link'}
-            href="#/admin/users"
+            href="#/admin"
             aria-current={active === 'admin' ? 'page' : undefined}
           >
             <NavIcon name="admin" />

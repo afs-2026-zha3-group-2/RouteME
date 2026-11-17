@@ -50,7 +50,18 @@ describe('parseRoute', () => {
       expect(parseRoute('#/settings')).toEqual({ name: 'notFound' });
       expect(parseRoute('#/chat/12')).toEqual({ name: 'notFound' });
       expect(parseRoute('#/admin/users/abc')).toEqual({ name: 'notFound' });
-      expect(parseRoute('#/admin')).toEqual({ name: 'notFound' });
+    });
+
+    it('maps the admin dashboard landing route', () => {
+      expect(parseRoute('#/admin')).toEqual({ name: 'adminDashboard' });
+      expect(parseRoute('#/admin/')).toEqual({ name: 'adminDashboard' });
+      expect(routeToHash({ name: 'adminDashboard' })).toBe('#/admin');
+    });
+
+    it('keeps the other admin tabs and rejects non-goal admin lists', () => {
+      expect(parseRoute('#/admin/trips')).toEqual({ name: 'notFound' });
+      expect(parseRoute('#/admin/applications')).toEqual({ name: 'notFound' });
+      expect(parseRoute('#/admin/experiences')).toEqual({ name: 'notFound' });
     });
 
     it('maps the help and admin console paths', () => {
@@ -85,6 +96,7 @@ describe('parseRoute', () => {
         { name: 'profileSetup' as const },
         { name: 'userProfile' as const, userId: 7 },
         { name: 'help' as const },
+        { name: 'adminDashboard' as const },
         { name: 'adminUsers' as const },
         { name: 'adminUserDetail' as const, userId: 7 },
         { name: 'adminReports' as const },

@@ -420,4 +420,32 @@
 - **管理端排除：** 管理员核实、人工封禁、申诉与后台页面均不在本 change（D3）；待核实保持 pending。
 - **明细排除：** 用户端不展示加扣分明细（D4）；只看分数、等级、限制状态与本人原因。
 - **Delta 归属：** 新能力 `credit-enforcement`；不改未归档的 `user-credit` / `trip-cancellation` / `trip-companions` Delta（D15）。
+
+---
+
+# Story list — REQ-026（S27 管理后台概览统计）
+
+- **来源：** 用户 2026-11-17 需求「admin account which provide basic dashboard for statistics and count of different users etc」
+- **Change：** `add-admin-dashboard`（`admin-dashboard` ADDED：5 Requirement / 13 Scenario）
+- **口径：** 一条故事 = 一个页面 + 一份只读契约 + 一次聚合查询；只统计，不改任何业务状态机
+- **编号说明：** `stories.md` 现有最大编号为 S24（S19 在 REQ-018 与 REQ-019 各有一条历史重号，属并行登记遗留），本故事顺延为 **S27**（合并 main 后 S25 / S26 已由 `add-credit-exit-restriction` 占用，原登记 S25）
+- **更新时间：** 2026-11-17
+
+| Story | Title | 角色 | Priority | Iteration | Points | Page | Parent REQ | Change | Status |
+|---|---|---|---|---|---|---|---|---|---|
+| S27 | 查看平台概览统计 | 平台管理员 | P0 | 管理后台迭代 4 | 3 | 管理后台概览页 `#/admin` | REQ-026 | `add-admin-dashboard` | P1 drafted（2026-11-17） |
+
+## Traceability（REQ-026）
+
+| Story | Requirement scenarios | Change spec | Story file |
+|---|---|---|---|
+| S27 | REQ-026 §4（change spec 历史编号 S25-1 ~ S25-13） | `openspec/changes/add-admin-dashboard/specs/admin-dashboard/spec.md`（ADDED：5 Requirement / 13 Scenario） | `requirement-workspace/stories/add-admin-dashboard.story.md` |
+
+## Notes（REQ-026）
+
+- **不拆故事：** 「看数字 → 进入处理页」是同一垂直切片；只做接口或只做页面都不可验收。
+- **六组共享一次请求：** 避免首屏六个请求与部分失败；也不引入缓存与轮询。
+- **三组不可跳转：** 行程 / 申请 / 体验没有后台列表页，卡片只展示数字，不放假入口。
+- **口径依赖既有能力：** 账号有效状态复用 `admin-console` 的惰性恢复；行程状态复用 `TripPlan.status` 的四态推导；本故事不重复定义。
+- **边界：** 趋势图、时间范围选择、导出、自动刷新与更多维度统计均不在本故事。
 - 未接入外部 ALM；本表为仓库内权威故事清单，ALM Sync 状态记为 Pending。

@@ -67,6 +67,14 @@
   --sh-3: 0 8px 24px -8px rgba(20, 51, 95, 0.2), 0 32px 64px -32px rgba(20, 51, 95, 0.45);
   --ring: 0 0 0 3px rgba(14, 128, 116, 0.22);
 
+  /* 管理后台概览图表：只引用主题变量，浅 / 深色自动跟随 */
+  --admin-chart-1: var(--lagoon);
+  --admin-chart-2: var(--surf);
+  --admin-chart-3: var(--amber);
+  --admin-chart-4: var(--coral);
+  --admin-chart-5: var(--dusk);
+  --admin-chart-track: var(--surface-3);
+
   --topbar-h: 66px;
   --rail-w: 246px;
   --ease: cubic-bezier(0.22, 0.68, 0.32, 1);
@@ -8836,6 +8844,72 @@ svg {
   color: var(--ink);
 }
 
+/* ---------- 后台概览：指标卡与快照分布图 ---------- */
+
+.admin-dashboard-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.admin-dashboard-updated {
+  margin: 0;
+  font-size: 12.5px;
+  color: var(--ink-2);
+}
+
+.admin-dashboard-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.admin-metric-card {
+  display: grid;
+  gap: 14px;
+  align-content: start;
+  min-width: 0;
+  padding: 18px;
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+  background: var(--surface);
+  box-shadow: var(--sh-1);
+  color: inherit;
+  text-decoration: none;
+}
+
+a.admin-metric-card {
+  transition: transform 0.18s var(--ease), box-shadow 0.18s var(--ease),
+    border-color 0.18s var(--ease);
+}
+
+a.admin-metric-card:hover {
+  transform: translateY(-2px);
+  border-color: color-mix(in srgb, var(--lagoon) 36%, var(--line));
+  box-shadow: var(--sh-2);
+}
+
+a.admin-metric-card:focus-visible {
+  outline: none;
+  box-shadow: var(--ring);
+}
+
+.admin-metric-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.admin-metric-title {
+  margin: 0;
+  font-size: 13.5px;
+  font-weight: 750;
+  color: var(--ink);
+}
+
 .ai-min-stops {
   margin: 0 0 8px;
   font-size: 12.5px;
@@ -9148,6 +9222,48 @@ svg {
   list-style: none;
 }
 
+.admin-metric-total {
+  font-family: var(--font-num);
+  font-size: 1.7rem;
+  font-weight: 800;
+  line-height: 1;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+
+.admin-metric-visual {
+  display: grid;
+  gap: 12px;
+  align-content: start;
+}
+
+.admin-stack {
+  display: grid;
+  gap: 7px;
+}
+
+.admin-stack-track {
+  display: flex;
+  height: 10px;
+  border-radius: 99px;
+  overflow: hidden;
+  background: var(--admin-chart-track);
+}
+
+.admin-stack-seg {
+  display: block;
+  min-width: 2px;
+  height: 100%;
+}
+
+.admin-chart-legend {
+  display: grid;
+  gap: 5px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
 .recommendation-row {
   display: grid;
   gap: 8px;
@@ -9213,5 +9329,191 @@ svg {
 @media (max-width: 900px) {
   .recommendation-row {
     padding: 10px;
+  }
+}
+
+.admin-chart-legend li {
+  display: grid;
+  grid-template-columns: 8px minmax(0, 1fr) auto minmax(34px, auto);
+  gap: 7px;
+  align-items: baseline;
+  font-size: 11.5px;
+  color: var(--ink-2);
+}
+
+.admin-chart-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  align-self: center;
+}
+
+.admin-chart-legend-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.admin-chart-legend-value {
+  font-family: var(--font-num);
+  font-weight: 650;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+
+.admin-chart-legend-percent {
+  text-align: right;
+  font-family: var(--font-num);
+  color: var(--ink-2);
+  font-variant-numeric: tabular-nums;
+}
+
+.admin-metric-foot {
+  display: flex;
+  gap: 8px 18px;
+  flex-wrap: wrap;
+  padding-top: 10px;
+  border-top: 1px dashed var(--line);
+  font-size: 11.5px;
+  color: var(--ink-2);
+}
+
+.admin-metric-foot b {
+  margin-left: 5px;
+  font-family: var(--font-num);
+  font-size: 12.5px;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+
+.admin-meter {
+  display: grid;
+  gap: 6px;
+}
+
+.admin-meter-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  font-size: 12px;
+  color: var(--ink-2);
+}
+
+.admin-meter-value {
+  font-family: var(--font-num);
+  font-weight: 700;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+
+.admin-meter-ratio {
+  margin-left: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--ink-2);
+}
+
+.admin-meter-track {
+  height: 10px;
+  border-radius: 99px;
+  overflow: hidden;
+  background: var(--admin-chart-track);
+}
+
+.admin-meter-fill {
+  display: block;
+  height: 100%;
+  border-radius: 99px;
+}
+
+.admin-donut {
+  display: grid;
+  gap: 12px;
+  justify-items: center;
+}
+
+.admin-donut-figure {
+  position: relative;
+  width: 132px;
+  height: 132px;
+}
+
+.admin-donut-figure svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.admin-donut-track {
+  stroke: var(--admin-chart-track);
+}
+
+.admin-donut-center {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  gap: 2px;
+  pointer-events: none;
+  text-align: center;
+}
+
+.admin-donut-center b {
+  font-family: var(--font-num);
+  font-size: 1.5rem;
+  line-height: 1;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+
+.admin-donut-center span {
+  font-size: 11px;
+  color: var(--ink-2);
+}
+
+.admin-donut .admin-chart-legend {
+  width: 100%;
+}
+
+.admin-chart-tone-1 {
+  background: var(--admin-chart-1);
+  stroke: var(--admin-chart-1);
+}
+
+.admin-chart-tone-2 {
+  background: var(--admin-chart-2);
+  stroke: var(--admin-chart-2);
+}
+
+.admin-chart-tone-3 {
+  background: var(--admin-chart-3);
+  stroke: var(--admin-chart-3);
+}
+
+.admin-chart-tone-4 {
+  background: var(--admin-chart-4);
+  stroke: var(--admin-chart-4);
+}
+
+.admin-chart-tone-5 {
+  background: var(--admin-chart-5);
+  stroke: var(--admin-chart-5);
+}
+
+@media (max-width: 1180px) {
+  .admin-dashboard-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 680px) {
+  .admin-dashboard-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .admin-metric-card {
+    padding: 16px;
   }
 }
