@@ -12,6 +12,13 @@
 
 import { amapServiceHost } from './config';
 import { loadAmap } from './loader';
+import {
+  PLACES,
+  findPlaceByName,
+  placesInCity,
+  searchPlaces as catalogSearchPlaces,
+  type Place,
+} from '../placeCatalog';
 import type { LngLat } from './types';
 
 export type TravelMode = 'walking' | 'driving' | 'bicycling';
@@ -40,6 +47,8 @@ export type RoutePlan = {
   distanceMeters: number;
   durationSeconds: number;
   path: LngLat[];
+  /** 高德路线不可用时按直线估算，UI 用虚线区分。 */
+  estimated?: boolean;
   legs: Array<{
     fromId: string;
     toId: string;
@@ -263,6 +272,176 @@ export function toRouteLeg(
   };
 }
 
+/* ---------- 离线地名库兜底 ---------- */
+
+function normalizePlaceName(value: string): string {
+  return value.trim().toLowerCase().replace(/\s+/g, '');
+}
+
+/**
+ * 限定在行程城市内的候选地名。
+ *
+ * <p>城市名解析不到时返回空数组：宁可少定位，也不把外地同名景点放到地图上。
+ */
+function catalogPool(city?: string): Place[] {
+  const raw = city?.trim() ?? '';
+  if (raw === '') {
+    return PLACES;
+  }
+  const cityPlace = findPlaceByName(raw);
+  if (cityPlace === undefined) {
+    return [];
+  }
+  return placesInCity(cityPlace.kind === 'city' ? cityPlace.name : cityPlace.city);
+}
+
+/**
+ * 名称 → 离线地名库条目。
+ *
+ * <p>先按名称/别名精确匹配；再退化为「行程文案包含地名」，例如
+ * 「大鹏所城集合」命中「大鹏所城」、「东西涌穿越 12km」命中「东西涌」。
+ * 多个候选时取最长的地名，避免短名抢先；城市节点本身不参与包含匹配。
+ */
+export function matchCatalogPlace(name: string, city?: string): Place | null {
+  const value = normalizePlaceName(name);
+  if (value === '') {
+    return null;
+  }
+  const pool = catalogPool(city);
+  if (pool.length === 0) {
+    return null;
+  }
+
+  const exact = pool.find(
+    (place) =>
+      normalizePlaceName(place.name) === value ||
+      place.aliases.some((alias) => normalizePlaceName(alias) === value),
+  );
+  if (exact !== undefined) {
+    return exact;
+  }
+
+  let best: { place: Place; length: number } | null = null;
+  for (const place of pool) {
+    if (place.kind === 'city') {
+      continue;
+    }
+    for (const candidate of [place.name, ...place.aliases]) {
+      const needle = normalizePlaceName(candidate);
+      if (needle.length < 2 || !value.includes(needle)) {
+        continue;
+      }
+      if (best === null || needle.length > best.length) {
+        best = { place, length: needle.length };
+      }
+    }
+  }
+  return best?.place ?? null;
+}
+
+/** 离线地名库 → RouteMe 地点（高德搜索/地理编码不可用时兜底）。 */
+export function catalogPlaceResult(name: string, city?: string): PlaceResult | null {
+  const place = matchCatalogPlace(name, city);
+  return place === null ? null : placeToResult(place);
+}
+
+function placeToResult(place: Place): PlaceResult {
+  return {
+    id: place.id,
+    name: place.name,
+    // 离线条目没有街道地址；城市已由 city 字段展示，避免搜索面板重复出现。
+    address: '',
+    city: place.city,
+    district: '',
+    lng: place.lng,
+    lat: place.lat,
+    type: 'offline',
+  };
+}
+
+/** 关键词 → 离线地名库结果（限定城市时只保留该城条目）。 */
+function catalogSearchResults(keyword: string, city?: string): PlaceResult[] {
+  const scoped = city?.trim() ?? '';
+  const pool = scoped === '' ? PLACES : catalogPool(scoped);
+  if (pool.length === 0) {
+    return [];
+  }
+  const allowed = new Set(pool.map((place) => place.id));
+  return catalogSearchPlaces(keyword, { kinds: ['city', 'poi'], limit: 50 })
+    .filter((place) => allowed.has(place.id))
+    .slice(0, 10)
+    .map(placeToResult);
+}
+
+/** 地图点击位置附近的离线景点（按球面距离筛选，单位米）。 */
+function catalogNearbyResults(lng: number, lat: number, radius: number): PlaceResult[] {
+  return PLACES.filter((place) => place.kind === 'poi')
+    .map((place) => ({
+      place,
+      distance: haversineMeters([lng, lat], [place.lng, place.lat]),
+    }))
+    .filter((entry) => entry.distance <= radius)
+    .sort((left, right) => left.distance - right.distance)
+    .slice(0, 5)
+    .map((entry) => placeToResult(entry.place));
+}
+
+/* ---------- 直线兜底路线 ---------- */
+
+/** 各出行方式的平均速度（米/秒），仅用于离线估算。 */
+const MODE_SPEED_MPS: Record<TravelMode, number> = {
+  walking: 1.2,
+  bicycling: 4.2,
+  driving: 8.3,
+};
+
+/** 两点间大圆距离（米）。 */
+export function haversineMeters(from: LngLat, to: LngLat): number {
+  const earthRadius = 6371008.8;
+  const toRad = (degrees: number) => (degrees * Math.PI) / 180;
+  const lat1 = toRad(from[1]);
+  const lat2 = toRad(to[1]);
+  const deltaLat = lat2 - lat1;
+  const deltaLng = toRad(to[0] - from[0]);
+  const a =
+    Math.sin(deltaLat / 2) ** 2 + Math.cos(lat1) * Math.cos(lat2) * Math.sin(deltaLng / 2) ** 2;
+  return 2 * earthRadius * Math.asin(Math.min(1, Math.sqrt(a)));
+}
+
+/**
+ * 直线兜底路线：保留途经点顺序，用球面距离与平均速度估算。
+ *
+ * <p>高德路线服务不可用（未配置安全密钥、代理不可达）时仍能画出行程顺序，
+ * 调用方需要用 {@link RoutePlan.estimated} 向用户说明这是估算值。
+ */
+export function straightLineRoute(mode: TravelMode, waypoints: RouteWaypoint[]): RoutePlan {
+  if (waypoints.length < 2) {
+    throw new AmapApiError('INVALID_WAYPOINTS', '至少需要两个途经点才能规划路线');
+  }
+  const speed = MODE_SPEED_MPS[mode];
+  const path: LngLat[] = waypoints.map((waypoint): LngLat => [waypoint.lng, waypoint.lat]);
+  const legs: RoutePlan['legs'] = [];
+  let distanceMeters = 0;
+  let durationSeconds = 0;
+
+  for (let index = 0; index < waypoints.length - 1; index += 1) {
+    const start = waypoints[index];
+    const end = waypoints[index + 1];
+    const legDistance = Math.round(haversineMeters([start.lng, start.lat], [end.lng, end.lat]));
+    const legDuration = Math.round(legDistance / speed);
+    distanceMeters += legDistance;
+    durationSeconds += legDuration;
+    legs.push({
+      fromId: start.id,
+      toId: end.id,
+      distanceMeters: legDistance,
+      durationSeconds: legDuration,
+    });
+  }
+
+  return { mode, distanceMeters, durationSeconds, path, estimated: true, legs };
+}
+
 /** 高德 SDK 失败结果 → 统一错误（含配额 / Key / 安全密钥 / 代理）。 */
 function sdkError(
   status: string,
@@ -397,6 +576,15 @@ export async function searchPlaces(keyword: string, city?: string): Promise<Plac
   if (keywords === '') {
     return [];
   }
+  try {
+    return await remoteSearchPlaces(keywords, city);
+  } catch {
+    // 高德不可用（未配置安全密钥 / 代理不可达）时退回离线地名库。
+    return catalogSearchResults(keywords, city);
+  }
+}
+
+async function remoteSearchPlaces(keywords: string, city?: string): Promise<PlaceResult[]> {
   const sdk = await loadSdk();
   const scopedCity = city?.trim() ?? '';
   const service = new sdk.PlaceSearch({
@@ -429,6 +617,18 @@ export async function aroundPlaces(
   lat: number,
   radius = 500,
 ): Promise<PlaceResult[]> {
+  try {
+    return await remoteAroundPlaces(lng, lat, radius);
+  } catch {
+    return catalogNearbyResults(lng, lat, radius);
+  }
+}
+
+async function remoteAroundPlaces(
+  lng: number,
+  lat: number,
+  radius: number,
+): Promise<PlaceResult[]> {
   const sdk = await loadSdk();
   const service = new sdk.PlaceSearch({ pageSize: 5, pageIndex: 1, extensions: 'base' });
 
@@ -448,12 +648,22 @@ export async function aroundPlaces(
   });
 }
 
-/** 名称 → 坐标：先用地点搜索，失败再走地理编码。 */
+/**
+ * 名称 → 坐标：先用高德地点搜索，失败再走地理编码，最后兜底离线地名库。
+ *
+ * <p>高德服务未配置或不可达时（本仓库的默认开发环境），城市与 Demo 途经点
+ * 仍能通过 `map/data` 的离线索引定位，地图不至于整块空白。
+ */
 export async function geocodePlace(name: string, city?: string): Promise<PlaceResult | null> {
   const value = name.trim();
   if (value === '') {
     return null;
   }
+  const remote = await remoteGeocode(value, city).catch(() => null);
+  return remote ?? catalogPlaceResult(value, city);
+}
+
+async function remoteGeocode(value: string, city?: string): Promise<PlaceResult | null> {
   const found = await searchPlaces(value, city).catch(() => [] as PlaceResult[]);
   if (found.length > 0) {
     return found[0];
