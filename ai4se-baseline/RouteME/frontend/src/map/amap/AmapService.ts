@@ -34,6 +34,12 @@ export type RoutePlan = {
   distanceMeters: number;
   durationSeconds: number;
   path: LngLat[];
+  legs: Array<{
+    fromId: string;
+    toId: string;
+    distanceMeters: number;
+    durationSeconds: number;
+  }>;
 };
 
 type AmapPoi = {
@@ -341,6 +347,7 @@ export async function planRoute(mode: TravelMode, waypoints: RouteWaypoint[]): P
   let distanceMeters = 0;
   let durationSeconds = 0;
   const path: LngLat[] = [];
+  const legs: RoutePlan['legs'] = [];
 
   for (let index = 0; index < waypoints.length - 1; index += 1) {
     const start = waypoints[index];
@@ -353,6 +360,12 @@ export async function planRoute(mode: TravelMode, waypoints: RouteWaypoint[]): P
     const leg = parseRouteLeg(data, [start.lng, start.lat], [end.lng, end.lat]);
     distanceMeters += leg.distanceMeters;
     durationSeconds += leg.durationSeconds;
+    legs.push({
+      fromId: start.id,
+      toId: end.id,
+      distanceMeters: leg.distanceMeters,
+      durationSeconds: leg.durationSeconds,
+    });
     for (const point of leg.path) {
       const previous = path[path.length - 1];
       if (previous === undefined || previous[0] !== point[0] || previous[1] !== point[1]) {
@@ -361,7 +374,7 @@ export async function planRoute(mode: TravelMode, waypoints: RouteWaypoint[]): P
     }
   }
 
-  return { mode, distanceMeters, durationSeconds, path };
+  return { mode, distanceMeters, durationSeconds, path, legs };
 }
 
 export function formatDistance(meters: number): string {

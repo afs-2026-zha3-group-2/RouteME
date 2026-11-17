@@ -5337,3 +5337,899 @@ svg {
     max-height: none;
   }
 }
+
+/* ---------- 高德地图旅行探索（AMap JS API 2.0） ---------- */
+.amap-explorer {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 340px;
+  gap: 14px;
+  align-items: start;
+  margin-top: 14px;
+}
+
+.amap-explorer-main {
+  position: relative;
+  min-width: 0;
+}
+
+.amap-container {
+  position: relative;
+  overflow: hidden;
+  min-height: 560px;
+  height: clamp(440px, 68vh, 720px);
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+  background: color-mix(in srgb, var(--lagoon-soft) 55%, var(--surface));
+  box-shadow: var(--sh-2);
+}
+
+.amap-container.is-fullscreen {
+  position: fixed;
+  inset: 0;
+  z-index: 1300;
+  height: auto;
+  border: 0;
+  border-radius: 0;
+}
+
+.amap-canvas-host {
+  width: 100%;
+  height: 100%;
+}
+
+.amap-container.is-fullscreen .amap-canvas-host {
+  height: 100vh;
+}
+
+.amap-state {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  gap: 8px;
+  padding: 24px;
+  text-align: center;
+  background: color-mix(in srgb, var(--surface) 82%, transparent);
+  backdrop-filter: blur(2px);
+}
+
+.amap-state-error {
+  color: var(--t-danger);
+}
+
+.amap-controls {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  z-index: 30;
+  display: grid;
+  gap: 6px;
+}
+
+.amap-controls button {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--surface) 94%, transparent);
+  box-shadow: var(--sh-1);
+  color: var(--ink-2);
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 1;
+  cursor: pointer;
+  transition: transform 0.14s var(--ease), border-color 0.14s var(--ease);
+}
+
+.amap-controls button:hover {
+  border-color: var(--lagoon);
+  color: var(--t-lagoon);
+  transform: translateY(-1px);
+}
+
+.amap-controls button:disabled {
+  opacity: 0.55;
+  cursor: progress;
+}
+
+.amap-locate-error {
+  position: absolute;
+  left: 50%;
+  bottom: 52px;
+  z-index: 35;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  max-width: min(420px, calc(100% - 24px));
+  padding: 8px 10px 8px 12px;
+  border: 1px solid color-mix(in srgb, var(--warn) 45%, var(--line));
+  border-radius: 10px;
+  background: var(--surface);
+  box-shadow: var(--sh-2);
+  color: var(--t-warn);
+  font-size: 12px;
+  transform: translateX(-50%);
+}
+
+.amap-locate-error button {
+  border: 0;
+  background: transparent;
+  color: var(--ink-3);
+  font-size: 15px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.amap-search-overlay {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  right: 64px;
+  z-index: 40;
+  max-width: 420px;
+}
+
+.amap-search-box {
+  position: relative;
+  padding: 6px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--surface) 97%, transparent);
+  box-shadow: var(--sh-2);
+}
+
+.amap-search-panel {
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  right: 0;
+  z-index: 50;
+  overflow: hidden auto;
+  max-height: 330px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface);
+  box-shadow: var(--sh-3);
+}
+
+.amap-search-state {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px;
+  color: var(--ink-3);
+  font-size: 12px;
+}
+
+.amap-search-state.is-error {
+  color: var(--t-danger);
+}
+
+.amap-search-list {
+  margin: 0;
+  padding: 4px;
+  list-style: none;
+}
+
+.amap-search-item {
+  display: grid;
+  gap: 2px;
+  width: 100%;
+  padding: 8px 10px;
+  border: 0;
+  border-radius: 9px;
+  background: transparent;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.amap-search-item:hover,
+.amap-search-item.is-active {
+  background: var(--lagoon-soft);
+}
+
+.amap-search-name {
+  color: var(--ink);
+  font-size: 13px;
+  font-weight: 750;
+}
+
+.amap-search-meta,
+.amap-search-address {
+  overflow: hidden;
+  color: var(--ink-3);
+  font-size: 11px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.amap-candidate {
+  position: absolute;
+  left: 12px;
+  bottom: 52px;
+  z-index: 40;
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  max-width: min(360px, calc(100% - 24px));
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--surface) 96%, transparent);
+  box-shadow: var(--sh-2);
+}
+
+.amap-candidate.is-loading {
+  color: var(--ink-3);
+  font-size: 12px;
+}
+
+.amap-candidate-text {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.amap-candidate-text b {
+  font-size: 13.5px;
+}
+
+.amap-candidate-text span {
+  overflow: hidden;
+  color: var(--ink-3);
+  font-size: 11px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.amap-candidate-actions {
+  display: flex;
+  gap: 4px;
+  align-items: center;
+  flex: none;
+}
+
+.amap-candidate-actions button:not(.ant-btn) {
+  border: 0;
+  background: transparent;
+  color: var(--ink-3);
+  font-size: 15px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.amap-legend {
+  position: absolute;
+  right: 12px;
+  bottom: 12px;
+  z-index: 20;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 8px 10px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--surface) 92%, transparent);
+  box-shadow: var(--sh-1);
+  color: var(--ink-2);
+  font-size: 10.5px;
+}
+
+.amap-legend > span {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.amap-legend-line {
+  width: 18px;
+  height: 3px;
+  border-radius: 99px;
+  background: linear-gradient(90deg, #12707f, #7b5cff);
+}
+
+.amap-legend-stop {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #12707f, #7b5cff);
+}
+
+.amap-legend-note {
+  color: var(--ink-3);
+  font-size: 9.5px;
+}
+
+/* 编号 Marker（由 RouteLayer 生成 HTML） */
+.amap-stop-pin {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border: 2px solid #fff;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #12707f 0%, #7b5cff 100%);
+  box-shadow: 0 4px 12px rgba(6, 35, 43, 0.28);
+  color: #fff;
+  transform: scale(1);
+  transition: transform 0.14s var(--ease);
+}
+
+.amap-stop-pin.is-start {
+  background: linear-gradient(135deg, #0d9b74 0%, #12a89b 100%);
+}
+
+.amap-stop-pin.is-end {
+  background: linear-gradient(135deg, #ff6b35 0%, #ffb03a 100%);
+}
+
+.amap-stop-pin.is-active {
+  transform: scale(1.14);
+  box-shadow: 0 0 0 4px rgba(123, 92, 255, 0.22), 0 6px 16px rgba(6, 35, 43, 0.3);
+}
+
+.amap-stop-number {
+  font-size: 14px;
+  font-weight: 800;
+  line-height: 1;
+}
+
+.amap-stop-tag {
+  position: absolute;
+  bottom: -15px;
+  left: 50%;
+  padding: 1px 5px;
+  border: 1px solid var(--line);
+  border-radius: 99px;
+  background: var(--surface);
+  color: var(--t-lagoon);
+  font-size: 9.5px;
+  font-weight: 700;
+  line-height: 1.3;
+  transform: translateX(-50%);
+  white-space: nowrap;
+}
+
+/* 侧边栏 */
+.amap-side {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+}
+
+.amap-side-card {
+  display: grid;
+  gap: 8px;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+  background: var(--surface);
+  box-shadow: var(--sh-1);
+}
+
+.amap-side-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.amap-side-head > div {
+  display: grid;
+  gap: 1px;
+  min-width: 0;
+}
+
+.amap-side-head b {
+  color: var(--ink);
+  font-size: 13.5px;
+  font-weight: 750;
+}
+
+.amap-side-head span {
+  color: var(--ink-3);
+  font-size: 11px;
+}
+
+.amap-side-empty {
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+.amap-side-hint {
+  font-size: 11px;
+  line-height: 1.5;
+}
+
+.amap-side-summary {
+  margin: 0;
+  color: var(--t-lagoon);
+  font-size: 11.5px;
+  font-weight: 650;
+}
+
+.amap-date-range {
+  width: 100%;
+}
+
+.amap-waypoint-list {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.amap-waypoint {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface-2);
+  transition: border-color 0.14s var(--ease), box-shadow 0.14s var(--ease);
+}
+
+.amap-waypoint.is-dragging {
+  opacity: 0.5;
+}
+
+.amap-waypoint.is-over {
+  border-color: var(--lagoon);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--lagoon) 22%, transparent);
+}
+
+.amap-waypoint-grip {
+  padding-left: 6px;
+  color: var(--ink-3);
+  font-size: 10px;
+  letter-spacing: -1px;
+  cursor: grab;
+  user-select: none;
+}
+
+.amap-waypoint-main {
+  display: flex;
+  flex: 1;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  padding: 6px 2px;
+  border: 0;
+  background: transparent;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.amap-waypoint-index {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #12707f, #7b5cff);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.amap-waypoint-text {
+  display: grid;
+  gap: 1px;
+  min-width: 0;
+}
+
+.amap-waypoint-text b {
+  overflow: hidden;
+  font-size: 12.5px;
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.amap-waypoint-text span {
+  overflow: hidden;
+  color: var(--ink-3);
+  font-size: 10.5px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.amap-waypoint-tools {
+  display: flex;
+  flex: none;
+  align-items: center;
+  padding-right: 3px;
+}
+
+.amap-waypoint-tools button {
+  width: 22px;
+  height: 24px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--ink-3);
+  font-size: 12px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.amap-waypoint-tools button:hover {
+  color: var(--t-lagoon);
+}
+
+.amap-waypoint-tools button:last-child:hover {
+  color: var(--t-danger);
+}
+
+.amap-mode-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.amap-mode-label {
+  color: var(--ink-2);
+  font-size: 11.5px;
+  font-weight: 650;
+}
+
+.amap-route-stats {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 6px;
+  padding: 10px;
+  border: 1px solid color-mix(in srgb, #7b5cff 22%, var(--line));
+  border-radius: 12px;
+  background: linear-gradient(150deg, rgba(18, 112, 127, 0.08), rgba(123, 92, 255, 0.1));
+}
+
+.amap-route-stats > div {
+  display: grid;
+  gap: 1px;
+  min-width: 0;
+}
+
+.amap-route-stats b {
+  overflow: hidden;
+  color: var(--ink);
+  font-size: 14px;
+  font-weight: 800;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.amap-route-stats span {
+  color: var(--ink-3);
+  font-size: 10px;
+}
+
+.amap-itinerary {
+  display: grid;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.amap-itinerary li {
+  border-radius: 8px;
+}
+
+.amap-itinerary li.is-focused {
+  background: var(--lagoon-soft);
+}
+
+.amap-itinerary button {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  width: 100%;
+  padding: 6px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+.amap-itinerary button:hover {
+  background: color-mix(in srgb, var(--lagoon-soft) 60%, transparent);
+}
+
+.amap-itinerary-index {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--surface-3);
+  color: var(--ink-2);
+  font-size: 10.5px;
+  font-weight: 800;
+}
+
+.amap-itinerary-text {
+  display: grid;
+  gap: 1px;
+  min-width: 0;
+}
+
+.amap-itinerary-text b {
+  overflow: hidden;
+  font-size: 12.5px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.amap-itinerary-text span {
+  color: var(--ink-3);
+  font-size: 10.5px;
+}
+
+.amap-match-card {
+  display: grid;
+  gap: 10px;
+  padding: 12px;
+  border: 1px solid color-mix(in srgb, #7b5cff 26%, var(--line));
+  border-radius: var(--r);
+  background:
+    radial-gradient(120% 120% at 0% 0%, rgba(18, 112, 127, 0.1), transparent 55%),
+    linear-gradient(150deg, rgba(123, 92, 255, 0.12), var(--surface));
+  box-shadow: var(--sh-1);
+}
+
+.amap-match-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.amap-match-faces {
+  display: flex;
+  flex: none;
+  padding-left: 6px;
+}
+
+.amap-match-faces span {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  margin-left: -6px;
+  border: 2px solid var(--surface);
+  border-radius: 50%;
+  background: linear-gradient(135deg, #12707f, #7b5cff);
+  color: #fff;
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.amap-match-text {
+  display: grid;
+  gap: 1px;
+}
+
+.amap-match-text b {
+  color: var(--t-dusk);
+  font-size: 14.5px;
+  font-weight: 800;
+}
+
+.amap-match-text span {
+  color: var(--ink-2);
+  font-size: 11.5px;
+}
+
+.amap-match-note {
+  font-size: 11.5px;
+}
+
+.amap-companion-list {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.amap-companion-card {
+  display: grid;
+  gap: 8px;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface);
+}
+
+.amap-companion-card header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.amap-companion-avatar {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #12707f, #7b5cff);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.amap-companion-id {
+  display: grid;
+  flex: 1;
+  gap: 1px;
+  min-width: 0;
+}
+
+.amap-companion-id b {
+  font-size: 13.5px;
+}
+
+.amap-companion-id span {
+  color: var(--ink-3);
+  font-size: 11px;
+}
+
+.amap-companion-percent {
+  padding: 3px 8px;
+  border-radius: 99px;
+  background: color-mix(in srgb, #7b5cff 14%, transparent);
+  color: var(--t-dusk);
+  font-size: 12px;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.amap-companion-bio {
+  margin: 0;
+  color: var(--ink-2);
+  font-size: 12px;
+  line-height: 1.55;
+}
+
+.amap-companion-field {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: center;
+  font-size: 11.5px;
+}
+
+.amap-companion-field > span {
+  min-width: 56px;
+  color: var(--ink-3);
+  font-size: 10.5px;
+  font-weight: 700;
+}
+
+.amap-companion-field b {
+  font-size: 11.5px;
+}
+
+.amap-companion-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.amap-companion-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+@media (max-width: 1024px) {
+  .amap-explorer {
+    grid-template-columns: minmax(0, 1fr) 300px;
+  }
+}
+
+@media (max-width: 900px) {
+  .amap-explorer {
+    grid-template-columns: 1fr;
+  }
+
+  .amap-container {
+    min-height: 420px;
+    height: 56vh;
+  }
+
+  .amap-side {
+    order: 2;
+  }
+
+  .amap-side-card {
+    padding: 11px;
+  }
+}
+
+/* 详情页只读地图与发布页选点小地图 */
+.amap-trip-map {
+  position: relative;
+  display: grid;
+  gap: 8px;
+}
+
+.amap-trip-container {
+  min-height: 320px;
+  height: 360px;
+}
+
+.amap-trip-status {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  z-index: 30;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  background: color-mix(in srgb, var(--surface) 94%, transparent);
+  box-shadow: var(--sh-1);
+  color: var(--ink-3);
+  font-size: 11px;
+}
+
+.amap-trip-alert {
+  font-size: 12px;
+}
+
+.amap-picker-map {
+  position: relative;
+  display: grid;
+  gap: 6px;
+}
+
+.amap-picker-map .amap-container {
+  min-height: 250px;
+  height: 250px;
+}
+
+.amap-picker-hint {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  z-index: 30;
+  padding: 4px 8px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--surface) 92%, transparent);
+  box-shadow: var(--sh-1);
+  color: var(--ink-3);
+  font-size: 10.5px;
+}
+
+.amap-picker-status {
+  font-size: 11px;
+}
+
+.place-picker .amap-search-box {
+  box-shadow: none;
+}
+
+@media (max-width: 900px) {
+  .amap-trip-container {
+    height: 320px;
+    min-height: 320px;
+  }
+}
