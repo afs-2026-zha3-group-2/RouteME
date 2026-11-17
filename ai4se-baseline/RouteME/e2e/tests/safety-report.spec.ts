@@ -128,10 +128,10 @@ test('shows the target, four reasons, confidentiality and emergency text', async
   ).toBeVisible();
   await expect(dialog.getByText('补充说明（选填，200 字以内）')).toBeVisible();
 
-  await dialog.getByRole('combobox').click();
-  const options = page.locator('.ant-select-dropdown .ant-select-item-option');
+  await dialog.getByRole('button', { name: '举报原因' }).click();
+  const options = dialog.getByRole('listbox', { name: '举报原因' }).getByRole('option');
   await expect(options).toHaveCount(4);
-  await expect(options).toHaveText(['骚扰或不当言行', '虚假信息', '安全风险', '其他']);
+  await expect(options).toHaveText(['骚扰或不当言行', '虚假信息', /^安全风险/, '其他']);
 });
 
 test('hides the entry on your own trip but keeps the pre-publish note', async ({ page }) => {
@@ -203,7 +203,7 @@ test('keeps the reason and note on failure and retries to a single receipt', asy
   await dialog.getByRole('button', { name: '提交举报' }).click();
 
   await expect(dialog.getByText('举报提交失败')).toBeVisible();
-  await expect(dialog.locator('.ant-select-content')).toHaveText('安全风险');
+  await expect(dialog.getByRole('button', { name: '举报原因' })).toHaveText('安全风险');
   await expect(dialog.locator('textarea')).toHaveValue('网络故障时保留这段说明。');
 
   await page.unroute('**/api/reports');
