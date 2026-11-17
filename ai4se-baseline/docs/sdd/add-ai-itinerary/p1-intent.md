@@ -50,4 +50,4 @@
 
 - **阶段提交：** `docs(p1): add-ai-itinerary proposal and delta draft for AI itinerary recommendation`；push 前 `git pull --rebase origin main`。
 - **validate：** `openspec validate add-ai-itinerary --strict` valid；`deltaCount: 9`，无 INFO / WARNING。
-- **偏离：** 无。P0 记录中「key 配置在 application.yml」按安全规则落为本地覆盖文件，已在提案决策与评审报告说明并经发起人批准。
+- **偏离：** ① P0 记录中「key 配置在 application.yml」按安全规则落为本地覆盖文件，已在提案决策与评审报告说明并经发起人批准。② P1 提交时共享工作区被并行会话切到 `main`，提交 `3f7f49e` 落在 `main` 并推送（纯文档）；已立即切回 `feature/add-ai-itinerary` 并 merge main（`4766a2b`）收编，P2 起每次提交前先核对当前分支。
