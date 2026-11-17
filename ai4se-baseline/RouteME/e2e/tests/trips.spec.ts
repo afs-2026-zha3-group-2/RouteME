@@ -643,4 +643,21 @@ test.describe('date pickers under reduced motion', () => {
     await page.getByLabel('出发不早于').click();
     await expect(page.locator('.app-date-popup')).toBeVisible();
   });
+
+  test('opens the meeting time date-time panel instead of rendering it off-screen', async ({
+    page,
+  }) => {
+    await loginAs(page, 1);
+    await page.goto('/#/trips/new');
+
+    await page.getByLabel(/集合时间/).click();
+    const panel = page.locator('.app-date-popup');
+    await expect(panel).toBeVisible();
+    const box = await panel.boundingBox();
+    expect(box).not.toBeNull();
+    expect(box!.x).toBeGreaterThanOrEqual(0);
+    expect(box!.y).toBeGreaterThanOrEqual(0);
+    expect(box!.x).toBeLessThan(1280);
+    await expect(panel.locator('.ant-picker-time-panel')).toBeVisible();
+  });
 });
