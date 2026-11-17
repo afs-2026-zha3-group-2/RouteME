@@ -1,0 +1,77 @@
+/* ---------- 栅格底图（Web Mercator 瓦片） ---------- */
+
+.amap-canvas-host {
+  position: relative;
+  overflow: hidden;
+  background: color-mix(in srgb, var(--lagoon-soft) 55%, var(--surface));
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+}
+
+.amap-canvas-host.is-dragging {
+  cursor: grabbing;
+}
+
+.raster-map-tiles {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  /* 让指针事件落到容器本身：拖动/点击由 AmapContainer 统一处理。 */
+  pointer-events: none;
+}
+
+.raster-map-tile {
+  position: absolute;
+  top: 0;
+  left: 0;
+  pointer-events: none;
+  user-select: none;
+  -webkit-user-drag: none;
+}
+
+/* 覆盖层与地图同尺寸，子元素用 project() 的像素坐标绝对定位。 */
+.raster-map-overlay {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.amap-route-svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+.amap-overlay-marker {
+  position: absolute;
+  display: block;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  cursor: pointer;
+  pointer-events: auto;
+  transform: translate(-50%, -50%);
+  user-select: none;
+}
+
+.amap-overlay-marker:hover > .amap-stop-pin,
+.amap-overlay-marker:focus-visible > .amap-stop-pin {
+  transform: scale(1.08);
+}
+
+.amap-overlay-marker:focus-visible {
+  outline: 2px solid var(--t-lagoon);
+  outline-offset: 2px;
+}
+
+.amap-overlay-marker > .amap-stop-pin {
+  width: 100%;
+  height: 100%;
+}

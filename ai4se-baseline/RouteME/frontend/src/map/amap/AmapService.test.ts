@@ -2,8 +2,12 @@ import { describe, expect, it } from 'vitest';
 import {
   AmapApiError,
   amapErrorMessage,
+  catalogPlaceResult,
   formatDistance,
   formatDuration,
+  haversineMeters,
+  matchCatalogPlace,
+  straightLineRoute,
   toPlaceResult,
   toRouteLeg,
 } from './AmapService';
@@ -99,5 +103,75 @@ describe('AmapService mapping', () => {
 
   it('names the AMap upstream when the proxy forward fails', () => {
     expect(amapErrorMessage(new AmapApiError('UPSTREAM_UNAVAILABLE', 'forward'))).toContain('上游');
+  });
+});
+
+describe('offline gazetteer fallback', () => {
+  it('resolves a city and its demo stop inside the trip city', () => {
+    expect(matchCatalogPlace('深圳', '深圳')?.name).toBe('深圳');
+    expect(matchCatalogPlace('大鹏所城', '深圳')?.name).toBe('大鹏所城');
+  });
+
+  it('tolerates itinerary suffixes around a catalog name', () => {
+    // 集合 / 穿越 12km / 观景 / 骑行 都是行程文案，不是地点名的一部分。
+    expect(matchCatalogPlace('大鹏所城集合', '深圳')?.name).toBe('大鹏所城');
+    expect(matchCatalogPlace('东西涌穿越 12km', '深圳')?.name).toBe('东西涌');
+    expect(matchCatalogPlace('天文台观景', '深圳')?.name).toBe('西涌天文台');
+    expect(matchCatalogPlace('次日杨梅坑骑行', '深圳')?.name).toBe('杨梅坑');
+    expect(matchCatalogPlace('情侣路骑行段', '珠海')?.name).toBe('情侣路');
+  });
+
+  it('prefers the longest matching name and skips the city node', () => {
+    expect(matchCatalogPlace('深圳湾公园日落', '深圳')?.name).toBe('深圳湾公园');
+  });
+
+  it('does not place a stop outside its trip city', () => {
+    expect(matchCatalogPlace('大鹏所城', '珠海')).toBeNull();
+    expect(matchCatalogPlace('大鹏所城集合', '拉萨')).toBeNull();
+  });
+
+  it('builds a place result with real coordinates', () => {
+    const place = catalogPlaceResult('海滨泳场日落机位', '珠海');
+    expect(place).toMatchObject({ name: '海滨泳场', city: '珠海', type: 'offline' });
+    expect(place?.lng).toBeCloseTo(113.586, 3);
+    expect(place?.lat).toBeCloseTo(22.2572, 3);
+  });
+});
+
+describe('straight-line route fallback', () => {
+  const waypoints = [
+    { id: 'a', name: '大鹏所城', lng: 114.5077, lat: 22.5979 },
+    { id: 'b', name: '东西涌', lng: 114.571, lat: 22.545 },
+    { id: 'c', name: '杨梅坑', lng: 114.5654, lat: 22.5481 },
+  ];
+
+  it('keeps the waypoint order and marks the plan as estimated', () => {
+    const plan = straightLineRoute('walking', waypoints);
+    expect(plan.estimated).toBe(true);
+    expect(plan.path).toEqual([
+      [114.5077, 22.5979],
+      [114.571, 22.545],
+      [114.5654, 22.5481],
+    ]);
+    expect(plan.legs.map((leg) => [leg.fromId, leg.toId])).toEqual([
+      ['a', 'b'],
+      ['b', 'c'],
+    ]);
+    expect(plan.distanceMeters).toBeGreaterThan(0);
+    expect(plan.durationSeconds).toBeGreaterThan(0);
+  });
+
+  it('estimates distance with the haversine formula', () => {
+    // 广州塔 → 海心沙约 1.5km。
+    const meters = haversineMeters([113.3245, 23.1064], [113.3245, 23.12]);
+    expect(meters).toBeGreaterThan(1400);
+    expect(meters).toBeLessThan(1600);
+
+    const plan = straightLineRoute('driving', waypoints);
+    expect(plan.distanceMeters).toBe(plan.legs.reduce((sum, leg) => sum + leg.distanceMeters, 0));
+  });
+
+  it('rejects a route with fewer than two waypoints', () => {
+    expect(() => straightLineRoute('walking', [waypoints[0]])).toThrow(AmapApiError);
   });
 });
