@@ -10,6 +10,7 @@ export type Route =
   | { name: 'userProfile'; userId: number }
   | { name: 'map'; provinceCode?: string; cityCode?: string }
   | { name: 'help' }
+  | { name: 'adminDashboard' }
   | { name: 'adminUsers' }
   | { name: 'adminUserDetail'; userId: number }
   | { name: 'adminReports' }
@@ -45,6 +46,9 @@ export function parseRoute(hash: string): Route {
   }
   if (path === '/help') {
     return { name: 'help' };
+  }
+  if (path === '/admin') {
+    return { name: 'adminDashboard' };
   }
   if (path === '/admin/users') {
     return { name: 'adminUsers' };
@@ -119,6 +123,9 @@ export function routeToHash(route: Route): string {
   }
   if (route.name === 'help') {
     return '#/help';
+  }
+  if (route.name === 'adminDashboard') {
+    return '#/admin';
   }
   if (route.name === 'adminUsers') {
     return '#/admin/users';

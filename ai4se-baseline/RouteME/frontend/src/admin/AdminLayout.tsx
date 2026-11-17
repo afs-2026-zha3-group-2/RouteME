@@ -1,9 +1,10 @@
 import type { ReactNode } from 'react';
 import { adminMessages } from '../i18n/adminMessages';
 
-export type AdminTab = 'users' | 'reports' | 'service';
+export type AdminTab = 'dashboard' | 'users' | 'reports' | 'service';
 
 const TABS: Array<{ key: AdminTab; label: string; href: string }> = [
+  { key: 'dashboard', label: adminMessages.tabDashboard, href: '#/admin' },
   { key: 'users', label: adminMessages.tabUsers, href: '#/admin/users' },
   { key: 'reports', label: adminMessages.tabReports, href: '#/admin/reports' },
   { key: 'service', label: adminMessages.tabService, href: '#/admin/service' },
@@ -17,7 +18,7 @@ type Props = {
 };
 
 /**
- * 后台页头 + 三个 Tab + 返回前台。后台不新建第二套全局壳，
+ * 后台页头 + 四个 Tab + 返回前台。后台不新建第二套全局壳，
  * 路由变化只切换本组件内部的内容区。
  */
 export function AdminLayout({ active, title, subtitle, children }: Props) {

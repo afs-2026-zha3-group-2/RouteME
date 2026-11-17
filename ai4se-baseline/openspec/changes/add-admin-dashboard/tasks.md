@@ -70,15 +70,15 @@
 
 ## 5. 执行清单（openspec 任务追踪）
 
-- [ ] **T1 契约：`openapi.yaml` 0.18.0 + `/admin/dashboard` + 7 schema + `OpenApiTest`**
-- [ ] **T2 后端验收 Red：`AdminDashboardControllerTest` A1–A8**
-- [ ] **T3 后端响应模型：`AdminDashboardResponse` + 六个计数 record**
-- [ ] **T4 后端聚合服务：单时刻、六次查询、零填充、有效状态、五态、窗口**
-- [ ] **T5 后端控制器：`requireAdmin` + `no-store`**
-- [ ] **T6 前端纯函数 Red：`dashboardFormat` + `route`**
-- [ ] **T7 前端请求与类型：`types.ts` + `loadAdminDashboard`**
-- [ ] **T8 前端页面与图表：六卡、堆叠条、环形、文案、样式**
-- [ ] **T9 路由与导航：`#/admin` 落地、Tab 置首、入口改指**
-- [ ] **T10 E2E：M1–M5**
-- [ ] **T11 文档：接口知识库登记 `/admin/dashboard`**
-- [ ] **T12 回归与走查：后端全量、前端 typecheck/build/test、E2E、三档 × 双主题**
+- [x] **T1 契约：`openapi.yaml` 0.18.0 + `/admin/dashboard` + 7 schema + `OpenApiTest`**
+- [x] **T2 后端验收 Red：`AdminDashboardControllerTest` A1–A8**
+- [x] **T3 后端响应模型：`AdminDashboardResponse` + 六个计数 record**
+- [x] **T4 后端聚合服务：单时刻、六次查询、零填充、有效状态、五态、窗口**
+- [x] **T5 后端控制器：`requireAdmin` + `no-store`**
+- [x] **T6 前端纯函数 Red：`dashboardFormat` + `route`**
+- [x] **T7 前端请求与类型：`types.ts` + `loadAdminDashboard`**
+- [x] **T8 前端页面与图表：六卡、堆叠条、环形、文案、样式**
+- [x] **T9 路由与导航：`#/admin` 落地、Tab 置首、入口改指**
+- [x] **T10 E2E：M1–M5**
+- [x] **T11 文档：接口知识库登记 `/admin/dashboard`**
+- [x] **T12 回归与走查：后端全量、前端 typecheck/build/test、E2E、三档 × 双主题**
