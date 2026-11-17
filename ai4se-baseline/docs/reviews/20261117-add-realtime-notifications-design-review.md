@@ -92,17 +92,19 @@
 
 ## 7. 签署记录
 
-按 `@rule:artifact-review-gate`：`design.md` 需当前开发者 + 1 名非当前开发者且非 WAYNE 的成员；本报告需 WAYNE + 当前开发者。四个签署位缺一即未批准，故当前状态为**未批准**。
+按 `@rule:artifact-review-gate`：`design.md` 需当前开发者 + 1 名非当前开发者且非 WAYNE 的成员；本报告需 WAYNE + 当前开发者。四个签署位均已批准，可进入 `tasks.md`。
 
 | 对象 | 签署位 | 批准人 | 批准时间 | 结论 |
 |---|---|---|---|---|
-| `openspec/changes/add-realtime-notifications/design.md` | 1 | （待签） | — | 未签 |
-| `openspec/changes/add-realtime-notifications/design.md` | 2 | （待签：Jay / Lewis / Jacky / Neal 之一） | — | 未签 |
-| `docs/reviews/20261117-add-realtime-notifications-design-review.md` | 1 | （待签） | — | 未签 |
-| `docs/reviews/20261117-add-realtime-notifications-design-review.md` | 2 | （待签） | — | 未签 |
+| `openspec/changes/add-realtime-notifications/design.md` | 1 | Karena | 2026-11-17T17:11+0800 | 批准 |
+| `openspec/changes/add-realtime-notifications/design.md` | 2 | Jay | 2026-11-17T17:11+0800 | 批准 |
+| `docs/reviews/20261117-add-realtime-notifications-design-review.md` | 1 | WAYNE | 2026-11-17T17:11+0800 | 批准 |
+| `docs/reviews/20261117-add-realtime-notifications-design-review.md` | 2 | Karena | 2026-11-17T17:11+0800 | 批准 |
+
+- 签署时确认：面板入口保持 **click 展开**（`Popover trigger="click"`），不改为 hover；触屏、窄屏与键盘路径以点击为准，Escape 关闭并把焦点还给铃铛。
 
 ## 8. 下一步（非门禁建议）
 
-1. 收齐上表四个签署位；`design.md` 的第二签署人不得是 Karena 或 WAYNE。
-2. 签齐后写 `tasks.md`（T1 契约 → T8 E2E / 回归，每条任务回指 Requirement 与 ATDD 用例），再走一次 `all-specs-review` 与 tasks 签署。
+1. 四个签署位已收齐（上表）；`design.md` 的第二签署人为 Jay，满足「非当前开发者且非 WAYNE」。
+2. 写 `tasks.md`（T1 契约 → T8 E2E / 回归，每条任务回指 Requirement 与 ATDD 用例），再走一次 `all-specs-review` 与 tasks 签署。
 3. `tasks.md` 签齐后进入 P4：按 ATDD D1–D12 顺序先 Red 后 Green；先在本地跑后端 / 前端全量回归，再补 Playwright 双上下文与 1440 / 768 / 390 × 明暗走查。
