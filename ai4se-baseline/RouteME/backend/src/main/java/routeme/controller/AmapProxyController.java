@@ -32,18 +32,22 @@ import routeme.config.AmapProperties;
 @RequestMapping({"/api/amap", "/_AMapService"})
 public class AmapProxyController {
 
-    /** 与前端搜索、定位、路线规划实际使用的接口保持一致。 */
+    /** 与前端搜索、定位、路线规划实际使用的接口保持一致（含 JS 插件走的 v4 路径）。 */
     private static final Set<String> ALLOWED_PATHS = Set.of(
             "v3/place/text",
             "v3/place/around",
             "v3/place/detail",
+            "v3/assistant/inputtips",
             "v3/geocode/geo",
             "v3/geocode/regeo",
             "v3/ip",
             "v3/direction/walking",
             "v3/direction/driving",
             "v3/direction/bicycling",
-            "v3/direction/transit/integrated");
+            "v3/direction/transit/integrated",
+            "v4/direction/walking",
+            "v4/direction/driving",
+            "v4/direction/bicycling");
 
     private static final String MISSING_KEY_BODY =
             "{\"status\":\"0\",\"info\":\"AMAP_KEY_NOT_CONFIGURED\",\"infocode\":\"50000\"}";

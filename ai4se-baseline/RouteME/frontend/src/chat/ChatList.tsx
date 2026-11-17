@@ -21,7 +21,7 @@ export function ChatList({ partners, activeTripId, activeOtherId }: Props) {
             href={`#/chat/${partner.trip.id}/${partner.other.id}`}
             aria-current={active ? 'page' : undefined}
           >
-            <Avatar user={partner.other} size="sm" />
+            <Avatar user={partner.other} />
             <span className="ci-body">
               <span className="ci-name">{partner.other.nickname}</span>
               <span className="ci-trip">{partner.trip.title}</span>

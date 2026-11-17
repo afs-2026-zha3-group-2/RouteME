@@ -212,7 +212,7 @@ export function ChatPage({ currentUser, tripId, otherUserId }: Props) {
 
   return (
     <main className="chat-page">
-      <div className="page-head chat-page-head">
+      <div className="page-head">
         <div>
           <Typography.Title level={2} className="page-title">
             {tripMessages.chatNav}
@@ -231,29 +231,31 @@ export function ChatPage({ currentUser, tripId, otherUserId }: Props) {
         </Button>
       </div>
 
-      <ChatList partners={partners} activeTripId={activeTripId} activeOtherId={activeOtherId} />
+      <div className="chat-layout">
+        <ChatList partners={partners} activeTripId={activeTripId} activeOtherId={activeOtherId} />
 
-      {trip === null ? (
-        <section className="chat-main">
-          <Skeleton active paragraph={{ rows: 6 }} />
-        </section>
-      ) : (
-        <ChatMain
-          currentUser={currentUser}
-          trip={trip}
-          other={partner.other}
-          messages={messages}
-          error={messagesError}
-          content={content}
-          sending={sending}
-          canLeave={canLeave}
-          onContentChange={setContent}
-          onSend={send}
-          onProfile={() => openProfile(partner.other.id)}
-          onReport={() => setReportOpen(true)}
-          onLeave={leave}
-        />
-      )}
+        {trip === null ? (
+          <section className="chat-main">
+            <Skeleton active paragraph={{ rows: 6 }} />
+          </section>
+        ) : (
+          <ChatMain
+            currentUser={currentUser}
+            trip={trip}
+            other={partner.other}
+            messages={messages}
+            error={messagesError}
+            content={content}
+            sending={sending}
+            canLeave={canLeave}
+            onContentChange={setContent}
+            onSend={send}
+            onProfile={() => openProfile(partner.other.id)}
+            onReport={() => setReportOpen(true)}
+            onLeave={leave}
+          />
+        )}
+      </div>
 
       <ReportModal
         userId={currentUser.id}

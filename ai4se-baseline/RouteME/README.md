@@ -18,9 +18,9 @@
 | | `WaypointPanel` + `ItineraryPanel` | 途经点拖拽排序、删除、清空、出行方式、距离与时间 |
 | | `RouteLayer` | 高德路线折线 + 起终点/编号 Marker，与列表联动 |
 | | `TravelerMatchPanel` | 85% 同路 / 3 位同行者的聚合与详情弹窗 |
-| | `AmapService` | 搜索、逆地理、步行/驾车/骑行路线（RouteMe 数据模型） |
+| | `AmapService` | 搜索、地理编码、步行/驾车/骑行路线（`AMap.PlaceSearch/Geocoder/Walking/Driving/Riding` 插件，RouteMe 数据模型） |
 | | `companions` + `mockCompanions` | 同行者 Mock 数据模型与重合度计算（UI 不写死百分比） |
-| backend | `AmapProxyController` | `/api/amap/**` 与 `/_AMapService/**` 同源代理，补 Web 服务 Key / 安全密钥 |
+| backend | `AmapProxyController` | `/_AMapService/**` 同源代理，为 JS 插件请求补 `jscode` 安全密钥；另保留 `/api/amap/**` 供排查 |
 
 ### 环境变量
 
@@ -28,13 +28,14 @@
 |---|---|---|
 | `VITE_AMAP_JS_KEY` | `frontend/.env.local` | 高德 **Web 端（JS API）** Key，会出现在浏览器脚本中 |
 | `VITE_AMAP_SECURITY_CODE` | 可选 | 仅在 `VITE_AMAP_PROXY_PATH=off` 直连时使用；推荐留空走代理 |
-| `VITE_AMAP_PROXY_PATH` | 可选，默认 `/api/amap` | 前端 REST 代理前缀；`/_AMapService` 固定作为 JS API 安全代理一级路由 |
-| `AMAP_WEB_SERVICE_KEY` | 后端环境变量或 `backend/amap-local.yml` | 高德 **Web 服务** Key（或配合安全密钥使用的 JS Key） |
+| `VITE_AMAP_PROXY_PATH` | 可选，默认 `/api/amap` | 仅影响已停用的 REST 直连路径；`/_AMapService` 固定作为 JS API 安全代理一级路由 |
 | `AMAP_SECURITY_JS_CODE` | 后端环境变量或 `backend/amap-local.yml` | 高德 JS API 安全密钥 `securityJsCode`，只在后端使用 |
+| `AMAP_WEB_SERVICE_KEY` | 后端环境变量或 `backend/amap-local.yml` | 可选：拥有 Web 服务 Key 时用于 REST 排查；JS 插件链路不依赖它 |
 
-`backend/amap-local.yml` 与 `frontend/.env.local` 已被 git 忽略；示例见 `frontend/.env.example`。生产环境不要把 Web 服务 Key 或 `securityJsCode` 写进前端产物。
+`backend/amap-local.yml` 与 `frontend/.env.local` 已被 git 忽略；示例见 `frontend/.env.example`。生产环境不要把安全密钥写进前端产物。
 
-> 若高德控制台提示 `USERKEY_PLAT_NOMATCH` / `INVALID_USER_SCODE`，说明 Key 平台与用途不匹配或缺少安全密钥：请使用 Web 服务 Key，或把该 JS Key 对应的 `securityJsCode` 配到 `AMAP_SECURITY_JS_CODE`。
+> 本项目的 Key 是 **Web 端（JS API）** Key：直接调 REST 会返回 `USERKEY_PLAT_NOMATCH`，所以搜索与路线统一走 JS 插件，并由 `/_AMapService` 代理补 `securityJsCode`。
+> 若出现 `INVALID_USER_SCODE`，说明 `AMAP_SECURITY_JS_CODE` 缺失或与该 Key 不匹配（在高德控制台该 Key 详情页可看到安全密钥）。
 
 ### Mock 边界
 

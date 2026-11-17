@@ -24,6 +24,8 @@ class AmapProxyControllerTest {
     void onlyAllowsKnownWebServicePaths() {
         assertTrue(AmapProxyController.isAllowed("v3/place/text"));
         assertTrue(AmapProxyController.isAllowed("v3/direction/bicycling"));
+        // JS API Riding 插件走 v4 路径。
+        assertTrue(AmapProxyController.isAllowed("v4/direction/bicycling"));
         assertFalse(AmapProxyController.isAllowed("v3/unknown"));
         assertFalse(AmapProxyController.isAllowed(""));
     }
