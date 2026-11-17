@@ -1,4 +1,4 @@
-# ATDD 设计 — add-trip-cancel（REQ-019 / issue #28）
+# ATDD 设计 — add-trip-cancel（REQ-021 / issue #28）
 
 - **Change：** `add-trip-cancel`
 - **输入：** Delta Spec `trip-cancellation`（5 Requirement / 20 Scenario）、`design.md`、`dov-ac-review.md`、`g1-decision.md`

@@ -871,18 +871,29 @@
   }
 
   /* ---------------- S02 资料弹窗 ---------------- */
+  /* 信用分展示：与后端五档阈值一致（90 / 80 / 60 / 30），缺失时按初始 80。 */
+  function creditInfo(raw) {
+    var n = Number(raw);
+    var score = isFinite(n) ? Math.max(0, Math.min(100, Math.round(n))) : 80;
+    var label = score >= 90 ? '信用优秀' : score >= 80 ? '信用良好' : score >= 60 ? '信用一般' : score >= 30 ? '信用较低' : '信用风险';
+    var tone = score >= 90 ? 'is-excellent' : score >= 80 ? 'is-good' : score >= 60 ? 'is-fair' : score >= 30 ? 'is-low' : 'is-risk';
+    return { score: score, label: label, tone: tone };
+  }
+
   function profileModal(userId) {
     var u = S.user(userId);
     if (!u) return '';
     var st = S.stats(userId);
     var isMe = userId === S.state.currentUserId;
     var shared = S.me().interests.filter(function (x) { return u.interests.indexOf(x) > -1; });
+    var credit = creditInfo(u.creditScore);
     return '<div class="modal" role="dialog" aria-modal="true" aria-label="' + esc(u.nickname) + '的资料">' +
       '<div class="modal-head"><h2 class="modal-title">旅行者资料</h2>' +
       '<button class="icon-btn" data-action="close-overlay" type="button" aria-label="关闭">' + icon('x') + '</button></div>' +
       '<div class="modal-body"><div class="profile-top">' + avatar(u, 'xl') +
       '<span><span class="profile-name">' + esc(u.nickname) + (isMe ? ' <span class="badge dusk no-dot">这是你</span>' : '') + '</span>' +
       '<span class="profile-school" style="display:block">' + esc(u.school) + '</span>' +
+      '<span class="profile-credit ' + credit.tone + '">信用分：' + credit.score + ' / 100 · ' + credit.label + '</span>' +
       '<span class="muted" style="font-size:11.5px">加入于 ' + esc(relTime(u.joinedAt)) + '</span></span></div>' +
       '<p class="profile-bio">' + esc(u.bio) + '</p>' +
       '<div class="tc-tags" style="margin-top:14px">' + tags(u.interests, shared) + '</div>' +

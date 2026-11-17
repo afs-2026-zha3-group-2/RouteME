@@ -1,4 +1,4 @@
-# 技术设计 — add-trip-cancel（REQ-019 / issue #28）
+# 技术设计 — add-trip-cancel（REQ-021 / issue #28）
 
 - **Change：** `add-trip-cancel`
 - **输入：** Delta Spec（`specs/trip-cancellation/spec.md`）、`atdd-design.md`、G1 决策 C1–C7、`proposal.md`

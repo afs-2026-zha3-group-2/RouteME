@@ -1,6 +1,6 @@
 # P3 设计记录 — add-trip-cancel
 
-- **Change：** `add-trip-cancel`（REQ-019 / issue #28）｜ **阶段：** P3（Design & decompose）
+- **Change：** `add-trip-cancel`（REQ-021 / issue #28）｜ **阶段：** P3（Design & decompose）
 - **日期：** 2026-11-17 ｜ **记录人：** Neal（VL）
 - **分支：** `feature/add-trip-cancel`（worktree `.worktrees/add-trip-cancel`）
 

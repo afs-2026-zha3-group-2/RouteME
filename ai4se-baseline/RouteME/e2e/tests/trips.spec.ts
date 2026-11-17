@@ -534,19 +534,20 @@ test('detail page renders the route map with numbered pins and a route strip', a
 
   const section = page.locator('.detail-map-section');
   await expect(section).toBeVisible();
-  const map = section.locator('[data-testid="city-map"]');
-  await expect(map).toHaveAttribute('data-city', '440100');
-  await expect(map.locator('.map-pin.selected')).toHaveCount(3);
-  await expect(map.locator('[data-poi-id="广州-广州塔"] .map-selected-index')).toHaveText('1');
-  await expect(map.locator('[data-poi-id="广州-北京路"] .map-selected-index')).toHaveText('2');
-  await expect(map.locator('[data-poi-id="广州-陈家祠"] .map-selected-index')).toHaveText('3');
-  await expect(map.locator('.map-route-line')).toBeVisible();
+  await expect(section.locator('[data-testid="amap-container"]')).toBeVisible();
+
+  // 途经点用离线地名库定位成编号 Marker（起点/终点另有「起/终」标签）。
+  const pins = section.locator('.amap-overlay-marker');
+  await expect(pins).toHaveCount(3);
+  await expect(section.locator('.amap-stop-number')).toHaveText(['1', '2', '3']);
+  await expect(section.locator('.amap-stop-tag')).toHaveText(['起', '终']);
+  await expect(section.locator('.amap-route-svg path')).toHaveCount(2);
+
   // R2：只读详情地图不提供生成/加入动作。
-  await expect(section.locator('[data-testid="route-generate"]')).toHaveCount(0);
+  await expect(section.locator('[data-testid="amap-route-generate"]')).toHaveCount(0);
 
   await expect(section.locator('.route-strip-card')).toHaveCount(3);
-  await expect(section.locator('.route-strip-leg')).toHaveCount(2);
-  await expect(section.locator('.route-strip-leg').first()).toContainText(/步行 约 .+ km/);
+  await expect(section.locator('.route-strip-name')).toHaveText(['广州塔', '北京路', '陈家祠']);
 });
 
 test('route strip click focuses the map and read-only pins carry no add action', async ({ page }) => {
@@ -558,27 +559,35 @@ test('route strip click focuses the map and read-only pins carry no add action',
   await loginAs(page, 1);
   await page.goto(`/#/trips/${created.id}`);
 
-  const map = page.locator('.detail-map-section [data-testid="city-map"]');
-  const before = await map.getAttribute('viewBox');
+  const section = page.locator('.detail-map-section');
+  const pins = section.locator('.amap-overlay-marker');
+  await expect(pins).toHaveCount(3);
+  await expect(section.locator('.amap-stop-pin.is-active')).toHaveCount(0);
+
   await page.locator('.route-strip-card').nth(1).click();
-  await expect.poll(async () => map.getAttribute('viewBox')).not.toBe(before);
+  await expect(pins.nth(1).locator('.amap-stop-pin')).toHaveClass(/is-active/);
 
   // R2：已选 pin 点击只聚焦，不弹加入动作卡（只读语义）。
-  const focused = await map.getAttribute('viewBox');
-  await map.locator('[data-poi-id="广州-广州塔"]').dispatchEvent('click');
-  await expect.poll(async () => map.getAttribute('viewBox')).not.toBe(focused);
+  await pins.first().click();
+  await expect(pins.first().locator('.amap-stop-pin')).toHaveClass(/is-active/);
   await expect(page.locator('.detail-map-section .map-callout')).toHaveCount(0);
 });
 
-test('detail page degrades to text when stops are off the gazetteer', async ({ page }) => {
+test('detail page keeps the map and warns when a stop is off the gazetteer', async ({ page }) => {
   const title = `E2E 地图降级 ${Date.now()}`;
-  const created = await createTripViaApi(page, title);
+  const created = await createTripViaApi(page, title, todayIso(), todayIso(), {
+    // 第一个能离线定位，第二个不在任何地名库，用于验证「部分定位」降级。
+    stops: ['香洲港集合', '不存在的地点XYZ'],
+  });
   await loginAs(page, 1);
   await page.goto(`/#/trips/${created.id}`);
 
-  await expect(page.locator('.detail-map-section')).toHaveCount(0);
-  await expect(page.getByText('部分途经点不在地图地名库，路线地图未渲染。')).toBeVisible();
+  const section = page.locator('.detail-map-section');
+  await expect(section).toBeVisible();
+  await expect(section.locator('.amap-overlay-marker')).toHaveCount(1);
+  await expect(section.locator('.amap-trip-alert')).toContainText('有 1 个途经点未能定位');
   await expect(page.locator('.detail-stops')).toContainText('香洲港集合');
+  await expect(page.locator('.detail-stops')).toContainText('不存在的地点XYZ');
 });
 
 test('meeting edit syncs multiple areas and the API guards limit and ownership', async ({ page }) => {

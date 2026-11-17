@@ -1,10 +1,10 @@
-# 意图捕获 — REQ-019 取消行程（issue #28）
+# 意图捕获 — REQ-021 取消行程（issue #28）
 
 - **候选能力：** `trip-cancellation`（ADDED）
 - **来源：** issue #28「[P0] 取消行程」（GitHub `afs-2026-zha3-group-2/RouteME`，2026-11-17 读取）；落点页面「我的旅行 / 行程详情页」；原型 `docs/prototype/ui.js:410`（详情页取消入口）与 `main.js:646`（二次确认文案）
 - **捕获日期：** 2026-11-17 ｜ **记录人：** Neal（VL）
 - **分支：** `feature/add-trip-cancel`（worktree `.worktrees/add-trip-cancel`，从 `origin/main@c1c238a` 切出）
-- **编号说明：** 并行会话已在主工作区把 `REQ-018` 分配给 `add-experience-photos`（未提交），本需求按「后到者顺延」登记为 **REQ-019**。
+- **编号说明：** 并行会话已在主工作区把 `REQ-018` 分配给 `add-experience-photos`（未提交），本需求按「后到者顺延」登记为 **REQ-021**。
 - **范围说明：** #28 正文含信用分与免扣分审核。用户 2026-11-17 裁决：**信用分属于其他 story，本次只做取消行程主目标**；本 change 不新增信用分字段、信用记录、扣分规则与管理员审核。
 
 ## 原始意图（一句话）
@@ -46,7 +46,7 @@
 | D3 | 原因可见性 | 仅发布者与 **ACCEPTED** 同行者可见原因与说明；PENDING 及其他用户只看到「已取消」 | 详情响应需按请求人裁剪 |
 | D4 | 「其他原因」说明 | **必填，≤100 字**，前后端同时校验 | 原因枚举增加 `other`，说明列可空但仅限非 other |
 | D5 | 我的旅行归组 | 沿用现有四组；取消行程留在「我发布的」，已接受同行者留在「已匹配同行」，均显示「已取消」 | 不改聚合接口分组，只补状态文案 |
-| D6 | 编号 | `REQ-019` / `add-trip-cancel` | 避免与并行 `add-experience-photos`（REQ-018）冲突 |
+| D6 | 编号 | `REQ-021` / `add-trip-cancel` | 避免与并行 `add-experience-photos`（REQ-018）冲突 |
 
 ## 意图边界
 

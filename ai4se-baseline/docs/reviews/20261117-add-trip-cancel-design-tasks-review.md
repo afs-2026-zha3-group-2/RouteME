@@ -2,7 +2,7 @@
 
 - **Verdict: Partial**（BLOCKER 0 / WARNING 3（均落 P4 验证）/ SUGGESTION 4）｜ **签署：已完成（WAYNE + Neal + Jay，2026-11-17）**
 - **Scope：** `openspec/changes/add-trip-cancel/design.md`、`atdd-design.md`、`tasks.md`、`docs/prototype/` 取消相关改动
-- **Inputs：** Delta Spec（5 Requirement / 20 Scenario）、`proposal.md`、`dov-ac-review.md`、`g1-decision.md`、`requirements/REQ-019-trip-cancel.md`、as-is 代码（TripPlan / TripPlanServiceImpl / TripPlanMapper / TripController / ChatServiceImpl / ExperienceServiceImpl / UserProfileStatsServiceImpl / 前端 6 文件）
+- **Inputs：** Delta Spec（5 Requirement / 20 Scenario）、`proposal.md`、`dov-ac-review.md`、`g1-decision.md`、`requirements/REQ-021-trip-cancel.md`、as-is 代码（TripPlan / TripPlanServiceImpl / TripPlanMapper / TripController / ChatServiceImpl / ExperienceServiceImpl / UserProfileStatsServiceImpl / 前端 6 文件）
 - **Timestamp：** 2026-11-17T13:00+0800
 - **Reviewer：** Qoder（AI agent）
 

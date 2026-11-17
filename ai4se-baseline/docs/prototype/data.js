@@ -307,19 +307,19 @@
       {
         id: 'u_lin', nickname: '林见夏', initial: '夏', hue: 18, school: '大三 · 视觉传达',
         bio: '拍照比走路多。喜欢日落前一小时的光，能为了一个机位等很久。预算不高，但愿意为好吃的多走两公里。',
-        interests: ['摄影', '海边', '美食'], joinedAt: offsetTime(-64, 10, 0),
+        interests: ['摄影', '海边', '美食'], joinedAt: offsetTime(-64, 10, 0), creditScore: 80,
         username: 'linjianxia', city: '珠海', birthday: '', gender: '', major: '', job: '', mbti: '', travelStyle: '', avatarUrl: ''
       },
       {
         id: 'u_chen', nickname: '陈屿', initial: '屿', hue: 168, school: '研一 · 地理科学',
         bio: '周末基本在山里。走过的东西会记轨迹和补给点，队伍里我负责收尾，不会把人落下。',
-        interests: ['徒步', '自然', '露营'], joinedAt: offsetTime(-91, 10, 0),
+        interests: ['徒步', '自然', '露营'], joinedAt: offsetTime(-91, 10, 0), creditScore: 80,
         username: 'chenyu', city: '广州', birthday: '', gender: '', major: '', job: '', mbti: '', travelStyle: '', avatarUrl: ''
       },
       {
         id: 'u_su', nickname: '苏念', initial: '念', hue: 272, school: '大二 · 新闻学',
         bio: '为了吃可以跨城。逛展和夜市是我的固定行程，走路不快，行程里一定留坐下来的时间。',
-        interests: ['美食', '展览', '夜景'], joinedAt: offsetTime(-38, 10, 0),
+        interests: ['美食', '展览', '夜景'], joinedAt: offsetTime(-38, 10, 0), creditScore: 80,
         username: 'sunian', city: '广州', birthday: '', gender: '', major: '', job: '', mbti: '', travelStyle: '', avatarUrl: ''
       }
     ];

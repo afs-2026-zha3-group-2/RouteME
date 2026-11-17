@@ -1,4 +1,4 @@
-# 任务清单 — add-trip-cancel（REQ-019 / issue #28）
+# 任务清单 — add-trip-cancel（REQ-021 / issue #28）
 
 - **Change：** `add-trip-cancel`
 - **输入：** Delta Spec（`trip-cancellation`）、`atdd-design.md`、`design.md`（D1–D9）

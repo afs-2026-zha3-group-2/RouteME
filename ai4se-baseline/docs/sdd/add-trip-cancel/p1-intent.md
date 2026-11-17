@@ -1,22 +1,22 @@
 # P1 意图记录 — add-trip-cancel
 
-- **Change：** `add-trip-cancel`（REQ-019 / issue #28）｜ **阶段：** P1（Intent & proposal）
+- **Change：** `add-trip-cancel`（REQ-021 / issue #28）｜ **阶段：** P1（Intent & proposal）
 - **日期：** 2026-11-17 ｜ **记录人：** Neal（VL）
 - **分支：** `feature/add-trip-cancel`（worktree `.worktrees/add-trip-cancel`，从 `origin/main@c1c238a` 切出）
 
 ## 1. 阶段目标
 
-把 issue #28「取消行程」收敛为可判定的 REQ-019、影响面与 OpenSpec 提议；按用户裁决 D1 将信用分整体排除，只交付取消状态机与取消后的产品闭环。
+把 issue #28「取消行程」收敛为可判定的 REQ-021、影响面与 OpenSpec 提议；按用户裁决 D1 将信用分整体排除，只交付取消状态机与取消后的产品闭环。
 
 ## 2. 产出
 
 | 工件 | 路径 | 摘要 |
 |---|---|---|
-| 意图捕获 | [`intents/REQ-019-trip-cancel.md`](../../requirement-workspace/intents/REQ-019-trip-cancel.md) | issue #28 原始用户故事、取消规则、原因、善后、15 条 AC 与 4 个场景；现状差距；D1–D6 |
-| Ready 需求 | [`requirements/REQ-019-trip-cancel.md`](../../requirement-workspace/requirements/REQ-019-trip-cancel.md) | 六字段 + 20 场景 + 11 条 OQ（blocking 0）+ DoR（BLOCKER 0） |
-| 故事 | [`stories.md`](../../requirement-workspace/stories.md) REQ-019 段、[`stories/add-trip-cancel.story.md`](../../requirement-workspace/stories/add-trip-cancel.story.md) | S19（P0 / 迭代 2 / 3 点 / 详情与我的旅行） |
-| deep-dive | [`deep-dive.md`](../../requirement-workspace/deep-dive.md)「REQ-019 增补」 | 数据契约、边界归属、跨 REQ 一致性、展示契约、探针记录 |
-| 影响面 | [`impact-brief.md`](../../requirement-workspace/impact-brief.md)「19. REQ-019 变更影响」 | as-is → delta、blast radius、artifact impact、风险、拆分边界 |
+| 意图捕获 | [`intents/REQ-021-trip-cancel.md`](../../requirement-workspace/intents/REQ-021-trip-cancel.md) | issue #28 原始用户故事、取消规则、原因、善后、15 条 AC 与 4 个场景；现状差距；D1–D6 |
+| Ready 需求 | [`requirements/REQ-021-trip-cancel.md`](../../requirement-workspace/requirements/REQ-021-trip-cancel.md) | 六字段 + 20 场景 + 11 条 OQ（blocking 0）+ DoR（BLOCKER 0） |
+| 故事 | [`stories.md`](../../requirement-workspace/stories.md) REQ-021 段、[`stories/add-trip-cancel.story.md`](../../requirement-workspace/stories/add-trip-cancel.story.md) | S21（P0 / 迭代 2 / 3 点 / 详情与我的旅行） |
+| deep-dive | [`deep-dive.md`](../../requirement-workspace/deep-dive.md)「REQ-021 增补」 | 数据契约、边界归属、跨 REQ 一致性、展示契约、探针记录 |
+| 影响面 | [`impact-brief.md`](../../requirement-workspace/impact-brief.md)「21. REQ-021 变更影响」 | as-is → delta、blast radius、artifact impact、风险、拆分边界 |
 | 提案 | [`proposal.md`](../../openspec/changes/add-trip-cancel/proposal.md) | Why / What Changes / In-Out / D1–D6 / 影响面 / 残余风险 |
 | Delta Spec | [`specs/trip-cancellation/spec.md`](../../openspec/changes/add-trip-cancel/specs/trip-cancellation/spec.md) | ADDED 5 Requirement / 20 Scenario；`openspec validate --strict` valid |
 | P1 质量报告 | [`docs/ai4se-plugins/20261117-114804-quality-checklist-report.md`](../../docs/ai4se-plugins/20261117-114804-quality-checklist-report.md) | P1-1 ~ P1-4 Pass；P1-5 / P1-6 Skipped；Overall Pass |
@@ -29,7 +29,7 @@
 - **D3 原因可见性：** 仅发布者与 ACCEPTED 同行者；PENDING 与其他用户只见「已取消」。
 - **D4 其他原因：** 说明必填，1–100 字，前后端同时校验。
 - **D5 我的旅行归组：** 沿用四组；取消行程留在「我发布的」/「已匹配同行」，显示「已取消」。
-- **D6 编号与能力：** REQ-019 / `add-trip-cancel` / 新能力 `trip-cancellation`（ADDED）；REQ-018 被并行 `add-experience-photos` 占用。
+- **D6 编号与能力：** REQ-021 / `add-trip-cancel` / 新能力 `trip-cancellation`（ADDED）；REQ-018 被并行 `add-experience-photos` 占用。
 
 ## 4. 校验证据
 

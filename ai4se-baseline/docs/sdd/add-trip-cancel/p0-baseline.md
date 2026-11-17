@@ -1,6 +1,6 @@
 # P0 基线记录 — add-trip-cancel
 
-- **Change：** `add-trip-cancel`（能力 `trip-cancellation` ADDED）｜ **需求：** REQ-019（issue #28「[P0] 取消行程」）｜ **关联故事：** #28 取消行程
+- **Change：** `add-trip-cancel`（能力 `trip-cancellation` ADDED）｜ **需求：** REQ-021（issue #28「[P0] 取消行程」）｜ **关联故事：** #28 取消行程
 - **阶段：** P0（Project baseline）｜ **日期：** 2026-11-17
 - **记录人：** Neal（VL）
 - **分支：** `feature/add-trip-cancel`（worktree `.worktrees/add-trip-cancel`，从 `origin/main@c1c238a` 切出）
@@ -18,7 +18,7 @@
 | D3 | 取消原因可见性 | 仅发布者与已接受（ACCEPTED）同行者可见取消原因与「其他原因」说明；待处理申请者只看到「已取消」。 |
 | D4 | 「其他原因」说明 | **必填，≤100 字**，前后端同时校验。 |
 | D5 | 我的旅行归组 | 沿用现有四组：取消后仍留在「我发布的」，已接受同行者仍留在「已匹配同行」，均显示「已取消」；不新增分组。 |
-| D6 | 编号 | `REQ-019` / `add-trip-cancel`。REQ-018 已被并行会话的 `add-experience-photos` 占用（主工作区未提交），本 change 顺延。 |
+| D6 | 编号 | `REQ-021` / `add-trip-cancel`。REQ-018 由 `add-experience-photos`、REQ-019 由 `add-credit-account` 占用（REQ-020 预留给并行 `refine-detail-companions`），按「后到者顺延」本 change 定为 REQ-021；合并 `origin/main` 时确认。 |
 
 ## 3. 基线核对
 
@@ -91,8 +91,8 @@
 | 角色 | 姓名 | 本阶段确认内容 | 日期 |
 |---|---|---|---|
 | 当前开发者 | Neal（VL） | 基线证据可复现；承担 P1–P4 实现与阶段记录 | 2026-11-17 |
-| SM | 待签署 | 准入 P1；REQ-019 进入本迭代排期 | 待签署 |
-| IO | 待签署 | REQ-019 需求来源（issue #28），信用分不在本范围 | 待签署 |
+| SM | 待签署 | 准入 P1；REQ-021 进入本迭代排期 | 待签署 |
+| IO | 待签署 | REQ-021 需求来源（issue #28），信用分不在本范围 | 待签署 |
 
 **阶段结论：Pass（required 5/5；P0-4 Skipped 不适用）。** 下一步 P1：意图 / 需求 / 影响面 / 提案。
 

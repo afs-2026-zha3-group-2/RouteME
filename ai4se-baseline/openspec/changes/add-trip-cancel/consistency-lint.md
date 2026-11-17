@@ -27,8 +27,8 @@
 | L-01 | SUGGESTION | p2 | 根 `AGENTS.md` §UI design；`docs/knowledge/rules/quality/rules.md` | 宿主投影引用 `prototype-ui-alignment`，但权威区没有同名二级标题锚点（预存差异，非本 change 引入）；本 change 的 proposal / 评审均以普通路径与 `AGENTS.md` 引用，未写 `@rule:` | 由 rules-govern 另立变更处理锚点漂移；本 change 不修 | `.qoder/rules/project-rules.md` vs `docs/knowledge/rules/quality/rules.md` 二级标题清单 | AI-inference | [fact] |
 | L-02 | SUGGESTION | p2 | Delta R3；`openspec/specs/trip-plans/spec.md`「浏览未结束的旅行计划」 | 「已取消不出现在默认列表」在 `trip-plans` 已存在，本 change 在新能力中再次声明，存在双权威风险 | 明确列表过滤口径归 `trip-plans`；`trip-cancellation` 只声明取消动作与联动结果；P5 归档时核对两处措辞一致 | `openspec/specs/trip-plans/spec.md:38-52` | spec | [fact] |
 | L-03 | SUGGESTION | p2 | Delta R5；`TripPlanMapper.xml#selectExpiredIds`、`TripPlanServiceImpl.materializeIfExpired` | 到期物化只判断 `completed_at` 与结束日期；已取消行程若未排除，越过结束日期会被写入 `completed_at` 并发布结束事件，污染终态数据 | P3 设计排除 `cancelled_at` 非空；P4 补「取消行程越过结束日期后 `completed_at` 仍为空」回归 | `TripPlanMapper.xml:62-67`；`TripPlanServiceImpl:145-171` | code | [fact] |
-| L-04 | SUGGESTION | p2 | `proposal.md` 残余风险；REQ-019 §3 Out of scope；#28 正文 | #28 的 5 条信用相关 AC 被 D1 排除，但 issue 仍开放；读者对照 issue 可能误判漏做 | G1 由 IO 确认 D1 范围；P5 `summary.md` 记录信用分另立 story；后续需求单独承接 | 用户 2026-11-17 裁决 D1；issue #28 | proposal | [fact] |
-| L-05 | SUGGESTION | p2 | `proposal.md` 归档顺序；`deep-dive.md` ① | 契约 0.13.0 + V19 为暂定；`add-ai-itinerary` 计划 0.12.0 + V18，并行 `add-experience-photos` 亦待排号 | P3 定稿前复核实际号段；若被占用则顺延，并同步 `OpenApiTest` 版本断言 | `requirement-workspace/registry.md` REQ-017 / REQ-019 行 | config | [fact] |
+| L-04 | SUGGESTION | p2 | `proposal.md` 残余风险；REQ-021 §3 Out of scope；#28 正文 | #28 的 5 条信用相关 AC 被 D1 排除，但 issue 仍开放；读者对照 issue 可能误判漏做 | G1 由 IO 确认 D1 范围；P5 `summary.md` 记录信用分另立 story；后续需求单独承接 | 用户 2026-11-17 裁决 D1；issue #28 | proposal | [fact] |
+| L-05 | SUGGESTION | p2 | `proposal.md` 归档顺序；`deep-dive.md` ① | 契约 0.13.0 + V19 为暂定；`add-ai-itinerary` 计划 0.12.0 + V18，并行 `add-experience-photos` 亦待排号 | P3 定稿前复核实际号段；若被占用则顺延，并同步 `OpenApiTest` 版本断言 | `requirement-workspace/registry.md` REQ-017 / REQ-021 行 | config | [fact] |
 
 ## Checklist coverage
 
@@ -52,7 +52,7 @@
 | D1–D3 Design rules | N/A | 无 `design.md` |
 | p2-1 proposal scope vs Delta | Pass | 无静默扩张 / 丢弃；信用分显式 out |
 | p2-2 Delta 内部一致 | Pass | 「取消 → 关闭申请 / 只读聊天 / 保留历史 / 统计排除」与「禁止结束 / 再次取消 / 编辑 / 体验」互不矛盾 |
-| p2-3 proposal 关键场景有落点 | Pass | REQ-019 20/20；#28 in-scope AC 10/10 |
+| p2-3 proposal 关键场景有落点 | Pass | REQ-021 20/20；#28 in-scope AC 10/10 |
 | p2-4 tasks 方向检查 | N/A | 无 `tasks.md` |
 | p2-5 无法追溯的 Requirement | Pass | 无 |
 

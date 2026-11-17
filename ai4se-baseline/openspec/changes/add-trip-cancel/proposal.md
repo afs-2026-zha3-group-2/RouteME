@@ -1,8 +1,8 @@
 # 变更提案：add-trip-cancel
 
 - **触发：** issue #28「[P0] 取消行程」（迭代 2 ｜ 故事点 3 ｜ 落点：我的旅行 / 行程详情页）＋ 用户 2026-11-17 的范围与展示口径裁决 D1–D6
-- **需求条目：** `requirement-workspace/requirements/REQ-019-trip-cancel.md`
-- **意图捕获：** `requirement-workspace/intents/REQ-019-trip-cancel.md`
+- **需求条目：** `requirement-workspace/requirements/REQ-021-trip-cancel.md`
+- **意图捕获：** `requirement-workspace/intents/REQ-021-trip-cancel.md`
 - **能力：** `trip-cancellation`（ADDED）
 - **规模：** M（状态机扩展 + 取消端点与迁移 + 跨能力申请/聊天/统计善后 + 前端两处入口与原因选择）
 - **规则：** `@rule:api-contract`、`@rule:package-structure`、`@rule:java-patterns`、`@rule:web-coding-style`、`@rule:sdd-artifacts`、`prototype-ui-alignment`
@@ -73,7 +73,7 @@
 | D3 | 原因可见性 | 仅发布者与 ACCEPTED 同行者；PENDING 与其他用户只见「已取消」 |
 | D4 | 「其他原因」说明 | 必填，1–100 字，前后端同时校验 |
 | D5 | 我的旅行归组 | 沿用四组；取消行程留在「我发布的」/「已匹配同行」，显示「已取消」 |
-| D6 | 编号与能力 | REQ-019 / `add-trip-cancel` / 新能力 `trip-cancellation`（ADDED） |
+| D6 | 编号与能力 | REQ-021 / `add-trip-cancel` / 新能力 `trip-cancellation`（ADDED） |
 
 ## 影响面
 

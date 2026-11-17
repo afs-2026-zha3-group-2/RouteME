@@ -11,10 +11,10 @@
 
 | Check id | Required? | Status | Evidence |
 |----------|-----------|--------|----------|
-| P1-1 | yes | Pass | `requirement-workspace/`（intents/REQ-019、requirements/REQ-019、stories/add-trip-cancel、deep-dive、impact-brief） |
-| P1-2 | yes | Pass | `requirements/REQ-019-trip-cancel.md`：20 场景、blocking OQ 0、DoR BLOCKER 0 |
-| P1-3 | yes | Pass | `impact-brief.md` §19 REQ-019 变更影响 |
-| P1-4 | yes | Pass | `openspec/changes/add-trip-cancel/proposal.md` + `specs/trip-cancellation/spec.md`（`openspec validate add-trip-cancel --strict` valid）+ `stories.md` S19 |
+| P1-1 | yes | Pass | `requirement-workspace/`（intents/REQ-021、requirements/REQ-021、stories/add-trip-cancel、deep-dive、impact-brief） |
+| P1-2 | yes | Pass | `requirements/REQ-021-trip-cancel.md`：20 场景、blocking OQ 0、DoR BLOCKER 0 |
+| P1-3 | yes | Pass | `impact-brief.md` §21 REQ-021 变更影响 |
+| P1-4 | yes | Pass | `openspec/changes/add-trip-cancel/proposal.md` + `specs/trip-cancellation/spec.md`（`openspec validate add-trip-cancel --strict` valid）+ `stories.md` S21 |
 | P1-5 | no | Skipped | 未运行 `/sdd:explore`；issue #28 意图与边界已明确 |
 | P1-6 | no | Skipped | 未运行 `/sdd:agent-evalset`；本 change 非 agent 产品 |
 

@@ -1,8 +1,8 @@
 # AC / DoV review — add-trip-cancel
 
-- **Change:** `add-trip-cancel`（`trip-cancellation` ADDED，REQ-019 / issue #28）
+- **Change:** `add-trip-cancel`（`trip-cancellation` ADDED，REQ-021 / issue #28）
 - **Reviewed artifact:** [`specs/trip-cancellation/spec.md`](specs/trip-cancellation/spec.md)（5 Requirement / 20 Scenario；ADDED）
-- **Inputs:** [`proposal.md`](proposal.md)、`requirement-workspace/requirements/REQ-019-trip-cancel.md`、`requirement-workspace/intents/REQ-019-trip-cancel.md`、`requirement-workspace/impact-brief.md` §19、`requirement-workspace/deep-dive.md`「REQ-019 增补」、`openspec/specs/trip-plans/spec.md`（浏览排除已取消）、`openspec/specs/trip-companions/spec.md`（申请与聊天）、`docs/prototype/ui.js` / `main.js` / `store.js`
+- **Inputs:** [`proposal.md`](proposal.md)、`requirement-workspace/requirements/REQ-021-trip-cancel.md`、`requirement-workspace/intents/REQ-021-trip-cancel.md`、`requirement-workspace/impact-brief.md` §21、`requirement-workspace/deep-dive.md`「REQ-021 增补」、`openspec/specs/trip-plans/spec.md`（浏览排除已取消）、`openspec/specs/trip-companions/spec.md`（申请与聊天）、`docs/prototype/ui.js` / `main.js` / `store.js`
 - **Timestamp:** 2026-11-17T12:10+0800
 - **Reviewer:** Qoder（AI agent）
 - **Tooling:** `openspec validate add-trip-cancel --strict` → `Change 'add-trip-cancel' is valid`
@@ -21,37 +21,37 @@
 | Item | Result | Evidence | Notes |
 |---|---|---|---|
 | DoV-1 Scope matches proposal | Pass | `proposal.md` §范围 In scope 10 项 ↔ 5 Requirement；§Out of scope 6 项无对应需求 | 信用分 / 信用记录 / 免扣分 / 管理员审核明确 out（D1） |
-| DoV-2 Ambiguities listed or resolved | Pass | 下方「规格解释裁决 1–7」；REQ-019 §8 blocking OQ = 0 | 入口、可见性、说明、归组、编号均已裁决 |
+| DoV-2 Ambiguities listed or resolved | Pass | 下方「规格解释裁决 1–7」；REQ-021 §8 blocking OQ = 0 | 入口、可见性、说明、归组、编号均已裁决 |
 | DoV-3 Role concerns noted for residual risk | Pass | 下方「残余风险」 | IO：信用分 AC 被 D1 排除；SA：新能力与列表口径归属；AO：物化排除、原因裁剪、原型先行 |
 | DoV-4 No business implementation claimed done | Pass | 本阶段只改 Delta Spec；代码仅作为 as-is 证据 | `proposal.md` 残余风险明确 P3 / P4 才实现 |
 | DoV-5 Requirements trace to proposal / approved requirements | Pass | 下方「Requirement mapping」20/20；#28 AC in-scope 10/10 | 无孤儿场景，无规格外行为 |
 
 **Blocking gaps:** 无。G1-ready from the review's perspective；是否签署由 IO / SA 决定。
 
-## Requirement mapping（REQ-019 §4 → Delta Spec）
+## Requirement mapping（REQ-021 §4 → Delta Spec）
 
-| REQ-019 场景 | Delta Scenario | 覆盖判定 |
+| REQ-021 场景 | Delta Scenario | 覆盖判定 |
 |---|---|---|
-| S19-1 发布者取消招募中行程 | R1 / 发布者取消招募中的行程 | 完整（状态、取消字段、列表排除） |
-| S19-2 发布者取消已满员行程 | R1 / 发布者取消已满员的行程 | 完整 |
-| S19-3 非发布者不能取消 | R1 / 非发布者不能取消行程 | 完整（无入口、403、状态不变） |
-| S19-4 非可取消状态拒绝 | R1 / 非可取消状态不能取消行程 | 完整（409、状态不变） |
-| S19-5 详情页入口条件 | R1 / 取消入口按资格显示 | 完整（两处入口） |
-| S19-6 我的旅行入口条件 | R1 / 取消入口按资格显示 | 完整（两处入口） |
-| S19-7 原因必选 | R2 / 取消原因必选 | 完整（前后端拒绝） |
-| S19-8 原因字典 8 项 | R2 Requirement 陈述 + 取消原因必选 | 完整（8 项逐字列出） |
-| S19-9 其他原因说明 | R2 / 其他原因需要说明 | 完整（空 / 超长 / 合法） |
-| S19-10 二次确认内容与返回 | R2 / 取消前的二次确认、取消确认不产生变化 | 完整 |
-| S19-11 确认后状态迁移 | R1 / 发布者取消招募中 / 已满员 | 完整（记录时间与原因；other 记录说明） |
-| S19-12 首页与匹配列表排除 | R3 / 已取消行程不出现在首页与匹配列表 | 完整（含分页总数） |
-| S19-13 申请关闭与 PENDING 自动取消 | R4 / 待处理申请自动取消、取消后不再接受申请 | 完整（含「我申请的」可见结果） |
-| S19-14 ACCEPTED 保留 | R4 / 已接受同行者保留 | 完整 |
-| S19-15 聊天只读 | R4 / 已取消行程的聊天只读 | 完整（历史可读、发送拒绝、提示） |
-| S19-16 禁止结束/再次取消/编辑集合 | R5 / 取消后不能结束或再次取消、取消后不能编辑集合信息 | 完整 |
-| S19-17 无体验入口 | R5 / 已取消行程不能发表体验 | 完整（页面 + 服务端拒绝） |
-| S19-18 我的旅行历史与徽标 | R3 / 详情与我的旅行展示已取消 | 完整（四组不变、不进已完成） |
-| S19-19 原因可见性 | R3 / 取消原因按角色可见 | 完整（发布者 + ACCEPTED；其他仅状态） |
-| S19-20 统计 / 幂等 / 兼容 | R5 / 发布行程统计排除取消、取消后不能结束或再次取消 | 完整（统计、并发、旧数据） |
+| S21-1 发布者取消招募中行程 | R1 / 发布者取消招募中的行程 | 完整（状态、取消字段、列表排除） |
+| S21-2 发布者取消已满员行程 | R1 / 发布者取消已满员的行程 | 完整 |
+| S21-3 非发布者不能取消 | R1 / 非发布者不能取消行程 | 完整（无入口、403、状态不变） |
+| S21-4 非可取消状态拒绝 | R1 / 非可取消状态不能取消行程 | 完整（409、状态不变） |
+| S21-5 详情页入口条件 | R1 / 取消入口按资格显示 | 完整（两处入口） |
+| S21-6 我的旅行入口条件 | R1 / 取消入口按资格显示 | 完整（两处入口） |
+| S21-7 原因必选 | R2 / 取消原因必选 | 完整（前后端拒绝） |
+| S21-8 原因字典 8 项 | R2 Requirement 陈述 + 取消原因必选 | 完整（8 项逐字列出） |
+| S21-9 其他原因说明 | R2 / 其他原因需要说明 | 完整（空 / 超长 / 合法） |
+| S21-10 二次确认内容与返回 | R2 / 取消前的二次确认、取消确认不产生变化 | 完整 |
+| S21-11 确认后状态迁移 | R1 / 发布者取消招募中 / 已满员 | 完整（记录时间与原因；other 记录说明） |
+| S21-12 首页与匹配列表排除 | R3 / 已取消行程不出现在首页与匹配列表 | 完整（含分页总数） |
+| S21-13 申请关闭与 PENDING 自动取消 | R4 / 待处理申请自动取消、取消后不再接受申请 | 完整（含「我申请的」可见结果） |
+| S21-14 ACCEPTED 保留 | R4 / 已接受同行者保留 | 完整 |
+| S21-15 聊天只读 | R4 / 已取消行程的聊天只读 | 完整（历史可读、发送拒绝、提示） |
+| S21-16 禁止结束/再次取消/编辑集合 | R5 / 取消后不能结束或再次取消、取消后不能编辑集合信息 | 完整 |
+| S21-17 无体验入口 | R5 / 已取消行程不能发表体验 | 完整（页面 + 服务端拒绝） |
+| S21-18 我的旅行历史与徽标 | R3 / 详情与我的旅行展示已取消 | 完整（四组不变、不进已完成） |
+| S21-19 原因可见性 | R3 / 取消原因按角色可见 | 完整（发布者 + ACCEPTED；其他仅状态） |
+| S21-20 统计 / 幂等 / 兼容 | R5 / 发布行程统计排除取消、取消后不能结束或再次取消 | 完整（统计、并发、旧数据） |
 
 ## Living Spec 基线保留
 

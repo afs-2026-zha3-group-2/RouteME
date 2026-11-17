@@ -1061,21 +1061,211 @@ REQ-010：聊天页按原型重构、聊天准入与退出语义调整、集合�
 - **后续候选（均需另开需求）：** 独立体验详情页；集合区域改为发布必填；参考发布的来源统计。
 - **质量自检（split-heuristics）：** 子目标一句话可说明 ✓；端到端可观察（已结束行程 / 体验卡 → 发布页 → 预填 → 提交独立计划）✓；可独立运行 ✓；capability 名真实 ✓；无依赖环 ✓。
 
-## 19. REQ-019 变更影响 — 取消行程（issue #28）
+## 18. REQ-018（S16 增强项）变更影响 — 游后体验图片上传
+
+### 18.1 Requirement set
+
+- REQ-018 游后体验图片上传（Ready：`requirements/REQ-018-experience-photos.md`；意图：`intents/REQ-018-experience-photos.md`）。
+- 裁决 D1–D4（2026-11-17）：两步上传 + 本地磁盘；≤6 张 / ≤5MB / 三种格式；首页卡片不变；仅体验、作者可管理。
+- 裁决 D5–D8（2026-11-17）：不生成服务端缩略图（原图 + `loading="lazy"`）；上传时全部剥离 EXIF；>24 小时未绑定图片懒清理；不做自动审核（沿用举报入口）。
+
+### 18.2 As-is asset inventory（evidence paths）
+
+| 层 | 资产 | 现状 | 证据 |
+|---|---|---|---|
+| 数据库 | `trip_experiences` | 三字段，无图片 | `V8__create_trip_experiences.sql:1-13` |
+| 契约 | `ExperienceWriteRequest` / `Experience` | 三字段，无图片 | `openapi.yaml:2180-2200` |
+| 后端 | `ExperienceController` / `ExperienceServiceImpl.upsert` | JSON upsert，无上传端点 | `ExperienceController.java:73-77`、`ExperienceServiceImpl.java:59-63` |
+| 前端 | `ShareExperiencePage` | 三面板，无上传位 | `ShareExperiencePage.tsx:178-234` |
+| 前端 | `ExperienceCard` | 内置封面 | `ExperienceCard.tsx:24-29` |
+| 详情 | `TripDetailPage` 体验列表 | 文字 + 作者 + 强度 | `TripDetailPage.tsx:524-535` |
+| 测试 | `experiences.spec.ts` | 9 例，含「无上传入口」反向断言 | `experiences.spec.ts:238` |
+| 原型 | 分享页 / 体验卡 | 无上传位，内置封面 | `ui.js:805-840`、`styles.css:942-950` |
+| 先例 | 头像上传 | multipart / 魔数 / ≤2MB / 本地落盘 / 公开读取 | `openapi.yaml:215-257`、`application.yaml:24-27`、`.gitignore:45-46` |
+| Living Spec | `trip-experiences` | 「纯文字 + 内置封面」展示口径 | `openspec/specs/trip-experiences/spec.md:45,59-63` |
+| 未归档 change | `refine-experience-share` | 同改 `trip-experiences`，图片上传在 Out of scope | `openspec/changes/refine-experience-share/proposal.md:45,131` |
+
+### 18.3 As-is → proposed delta（逐资产）
+
+| 资产 | As-is | Proposed delta | 风险 / 备注 |
+|---|---|---|---|
+| `trip_experiences` | 三字段 | 不改表；新增 `trip_experience_photos` 子表 | 迁移号与 `add-ai-itinerary`（计划 V18）串行 |
+| `openapi.yaml` | 0.11.0，体验三字段 | 新增 multipart 上传端点、图片读取端点、体验图片字段；版本在 P3 定 | 与在途 change 的 0.12.0 冲突需排号 |
+| 后端 | 无上传 / 存储 | 新增上传（魔数 + EXIF 剥离）、读取、归属校验、绑定与懒清理；`ExperienceServiceImpl.upsert` 扩展 | 复用头像模式；注意事务与文件清理顺序 |
+| 分享页 | 三面板 | 新增图片上传位（预览 / 删除 / 排序 / 失败重试） | 与 R2 双栏布局兼容；≤900px 单列 |
+| 详情页 | 文字列表 | 新增首图缩略图 + 查看全部 | 不改行程信息与申请入口 |
+| 首页卡片 | 内置封面 | **不变** | 反向验证：E2E 封面断言保持 |
+| 图片查看层 | 无 | 新增浮层（上一张 / 下一张 / 关闭） | 键盘与读屏语义 |
+| 原型 | 无上传位 | 先改 `prototype.html` / `ui.js` / `styles.css` | 规则要求原型先行 |
+| 测试 | 反向断言无上传 | 改正向；新增上传 / 编辑 / 展示 / 权限 / 兼容用例 | E2E 依赖真实文件与隔离目录 |
+| Living Spec | 纯文字 + 内置封面 | MODIFIED「游后体验的内容口径与纯文字降级」的展示口径（图片为可选增强） | 归档时与 `refine-experience-share` 串行 |
+
+### 18.4 Blast radius（应用架构）
+
+- 应用层：前端（分享页、详情页、图片查看层）+ 后端（体验 controller/service、文件存储、静态读取）+ 契约 + 数据库。
+- 不变：`trip-plans` 行程模型与发布校验、`trip-companions` 申请 / 聊天、`user-profile` 头像端点、首页体验卡。
+- 运行期：本地磁盘目录新增 `SqlLite/uploads/experience-photos/`；`uploads/` 已 gitignore，不需要新部署组件。
+- 跨边界：图片读取为公开只读端点，与头像读取同模式；上传需会话。
+
+### 18.5 Artifact impact（specs / tests / docs）
+
+| Artifact | Impact |
+|---|---|
+| Living Spec | `openspec/specs/trip-experiences/spec.md` MODIFIED（展示口径 + 图片字段 / 端点） |
+| Delta Spec | 新建 `openspec/changes/add-experience-photos/specs/trip-experiences/spec.md` |
+| 原型 | `docs/prototype/prototype.html` / `ui.js` / `styles.css` |
+| 契约 | `RouteME/openapi.yaml`（版本在 P3 定） |
+| 迁移 | `V18__...` 或顺延（P3 定） |
+| 前端 | `ShareExperiencePage`、`TripDetailPage`、`ExperienceCard`（不变）、`tripMessages`、`styles.css`、`types.ts`、`api.ts` |
+| 后端 | 上传 / 读取 controller、service、存储组件、`ExperienceWriteRequest` / `ExperienceResponse` |
+| 测试 | 后端上传校验与归属用例；前端表单 / 预览用例；E2E 上传、编辑、展示、权限、历史兼容 |
+| 文档 | registry / handoff / stories / deep-dive / impact brief / SDD P1–P4 记录 |
+
+### 18.6 Dual-track notes（OpenSpec vs agile）
+
+- OpenSpec：新 change `add-experience-photos`（`trip-experiences` MODIFIED）。
+- Agile：S16 增强项，不新开故事；原 S16 3 点不含图片，点数由 SM 在排期时确认。
+
+### 18.7 Risks & blockers
+
+| 级别 | 项 | 说明 / 缓解 |
+|---|---|---|
+| Blocker | 无 | blocking OQ=0、DoR BLOCKER=0、A0 ⑨–⑫ 全过 |
+| Risk | 契约 / 迁移号撞车 | `add-ai-itinerary` 计划 0.12.0 + V18；P3 统一排号 |
+| Risk | 与 `refine-experience-share` 同改 `trip-experiences` | 本 change 归档必须排在其后或与其串行 |
+| Risk | 本地磁盘容量与孤儿文件 | 上限 + 清理策略；E2E 用隔离目录 |
+| Risk | 图片 EXIF 含精确位置 | D6 已定上传时全部剥离；P4 用带 GPS 样本验证 |
+| Risk | 孤儿文件累积 | D7 懒清理 >24h 未绑定；E2E 用隔离目录 |
+| Risk | 无自动审核 | D8 不做；依赖现有举报入口与人工处理，记为残余风险 |
+| Risk | 首页信息密度 | D3 明确首页卡片不变，E2E 反向验证 |
+| Risk | E2E 与共享 `test-results/` | 沿用现有隔离产物目录策略 |
+
+### 18.8 Suggested split boundaries（供 proposal-split / story-split）
+
+- **单 change：** `add-experience-photos`（`trip-experiences` MODIFIED），不拆多个 capability。
+- **单故事：** S16 增强项；不新开故事，避免与原型故事列表双维护。
+- **切片建议（P3 任务顺序）：** 契约 + 迁移 → 后端上传（魔数 / EXIF）/ 读取 / 归属 / 懒清理 → 分享页上传与编辑 → 详情页展示 → 历史兼容与 E2E 回归 → 原型与文档。
+- **质量自检（split-heuristics）：** 子目标一句话可说清 ✓；端到端可观察（上传 → 保存 → 详情可见 → 编辑排序）✓；可独立运行 ✓；capability 名真实 ✓；无依赖环 ✓（仅依赖已完成的上传先例）。
+
+## 19. REQ-019 变更影响 — 信用分账户与等级展示（信用系统迭代 1）
+
+- **日期：** 2026-11-17 ｜ **触发：** `/sdd:p1`（用户提供 P0 故事 + 8 项裁决 D1–D8）
+- **粒度：** 应用架构（数据所有权 / 注册集成点 / 个人主页展示面 / 管理端边界），非代码设计
+- **基线：** `main@cf3ed76`（P1/P2 期间）→ 合并 `origin/main@77ab02b` 时发现 REQ-018 已被 `add-experience-photos` 占用，本需求按「后到者顺延」改为 **REQ-019**
+
+### 19.1 Requirement set
+
+- `requirement-workspace/requirements/REQ-019-credit-account.md`（Ready 条目，16 场景 C-1 ~ C-16，blocking OQ 0，DoR BLOCKER 0）
+- `requirement-workspace/intents/REQ-019-credit-account.md`（意图捕获 + 证据锚点 + D1–D11）
+- 新增能力：`user-credit`（ADDED）；依赖 `user-profile` / `user-profiles`（未归档，只读字段扩展）与 `user-auth`（注册集成点）
+- 用户裁决：D1 0–100 五档（0–120 方案作废）/ D2 本轮只做用户端 / D3 账户表 + 账本表 / D4 本人与他人同口径、明细不展示 / D5 统一回填 80 / D6 落地记账服务 / D7 扩展个人主页响应 / D8 `add-credit-account` + `user-credit` / D9 不改 `user-auth` / D10 等级英文码 + 前端映射 / D11 零变化仍留一条 `applied_delta = 0` 记录
+
+### 19.2 As-is asset inventory（evidence paths）
+
+| 资产 | 路径 | 现状 |
+|---|---|---|
+| 信用分实现 | 全仓 grep `信用分 / 信誉分 / credit_score / creditScore / reputation` | **0 命中**：无实现、无规格、无迁移、无原型 |
+| 用户表 | `RouteME/backend/src/main/resources/db/migration/V3__create_demo_users.sql`、`V10__add_user_profile.sql` | 仅昵称 / 首字头像 / 学校 / 简介 / 兴趣 + 资料八列；无分数、无角色 |
+| 注册链路 | `RouteME/backend/src/main/java/routeme/service/impl/AuthServiceImpl.java` | `register` 为 `@Transactional`；校验 → `DemoUserService.createAccount` → `issue` |
+| 账号写入 | `RouteME/backend/src/main/java/routeme/service/DemoUserService.java` / `impl/DemoUserServiceImpl.java` | 注册与演示账号共用的唯一写入口 |
+| 个人主页接口 | `RouteME/backend/src/main/java/routeme/controller/UserProfileController.java`、`service/impl/UserProfileServiceImpl.java`、`response/UserProfileResponse.java` | `GET /api/users/{userId}/profile`；`@JsonInclude(NON_NULL)`；本人 / 他人仅生日差异 |
+| 个人主页页面 | `RouteME/frontend/src/profile/ProfilePage.tsx` | `#/users/{id}`；hero + 资料卡；单次 `loadUserProfile` |
+| 前端类型 / API | `RouteME/frontend/src/types.ts`（`UserProfile`）、`RouteME/frontend/src/api.ts`（`loadUserProfile`） | 需同步新增只读字段 |
+| 文案 | `RouteME/frontend/src/i18n/tripMessages.ts`（`profile*`） | 等级 / 分数文案落点 |
+| 既有账号 | `V3`、`V12`（id 4 周野）、`V13`、`V14`、`V15` | 4 个演示用户 + 已注册账号，均需回填 |
+| 契约 | `RouteME/openapi.yaml`（`info.version: 0.11.0`、`components.schemas.UserProfile`） | 需追加只读字段并升次版本 |
+| 迁移 | `RouteME/backend/src/main/resources/db/migration` | 头为 `V17__meeting_areas.sql` |
+| 管理端 | 全仓 grep `admin / 管理后台`；`app_users` 列 | **0 命中**；无角色列、无端点、无页面 |
+| Living Spec | `openspec/specs/user-auth/spec.md`「注册账号」；`openspec/specs/design-system/spec.md` | 注册需求不含信用分；展示令牌可复用 |
+| 未归档相关 change | `openspec/changes/add-user-profile/`（`user-profile` ADDED）、`openspec/changes/add-user-profiles/`（`user-profiles` ADDED） | 个人主页响应归属方，本需求在其上追加字段 |
+| 原型 | `docs/prototype/stories.html`、`docs/prototype/discovery-cn.html` | 信用体系列为 MVP 之外 / 后续，无页面骨架 |
+
+### 19.3 As-is → proposed delta（逐资产）
+
+| 资产 | As-is | Proposed delta |
+|---|---|---|
+| 数据表 | 无信用相关表 | **新增** `user_credit_account`（每用户 1 条，`score` 0–100）+ `credit_ledger`（append-only，含前后快照与幂等键）；**不改** `app_users` |
+| 历史数据 | 4 个演示用户 + 已注册账号无分数 | 迁移回填 80（全表，不只覆盖有凭据账号） |
+| 注册链路 | 只建账号与会话 | 同事务内建信用账户并置 80；失败分支不落账户 |
+| 个人主页接口 | 返回资料 + `joined_at` + `stats` | 追加只读信用字段（分数 + 等级），本人 / 他人同口径；非空值（破 `NON_NULL` 省略） |
+| 个人主页页面 | hero + 资料卡，无信用区 | 新增信用状态展示（分数 + `/ 100` + 等级文字，不只颜色）；资料未完善仍展示 |
+| 资料保存接口 | 用户可写资料字段 | 信用字段不属于可写字段；携带即忽略（无写分端点） |
+| 记账能力 | 无 | 新增内部记账服务：0–100 裁断、实际生效量、前后快照、同事务写账本、幂等键唯一约束；**无业务事件调用方** |
+| 契约 | 0.11.0 | 次版本 + `UserProfile` 新字段（`credit_score` + `credit_level`，等级取 `excellent` / `good` / `fair` / `low` / `risk`）；版本号与迁移号在 P3 排他确认（REQ-016 / REQ-017 已占用 V17 / V18 与 0.12.0） |
+| 管理端 | 不存在 | **无 delta**（D2 推迟；AC3 / AC4 / AC6 管理端一半不在本需求） |
+| Living Spec | `user-auth` 注册需求不含信用分 | 新增 `user-credit` 规格；D9 裁定不改 `user-auth`「注册账号」 |
+| 原型 | 无信用分页面 | P3 需补一个原型截点（个人主页信用状态）再对齐实现 |
+
+### 19.4 Blast radius（应用架构）
+
+- **后端（1 个新能力 + 2 处集成）：** 新增 `user-credit` 的实体 / mapper / service / 记账服务；注册链路插入账户初始化；个人主页读取路径拼接信用字段。
+- **数据（2 表 + 1 迁移）：** 账户表与流水表；回填 80；不动既有表结构与既有种子。
+- **契约（1 处扩展）：** `UserProfile` 追加只读字段；无新端点。
+- **前端（1 页 + 类型 + 文案）：** `ProfilePage` 展示信用状态；`types.ts` / `tripMessages.ts` 同步；无新路由、无新页面。
+- **管理端（0）：** 不新增角色、端点与页面。
+- **不影响：** 首页、行程、申请、聊天、体验、举报；`ProfileModal` 与他人摘要接口不变。
+- **运行时风险面：** 注册事务多一次写入（同库同事务，无新依赖）；个人主页读取多一次按用户查询。
+
+### 19.5 Artifact impact（specs / tests / docs）
+
+| 工件 | 影响 |
+|---|---|
+| OpenSpec Delta | `user-credit` **ADDED**（账户 / 初始化与回填 / 五档派生 / 展示口径 / 只读 / 账本与记账（含零变化留痕）/ 越界裁断）；无 MODIFIED、无 REMOVED |
+| 长期规格 | 归档后新增 Living Spec `openspec/specs/user-credit/spec.md` |
+| 契约 | `openapi.yaml` 次版本 + `UserProfile` 新字段；后端契约测试同步 |
+| 后端测试 | 记账服务单测（裁断 / 快照 / 等式 / 幂等键）；注册集成测试（成功建账户 80、失败无账户）；个人主页响应断言（本人 / 他人 / 历史账号 / 资料未完善） |
+| 前端测试 | 等级派生纯函数单测（五档边界）；展示串断言 |
+| E2E | 注册 → 个人主页看到「80 / 100 · 信用良好」；他人视角看到同一分数；无明细入口 |
+| 知识库 | `docs/knowledge/interfaces/README.md` 需登记 `GET /users/{id}/profile` 新字段 |
+| 阶段记录 | `docs/sdd/add-credit-account/p1..p4`；`docs/sdd/README.md` 索引 |
+| 评审 | `docs/reviews/20261117-add-credit-account-proposal-review.md`、`-spec-review.md` |
+
+### 19.6 Dual-track notes（OpenSpec vs agile）
+
+- **OpenSpec 轨：** 单 change `add-credit-account`，单能力 `user-credit`（ADDED）；个人主页字段扩展写在同一 Delta，不新建 `user-profile` delta（避免与未归档 change 撞块）。
+- **Agile 轨：** 故事「信用分账户与等级展示」（信用系统迭代 1 / P0 / 2 点）即业务口径；不另拆多条故事（尺寸小于拆分阈值，且四件事必须同批交付才能闭环）。
+- **并列轨道：** `creditscore-account` 与后续「计分事件」「管理后台」分属不同故事，本需求不预留空壳端点。
+
+### 19.7 Risks & blockers
+
+| 级别 | 项 | 说明 / 缓解 |
+|---|---|---|
+| Risk | 契约版本号撞号 | REQ-017 已声明 0.12.0；本需求升次版本前必须在 P3 按合并顺序确认 |
+| Risk | 迁移号撞号 | main 头为 V17；REQ-016 声明 V17、REQ-017 声明 V18；本需求迁移号在 P3 排他确认（不预设 V18 / V19） |
+| Risk | `NON_NULL` 序列化导致字段被省略 | 信用字段必须非空；实现后需断言「他人视角也含该键」 |
+| Risk | 历史账号漏回填 | 回填按 `app_users` 全表，不只按有登录凭据的账号；E2E 覆盖 id 4 等无凭据账号 |
+| Risk | 未归档 change 交叉 | `add-user-profile` / `add-user-profiles` 尚未归档；本需求只追加字段，不改其 Requirement 语义；归档顺序不影响本 change 通过 |
+| Risk | 管理端 AC 被误认为未完成 | D2 已显式推迟；proposal / 需求 / registry 均标注推迟范围 |
+| Risk | 等级英文码与前端文案不一致 | 契约固定五个码值，前端映射集中在 i18n；契约测试断言码值集合，E2E 断言展示文字 |
+| Risk | 零变化记录被误当成异常数据 | Delta 明确「变更前 = 变更后、实际变化量 0」为合法记录；记账服务单测覆盖该分支 |
+| Risk | 原型无骨架 | `@rule:prototype-ui-alignment`；P3 先补原型截点再实现 |
+| Blocker | 无 | blocking OQ = 0；DoR BLOCKER = 0；A0 ⑨–⑫ 全过 |
+
+### 19.8 Suggested split boundaries（供 proposal-split / story-split）
+
+- **一个 change：** `add-credit-account` ← REQ-019（信用系统迭代 1 / Story 1）。
+- **不并入计分故事：** 赞 / 退出 / 举报 / 月度上限 / 封禁属后续故事；本 change 只交付底座与展示，不预留业务事件端点。
+- **不并入管理后台：** 管理端能力不存在（无角色列、无端点、无页面），另开故事。
+- **阶段：** 单阶段；无归档前置依赖（`user-credit` 全新能力），但需与 REQ-016 / REQ-017 协调契约版本与迁移号。
+- **质量自检（split-heuristics）：** 子目标一句话可说明 ✓；端到端可观察（注册 → 个人主页看到「80 / 100 · 信用良好」）✓；可独立运行 ✓；capability 名真实（`user-credit`）✓；无依赖环 ✓；场景 15 条 ≤ 单 change 阈值 ✓。
+
+## 21. REQ-021 变更影响 — 取消行程（issue #28）
+
+> 编号说明：REQ-019 由 `add-credit-account` 占用、REQ-020 由并行 `refine-detail-companions` 预留；本需求顺延为 REQ-021，故事 S21。
 
 - **日期：** 2026-11-17 ｜ **触发：** `/sdd:p1`（issue #28；用户裁决 D1：信用分不在本 change）
 - **粒度：** 应用架构（状态 / 入口 / 契约 / 联动消费点），非代码设计
 - **基线：** `origin/main@c1c238a`（worktree `feature/add-trip-cancel`）
 
-### 19.1 Requirement set
+### 21.1 Requirement set
 
-- `requirement-workspace/requirements/REQ-019-trip-cancel.md`（六字段 + 20 场景 + OQ + DoR）
-- `requirement-workspace/intents/REQ-019-trip-cancel.md`
-- `requirement-workspace/stories/add-trip-cancel.story.md`（S19）
+- `requirement-workspace/requirements/REQ-021-trip-cancel.md`（六字段 + 20 场景 + OQ + DoR）
+- `requirement-workspace/intents/REQ-021-trip-cancel.md`
+- `requirement-workspace/stories/add-trip-cancel.story.md`（S21）
 - 能力：`trip-cancellation`（ADDED）；`trip-plans` / `trip-companions` / `trip-experiences` / `user-profiles` 只读消费。
 - **Delta：** `openspec/changes/add-trip-cancel/specs/trip-cancellation/spec.md`（ADDED，5 Requirement / 20 Scenario）。
 
-### 19.2 As-is asset inventory（evidence paths）
+### 21.2 As-is asset inventory（evidence paths）
 
 | 资产 | 路径 | 现状 |
 |---|---|---|
@@ -1098,7 +1288,7 @@ REQ-010：聊天页按原型重构、聊天准入与退出语义调整、集合�
 | 现有 E2E | `RouteME/e2e/tests/trips.spec.ts:351` | 非本人无取消按钮 |
 | 阶段记录 | `docs/sdd/README.md` | 已新增 `add-trip-cancel` 行 |
 
-### 19.3 As-is → proposed delta（逐资产）
+### 21.3 As-is → proposed delta（逐资产）
 
 | 资产 | As-is | Proposed delta |
 |---|---|---|
@@ -1112,12 +1302,12 @@ REQ-010：聊天页按原型重构、聊天准入与退出语义调整、集合�
 | 聊天 | 只对已结束只读 | 取消后同样只读，并提示「该行程已取消」 |
 | 体验 | 只认已结束 | 不改规则；补取消回归断言 |
 | 统计 | 发布行程 = 全部 | 排除已取消 |
-| 契约 | 0.11.0 四态 | 次版本递增；枚举 + 取消端点 + 取消字段（按人裁剪） |
-| 迁移 | head V17 | 新增 V19（V18 由在途 `add-ai-itinerary` 占用） |
+| 契约 | 0.11.0 四态 | 0.13.0；枚举 + 取消端点 + 取消字段（按人裁剪） |
+| 迁移 | head V17 | 新增 V19（V18 由在途 `add-credit-account` / `add-ai-itinerary` 占用） |
 | 原型 | 详情页入口 | 新增我的旅行入口、原因选择、取消态样式（原型先行） |
 | 信用分 | 无 | **无**（D1，不在本 change） |
 
-### 19.4 Blast radius（应用架构）
+### 21.4 Blast radius（应用架构）
 
 - **页面（3）：** 行程详情、我的旅行、聊天页（只读提示）。
 - **能力（1 新增 + 5 消费）：** `trip-cancellation`（ADDED）；`trip-plans`（状态与列表）、`trip-companions`（申请/聊天/我的旅行）、`trip-experiences`（资格只读）、`user-profiles`（统计）、`design-system`（样式令牌）。
@@ -1127,41 +1317,40 @@ REQ-010：聊天页按原型重构、聊天准入与退出语义调整、集合�
 - **知识库：** P4 后回写行程生命周期 / 申请 / 聊天的取消语义。
 - **风险面：** 取消态与「旅行中」的优先级、可见性裁剪、迁移/契约号段冲突。
 
-### 19.5 Artifact impact（specs / tests / docs）
+### 21.5 Artifact impact（specs / tests / docs）
 
 | 类型 | 影响 |
 |---|---|
 | Spec（Delta） | `trip-cancellation` ADDED（5 Requirement / 20 Scenario）；不改 `trip-plans` / `trip-companions` 既有块 |
 | Proposal | `openspec/changes/add-trip-cancel/proposal.md`（D1–D6 + 影响面 + 残余风险） |
-| Story | `stories.md` 新增 REQ-019 / S19 段与追溯；新增 `stories/add-trip-cancel.story.md` |
-| Registry / handoff | 新增 REQ-019 行与 change 映射；记录编号顺延原因 |
+| Story | `stories.md` 新增 REQ-021 / S21 段与追溯；新增 `stories/add-trip-cancel.story.md` |
+| Registry / handoff | 新增 REQ-021 行与 change 映射；记录编号顺延原因 |
 | Tests / 代码 | P4 实现：迁移 + 端点 + 状态推导 + 列表/申请/聊天/统计联动；前端入口与展示；E2E 新增取消主路径 |
 | Living Spec | 归档时新能力并入 `openspec/specs/trip-cancellation/`；既有 Living Spec 不改写 |
 | 阶段记录 | `docs/sdd/add-trip-cancel/p0-baseline.md`、`p1-intent.md`；`docs/sdd/README.md` 索引 |
 | 质量报告 | `docs/ai4se-plugins/<ts>-quality-checklist-report.md`（P1 DoV） |
 
-### 19.6 Dual-track notes（OpenSpec vs agile）
+### 21.6 Dual-track notes（OpenSpec vs agile）
 
 - **OpenSpec 轨：** 新能力 `trip-cancellation` 单 capability，归档不替换任何既有 Requirement 块；不与未归档的 `add-trip-completion` / `refine-trip-application` / `refine-trip-chat` 争同一块。
-- **Agile 轨：** S19（迭代 2 / P0 / 3 点）；#28 的信用分相关 AC 拆到后续 story，不在本故事验收。
+- **Agile 轨：** S21（迭代 2 / P0 / 3 点）；#28 的信用分相关 AC 拆到后续 story，不在本故事验收。
 - **契约 / 迁移串行：** 本 change 暂定 0.13.0 + V19；若 `add-ai-itinerary` 或 `add-experience-photos` 先落地，版本号顺延，不改验收语义。
 
-### 19.7 Risks & blockers
+### 21.7 Risks & blockers
 
 | 级别 | 项 | 说明 / 缓解 |
 |---|---|---|
 | Risk | 取消原因按请求人裁剪 | 详情接口需读取请求人身份；缓存与摘要复用时要避免泄漏；P3 设计明确字段裁剪边界 |
 | Risk | 取消态与在途状态变更叠加 | `add-trip-completion` 未归档；新能力不改写其 Requirement 块，但代码需在同一状态推导中组合；P4 回归覆盖四态 + 取消 |
-| Risk | 契约 / 迁移编号冲突 | 0.12.0 + V18 由 `add-ai-itinerary` 计划占用；本 change 暂定 0.13.0 + V19，P3 前复核并串行 |
+| Risk | 契约 / 迁移编号冲突 | V18 由在途 `add-credit-account` / `add-ai-itinerary` 占用；本 change 定为 0.13.0 + V19，已复核并串行 |
 | Risk | 我的旅行入口超出原型 | 按 `prototype-ui-alignment` 先改原型，再改实现；原型变更纳入 P3 / P4 证据 |
 | Risk | #28 信用分 AC 未交付被误判为漏做 | 在 proposal / registry / stories 中显式记录 D1（属其他 story），本 change 不主张相关 AC |
 | Risk | 取消行程仍出现在「到期物化」扫描 | 取消优先于日期推导；列表与物化查询都需排除取消，P4 用回归固定 |
 | Blocker | 无 | blocking OQ=0、DoR BLOCKER=0、A0 ⑨–⑫ 全过；无外部依赖 |
 
-### 19.8 Suggested split boundaries（供 proposal-split / story-split）
+### 21.8 Suggested split boundaries（供 proposal-split / story-split）
 
 - **不拆 change：** 取消状态机与取消善后必须同批交付，否则验收无法闭环。
-- **不拆故事：** S19 一条故事覆盖两个入口与一次状态迁移；拆开会造成同一状态被两条故事重复验收。
+- **不拆故事：** S21 一条故事覆盖两个入口与一次状态迁移；拆开会造成同一状态被两条故事重复验收。
 - **后续候选（均需另开需求）：** 信用分与信用记录、免扣分申请与管理员审核、删除行程、恢复/重新开启、取消原因申诉。
 - **质量自检（split-heuristics）：** 子目标一句话可说明 ✓；端到端可观察（发布者取消 → 首页下架 / 申请关闭 / 聊天只读 / 我的旅行保留）✓；可独立运行 ✓；capability 名真实 ✓；无依赖环 ✓。
-

@@ -411,6 +411,36 @@ function buildPlaces(): Place[] {
 
 export const PLACES: Place[] = buildPlaces();
 
+/**
+ * Demo 行程途经点的离线坐标（真实经纬度）。
+ *
+ * <p>只并入 {@link PLACES}（搜索、发布校验、高德地图兜底），不进入
+ * `CITY_INDEX`：离线 SVG 城市投影的取景范围由城市 POI 包围盒推导，
+ * 把大鹏半岛这类远端点位塞进去会拉伸既有构图。
+ *
+ * <p>高德服务不可用时，{@code AmapService.geocodePlace} 会用这些坐标
+ * 定位行程途经点，并按「文案包含地名」容忍「集合 / 收尾 / 12km」等后缀。
+ */
+const DEMO_PLACES: Array<Omit<Place, 'kind'>> = [
+  // 深圳大鹏半岛（行程 5）。
+  { id: '深圳-大鹏所城', name: '大鹏所城', city: '深圳', lat: 22.5979, lng: 114.5077, aliases: ['大鹏古城', '所城'] },
+  { id: '深圳-较场尾', name: '较场尾', city: '深圳', lat: 22.5923, lng: 114.5061, aliases: ['较场尾海滩'] },
+  { id: '深圳-东西涌', name: '东西涌', city: '深圳', lat: 22.545, lng: 114.571, aliases: ['东涌', '西涌', '东西涌穿越'] },
+  { id: '深圳-西涌天文台', name: '西涌天文台', city: '深圳', lat: 22.4827, lng: 114.5557, aliases: ['天文台', '深圳市天文台'] },
+  { id: '深圳-杨梅坑', name: '杨梅坑', city: '深圳', lat: 22.5481, lng: 114.5654, aliases: [] },
+  // 珠海情侣路（行程 1 / 3）。
+  { id: '珠海-海滨泳场', name: '海滨泳场', city: '珠海', lat: 22.2572, lng: 113.586, aliases: ['海滨泳场沙滩'] },
+  { id: '珠海-野狸岛', name: '野狸岛', city: '珠海', lat: 22.2812, lng: 113.5841, aliases: ['名亭公园'] },
+  { id: '珠海-情侣北路', name: '情侣北路', city: '珠海', lat: 22.31, lng: 113.585, aliases: [] },
+  // 广州老城（行程 4）。
+  { id: '广州-上下九步行街', name: '上下九步行街', city: '广州', lat: 23.1177, lng: 113.2427, aliases: ['上下九'] },
+  { id: '广州-宝华面店', name: '宝华面店', city: '广州', lat: 23.1181, lng: 113.2465, aliases: [] },
+  // 佛山禅城（行程 6）。
+  { id: '佛山-梁园', name: '梁园', city: '佛山', lat: 23.0406, lng: 113.1076, aliases: ['佛山梁园'] },
+];
+
+PLACES.push(...DEMO_PLACES.map((place) => ({ ...place, kind: 'poi' as const })));
+
 export const CITY_NAMES: string[] = CITY_INDEX.map((city) => city.name);
 
 function normalize(value: string): string {

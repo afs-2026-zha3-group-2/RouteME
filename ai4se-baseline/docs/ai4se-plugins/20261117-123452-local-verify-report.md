@@ -1,4 +1,4 @@
-# Local Verify Report: add-trip-cancel（REQ-019 / issue #28）
+# Local Verify Report: add-trip-cancel（REQ-021 / issue #28）
 
 **Date:** 2026-11-17 (timezone: +0800)
 **Root:** c:/Git/ITA/RouteME/.worktrees/add-trip-cancel/ai4se-baseline

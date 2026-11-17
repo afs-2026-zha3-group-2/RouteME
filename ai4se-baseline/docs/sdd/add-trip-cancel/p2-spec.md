@@ -1,6 +1,6 @@
 # P2 规格记录 — add-trip-cancel
 
-- **Change：** `add-trip-cancel`（REQ-019 / issue #28）｜ **阶段：** P2（Delta Spec / G1）
+- **Change：** `add-trip-cancel`（REQ-021 / issue #28）｜ **阶段：** P2（Delta Spec / G1）
 - **日期：** 2026-11-17 ｜ **记录人：** Neal（VL）
 - **分支：** `feature/add-trip-cancel`（worktree `.worktrees/add-trip-cancel`）
 
@@ -12,7 +12,7 @@
 
 | 工件 | 路径 | 摘要 |
 |---|---|---|
-| AC / DoV 复核 | [`dov-ac-review.md`](../../openspec/changes/add-trip-cancel/dov-ac-review.md) | AC 4/4 Pass、DoV 5/5 Pass、REQ-019 映射 20/20、#28 in-scope AC 10/10；基线保留 N/A（ADDED） |
+| AC / DoV 复核 | [`dov-ac-review.md`](../../openspec/changes/add-trip-cancel/dov-ac-review.md) | AC 4/4 Pass、DoV 5/5 Pass、REQ-021 映射 20/20、#28 in-scope AC 10/10；基线保留 N/A（ADDED） |
 | 一致性 lint | [`consistency-lint.md`](../../openspec/changes/add-trip-cancel/consistency-lint.md) | Pass；BLOCKER 0 / WARNING 0 / SUGGESTION 5 / N/A 4 |
 | G1 决策 | [`g1-decision.md`](../../openspec/changes/add-trip-cancel/g1-decision.md) | Decision Pass（拟）；C1–C7；IO WAYNE + SA Jacky / Karena 待签署 |
 | P2 质量报告 | [`docs/ai4se-plugins/20261117-115250-quality-checklist-report.md`](../../docs/ai4se-plugins/20261117-115250-quality-checklist-report.md) | P2-1 / P2-2 Pass；P2-3 Skipped（G1 未签署）；P2-4 Pass；Overall Pass |

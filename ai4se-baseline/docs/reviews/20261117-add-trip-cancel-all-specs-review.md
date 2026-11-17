@@ -3,7 +3,7 @@
 - **Verdict: Partial**（BLOCKER 0 / WARNING 6（2 已修复、4 待 P3）/ SUGGESTION 5（2 已修复、3 待处理））｜ **签署：已完成（WAYNE + Neal，2026-11-17）**
 - **Scope：** focus=`full`（A 架构 / B 质量 / C 测试 / D 安全 / E 过程 / F 文档 / G 工件链与契约追溯）；root=`ai4se-baseline`（worktree `feature/add-trip-cancel`）；change=`openspec/changes/add-trip-cancel`；timestamp=`2026-11-17`
 - **Artifact under review：** [`proposal.md`](../../openspec/changes/add-trip-cancel/proposal.md)、[`specs/trip-cancellation/spec.md`](../../openspec/changes/add-trip-cancel/specs/trip-cancellation/spec.md)（ADDED，5 Requirement / 20 Scenario）
-- **Supporting inputs：** issue #28 正文（2026-11-17 读取）、用户裁决 D1–D6（2026-11-17）、REQ-019 意图 / Ready 条目 / 故事 S19、`deep-dive.md`「REQ-019 增补」、`impact-brief.md` §19、`docs/sdd/add-trip-cancel/p0-baseline.md`、Living `openspec/specs/trip-plans/spec.md`、`trip-companions/spec.md`、`trip-experiences/spec.md`
+- **Supporting inputs：** issue #28 正文（2026-11-17 读取）、用户裁决 D1–D6（2026-11-17）、REQ-021 意图 / Ready 条目 / 故事 S21、`deep-dive.md`「REQ-021 增补」、`impact-brief.md` §21、`docs/sdd/add-trip-cancel/p0-baseline.md`、Living `openspec/specs/trip-plans/spec.md`、`trip-companions/spec.md`、`trip-experiences/spec.md`
 - **Evidence：**
   - `openspec validate add-trip-cancel --strict` → `Change 'add-trip-cancel' is valid`（2026-11-17，修复后复跑）
   - 代码证据：`TripStatusEnum`（四态）、`TripPlan.status()`（无取消）、`TripPlanMapper.xml:13-14`（只排 `completed_at`）、`TripPlanServiceImpl.complete()`（无取消）、`ApplicationServiceImpl:235`（仅结束事件批量取消）、`ChatServiceImpl:114`（仅 COMPLETED 只读）、`UserProfileStatsServiceImpl:42-52`（发布行程含全部）、`ExperienceServiceImpl:149`（仅 COMPLETED）
@@ -67,7 +67,7 @@
 | V2 | 可测试 | Pass | 权限、状态、原因、列表、申请、聊天、统计、幂等均可用 API + E2E 断言 |
 | V3 | 无歧义 | Pass | S-02 修复后，「记录说明」只在 `other` 时成立；原因码与文案一一对应 |
 | V4 | 边界明确 | Pass | 信用分 / 信用记录 / 免扣分 / 管理员审核显式 out（D1） |
-| V5 | 可追溯 | Pass | #28 AC → REQ-019 S19-1 ~ S19-20 → Delta 场景 → 故事 S19 四级映射 |
+| V5 | 可追溯 | Pass | #28 AC → REQ-021 S21-1 ~ S21-20 → Delta 场景 → 故事 S21 四级映射 |
 
 ## Baseline preservation
 

@@ -1,6 +1,6 @@
 # P4 实现与验证记录 — add-trip-cancel
 
-- **Change：** `add-trip-cancel`（REQ-019 / issue #28）｜ **阶段：** P4（Apply & verify）
+- **Change：** `add-trip-cancel`（REQ-021 / issue #28）｜ **阶段：** P4（Apply & verify）
 - **日期：** 2026-11-17 ｜ **记录人：** Neal（VL）
 - **分支：** `feature/add-trip-cancel`（worktree `.worktrees/add-trip-cancel`）
 - **本地验证报告：** [`docs/ai4se-plugins/20261117-123452-local-verify-report.md`](../../ai4se-plugins/20261117-123452-local-verify-report.md)
