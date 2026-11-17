@@ -2500,22 +2500,30 @@ svg {
 .experience-photos {
   display: flex;
   gap: 8px;
-  align-items: flex-end;
   margin-top: 12px;
   flex-wrap: wrap;
 }
 
-.experience-photos img {
+/* antd Image 的 .ant-image .ant-image-img 自带 width:100%/height:auto，特异性高于单类，必须用三级类名压回固定尺寸 */
+.experience-photos .ant-image {
   width: 96px;
   height: 72px;
-  object-fit: cover;
   border-radius: 10px;
+  overflow: hidden;
   border: 1px solid var(--line);
-  display: block;
+  transition: border-color 0.2s ease;
 }
 
-.experience-photos-more {
-  margin-left: auto;
+.experience-photos .ant-image:hover {
+  border-color: var(--ink-3);
+}
+
+.experience-photos .ant-image .ant-image-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  cursor: zoom-in;
 }
 
 .photo-viewer {
