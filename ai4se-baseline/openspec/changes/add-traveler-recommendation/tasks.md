@@ -83,3 +83,17 @@
 - [x] **T10 E2E：推荐四态与后端分值（7 条）**
 - [x] **T11 文档：接口表、变更日志、SDD 索引**
 - [x] **T12 回归与走查：后端全量、前端 build + 单测、E2E、390px 无溢出**
+
+## 6. R2 任务（可解释推荐原因，2026-11-17）
+
+| id | 任务 | 落点 | 验收 | 验证 |
+|---|---|---|---|---|
+| T13 | 日期分项文案统一为「旅行日期相差 1 天」 | backend | 单元测试断言新文案 | C2 |
+| T14 | `recommendation.ts` 新增 `reasonSentence` / `recommendationReason` / `breakdownLines`；`formatScore` 输出「匹配度 N%」 | frontend | F1–F9 全绿 | C3 |
+| T15 | 推荐行展示匹配度 + 可读原因句；用 `<details>` 展开分项；缺数据时降级到后端 `reasons` | frontend | 详情页可见；390px 无溢出 | C3 / C4 |
+| T16 | E2E 断言匹配度、原因句、展开明细与「相差 1 天」文案 | e2e | `traveler-recommendation.spec.ts` 8/8 | C4 |
+
+- [x] **T13 日期文案：旅行日期相差 1 天**
+- [x] **T14 前端纯函数：匹配度与可读原因句**
+- [x] **T15 推荐行：明细展开与降级展示**
+- [x] **T16 E2E：匹配度、原因句与相差一天文案**

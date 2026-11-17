@@ -80,7 +80,7 @@ class TravelerMatchTest {
         // Then
         assertAll(
                 () -> assertEquals(20, match.score(), "one day apart"),
-                () -> assertEquals("出发日期相差一天 +20", match.reasons().get(0), "reason text")
+                () -> assertEquals("旅行日期相差 1 天 +20", match.reasons().get(0), "reason text")
         );
     }
 

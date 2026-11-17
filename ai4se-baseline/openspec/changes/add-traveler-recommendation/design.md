@@ -167,8 +167,11 @@ export type RecommendationList = {
 
 | 函数 | 作用 |
 |---|---|
-| `formatScore(score)` | `"90 分"` |
-| `breakdownText(item)` | 把 `breakdown` 拼成 `"目的地相同 +50 · 出发日期相同 +30"`（仅格式化，不改值） |
+| `formatScore(score)` | `"匹配度 90%"` |
+| `breakdownText(items)` | 把 `breakdown` 拼成 `"目的地相同 +50 · 出发日期相同 +30"`（仅格式化，不改值） |
+| `breakdownLines(items)` | 逐项文本，供「查看匹配明细」展开区渲染 |
+| `reasonSentence(item)` | 只用后端返回的命中维度与共同兴趣拼句：`"目的地和日期相同，并且都喜欢摄影"` |
+| `recommendationReason(item)` | 优先返回原因句；分项缺失时退回后端 `reasons`；都缺失时返回空串 |
 | `referenceText(reference)` | `"以广州 · 2026-11-20 为参照"` |
 | `emptyRecommendationText()` | 空状态标题 / 说明 |
 
