@@ -283,7 +283,7 @@ test.describe('reduced motion', () => {
     await openSetup(page);
 
     await page.locator('#profile-birthday').click();
-    const popup = page.locator('.profile-birthday-popup');
+    const popup = page.locator('.app-date-popup');
     await expect(popup).toBeVisible();
 
     const box = await popup.boundingBox();

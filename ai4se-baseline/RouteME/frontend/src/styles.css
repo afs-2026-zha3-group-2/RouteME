@@ -4242,19 +4242,6 @@ svg {
   position: relative;
 }
 
-/*
- * antd 6.7 keeps the picker popup at inset -1000vw when the OS asks for reduced motion
- * (the alignment effect depends on the appear motion). Anchor the popup to the field instead.
- */
-@media (prefers-reduced-motion: reduce) {
-  .profile-birthday-popup {
-    left: 0 !important;
-    right: auto !important;
-    top: calc(100% + 4px) !important;
-    bottom: auto !important;
-  }
-}
-
 .profile-field.wide {
   grid-column: 1 / -1;
 }
