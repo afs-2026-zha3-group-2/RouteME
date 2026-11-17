@@ -21,6 +21,47 @@ export const aiMessages = {
   loading: 'AI 正在结合天气与地图生成推荐行程…',
   generatingHint: '通常需要 10–30 秒，请稍候',
 
+  /* ---------- 对话式布局（参考稿 v2） ---------- */
+  chatTitle: '用 AI，规划你的专属旅程',
+  chatSubtitle: '告诉我你的想法，生成路线、美食、景点和实用建议。',
+  conditionsTitle: '规划条件',
+  conditionsHint: '必填：出发地 / 目的地 / 日期；其余越详细，路线越贴合你',
+  welcomeTitle: '你好！我是 RouteMe AI 旅行助手',
+  welcomeIntro: '我可以帮你快速规划专属的旅行路线，包括景点、美食、交通、预算和实用建议。',
+  welcomePrompt: '你可以这样告诉我你的需求：',
+  welcomeDetail: '或者直接输入你的想法，越详细越好哦～',
+  composerLabel: '告诉我你的旅行想法',
+  composerPlaceholder: '继续问我，或者告诉我你的新需求…',
+  send: '发送',
+  planReady: '好的！我已为你生成专属行程，结合美食、拍照、预算和交通，推荐如下方案：',
+  planReadyFor: (note: string) => `已按「${note}」重新生成行程：`,
+  planDays: (days: number) => `${days} 天行程`,
+  planPreviewHint: '完整时间轴、路线距离与预算都在右侧预览里，可继续调整后发布为行程。',
+  previewTitle: '完整行程预览',
+  previewHint: '可直接保存或发布行程',
+  previewEmptyHint: '填写条件或直接告诉 AI 你的想法',
+  export: '导出行程',
+  publish: '发布为行程',
+  exported: (title: string) => `已导出「${title}」为 Markdown 文件。`,
+  exportEmpty: '还没有可导出的行程，先生成一条路线吧。',
+  mapTitle: '路线地图',
+  mapSubtitle: '距离与时间来自高德地图',
+  mapAriaLabel: 'AI 推荐路线地图',
+  budgetEmpty: '生成行程后展示 AI 估算预算',
+  tipsEmpty: '生成行程后展示 AI 出行建议',
+  errorHint: '可以补充条件后重试，或换一个目的地。',
+  intentDestination: (name: string) => `已把目的地识别为「${name}」，正在按你的要求规划。`,
+  intentDestinationMissing: (name: string) =>
+    `没有在高德地图找到「${name}」，请在「规划条件」里手动选择目的地。`,
+  intentBudget: (yuan: string) => `预算 ${yuan} 元`,
+  /** 只把已识别的条件拼成一句摘要；空数组返回空串。 */
+  intentSummary: (parts: Array<string | null>) => {
+    const list = parts.filter((part): part is string => part !== null && part !== '');
+    return list.join(' · ');
+  },
+  chatNeedForm: '我还需要出发地、目的地和日期才能规划路线，先在上面的「规划条件」里补齐吧。',
+  chatNeedFormWith: (summary: string) => `收到：${summary}。还缺出发地、目的地或日期，补齐后我就开始规划。`,
+
   aiNotConfigured: 'AI 服务尚未配置：请联系管理员配置 AI 服务后重试。',
   aiFailed: 'AI 生成失败，请重试。',
   weatherFailed: '天气获取失败，请稍后重试。',
