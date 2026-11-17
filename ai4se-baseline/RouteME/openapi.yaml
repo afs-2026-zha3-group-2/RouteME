@@ -1,7 +1,7 @@
 openapi: 3.0.3
 info:
   title: RouteME API
-  version: 0.11.0
+  version: 0.12.0
   description: |
     RouteME 后端对外契约。本文件是前后端唯一事实源，字段名、类型、状态码与错误码只在这里定稿。
         当前包含：脚手架问候语、演示账户与账号认证（注册/登录/会话/退出）、旅行计划（浏览/筛选/发布/详情/结束），同行匹配、申请、退出、聊天、我的旅行与举报，以及游后体验分享与参考发布所需数据。
@@ -1382,6 +1382,96 @@ paths:
           $ref: '#/components/responses/NotFound'
         '500':
           $ref: '#/components/responses/Unexpected'
+  /trips/{tripId}/experiences/photos:
+    post:
+      operationId: uploadTripExperiencePhoto
+      summary: 上传游后体验图片
+      description: |
+        只能为已结束且自己参加过的行程上传；只接受 JPEG / PNG / WebP（按魔数判定，不信任声明类型与原始文件名），
+        单张不超过 5 MB；同一用户对同一行程最多 6 张（含已绑定与未绑定，第 7 张返回 400）。
+        上传成功返回未绑定的图片引用，随后随体验提交按 `photo_ids` 顺序绑定；
+        文件名由服务端生成，上传时剥离全部 EXIF 元数据。
+      parameters:
+        - $ref: '#/components/parameters/DemoUserId'
+        - name: tripId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [file]
+              properties:
+                file:
+                  type: string
+                  format: binary
+      responses:
+        '200':
+          description: 已保存的图片引用
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExperiencePhoto'
+        '400':
+          $ref: '#/components/responses/InvalidInput'
+        '401':
+          $ref: '#/components/responses/DemoUserRequired'
+        '403':
+          description: 行程未结束或当前用户不具备分享资格
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                notAllowed:
+                  value:
+                    code: EXPERIENCE_NOT_ALLOWED
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/Unexpected'
+  /experience-photos/{photoId}:
+    get:
+      operationId: loadExperiencePhoto
+      summary: 读取游后体验图片
+      description: |
+        公开只读图片端点；返回服务端保存的原图（已剥离 EXIF）。
+        缓存一天且不标记 immutable：图片被移除后服务端返回 404，浏览器缓存最多一天内自然失效。
+      parameters:
+        - name: photoId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: 体验图片
+          headers:
+            Cache-Control:
+              description: '`public, max-age=86400`'
+              schema:
+                type: string
+          content:
+            image/jpeg:
+              schema:
+                type: string
+                format: binary
+            image/png:
+              schema:
+                type: string
+                format: binary
+            image/webp:
+              schema:
+                type: string
+                format: binary
+        '404':
+          description: 图片不存在或已被移除
 components:
   parameters:
     DemoUserId:
@@ -2177,6 +2267,18 @@ components:
         count:
           type: integer
           minimum: 1
+    ExperiencePhoto:
+      type: object
+      required: [id, url]
+      properties:
+        id:
+          type: integer
+          format: int64
+          readOnly: true
+        url:
+          type: string
+          description: 本站只读图片地址，形如 `/api/experience-photos/{id}`
+          example: /api/experience-photos/12
     ExperienceWriteRequest:
       type: object
       required: [content, intensity, advice]
@@ -2195,9 +2297,19 @@ components:
           minLength: 1
           maxLength: 120
           description: 给后来者的一条建议
+        photo_ids:
+          type: array
+          maxItems: 6
+          default: []
+          description: |
+            已上传图片的 id，按展示顺序排列；省略等同于空数组。
+            服务端去重后不得超过 6 个；只能引用本人上传且未绑定其它体验的图片。
+          items:
+            type: integer
+            format: int64
     Experience:
       type: object
-      required: [id, trip, author, content, intensity, advice, created_at, updated_at]
+      required: [id, trip, author, content, intensity, advice, photos, created_at, updated_at]
       properties:
         id:
           type: integer
@@ -2216,6 +2328,11 @@ components:
         advice:
           type: string
           maxLength: 120
+        photos:
+          type: array
+          description: 按提交顺序排列的图片；无图时为空数组
+          items:
+            $ref: '#/components/schemas/ExperiencePhoto'
         created_at:
           type: string
           format: date-time

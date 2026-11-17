@@ -5,6 +5,7 @@ import {
   Button,
   Card,
   DatePicker,
+  Image,
   Input,
   Modal,
   Progress,
@@ -96,6 +97,8 @@ export function TripDetailPage({ currentUser, tripId }: Props) {
   >(null);
   const [reportOpen, setReportOpen] = useState(false);
   const [experiences, setExperiences] = useState<Experience[] | null>(null);
+  const [previewExperienceId, setPreviewExperienceId] = useState<number | null>(null);
+  const [previewIndex, setPreviewIndex] = useState(0);
   const [meetingOpen, setMeetingOpen] = useState(false);
   const [meetingForm, setMeetingForm] = useState<MeetingFormValues>(emptyMeetingForm());
   const [meetingErrors, setMeetingErrors] = useState<MeetingFieldErrors>({});
@@ -540,6 +543,42 @@ export function TripDetailPage({ currentUser, tripId }: Props) {
                       <b>{tripMessages.experienceAdviceLabel}：</b>
                       {experience.advice}
                     </p>
+                    {experience.photos.length > 0 && (
+                      <div className="experience-photos">
+                        <Image.PreviewGroup
+                          items={experience.photos.map((photo) => photo.url)}
+                          preview={{
+                            open: previewExperienceId === experience.id,
+                            current: previewIndex,
+                            onChange: (current) => setPreviewIndex(current),
+                            onOpenChange: (open) => {
+                              setPreviewExperienceId(open ? experience.id : null);
+                              if (!open) {
+                                setPreviewIndex(0);
+                              }
+                            },
+                          }}
+                        >
+                          <Image
+                            src={experience.photos[0].url}
+                            alt={tripMessages.experiencePhotoAlt}
+                          />
+                        </Image.PreviewGroup>
+                        {experience.photos.length > 1 && (
+                          <Button
+                            size="small"
+                            className="experience-photos-more"
+                            onClick={() => {
+                              setPreviewIndex(0);
+                              setPreviewExperienceId(experience.id);
+                            }}
+                          >
+                            {tripMessages.experiencePhotoViewAll} {experience.photos.length}{' '}
+                            {tripMessages.experiencePhotoCountSuffix}
+                          </Button>
+                        )}
+                      </div>
+                    )}
                   </li>
                 ))}
               </ul>

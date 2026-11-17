@@ -163,10 +163,11 @@ test('renders the share page with the prototype layout', async ({ page }) => {
     );
 
   expect(await columns()).toBe(2);
-  await expect(page.locator('.publish-main .panel')).toHaveCount(3);
+  await expect(page.locator('.publish-main .panel')).toHaveCount(4);
   await expect(page.locator('.publish-side .panel')).toHaveCount(2);
   await expect(page.locator('.publish-main .panel-title')).toContainText([
     '真实感受',
+    '照片（选填）',
     '路线强度',
     '给后来者的一条建议',
   ]);
@@ -235,7 +236,7 @@ test('keeps experience entry points honest', async ({ page }) => {
   await switchUser(page, 1);
   await page.goto('/#/share/1');
   await expect(page.getByPlaceholder(/路况、强度、时间点/)).toBeVisible();
-  await expect(page.getByRole('button', { name: /上传图片|添加图片/ })).toHaveCount(0);
+  await expect(page.getByRole('button', { name: '添加照片' })).toBeVisible();
   await expect(page.getByText('分享边界')).toBeVisible();
 });
 

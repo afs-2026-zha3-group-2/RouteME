@@ -1,10 +1,11 @@
 import { tripMessages } from '../i18n/tripMessages';
-import type { ExperienceIntensity } from '../types';
+import type { ExperienceIntensity, ExperiencePhoto } from '../types';
 
 export type ExperienceDraft = {
   content: string;
   intensity: ExperienceIntensity;
   advice: string;
+  photos: ExperiencePhoto[];
 };
 
 export type ExperienceErrors = {
@@ -15,11 +16,15 @@ export type ExperienceErrors = {
 export const MIN_CONTENT_LENGTH = 10;
 export const MAX_CONTENT_LENGTH = 400;
 export const MAX_ADVICE_LENGTH = 120;
+export const MAX_PHOTOS = 6;
+export const MAX_PHOTO_BYTES = 5 * 1024 * 1024;
+export const ALLOWED_PHOTO_TYPES = ['image/jpeg', 'image/png', 'image/webp'];
 
 export const emptyExperienceDraft: ExperienceDraft = {
   content: '',
   intensity: 'moderate',
   advice: '',
+  photos: [],
 };
 
 export const INTENSITY_OPTIONS: {
@@ -63,5 +68,6 @@ export function toExperienceRequest(draft: ExperienceDraft) {
     content: draft.content.trim(),
     intensity: draft.intensity,
     advice: draft.advice.trim(),
+    photo_ids: draft.photos.map((photo) => photo.id),
   };
 }

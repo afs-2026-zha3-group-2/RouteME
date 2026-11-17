@@ -395,12 +395,28 @@
       { id: 'm_4', tripId: 't_guangzhou_1', senderId: 'u_lin', receiverId: 'u_su', content: '好，那我把三脚架收起来，轻装走。', sentAt: offsetTime(-3, 9, 31) }
     ];
 
+    /* 原型演示照片：内联 SVG，仅用于展示版式与交互，不进入实现。 */
+    function samplePhoto(label, from, to) {
+      var svg = '<svg xmlns="http://www.w3.org/2000/svg" width="640" height="420">' +
+        '<defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1">' +
+        '<stop offset="0" stop-color="' + from + '"/><stop offset="1" stop-color="' + to + '"/>' +
+        '</linearGradient></defs><rect width="640" height="420" fill="url(#g)"/>' +
+        '<circle cx="512" cy="104" r="42" fill="rgba(255,255,255,.55)"/>' +
+        '<text x="34" y="378" font-family="sans-serif" font-size="30" fill="rgba(255,255,255,.92)">' + label + '</text></svg>';
+      return 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg);
+    }
+
     var experiences = [
       {
         id: 'e_1', tripId: 't_zhuhai_1', authorId: 'u_chen',
         content: '整条线基本没有爬升，骑行段风很大但很值。日落前四十分钟到海滨泳场刚好，再晚机位就满了。晚饭后野狸岛那段灯光偏黄，白平衡要手动调。',
         intensity: 'MODERATE',
         advice: '带一件防风外套，海边傍晚温差比市区大。三脚架能不带就不带，走到第三个点会后悔。',
+        photos: [
+          samplePhoto('海滨泳场日落', '#f3bd7a', '#4f7f9c'),
+          samplePhoto('野狸岛灯光', '#7a6ba8', '#2d3d63'),
+          samplePhoto('情侣路骑行', '#9ec9b4', '#3d6b62')
+        ],
         createdAt: offsetTime(-8, 22, 10)
       },
       {

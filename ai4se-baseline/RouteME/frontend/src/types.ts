@@ -220,6 +220,11 @@ export type ReportRequest = {
 
 export type ExperienceIntensity = 'relaxed' | 'moderate' | 'tiring';
 
+export type ExperiencePhoto = {
+  id: number;
+  url: string;
+};
+
 export type Experience = {
   id: number;
   trip: TripSummary;
@@ -227,6 +232,7 @@ export type Experience = {
   content: string;
   intensity: ExperienceIntensity;
   advice: string;
+  photos: ExperiencePhoto[];
   created_at: string;
   updated_at: string;
 };
@@ -235,6 +241,7 @@ export type ExperienceWriteRequest = {
   content: string;
   intensity: ExperienceIntensity;
   advice: string;
+  photo_ids?: number[];
 };
 
 export type ExperienceFilters = {

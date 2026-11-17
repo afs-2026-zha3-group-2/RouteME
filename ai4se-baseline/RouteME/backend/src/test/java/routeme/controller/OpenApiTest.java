@@ -60,7 +60,7 @@ class OpenApiTest {
 
         // Then
         assertAll(
-                () -> assertEquals("0.11.0", info.get("version"), "info.version"),
+                () -> assertEquals("0.12.0", info.get("version"), "info.version"),
                 () -> assertTrue(paths(document).containsKey("/users"), "/users declared"),
                 () -> assertTrue(paths(document).containsKey("/trips/{tripId}"), "detail path declared"),
                 () -> assertTrue(
@@ -291,8 +291,12 @@ class OpenApiTest {
         // When
         Map<String, Object> getExperiences = operation(document, "/experiences", "get");
         Map<String, Object> postExperience = operation(document, "/trips/{tripId}/experiences", "post");
+        Map<String, Object> uploadPhoto = operation(document, "/trips/{tripId}/experiences/photos", "post");
+        Map<String, Object> loadPhoto = operation(document, "/experience-photos/{photoId}", "get");
         Map<String, Object> writeRequest = schema(document, "ExperienceWriteRequest");
         Map<String, Object> experience = schema(document, "Experience");
+        Map<String, Object> experiencePhoto = schema(document, "ExperiencePhoto");
+        Map<String, Object> tripPlan = schema(document, "TripPlan");
         Map<String, Object> errorSchema = schema(document, "Error");
 
         // Then
@@ -317,8 +321,32 @@ class OpenApiTest {
                         "intensity enum"),
                 () -> assertTrue(
                         required(experience)
-                                .containsAll(List.of("id", "trip", "author", "content", "intensity", "advice")),
+                                .containsAll(List.of("id", "trip", "author", "content", "intensity", "advice", "photos")),
                         "experience required fields"),
+                () -> assertTrue(
+                        properties(experience).containsKey("photos"),
+                        "experience photos field"),
+                () -> assertTrue(
+                        required(experiencePhoto).containsAll(List.of("id", "url")),
+                        "experience photo fields"),
+                () -> assertTrue(
+                        properties(writeRequest).containsKey("photo_ids"),
+                        "experience write photo_ids"),
+                () -> assertEquals(
+                        6, asMap(properties(writeRequest).get("photo_ids")).get("maxItems"),
+                        "photo_ids maxItems"),
+                () -> assertTrue(
+                        responses(uploadPhoto).containsKey("400")
+                                && responses(uploadPhoto).containsKey("401")
+                                && responses(uploadPhoto).containsKey("403"),
+                        "photo upload error statuses"),
+                () -> assertTrue(responses(loadPhoto).containsKey("404"), "photo read 404"),
+                () -> assertFalse(
+                        asMap(paths(document).get("/trips/{tripId}/experiences")).containsKey("delete"),
+                        "no experience delete endpoint"),
+                () -> assertFalse(
+                        properties(tripPlan).containsKey("photos"),
+                        "trip plan keeps no photos"),
                 () -> assertTrue(
                         enums(properties(errorSchema).get("code")).contains("EXPERIENCE_NOT_ALLOWED"),
                         "experience error code")

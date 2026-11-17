@@ -6,6 +6,7 @@ import type {
   DemoUser,
   Experience,
   ExperienceFilters,
+  ExperiencePhoto,
   ExperienceWriteRequest,
   MatchCandidate,
   MyTrips,
@@ -364,4 +365,19 @@ export async function shareExperience(
     userId,
   );
   return (await response.json()) as Experience;
+}
+
+export async function uploadExperiencePhoto(
+  userId: number,
+  tripId: number,
+  file: File,
+): Promise<ExperiencePhoto> {
+  const form = new FormData();
+  form.append('file', file);
+  const response = await request(
+    `/trips/${tripId}/experiences/photos`,
+    { method: 'POST', body: form },
+    userId,
+  );
+  return (await response.json()) as ExperiencePhoto;
 }
