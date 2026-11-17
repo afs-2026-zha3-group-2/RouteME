@@ -79,8 +79,8 @@ export function MapExplorerPage({ provinceCode, cityCode }: Props) {
   const [clickedPoint, setClickedPoint] = useState<PlaceResult | null>(null);
   const [savedLabel, setSavedLabel] = useState<string | null>(null);
   const [dateRange, setDateRange] = useState<[string, string]>([
-    dayjs().add(3, 'day').format('YYYY-MM-DD'),
-    dayjs().add(5, 'day').format('YYYY-MM-DD'),
+    dayjs().format('YYYY-MM-DD'),
+    dayjs().format('YYYY-MM-DD'),
   ]);
 
   // 从 URL 带来的城市（#/map/440000/440100）直接定位到该城；#/map 显示全国。

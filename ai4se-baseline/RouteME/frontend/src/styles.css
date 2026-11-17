@@ -6115,6 +6115,22 @@ svg {
   color: var(--t-danger);
 }
 
+/* 底图加载失败时的横幅：不铺满地图，否则用户连点都没法点。 */
+.amap-state-error.is-banner {
+  inset: auto 12px 12px 12px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 8px 10px;
+  border: 1px solid color-mix(in srgb, var(--t-danger) 45%, var(--line));
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--surface) 96%, transparent);
+  box-shadow: var(--sh-2);
+  text-align: left;
+}
+
 .amap-controls {
   position: absolute;
   top: 12px;
@@ -6151,34 +6167,6 @@ svg {
 .amap-controls button:disabled {
   opacity: 0.55;
   cursor: progress;
-}
-
-.amap-locate-error {
-  position: absolute;
-  left: 50%;
-  bottom: 52px;
-  z-index: 35;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  max-width: min(420px, calc(100% - 24px));
-  padding: 8px 10px 8px 12px;
-  border: 1px solid color-mix(in srgb, var(--warn) 45%, var(--line));
-  border-radius: 10px;
-  background: var(--surface);
-  box-shadow: var(--sh-2);
-  color: var(--t-warn);
-  font-size: 12px;
-  transform: translateX(-50%);
-}
-
-.amap-locate-error button {
-  border: 0;
-  background: transparent;
-  color: var(--ink-3);
-  font-size: 15px;
-  line-height: 1;
-  cursor: pointer;
 }
 
 .amap-search-overlay {
@@ -6941,9 +6929,115 @@ svg {
   gap: 6px;
 }
 
+/* 选点小地图：高度随宽度与视口自适应，窄屏也不至于只剩一条缝。 */
 .amap-picker-map .amap-container {
-  min-height: 250px;
-  height: 250px;
+  min-height: clamp(220px, 42vw, 300px);
+  height: clamp(220px, 42vw, 300px);
+}
+
+.amap-picker-map .amap-canvas-host {
+  cursor: grab;
+}
+
+.amap-picker-map .amap-canvas-host.is-dragging {
+  cursor: grabbing;
+}
+
+/* 选中位置信息卡：钉在点击点上，随地图移动。 */
+.amap-point-callout {
+  position: absolute;
+  z-index: 45;
+  width: 0;
+  height: 0;
+  pointer-events: none;
+}
+
+.amap-point-pin {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 14px;
+  height: 14px;
+  margin: -7px 0 0 -7px;
+  border: 2px solid var(--surface);
+  border-radius: 50%;
+  background: var(--t-lagoon, #2f9fe0);
+  box-shadow: 0 0 0 4px color-mix(in srgb, #2f9fe0 30%, transparent), var(--sh-1);
+}
+
+.amap-point-card {
+  position: absolute;
+  left: 0;
+  bottom: 14px;
+  display: grid;
+  gap: 3px;
+  width: max-content;
+  max-width: min(280px, 70vw);
+  padding: 9px 11px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--surface) 97%, transparent);
+  box-shadow: var(--sh-2);
+  color: var(--ink-2);
+  font-size: 12px;
+  line-height: 1.35;
+  pointer-events: auto;
+  transform: translateX(-50%);
+}
+
+.amap-point-name {
+  color: var(--ink-1);
+  font-size: 13px;
+}
+
+.amap-point-address,
+.amap-point-coords {
+  color: var(--ink-3);
+}
+
+.amap-point-coords {
+  font-variant-numeric: tabular-nums;
+}
+
+.amap-point-flag {
+  justify-self: start;
+  padding: 1px 6px;
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--warn) 18%, transparent);
+  color: var(--t-warn);
+  font-size: 10.5px;
+}
+
+.amap-point-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 6px;
+  margin-top: 4px;
+}
+
+/* 高德搜索不可用时的示意位置提示。 */
+.amap-search-degraded {
+  padding: 8px 10px;
+  border-bottom: 1px solid var(--line);
+  background: color-mix(in srgb, var(--warn) 12%, transparent);
+  color: var(--t-warn);
+  font-size: 11px;
+  line-height: 1.4;
+}
+
+.amap-search-degraded-reason {
+  display: block;
+  margin-top: 2px;
+  color: var(--ink-3);
+}
+
+.amap-search-badge {
+  justify-self: start;
+  padding: 1px 6px;
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--warn) 16%, transparent);
+  color: var(--t-warn);
+  font-size: 10px;
 }
 
 .amap-picker-hint {

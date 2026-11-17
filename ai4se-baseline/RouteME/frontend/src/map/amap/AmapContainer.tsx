@@ -9,7 +9,6 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react';
 import { Button, Spin, Typography } from 'antd';
 import { resetProxyProbe } from './AmapService';
-import { wgs84ToGcj02 } from './geoDatum';
 import { createRasterMap } from './rasterMap';
 import './rasterMap.css';
 import type { AmapMap, LngLat } from './types';
@@ -54,8 +53,6 @@ export function AmapContainer({
   const [error, setError] = useState<string | null>(null);
   const [attempt, setAttempt] = useState(0);
   const [fullscreen, setFullscreen] = useState(false);
-  const [locating, setLocating] = useState(false);
-  const [locateError, setLocateError] = useState<string | null>(null);
 
   useEffect(() => {
     const host = hostRef.current;
@@ -96,31 +93,6 @@ export function AmapContainer({
     map?.setZoomAndCenter(zoom, [lng, lat]);
   }, [map, lng, lat, zoom]);
 
-  const locate = () => {
-    if (mapRef.current === null) {
-      return;
-    }
-    if (!('geolocation' in navigator)) {
-      setLocateError('当前浏览器不支持定位');
-      return;
-    }
-    setLocating(true);
-    setLocateError(null);
-    navigator.geolocation.getCurrentPosition(
-      (position) => {
-        setLocating(false);
-        // 浏览器给的是 WGS-84，底图是 GCJ-02：不纠偏会稳定偏出几百米。
-        const point = wgs84ToGcj02(position.coords.longitude, position.coords.latitude);
-        mapRef.current?.setZoomAndCenter(15, [point.lng, point.lat]);
-      },
-      () => {
-        setLocating(false);
-        setLocateError('定位失败，请检查浏览器定位权限后重试');
-      },
-      { enableHighAccuracy: true, timeout: 8000 },
-    );
-  };
-
   const zoomBy = (delta: number) => {
     const instance = mapRef.current;
     if (instance === null) {
@@ -149,7 +121,8 @@ export function AmapContainer({
         </div>
       )}
       {status === 'error' && (
-        <div className="amap-state amap-state-error" role="alert">
+        // 瓦片挂了也不能挡住选点：横幅置于底部，地图仍可点击/缩放。
+        <div className="amap-state amap-state-error is-banner" role="alert">
           <Typography.Text>{error}</Typography.Text>
           <Button
             size="small"
@@ -172,24 +145,12 @@ export function AmapContainer({
           <button type="button" aria-label="缩小地图" onClick={() => zoomBy(-1)}>
             −
           </button>
-          <button type="button" aria-label="定位到我的位置" onClick={locate} disabled={locating}>
-            {locating ? '…' : '◎'}
-          </button>
           <button
             type="button"
             aria-label={fullscreen ? '退出全屏地图' : '全屏查看地图'}
             onClick={() => setFullscreen((previous) => !previous)}
           >
             {fullscreen ? '⤡' : '⤢'}
-          </button>
-        </div>
-      )}
-
-      {locateError !== null && (
-        <div className="amap-locate-error" role="alert">
-          <span>{locateError}</span>
-          <button type="button" aria-label="关闭定位失败提示" onClick={() => setLocateError(null)}>
-            ×
           </button>
         </div>
       )}

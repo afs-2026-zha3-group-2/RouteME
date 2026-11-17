@@ -26,6 +26,18 @@ export const emptyPlannerForm: PlannerFormValues = {
   pace: 'moderate',
 };
 
+/**
+ * 页面初始值：日期默认今天（当天）。
+ *
+ * <p>日期留空会让天气卡与「生成行程」一直处于不可用状态，用户还得先点一次日期；
+ * 默认当天既符合「所有日期都有默认值」的要求，也不阻止改期。
+ */
+export function defaultPlannerForm(now: Date = new Date()): PlannerFormValues {
+  const pad = (value: number) => String(value).padStart(2, '0');
+  const today = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
+  return { ...emptyPlannerForm, date: today };
+}
+
 function hasPlace(place: AiPlace | null): place is AiPlace {
   return place !== null && place.name.trim() !== '';
 }

@@ -39,16 +39,24 @@ export const emptyTripForm: TripFormValues = {
   note: '',
 };
 
+/** 新发布表单的默认集合时间：与出发日期同一天，08:30 只是可改的默认值。 */
+export const DEFAULT_MEETING_TIME = '08:30';
+
 /** Local calendar day as `yyyy-mm-dd`; `toISOString` would shift around UTC midnight. */
 export function todayIso(now: Date = new Date()): string {
   const pad = (value: number) => String(value).padStart(2, '0');
   return `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
 }
 
-/** Publish form starts on today's date; users can still change both ends. */
+/** Publish form starts on today's date (including meeting time); users can still change every field. */
 export function initialTripForm(now: Date = new Date()): TripFormValues {
   const today = todayIso(now);
-  return { ...emptyTripForm, startDate: today, endDate: today };
+  return {
+    ...emptyTripForm,
+    startDate: today,
+    endDate: today,
+    meetingTime: `${today}T${DEFAULT_MEETING_TIME}`,
+  };
 }
 
 export function validateTripForm(values: TripFormValues): TripFieldErrors {

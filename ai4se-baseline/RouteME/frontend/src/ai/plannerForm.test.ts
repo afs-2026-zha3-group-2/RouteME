@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   canGenerate,
+  defaultPlannerForm,
   emptyPlannerForm,
   toGenerateRequest,
   yuanToCents,
@@ -41,6 +42,18 @@ describe('canGenerate', () => {
         interests: [],
       }),
     ).toBe(true);
+  });
+});
+
+describe('defaultPlannerForm', () => {
+  it('defaults the planner date to today in the local calendar', () => {
+    expect(defaultPlannerForm(new Date(2026, 10, 16, 9, 5)).date).toBe('2026-11-16');
+    expect(defaultPlannerForm(new Date(2026, 0, 1, 0, 5)).date).toBe('2026-01-01');
+  });
+
+  it('keeps every other default untouched', () => {
+    const form = defaultPlannerForm(new Date(2026, 10, 16, 9, 5));
+    expect(form).toEqual({ ...emptyPlannerForm, date: '2026-11-16' });
   });
 });
 

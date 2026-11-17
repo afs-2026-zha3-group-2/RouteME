@@ -32,6 +32,11 @@ export type PlaceResult = {
   lng: number;
   lat: number;
   type: string;
+  /**
+   * 离线地名库兜底出来的坐标：只用于演示排版，与真实地理位置可能相差数百米
+   * 到数公里。UI 必须显式标注「示意位置」，不伪装成高德返回的精确坐标。
+   */
+  approximate?: boolean;
 };
 
 /** 附近搜索候选：在 PlaceResult 上补充与点击位置的距离。 */
@@ -582,6 +587,8 @@ function placeToResult(place: Place): PlaceResult {
     lng: place.lng,
     lat: place.lat,
     type: 'offline',
+    // 手工布局城市（广州/北京/上海等）的经纬度由局部 viewBox 反推，属于示意坐标。
+    approximate: true,
   };
 }
 
@@ -597,17 +604,6 @@ function catalogSearchResults(keyword: string, city?: string): PlaceResult[] {
     .filter((place) => allowed.has(place.id))
     .slice(0, 10)
     .map(placeToResult);
-}
-
-/** 地图点击位置附近的离线景点（按球面距离筛选，单位米）。 */
-function catalogNearbyResults(lng: number, lat: number, radius: number): NearbyPlace[] {
-  return sortByDistance(
-    PLACES.filter((place) => place.kind === 'poi').map(placeToResult),
-    lng,
-    lat,
-  )
-    .filter((place) => place.distanceMeters <= radius)
-    .slice(0, 5);
 }
 
 /* ---------- 直线兜底路线 ---------- */
@@ -697,10 +693,16 @@ function sdkError(
 
 /* ---------- 插件加载 ---------- */
 
-/** 代理探测结果：ok / 后端未配置安全密钥 / 后端不可达。 */
-export type ProxyProbeResult = 'ok' | 'not-configured' | 'unavailable';
+/** 代理探测结果：ok / 后端未配置安全密钥 / Key 不可用 / 后端不可达。 */
+export type ProxyProbeResult = 'ok' | 'not-configured' | 'key-invalid' | 'unavailable';
 
 let probePending: Promise<ProxyProbeResult> | null = null;
+/** 探测到的 Key 错误码（如 10009），供错误文案给用户可执行的理由。 */
+let probeInfocode = '';
+
+export function lastProbeInfocode(): string {
+  return probeInfocode;
+}
 
 /**
  * 探测同源地图代理是否可用。
@@ -731,10 +733,24 @@ export async function probeProxy(): Promise<ProxyProbeResult> {
       if (!response.ok) {
         return 'unavailable';
       }
-      // 只要拿到 JSON，代理链路就是通的；业务状态交给插件回调处理。
-      const body = (await response.json().catch(() => null)) as { info?: string } | null;
+      // 代理返回 200 但高德拒绝了这个 Key（例如 Web 端 Key 被当成 Web 服务 Key
+      // 使用，infocode 10009）：此时链路是通的，搜索/逆地理却一定失败，
+      // 必须单独报出来，否则界面只能退回离线地名库并显示相差数公里的假精度。
+      const body = (await response.json().catch(() => null)) as
+        | { status?: string; info?: string; infocode?: string }
+        | null;
       if (body?.info === 'AMAP_PROXY_UNAVAILABLE') {
         return 'unavailable';
+      }
+      if (body?.status === '0') {
+        const info = body.info ?? '';
+        const infocode = body.infocode ?? '';
+        if (AUTH_INFOCODES.has(infocode) || AUTH_INFOCODES.has(info)) {
+          probeInfocode = infocode !== '' ? infocode : info;
+          return 'key-invalid';
+        }
+        // 其余业务错误（如配额）说明管道与 Key 都是通的。
+        return 'ok';
       }
       return 'ok';
     } catch {
@@ -749,6 +765,7 @@ export async function probeProxy(): Promise<ProxyProbeResult> {
 /** 允许「重新加载地图」后再次探测（例如刚启动后端）。 */
 export function resetProxyProbe(): void {
   probePending = null;
+  probeInfocode = '';
   sdkPending = null;
 }
 
@@ -774,6 +791,13 @@ function loadSdk(): Promise<AmapSdk> {
           'NOT_CONFIGURED',
           '后端未配置高德安全密钥',
           'AMAP_KEY_NOT_CONFIGURED',
+        );
+      }
+      if (probe === 'key-invalid') {
+        throw new AmapApiError(
+          'AUTH',
+          '高德 Key 平台类型不匹配或安全密钥无效',
+          lastProbeInfocode(),
         );
       }
     }
@@ -846,7 +870,13 @@ async function remoteSearchPlaces(keywords: string, city?: string): Promise<Plac
   });
 }
 
-/** 地图点击后的附近景点（用于「点击地图点位加入途经点」）。 */
+/**
+ * 地图点击后的附近景点（用于「点击地图点位加入途经点」）。
+ *
+ * <p>高德不可用时返回空数组，**不再**用离线地名库凑数：那里的经纬度是手工
+ * 布局反推的示意坐标，当作「附近地点」推荐会把用户点在 A 处的地点加到几公里
+ * 外的 B 处。调用方应当回落到「点击点本身」这一精确来源。
+ */
 export async function aroundPlaces(
   lng: number,
   lat: number,
@@ -856,7 +886,7 @@ export async function aroundPlaces(
     const remote = await remoteAroundPlaces(lng, lat, radius);
     return sortByDistance(remote, lng, lat).filter((place) => place.distanceMeters <= radius);
   } catch {
-    return catalogNearbyResults(lng, lat, radius);
+    return [];
   }
 }
 
@@ -883,7 +913,7 @@ export function sortByDistance(
 export async function reverseGeocode(lng: number, lat: number): Promise<PlaceResult> {
   const fallback: PlaceResult = {
     id: `point-${lng.toFixed(6)},${lat.toFixed(6)}`,
-    name: `地图选点 ${lng.toFixed(4)}, ${lat.toFixed(4)}`,
+    name: `地图选点 ${lng.toFixed(5)}, ${lat.toFixed(5)}`,
     address: '',
     city: '',
     district: '',
@@ -1138,6 +1168,18 @@ export function amapErrorMessage(error: unknown): string {
       case 'QUOTA':
         return '高德 API 配额或并发限制已触发，请稍后再试。';
       case 'AUTH':
+        if (error.infocode === '10009') {
+          return (
+            '高德 Key 平台类型不匹配（10009）：JS API 要用「Web 端」Key，' +
+            '后端代理要用「Web 服务」Key，两者不能混用；请检查后端 web-service-key。'
+          );
+        }
+        if (error.infocode === '10001' || error.infocode === '10002') {
+          return '高德 Key 无效或已过期：请检查前端 VITE_AMAP_JS_KEY 与后端 web-service-key。';
+        }
+        if (error.infocode.includes('SCODE')) {
+          return '高德安全密钥 jscode 与 JS Key 不配对：请检查后端 security-js-code。';
+        }
         return '高德 Key 或安全密钥无效：请检查 VITE_AMAP_JS_KEY 与后端 AMAP_SECURITY_JS_CODE。';
       case 'NOT_CONFIGURED':
       case 'MISSING_JS_KEY':
