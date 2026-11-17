@@ -92,7 +92,7 @@ class OpenApiTest {
 
         // Then
         assertAll(
-                () -> assertEquals("0.15.0", info.get("version"), "info.version"),
+                () -> assertEquals("0.17.0", info.get("version"), "info.version"),
                 () -> assertTrue(paths(document).containsKey("/users"), "/users declared"),
                 () -> assertTrue(paths(document).containsKey("/trips/{tripId}"), "detail path declared"),
                 () -> assertTrue(
@@ -142,6 +142,45 @@ class OpenApiTest {
                         asMap(properties(schema(document, "TripMeetingRequest")).get("meeting_areas")).get("maxItems"),
                         "meeting update accepts a single meeting area")
         );
+    }
+
+    @Test
+    void in_openApiFile_out_weatherContractDeclared() throws IOException {
+        // Given
+        Map<String, Object> document = loadYaml(SPEC_PATH);
+
+        // When
+        Map<String, Object> forecast = operation(document, "/weather/forecast", "get");
+        Map<String, Object> forecastSchema = schema(document, "WeatherForecast");
+        Map<String, Object> dailySchema = schema(document, "WeatherDaily");
+        Map<String, Object> reminderSchema = schema(document, "WeatherReminder");
+        Map<String, Object> errorSchema = schema(document, "Error");
+
+        // Then
+        assertAll(
+                () -> assertTrue(paths(document).containsKey("/weather/forecast"), "weather path declared"),
+                () -> assertTrue(
+                        parameterNames(document, forecast).containsAll(List.of("destination_code", "date", "lng", "lat")),
+                        "weather query parameters"),
+                () -> assertTrue(responses(forecast).containsKey("200"), "weather returns 200"),
+                () -> assertTrue(responses(forecast).containsKey("400"), "weather returns 400"),
+                () -> assertTrue(responses(forecast).containsKey("502"), "weather returns 502"),
+                () -> assertTrue(
+                        required(forecastSchema).containsAll(List.of("date", "available", "reminders", "source")),
+                        "weather required fields"),
+                () -> assertTrue(
+                        enums(properties(forecastSchema).get("source")).contains("open-meteo"), "weather source enum"),
+                () -> assertTrue(
+                        required(dailySchema).containsAll(List.of("weather_text", "temp_max_c", "temp_min_c")),
+                        "daily required fields"),
+                () -> assertTrue(properties(dailySchema).containsKey("uv_index"), "daily uv_index declared"),
+                () -> assertTrue(
+                        enums(properties(reminderSchema).get("code"))
+                                .containsAll(List.of("rain", "heat", "uv", "cold", "temperature_gap", "wind", "calm")),
+                        "reminder code enum"),
+                () -> assertTrue(
+                        enums(properties(errorSchema).get("code")).contains("WEATHER_UPSTREAM_ERROR"),
+                        "weather upstream error code"));
     }
 
     @Test

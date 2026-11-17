@@ -1129,3 +1129,45 @@ MVP 无推送、无通知；以下为详情页同行者展示面的 UI 契约。
 - `ExperienceServiceImpl` 仅允许 `COMPLETED`；取消行程无需改资格规则，补回归断言防止未来放宽。
 - 原型 `store.js:240-248` 已定义「取消行程只取消 PENDING、ACCEPTED 保留」；与 REQ-021 的 D3 / D5 一致。
 - `{TBD}`：无。非阻塞项（原因码 wire 命名、事件复用、列类型）在 REQ-021 §8 OQ-10 / OQ-11 记为 Dev 后续。
+
+## REQ-022 增补 — 目的地天气与出行提醒
+
+### ① 数据契约
+
+| 事实 | 证据 | 约束 |
+|---|---|---|
+| 行程只有目的地**区划码**与名称，没有经纬度 | `TripPlan.java`、`TripCreateRequest.java`、`TripDetailResponse.java`、`V11__add_destination_area_code.sql` | 天气必须先把区划码解析成坐标，或使用调用方给的坐标 |
+| 支持 375 个城市 | `backend/src/main/resources/area/area-codes.json`（34 省级 / 375 城市） | 不能靠手工静态坐标表；必须解析 + 缓存 |
+| 目的地是省市级联，不是地图选点 | `TripCreatePage` 的 `AreaCascader`；`AmapPlacePicker` 只用于途经点与集合点 | 途经点坐标不能挪用为目的地坐标（地点会错位） |
+| Open-Meteo daily 变量与窗口 | 官方 `v1/forecast` 文档：`temperature_2m_max` / `temperature_2m_min` / `precipitation_probability_max` / `precipitation_sum` / `weather_code` / `wind_speed_10m_max` / `uv_index_max`；`timezone` 必填；`forecast_days` 0–16 | 窗口取「今天 ~ 今天 + 15」；UV 可空，不得补 0 |
+| 上游错误形态 | Open-Meteo 错误返回 HTTP 400 + `{"error":true,"reason":…}` | 上游失败统一归一为天气不可用，不向用户暴露原始 reason |
+
+### ② 边界归属
+
+| 关注点 | 归属 | 说明 |
+|---|---|---|
+| 天气数据 | Open-Meteo | 唯一数据源，RouteMe 不做估算 |
+| 坐标 | 高德选点结果优先 / 区划解析兜底 | 不做第三方地理编码，不做离线估算 |
+| 提醒 | RouteMe 后端固定规则 | 阈值可判定、可单测；不引入 AI |
+| 地图与路线 | 高德 | 本故事不改地图行为 |
+| AI 推荐 | `add-ai-itinerary` | 后续复用本故事的天气端点与提醒函数 |
+
+### ③ 跨 REQ 一致性
+
+| 相关 REQ | 关系 |
+|---|---|
+| REQ-017（AI 推荐） | 该 change 的天气代理在本 change 落地后应改为复用；提示词里的天气摘要口径与本 change 一致（真实数据 + `source` 标注） |
+| REQ-002 / REQ-006 / REQ-007（发布与浏览） | 发布页新增天气仅展示，不改变表单校验、发布契约与列表筛选 |
+| REQ-016（地图导航风） | 详情页新增天气区块不得破坏既有地图与路线区块布局 |
+| REQ-021（取消行程） | 不新增按状态隐藏天气的分支：日期已过自然落到「暂无该日期天气预报」；未发生的取消行程仍展示事实天气，不额外判断 |
+
+### ④ 展示契约 + 探针
+
+| 展示 | 口径 |
+|---|---|
+| 天气卡标题 | 「目的地天气」，副标注数据来源与日期 |
+| 必展示字段 | 天气状态、最高 / 最低温、降雨概率、降水量、风速 |
+| 条件字段 | UV（上游返回时展示） |
+| 提醒 | 每条一句，前置类别标签（雨 / 热 / 冷 / 风 / 平稳） |
+| 状态 | 未就绪（缺目的地或日期）、加载中、成功、暂无该日期天气预报、失败 + 重试 |
+| 探针 | `data-testid="weather-card"`、`weather-loading`、`weather-error`、`weather-retry`、`weather-reminder`、`weather-out-of-range` |

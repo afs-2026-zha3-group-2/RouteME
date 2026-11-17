@@ -9,6 +9,7 @@ import { cityLabel } from '../area/areaOptions';
 import { tripMessages } from '../i18n/tripMessages';
 import { AmapPlacePicker } from '../map/amap/AmapPlacePicker';
 import type { DemoUser, TripSummary, TripTravelMode } from '../types';
+import { WeatherCard } from '../weather/WeatherCard';
 import { appDatePickerProps, appDateTimePickerProps } from '../utils/datePickerProps';
 import {
   dayjsToIso,
@@ -521,6 +522,7 @@ export function TripCreatePage({ currentUser, fromTripId }: Props) {
             <span className="preview-label">{tripMessages.previewLabel}</span>
             <TripCard trip={previewTrip} preview />
           </div>
+          <WeatherCard destinationCode={values.destinationCode} date={values.startDate} />
           <Card className="panel safety-panel">
             <h3 className="panel-title">{tripMessages.publishSafetyTitle}</h3>
             <ul className="safety-list">

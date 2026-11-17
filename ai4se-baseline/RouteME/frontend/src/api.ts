@@ -23,6 +23,7 @@ import type {
   UserCreditEntry,
   UserProfile,
   UserProfileUpdateRequest,
+  WeatherForecast,
 } from './types';
 
 /**
@@ -409,4 +410,19 @@ export async function uploadExperiencePhoto(
     userId,
   );
   return (await response.json()) as ExperiencePhoto;
+}
+
+/** 目的地日期天气（Open-Meteo）；公开只读，失败由调用方展示可重试状态。 */
+export async function fetchWeatherForecast(
+  destinationCode: string,
+  date: string,
+  point?: { lng: number; lat: number },
+): Promise<WeatherForecast> {
+  const params = new URLSearchParams({ destination_code: destinationCode, date });
+  if (point !== undefined) {
+    params.set('lng', String(point.lng));
+    params.set('lat', String(point.lat));
+  }
+  const response = await request(`/weather/forecast?${params.toString()}`);
+  return (await response.json()) as WeatherForecast;
 }
