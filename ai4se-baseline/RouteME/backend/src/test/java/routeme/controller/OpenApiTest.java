@@ -37,7 +37,7 @@ class OpenApiTest {
             "/admin/service/sessions",
             "/admin/service/sessions/{sessionId}",
             "/admin/service/sessions/{sessionId}/join",
-            "/admin/service/sessions/{sessionId}/close",
+            "/admin/service/sessions/{sessionId}/resolve",
             "/help/reports",
             "/service/sessions/current",
             "/service/sessions",
@@ -79,7 +79,7 @@ class OpenApiTest {
 
         // Then
         assertAll(
-                () -> assertEquals("0.24.0", info.get("version"), "info.version"),
+                () -> assertEquals("0.25.0", info.get("version"), "info.version"),
                 () -> assertTrue(responses(likeExperience).containsKey("201"), "first like returns 201"),
                 () -> assertTrue(responses(likeExperience).containsKey("200"), "duplicate like returns 200"),
                 () -> assertTrue(responses(likeExperience).containsKey("403"), "self like returns 403"),
@@ -156,7 +156,7 @@ class OpenApiTest {
 
         // Then
         assertAll(
-                () -> assertEquals("0.24.0", info.get("version"), "info.version"),
+                () -> assertEquals("0.25.0", info.get("version"), "info.version"),
                 () -> assertTrue(paths(document).containsKey("/users"), "/users declared"),
                 () -> assertTrue(paths(document).containsKey("/trips/{tripId}"), "detail path declared"),
                 () -> assertTrue(
@@ -741,7 +741,7 @@ class OpenApiTest {
 
         // Then
         assertAll(
-                () -> assertEquals("0.24.0", info.get("version"), "info.version"),
+                () -> assertEquals("0.25.0", info.get("version"), "info.version"),
                 () -> assertTrue(paths(document).keySet().containsAll(ADMIN_CONSOLE_PATHS), "admin console paths"),
                 () -> assertEquals(17L, adminOperations, "admin console operations"),
                 () -> assertTrue(
@@ -780,7 +780,7 @@ class OpenApiTest {
                         enums(schema(document, "ReportResolutionAction")),
                         "resolution actions"),
                 () -> assertEquals(
-                        List.of("WAITING", "HANDLING", "CLOSED"),
+                        List.of("WAITING", "HANDLING", "RESOLVED", "CLOSED"),
                         enums(schema(document, "ServiceSessionStatus")),
                         "service session statuses"),
                 () -> assertTrue(
@@ -814,6 +814,13 @@ class OpenApiTest {
                         required(serviceSessionSummary).containsAll(
                                 List.of("id", "user", "status", "created_at", "message_count")),
                         "service session summary required fields"),
+                () -> assertTrue(
+                        properties(serviceSessionSummary).containsKey("resolved_at"),
+                        "service session summary carries resolved_at"),
+                () -> assertTrue(
+                        paths(document).containsKey("/service/sessions/{sessionId}/close")
+                                && !paths(document).containsKey("/admin/service/sessions/{sessionId}/close"),
+                        "user close endpoint replaces admin close"),
                 () -> assertTrue(
                         required(demoUser).containsAll(List.of("role", "status")),
                         "demo user carries role and status"),
@@ -872,7 +879,7 @@ class OpenApiTest {
 
         // Then
         assertAll(
-                () -> assertEquals("0.24.0", asMap(document.get("info")).get("version"), "info.version"),
+                () -> assertEquals("0.25.0", asMap(document.get("info")).get("version"), "info.version"),
                 () -> assertTrue(responses(startSession).containsKey("201"), "session start returns 201"),
                 () -> assertTrue(
                         responses(startSession).keySet().containsAll(List.of("401", "404", "409", "429")),
@@ -1016,7 +1023,7 @@ class OpenApiTest {
                         "service sessions required fields"),
                 () -> assertEquals(
                         required(asMap(properties(serviceSessions).get("by_status"))),
-                        List.of("WAITING", "HANDLING", "CLOSED"),
+                        List.of("WAITING", "HANDLING", "RESOLVED", "CLOSED"),
                         "service session status buckets"),
                 () -> assertEquals(0, properties(users).get("total").get("minimum"), "counts are non-negative")
         );

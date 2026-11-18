@@ -48,6 +48,8 @@ describe('account status presentation', () => {
     expect(serviceStatusLabel('CLOSED')).toBe('已结束');
     expect(serviceStatusTone('WAITING')).toBe('amber');
     expect(serviceStatusTone('HANDLING')).toBe('surf');
+    expect(serviceStatusLabel('RESOLVED')).toBe('待用户确认');
+    expect(serviceStatusTone('RESOLVED')).toBe('jade');
     expect(serviceStatusTone('CLOSED')).toBe('muted');
   });
 });

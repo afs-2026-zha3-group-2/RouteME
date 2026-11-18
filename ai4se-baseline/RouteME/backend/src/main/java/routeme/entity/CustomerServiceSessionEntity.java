@@ -29,6 +29,10 @@ public class CustomerServiceSessionEntity {
 
     private Long closedBy;
 
+    private String resolvedAt;
+
+    private Long resolvedBy;
+
     public CustomerServiceSession toSession() {
         return new CustomerServiceSession(
                 id,
@@ -38,7 +42,9 @@ public class CustomerServiceSessionEntity {
                 joinedAt == null ? null : Instant.parse(joinedAt),
                 joinedBy,
                 closedAt == null ? null : Instant.parse(closedAt),
-                closedBy);
+                closedBy,
+                resolvedAt == null ? null : Instant.parse(resolvedAt),
+                resolvedBy);
     }
 
     public Long getId() {
@@ -103,5 +109,21 @@ public class CustomerServiceSessionEntity {
 
     public void setClosedBy(Long closedBy) {
         this.closedBy = closedBy;
+    }
+
+    public String getResolvedAt() {
+        return resolvedAt;
+    }
+
+    public void setResolvedAt(String resolvedAt) {
+        this.resolvedAt = resolvedAt;
+    }
+
+    public Long getResolvedBy() {
+        return resolvedBy;
+    }
+
+    public void setResolvedBy(Long resolvedBy) {
+        this.resolvedBy = resolvedBy;
     }
 }

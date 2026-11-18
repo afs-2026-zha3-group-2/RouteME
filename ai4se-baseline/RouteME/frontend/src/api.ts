@@ -623,12 +623,25 @@ export async function joinServiceSession(
   return (await response.json()) as ServiceSessionDetail;
 }
 
+/** 用户结束本人会话；WAITING / HANDLING / RESOLVED 均可。 */
 export async function closeServiceSession(
   token: string,
   sessionId: number,
 ): Promise<ServiceSessionDetail> {
   const response = await request(
-    `/admin/service/sessions/${sessionId}/close`,
+    `/service/sessions/${sessionId}/close`,
+    bearerInit(token, { method: 'POST' }),
+  );
+  return (await response.json()) as ServiceSessionDetail;
+}
+
+/** 客服标记处理完成：HANDLING → RESOLVED。 */
+export async function resolveServiceSession(
+  token: string,
+  sessionId: number,
+): Promise<ServiceSessionDetail> {
+  const response = await request(
+    `/admin/service/sessions/${sessionId}/resolve`,
     bearerInit(token, { method: 'POST' }),
   );
   return (await response.json()) as ServiceSessionDetail;

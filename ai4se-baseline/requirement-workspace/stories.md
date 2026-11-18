@@ -500,7 +500,7 @@
 
 | Story | Title | 角色 | Priority | Iteration | Points | Page | Parent REQ | Change | Status |
 |---|---|---|---|---|---|---|---|---|---|
-| S29 | 用户结束客服会话，客服只标记处理完成 | 普通用户 / 客服 | P0 | 迭代 2 | 2 | `#/support` / 管理端客户服务 | REQ-028 | `refine-service-close` | P0 Pass（2026-11-18）；P1 Pass（2026-11-18，WAYNE + Lewis Liu 签） |
+| S29 | 用户结束客服会话，客服只标记处理完成 | 普通用户 / 客服 | P0 | 迭代 2 | 2 | `#/support` / 管理端客户服务 | REQ-028 | `refine-service-close` | P0 Pass（2026-11-18）；P1 Pass（2026-11-18，WAYNE + Lewis Liu 签）；P2 Pass + G1（2026-11-18，Delta 3 Requirement / 31 Scenario，IO=WAYNE / SA=Jacky）；P3 Pass（2026-11-18，design / tasks 与评审报告已签）；P4 Pass（2026-11-18，后端 583 / 前端 475 / E2E 14，契约 0.25.0 + V30）；G2 Pass（附记录债务，VL=Neal / AO=Lewis Liu / IO=WAYNE / SA=Jacky）；P5 / 归档不执行 |
 
 ## Traceability（REQ-028）
 

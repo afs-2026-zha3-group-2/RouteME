@@ -172,7 +172,31 @@ public class CustomerServiceImpl implements CustomerService {
 
     @Override
     @Transactional
-    public Optional<ServiceSessionDetailResponse> close(long sessionId, long adminId) {
+    public Optional<ServiceSessionDetailResponse> closeByUser(long sessionId, long userId) {
+        accountStatusService.assertCanWrite(userId, WriteScopeEnum.SUPPORT);
+        CustomerServiceSessionEntity entity = sessionMapper.selectById(sessionId);
+        if (entity == null || !Objects.equals(entity.getUserId(), userId)) {
+            return Optional.empty();
+        }
+        boolean updated = sessionMapper.update(null, Wrappers.<CustomerServiceSessionEntity>lambdaUpdate()
+                .eq(CustomerServiceSessionEntity::getId, sessionId)
+                .eq(CustomerServiceSessionEntity::getUserId, userId)
+                .in(CustomerServiceSessionEntity::getStatus,
+                        ServiceSessionStatusEnum.WAITING.code(),
+                        ServiceSessionStatusEnum.HANDLING.code(),
+                        ServiceSessionStatusEnum.RESOLVED.code())
+                .set(CustomerServiceSessionEntity::getStatus, ServiceSessionStatusEnum.CLOSED.code())
+                .set(CustomerServiceSessionEntity::getClosedBy, userId)
+                .set(CustomerServiceSessionEntity::getClosedAt, clock.instant().toString())) > 0;
+        if (!updated) {
+            throw new SessionClosedException(sessionId);
+        }
+        return Optional.of(detail(sessionMapper.selectById(sessionId).toSession(), false));
+    }
+
+    @Override
+    @Transactional
+    public Optional<ServiceSessionDetailResponse> resolve(long sessionId, long adminId) {
         CustomerServiceSessionEntity entity = sessionMapper.selectById(sessionId);
         if (entity == null) {
             return Optional.empty();
@@ -180,9 +204,9 @@ public class CustomerServiceImpl implements CustomerService {
         boolean updated = sessionMapper.update(null, Wrappers.<CustomerServiceSessionEntity>lambdaUpdate()
                 .eq(CustomerServiceSessionEntity::getId, sessionId)
                 .eq(CustomerServiceSessionEntity::getStatus, ServiceSessionStatusEnum.HANDLING.code())
-                .set(CustomerServiceSessionEntity::getStatus, ServiceSessionStatusEnum.CLOSED.code())
-                .set(CustomerServiceSessionEntity::getClosedBy, adminId)
-                .set(CustomerServiceSessionEntity::getClosedAt, clock.instant().toString())) > 0;
+                .set(CustomerServiceSessionEntity::getStatus, ServiceSessionStatusEnum.RESOLVED.code())
+                .set(CustomerServiceSessionEntity::getResolvedBy, adminId)
+                .set(CustomerServiceSessionEntity::getResolvedAt, clock.instant().toString())) > 0;
         if (!updated) {
             throw new SessionNotHandlingException(sessionId);
         }
@@ -214,6 +238,21 @@ public class CustomerServiceImpl implements CustomerService {
             throw new InvalidInputException(
                     "content must be between 1 and " + MAX_MESSAGE_LENGTH + " characters");
         }
+        if (ServiceSessionStatusEnum.RESOLVED.code().equals(session.status())) {
+            boolean promoted = sessionMapper.update(null, Wrappers.<CustomerServiceSessionEntity>lambdaUpdate()
+                    .eq(CustomerServiceSessionEntity::getId, session.id())
+                    .eq(CustomerServiceSessionEntity::getStatus, ServiceSessionStatusEnum.RESOLVED.code())
+                    .set(CustomerServiceSessionEntity::getStatus, ServiceSessionStatusEnum.HANDLING.code())
+                    .set(CustomerServiceSessionEntity::getResolvedAt, null)
+                    .set(CustomerServiceSessionEntity::getResolvedBy, null)) > 0;
+            if (!promoted) {
+                CustomerServiceSessionEntity latest = sessionMapper.selectById(session.id());
+                if (latest == null
+                        || ServiceSessionStatusEnum.CLOSED.code().equals(latest.getStatus())) {
+                    throw new SessionClosedException(session.id());
+                }
+            }
+        }
         CustomerServiceMessageEntity entity = new CustomerServiceMessageEntity();
         entity.setId(nextMessageId());
         entity.setSessionId(session.id());
@@ -238,6 +277,7 @@ public class CustomerServiceImpl implements CustomerService {
                 summary.createdAt(),
                 summary.joinedAt(),
                 summary.closedAt(),
+                summary.resolvedAt(),
                 summary.lastMessageAt(),
                 summary.messageCount(),
                 messages,
@@ -254,6 +294,7 @@ public class CustomerServiceImpl implements CustomerService {
                 session.createdAt().toString(),
                 session.joinedAt() == null ? null : session.joinedAt().toString(),
                 session.closedAt() == null ? null : session.closedAt().toString(),
+                session.resolvedAt() == null ? null : session.resolvedAt().toString(),
                 last == null ? null : last.createdAt().toString(),
                 messages.size());
     }
@@ -290,7 +331,8 @@ public class CustomerServiceImpl implements CustomerService {
                         .eq(CustomerServiceSessionEntity::getUserId, userId)
                         .in(CustomerServiceSessionEntity::getStatus,
                                 ServiceSessionStatusEnum.WAITING.code(),
-                                ServiceSessionStatusEnum.HANDLING.code())
+                                ServiceSessionStatusEnum.HANDLING.code(),
+                                ServiceSessionStatusEnum.RESOLVED.code())
                         .orderByDesc(CustomerServiceSessionEntity::getCreatedAt)
                         .orderByDesc(CustomerServiceSessionEntity::getId))
                 .stream()

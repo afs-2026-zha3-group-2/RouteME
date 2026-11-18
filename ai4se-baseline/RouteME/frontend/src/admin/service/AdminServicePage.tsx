@@ -24,6 +24,7 @@ const STATUS_OPTIONS = [
   { value: '', label: adminMessages.serviceAllStatuses },
   { value: 'WAITING', label: adminMessages.sessionWaiting },
   { value: 'HANDLING', label: adminMessages.sessionHandling },
+  { value: 'RESOLVED', label: adminMessages.sessionResolved },
   { value: 'CLOSED', label: adminMessages.sessionClosed },
 ];
 

@@ -403,7 +403,7 @@ export type ReportStatus = 'PENDING' | 'PROCESSING' | 'RESOLVED' | 'REJECTED';
 
 export type ReportResolutionAction = 'SUSPEND' | 'BAN' | 'KEEP' | 'UPDATE_BAN' | 'REJECT';
 
-export type ServiceSessionStatus = 'WAITING' | 'HANDLING' | 'CLOSED';
+export type ServiceSessionStatus = 'WAITING' | 'HANDLING' | 'RESOLVED' | 'CLOSED';
 
 export type AdminStatusAction = 'SUSPEND' | 'BAN' | 'RESTORE';
 
@@ -570,6 +570,7 @@ export type ServiceSessionSummary = {
   created_at: string;
   joined_at?: string | null;
   closed_at?: string | null;
+  resolved_at?: string | null;
   last_message_at?: string | null;
   message_count: number;
 };

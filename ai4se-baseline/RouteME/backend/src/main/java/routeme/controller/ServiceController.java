@@ -88,6 +88,16 @@ public class ServiceController {
                 .orElseGet(() -> ResponseEntity.notFound().build());
     }
 
+    @PostMapping("/{sessionId}/close")
+    public ResponseEntity<ServiceSessionDetailResponse> close(
+            @RequestHeader(value = "Authorization", required = false) String authorization,
+            @PathVariable long sessionId) {
+        DemoUser user = authService.requireUser(bearerToken(authorization));
+        return customerService.closeByUser(sessionId, user.id())
+                .map(ResponseEntity::ok)
+                .orElseGet(() -> ResponseEntity.notFound().build());
+    }
+
     private static String bearerToken(String authorization) {
         if (authorization == null
                 || !authorization.regionMatches(true, 0, BEARER_PREFIX, 0, BEARER_PREFIX.length())) {
