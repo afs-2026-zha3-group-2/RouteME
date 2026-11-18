@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Popover } from 'antd';
+import { createPortal } from 'react-dom';
 import { notificationMessages } from '../i18n/notificationMessages';
 import type { AppNotification } from '../types';
 import { NotificationBadge } from './NotificationBadge';
@@ -7,36 +7,120 @@ import { NotificationPanel } from './NotificationPanel';
 import { useNotifications } from './NotificationContext';
 import { notificationHref } from './notificationModel';
 
+/** 面板总宽（含内边距）；窄屏改为左右各留 8px 的整行宽度。 */
+const PANEL_WIDTH = 384;
+const VIEWPORT_MARGIN = 8;
+const GAP = 8;
+const MIN_HEIGHT = 160;
+
+type Anchor = {
+  left: number;
+  width: number;
+  top?: number;
+  bottom?: number;
+  maxHeight: number;
+};
+
 /**
  * 顶栏铃铛：click 展开（不引入 hover 分支），Escape 关闭并把焦点还给按钮。
  * 徽标显示 `counts.total`，数字同时进入 `aria-label`。
+ *
+ * 面板用 portal 挂到 body、按铃铛的视口矩形定位：顶栏带 backdrop-filter，
+ * 会成为 fixed 子元素的定位容器；同时这里不依赖入场动画 —— antd Popover 的
+ * `ant-zoom-big-appear-prepare` 在后台标签页里会被 rAF 节流卡在 opacity: 0，
+ * 表现为「点了没反应」，和左下角账号菜单一样用纯定位即可。
  */
 export function NotificationBell() {
   const { items, counts, loadFailed, markOneRead, markAllRead, reload } = useNotifications();
   const [open, setOpen] = useState(false);
+  const [anchor, setAnchor] = useState<Anchor | null>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
+  const panelRef = useRef<HTMLDivElement>(null);
   const label =
     counts.total > 0
       ? notificationMessages.bellLabelUnread(counts.total)
       : notificationMessages.bellLabel;
+
+  const placePanel = useCallback(() => {
+    const trigger = buttonRef.current;
+    if (trigger === null) {
+      return;
+    }
+    const rect = trigger.getBoundingClientRect();
+    const viewportWidth = window.innerWidth;
+    const width = viewportWidth <= 680 ? viewportWidth - VIEWPORT_MARGIN * 2 : PANEL_WIDTH;
+    const left =
+      viewportWidth <= 680
+        ? VIEWPORT_MARGIN
+        : Math.min(
+            Math.max(VIEWPORT_MARGIN, rect.right - width),
+            viewportWidth - width - VIEWPORT_MARGIN,
+          );
+    const spaceBelow = window.innerHeight - rect.bottom - GAP - VIEWPORT_MARGIN;
+    const spaceAbove = rect.top - GAP - VIEWPORT_MARGIN;
+    if (spaceBelow >= MIN_HEIGHT || spaceBelow >= spaceAbove) {
+      setAnchor({
+        left,
+        width,
+        top: rect.bottom + GAP,
+        maxHeight: Math.min(520, Math.max(MIN_HEIGHT, spaceBelow)),
+      });
+      return;
+    }
+    setAnchor({
+      left,
+      width,
+      bottom: window.innerHeight - rect.top + GAP,
+      maxHeight: Math.min(520, Math.max(MIN_HEIGHT, spaceAbove)),
+    });
+  }, []);
 
   const close = useCallback(() => {
     setOpen(false);
     buttonRef.current?.focus();
   }, []);
 
-  useEffect(() => {
-    if (!open) {
+  /**
+   * 打开时不抢焦点：V2 场景要求「面板打开时新事件只更新列表，不移动焦点」，
+   * 铃铛本身已用 `aria-expanded` 表明展开状态；Escape 才把焦点交还铃铛。
+   */
+  const toggle = () => {
+    if (open) {
+      setOpen(false);
       return;
     }
-    const onKeyDown = (event: KeyboardEvent) => {
+    placePanel();
+    setOpen(true);
+  };
+
+  useEffect(() => {
+    if (!open) {
+      setAnchor(null);
+      return;
+    }
+    const closeOnOutside = (event: MouseEvent) => {
+      const target = event.target as Node;
+      if (buttonRef.current?.contains(target) || panelRef.current?.contains(target)) {
+        return;
+      }
+      setOpen(false);
+    };
+    const closeOnEscape = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
         close();
       }
     };
-    document.addEventListener('keydown', onKeyDown);
-    return () => document.removeEventListener('keydown', onKeyDown);
-  }, [open, close]);
+    document.addEventListener('mousedown', closeOnOutside);
+    document.addEventListener('keydown', closeOnEscape);
+    window.addEventListener('resize', placePanel);
+    document.addEventListener('scroll', placePanel, true);
+    return () => {
+      document.removeEventListener('mousedown', closeOnOutside);
+      document.removeEventListener('keydown', closeOnEscape);
+      window.removeEventListener('resize', placePanel);
+      document.removeEventListener('scroll', placePanel, true);
+    };
+  }, [open, close, placePanel]);
 
   const selectItem = (item: AppNotification) => {
     markOneRead(item.id);
@@ -44,24 +128,31 @@ export function NotificationBell() {
     setOpen(false);
   };
 
-  return (
-    <Popover
-      trigger="click"
-      placement="bottomRight"
-      arrow={false}
-      open={open}
-      onOpenChange={setOpen}
-      content={
-        <NotificationPanel
-          items={items}
-          total={counts.total}
-          loadFailed={loadFailed}
-          onRetry={reload}
-          onMarkAll={markAllRead}
-          onSelect={selectItem}
-        />
-      }
+  const panel = (
+    <div
+      className="notification-pop"
+      ref={panelRef}
+      style={{
+        left: anchor?.left,
+        width: anchor?.width,
+        top: anchor?.top,
+        bottom: anchor?.bottom,
+        maxHeight: anchor?.maxHeight,
+      }}
     >
+      <NotificationPanel
+        items={items}
+        total={counts.total}
+        loadFailed={loadFailed}
+        onRetry={reload}
+        onMarkAll={markAllRead}
+        onSelect={selectItem}
+      />
+    </div>
+  );
+
+  return (
+    <>
       <button
         ref={buttonRef}
         type="button"
@@ -71,6 +162,7 @@ export function NotificationBell() {
         aria-expanded={open}
         aria-label={label}
         title={notificationMessages.title}
+        onClick={toggle}
       >
         <svg
           viewBox="0 0 20 20"
@@ -86,6 +178,7 @@ export function NotificationBell() {
         </svg>
         <NotificationBadge count={counts.total} testId="notification-badge" />
       </button>
-    </Popover>
+      {open && anchor !== null && createPortal(panel, document.body)}
+    </>
   );
 }

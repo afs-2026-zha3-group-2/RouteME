@@ -104,6 +104,7 @@
 | D-4 | 运行时日志噪声 | 浏览器关闭 SSE 连接时，Spring 会向 `GlobalExceptionHandler` 抛 `AsyncRequestNotUsableException` / `HttpMessageNotWritableException: No converter for ErrorResponse with preset Content-Type 'text/event-stream'`，按 ERROR + 栈打印 | 非致命（连接已断，无副作用），本 change 不修；后续可给 SSE 端点加专用异常处理或忽略该异常类型 |
 | D-5 | 客户端追加消息 | 推送 payload 的 `NotificationEvent` 内嵌 `message`（`ChatMessageResponse`），前端 `ChatPage` 直接追加，不再二次拉取；同时用 `unreadRef` 让 3 秒轮询与推送收敛 | 与 D14 / §6.5 一致 |
 | D-6 | 证据目录共用 | `weather-walkthrough.spec.ts` 与通知走查都写 `docs/preview/`；跑全量会重写天气截图 | 提交前已 `git checkout` 还原天气截图，只提交 6 张通知截图 |
+| D-7 | G2 后缺陷修复（铃铛点开无反应） | 走查反馈：点铃铛看不到面板。定位结果：面板 DOM 已挂载、`role=dialog` 可访问，但 antd `Popover` 的容器停在 `ant-zoom-big-appear-prepare`（`opacity: 0`），且计算盒子落在视口外（`top ≈ -6988`）；原因是入场动画依赖 rAF，后台 / 被遮挡标签页里 rAF 被节流，动画永不推进。左下角账号菜单不受影响，因为它用 portal + `position: fixed` 自算坐标、没有入场动画。改为同一套做法：`createPortal` 挂 body，按铃铛的 `getBoundingClientRect()` 算 `left/top/bottom/maxHeight`，下方空间不足时向上展开，宽度 384 px（≤680 px 时 `视口 - 16`），resize / scroll 时重算；关闭路径为 `mousedown` 外部点击（不抢焦点）与 Escape（焦点交还铃铛）。同时按「不只靠颜色」补上条目类型标签（同行申请 / 申请通过 / 申请未通过 / 聊天消息），并删除 `@media (max-width: 680px)` 下针对 `.ant-popover` 的 `!important` 覆盖 | 已修复并复跑：`npm run typecheck` 干净、`npm test` 47 文件 / 369 用例、`npm run build` 通过（`index.js` 1,609.35 kB / gzip 504.67 kB，`index.css` 116.67 kB / gzip 21.45 kB）、通知 E2E 14/14（V1–V4 + M1–M10）、6 张 `docs/preview/notifications-*.png` 重拍；另用四类事件（申请 / 通过 / 拒绝 / 消息）演示面板全部可辨。打开时**不**把焦点移入面板，保持 V2「面板打开时新事件只更新列表，不移动焦点」的断言不变 |
 
 ## 6. 残余风险
 
@@ -124,6 +125,8 @@
 
 **G2 结论：Pass**。E2E 门禁口径经签署确认：以「通知 14 条全绿 + 失败集与基线同构（27 条硬失败逐条同名）」判定，不要求全量 0 失败。
 
+**G2 后补充（D-7）：** 签署后走查发现铃铛点击无可见面板（antd 弹层动画在后台标签页被 rAF 节流卡在 `opacity: 0`）。已按账号菜单同构的 portal + `position: fixed` 方案重写面板定位，并补上类型标签；复跑证据见 §3 与 D-7。该改动为纯前端定位/可读性修复，不改接口、不改计数语义、不改已完成签署的门禁口径，PR 评审时需一并确认。
+
 ## 8. 阶段提交链
 
 | 阶段 | 提交 |
@@ -135,6 +138,7 @@
 | P4 E2E 与走查（T12、T14） | `a96b3fe` test(notifications): cover the three second budget and narrow screens |
 | P4 文档与登记（T13） | `f30e95c` docs(notifications): record the P4 verification and walkthrough evidence |
 | P4 G2 签署 | 本文件（`docs(p4)` 提交） |
+| P4 修正（G2 后，D-7） | 本提交 `fix(notifications): anchor the bell panel like the account menu` |
 
 ## 9. 下一步
 

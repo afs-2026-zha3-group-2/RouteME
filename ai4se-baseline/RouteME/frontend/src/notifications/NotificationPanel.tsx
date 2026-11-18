@@ -62,13 +62,16 @@ export function NotificationPanel({
               data-testid="notification-item"
               onClick={() => onSelect(item)}
             >
-              <span className="notification-item-text">{item.text}</span>
               <span className="notification-item-meta">
+                <span className="notification-item-kind" data-kind={item.type}>
+                  {notificationMessages.typeLabel(item.type)}
+                </span>
                 <span>{formatChatTime(item.created_at)}</span>
                 {item.read ? null : (
                   <span className="notification-unread-flag">{notificationMessages.unread}</span>
                 )}
               </span>
+              <span className="notification-item-text">{item.text}</span>
             </button>
           ))}
         </div>
