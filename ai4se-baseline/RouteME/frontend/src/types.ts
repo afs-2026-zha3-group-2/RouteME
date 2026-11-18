@@ -970,7 +970,10 @@ export type TravelLoan = {
   principal_cents: number;
   service_fee_cents: number;
   disbursed_cents: number;
+  interest_cents: number;
   repay_cents: number;
+  penalty_cents: number;
+  total_repay_cents: number;
   term_days: LoanTermDays;
   status: LoanStatus;
   funded_at: string;

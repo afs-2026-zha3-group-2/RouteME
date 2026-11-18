@@ -1,5 +1,13 @@
 import { describe, expect, it } from 'vitest';
-import { feeOf, loanStatusOf, money, netOf } from './financeFormat';
+import {
+  feeOf,
+  interestOf,
+  loanStatusOf,
+  money,
+  netOf,
+  overdueDaysOf,
+  penaltyOf,
+} from './financeFormat';
 
 describe('feeOf', () => {
   it('charges 5% of the base amount in cents', () => {
@@ -19,6 +27,48 @@ describe('netOf', () => {
   it('deducts the fee from the principal', () => {
     expect(netOf(100_000)).toBe(95_000);
     expect(netOf(10_000)).toBe(9_500);
+  });
+});
+
+describe('interestOf', () => {
+  it('charges 0.05% of the principal per day of the term', () => {
+    expect(interestOf(100_000, 14)).toBe(700);
+    expect(interestOf(100_000, 7)).toBe(350);
+    expect(interestOf(100_000, 30)).toBe(1_500);
+  });
+
+  it('rounds to the nearest cent', () => {
+    expect(interestOf(10_000, 7)).toBe(35);
+    expect(interestOf(12_345, 7)).toBe(43);
+  });
+});
+
+describe('penaltyOf', () => {
+  it('charges 0.1% of the principal per started overdue day', () => {
+    expect(penaltyOf(100_000, 6)).toBe(600);
+    expect(penaltyOf(100_000, 1)).toBe(100);
+    expect(penaltyOf(200_000, 2)).toBe(400);
+  });
+
+  it('never charges a penalty on time', () => {
+    expect(penaltyOf(100_000, 0)).toBe(0);
+    expect(penaltyOf(100_000, -1)).toBe(0);
+  });
+});
+
+describe('overdueDaysOf', () => {
+  const dueAt = '2026-11-15T09:00:00Z';
+
+  it('stays at zero before the due instant', () => {
+    expect(overdueDaysOf(dueAt, new Date('2026-11-15T09:00:00Z'))).toBe(0);
+    expect(overdueDaysOf(dueAt, new Date('2026-11-15T08:59:59Z'))).toBe(0);
+  });
+
+  it('counts any started day as a full overdue day', () => {
+    expect(overdueDaysOf(dueAt, new Date('2026-11-15T09:00:01Z'))).toBe(1);
+    expect(overdueDaysOf(dueAt, new Date('2026-11-16T08:59:59Z'))).toBe(1);
+    expect(overdueDaysOf(dueAt, new Date('2026-11-16T09:00:00Z'))).toBe(1);
+    expect(overdueDaysOf(dueAt, new Date('2026-11-16T09:00:01Z'))).toBe(2);
   });
 });
 
