@@ -253,6 +253,13 @@ class OpenApiTest {
         Map<String, Object> document = loadYaml(SPEC_PATH);
         Map<String, Object> preview = operation(document, "/trips/{tripId}/leave-preview", "get");
         Map<String, Object> leave = operation(document, "/trips/{tripId}/leave", "post");
+        Map<String, Object> evidenceUpload = operation(document, "/trips/{tripId}/leave-evidence", "post");
+        Map<String, Object> leaveRecord = operation(document, "/trips/{tripId}/leave-record", "get");
+        Map<String, Object> leaveEvidenceOperation = operation(document, "/leave-evidence/{attachmentId}", "get");
+        Map<String, Object> recordSchema = schema(document, "LeaveRecord");
+        Map<String, Object> recordAttachment = schema(document, "LeaveRecordAttachment");
+        Map<String, Object> leaveRequest = schema(document, "LeaveRequest");
+        Map<String, Object> leaveEvidence = schema(document, "LeaveEvidence");
         Map<String, Object> previewSchema = schema(document, "LeavePreview");
         Map<String, Object> leaveResult = schema(document, "LeaveResult");
         Map<String, Map<String, Object>> tripDetailProps = allOfProperties(document, "TripDetail");
@@ -264,6 +271,29 @@ class OpenApiTest {
                 () -> assertTrue(responses(preview).containsKey("403"), "preview 403"),
                 () -> assertTrue(responses(leave).containsKey("200"), "leave 200"),
                 () -> assertTrue(responses(leave).containsKey("409"), "leave 409"),
+                () -> assertTrue(responses(evidenceUpload).containsKey("201"), "evidence upload 201"),
+                () -> assertTrue(responses(leaveRecord).containsKey("200"), "leave record 200"),
+                () -> assertTrue(responses(leaveRecord).containsKey("404"), "leave record 404"),
+                () -> assertTrue(responses(leaveEvidenceOperation).containsKey("200"), "leave evidence 200"),
+                () -> assertTrue(responses(leaveEvidenceOperation).containsKey("403"), "leave evidence 403"),
+                () -> assertTrue(
+                        required(recordSchema).containsAll(List.of(
+                                "reason", "exit_at", "review_status", "theoretical_delta",
+                                "applied_delta", "monthly_ordinal", "attachments")),
+                        "leave record required fields"),
+                () -> assertTrue(
+                        required(recordAttachment).containsAll(List.of("id", "content_type", "size_bytes", "url")),
+                        "leave record attachment required fields"),
+                () -> assertTrue(
+                        properties(leaveRequest).containsKey("note")
+                                && Integer.valueOf(200).equals(properties(leaveRequest).get("note").get("maxLength")),
+                        "leave note max 200"),
+                () -> assertTrue(
+                        Integer.valueOf(3).equals(properties(leaveRequest).get("attachment_ids").get("maxItems")),
+                        "leave attachments max 3"),
+                () -> assertTrue(
+                        required(leaveEvidence).containsAll(List.of("id", "content_type", "size_bytes")),
+                        "leave evidence required fields"),
                 () -> assertTrue(
                         required(previewSchema).containsAll(List.of(
                                 "reason", "departure_at", "penalty_tier", "applied_delta",

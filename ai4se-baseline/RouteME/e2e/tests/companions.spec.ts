@@ -110,6 +110,7 @@ test('lists conversations, keeps history readable and still chats after leaving'
   const leaveDialog = page.getByRole('dialog');
   await leaveDialog.locator('[data-leave-reason]').selectOption('force_majeure');
   await expect(leaveDialog.locator('[data-leave-preview]')).toContainText('暂不扣分，待核实');
+  await leaveDialog.locator('[data-leave-note]').fill('台风停航，无法出发');
   await leaveDialog.getByRole('button', { name: '退出同行' }).click();
   await expect(page.getByText('已加入 1/3人')).toBeVisible();
   await expect(page.getByRole('button', { name: '提交同行申请' })).toBeVisible();

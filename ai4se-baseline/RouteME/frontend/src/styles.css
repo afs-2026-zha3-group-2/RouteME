@@ -11409,6 +11409,179 @@ a.admin-metric-card:focus-visible {
   margin-top: 6px;
 }
 
+.leave-note,
+.leave-evidence {
+  display: block;
+  margin-top: 12px;
+}
+
+.leave-note .hint,
+.leave-evidence .hint {
+  display: block;
+  margin-top: 4px;
+  font-size: 11.5px;
+  color: var(--ink-3);
+}
+
+.leave-note .hint.danger,
+.leave-evidence .hint.danger {
+  color: var(--t-danger);
+}
+
+.leave-evidence-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  margin-top: 6px;
+}
+
+/* 原生 file input 铺满可见按钮：点击即直接唤起系统选择器，不依赖脚本触发 */
+.leave-evidence-add {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 28px;
+  padding: 0 12px;
+  overflow: hidden;
+  border: 1px dashed var(--line);
+  border-radius: 999px;
+  background: var(--surface-2);
+  color: var(--ink-2);
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.leave-evidence-add:hover {
+  border-color: var(--lagoon);
+  color: var(--lagoon);
+}
+
+.leave-evidence-input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  cursor: pointer;
+  font-size: 0;
+}
+
+.leave-record dl {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+}
+
+.leave-record dl > div {
+  display: grid;
+  grid-template-columns: 84px 1fr;
+  gap: 8px;
+  align-items: start;
+}
+
+.leave-record dt {
+  color: var(--ink-3);
+  font-size: 12px;
+}
+
+.leave-record dd {
+  margin: 0;
+  color: var(--ink);
+  font-size: 13px;
+  line-height: 1.6;
+  overflow-wrap: anywhere;
+}
+
+.leave-record .hint {
+  display: block;
+  margin-top: 2px;
+  color: var(--ink-3);
+  font-size: 11.5px;
+}
+
+.leave-record-images {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.leave-record-images .ant-image-img {
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  object-fit: cover;
+}
+
+.leave-record .ant-btn {
+  margin-top: 14px;
+}
+
+.leave-record-count {
+  margin: 0 0 8px;
+  color: var(--ink-3);
+  font-size: 12px;
+}
+
+.leave-record-item {
+  padding: 10px 0;
+  border-top: 1px dashed var(--line);
+}
+
+.leave-record-item:first-of-type {
+  padding-top: 0;
+  border-top: 0;
+}
+
+.leave-record-item-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: 0 0 8px;
+  color: var(--ink-2);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.leave-record-item-head .hint {
+  margin: 0;
+  color: var(--ink-3);
+  font-size: 11.5px;
+  font-weight: 400;
+}
+
+.leave-evidence-item {
+  position: relative;
+  width: 64px;
+  height: 64px;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+}
+
+.leave-evidence-item img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.leave-evidence-remove {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: rgb(0 0 0 / 55%);
+  color: #fff;
+  font-size: 14px;
+  line-height: 1;
+  cursor: pointer;
+}
+
 /* 受限账号的「发布行程」导航入口：仍可见，但不可点开 */
 .rail-link.is-disabled,
 .tab-link.is-disabled {

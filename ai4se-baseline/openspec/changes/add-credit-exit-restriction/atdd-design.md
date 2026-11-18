@@ -1,7 +1,7 @@
 # ATDD design — add-credit-exit-restriction
 
 - **Change：** `add-credit-exit-restriction`
-- **Delta：** `openspec/changes/add-credit-exit-restriction/specs/credit-enforcement/spec.md`（ADDED 9 Requirement / 46 Scenario）
+- **Delta：** `openspec/changes/add-credit-exit-restriction/specs/credit-enforcement/spec.md`（ADDED 11 Requirement / 61 Scenario）
 - **日期：** 2026-11-17 ｜ **阶段：** P3
 - **范围：** API + E2E 验收层；纯逻辑单测延后到 P4 `/sdd:atdd-apply` 的 TDD 红绿循环
 
@@ -63,3 +63,26 @@
 | 不做通知 | 无站内信 / 推送 / 邮件端点与 UI |
 | 不改未归档 Delta | `openspec/specs/` 无新增 `user-credit` / `trip-cancellation` 修改；`trip-companions` 无 MODIFIED |
 | 系统清退不扣分 | 触发限制后 `credit_ledger` 无新增退出扣分行；当月次数不变 |
+
+## 7. R2 验收修订（2026-11-17）
+
+| id | 验收工件 | 场景 |
+|---|---|---|
+| A6 | `CreditExitApiTest` 新增：安全 / 不可抗力无说明 → 400 且不写事件；说明 >200 字 → 400；个人原因可无说明；说明 + 2 张图片绑定退出事件；第 4 张与假图片 → 400 | S25-23 ~ S25-29 及说明 / 证据相关场景 |
+| A6 | `CreditEnforcementMigrationSqliteTest`：V25 → V26 升级新增 `exit_note` 与 `credit_exit_attachment` | 数据契约 |
+| E4 | `credit-exit.spec.ts`：未选原因时确认置灰；下拉不出现标签选项；不可抗力待核实只有一行；说明必填；上传一张 PNG 后提交成功 | 同上 |
+| UT | `leaveForm.test.ts`：`canSubmitLeave` 三原因组合；图片类型 / 5MB 边界 | Modal 纯逻辑 |
+
+## 8. R3 本人回看（2026-11-17）
+
+| id | 验收工件 | 场景 |
+|---|---|---|
+| A7 | `CreditExitApiTest`：本人读记录 200（原因 / 说明 / 影响 / 2 张附件）；图片 200 `image/png`；发布者读记录 404 `LEAVE_RECORD_NOT_FOUND`、读图片 403 `FORBIDDEN` | S25-30 ~ S25-33 |
+| E5 | `credit-exit.spec.ts`：退出后到「我申请的」点「查看退出记录」，断言不可抗力 / 说明 / 待核实与 1 张缩略图 | 同上 |
+
+## 9. R4 同一行程多次退出（2026-11-17）
+
+| id | 验收工件 | 场景 |
+|---|---|---|
+| A8 | `CreditExitApiTest`：退出→再次申请并接受→第二次退出（-10 / 月序号 2）→记录 2 条→重试幂等；`CreditEnforcementMigrationSqliteTest`：V27 `application_id` 与旧数据回填 | S25-34 ~ S25-37 |
+| E6 | `credit-exit.spec.ts`：再次申请并接受后再次退出，预览 -10、结果 75→65，记录列出 2 条并包含两次说明 | 同上 |

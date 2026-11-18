@@ -21,6 +21,7 @@ public class CreditExitEventEntity {
     private Long id;
     private Long userId;
     private Long tripId;
+    private Long applicationId;
     private String exitReason;
     private String exitAt;
     private String departureBasisAt;
@@ -29,6 +30,7 @@ public class CreditExitEventEntity {
     private Integer appliedDelta;
     private Integer monthlyOrdinal;
     private String reviewStatus;
+    private String exitNote;
     private String reviewedAt;
     private Long ledgerId;
     private String idempotencyKey;
@@ -39,6 +41,7 @@ public class CreditExitEventEntity {
         entity.id = event.id();
         entity.userId = event.userId();
         entity.tripId = event.tripId();
+        entity.applicationId = event.applicationId();
         entity.exitReason = event.reason().wireValue();
         entity.exitAt = event.exitAt().toString();
         entity.departureBasisAt = event.departureBasisAt().toString();
@@ -47,6 +50,7 @@ public class CreditExitEventEntity {
         entity.appliedDelta = event.appliedDelta();
         entity.monthlyOrdinal = event.monthlyOrdinal();
         entity.reviewStatus = event.reviewStatus().wireValue();
+        entity.exitNote = event.exitNote();
         entity.reviewedAt = event.reviewedAt() == null ? null : event.reviewedAt().toString();
         entity.ledgerId = event.ledgerId();
         entity.idempotencyKey = event.idempotencyKey();
@@ -59,6 +63,7 @@ public class CreditExitEventEntity {
                 id,
                 userId,
                 tripId,
+                applicationId,
                 CreditExitReasonEnum.parse(exitReason),
                 Instant.parse(exitAt),
                 Instant.parse(departureBasisAt),
@@ -67,6 +72,7 @@ public class CreditExitEventEntity {
                 appliedDelta,
                 monthlyOrdinal,
                 CreditExitReviewStatus.parse(reviewStatus),
+                exitNote,
                 reviewedAt == null ? null : Instant.parse(reviewedAt),
                 ledgerId,
                 idempotencyKey,
@@ -95,6 +101,14 @@ public class CreditExitEventEntity {
 
     public void setTripId(Long tripId) {
         this.tripId = tripId;
+    }
+
+    public Long getApplicationId() {
+        return applicationId;
+    }
+
+    public void setApplicationId(Long applicationId) {
+        this.applicationId = applicationId;
     }
 
     public String getExitReason() {
@@ -159,6 +173,14 @@ public class CreditExitEventEntity {
 
     public void setReviewStatus(String reviewStatus) {
         this.reviewStatus = reviewStatus;
+    }
+
+    public String getExitNote() {
+        return exitNote;
+    }
+
+    public void setExitNote(String exitNote) {
+        this.exitNote = exitNote;
     }
 
     public String getReviewedAt() {

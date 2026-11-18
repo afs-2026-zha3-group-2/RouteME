@@ -17,7 +17,9 @@ import org.springframework.jdbc.datasource.DriverManagerDataSource;
 
 /**
  * V25：credit_exit_event / credit_restriction / trip_applications.status_reason。
- * 覆盖全新库、V20 升级与 active 唯一约束。
+ * V26：credit_exit_event.exit_note / credit_exit_attachment（合并 main 后顺延为 V28）。
+ * V27：credit_exit_event.application_id（同一行程可多次退出；合并 main 后顺延为 V29）。
+ * 覆盖全新库、V25 升级与 active 唯一约束。
  */
 class CreditEnforcementMigrationSqliteTest {
 
@@ -34,40 +36,65 @@ class CreditEnforcementMigrationSqliteTest {
                 .query(Integer.class).single();
         int restrictions = jdbc.sql("SELECT COUNT(*) FROM sqlite_master WHERE type = 'table' AND name = 'credit_restriction'")
                 .query(Integer.class).single();
+        int attachments = jdbc.sql("SELECT COUNT(*) FROM sqlite_master WHERE type = 'table' AND name = 'credit_exit_attachment'")
+                .query(Integer.class).single();
         List<String> applicationColumns = jdbc.sql("SELECT name FROM pragma_table_info('trip_applications')")
                 .query(String.class).list();
-        int applied = jdbc.sql("""
+        List<String> eventColumns = jdbc.sql("SELECT name FROM pragma_table_info('credit_exit_event')")
+                .query(String.class).list();
+        int applied25 = jdbc.sql("""
                 SELECT COUNT(*) FROM flyway_schema_history
                  WHERE success = 1 AND version = '25'
+                """).query(Integer.class).single();
+        int applied28 = jdbc.sql("""
+                SELECT COUNT(*) FROM flyway_schema_history
+                 WHERE success = 1 AND version = '28'
+                """).query(Integer.class).single();
+        int applied29 = jdbc.sql("""
+                SELECT COUNT(*) FROM flyway_schema_history
+                 WHERE success = 1 AND version = '29'
                 """).query(Integer.class).single();
 
         assertAll(
                 () -> assertEquals(1, exitEvents, "credit_exit_event created"),
                 () -> assertEquals(1, restrictions, "credit_restriction created"),
+                () -> assertEquals(1, attachments, "credit_exit_attachment created"),
                 () -> assertTrue(applicationColumns.contains("status_reason"), "status_reason added"),
-                () -> assertEquals(1, applied, "V25 applied once"));
+                () -> assertTrue(eventColumns.contains("exit_note"), "exit_note added"),
+                () -> assertTrue(eventColumns.contains("application_id"), "application_id added"),
+                () -> assertEquals(1, applied25, "V25 applied once"),
+                () -> assertEquals(1, applied28, "V28 applied once"),
+                () -> assertEquals(1, applied29, "V29 applied once"));
     }
 
     @Test
-    void in_databaseAtV20_out_creditEnforcementTablesAddedOnUpgrade() {
+    void in_databaseAtV25_out_exitEvidenceAddedOnUpgrade() {
         String jdbcUrl = sqliteUrl("upgrade.db");
-        migrate(jdbcUrl, "20");
+        migrate(jdbcUrl, "25");
         JdbcClient before = JdbcClient.create(new DriverManagerDataSource(jdbcUrl));
         int beforeTables = before.sql(
-                "SELECT COUNT(*) FROM sqlite_master WHERE type = 'table' AND name = 'credit_exit_event'")
+                "SELECT COUNT(*) FROM sqlite_master WHERE type = 'table' AND name = 'credit_exit_attachment'")
                 .query(Integer.class).single();
+        List<String> beforeColumns = before.sql("SELECT name FROM pragma_table_info('credit_exit_event')")
+                .query(String.class).list();
 
         migrate(jdbcUrl, null);
         JdbcClient after = JdbcClient.create(new DriverManagerDataSource(jdbcUrl));
         int afterTables = after.sql(
-                "SELECT COUNT(*) FROM sqlite_master WHERE type = 'table' AND name = 'credit_restriction'")
+                "SELECT COUNT(*) FROM sqlite_master WHERE type = 'table' AND name = 'credit_exit_attachment'")
                 .query(Integer.class).single();
+        List<String> afterColumns = after.sql("SELECT name FROM pragma_table_info('credit_exit_event')")
+                .query(String.class).list();
         List<String> statusReasons = after.sql("SELECT status_reason FROM trip_applications")
                 .query(String.class).list();
 
         assertAll(
-                () -> assertEquals(0, beforeTables, "V20 has no exit event table"),
-                () -> assertEquals(1, afterTables, "upgrade creates restriction table"),
+                () -> assertEquals(0, beforeTables, "V25 has no attachment table"),
+                () -> assertTrue(!beforeColumns.contains("exit_note"), "V25 has no exit_note"),
+                () -> assertTrue(!beforeColumns.contains("application_id"), "V25 has no application_id"),
+                () -> assertEquals(1, afterTables, "upgrade creates attachment table"),
+                () -> assertTrue(afterColumns.contains("exit_note"), "upgrade adds exit_note"),
+                () -> assertTrue(afterColumns.contains("application_id"), "upgrade adds application_id"),
                 () -> assertTrue(statusReasons.stream().allMatch(value -> value == null),
                         "existing applications keep null status_reason"));
     }

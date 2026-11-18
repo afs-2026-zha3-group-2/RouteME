@@ -1228,6 +1228,11 @@ paths:
               personal:
                 value:
                   reason: personal
+              force_majeure:
+                value:
+                  reason: force_majeure
+                  note: 台风停航，无法出发
+                  attachment_ids: [12]
       responses:
         '200':
           description: 退出成功与实际信用结果
@@ -1256,6 +1261,106 @@ paths:
           $ref: '#/components/responses/NotFound'
         '409':
           $ref: '#/components/responses/Conflict'
+  /trips/{tripId}/leave-evidence:
+    post:
+      operationId: uploadLeaveEvidence
+      summary: 上传退出证明图片（仅落库供核实，不对外提供读取）
+      parameters:
+        - $ref: '#/components/parameters/DemoUserId'
+        - name: tripId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [file]
+              properties:
+                file:
+                  type: string
+                  format: binary
+                  description: JPEG / PNG / WebP，单张 ≤5MB；每人每行程最多 3 张
+      responses:
+        '201':
+          description: 上传成功；返回元数据，文件本身不对外提供
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LeaveEvidence'
+        '400':
+          $ref: '#/components/responses/InvalidInput'
+        '401':
+          $ref: '#/components/responses/DemoUserRequired'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+  /trips/{tripId}/leave-record:
+    get:
+      operationId: loadLeaveRecord
+      summary: 本人查看自己的退出记录（只读）
+      parameters:
+        - $ref: '#/components/parameters/DemoUserId'
+        - name: tripId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: 本人退出记录（同一行程可多次，按时间倒序）
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/LeaveRecord'
+        '401':
+          $ref: '#/components/responses/DemoUserRequired'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /leave-evidence/{attachmentId}:
+    get:
+      operationId: loadLeaveEvidence
+      summary: 本人读取退出证明材料（图片）
+      parameters:
+        - $ref: '#/components/parameters/DemoUserId'
+        - name: attachmentId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: 图片二进制
+          content:
+            image/jpeg:
+              schema:
+                type: string
+                format: binary
+            image/png:
+              schema:
+                type: string
+                format: binary
+            image/webp:
+              schema:
+                type: string
+                format: binary
+        '401':
+          $ref: '#/components/responses/DemoUserRequired'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
   /trips/{tripId}/messages:
     get:
       operationId: loadMessages
@@ -3283,6 +3388,33 @@ components:
           description: 过期时间，UTC；默认签发后 7 天
         user:
           $ref: '#/components/schemas/DemoUser'
+    TripPage:
+      type: object
+      required: [items, page, size, total, total_pages]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/TripPlan'
+          description: 当前页的行程
+        page:
+          type: integer
+          minimum: 1
+          description: 当前页码，从 1 起
+        size:
+          type: integer
+          minimum: 1
+          maximum: 50
+          description: 每页条数
+        total:
+          type: integer
+          format: int64
+          minimum: 0
+          description: 筛选后的命中总数，不是全量行程数
+        total_pages:
+          type: integer
+          minimum: 0
+          description: 命中总数按 size 向上取整的页数
     TripPlan:
       type: object
       required:
@@ -3556,6 +3688,85 @@ components:
       properties:
         reason:
           $ref: '#/components/schemas/LeaveReason'
+        note:
+          type: string
+          nullable: true
+          maxLength: 200
+          description: 退出说明；安全原因 / 不可抗力必填，个人原因选填
+        attachment_ids:
+          type: array
+          maxItems: 3
+          description: 已通过 /leave-evidence 上传的证明图片 id
+          items:
+            type: integer
+            format: int64
+    LeaveEvidence:
+      type: object
+      required: [id, content_type, size_bytes]
+      properties:
+        id:
+          type: integer
+          format: int64
+          description: 证明图片 id，提交退出时放入 attachment_ids
+        original_name:
+          type: string
+          nullable: true
+          description: 原始文件名，仅用于核实
+        content_type:
+          type: string
+          enum: [image/jpeg, image/png, image/webp]
+        size_bytes:
+          type: integer
+          format: int64
+          minimum: 1
+          maximum: 5242880
+    LeaveRecord:
+      type: object
+      required: [reason, exit_at, review_status, theoretical_delta, applied_delta, monthly_ordinal, attachments]
+      properties:
+        reason:
+          $ref: '#/components/schemas/LeaveReason'
+        note:
+          type: string
+          nullable: true
+          maxLength: 200
+        exit_at:
+          type: string
+          format: date-time
+        review_status:
+          type: string
+          enum: [not_required, pending, verified_true, verified_false]
+        theoretical_delta:
+          type: integer
+        applied_delta:
+          type: integer
+        monthly_ordinal:
+          type: integer
+          minimum: 0
+        attachments:
+          type: array
+          items:
+            $ref: '#/components/schemas/LeaveRecordAttachment'
+    LeaveRecordAttachment:
+      type: object
+      required: [id, content_type, size_bytes, url]
+      properties:
+        id:
+          type: integer
+          format: int64
+        original_name:
+          type: string
+          nullable: true
+        content_type:
+          type: string
+          enum: [image/jpeg, image/png, image/webp]
+        size_bytes:
+          type: integer
+          format: int64
+        url:
+          type: string
+          readOnly: true
+          description: 本人读取图片的接口路径，需带演示用户头
     LeavePreview:
       type: object
       required: [reason, departure_at, penalty_tier, theoretical_delta, applied_delta, monthly_ordinal, monthly_doubled, counted, review_status, resulting_score, message_code]
@@ -5288,7 +5499,7 @@ components:
              ACCOUNT_BANNED, INVALID_STATUS_TRANSITION, CANNOT_TARGET_SELF, REPORT_NOT_FOUND, REPORT_NOT_PENDING,
              REPORT_NOT_PROCESSING, EMAIL_TAKEN, SESSION_ALREADY_HANDLING, SESSION_NOT_HANDLING, SESSION_CLOSED,
              CREDIT_RESTRICTED, LEARNING_NOT_ELIGIBLE, LEARNING_EXAM_QUOTA_EXCEEDED, LEARNING_RECOVERY_QUOTA_EXCEEDED,
-             LEARNING_NOT_COMPLETED, LEARNING_SESSION_NOT_FOUND]
+             LEARNING_NOT_COMPLETED, LEARNING_SESSION_NOT_FOUND, LEAVE_RECORD_NOT_FOUND]
         fields:
           type: object
           description: |

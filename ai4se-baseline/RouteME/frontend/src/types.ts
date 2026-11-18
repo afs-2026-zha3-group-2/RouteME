@@ -234,6 +234,38 @@ export type LeaveResult = {
   message_code: LeaveMessageCode;
 };
 
+export type LeaveEvidence = {
+  id: number;
+  original_name: string | null;
+  content_type: string;
+  size_bytes: number;
+};
+
+export type LeavePayload = {
+  reason: LeaveReason;
+  note: string | null;
+  attachment_ids: number[];
+};
+
+export type LeaveRecordAttachment = {
+  id: number;
+  original_name: string | null;
+  content_type: string;
+  size_bytes: number;
+  url: string;
+};
+
+export type LeaveRecord = {
+  reason: LeaveReason;
+  note: string | null;
+  exit_at: string;
+  review_status: LeaveStatus;
+  theoretical_delta: number;
+  applied_delta: number;
+  monthly_ordinal: number;
+  attachments: LeaveRecordAttachment[];
+};
+
 export type TripCreateRequest = {
   title: string;
   destination_code: string;
