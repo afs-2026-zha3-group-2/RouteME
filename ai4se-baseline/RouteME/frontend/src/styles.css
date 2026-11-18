@@ -10130,3 +10130,98 @@ a.admin-metric-card:focus-visible {
     padding: 16px;
   }
 }
+
+/* ---------- 发布页路线编辑器（REQ-027）：只覆盖本页内部的地图高度与两栏 ---------- */
+
+.publish-route-editor {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 280px;
+  gap: 12px;
+  align-items: start;
+}
+
+.publish-route-canvas {
+  position: relative;
+  min-width: 0;
+}
+
+.publish-route-canvas .amap-container {
+  min-height: 320px;
+  height: clamp(320px, 46vh, 460px);
+}
+
+.publish-route-side {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  min-width: 0;
+}
+
+.publish-route-unresolved ul {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.publish-route-unresolved li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 6px 8px;
+  border: 1px dashed var(--line);
+  border-radius: var(--r);
+  background: var(--surface-2);
+}
+
+.publish-route-unresolved-name {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.publish-route-unresolved-tools {
+  display: flex;
+  flex: none;
+  gap: 4px;
+}
+
+.publish-route-unresolved-tools button {
+  padding: 2px 6px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+}
+
+.publish-route-unresolved-tools button:hover {
+  background: var(--surface);
+}
+
+.publish-route-name-hint,
+.publish-route-name-coords {
+  margin: 0 0 8px;
+  color: var(--ink-3);
+  font-size: 12px;
+}
+
+.publish-route-name-coords {
+  margin: 8px 0 0;
+  font-family: ui-monospace, "Cascadia Code", monospace;
+}
+
+@media (max-width: 1100px) {
+  .publish-route-editor {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 640px) {
+  .publish-route-canvas .amap-container {
+    min-height: 300px;
+    height: 300px;
+  }
+}

@@ -11,6 +11,7 @@
  */
 import { expect, test, type Page } from '@playwright/test';
 import { API, isoDaysFromToday, loginAs, switchUser } from './support';
+import { installAmapStub } from './support/amapStub';
 
 /* ---------- 夹具 ---------- */
 
@@ -103,160 +104,6 @@ function weatherFixture(key: WeatherKey, date: string) {
   };
 }
 
-/* ---------- window.AMap 替身 ---------- */
-
-async function installAmapStub(page: Page) {
-  await page.addInitScript(() => {
-    const w = window as any;
-    w.__amapPois = [
-      { name: '广州南站', lng: 113.269, lat: 22.989, address: '广州市番禺区石壁街道', city: '广州市', district: '番禺区', type: '交通设施服务;火车站;火车站' },
-      { name: '广州市', lng: 113.264, lat: 23.129, address: '广东省广州市', city: '广州市', district: '越秀区', type: '地名地址信息;普通地名;城市级地名' },
-      { name: '广州塔', lng: 113.3245, lat: 23.1064, address: '广州市海珠区阅江西路 222 号', city: '广州市', district: '海珠区', type: '风景名胜;风景名胜;风景名胜' },
-      { name: '海心沙', lng: 113.3217, lat: 23.1104, address: '广州市天河区临江大道', city: '广州市', district: '天河区', type: '风景名胜;公园广场;公园' },
-      { name: '花城广场', lng: 113.3236, lat: 23.1203, address: '广州市天河区珠江新城', city: '广州市', district: '天河区', type: '风景名胜;公园广场;城市广场' },
-      { name: '北京路步行街', lng: 113.2644, lat: 23.1291, address: '广州市越秀区北京路', city: '广州市', district: '越秀区', type: '购物服务;特色商业街;步行街' },
-      { name: '永庆坊', lng: 113.2374, lat: 23.1148, address: '广州市荔湾区恩宁路', city: '广州市', district: '荔湾区', type: '风景名胜;风景名胜;风景名胜' },
-      { name: '广东省博物馆', lng: 113.3265, lat: 23.1148, address: '广州市天河区珠江东路 2 号', city: '广州市', district: '天河区', type: '科教文化服务;博物馆;博物馆' },
-      { name: '香洲港', lng: 113.5767, lat: 22.2859, address: '珠海市香洲区情侣中路', city: '珠海市', district: '香洲区', type: '交通设施服务;港口码头;港口码头' },
-      { name: '情侣路', lng: 113.5767, lat: 22.2759, address: '珠海市香洲区情侣路', city: '珠海市', district: '香洲区', type: '风景名胜;风景名胜;风景名胜' },
-    ];
-    w.__amapRouteCalls = [];
-    w.__amapStubConfig = { routeFail: false };
-    w.__amapLastMap = null;
-
-    const ll = (lng: number, lat: number) => ({ getLng: () => lng, getLat: () => lat });
-    const toSdkPoi = (p: any) => ({
-      id: `poi-${p.name}`, name: p.name, address: p.address, cityname: p.city,
-      adname: p.district, type: p.type, location: ll(p.lng, p.lat),
-    });
-
-    class LngLat {
-      lng: number; lat: number;
-      constructor(lng: number, lat: number) { this.lng = lng; this.lat = lat; }
-      getLng() { return this.lng; }
-      getLat() { return this.lat; }
-    }
-    class Pixel {
-      x: number; y: number;
-      constructor(x: number, y: number) { this.x = x; this.y = y; }
-    }
-    class Marker {
-      el: HTMLDivElement; handlers: Record<string, Array<() => void>> = {};
-      constructor(opts: any = {}) {
-        this.el = document.createElement('div');
-        this.el.className = 'amap-stub-marker';
-        if (typeof opts.content === 'string') { this.el.innerHTML = opts.content; }
-        this.el.addEventListener('click', () => (this.handlers.click ?? []).forEach((fn) => fn()));
-      }
-      on(event: string, fn: () => void) { (this.handlers[event] ??= []).push(fn); }
-      setMap(map: unknown) {
-        if (map === null && this.el.parentNode) { this.el.parentNode.removeChild(this.el); }
-      }
-    }
-    class Polyline {
-      constructor(_opts: any = {}) {}
-      setMap(_map: unknown) {}
-    }
-    class Map {
-      host: HTMLElement; zoom: number; handlers: Record<string, Array<(event: any) => void>> = {};
-      constructor(host: HTMLElement, opts: any = {}) {
-        this.host = host;
-        this.zoom = opts.zoom ?? 11;
-        w.__amapLastMap = this;
-      }
-      on(event: string, fn: (event: any) => void) { (this.handlers[event] ??= []).push(fn); }
-      off(event: string, fn: (event: any) => void) {
-        this.handlers[event] = (this.handlers[event] ?? []).filter((entry) => entry !== fn);
-      }
-      add(items: any) {
-        for (const item of [].concat(items)) {
-          if (item && item.el) { this.host.appendChild(item.el); }
-        }
-      }
-      remove(items: any) {
-        for (const item of [].concat(items)) {
-          if (item && item.el && item.el.parentNode) { item.el.parentNode.removeChild(item.el); }
-        }
-      }
-      setZoomAndCenter(zoom: number, _center: unknown) { this.zoom = zoom; }
-      getZoom() { return this.zoom; }
-      setZoom(zoom: number) { this.zoom = zoom; }
-      resize() {}
-      setFitView() {}
-      destroy() { this.host.innerHTML = ''; w.__amapLastMap = null; }
-    }
-    class PlaceSearch {
-      constructor(_opts: any = {}) {}
-      search(keyword: string, cb: (status: string, result: any) => void) {
-        const kw = String(keyword ?? '').trim();
-        const pois = w.__amapPois.filter((p: any) => p.name.includes(kw));
-        if (pois.length === 0) { cb('no_data', { info: 'NO_DATA', infocode: '10000' }); return; }
-        cb('complete', { info: 'OK', infocode: '10000', poiList: { pois: pois.map(toSdkPoi) } });
-      }
-      searchNearBy(_keyword: string, center: [number, number], _radius: number, cb: (status: string, result: any) => void) {
-        const [lng, lat] = center;
-        const distance = (p: any) => (p.lng - lng) ** 2 + (p.lat - lat) ** 2;
-        const sorted = [...w.__amapPois].sort((a: any, b: any) => distance(a) - distance(b));
-        cb('complete', { info: 'OK', infocode: '10000', poiList: { pois: sorted.slice(0, 5).map(toSdkPoi) } });
-      }
-    }
-    class Geocoder {
-      constructor(_opts: any = {}) {}
-      getLocation(address: string, cb: (status: string, result: any) => void) {
-        const poi = w.__amapPois.find((p: any) => p.name === String(address ?? '').trim());
-        if (poi === undefined) { cb('no_data', { info: 'NO_DATA', infocode: '10000' }); return; }
-        cb('complete', {
-          info: 'OK', infocode: '10000',
-          geocodes: [{ location: ll(poi.lng, poi.lat), formattedAddress: poi.address, province: '广东省', city: poi.city, district: poi.district }],
-        });
-      }
-    }
-    // 每段固定 2100 米 / 900 秒：4 个已解析 POI → 3 段 = 6300 米 / 2700 秒。
-    const makeRouteService = (mode: string) => class {
-      constructor(_opts: any = {}) {}
-      search(origin: [number, number], destination: [number, number], cb: (status: string, result: any) => void) {
-        w.__amapRouteCalls.push({ mode, origin, destination });
-        if (w.__amapStubConfig.routeFail) { cb('error', { info: 'ROUTE_FAILED', infocode: '20800' }); return; }
-        const path = [ll(origin[0], origin[1]), ll(destination[0], destination[1])];
-        if (mode === 'transit') {
-          cb('complete', {
-            info: 'OK', infocode: '10000',
-            routes: [{ transits: [{ distance: 2100, cost: { duration: 900 }, segments: [
-              { walking: { steps: [{ path }] } },
-              { bus: { buslines: [{ polyline: `${origin[0]},${origin[1]};${destination[0]},${destination[1]}` }] } },
-            ] }] }],
-          });
-          return;
-        }
-        cb('complete', { info: 'OK', infocode: '10000', routes: [{ distance: 2100, time: 900, steps: [{ path }] }] });
-      }
-    };
-
-    w.AMap = {
-      Map, Marker, Polyline, Pixel, LngLat,
-      plugin: (_names: string[], cb?: () => void) => cb?.(),
-      PlaceSearch, Geocoder,
-      Walking: makeRouteService('walking'),
-      Driving: makeRouteService('driving'),
-      Riding: makeRouteService('bicycling'),
-      Transfer: makeRouteService('transit'),
-    };
-    // 底图为栅格瓦片（createRasterMap）：点击走宿主 pointerdown/up，按实例投影取像素。
-    w.__amapClick = (lng: number, lat: number) => {
-      const host = document.querySelector('.amap-canvas-host') as (HTMLElement & { __rasterMap?: any }) | null;
-      const map = host?.__rasterMap;
-      if (!host || !map) { return; }
-      const rect = host.getBoundingClientRect();
-      const pixel = map.project([lng, lat]);
-      const clientX = rect.left + pixel.x;
-      const clientY = rect.top + pixel.y;
-      const init = { bubbles: true, button: 0, pointerId: 1, clientX, clientY };
-      host.dispatchEvent(new PointerEvent('pointerdown', init));
-      host.dispatchEvent(new PointerEvent('pointerup', init));
-    };
-  });
-}
-
 /* ---------- AI / 天气 page.route 替身 ---------- */
 
 async function installApiStubs(page: Page, state: StubState) {
@@ -339,13 +186,14 @@ async function pickDestination(page: Page, province: string, city: string) {
   await page.locator('.area-option', { hasText: city }).first().click();
 }
 
-async function pickPlace(page: Page, field: string, name: string) {
-  // 限定 textbox 角色，避免 getByLabel 子串命中高德 region 的 aria-label。
-  const input = page.getByRole('textbox', { name: field });
-  await input.fill(name);
-  await page.locator('.amap-search-item', { hasText: name }).first().waitFor();
-  await input.press('Enter');
-  await expect(page.locator('.place-chip-name', { hasText: name }).first()).toBeVisible();
+/** 发布页路线编辑器：搜索候选加入途经点（与 trips.spec.ts 同口径）。 */
+async function addRouteStop(page: Page, name: string) {
+  const editor = page.locator('.publish-route-editor');
+  await editor.locator('#trip-stops').fill(name);
+  const option = editor.locator('.amap-search-item').filter({ hasText: name }).first();
+  await expect(option).toBeVisible();
+  await option.click();
+  await expect(editor.locator('.amap-waypoint-text b').filter({ hasText: name }).first()).toBeVisible();
 }
 
 async function expandPageSize(page: Page) {
@@ -697,7 +545,9 @@ test('A11 saves the snapshot, publishes it and shows the AI badge', async ({ pag
   await expect(page.getByLabel('出发日期')).toHaveValue(DAY);
   await expect(page.getByLabel('结束日期')).toHaveValue(DAY);
   for (const name of ['广州塔', '海心沙', '花城广场', '北京路步行街']) {
-    await expect(page.locator('.place-chip-name', { hasText: name }).first()).toBeVisible();
+    await expect(
+      page.locator('.publish-route-editor .amap-waypoint-text b', { hasText: name }).first(),
+    ).toBeVisible();
   }
   await expect(page.locator('#trip-budget-min')).toHaveValue('460');
   await expect(page.locator('#trip-budget-max')).toHaveValue('460');
@@ -718,7 +568,7 @@ test('A11 saves the snapshot, publishes it and shows the AI badge', async ({ pag
   // 首页可见（相对日期口径）。
   await page.goto('/');
   await expandPageSize(page);
-  await expect(page.locator('.trip-card', { hasText: title })).toBeVisible();
+  await expect(page.locator('.trip-card', { hasText: title }).first()).toBeVisible();
 });
 
 /* ---------- A12 链接归属（E38，L-01 失败语义） ---------- */
@@ -763,8 +613,8 @@ test('A12 rejects another user\'s snapshot link and keeps the snapshot retryable
   const title = `E2E AI 归属 ${Date.now()}`;
   await page.getByLabel('标题').fill(title);
   await pickDestination(page, '广东省', '珠海市');
-  await pickPlace(page, '途经点', '香洲港');
-  await pickPlace(page, '途经点', '情侣路');
+  await addRouteStop(page, '香洲港');
+  await addRouteStop(page, '情侣路');
   await page.getByRole('button', { name: /^发\s*布$/ }).click();
 
   // 提交被后端拒绝（400），错误可读，URL 保留 ?ai= 可重试。

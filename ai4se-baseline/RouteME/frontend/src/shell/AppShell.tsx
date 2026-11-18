@@ -13,13 +13,12 @@ import type { DemoUser, UserProfile } from '../types';
 import { Avatar } from './Avatar';
 import { BrandMark } from './BrandMark';
 
-type NavKey = 'discover' | 'map' | 'create' | 'aiPlanner' | 'mine' | 'chat' | 'help' | 'admin';
+type NavKey = 'discover' | 'create' | 'aiPlanner' | 'mine' | 'chat' | 'help' | 'admin';
 
 type NavItem = { key: NavKey; label: string; href: string };
 
 const NAV_ITEMS: NavItem[] = [
   { key: 'discover', label: tripMessages.homeTitle, href: '#/' },
-  { key: 'map', label: '旅行地图', href: '#/map' },
   { key: 'create', label: tripMessages.publish, href: '#/trips/new' },
   { key: 'aiPlanner', label: 'AI 规划', href: '#/ai-planner' },
   { key: 'mine', label: tripMessages.mineTitle, href: '#/mine' },
@@ -33,7 +32,7 @@ const RAIL_ITEMS: NavItem[] = [
 ];
 
 const NAV_GROUPS: Array<{ title: string; items: NavItem[] }> = [
-  { title: '浏览', items: RAIL_ITEMS.filter((item) => item.key === 'discover' || item.key === 'map') },
+  { title: '浏览', items: RAIL_ITEMS.filter((item) => item.key === 'discover') },
   { title: '规划', items: RAIL_ITEMS.filter((item) => item.key === 'create' || item.key === 'aiPlanner') },
   { title: '我的', items: RAIL_ITEMS.filter((item) => item.key === 'mine' || item.key === 'chat' || item.key === 'help' || item.key === 'admin') },
 ];
@@ -41,9 +40,6 @@ const NAV_GROUPS: Array<{ title: string; items: NavItem[] }> = [
 function activeKey(route: Route): NavKey | null {
   if (route.name === 'home') {
     return 'discover';
-  }
-  if (route.name === 'map') {
-    return 'map';
   }
   if (route.name === 'create' || route.name === 'share') {
     return 'create';
@@ -72,22 +68,6 @@ function NavIcon({ name }: { name: NavKey }) {
       <svg viewBox="0 0 20 20" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.7">
         <circle cx="10" cy="10" r="7" />
         <path d="m12.8 7.2-1.5 4.1-4.1 1.5 1.5-4.1z" strokeLinejoin="round" />
-      </svg>
-    );
-  }
-  if (name === 'map') {
-    return (
-      <svg
-        viewBox="0 0 20 20"
-        aria-hidden="true"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="1.7"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      >
-        <path d="M3 5.5 7.5 4l5 1.5L17 4v10.5L12.5 16l-5-1.5L3 16Z" />
-        <path d="M7.5 4v10.5M12.5 5.5V16" />
       </svg>
     );
   }

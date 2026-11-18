@@ -20,13 +20,10 @@ import {
   formatDistance,
   formatDuration,
   geocodePlace,
-  planRoute,
   reverseGeocode,
   scenicSpots,
-  straightLineRoute,
   type NearbyPlace,
   type PlaceResult,
-  type RoutePlan,
   type RouteWaypoint,
   type TravelMode,
 } from '../map/amap/AmapService';
@@ -40,6 +37,7 @@ import { WaypointPanel } from '../map/amap/WaypointPanel';
 import { matchCompanions, topCompanionMatch } from '../map/amap/companions';
 import { MOCK_COMPANIONS } from '../map/amap/mockCompanions';
 import { buildSavedRoute, saveRoute } from '../map/amap/savedRoutes';
+import { useRoutePlan, type RoutePlanMessages } from '../map/amap/useRoutePlan';
 import type { AmapMap, LngLat } from '../map/amap/types';
 
 type Props = {
@@ -48,6 +46,12 @@ type Props = {
 };
 
 const CHINA_CENTER: LngLat = [104.1954, 35.8617];
+
+/** 探索页保留高德错误原文：这里的用户就是来调地图的。 */
+const ROUTE_MESSAGES: RoutePlanMessages = {
+  fallbackNote: (failure) =>
+    `高德路线服务不可用（${failure}），已按直线显示途经点顺序，距离与时间为本地估算。`,
+};
 
 function toWaypoint(place: PlaceResult): RouteWaypoint {
   return {
@@ -70,11 +74,6 @@ export function MapExplorerPage({ provinceCode, cityCode }: Props) {
   const [waypoints, setWaypoints] = useState<RouteWaypoint[]>([]);
   const [mode, setMode] = useState<TravelMode>('walking');
   const [focusId, setFocusId] = useState<string | null>(null);
-  const [route, setRoute] = useState<RoutePlan | null>(null);
-  const [routeRequested, setRouteRequested] = useState(false);
-  const [planning, setPlanning] = useState(false);
-  const [routeError, setRouteError] = useState<string | null>(null);
-  const [estimateNote, setEstimateNote] = useState<string | null>(null);
   const [candidate, setCandidate] = useState<NearbyPlace | null>(null);
   const [candidateLoading, setCandidateLoading] = useState(false);
   /** 点击位置本身（坐标精确等于点击点，仅用逆地理取名称）。 */
@@ -87,6 +86,17 @@ export function MapExplorerPage({ provinceCode, cityCode }: Props) {
     dayjs().format('YYYY-MM-DD'),
     dayjs().format('YYYY-MM-DD'),
   ]);
+
+  // 探索页不限定公共交通的城市（保持既有行为，见 REQ-027 P0 G-06）。
+  const {
+    route,
+    planning,
+    routeError,
+    estimateNote,
+    routeRequested,
+    generate: generateRoute,
+    reset: resetRoute,
+  } = useRoutePlan(waypoints, mode, undefined, ROUTE_MESSAGES);
 
   // 从 URL 带来的城市（#/map/440000/440100）直接定位到该城；#/map 显示全国。
   useEffect(() => {
@@ -152,51 +162,6 @@ export function MapExplorerPage({ provinceCode, cityCode }: Props) {
       })
       .finally(() => setCandidateLoading(false));
   };
-
-  useEffect(() => {
-    if (!routeRequested || waypoints.length < 2) {
-      setRoute(null);
-      setEstimateNote(null);
-      return;
-    }
-    let active = true;
-    setPlanning(true);
-    setRouteError(null);
-    setEstimateNote(null);
-    planRoute(mode, waypoints)
-      .then((plan) => {
-        if (active) {
-          setRoute(plan);
-          setPlanning(false);
-        }
-      })
-      .catch((reason: unknown) => {
-        if (!active) {
-          return;
-        }
-        // 路线服务不可用时仍按直线展示途经点顺序，避免整块地图空白。
-        setPlanning(false);
-        try {
-          setRoute(straightLineRoute(mode, waypoints));
-          setRouteError(null);
-          setEstimateNote(
-            `高德路线服务不可用（${amapErrorMessage(reason)}），已按直线显示途经点顺序，距离与时间为本地估算。`,
-          );
-        } catch {
-          setRoute(null);
-          setRouteError(amapErrorMessage(reason));
-        }
-      });
-    return () => {
-      active = false;
-    };
-  }, [routeRequested, waypoints, mode]);
-
-  useEffect(() => {
-    if (waypoints.length < 2) {
-      setRouteRequested(false);
-    }
-  }, [waypoints.length]);
 
   useEffect(() => {
     if (!scenicOn || map === null) {
@@ -267,18 +232,13 @@ export function MapExplorerPage({ provinceCode, cityCode }: Props) {
 
   const clear = () => {
     setWaypoints([]);
-    setRoute(null);
-    setRouteRequested(false);
+    resetRoute();
     setFocusId(null);
-    setRouteError(null);
   };
 
   const generate = () => {
-    if (waypoints.length < 2) {
-      return;
-    }
     setFocusId(null);
-    setRouteRequested(true);
+    generateRoute();
   };
 
   const routeNames = useMemo(() => waypoints.map((waypoint) => waypoint.name), [waypoints]);
