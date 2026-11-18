@@ -4699,6 +4699,54 @@ svg {
   font-size: 11px;
 }
 
+/* 路线完成度：紧跟信用行；四档色阶只用既有令牌，watch 用警示色而非危险红 */
+.profile-completion {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  width: fit-content;
+  margin: 0;
+  padding: 3px 10px;
+  border-radius: var(--r-sm);
+  border: 1px solid var(--line);
+  background: var(--surface-2);
+  font-size: 12px;
+  font-weight: 650;
+  color: var(--ink-2);
+}
+
+.profile-completion::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.profile-completion.is-good {
+  color: var(--t-jade);
+  border-color: color-mix(in srgb, var(--jade) 30%, transparent);
+  background: color-mix(in srgb, var(--jade) 8%, transparent);
+}
+
+.profile-completion.is-fair {
+  color: var(--t-lagoon);
+  border-color: color-mix(in srgb, var(--lagoon) 24%, transparent);
+  background: color-mix(in srgb, var(--lagoon) 6%, transparent);
+}
+
+.profile-completion.is-watch {
+  color: var(--t-warn);
+  border-color: color-mix(in srgb, var(--amber) 30%, transparent);
+  background: color-mix(in srgb, var(--amber) 8%, transparent);
+}
+
+.profile-completion.is-muted {
+  color: var(--ink-3);
+  border-color: var(--line);
+  background: var(--surface-2);
+}
+
 /* 卡片：信用行并进发布者行，排在头像与名字下方 */
 .tc-host .tc-credit {
   flex-basis: 100%;

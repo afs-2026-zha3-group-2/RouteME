@@ -47,10 +47,10 @@
      - A16：响应信用字段与基线一致；读取前后 `credit_ledger` 计数不变。
      - A17：`stats` 四项不变；响应 JSON 不含 `growth_level` / `lv` 类字段。
      - A18：缺 `X-User-Id` → 既有未登录码；未知 id → `USER_NOT_FOUND`。
-   - `UserProfileRouteCompletionMigrationSqliteTest`（反向）：全新库迁移头仍为 `V31`；`app_users` 列集合与 `trip_plans` 状态枚举不变；无 `route_completion*` 表 / 列。
+   - `RouteCompletionMigrationSqliteTest`（反向）：全新库迁移头仍为 `V31`；`app_users` 列集合与 `trip_plans` 状态枚举不变；无 `route_completion*` 表 / 列。
 
 3. **单元（先红，apply 阶段）**
-   - 后端 `RouteCompletionStateTest`：A3–A8（80 / 100 / 79 / 70 / 69 / 0 / null / 非整数 / -1 / 101；样本 0 与 ≥1；仅 `completed` 计入）。
+   - 后端 `RouteCompletionPolicyTest`：A3–A8（80 / 100 / 79 / 70 / 69 / 0 / null / 非整数 / -1 / 101；样本 0 与 ≥1；仅 `completed` 计入）。
    - 前端 `routeCompletionDisplay.test.ts`：`state` → 文案键映射（`good` / `watch` 带标签、`neutral` 纯百分比、`insufficient` 固定文案）；缺失或 `null` 的 `rate` 一律按数据不足处理。
 
 4. **E2E（先红）**

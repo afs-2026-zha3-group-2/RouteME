@@ -16,7 +16,7 @@
 
 ### D2 — 状态枚举与派生单点
 
-- 新增 `pojo/RouteCompletionState.java`：`GOOD / NEUTRAL / WATCH / INSUFFICIENT` + `wireValue()`。
+- 新增 `enums/RouteCompletionState.java`：`GOOD / NEUTRAL / WATCH / INSUFFICIENT` + `wireValue()`（与 `CreditLevel` 同目录惯例）。
 - 新增 `service/RouteCompletionPolicy.java`（`final` 工具类，无状态）：
   - 常量 `GOOD_MIN = 80`、`NEUTRAL_MIN = 70`；
   - `static RouteCompletion evaluate(Integer rate, int completedTripCount)`；
@@ -93,7 +93,7 @@
 
 | 位置 | 改动 |
 |---|---|
-| `backend/.../pojo/RouteCompletionState.java` | 新增枚举（4 值 + `wireValue`） |
+| `backend/.../enums/RouteCompletionState.java` | 新增枚举（4 值 + `wireValue`） |
 | `backend/.../pojo/RouteCompletion.java` | 新增派生结果 record |
 | `backend/.../service/RouteCompletionPolicy.java` | 新增派生单点（阈值 + 失败安全） |
 | `backend/.../response/UserProfileResponse.java` | record 末尾追加两字段并透传 |
