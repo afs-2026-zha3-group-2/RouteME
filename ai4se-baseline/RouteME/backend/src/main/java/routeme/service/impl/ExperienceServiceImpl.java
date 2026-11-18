@@ -21,6 +21,7 @@ import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 
+import routeme.config.GrowthProperties;
 import routeme.entity.TripExperienceEntity;
 import routeme.entity.TripExperiencePhotoEntity;
 import routeme.enums.WriteScopeEnum;
@@ -33,6 +34,7 @@ import routeme.mapper.TripExperiencePhotoMapper;
 import routeme.param.PageParam;
 import routeme.pojo.DemoUser;
 import routeme.pojo.ExperienceLikeStat;
+import routeme.pojo.GrowthBooking;
 import routeme.pojo.PageResult;
 import routeme.pojo.TripExperience;
 import routeme.pojo.TripPlan;
@@ -47,6 +49,7 @@ import routeme.service.ExperienceEligibility;
 import routeme.service.ExperienceLikeService;
 import routeme.service.ExperiencePhotoService;
 import routeme.service.ExperienceService;
+import routeme.service.GrowthService;
 import routeme.service.TripPlanService;
 import routeme.utils.ExperiencePhotoStorage;
 
@@ -69,6 +72,8 @@ public class ExperienceServiceImpl
     private final CreditRestrictionGuard creditRestrictionGuard;
     private final Clock clock;
     private final AccountStatusService accountStatusService;
+    private final GrowthService growthService;
+    private final GrowthProperties growthProperties;
 
     public ExperienceServiceImpl(
             TripPlanService tripPlanService,
@@ -80,7 +85,9 @@ public class ExperienceServiceImpl
             ExperienceLikeService experienceLikeService,
             CreditRestrictionGuard creditRestrictionGuard,
             Clock clock,
-            AccountStatusService accountStatusService) {
+            AccountStatusService accountStatusService,
+            GrowthService growthService,
+            GrowthProperties growthProperties) {
         this.tripPlanService = tripPlanService;
         this.demoUserService = demoUserService;
         this.photoMapper = photoMapper;
@@ -91,6 +98,8 @@ public class ExperienceServiceImpl
         this.creditRestrictionGuard = creditRestrictionGuard;
         this.clock = clock;
         this.accountStatusService = accountStatusService;
+        this.growthService = growthService;
+        this.growthProperties = growthProperties;
     }
 
     @Override
@@ -122,6 +131,10 @@ public class ExperienceServiceImpl
         }
         List<TripExperiencePhotoEntity> removed = bindPhotos(tripId, authorId, saved.id(), photoIds);
         deleteAfterCommit(removed);
+        if (created) {
+            growthService.book(GrowthBooking.publish(
+                    authorId, tripId, growthProperties.publishExp()));
+        }
         return new ExperienceSaveResponse(describe(saved, authorId), created);
     }
 

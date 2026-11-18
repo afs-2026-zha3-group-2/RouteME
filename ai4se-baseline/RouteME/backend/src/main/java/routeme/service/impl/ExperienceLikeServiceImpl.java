@@ -11,6 +11,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 
+import routeme.constant.GrowthConstant;
 import routeme.entity.ExperienceLikeEntity;
 import routeme.entity.TripExperienceEntity;
 import routeme.exception.ExperienceNotFoundException;
@@ -18,10 +19,12 @@ import routeme.exception.ForbiddenActionException;
 import routeme.mapper.ExperienceLikeMapper;
 import routeme.mapper.TripExperienceMapper;
 import routeme.pojo.ExperienceLikeStat;
+import routeme.pojo.GrowthBooking;
 import routeme.response.ExperienceLikeResponse;
 import routeme.response.ExperienceLikeSaveResponse;
 import routeme.service.ExperienceLikeRewardService;
 import routeme.service.ExperienceLikeService;
+import routeme.service.GrowthService;
 
 /**
  * 体验点赞的业务实现：体验存在性、自赞拒绝与唯一约束兜底。
@@ -36,14 +39,17 @@ public class ExperienceLikeServiceImpl
 
     private final TripExperienceMapper experienceMapper;
     private final ExperienceLikeRewardService rewardService;
+    private final GrowthService growthService;
     private final Clock clock;
 
     public ExperienceLikeServiceImpl(
             TripExperienceMapper experienceMapper,
             ExperienceLikeRewardService rewardService,
+            GrowthService growthService,
             Clock clock) {
         this.experienceMapper = experienceMapper;
         this.rewardService = rewardService;
+        this.growthService = growthService;
         this.clock = clock;
     }
 
@@ -55,11 +61,16 @@ public class ExperienceLikeServiceImpl
             throw new ForbiddenActionException("cannot like own experience: " + experienceId);
         }
         boolean created = insertLike(experienceId, userId);
+        int likeCount = baseMapper.countByExperience(experienceId);
         if (created) {
             rewardService.award(experience.getTripId(), experience.getAuthorId());
+            int tier = GrowthConstant.likeTier(likeCount);
+            if (tier > 0) {
+                growthService.book(GrowthBooking.like(experience.getAuthorId(), experienceId, tier));
+            }
         }
         return new ExperienceLikeSaveResponse(
-                new ExperienceLikeResponse(experienceId, baseMapper.countByExperience(experienceId), true),
+                new ExperienceLikeResponse(experienceId, likeCount, true),
                 created);
     }
 

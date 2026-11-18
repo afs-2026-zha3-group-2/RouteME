@@ -25,6 +25,7 @@ import routeme.model.PenaltyRules;
 import routeme.param.PageParam;
 import routeme.pojo.ChatMessage;
 import routeme.pojo.CreditBooking;
+import routeme.pojo.GrowthBooking;
 import routeme.pojo.PageResult;
 import routeme.pojo.Report;
 import routeme.pojo.TripPlan;
@@ -43,6 +44,7 @@ import routeme.service.AdminReportService;
 import routeme.service.ChatService;
 import routeme.service.CreditService;
 import routeme.service.DemoUserService;
+import routeme.service.GrowthService;
 import routeme.service.ReportService;
 import routeme.service.ReportTargetService;
 import routeme.service.TripPlanService;
@@ -61,6 +63,7 @@ public class AdminReportServiceImpl extends AbstractServiceImpl<ReportMapper, Re
     private final DemoUserService demoUserService;
     private final ChatService chatService;
     private final TripPlanService tripPlanService;
+    private final GrowthService growthService;
     private final Clock clock;
 
     public AdminReportServiceImpl(
@@ -71,6 +74,7 @@ public class AdminReportServiceImpl extends AbstractServiceImpl<ReportMapper, Re
             DemoUserService demoUserService,
             ChatService chatService,
             TripPlanService tripPlanService,
+            GrowthService growthService,
             Clock clock) {
         this.reportService = reportService;
         this.targetService = targetService;
@@ -79,6 +83,7 @@ public class AdminReportServiceImpl extends AbstractServiceImpl<ReportMapper, Re
         this.demoUserService = demoUserService;
         this.chatService = chatService;
         this.tripPlanService = tripPlanService;
+        this.growthService = growthService;
         this.clock = clock;
     }
 
@@ -178,6 +183,7 @@ public class AdminReportServiceImpl extends AbstractServiceImpl<ReportMapper, Re
                     "REPORT",
                     String.valueOf(reportId),
                     "REPORT_VIOLATION:" + reportId));
+            growthService.book(GrowthBooking.report(reportedUserId, reportId));
         }
         return detailOf(require(reportId));
     }

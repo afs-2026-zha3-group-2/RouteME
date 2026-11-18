@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
 import { Alert, Button, Skeleton, Typography } from 'antd';
 import { loadUserProfile } from '../api';
+import { GrowthBadge } from '../growth/GrowthBadge';
+import { GrowthProgressBlock } from '../growth/GrowthProgressBlock';
 import { tripMessages } from '../i18n/tripMessages';
 import { Avatar } from '../shell/Avatar';
 import type { DemoUser, UserProfile } from '../types';
@@ -97,14 +99,17 @@ export function ProfilePage({ currentUser, userId, canEdit }: Props) {
       <header className="profile-hero profile-card">
         <Avatar user={profile} size="xl" />
         <div className="profile-hero-main">
-          <Typography.Title level={2} className="profile-name">
-            {profile.nickname}
-            {profile.profile_complete ? (
-              <span className="badge jade">{tripMessages.profileCompleteBadge}</span>
-            ) : (
-              <span className="badge muted">{tripMessages.profileIncompleteBadge}</span>
-            )}
-          </Typography.Title>
+          <div className="profile-name-row">
+            <Typography.Title level={2} className="profile-name">
+              {profile.nickname}
+              {profile.profile_complete ? (
+                <span className="badge jade">{tripMessages.profileCompleteBadge}</span>
+              ) : (
+                <span className="badge muted">{tripMessages.profileIncompleteBadge}</span>
+              )}
+            </Typography.Title>
+            <GrowthBadge level={profile.growth?.level} withLabel />
+          </div>
           <p className="profile-hero-meta">
             {ageZodiac !== '' && <span>{ageZodiac}</span>}
             {(profile.city ?? '') !== '' && <span>{profile.city}</span>}
@@ -142,6 +147,7 @@ export function ProfilePage({ currentUser, userId, canEdit }: Props) {
             {tripMessages.profileEditEntry}
           </Button>
         )}
+        {isSelf && <GrowthProgressBlock growth={profile.growth} />}
       </header>
 
       {/* 本人受限时顶栏已有同一条提示，避免同一页重复两次。 */}

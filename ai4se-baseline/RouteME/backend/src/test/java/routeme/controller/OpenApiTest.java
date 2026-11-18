@@ -79,7 +79,7 @@ class OpenApiTest {
 
         // Then
         assertAll(
-                () -> assertEquals("0.26.0", info.get("version"), "info.version"),
+                () -> assertEquals("0.27.0", info.get("version"), "info.version"),
                 () -> assertTrue(responses(likeExperience).containsKey("201"), "first like returns 201"),
                 () -> assertTrue(responses(likeExperience).containsKey("200"), "duplicate like returns 200"),
                 () -> assertTrue(responses(likeExperience).containsKey("403"), "self like returns 403"),
@@ -141,6 +141,35 @@ class OpenApiTest {
     }
 
     @Test
+    void in_openApiFile_out_userGrowthContractDeclared() throws IOException {
+        // Given
+        Map<String, Object> document = loadYaml(SPEC_PATH);
+        Map<String, Object> userProfile = schema(document, "UserProfile");
+        Map<String, Object> growth = schema(document, "UserGrowth");
+        Map<String, Object> entry = schema(document, "UserGrowthEntry");
+        Map<String, Object> batch = operation(document, "/users/growth", "get");
+
+        // When
+        Map<String, Object> profileGrowth = asMap(properties(userProfile).get("growth"));
+        Map<String, Object> level = asMap(properties(growth).get("level"));
+
+        // Then
+        assertAll(
+                () -> assertTrue(paths(document).containsKey("/users/growth"), "batch growth path declared"),
+                () -> assertTrue(parameterNames(document, batch).contains("ids"), "batch growth ids parameter"),
+                () -> assertTrue(required(entry).containsAll(List.of("user_id", "level")), "batch growth entry fields"),
+                () -> assertEquals(Boolean.TRUE, profileGrowth.get("nullable"), "profile growth nullable"),
+                () -> assertEquals(Boolean.TRUE, profileGrowth.get("readOnly"), "profile growth readOnly"),
+                () -> assertTrue(required(growth).contains("level"), "growth level required"),
+                () -> assertEquals("integer", level.get("type"), "growth level type"),
+                () -> assertEquals(1, level.get("minimum"), "growth level minimum"),
+                () -> assertEquals(5, level.get("maximum"), "growth level maximum"),
+                () -> assertTrue(properties(growth).containsKey("exp"), "growth exp declared"),
+                () -> assertTrue(properties(growth).containsKey("exp_to_next"), "growth exp_to_next declared"),
+                () -> assertTrue(properties(growth).containsKey("max_level"), "growth max_level declared"));
+    }
+
+    @Test
     void in_openApiFile_out_tripPlanContractDeclared() throws IOException {
         // Given
         Map<String, Object> document = loadYaml(SPEC_PATH);
@@ -156,7 +185,7 @@ class OpenApiTest {
 
         // Then
         assertAll(
-                () -> assertEquals("0.26.0", info.get("version"), "info.version"),
+                () -> assertEquals("0.27.0", info.get("version"), "info.version"),
                 () -> assertTrue(paths(document).containsKey("/users"), "/users declared"),
                 () -> assertTrue(paths(document).containsKey("/trips/{tripId}"), "detail path declared"),
                 () -> assertTrue(
@@ -741,7 +770,7 @@ class OpenApiTest {
 
         // Then
         assertAll(
-                () -> assertEquals("0.26.0", info.get("version"), "info.version"),
+                () -> assertEquals("0.27.0", info.get("version"), "info.version"),
                 () -> assertTrue(paths(document).keySet().containsAll(ADMIN_CONSOLE_PATHS), "admin console paths"),
                 () -> assertEquals(17L, adminOperations, "admin console operations"),
                 () -> assertTrue(
@@ -872,7 +901,7 @@ class OpenApiTest {
 
         // Then
         assertAll(
-                () -> assertEquals("0.26.0", asMap(document.get("info")).get("version"), "info.version"),
+                () -> assertEquals("0.27.0", asMap(document.get("info")).get("version"), "info.version"),
                 () -> assertTrue(responses(startSession).containsKey("201"), "session start returns 201"),
                 () -> assertTrue(
                         responses(startSession).keySet().containsAll(List.of("401", "404", "409", "429")),
@@ -1048,7 +1077,7 @@ class OpenApiTest {
 
         // Then
         assertAll(
-                () -> assertEquals("0.26.0", info.get("version"), "info.version"),
+                () -> assertEquals("0.27.0", info.get("version"), "info.version"),
                 () -> assertTrue(
                         paths(document).keySet().containsAll(List.of(
                                 "/trips/{tripId}/finance",

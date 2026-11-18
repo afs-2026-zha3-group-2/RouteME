@@ -36,6 +36,7 @@ public record UserProfileResponse(
         String creditRestrictionReason,
         String joinedAt,
         ProfileStatsResponse stats,
+        UserGrowthResponse growth,
         String status,
         String banReasonCode,
         String banExpiresAt) {
@@ -49,6 +50,15 @@ public record UserProfileResponse(
             boolean includeBirthday,
             String joinedAt,
             ProfileStatsResponse stats) {
+        return from(profile, includeBirthday, joinedAt, stats, null);
+    }
+
+    public static UserProfileResponse from(
+            UserProfile profile,
+            boolean includeBirthday,
+            String joinedAt,
+            ProfileStatsResponse stats,
+            UserGrowthResponse growth) {
         return new UserProfileResponse(
                 profile.id(),
                 profile.nickname(),
@@ -73,6 +83,7 @@ public record UserProfileResponse(
                 profile.creditRestrictionReason(),
                 joinedAt,
                 stats,
+                growth,
                 profile.status(),
                 profile.banReasonCode(),
                 profile.banExpiresAt());

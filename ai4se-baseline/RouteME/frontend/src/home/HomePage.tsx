@@ -7,6 +7,7 @@ import { useExperiences } from '../experiences/useExperiences';
 import { adminMessages } from '../i18n/adminMessages';
 import { tripMessages } from '../i18n/tripMessages';
 import { useUserCredits } from '../profiles/useUserCredits';
+import { useGrowthLevels } from '../profiles/useGrowthLevels';
 import { EmptyState } from '../shell/EmptyState';
 import { SoftSelect } from '../shell/SoftSelect';
 import { Pager } from '../shell/Pager';
@@ -38,6 +39,7 @@ export function HomePage({ currentUser, token }: Props) {
   const experiences = useExperiences(currentUser.id, filters);
   const publisherIds = state.status === 'ready' ? state.trips.map((trip) => trip.publisher.id) : [];
   const credits = useUserCredits(publisherIds, currentUser.id);
+  const growth = useGrowthLevels(publisherIds, currentUser.id);
   const resultsRef = useRef<HTMLDivElement>(null);
   const [deletingId, setDeletingId] = useState<number | null>(null);
 
@@ -231,7 +233,7 @@ export function HomePage({ currentUser, token }: Props) {
         <div ref={resultsRef} className="list-block">
           <div className="trip-grid">
             {state.trips.map((trip) => (
-              <TripCard key={trip.id} trip={trip} credit={credits[trip.publisher.id]} />
+              <TripCard key={trip.id} trip={trip} credit={credits[trip.publisher.id]} growth={growth[trip.publisher.id]} />
             ))}
           </div>
           <Pager

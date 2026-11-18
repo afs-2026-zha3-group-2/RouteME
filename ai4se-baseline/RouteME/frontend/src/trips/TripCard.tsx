@@ -1,11 +1,12 @@
 import { Progress, Tag } from 'antd';
 import { cityLabel } from '../area/areaOptions';
+import { GrowthBadge } from '../growth/GrowthBadge';
 import { tripMessages } from '../i18n/tripMessages';
 import { useProfile } from '../profiles/ProfileContext';
 import { publisherSummary } from '../profile/profileDisplay';
 import { creditLine, creditRestrictedBadge, creditTone } from '../profile/creditDisplay';
 import { Avatar } from '../shell/Avatar';
-import type { TripSummary, UserCreditEntry } from '../types';
+import type { TripSummary, UserCreditEntry, UserGrowthEntry } from '../types';
 import { cityPhoto } from './cityPhotos';
 import { coverTone } from './coverTone';
 import { StatusBadge } from './StatusBadge';
@@ -19,11 +20,13 @@ type Props = {
   trip: TripSummary;
   /** 发布者信用状态；由页面层一次取数后下发，缺失时不展示。 */
   credit?: UserCreditEntry;
+  /** 发布者成长等级；列表页批量读取后下发，只含 LVn。 */
+  growth?: UserGrowthEntry;
   /** 发布页实时预览：不跳详情、不打开资料弹窗。 */
   preview?: boolean;
 };
 
-export function TripCard({ trip, credit, preview = false }: Props) {
+export function TripCard({ trip, credit, growth, preview = false }: Props) {
   const { openProfile } = useProfile();
   const joinedRate = trip.capacity === 0 ? 0 : Math.round((trip.joined_count / trip.capacity) * 100);
   const width = Math.min(100, Math.max(0, joinedRate));
@@ -91,6 +94,7 @@ export function TripCard({ trip, credit, preview = false }: Props) {
                 {publisherSummary(trip.publisher) !== '' &&
                   ` · ${publisherSummary(trip.publisher)}`}
               </span>
+              {growth !== undefined && <GrowthBadge level={growth.level} />}
               {credit !== undefined && (
                 <span className={`profile-credit is-compact tc-credit ${creditTone(credit.credit_level)}`}>
                   {creditLine(credit.credit_score, credit.credit_level)}

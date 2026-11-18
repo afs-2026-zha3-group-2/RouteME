@@ -1,7 +1,7 @@
 openapi: 3.0.3
 info:
   title: RouteME API
-  version: 0.26.0
+  version: 0.27.0
   description: |
     RouteME 后端对外契约。本文件是前后端唯一事实源，字段名、类型、状态码与错误码只在这里定稿。
         当前包含：脚手架问候语、演示账户与账号认证（注册/登录/会话/退出）、旅行计划（浏览/筛选/发布/详情/结束），同行匹配、申请、退出、聊天、我的旅行与举报，游后体验分享与参考发布所需数据，管理后台（用户管理 / 举报处置 / 人工客服）与用户侧帮助入口，AI 智能行程推荐（生成/快照保存与读取，天气复用目的地天气接口），以及目的地天气提醒与信用分账户、安全学习恢复信用分的考试会话与判分，旅行保障（演示钱包 / 保险 / 借款 / 还款）。
@@ -158,6 +158,66 @@ paths:
                 missing:
                   value:
                     code: DEMO_USER_REQUIRED
+  /users/growth:
+    get:
+      operationId: loadUserGrowthLevels
+      summary: 批量读取用户成长等级
+      description: |
+        需携带 `X-User-Id`。供行程卡、申请列表与详情同行者一次取数；
+        `ids` 为逗号分隔的用户 id，最多 50 个；只返回等级，不含经验值或流水。
+        任一 id 不存在时返回 404 `USER_NOT_FOUND`，不创建孤立账户。
+      parameters:
+        - $ref: '#/components/parameters/DemoUserId'
+        - name: ids
+          in: query
+          required: true
+          description: 逗号分隔的用户 id，最多 50 个
+          schema:
+            type: string
+      responses:
+        '200':
+          description: 按请求顺序返回的成长等级
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/UserGrowthEntry'
+              examples:
+                seeded:
+                  value:
+                    - user_id: 1
+                      level: 1
+        '400':
+          description: ids 缺失、非数字或超过 50 个
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                invalid:
+                  value:
+                    code: INVALID_INPUT
+        '401':
+          description: 缺失或未知的 X-User-Id
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                missing:
+                  value:
+                    code: DEMO_USER_REQUIRED
+        '404':
+          description: 任一用户不存在
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                missingUser:
+                  value:
+                    code: USER_NOT_FOUND
   /users/{userId}/profile:
     get:
       operationId: loadUserProfile
@@ -3535,6 +3595,12 @@ components:
           description: 仅有效状态为 BANNED 时出现；到期后接口不再返回
         stats:
           $ref: '#/components/schemas/ProfileStats'
+        growth:
+          type: object
+          nullable: true
+          readOnly: true
+          allOf:
+            - $ref: '#/components/schemas/UserGrowth'
     UserCreditEntry:
       type: object
       required: [user_id, credit_score, credit_level, credit_restricted]
@@ -3558,6 +3624,45 @@ components:
           type: boolean
           readOnly: true
           description: 当前信用分低于 60 时为 true；列表展示「限制中」徽标
+    UserGrowth:
+      type: object
+      required: [level]
+      properties:
+        level:
+          type: integer
+          minimum: 1
+          maximum: 5
+          readOnly: true
+          description: 由总经验实时派生：LV1 0–99 / LV2 100–199 / LV3 200–299 / LV4 300–399 / LV5 400+
+        exp:
+          type: integer
+          minimum: 0
+          readOnly: true
+          description: 当前总经验；仅本人在个人主页读取时返回
+        exp_to_next:
+          type: integer
+          minimum: 0
+          nullable: true
+          readOnly: true
+          description: 距下一级所需经验；LV5 时省略
+        max_level:
+          type: boolean
+          readOnly: true
+          description: 是否已达 LV5；仅本人在个人主页读取时返回
+    UserGrowthEntry:
+      type: object
+      required: [user_id, level]
+      properties:
+        user_id:
+          type: integer
+          format: int64
+          readOnly: true
+        level:
+          type: integer
+          minimum: 1
+          maximum: 5
+          readOnly: true
+          description: 由总经验实时派生：LV1 0–99 / LV2 100–199 / LV3 200–299 / LV4 300–399 / LV5 400+
     ProfileStats:
       type: object
       required: [published, completed, joined, shared]

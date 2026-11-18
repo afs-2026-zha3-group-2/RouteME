@@ -6,6 +6,8 @@ import { CreditRestrictedNotice } from '../credit/CreditRestrictedNotice';
 import { useMyCredit } from '../credit/CreditContext';
 import { creditLine, creditRestrictedBadge, creditTone } from '../profile/creditDisplay';
 import { useUserCredits } from '../profiles/useUserCredits';
+import { useGrowthLevels } from '../profiles/useGrowthLevels';
+import { GrowthBadge } from '../growth/GrowthBadge';
 import type { DemoUser, TripApplication, TripDetail } from '../types';
 import { applicationLabel } from './applicationStatus';
 import { statusColor, statusLabel } from '../trips/tripStatus';
@@ -23,6 +25,7 @@ export function ApplicationsPage({ currentUser, tripId }: Props) {
   const [busyId, setBusyId] = useState<number | null>(null);
   const applicantIds = applications?.map((application) => application.applicant.id) ?? [];
   const credits = useUserCredits(applicantIds, currentUser.id);
+  const growth = useGrowthLevels(applicantIds, currentUser.id);
 
   const reload = useCallback(() => {
     setError(null);
@@ -129,6 +132,9 @@ export function ApplicationsPage({ currentUser, tripId }: Props) {
                         <Typography.Text strong>
                           {application.applicant.nickname} · {application.applicant.school}
                         </Typography.Text>
+                        {growth[application.applicant.id] !== undefined && (
+                          <GrowthBadge level={growth[application.applicant.id].level} />
+                        )}
                         {credits[application.applicant.id] !== undefined && (
                           <span
                             className={`profile-credit is-compact ${creditTone(

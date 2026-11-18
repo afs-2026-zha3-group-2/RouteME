@@ -4629,6 +4629,14 @@ svg {
   color: var(--ink) !important;
 }
 
+/* 昵称与成长徽标同行：徽标保持在标题容器外，避免污染既有文本断言 */
+.profile-name-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
 .profile-hero-meta {
   display: flex;
   flex-wrap: wrap;
@@ -4697,6 +4705,90 @@ svg {
   gap: 5px;
   padding: 1px 8px;
   font-size: 11px;
+}
+
+/* 成长等级：青绿徽标，与信用分并列但色阶与文案区分；只用 LVn */
+.growth-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 1px 8px;
+  border-radius: 999px;
+  border: 1px solid var(--lagoon);
+  background: var(--lagoon-soft);
+  color: var(--t-lagoon);
+  font-family: var(--font-num);
+  font-size: 11px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.growth-pill em {
+  font-style: normal;
+  font-weight: 700;
+}
+
+.growth-pill small {
+  font-family: var(--font);
+  font-weight: 600;
+  color: var(--t-lagoon);
+  opacity: 0.8;
+}
+
+.growth-pill.lv5 {
+  background: var(--lagoon);
+  border-color: var(--lagoon);
+  color: var(--surface);
+}
+
+.growth-pill.lv5 small {
+  color: var(--surface);
+  opacity: 0.9;
+}
+
+/* 本人成长进度块：他人视角不渲染 */
+.growth-progress {
+  flex: 1 1 260px;
+  min-width: 0;
+  border: 1px solid var(--line);
+  border-radius: var(--r-sm);
+  background: var(--surface);
+  padding: 12px 14px;
+}
+
+.gp-top {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  font-size: 12px;
+  color: var(--ink-2);
+}
+
+.gp-top b {
+  font-family: var(--font-num);
+  color: var(--ink);
+}
+
+.gp-track {
+  position: relative;
+  height: 8px;
+  border-radius: 99px;
+  background: var(--surface-3);
+  margin: 10px 0 8px;
+  overflow: hidden;
+}
+
+.gp-track i {
+  position: absolute;
+  inset: 0 auto 0 0;
+  border-radius: 99px;
+  background: linear-gradient(90deg, var(--lagoon), var(--jade));
+}
+
+.gp-hint {
+  margin: 0;
+  font-size: 11.5px;
+  color: var(--ink-3);
 }
 
 /* 卡片：信用行并进发布者行，排在头像与名字下方 */

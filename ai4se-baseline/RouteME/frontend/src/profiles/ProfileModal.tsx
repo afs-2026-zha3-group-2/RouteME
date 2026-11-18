@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
 import { Alert, Button, Modal, Space, Spin, Typography } from 'antd';
 import { loadUserProfile } from '../api';
+import { GrowthBadge } from '../growth/GrowthBadge';
+import { GrowthProgressBlock } from '../growth/GrowthProgressBlock';
 import { profileMessages } from '../i18n/profileMessages';
 import { creditLine, creditRestrictedBadge, creditTone } from '../profile/creditDisplay';
 import { Avatar } from '../shell/Avatar';
@@ -101,6 +103,7 @@ function ProfileBody({ currentUser, profile }: { currentUser: DemoUser; profile:
             {profile.nickname}
             {isMe && <span className="badge dusk no-dot">{profileMessages.thisIsYou}</span>}
           </span>
+          <GrowthBadge level={profile.growth?.level} withLabel={isMe} />
           {identity !== '' && <span className="profile-modal-meta">{identity}</span>}
           <span className={`profile-credit is-compact ${creditTone(profile.credit_level)}`}>
             {creditLine(profile.credit_score, profile.credit_level)}
@@ -138,6 +141,8 @@ function ProfileBody({ currentUser, profile }: { currentUser: DemoUser; profile:
           {shared.join('、')}
         </p>
       )}
+
+      {isMe && <GrowthProgressBlock growth={profile.growth} />}
 
       <div className="profile-stats">
         <span className="profile-stat">
