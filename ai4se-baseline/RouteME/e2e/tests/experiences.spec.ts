@@ -1,4 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
+import { loginAsAdmin } from './support';
 
 const API = '/api';
 
@@ -123,15 +124,17 @@ test('shares an experience and reuses it to publish a new plan', async ({ page }
   await page.getByRole('button', { name: '参考此行程发布' }).click();
   await expect(page.getByRole('heading', { name: '发布一条想走的路' })).toBeVisible();
   await expect(page.getByText(/已预填目的地、途经点与兴趣/)).toBeVisible();
-  await expect(page.getByLabel('计划人数')).toHaveValue('');
+  // v3 发布页把「招募人数」收进侧栏卡片，默认 2 人（不再留空输入框）。
+  await expect(page.getByText('招募人数').first()).toBeVisible();
+  await expect(page.locator('.publish-companions-card')).toContainText('2 人');
   await expect(page.getByLabel('标题')).toHaveValue('');
   await expect(page.locator('.place-chip-name', { hasText: '香洲港集合' }).first()).toBeVisible();
-  await expect(page.getByRole('checkbox', { name: '摄影', exact: true })).toHaveAttribute(
-    'aria-checked',
-    'true',
-  );
+  // v3 已选标签以可关闭标签展示，不再出现在下方可选复选框里。
+  const selectedTag = page.locator('.publish-tag-row .ant-tag').filter({ hasText: '摄影' });
+  await expect(selectedTag).toBeVisible();
+  await expect(selectedTag.locator('.ant-tag-close-icon')).toBeVisible();
 
-  await page.getByRole('button', { name: /^发\s*布$/ }).click();
+  await page.getByRole('button', { name: /^发\s*布/ }).click();
   await expect(page.getByText(/给这条路线起个名字|请选择出发日期|含你在内至少 2 人/).first()).toBeVisible();
 });
 
@@ -302,10 +305,10 @@ test('guides an empty filter state to publish from both views', async ({ page })
 });
 
 test('shows skeletons instead of the previous view while lists load', async ({ page }) => {
-  const matchesGate = createGate();
+  const tripsGate = createGate();
   const experiencesGate = createGate();
-  await page.route('**/api/matches**', async (route) => {
-    await matchesGate.opened;
+  await page.route('**/api/trips**', async (route) => {
+    await tripsGate.opened;
     await route.continue();
   });
   await page.route('**/api/experiences**', async (route) => {
@@ -327,7 +330,7 @@ test('shows skeletons instead of the previous view while lists load', async ({ p
   ).toBeVisible();
   await expect(page.locator('.trip-card')).toHaveCount(0);
 
-  matchesGate.release();
+  tripsGate.release();
   experiencesGate.release();
   await expect(page.locator('.exp-card').first()).toBeVisible();
   await expect(page.locator('[aria-busy="true"]')).toHaveCount(0);
@@ -364,4 +367,49 @@ test('rejects experience sharing after the trip is cancelled', async ({ page }) 
     data: { content: '取消后不应该能发表体验。', intensity: 'relaxed', advice: '无' },
   });
   expect(rejected.status()).toBe(403);
+});
+
+test('admin removes any travel inspiration from the home list', async ({ page }) => {
+  const title = `E2E 管理员删除 ${Date.now()}`;
+  const trip = await createCompletedTrip(page, title);
+  const content = `管理员会删除这条旅行灵感 ${Date.now()}`;
+  const shared = await page.request.post(`${API}/trips/${trip.id}/experiences`, {
+    headers: { 'X-User-Id': '1', 'Content-Type': 'application/json' },
+    data: { content, intensity: 'relaxed', advice: '无' },
+  });
+  expect(shared.ok()).toBeTruthy();
+  const experience = (await shared.json()) as { id: number };
+
+  // 普通用户：看不到删除入口。
+  await loginAs(page, 1);
+  await page.goto('/');
+  await page.locator('.ant-segmented-item', { hasText: '旅行体验' }).click();
+  const card = page.locator('.exp-card').filter({ hasText: content });
+  await expect(card).toBeVisible();
+  await expect(card.getByRole('button', { name: /删除/ })).toHaveCount(0);
+
+  // 管理员：首页旅行灵感卡直接删除（二次确认）。
+  await loginAsAdmin(page);
+  await page.goto('/');
+  await page.locator('.ant-segmented-item', { hasText: '旅行体验' }).click();
+  const adminCard = page.locator('.exp-card').filter({ hasText: content });
+  await expect(adminCard).toBeVisible();
+  await adminCard.getByRole('button', { name: /删除/ }).click();
+  await page.getByRole('dialog').getByRole('button', { name: /删\s*除/ }).click();
+  await expect(adminCard).toHaveCount(0);
+  await expect(page.getByText('已删除该旅行灵感')).toBeVisible();
+
+  const list = await page.request.get(`${API}/experiences`, { headers: { 'X-User-Id': '1' } });
+  const items = ((await list.json()) as { items: { id: number }[] }).items;
+  expect(items.some((item) => item.id === experience.id)).toBe(false);
+
+  // 普通用户直接调用删除接口仍被拒绝。
+  const login = await page.request.post(`${API}/auth/login`, {
+    data: { username: 'linjianxia', password: '123456' },
+  });
+  const token = ((await login.json()) as { token: string }).token;
+  const forbidden = await page.request.delete(`${API}/admin/experiences/${experience.id}`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  expect(forbidden.status()).toBe(403);
 });

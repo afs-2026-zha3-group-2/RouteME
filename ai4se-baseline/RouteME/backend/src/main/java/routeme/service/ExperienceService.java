@@ -69,4 +69,12 @@ public interface ExperienceService extends IService<TripExperienceEntity> {
      * @return 按最近保存时间倒序的体验
      */
     List<ExperienceResponse> mine(long authorId);
+
+    /**
+     * 管理员删除任意一条旅行灵感：同时清理其图片行（文件在事务提交后删除）与全部点赞。
+     *
+     * @param experienceId 旅行灵感 id
+     * @throws routeme.exception.ExperienceNotFoundException 该旅行灵感不存在
+     */
+    void delete(long experienceId);
 }

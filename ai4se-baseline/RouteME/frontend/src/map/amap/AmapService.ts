@@ -48,6 +48,8 @@ export type RouteWaypoint = {
   address?: string;
   lng: number;
   lat: number;
+  /** 该点的城市名：公共交通按段换乘时用来限定搜索范围（跨城行程必需）。 */
+  city?: string;
 };
 
 export type RoutePlan = {
@@ -204,8 +206,12 @@ export type AmapErrorCode =
   | 'NO_RESULT'
   | 'ROUTE_NOT_FOUND'
   | 'INVALID_WAYPOINTS'
+  /** 公共交通缺少城市名：Transfer 插件必须有 city 才能发起请求。 */
+  | 'MISSING_CITY'
   | 'PROXY_UNAVAILABLE'
-  | 'UPSTREAM_UNAVAILABLE';
+  | 'UPSTREAM_UNAVAILABLE'
+  /** 高德插件在超时/限流时只回 status=error，没有 info：属于可重试的繁忙态。 */
+  | 'UPSTREAM_BUSY';
 
 /** 高德错误统一包装，UI 只读取 code/infocode，不解析原始结果对象。 */
 export class AmapApiError extends Error {
@@ -236,8 +242,7 @@ const QUOTA_INFOCODES = new Set([
 ]);
 
 /** Key / 权限 / 域名白名单 / 安全密钥类错误码。 */
-const AUTH_INFOCODES = new Set([
-  '10001',
+const AUTH_INFOCODES = new Set([  '10001',
   '10002',
   '10005',
   '10006',
@@ -254,6 +259,9 @@ const AUTH_INFOCODES = new Set([
   '20003',
   'INVALID_USER_SCODE',
 ]);
+
+/** 路线规划类错误码（20800 起）：途经点无法连通时高德返回这一族。 */
+const ROUTE_INFOCODES = new Set(['20800', '20801', '20802', '20803']);
 
 function readText(value: string | string[] | undefined): string {
   if (Array.isArray(value)) {
@@ -684,6 +692,10 @@ function sdkError(
   if (status === 'no_data') {
     return new AmapApiError('NO_RESULT', '没有找到结果', code);
   }
+  // 路线规划类错误（20800 路线规划失败等）：让用户改途经点，而不是重试。
+  if (ROUTE_INFOCODES.has(code)) {
+    return new AmapApiError('ROUTE_NOT_FOUND', '没有找到可用路线', code);
+  }
   // 本站代理自定义的错误码：区分「后端没配 Key」「转发失败」「路径被拒」。
   if (code === '50000' || upper.includes('AMAP_KEY_NOT_CONFIGURED')) {
     return new AmapApiError('NOT_CONFIGURED', '后端未配置高德 Key', code);
@@ -691,7 +703,79 @@ function sdkError(
   if (code === '50001' || upper.includes('AMAP_PROXY_UNAVAILABLE')) {
     return new AmapApiError('UPSTREAM_UNAVAILABLE', '高德上游转发失败', code || '50001');
   }
+  // status='error' 且没带 info/infocode：高德插件在超时或限流时就是这样回调的，
+  // 不能当成「Key 错误」抛给用户，标成可重试的繁忙态。
+  if (status === 'error' && code === '' && info === undefined) {
+    return new AmapApiError('UPSTREAM_BUSY', '高德服务繁忙', '');
+  }
   return new AmapApiError('AMAP_ERROR', message, code);
+}
+
+/* ---------- 请求节流：个人 Key 有 QPS 上限，请求必须串行 ---------- */
+
+/** 两次高德 SDK 请求之间的最小间隔（ms）：个人 Key 约 3 QPS，且并发会直接触发 10021。 */
+const AMAP_MIN_GAP_MS = 500;
+/** 限流 / 繁忙时的重试次数与退避基数。 */
+const AMAP_RETRY_ATTEMPTS = 3;
+const AMAP_RETRY_BACKOFF_MS = 800;
+
+let amapQueue: Promise<unknown> = Promise.resolve();
+let lastAmapCallAt = 0;
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => {
+    setTimeout(resolve, ms);
+  });
+}
+
+function isTransientAmapError(error: unknown): boolean {
+  return (
+    error instanceof AmapApiError &&
+    (error.code === 'QUOTA' || error.code === 'UPSTREAM_BUSY' || error.code === 'NETWORK')
+  );
+}
+
+/** 串行排队执行一次高德调用（保证最小间隔，不并发打高德）。 */
+function enqueueAmapCall<T>(task: () => Promise<T>): Promise<T> {
+  const run = async (): Promise<T> => {
+    const wait = AMAP_MIN_GAP_MS - (Date.now() - lastAmapCallAt);
+    if (wait > 0) {
+      await sleep(wait);
+    }
+    try {
+      return await task();
+    } finally {
+      lastAmapCallAt = Date.now();
+    }
+  };
+  const chained = amapQueue.then(run, run);
+  amapQueue = chained.then(
+    () => undefined,
+    () => undefined,
+  );
+  return chained;
+}
+
+/**
+ * 节流版高德调用：排队 + 限流自动重试。
+ *
+ * <p>路线解析一次要连打 7 次搜索，直接在个人 Key 上并发会拿到
+ * {@code CUQPS_HAS_EXCEEDED_THE_LIMIT}（10021）；旧实现把它归到通用错误，
+ * 用户只看到「高德服务返回错误」。这里统一排队并退避重试。
+ */
+export function runAmapCall<T>(task: () => Promise<T>): Promise<T> {
+  const attempt = async (remaining: number): Promise<T> => {
+    try {
+      return await enqueueAmapCall(task);
+    } catch (error) {
+      if (remaining <= 1 || !isTransientAmapError(error)) {
+        throw error;
+      }
+      await sleep(AMAP_RETRY_BACKOFF_MS);
+      return attempt(remaining - 1);
+    }
+  };
+  return attempt(AMAP_RETRY_ATTEMPTS);
 }
 
 /* ---------- 插件加载 ---------- */
@@ -858,18 +942,23 @@ async function remoteSearchPlaces(keywords: string, city?: string): Promise<Plac
   });
 
   return new Promise<PlaceResult[]>((resolve, reject) => {
-    service.search(keywords, (status, result) => {
-      if (status === 'no_data') {
-        resolve([]);
-        return;
-      }
-      if (status !== 'complete') {
-        reject(sdkError(status, result?.info, result?.infocode));
-        return;
-      }
-      const pois = result?.poiList?.pois ?? [];
-      resolve(pois.map(toPlaceResult).filter((place): place is PlaceResult => place !== null));
-    });
+    void runAmapCall(
+      () =>
+        new Promise<PlaceResult[]>((innerResolve, innerReject) => {
+          service.search(keywords, (status, result) => {
+            if (status === 'no_data') {
+              innerResolve([]);
+              return;
+            }
+            if (status !== 'complete') {
+              innerReject(sdkError(status, result?.info, result?.infocode));
+              return;
+            }
+            const pois = result?.poiList?.pois ?? [];
+            innerResolve(pois.map(toPlaceResult).filter((place): place is PlaceResult => place !== null));
+          });
+        }),
+    ).then(resolve, reject);
   });
 }
 
@@ -1027,26 +1116,29 @@ async function remoteScenicSpots(
   // type 走高德 POI 分类（风景名胜），比关键词「景点」更准。
   // 单页 20 条几乎都挤在同一片街区，多取 2 页再按距离去重，图钉才铺得开。
   const searchPage = (pageIndex: number) =>
-    new Promise<PlaceResult[]>((resolve, reject) => {
-      const service = new sdk.PlaceSearch({
-        type: '风景名胜',
-        pageSize: 20,
-        pageIndex,
-        extensions: 'base',
-      });
-      service.searchNearBy('', [lng, lat], radius, (status, result) => {
-        if (status === 'no_data') {
-          resolve([]);
-          return;
-        }
-        if (status !== 'complete') {
-          reject(sdkError(status, result?.info, result?.infocode));
-          return;
-        }
-        const pois = result?.poiList?.pois ?? [];
-        resolve(pois.map(toPlaceResult).filter((place): place is PlaceResult => place !== null));
-      });
-    });
+    runAmapCall(
+      () =>
+        new Promise<PlaceResult[]>((resolve, reject) => {
+          const service = new sdk.PlaceSearch({
+            type: '风景名胜',
+            pageSize: 20,
+            pageIndex,
+            extensions: 'base',
+          });
+          service.searchNearBy('', [lng, lat], radius, (status, result) => {
+            if (status === 'no_data') {
+              resolve([]);
+              return;
+            }
+            if (status !== 'complete') {
+              reject(sdkError(status, result?.info, result?.infocode));
+              return;
+            }
+            const pois = result?.poiList?.pois ?? [];
+            resolve(pois.map(toPlaceResult).filter((place): place is PlaceResult => place !== null));
+          });
+        }),
+    );
 
   const pages = await Promise.all([searchPage(1), searchPage(2), searchPage(3)]);
   return pages.flat();
@@ -1072,29 +1164,32 @@ export async function reverseGeocode(lng: number, lat: number): Promise<PlaceRes
   try {
     const sdk = await loadSdk();
     const geocoder = new sdk.Geocoder({ radius: 200, extensions: 'base' });
-    const named = await new Promise<PlaceResult | null>((resolve) => {
-      geocoder.getAddress([lng, lat], (status, result) => {
-        if (status !== 'complete') {
-          resolve(null);
-          return;
-        }
-        const geocode = result?.regeocode;
-        const address = geocode?.formattedAddress ?? '';
-        if (address === '') {
-          resolve(null);
-          return;
-        }
-        const point = pickRegeocodeName(address);
-        resolve({
-          ...fallback,
-          name: point === '' ? fallback.name : point,
-          address,
-          // 行政区划字段缺失时保留空串，避免伪造城市。
-          city: '',
-          district: '',
-        });
-      });
-    });
+    const named = await runAmapCall(
+      () =>
+        new Promise<PlaceResult | null>((resolve) => {
+          geocoder.getAddress([lng, lat], (status, result) => {
+            if (status !== 'complete') {
+              resolve(null);
+              return;
+            }
+            const geocode = result?.regeocode;
+            const address = geocode?.formattedAddress ?? '';
+            if (address === '') {
+              resolve(null);
+              return;
+            }
+            const point = pickRegeocodeName(address);
+            resolve({
+              ...fallback,
+              name: point === '' ? fallback.name : point,
+              address,
+              // 行政区划字段缺失时保留空串，避免伪造城市。
+              city: '',
+              district: '',
+            });
+          });
+        }),
+    );
     return named ?? fallback;
   } catch {
     return fallback;
@@ -1127,18 +1222,23 @@ async function remoteAroundPlaces(
   const service = new sdk.PlaceSearch({ pageSize: 5, pageIndex: 1, extensions: 'base' });
 
   return new Promise<PlaceResult[]>((resolve, reject) => {
-    service.searchNearBy('', [lng, lat], radius, (status, result) => {
-      if (status === 'no_data') {
-        resolve([]);
-        return;
-      }
-      if (status !== 'complete') {
-        reject(sdkError(status, result?.info, result?.infocode));
-        return;
-      }
-      const pois = result?.poiList?.pois ?? [];
-      resolve(pois.map(toPlaceResult).filter((place): place is PlaceResult => place !== null));
-    });
+    void runAmapCall(
+      () =>
+        new Promise<PlaceResult[]>((innerResolve, innerReject) => {
+          service.searchNearBy('', [lng, lat], radius, (status, result) => {
+            if (status === 'no_data') {
+              innerResolve([]);
+              return;
+            }
+            if (status !== 'complete') {
+              innerReject(sdkError(status, result?.info, result?.infocode));
+              return;
+            }
+            const pois = result?.poiList?.pois ?? [];
+            innerResolve(pois.map(toPlaceResult).filter((place): place is PlaceResult => place !== null));
+          });
+        }),
+    ).then(resolve, reject);
   });
 }
 
@@ -1147,14 +1247,28 @@ async function remoteAroundPlaces(
  *
  * <p>高德服务未配置或不可达时（本仓库的默认开发环境），城市与 Demo 途经点
  * 仍能通过 `map/data` 的离线索引定位，地图不至于整块空白。
+ *
+ * <p>同一次会话里同名景点会被反复解析（AI 行程与预览、快照预填），命中缓存
+ * 就不再打高德——个人 Key 的 QPS 很低，少一次请求就少一次限流。
  */
+const geocodeCache = new Map<string, PlaceResult | null>();
+
 export async function geocodePlace(name: string, city?: string): Promise<PlaceResult | null> {
   const value = name.trim();
   if (value === '') {
     return null;
   }
+  const cacheKey = `${value}|${(city ?? '').trim()}`;
+  if (geocodeCache.has(cacheKey)) {
+    return geocodeCache.get(cacheKey) ?? null;
+  }
   const remote = await remoteGeocode(value, city).catch(() => null);
-  return remote ?? catalogPlaceResult(value, city);
+  const resolved = remote ?? catalogPlaceResult(value, city);
+  // 只缓存成功结果：失败可能只是限流，下次值得重试。
+  if (resolved !== null) {
+    geocodeCache.set(cacheKey, resolved);
+  }
+  return resolved;
 }
 
 async function remoteGeocode(value: string, city?: string): Promise<PlaceResult | null> {
@@ -1166,44 +1280,50 @@ async function remoteGeocode(value: string, city?: string): Promise<PlaceResult 
 
   const sdk = await loadSdk();
   const geocoder = new sdk.Geocoder({ city: city?.trim() ?? '' });
-  return new Promise<PlaceResult | null>((resolve, reject) => {
-    geocoder.getLocation(value, (status, result) => {
-      if (status === 'no_data') {
-        resolve(null);
-        return;
-      }
-      if (status !== 'complete') {
-        reject(sdkError(status, result?.info, result?.infocode));
-        return;
-      }
-      const geocode = result?.geocodes?.[0];
-      const location = geocode?.location;
-      if (geocode === undefined || location === undefined) {
-        resolve(null);
-        return;
-      }
-      // 地理编码可能把不知道的地址解析到无关位置；只有地址与输入共享足够长的
-      // 片段时才采用，否则宁可不定位，也不把 Marker 放到错误的城市。
-      const address = geocode.formattedAddress ?? readText(geocode.province);
-      const required = Math.min(3, normalizeName(value).length);
-      if (required > 0 && longestCommonSubstring(normalizeName(value), normalizeName(address)) < required) {
-        resolve(null);
-        return;
-      }
-      const lng = location.getLng();
-      const lat = location.getLat();
-      resolve({
-        id: `geo-${lng}-${lat}`,
-        name: value,
-        address,
-        city: readText(geocode.city),
-        district: readText(geocode.district),
-        lng,
-        lat,
-        type: 'geocode',
-      });
-    });
-  });
+  return runAmapCall(
+    () =>
+      new Promise<PlaceResult | null>((resolve, reject) => {
+        geocoder.getLocation(value, (status, result) => {
+          if (status === 'no_data') {
+            resolve(null);
+            return;
+          }
+          if (status !== 'complete') {
+            reject(sdkError(status, result?.info, result?.infocode));
+            return;
+          }
+          const geocode = result?.geocodes?.[0];
+          const location = geocode?.location;
+          if (geocode === undefined || location === undefined) {
+            resolve(null);
+            return;
+          }
+          // 地理编码可能把不知道的地址解析到无关位置；只有地址与输入共享足够长的
+          // 片段时才采用，否则宁可不定位，也不把 Marker 放到错误的城市。
+          const address = geocode.formattedAddress ?? readText(geocode.province);
+          const required = Math.min(3, normalizeName(value).length);
+          if (
+            required > 0 &&
+            longestCommonSubstring(normalizeName(value), normalizeName(address)) < required
+          ) {
+            resolve(null);
+            return;
+          }
+          const lng = location.getLng();
+          const lat = location.getLat();
+          resolve({
+            id: `geo-${lng}-${lat}`,
+            name: value,
+            address,
+            city: readText(geocode.city),
+            district: readText(geocode.district),
+            lng,
+            lat,
+            type: 'geocode',
+          });
+        });
+      }),
+  );
 }
 
 const ROUTE_SERVICES: Record<TravelMode, 'Walking' | 'Driving' | 'Riding' | 'Transfer'> = {
@@ -1214,9 +1334,57 @@ const ROUTE_SERVICES: Record<TravelMode, 'Walking' | 'Driving' | 'Riding' | 'Tra
 };
 
 /**
+ * 单段规划：失败时按「本方式 → 备选方式 → 直线估算」逐级降级。
+ *
+ * <p>真实行程里经常出现一两段路线插件不支持的情况（跨城公共交通、步行距离过长、
+ * 景区内部道路等）。整条路线因此失败会让用户什么也看不到，所以只在**至少有一段**
+ * 成功时对失败段做直线估算；若全部段都失败仍抛错，避免把估算伪装成高德结果。
+ */
+const ROUTE_FALLBACK_CHAIN: Record<TravelMode, TravelMode[]> = {
+  walking: ['walking', 'transit', 'driving'],
+  transit: ['transit', 'driving'],
+  driving: ['driving'],
+  bicycling: ['bicycling', 'driving'],
+};
+
+/** 与途经点无关的全局失败（Key / 配额 / 网络）：继续换方式只会重复失败。 */
+const ROUTE_FATAL_CODES = new Set<string>([
+  'AUTH',
+  'QUOTA',
+  'NOT_CONFIGURED',
+  'MISSING_JS_KEY',
+  'NETWORK',
+  'PROXY_UNAVAILABLE',
+  'UPSTREAM_UNAVAILABLE',
+  'UPSTREAM_BUSY',
+]);
+
+function isFatalRouteError(error: unknown): boolean {
+  return error instanceof AmapApiError && ROUTE_FATAL_CODES.has(error.code);
+}
+
+type RouteLeg = { distanceMeters: number; durationSeconds: number; path: LngLat[] };
+
+/** 一段路线的直线估算：只在前一段没拿到高德数据时兜底。 */
+function estimateRouteLeg(mode: TravelMode, start: RouteWaypoint, end: RouteWaypoint): RouteLeg {
+  const distanceMeters = Math.round(
+    haversineMeters([start.lng, start.lat], [end.lng, end.lat]),
+  );
+  const durationSeconds = Math.round(distanceMeters / MODE_SPEED_MPS[mode]);
+  return {
+    distanceMeters,
+    durationSeconds,
+    path: [
+      [start.lng, start.lat],
+      [end.lng, end.lat],
+    ],
+  };
+}
+
+/**
  * 逐段规划路线并按顺序拼成一条。高德路线插件对途经点支持不一致，逐段请求
  * 可以保证顺序、距离和时长口径一致；8 个途经点最多 7 次请求。
- * transit 需要目的地城市名（city）限定换乘搜索范围。
+ * transit 需要城市名限定换乘搜索范围：按每一段的起点城市设置，跨城段退回驾车。
  */
 export async function planRoute(
   mode: TravelMode,
@@ -1226,17 +1394,24 @@ export async function planRoute(
   if (waypoints.length < 2) {
     throw new AmapApiError('INVALID_WAYPOINTS', '至少需要两个途经点才能规划路线');
   }
+  // 公共交通必须限定城市：city 为空时 Transfer 插件会在客户端直接回调 error。
+  // 优先用调用方给的城市，其次用途经点自带城市；两者都没有时退回驾车，而不是直接失败。
+  const waypointCity = waypoints.find((waypoint) => (waypoint.city ?? '').trim() !== '')?.city ?? '';
+  const scopedCity = (city ?? '').trim() || waypointCity.trim();
+  const chain =
+    mode === 'transit' && scopedCity === ''
+      ? (['driving'] as TravelMode[])
+      : ROUTE_FALLBACK_CHAIN[mode];
   const sdk = await loadSdk();
-  const Service = sdk[ROUTE_SERVICES[mode]];
-  const service =
-    mode === 'transit'
-      ? new Service({ city: city?.trim() ?? '', policy: 0, extensions: 'all' })
-      : new Service(mode === 'driving' ? { policy: 0, extensions: 'base' } : {});
 
   let distanceMeters = 0;
   let durationSeconds = 0;
   const path: LngLat[] = [];
   const legs: RoutePlan['legs'] = [];
+  /** 真正由高德返回的段数；直线兜底段不计入。 */
+  let realLegs = 0;
+  let estimated = false;
+  let firstError: unknown = null;
 
   for (let index = 0; index < waypoints.length - 1; index += 1) {
     const start = waypoints[index];
@@ -1244,27 +1419,76 @@ export async function planRoute(
     const origin: LngLat = [start.lng, start.lat];
     const destination: LngLat = [end.lng, end.lat];
 
-    const leg = await new Promise<ReturnType<typeof toRouteLeg>>((resolve, reject) => {
-      service.search(origin, destination, (status, result) => {
-        if (status === 'no_data') {
-          reject(new AmapApiError('ROUTE_NOT_FOUND', '没有找到可用路线'));
-          return;
+    let leg: RouteLeg | null = null;
+    let usedMode: TravelMode = mode;
+    let fromAmap = false;
+
+    for (const candidate of chain) {
+      const transitCity = `${start.city ?? end.city ?? scopedCity}`.trim();
+      if (candidate === 'transit' && transitCity === '') {
+        // 缺城市无法发起 Transfer：直接尝试下一种方式。
+        continue;
+      }
+      const Service = sdk[ROUTE_SERVICES[candidate]];
+      const service =
+        candidate === 'transit'
+          ? new Service({ city: transitCity, policy: 0, extensions: 'all' })
+          : new Service(candidate === 'driving' ? { policy: 0, extensions: 'base' } : {});
+      try {
+        leg = await new Promise<RouteLeg>((resolve, reject) => {
+          void runAmapCall(
+            () =>
+              new Promise<RouteLeg>((innerResolve, innerReject) => {
+                service.search(origin, destination, (status, result) => {
+                  if (status === 'no_data') {
+                    innerReject(new AmapApiError('ROUTE_NOT_FOUND', '没有找到可用路线'));
+                    return;
+                  }
+                  if (status !== 'complete') {
+                    innerReject(sdkError(status, result?.info, result?.infocode));
+                    return;
+                  }
+                  try {
+                    innerResolve(
+                      candidate === 'transit'
+                        ? parseTransitLeg(firstTransit(result), origin, destination)
+                        : toRouteLeg(result?.routes?.[0], origin, destination),
+                    );
+                  } catch (error: unknown) {
+                    innerReject(
+                      error instanceof Error
+                        ? error
+                        : new AmapApiError('ROUTE_NOT_FOUND', '没有找到可用路线'),
+                    );
+                  }
+                });
+              }),
+          ).then(resolve, reject);
+        });
+        usedMode = candidate;
+        fromAmap = true;
+        break;
+      } catch (error: unknown) {
+        if (isFatalRouteError(error)) {
+          throw error;
         }
-        if (status !== 'complete') {
-          reject(sdkError(status, result?.info, result?.infocode));
-          return;
+        if (firstError === null) {
+          firstError = error;
         }
-        try {
-          resolve(
-            mode === 'transit'
-              ? parseTransitLeg(firstTransit(result), origin, destination)
-              : toRouteLeg(result?.routes?.[0], origin, destination),
-          );
-        } catch (error: unknown) {
-          reject(error instanceof Error ? error : new AmapApiError('ROUTE_NOT_FOUND', '没有找到可用路线'));
-        }
-      });
-    });
+      }
+    }
+
+    if (leg === null) {
+      // 全部方式都失败：先记为直线估算，等确认「还有别的段成功」后再采用。
+      leg = estimateRouteLeg(mode, start, end);
+      estimated = true;
+    } else if (usedMode !== mode) {
+      // 换过方式（如跨城公共交通 → 驾车）时距离/时长口径已变，明确标注为参考。
+      estimated = true;
+    }
+    if (fromAmap) {
+      realLegs += 1;
+    }
 
     distanceMeters += leg.distanceMeters;
     durationSeconds += leg.durationSeconds;
@@ -1282,7 +1506,12 @@ export async function planRoute(
     }
   }
 
-  return { mode, distanceMeters, durationSeconds, path, legs };
+  if (realLegs === 0) {
+    // 所有段都没拿到高德数据：整条失败，绝不用直线估算冒充真实路线。
+    throw firstError ?? new AmapApiError('ROUTE_NOT_FOUND', '没有找到可用路线');
+  }
+
+  return { mode, distanceMeters, durationSeconds, path, estimated, legs };
 }
 
 export function formatDistance(meters: number): string {
@@ -1339,6 +1568,8 @@ export function amapErrorMessage(error: unknown): string {
         return '地图代理不可达：请确认后端已启动（默认 8080），然后重新加载地图。';
       case 'UPSTREAM_UNAVAILABLE':
         return '高德上游暂时连不上（代理转发失败），请稍后重试。';
+      case 'UPSTREAM_BUSY':
+        return '高德服务繁忙（请求过于频繁），已自动重试，请再试一次。';
       case 'NETWORK':
         return '高德服务连接失败，请检查网络后重试。';
       case 'NO_RESULT':
@@ -1347,8 +1578,15 @@ export function amapErrorMessage(error: unknown): string {
         return '没有找到可用路线，请调整途经点或出行方式。';
       case 'INVALID_WAYPOINTS':
         return '至少选择两个途经点后才能生成路线。';
-      default:
-        return `高德服务返回错误${error.infocode === '' ? '' : `（${error.infocode}）`}，请稍后重试。`;
+      case 'MISSING_CITY':
+        return '公共交通需要城市名：请把目的地改成城市（如「珠海市」）后再试。';
+      default: {
+        // 兜底也要说清「哪一步失败 + 原始原因」，避免用户只看到「高德服务返回错误」。
+        const reason = error.infocode === '' ? '' : `（${error.infocode}）`;
+        const detail =
+          error.message === '' || error.message === '高德服务返回错误' ? '' : `：${error.message}`;
+        return `高德服务返回错误${reason}${detail}，请稍后重试。`;
+      }
     }
   }
   return '地图服务暂时不可用，请稍后重试。';

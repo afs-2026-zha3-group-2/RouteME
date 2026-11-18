@@ -21,14 +21,17 @@ import type {
   ExperiencePhoto,
   ExperienceWriteRequest,
   HelpReports,
+  LeaveEvidence,
+  LeavePayload,
+  LearningResult,
+  LearningSession,
   LeavePreview,
   LeaveReason,
+  LeaveRecord,
   LeaveResult,
-  MatchCandidate,
   MyTrips,
   Page,
   Paging,
-  RecommendationList,
   ReportRequest,
   ServiceMessage,
   ServiceSessionDetail,
@@ -200,28 +203,6 @@ export async function loadTrips(
   return (await response.json()) as Page<TripSummary>;
 }
 
-export async function loadMatches(
-  userId: number,
-  filters: TripFilters = {},
-  paging?: Paging,
-): Promise<Page<MatchCandidate>> {
-  const response = await request(`/matches${tripQuery(filters, paging)}`, undefined, userId);
-  return (await response.json()) as Page<MatchCandidate>;
-}
-
-export async function loadMatch(userId: number, tripId: number): Promise<MatchCandidate> {
-  const response = await request(`/matches/${tripId}`, undefined, userId);
-  return (await response.json()) as MatchCandidate;
-}
-
-export async function loadTripRecommendations(
-  userId: number,
-  tripId: number,
-): Promise<RecommendationList> {
-  const response = await request(`/trips/${tripId}/recommendations`, undefined, userId);
-  return (await response.json()) as RecommendationList;
-}
-
 export async function loadTrip(userId: number, tripId: number): Promise<TripDetail> {
   const response = await request(`/trips/${tripId}`, undefined, userId);
   return (await response.json()) as TripDetail;
@@ -333,18 +314,42 @@ export async function loadLeavePreview(
 export async function leaveTrip(
   userId: number,
   tripId: number,
-  reason: LeaveReason,
+  payload: LeavePayload,
 ): Promise<LeaveResult> {
   const response = await request(
     `/trips/${tripId}/leave`,
     {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ reason }),
+      body: JSON.stringify(payload),
     },
     userId,
   );
   return (await response.json()) as LeaveResult;
+}
+
+export async function loadLeaveRecords(userId: number, tripId: number): Promise<LeaveRecord[]> {
+  const response = await request(`/trips/${tripId}/leave-record`, undefined, userId);
+  return (await response.json()) as LeaveRecord[];
+}
+
+export async function fetchLeaveEvidence(userId: number, attachmentId: number): Promise<Blob> {
+  const response = await request(`/leave-evidence/${attachmentId}`, undefined, userId);
+  return await response.blob();
+}
+export async function uploadLeaveEvidence(
+  userId: number,
+  tripId: number,
+  file: File,
+): Promise<LeaveEvidence> {
+  const form = new FormData();
+  form.append('file', file);
+  const response = await request(
+    `/trips/${tripId}/leave-evidence`,
+    { method: 'POST', body: form },
+    userId,
+  );
+  return (await response.json()) as LeaveEvidence;
 }
 
 export async function loadMyTrips(userId: number): Promise<MyTrips> {
@@ -436,6 +441,14 @@ export async function loadTripExperiences(userId: number, tripId: number): Promi
 export async function loadMyExperiences(userId: number): Promise<Experience[]> {
   const response = await request('/me/experiences', undefined, userId);
   return (await response.json()) as Experience[];
+}
+
+/** 管理员删除任意一条旅行灵感（后端会同步清理图片与点赞）。 */
+export async function deleteAdminExperience(
+  token: string,
+  experienceId: number,
+): Promise<void> {
+  await request(`/admin/experiences/${experienceId}`, bearerInit(token, { method: 'DELETE' }));
 }
 
 export async function shareExperience(
@@ -683,6 +696,43 @@ export async function fetchWeatherForecast(
   }
   const response = await request(`/weather/forecast?${params.toString()}`);
   return (await response.json()) as WeatherForecast;
+}
+
+/** 开始一次安全学习考试；分数 ≥ 60 或本月次数已用尽时抛 {@link ApiError}。 */
+export async function startLearningSession(userId: number): Promise<LearningSession> {
+  const response = await request('/credit/learning/sessions', { method: 'POST' }, userId);
+  return (await response.json()) as LearningSession;
+}
+
+/** 标记学习内容已完成；未完成时提交作答会被拒（409）。 */
+export async function completeLearningLessons(
+  userId: number,
+  sessionId: number,
+): Promise<LearningSession> {
+  const response = await request(
+    `/credit/learning/sessions/${sessionId}/lessons/complete`,
+    { method: 'POST' },
+    userId,
+  );
+  return (await response.json()) as LearningSession;
+}
+
+/** 提交作答并取判分结果；正确答案只在服务端，前端只能拿到逐题对错。 */
+export async function submitLearningAnswers(
+  userId: number,
+  sessionId: number,
+  answers: number[],
+): Promise<LearningResult> {
+  const response = await request(
+    `/credit/learning/sessions/${sessionId}/submission`,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ answers }),
+    },
+    userId,
+  );
+  return (await response.json()) as LearningResult;
 }
 
 /* ---------- AI 智能规划（契约 0.17.0；天气复用 add-trip-weather） ---------- */

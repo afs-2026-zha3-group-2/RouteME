@@ -11,9 +11,10 @@ import { AdminUserDetailPage } from './admin/users/AdminUserDetailPage';
 import { AdminUsersPage } from './admin/users/AdminUsersPage';
 import { loadSessionUser, loadUsers, logoutAccount } from './api';
 import { ChatPage } from './chat/ChatPage';
+import { LearningPage } from './credit/LearningPage';
 import { CreditProvider } from './credit/CreditContext';
 import { ShareExperiencePage } from './experiences/ShareExperiencePage';
-import { HelpPage } from './help/HelpPage';
+import { SupportPage } from './help/SupportPage';
 import { HomePage } from './home/HomePage';
 import { tripMessages } from './i18n/tripMessages';
 import { IdentityGate } from './identity/IdentityGate';
@@ -178,13 +179,15 @@ export function App() {
     return (
       <ProfileProvider currentUser={currentUser}>
         <CreditProvider currentUser={currentUser}>
-          <AppShell
+<AppShell
             currentUser={currentUser}
             isAuthenticated={authToken !== null}
             onLogout={logout}
             route={route}
           >
-            {route.name === 'home' && <HomePage currentUser={currentUser} />}
+            {route.name === 'home' && (
+              <HomePage currentUser={currentUser} token={authToken} />
+            )}
             {route.name === 'create' && (
               <TripCreatePage
                 currentUser={currentUser}
@@ -205,6 +208,7 @@ export function App() {
             {route.name === 'mine' && (
               <MyTripsPage currentUser={currentUser} />
             )}
+            {route.name === 'creditLearning' && <LearningPage currentUser={currentUser} />}
             {route.name === 'map' && (
               <MapExplorerPage provinceCode={route.provinceCode} cityCode={route.cityCode} />
             )}
@@ -229,7 +233,9 @@ export function App() {
                 otherUserId={route.userId}
               />
             )}
-            {route.name === 'help' && <HelpPage currentUser={currentUser} token={authToken} />}
+            {route.name === 'support' && (
+              <SupportPage currentUser={currentUser} token={authToken} />
+            )}
             {route.name === 'adminDashboard' && (
               <AdminGuard currentUser={currentUser} token={authToken}>
                 {(token) => <AdminDashboardPage token={token} />}

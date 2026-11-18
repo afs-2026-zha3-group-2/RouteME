@@ -92,17 +92,17 @@ RouteME/openapi.yaml   契约 SoT（info.version 0.6.0）
 
 | 包 | 现有成员 | 职责 |
 |---|---|---|
-| controller | 15 个 `XxxController` | 路由、参数绑定与校验、DTO↔领域转换、状态码映射；`WeatherController` 提供公开只读的 `GET /api/weather/forecast`；`RecommendationController` 提供只读的 `GET /api/trips/{tripId}/recommendations` |
+| controller | 13 个 `XxxController` | 路由、参数绑定与校验、DTO↔领域转换、状态码映射；`WeatherController` 提供公开只读的 `GET /api/weather/forecast` |
 | param | `TripQueryParam`、`PageParam` | 入参解析（标签拆分、排序取值、分页校验、默认值），无业务判断 |
-| service | `ApplicationService`、`AuthService`、`ChatService`、`DemoUserService`、`ExperienceService`、`GreetingService`、`MatchService`、`MyTripsService`、`RecommendationService`、`ReportService`、`TripPlanService`（均为接口） | 业务规则与编排；拥有数据表的接口继承 `IService<XxxEntity>`，纯计算 / 聚合服务（`MatchService`、`MyTripsService`、`RecommendationService`）不继承 |
-| service/impl | 11 个 `XxxServiceImpl` + `AbstractServiceImpl` | `extends ServiceImpl<XxxMapper, XxxEntity>` 实现接口，事务边界在这里；`AbstractServiceImpl` 只放 `nextId` / `firstBy` 这类跨表重复取数 |
+| service | `ApplicationService`、`AuthService`、`ChatService`、`DemoUserService`、`ExperienceService`、`GreetingService`、`MyTripsService`、`ReportService`、`TripPlanService`（均为接口） | 业务规则与编排；拥有数据表的接口继承 `IService<XxxEntity>`，纯聚合服务（`MyTripsService`）不继承 |
+| service/impl | 9 个 `XxxServiceImpl` + `AbstractServiceImpl` | `extends ServiceImpl<XxxMapper, XxxEntity>` 实现接口，事务边界在这里；`AbstractServiceImpl` 只放 `nextId` / `firstBy` 这类跨表重复取数 |
 | mapper | 8 个 `XxxMapper extends BaseMapper`，全部标 `@Mapper` | MyBatis-Plus 映射；**注解里不写 SQL**：简单条件用 `LambdaQueryWrapper`，复杂 join / 分组写 `resources/mapper/*.xml`（`TripPlanMapper.xml`、`TripExperienceMapper.xml`、`ChatMessageMapper.xml`） |
-| pojo | 领域 record `TripPlan`、`TripPlanDraft`、`TripApplication`、`TripExperience`、`TripMatch`、`TravelerMatch`、`TravelerRecommendation`、`TravelerRecommendationRanker`、`RecommendationBreakdown`、`RecommendationReference`、`RecommendationResult`、`ChatThread`、`ChatMessage`、`Greeting`、`Report`、`DemoUser`、`MatchCandidate`、`PageResult`、`UserAccount`、`AuthSession` | 业务语义 record，无持久化注解；与 `entity` 分工：领域对象随业务变 |
+| pojo | 领域 record `TripPlan`、`TripPlanDraft`、`TripApplication`、`TripExperience`、`ChatThread`、`ChatMessage`、`Greeting`、`Report`、`DemoUser`、`PageResult`、`UserAccount`、`AuthSession` | 业务语义 record，无持久化注解；与 `entity` 分工：领域对象随业务变 |
 | entity | `GreetingEntity`、`TripPlanEntity`、`TripApplicationEntity`、`TripExperienceEntity`、`ChatMessageEntity`、`ChatThreadEntity`、`ReportEntity`、`UserEntity`、`AuthSessionEntity` | 表结构映射实体（`@TableName` / `@TableId(INPUT)` + `toXxx()`），只被 mapper 与 `service/impl` 引用，向上转 pojo 领域对象 |
 | request | `ApplicationCreateRequest`、`AuthLoginRequest`、`AuthRegisterRequest`、`ChatMessageRequest`、`ExperienceWriteRequest`、`ReportRequest`、`TripCreateRequest`、`TripQuery` | 入参 record，与 `openapi.yaml` 入参 schema 一一对应 |
-| response | `AuthSessionResponse`、`ChatMessageResponse`、`ChatPartnerResponse`、`DemoUserResponse`、`ErrorResponse`、`ExperienceResponse`、`ExperienceSaveResponse`、`GreetingResponse`、`MatchCandidateResponse`、`MatchResponse`、`MyTripsResponse`、`PageResponse`、`RecommendationBreakdownResponse`、`RecommendationListResponse`、`RecommendationReferenceResponse`、`ReportReceiptResponse`、`TravelerRecommendationResponse`、`TripApplicationResponse`、`TripDetailResponse`、`TripSummaryResponse` | 出参 record 与错误体，与 `openapi.yaml` 出参 schema 一一对应 |
+| response | `AuthSessionResponse`、`ChatMessageResponse`、`ChatPartnerResponse`、`DemoUserResponse`、`ErrorResponse`、`ExperienceResponse`、`ExperienceSaveResponse`、`GreetingResponse`、`MyTripsResponse`、`PageResponse`、`ReportReceiptResponse`、`TripApplicationResponse`、`TripDetailResponse`、`TripSummaryResponse` | 出参 record 与错误体，与 `openapi.yaml` 出参 schema 一一对应 |
 | vo | 空占位 | 响应形状与 `pojo` 领域对象显著不同时才启用 |
-| enums | `ApplicationStatusEnum`、`RecommendationDimensionEnum`、`TripStatusEnum`、`ExperienceIntensityEnum` | 业务枚举（wire 值 + 显示文案） |
+| enums | `ApplicationStatusEnum`、`TripStatusEnum`、`ExperienceIntensityEnum` | 业务枚举（wire 值 + 显示文案） |
 | constant | `AuthConstant`、`TripCatalogConstant` | 静态字典与阀值（目的地、长度/容量/标签/认证字段上限） |
 | config | `ClockConfig`、`MybatisPlusConfig`、`SqliteDirectory` | Spring 装配，无业务判断；`MybatisPlusConfig` 注册 `@MapperScan` 与分页拦截器（上限 50，不固定 DbType） |
 | exception | `BusinessException`（基类，带 `code` + `HttpStatus`）与 15 个子类（`InvalidInputException`、`TripNotFoundException`、`ForbiddenActionException`、`UsernameTakenException`、`InvalidCredentialsException`、`SessionInvalidException` 等） | 业务异常，全部以 `Exception` 结尾 |

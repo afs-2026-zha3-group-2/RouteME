@@ -45,6 +45,12 @@ describe('parseRoute', () => {
       expect(parseRoute('#/users/abc')).toEqual({ name: 'notFound' });
     });
 
+    it('maps the credit learning path and keeps it out of the fallback', () => {
+      expect(parseRoute('#/credit/learning')).toEqual({ name: 'creditLearning' });
+      expect(parseRoute('#/credit')).toEqual({ name: 'notFound' });
+      expect(parseRoute('#/credit/learning/extra')).toEqual({ name: 'notFound' });
+    });
+
     it('falls back to notFound for unknown paths', () => {
       expect(parseRoute('#/trips/abc')).toEqual({ name: 'notFound' });
       expect(parseRoute('#/settings')).toEqual({ name: 'notFound' });
@@ -64,8 +70,10 @@ describe('parseRoute', () => {
       expect(parseRoute('#/admin/experiences')).toEqual({ name: 'notFound' });
     });
 
-    it('maps the help and admin console paths', () => {
-      expect(parseRoute('#/help')).toEqual({ name: 'help' });
+    it('maps the support and admin console paths', () => {
+      expect(parseRoute('#/support')).toEqual({ name: 'support' });
+      // 帮助与反馈已下线：旧深链落到不存在页。
+      expect(parseRoute('#/help')).toEqual({ name: 'notFound' });
       expect(parseRoute('#/admin/users')).toEqual({ name: 'adminUsers' });
       expect(parseRoute('#/admin/users/12')).toEqual({ name: 'adminUserDetail', userId: 12 });
       expect(parseRoute('#/admin/reports')).toEqual({ name: 'adminReports' });
@@ -95,7 +103,7 @@ describe('parseRoute', () => {
         { name: 'share' as const, tripId: 7 },
         { name: 'profileSetup' as const },
         { name: 'userProfile' as const, userId: 7 },
-        { name: 'help' as const },
+        { name: 'support' as const },
         { name: 'adminDashboard' as const },
         { name: 'adminUsers' as const },
         { name: 'adminUserDetail' as const, userId: 7 },
@@ -103,6 +111,7 @@ describe('parseRoute', () => {
         { name: 'adminReportDetail' as const, reportId: 7 },
         { name: 'adminService' as const },
         { name: 'adminServiceDetail' as const, sessionId: 7 },
+        { name: 'creditLearning' as const },
       ];
       expect(routes.map((route) => parseRoute(routeToHash(route)))).toEqual(routes);
     });

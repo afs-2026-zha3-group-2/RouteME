@@ -234,6 +234,38 @@ export type LeaveResult = {
   message_code: LeaveMessageCode;
 };
 
+export type LeaveEvidence = {
+  id: number;
+  original_name: string | null;
+  content_type: string;
+  size_bytes: number;
+};
+
+export type LeavePayload = {
+  reason: LeaveReason;
+  note: string | null;
+  attachment_ids: number[];
+};
+
+export type LeaveRecordAttachment = {
+  id: number;
+  original_name: string | null;
+  content_type: string;
+  size_bytes: number;
+  url: string;
+};
+
+export type LeaveRecord = {
+  reason: LeaveReason;
+  note: string | null;
+  exit_at: string;
+  review_status: LeaveStatus;
+  theoretical_delta: number;
+  applied_delta: number;
+  monthly_ordinal: number;
+  attachments: LeaveRecordAttachment[];
+};
+
 export type TripCreateRequest = {
   title: string;
   destination_code: string;
@@ -262,52 +294,7 @@ export type TripFilters = {
   date_from?: string;
   date_to?: string;
   tags?: string[];
-  sort?: 'match' | 'date' | 'new';
-};
-
-export type Match = {
-  score: number;
-  percentage: number;
-  reasons: string[];
-  basis: string;
-};
-
-export type MatchCandidate = {
-  trip: TripSummary;
-  match: Match;
-};
-
-/** 推荐分项维度：目的地 / 日期 / 共同兴趣。 */
-export type RecommendationDimension = 'destination' | 'date' | 'interest';
-
-/** 推荐分项：标签与得分均由后端返回，前端只负责展示。 */
-export type RecommendationBreakdown = {
-  dimension: RecommendationDimension;
-  label: string;
-  points: number;
-};
-
-/** 推荐参照：当前行程的目的地、出发日期与当前用户兴趣。 */
-export type RecommendationReference = {
-  trip_id: number;
-  destination: string;
-  start_date: string;
-  interests: string[];
-};
-
-/** 一条同行者推荐：用户 + 关联行程 + 后端算好的分值与解释。 */
-export type TravelerRecommendation = {
-  user: DemoUser;
-  trip: TripSummary;
-  score: number;
-  reasons: string[];
-  breakdown: RecommendationBreakdown[];
-  shared_interests: string[];
-};
-
-export type RecommendationList = {
-  reference: RecommendationReference;
-  items: TravelerRecommendation[];
+  sort?: 'date' | 'new';
 };
 
 export type ApplicationStatus = 'pending' | 'accepted' | 'rejected' | 'cancelled' | 'left';
@@ -660,6 +647,44 @@ export type WeatherForecast = {
   source: 'open-meteo';
 };
 
+/** 安全学习题库的四类题材，与契约 `LearningQuestion.category` 同值。 */
+export type LearningCategory = 'travel_safety' | 'stranger_companion' | 'platform_rules' | 'privacy';
+
+/** 下发的题目：选项顺序即作答下标，响应不含正确答案。 */
+export type LearningQuestion = {
+  id: string;
+  category: LearningCategory;
+  question: string;
+  options: string[];
+};
+
+/** 考试会话（`LearningSession`）：`learning_completed` 为 false 时提交作答会被拒。 */
+export type LearningSession = {
+  session_id: number;
+  questions: LearningQuestion[];
+  exam_used: number;
+  exam_limit: number;
+  month: string;
+  learning_completed: boolean;
+};
+
+/** 逐题对错：`question_id` 对应下发题目，正确答案不下发。 */
+export type LearningAnswerDetail = {
+  question_id: string;
+  correct: boolean;
+};
+
+/** 判分结果（`LearningResult`）：`recovery_applied` 为 false 时不得播报「已恢复」。 */
+export type LearningResult = {
+  session_id: number;
+  passed: boolean;
+  score: number;
+  pass_line: number;
+  details: LearningAnswerDetail[];
+  recovery_applied: boolean;
+  credit_score: number;
+  credit_level: CreditLevel;
+};
 /* ---------- AI 智能规划（add-ai-itinerary，契约 0.17.0；天气复用 add-trip-weather） ---------- */
 
 export type AiDuration = 'half_day' | 'one_day' | 'two_day';

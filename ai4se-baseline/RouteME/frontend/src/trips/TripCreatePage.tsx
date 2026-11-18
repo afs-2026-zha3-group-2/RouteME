@@ -6,7 +6,9 @@ import {
   DatePicker,
   Input,
   InputNumber,
+  Progress,
   Segmented,
+  Select,
   Space,
   Tag,
   Typography,
@@ -43,16 +45,20 @@ import {
 } from './tripForm';
 import { addMeetingArea } from './meetingForm';
 import { clearTripDraft, readTripDraft, writeTripDraft, type TripDraft } from './tripDraft';
+import { cityPhoto } from './cityPhotos';
+import { formatMonthDay } from './tripDateFormat';
 import {
   DIFFICULTY_TAGS,
   INTEREST_TAGS,
+  MAX_CAPACITY,
   MAX_STOPS,
   MAX_TAGS,
   MAX_TAG_LENGTH,
   MAX_TITLE_LENGTH,
+MIN_CAPACITY,
 } from './tripOptions';
-import { TripCard } from './TripCard';
 import { PublishRouteEditor } from './PublishRouteEditor';
+import { statusLabel } from './tripStatus';
 
 // The publish form is Chinese-only; keep the picker panel month names Chinese too.
 dayjs.locale('zh-cn');
@@ -79,13 +85,14 @@ export function TripCreatePage({ currentUser, fromTripId, aiItineraryId }: Props
   const [prefillError, setPrefillError] = useState(false);
   const [tagDraft, setTagDraft] = useState('');
   const [tagError, setTagError] = useState<string | null>(null);
+  const [tagInputOpen, setTagInputOpen] = useState(false);
   const [meetingDraft, setMeetingDraft] = useState('');
   const [meetingDraftError, setMeetingDraftError] = useState<string | null>(null);
   const [draft, setDraft] = useState<TripDraft | null>(() =>
     fromTripId === undefined && aiItineraryId === undefined ? readTripDraft() : null,
   );
   const [draftNotice, setDraftNotice] = useState<string | null>(null);
-  const [previewDevice, setPreviewDevice] = useState<'mobile' | 'web'>('web');
+  const [previewDevice, setPreviewDevice] = useState<'mobile' | 'web'>('mobile');
 
   useEffect(() => {
     if (fromTripId === undefined) {
@@ -143,28 +150,6 @@ export function TripCreatePage({ currentUser, fromTripId, aiItineraryId }: Props
       ? undefined
       : cityLabel(values.destinationCode).replace(/市$/, '');
   const hasDestination = values.destinationCode !== '';
-
-  const previewTrip: TripSummary = {
-    id: 0,
-    title: values.title.trim() === '' ? '你的行程标题' : values.title,
-    destination: cityLabel(values.destinationCode) || '目的地',
-    destination_code: values.destinationCode,
-    province_code: '',
-    province_name: '',
-    start_date: values.startDate,
-    end_date: values.endDate === '' ? values.startDate : values.endDate,
-    stops: values.stops.length > 0 ? values.stops : ['至少写出两个途经点'],
-    travel_mode: values.travelMode,
-    meeting_areas: values.meetingAreas,
-    meeting_time: values.meetingTime.trim() === '' ? null : values.meetingTime,
-    tags: values.tags,
-    capacity: Number(values.capacity) || 2,
-    joined_count: 1,
-    status: 'recruiting',
-    ending_soon: false,
-    publisher: currentUser,
-    created_at: new Date().toISOString(),
-  };
 
   /** 难度强度不新增后端字段：写入同名兴趣标签（最多保留 5 个）。 */
   const difficulty = DIFFICULTY_TAGS.find((tag) => values.tags.includes(tag)) ?? null;
@@ -232,76 +217,50 @@ export function TripCreatePage({ currentUser, fromTripId, aiItineraryId }: Props
     }
   };
 
+  const destination = cityLabel(values.destinationCode) || '目的地';
+  const cover = cityPhoto(destination, destination.replace(/市$/, ''));
+  const capacity = Number(values.capacity) || MIN_CAPACITY;
+  const previewTrip: TripSummary = {
+    id: 0,
+    title: values.title.trim() === '' ? '你的行程标题' : values.title,
+    destination,
+    destination_code: values.destinationCode,
+    province_code: '',
+    province_name: '',
+    start_date: values.startDate,
+    end_date: values.endDate === '' ? values.startDate : values.endDate,
+    stops: values.stops.length > 0 ? values.stops : ['至少写出两个途经点'],
+    travel_mode: values.travelMode,
+    meeting_areas: values.meetingAreas,
+    meeting_time: values.meetingTime.trim() === '' ? null : values.meetingTime,
+    tags: values.tags,
+    capacity,
+    joined_count: 1,
+    status: 'recruiting',
+    ending_soon: false,
+    publisher: currentUser,
+    created_at: new Date().toISOString(),
+  };
+
   return (
-    <main className="form-page publish-page">
+    <main className="publish-page publish-page-v3">
       <header className="publish-hero">
-        <div>
-          <Typography.Title level={2} className="page-title">
+        <div className="publish-hero-text">
+          <Typography.Title level={2} className="publish-hero-title">
             {tripMessages.createTitle}
           </Typography.Title>
-          <p className="page-sub">{tripMessages.createSubtitle}</p>
+          <p className="publish-hero-sub">{tripMessages.createSubtitle}</p>
         </div>
+        <span className="publish-hero-slogan" aria-hidden="true">
+          {tripMessages.createSlogan}
+        </span>
         <Button className="page-back" onClick={() => (window.location.hash = '#/')}>
           {tripMessages.createBackHome}
         </Button>
       </header>
 
-      {fromTripId !== undefined && (
-        <Alert
-          className="prefill-banner"
-          type="info"
-          showIcon
-          title={tripMessages.referenceHint}
-        />
-      )}
-
-      {aiItineraryId !== undefined && prefillReady && (
-        <Alert
-          className="prefill-banner"
-          data-testid="ai-prefill-banner"
-          type="info"
-          showIcon
-          title={aiMessages.prefillBanner}
-          description={
-            values.destinationCode === '' ? aiMessages.prefillDestinationHint : undefined
-          }
-        />
-      )}
-      {aiItineraryId !== undefined && prefillError && (
-        <Alert
-          className="prefill-banner"
-          data-testid="ai-prefill-error"
-          type="warning"
-          showIcon
-          title={aiMessages.prefillError}
-        />
-      )}
-
-      {draft !== null && (
-        <Alert
-          className="prefill-banner"
-          data-testid="trip-draft-banner"
-          type="info"
-          showIcon
-          title={tripMessages.draftRestoreTitle}
-          action={
-            <Space size="small">
-              <Button size="small" type="primary" onClick={restoreDraft}>
-                {tripMessages.draftRestoreAction}
-              </Button>
-              <Button size="small" onClick={() => setDraft(null)}>
-                {tripMessages.draftDismissAction}
-              </Button>
-            </Space>
-          }
-        />
-      )}
-      {draftNotice !== null && (
-        <Alert className="prefill-banner" type="success" showIcon title={draftNotice} />
-      )}
-
-      <div className="publish-grid">
-        <div className="publish-main">
+      <div className="publish-layout">
+        <div className="publish-main-col">
           <Card className="panel ai-import-card" data-testid="ai-import-banner">
             <span className="ai-import-icon" aria-hidden="true">
               ✦
@@ -312,7 +271,6 @@ export function TripCreatePage({ currentUser, fromTripId, aiItineraryId }: Props
             </div>
             <Button
               type="primary"
-              ghost
               data-testid="ai-import-action"
               onClick={() => (window.location.hash = '#/ai-planner')}
             >
@@ -320,8 +278,60 @@ export function TripCreatePage({ currentUser, fromTripId, aiItineraryId }: Props
             </Button>
           </Card>
 
+          {fromTripId !== undefined && (
+            <Alert
+              className="prefill-banner"
+              type="info"
+              showIcon
+              title={tripMessages.referenceHint}
+            />
+          )}
+          {aiItineraryId !== undefined && prefillReady && (
+            <Alert
+              className="prefill-banner"
+              data-testid="ai-prefill-banner"
+              type="info"
+              showIcon
+              title={aiMessages.prefillBanner}
+              description={
+                values.destinationCode === '' ? aiMessages.prefillDestinationHint : undefined
+              }
+            />
+          )}
+          {aiItineraryId !== undefined && prefillError && (
+            <Alert
+              className="prefill-banner"
+              data-testid="ai-prefill-error"
+              type="warning"
+              showIcon
+              title={aiMessages.prefillError}
+            />
+          )}
+          {draft !== null && (
+            <Alert
+              className="prefill-banner"
+              data-testid="trip-draft-banner"
+              type="info"
+              showIcon
+              title={tripMessages.draftRestoreTitle}
+              action={
+                <Space size="small">
+                  <Button size="small" type="primary" onClick={restoreDraft}>
+                    {tripMessages.draftRestoreAction}
+                  </Button>
+                  <Button size="small" onClick={() => setDraft(null)}>
+                    {tripMessages.draftDismissAction}
+                  </Button>
+                </Space>
+              }
+            />
+          )}
+          {draftNotice !== null && (
+            <Alert className="prefill-banner" type="success" showIcon title={draftNotice} />
+          )}
+
           <Card className="panel publish-panel">
-            <h3 className="panel-title">
+            <h3 className="panel-title publish-panel-head">
               <span className="step-badge" aria-hidden="true">
                 1
               </span>
@@ -339,31 +349,31 @@ export function TripCreatePage({ currentUser, fromTripId, aiItineraryId }: Props
                 <Input
                   {...fieldProps('trip-title', errors.title)}
                   maxLength={MAX_TITLE_LENGTH}
+                  placeholder="例如：珠海海岸一日游 · 美食与日落"
                   value={values.title}
                   onChange={(event) => update({ title: event.target.value })}
                 />
               </Field>
 
-              <Field
-                label={tripMessages.fieldDestination}
-                htmlFor="trip-destination"
-                error={errors.destination}
-                required
-              >
-                <AreaCascader
-                  id="trip-destination"
-                  ariaLabel={tripMessages.fieldDestination}
-                  ariaDescribedBy={
-                    errors.destination !== undefined ? 'trip-destination-error' : undefined
-                  }
-                  invalid={errors.destination !== undefined}
-                  value={values.destinationCode}
-                  onChange={(code) => update({ destinationCode: code })}
-                  placeholder="请选择省 / 市"
-                />
-              </Field>
-
-              <div className="form-row">
+              <div className="publish-field-row">
+                <Field
+                  label={tripMessages.fieldDestination}
+                  htmlFor="trip-destination"
+                  error={errors.destination}
+                  required
+                >
+                  <AreaCascader
+                    id="trip-destination"
+                    ariaLabel={tripMessages.fieldDestination}
+                    ariaDescribedBy={
+                      errors.destination !== undefined ? 'trip-destination-error' : undefined
+                    }
+                    invalid={errors.destination !== undefined}
+                    value={values.destinationCode}
+                    onChange={(code) => update({ destinationCode: code })}
+                    placeholder="请选择省 / 市"
+                  />
+                </Field>
                 <Field
                   label={tripMessages.fieldStartDate}
                   htmlFor="trip-start-date"
@@ -415,7 +425,6 @@ export function TripCreatePage({ currentUser, fromTripId, aiItineraryId }: Props
               <Field
                 label={tripMessages.fieldNoteTitle}
                 htmlFor="trip-note"
-                optional
                 counter={`${values.note.length}/${MAX_NOTE_LENGTH}`}
                 hint={tripMessages.hintNote}
               >
@@ -424,15 +433,85 @@ export function TripCreatePage({ currentUser, fromTripId, aiItineraryId }: Props
                   rows={3}
                   maxLength={MAX_NOTE_LENGTH}
                   value={values.note}
-                  placeholder="写点想让同行者知道的事：路线亮点、集合方式、对同行者的期待…"
+                  placeholder="吃牛庄、逛老街、打卡日月贝，最后在情侣路看日落。希望找到同样喜欢美食和海边风景的朋友，一起出发！"
                   onChange={(event) => update({ note: event.target.value })}
                 />
               </Field>
+
+              <div className="form-field" role="group" aria-label={tripMessages.fieldTags}>
+                <span className="chip-row publish-tag-row">
+                  {values.tags.map((tag) => (
+                    <Tag
+                      key={tag}
+                      closable
+                      onClose={() => update({ tags: values.tags.filter((item) => item !== tag) })}
+                    >
+                      {tag}
+                    </Tag>
+                  ))}
+                  {tagInputOpen ? (
+                    <Space.Compact size="small">
+                      <Input
+                        autoFocus
+                        size="small"
+                        value={tagDraft}
+                        maxLength={MAX_TAG_LENGTH}
+                        style={{ width: 132 }}
+                        placeholder={`最多 ${MAX_TAG_LENGTH} 字`}
+                        onChange={(event) => {
+                          setTagDraft(event.target.value);
+                          setTagError(null);
+                        }}
+                        onPressEnter={addCustomTag}
+                        onBlur={() => {
+                          if (tagDraft.trim() === '') {
+                            setTagInputOpen(false);
+                          }
+                        }}
+                      />
+                      <Button size="small" onClick={addCustomTag} disabled={tagDraft.trim() === ''}>
+                        添加
+                      </Button>
+                    </Space.Compact>
+                  ) : (
+                    <Button
+                      size="small"
+                      className="publish-tag-add"
+                      data-testid="trip-add-tag"
+                      onClick={() => setTagInputOpen(true)}
+                    >
+                      + 添加标签
+                    </Button>
+                  )}
+                </span>
+                <div className="publish-tag-options" role="group" aria-label={tripMessages.fieldTags}>
+                  {INTEREST_TAGS.filter((tag) => !values.tags.includes(tag)).map((tag) => (
+                    <Tag.CheckableTag
+                      key={tag}
+                      checked={false}
+                      onChange={() => {
+                        if (values.tags.length >= MAX_TAGS) {
+                          setTagError(tripMessages.errorTagsLimit);
+                          return;
+                        }
+                        update({ tags: [...values.tags, tag] });
+                        setTagError(null);
+                      }}
+                    >
+                      {tag}
+                    </Tag.CheckableTag>
+                  ))}
+                </div>
+                {tagError !== null && <Typography.Text type="warning">{tagError}</Typography.Text>}
+                {errors.tags !== undefined && (
+                  <Typography.Text type="danger">{errors.tags}</Typography.Text>
+                )}
+              </div>
             </div>
           </Card>
 
           <Card className="panel publish-panel">
-            <h3 className="panel-title">
+            <h3 className="panel-title publish-panel-head">
               <span className="step-badge" aria-hidden="true">
                 2
               </span>
@@ -440,11 +519,15 @@ export function TripCreatePage({ currentUser, fromTripId, aiItineraryId }: Props
               <span className="panel-hint">{tripMessages.routeSectionHint}</span>
               <Button
                 size="small"
-                className="panel-action"
+                className="panel-action ai-route-help"
                 data-testid="route-ai-recommend"
                 onClick={() => (window.location.hash = '#/ai-planner')}
               >
-                {tripMessages.routeRecommendAction}
+                <span aria-hidden="true">✦</span>
+                <span className="ai-route-help-text">
+                  <em>{tripMessages.routeRecommendAction}</em>
+                  <i>{tripMessages.routeRecommendHint}</i>
+                </span>
               </Button>
             </h3>
             <div className="form-stack">
@@ -453,7 +536,7 @@ export function TripCreatePage({ currentUser, fromTripId, aiItineraryId }: Props
                   stops={values.stops}
                   travelMode={values.travelMode}
                   city={cityForSearch}
-                  invalid={errors.stops !== undefined}
+invalid={errors.stops !== undefined}
                   onStopsChange={(stops) => update({ stops })}
                   onTravelModeChange={(travelMode) => update({ travelMode })}
                 />
@@ -465,11 +548,12 @@ export function TripCreatePage({ currentUser, fromTripId, aiItineraryId }: Props
           </Card>
 
           <Card className="panel publish-panel">
-            <h3 className="panel-title">
+            <h3 className="panel-title publish-panel-head">
               <span className="step-badge" aria-hidden="true">
                 3
               </span>
               {tripMessages.sectionExtras}
+              <span className="panel-hint">{tripMessages.extrasHint}</span>
             </h3>
             <div className="form-stack">
               <Field
@@ -530,24 +614,23 @@ export function TripCreatePage({ currentUser, fromTripId, aiItineraryId }: Props
                 />
               </Field>
 
-              <Field
-                label={tripMessages.fieldMeetingTime}
-                htmlFor="trip-meeting-time"
-                error={errors.meetingTime}
-                optional
-              >
-                <DatePicker
-                  {...appDateTimePickerProps}
-                  {...fieldProps('trip-meeting-time', errors.meetingTime)}
-                  className="trip-meeting-time"
-                  placeholder="选择日期与时间"
-                  value={localDateTimeToDayjs(values.meetingTime)}
-                  onChange={(value) => update({ meetingTime: dayjsToLocalDateTime(value) })}
-                  status={errors.meetingTime === undefined ? undefined : 'error'}
-                />
-              </Field>
-
-              <div className="form-row">
+              <div className="publish-field-row is-two">
+                <Field
+                  label={tripMessages.fieldMeetingTime}
+                  htmlFor="trip-meeting-time"
+                  error={errors.meetingTime}
+                  optional
+                >
+                  <DatePicker
+                    {...appDateTimePickerProps}
+                    {...fieldProps('trip-meeting-time', errors.meetingTime)}
+                    className="trip-meeting-time"
+                    placeholder="选择日期与时间"
+                    value={localDateTimeToDayjs(values.meetingTime)}
+                    onChange={(value) => update({ meetingTime: dayjsToLocalDateTime(value) })}
+                    status={errors.meetingTime === undefined ? undefined : 'error'}
+                  />
+                </Field>
                 <Field
                   label={tripMessages.fieldBudgetMin}
                   htmlFor="trip-budget-min"
@@ -560,9 +643,7 @@ export function TripCreatePage({ currentUser, fromTripId, aiItineraryId }: Props
                     precision={0}
                     style={{ width: '100%' }}
                     value={values.budgetMin === '' ? null : Number(values.budgetMin)}
-                    onChange={(value) =>
-                      update({ budgetMin: value === null ? '' : String(value) })
-                    }
+                    onChange={(value) => update({ budgetMin: value === null ? '' : String(value) })}
                     status={errors.budget === undefined ? undefined : 'error'}
                   />
                 </Field>
@@ -573,151 +654,149 @@ export function TripCreatePage({ currentUser, fromTripId, aiItineraryId }: Props
                     precision={0}
                     style={{ width: '100%' }}
                     value={values.budgetMax === '' ? null : Number(values.budgetMax)}
-                    onChange={(value) =>
-                      update({ budgetMax: value === null ? '' : String(value) })
-                    }
+                    onChange={(value) => update({ budgetMax: value === null ? '' : String(value) })}
                   />
                 </Field>
               </div>
             </div>
           </Card>
-
-          <Card className="panel publish-panel">
-            <h3 className="panel-title">
-              <span className="step-badge" aria-hidden="true">
-                4
-              </span>
-              {tripMessages.sectionTags}
-            </h3>
-            <div className="form-stack">
-              <div className="form-field" role="group" aria-label={tripMessages.fieldTags}>
-                <span className="form-label">{tripMessages.fieldTags}</span>
-                <span className="chip-row">
-                  {INTEREST_TAGS.map((tag) => {
-                    const checked = values.tags.includes(tag);
-                    return (
-                      <Tag.CheckableTag
-                        key={tag}
-                        checked={checked}
-                        onChange={() =>
-                          update({
-                            tags: checked
-                              ? values.tags.filter((item) => item !== tag)
-                              : values.tags.length >= MAX_TAGS
-                                ? values.tags
-                                : [...values.tags, tag],
-                          })
-                        }
-                      >
-                        {tag}
-                      </Tag.CheckableTag>
-                    );
-                  })}
-                  {values.tags
-                    .filter((tag) => !(INTEREST_TAGS as readonly string[]).includes(tag))
-                    .map((tag) => (
-                      <Tag
-                        key={tag}
-                        closable
-                        onClose={() =>
-                          update({ tags: values.tags.filter((item) => item !== tag) })
-                        }
-                      >
-                        {tag}
-                      </Tag>
-                    ))}
-                </span>
-                <Space.Compact style={{ width: '100%', marginTop: 8 }}>
-                  <Input
-                    value={tagDraft}
-                    maxLength={MAX_TAG_LENGTH}
-                    placeholder={`自定义兴趣标签（最多 ${MAX_TAGS} 个，每个 ${MAX_TAG_LENGTH} 字以内）`}
-                    onChange={(event) => {
-                      setTagDraft(event.target.value);
-                      setTagError(null);
-                    }}
-                    onPressEnter={addCustomTag}
-                  />
-                  <Button onClick={addCustomTag} disabled={tagDraft.trim() === ''}>
-                    添加标签
-                  </Button>
-                </Space.Compact>
-                {tagError !== null && <Typography.Text type="warning">{tagError}</Typography.Text>}
-                {errors.tags !== undefined && (
-                  <Typography.Text type="danger">{errors.tags}</Typography.Text>
-                )}
-              </div>
-            </div>
-          </Card>
         </div>
 
-        <aside className="publish-side">
+        <aside className="publish-side-col">
           <Card className="panel publish-preview-card">
-            <div className="publish-side-head">
-              <h3 className="panel-title">{tripMessages.previewLabel}</h3>
-              <Segmented
-                size="small"
-                aria-label={tripMessages.previewDeviceLabel}
-                value={previewDevice}
-                onChange={(value) => setPreviewDevice(value as 'mobile' | 'web')}
-                options={[
-                  { label: tripMessages.previewDeviceMobile, value: 'mobile' },
-                  { label: tripMessages.previewDeviceWeb, value: 'web' },
-                ]}
-              />
-            </div>
-            <div
-              className={
-                previewDevice === 'mobile'
-                  ? 'publish-preview-frame is-mobile'
-                  : 'publish-preview-frame'
-              }
-            >
-              <TripCard trip={previewTrip} preview />
-            </div>
-          </Card>
-
-          <Card className="panel publish-companions-card" data-testid="companions-settings">
-            <h3 className="panel-title">{tripMessages.companionsTitle}</h3>
-            <div className="form-stack">
-              <Field
-                label={tripMessages.sideMembers}
-                htmlFor="trip-capacity"
-                error={errors.capacity}
-                required
-                hint={tripMessages.hintCapacity}
-              >
-                <InputNumber
-                  {...fieldProps('trip-capacity', errors.capacity)}
-                  min={2}
-                  max={12}
-                  precision={0}
-                  style={{ width: '100%' }}
-                  value={values.capacity === '' ? null : Number(values.capacity)}
-                  onChange={(value) => update({ capacity: value === null ? '' : String(value) })}
-                  status={errors.capacity === undefined ? undefined : 'error'}
-                />
-              </Field>
-
-              <div className="form-field" role="group" aria-label={tripMessages.sideDifficulty}>
-                <span className="form-label">{tripMessages.sideDifficulty}</span>
+            <div className="publish-preview-head">
+              <div>
+                <h3 className="panel-title">{tripMessages.previewLiveTitle}</h3>
+                <span className="form-hint">{tripMessages.previewLiveSubtitle}</span>
+              </div>
+              <div className="publish-preview-device">
+                <span className="form-hint">{tripMessages.previewDeviceLabel}</span>
                 <Segmented
-                  block
                   size="small"
-                  aria-label={tripMessages.sideDifficulty}
-                  value={difficulty ?? '未设置'}
-                  onChange={(value) => setDifficulty(String(value))}
-                  options={DIFFICULTY_TAGS.map((tag) => ({ label: tag, value: tag }))}
+                  aria-label={tripMessages.previewDeviceLabel}
+                  value={previewDevice}
+                  onChange={(value) => setPreviewDevice(value as 'mobile' | 'web')}
+                  options={[
+                    { label: tripMessages.previewDeviceMobile, value: 'mobile' },
+                    { label: tripMessages.previewDeviceWeb, value: 'web' },
+                  ]}
                 />
-                <span className="form-hint">{tripMessages.hintDifficulty}</span>
               </div>
             </div>
+
+            <article
+              className={
+                previewDevice === 'mobile'
+                  ? 'publish-preview-card-body is-mobile'
+                  : 'publish-preview-card-body'
+              }
+            >
+              <div className="ppc-cover">
+                {cover !== null ? (
+                  <img src={cover} alt={`${destination}城市照片`} />
+                ) : (
+                  <span className="ppc-cover-fallback" aria-hidden="true" />
+                )}
+                <div className="ppc-cover-text">
+                  <strong>{destination}</strong>
+                  <span>
+                    {values.startDate === '' ? '日期待定' : formatMonthDay(values.startDate)}
+                    {values.endDate !== '' && values.endDate !== values.startDate
+                      ? ` - ${formatMonthDay(values.endDate)}`
+                      : ''}
+                  </span>
+                </div>
+              </div>
+              <h4 className="ppc-title">{previewTrip.title}</h4>
+              <p className="ppc-meta">
+                {values.startDate === '' ? '日期待定' : formatMonthDay(values.startDate)} ·{' '}
+                {destination}
+              </p>
+              {values.tags.length > 0 && (
+                <div className="ppc-tags">
+                  {values.tags.map((tag) => (
+                    <Tag key={tag}>{tag}</Tag>
+                  ))}
+                </div>
+              )}
+              {values.note.trim() !== '' && <p className="ppc-note">{values.note}</p>}
+              {values.stops.length > 0 && (
+                <div className="ppc-stops">
+                  <span className="ppc-stops-title">
+                    {tripMessages.previewStops(values.stops.length)}
+                  </span>
+                  <ol>
+                    {values.stops.map((stop, index) => (
+                      <li key={`${stop}-${index}`}>
+                        <span className="ppc-stop-index">{index + 1}</span>
+                        {stop}
+                      </li>
+                    ))}
+                  </ol>
+                </div>
+              )}
+              <div className="ppc-foot">
+                <span className="ppc-people">
+                  1 / {capacity} {tripMessages.peopleUnit}
+                </span>
+                <Progress
+                  percent={Math.round((1 / Math.max(capacity, 1)) * 100)}
+                  size="small"
+                  showInfo={false}
+                />
+                <span className="ppc-status">{statusLabel('recruiting')}</span>
+              </div>
+            </article>
           </Card>
 
           <WeatherCard destinationCode={values.destinationCode} date={values.startDate} />
 
-          <Card className="panel safety-panel">
-            <h3 className="panel-title">{tripMessages.publishSafetyTitle}</h3>
+<Card className="panel publish-companions-card" data-testid="companions-settings">
+            <h3 className="panel-title">
+              <span aria-hidden="true">👥</span> {tripMessages.companionsTitle}
+            </h3>
+            <div className="publish-companions-grid">
+              <div className="form-field">
+                <label className="form-label" htmlFor="trip-capacity">
+                  <span>{tripMessages.sideMembers}</span>
+                </label>
+                <Select
+                  id="trip-capacity"
+                  aria-label={tripMessages.sideMembers}
+                  className="publish-select"
+                  value={values.capacity === '' ? MIN_CAPACITY : Number(values.capacity)}
+                  status={errors.capacity === undefined ? undefined : 'error'}
+                  onChange={(value) => update({ capacity: String(value) })}
+                  options={Array.from(
+                    { length: MAX_CAPACITY - MIN_CAPACITY + 1 },
+                    (_, index) => MIN_CAPACITY + index,
+                  ).map((count) => ({ label: `${count} 人`, value: count }))}
+                />
+              </div>
+              <div className="form-field">
+                <label className="form-label" htmlFor="trip-difficulty">
+                  <span>{tripMessages.sideDifficulty}</span>
+                </label>
+                <Select
+                  id="trip-difficulty"
+                  aria-label={tripMessages.sideDifficulty}
+                  className="publish-select"
+                  value={difficulty ?? DIFFICULTY_TAGS[0]}
+                  onChange={(value) => setDifficulty(String(value))}
+                  options={DIFFICULTY_TAGS.map((tag) => ({ label: tag, value: tag }))}
+                />
+              </div>
+            </div>
+            <p className="form-hint">{tripMessages.companionsHint}</p>
+            {errors.capacity !== undefined && (
+              <Typography.Text type="danger">{errors.capacity}</Typography.Text>
+            )}
+          </Card>
+
+          <Card className="panel safety-panel publish-safety">
+            <h3 className="panel-title">
+              <span aria-hidden="true">📍</span> {tripMessages.publishSafetyTitle}
+            </h3>
             <ul className="safety-list">
               <li>{tripMessages.publishSafetyTipPublic}</li>
               <li>{tripMessages.publishSafetyTipClear}</li>
@@ -727,6 +806,14 @@ export function TripCreatePage({ currentUser, fromTripId, aiItineraryId }: Props
 
           <div className="publish-submit">
             {restricted && <CreditRestrictedNotice />}
+            {restricted && (
+              <p className="publish-guard-note">
+                <a className="publish-guard-entry" href="#/credit/learning">
+                  {tripMessages.publishGuardAction}
+                </a>
+                {tripMessages.publishGuardRemaining}
+              </p>
+            )}
             {submitError !== null && (
               <Alert
                 type="error"
@@ -745,12 +832,9 @@ export function TripCreatePage({ currentUser, fromTripId, aiItineraryId }: Props
                 disabled={restricted}
                 onClick={submit}
               >
-                {tripMessages.createSubmit}
+                {tripMessages.createSubmit} →
               </Button>
             </div>
-            <Button type="link" onClick={() => (window.location.hash = '#/')}>
-              {tripMessages.createCancel}
-            </Button>
           </div>
         </aside>
       </div>

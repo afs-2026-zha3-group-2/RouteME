@@ -8,7 +8,6 @@ import {
   Image,
   Input,
   Modal,
-  Progress,
   Skeleton,
   Space,
   Tag,
@@ -20,7 +19,6 @@ import {
   cancelApplication,
   completeTrip,
   loadAiItinerary,
-  loadMatch,
   loadMyApplications,
   loadTrip,
   loadTripApplications,
@@ -44,13 +42,11 @@ import { creditLine, creditRestrictedBadge, creditTone } from '../profile/credit
 import { useUserCredits } from '../profiles/useUserCredits';
 import { ReportModal } from '../safety/ReportModal';
 import { Avatar } from '../shell/Avatar';
-import type { AiItinerarySnapshot, DemoUser, Experience, MatchCandidate, TripApplication } from '../types';
+import type { AiItinerarySnapshot, DemoUser, Experience, TripApplication } from '../types';
 import { WeatherCard } from '../weather/WeatherCard';
 import { applicationEntryState, applicationErrorMessage } from './applicationEntry';
 import { CompanionCard } from './CompanionCard';
 import { tripCompanions } from './companions';
-import { TravelerRecommendationPanel } from './TravelerRecommendationPanel';
-import { useRecommendations } from './useRecommendations';
 import {
   MAX_MEETING_AREA_LENGTH,
   addMeetingArea,
@@ -101,18 +97,12 @@ export function TripDetailPage({ currentUser, tripId }: Props) {
   const { state, reload } = useTrip(currentUser.id, tripId);
   const { openProfile } = useProfile();
   const { restricted, refresh: refreshCredit } = useMyCredit();
-  const recommendations = useRecommendations(
-    currentUser.id,
-    tripId,
-    currentUser.interests.join('|'),
-  );
   const publisherId = state.status === 'ready' ? state.trip.publisher.id : 0;
   const publisherCredits = useUserCredits(publisherId > 0 ? [publisherId] : [], currentUser.id);
   const [feedback, setFeedback] = useState<Feedback | null>(null);
   const [completing, setCompleting] = useState(false);
   const [myApplication, setMyApplication] = useState<TripApplication | null>(null);
   const [pendingCount, setPendingCount] = useState(0);
-  const [match, setMatch] = useState<MatchCandidate | null>(null);
   const [applyMessage, setApplyMessage] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [cancelling, setCancelling] = useState(false);
@@ -144,13 +134,6 @@ export function TripDetailPage({ currentUser, tripId }: Props) {
       .then((applications) => {
         if (active) {
           setMyApplication(pickLatestApplication(applications, tripId));
-        }
-      })
-      .catch(() => undefined);
-    loadMatch(currentUser.id, tripId)
-      .then((loaded) => {
-        if (active) {
-          setMatch(loaded);
         }
       })
       .catch(() => undefined);
@@ -461,7 +444,7 @@ export function TripDetailPage({ currentUser, tripId }: Props) {
                     <dt>{aiMessages.budgetTotal}</dt>
                     <dd>
                       {centsToYuan(sumBudgetCents(aiSummary.ai_budget))} 元{' '}
-                      <Tag className="ai-estimate-tag">{aiMessages.aiEstimate}</Tag>
+                      <Tag className="ai-estimate-tag">{aiMessages.budgetReference}</Tag>
                     </dd>
                   </div>
                 )}
@@ -519,19 +502,6 @@ export function TripDetailPage({ currentUser, tripId }: Props) {
               </div>
             )}
             {!hasStops && <p className="form-hint">{tripMessages.detailMapNoStops}</p>}
-            <ol className="detail-stops">
-              {trip.stops.map((stop, index) => (
-                <li key={`${stop}-${index}`}>
-                  {hasStops ? (
-                    <button type="button" className="detail-stop-button" onClick={() => focusPlace(stop)}>
-                      {stop}
-                    </button>
-                  ) : (
-                    stop
-                  )}
-                </li>
-              ))}
-            </ol>
             <dl className="detail-facts">
               <div>
                 <dt>{tripMessages.detailMeetingArea}</dt>
@@ -709,34 +679,6 @@ export function TripDetailPage({ currentUser, tripId }: Props) {
               </div>
             )}
           </section>
-
-          {match !== null && (
-            <section className="detail-section">
-              <h3 className="section-title">{tripMessages.matchPanelWhy}</h3>
-              <div className="match-summary">
-                <Progress
-                  type="circle"
-                  percent={match.match.percentage}
-                  size={56}
-                  strokeWidth={8}
-                  strokeColor="var(--warn)"
-                  format={(percent) => percent}
-                />
-                <span className="match-reason">{match.match.reasons.join('，')}</span>
-              </div>
-              <p className="detail-meta">{match.match.basis}</p>
-              <p className="form-hint match-rule">{tripMessages.matchRuleHint}</p>
-            </section>
-          )}
-
-          {!isCancelled && (
-            <TravelerRecommendationPanel
-              state={recommendations.state}
-              tripTitle={trip.title}
-              onRetry={recommendations.reload}
-              onOpenProfile={openProfile}
-            />
-          )}
 
           {feedback !== null && (
             <Alert

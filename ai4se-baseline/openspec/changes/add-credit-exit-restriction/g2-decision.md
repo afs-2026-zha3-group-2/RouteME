@@ -64,3 +64,23 @@
 
 - Decision = Pass with documented debt；按用户 2026-11-17 指示 **P5 / 归档暂不执行**。
 - 收尾：`git pull` → 合并 `feature/add-credit-exit-restriction` 到 `main` → push → 删除已完成分支。
+
+## R2 验收修订（2026-11-17）
+
+- 用户验收指出 3 个交互问题（标签当占位项、未选原因可提交、待核实多一行），并补充说明 / 证明材料要求；已在同一 change 内完成（T15–T18），不改变 G2 结论。
+- 契约 **0.21.0**；迁移 **V26**（`exit_note` + `credit_exit_attachment`）。
+- 复验：后端 514 / 前端 362 / 隔离 E2E 23 通过；详见 `docs/sdd/add-credit-exit-restriction/p4-verify.md` §10。
+- 按用户指示本次不 pull、不 push；改动保留在本地工作区。
+
+## R3 本人回看（2026-11-17）
+
+- 用户验收指出原因 / 说明 / 图片无本人查看入口；新增 `GET /trips/{tripId}/leave-record` 与 `GET /leave-evidence/{attachmentId}`，入口在「我的旅行 → 我申请的（已退出）」，仅本人、只读。
+- 契约 **0.22.0**；无新迁移。复验：后端 515 / 前端 362 / E2E credit-exit 4/4；见 `docs/sdd/add-credit-exit-restriction/p4-verify.md` §11。
+- 仍按用户指示未 pull / 未 push。
+
+## R4 同一行程多次退出（2026-11-17）
+
+- 用户验收发现退出后再次加入并被接受，第二次退出不生效；根因是幂等键只按 user + trip。改为按本次同行关系（application）幂等，同一行程可多次退出且每次计入当月；记录接口返回全部。
+- 契约 **0.23.0**；迁移 **V27**（`application_id`，旧数据回填）。复验：后端 516 / 前端 362 / E2E credit-exit 5/5；见 `docs/sdd/add-credit-exit-restriction/p4-verify.md` §12。
+- 合并 `origin/main` 时 0.23.0 / V26 / V27 已被占用，最终顺延为 **0.24.0 / V28 / V29**；合并后复验后端 607 / 前端 475 / E2E 5/5。
+- 仍未 pull / 未 push。

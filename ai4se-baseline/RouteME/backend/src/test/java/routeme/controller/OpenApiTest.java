@@ -79,7 +79,7 @@ class OpenApiTest {
 
         // Then
         assertAll(
-                () -> assertEquals("0.22.0", info.get("version"), "info.version"),
+                () -> assertEquals("0.24.0", info.get("version"), "info.version"),
                 () -> assertTrue(responses(likeExperience).containsKey("201"), "first like returns 201"),
                 () -> assertTrue(responses(likeExperience).containsKey("200"), "duplicate like returns 200"),
                 () -> assertTrue(responses(likeExperience).containsKey("403"), "self like returns 403"),
@@ -156,7 +156,7 @@ class OpenApiTest {
 
         // Then
         assertAll(
-                () -> assertEquals("0.22.0", info.get("version"), "info.version"),
+                () -> assertEquals("0.24.0", info.get("version"), "info.version"),
                 () -> assertTrue(paths(document).containsKey("/users"), "/users declared"),
                 () -> assertTrue(paths(document).containsKey("/trips/{tripId}"), "detail path declared"),
                 () -> assertTrue(
@@ -253,6 +253,13 @@ class OpenApiTest {
         Map<String, Object> document = loadYaml(SPEC_PATH);
         Map<String, Object> preview = operation(document, "/trips/{tripId}/leave-preview", "get");
         Map<String, Object> leave = operation(document, "/trips/{tripId}/leave", "post");
+        Map<String, Object> evidenceUpload = operation(document, "/trips/{tripId}/leave-evidence", "post");
+        Map<String, Object> leaveRecord = operation(document, "/trips/{tripId}/leave-record", "get");
+        Map<String, Object> leaveEvidenceOperation = operation(document, "/leave-evidence/{attachmentId}", "get");
+        Map<String, Object> recordSchema = schema(document, "LeaveRecord");
+        Map<String, Object> recordAttachment = schema(document, "LeaveRecordAttachment");
+        Map<String, Object> leaveRequest = schema(document, "LeaveRequest");
+        Map<String, Object> leaveEvidence = schema(document, "LeaveEvidence");
         Map<String, Object> previewSchema = schema(document, "LeavePreview");
         Map<String, Object> leaveResult = schema(document, "LeaveResult");
         Map<String, Map<String, Object>> tripDetailProps = allOfProperties(document, "TripDetail");
@@ -264,6 +271,29 @@ class OpenApiTest {
                 () -> assertTrue(responses(preview).containsKey("403"), "preview 403"),
                 () -> assertTrue(responses(leave).containsKey("200"), "leave 200"),
                 () -> assertTrue(responses(leave).containsKey("409"), "leave 409"),
+                () -> assertTrue(responses(evidenceUpload).containsKey("201"), "evidence upload 201"),
+                () -> assertTrue(responses(leaveRecord).containsKey("200"), "leave record 200"),
+                () -> assertTrue(responses(leaveRecord).containsKey("404"), "leave record 404"),
+                () -> assertTrue(responses(leaveEvidenceOperation).containsKey("200"), "leave evidence 200"),
+                () -> assertTrue(responses(leaveEvidenceOperation).containsKey("403"), "leave evidence 403"),
+                () -> assertTrue(
+                        required(recordSchema).containsAll(List.of(
+                                "reason", "exit_at", "review_status", "theoretical_delta",
+                                "applied_delta", "monthly_ordinal", "attachments")),
+                        "leave record required fields"),
+                () -> assertTrue(
+                        required(recordAttachment).containsAll(List.of("id", "content_type", "size_bytes", "url")),
+                        "leave record attachment required fields"),
+                () -> assertTrue(
+                        properties(leaveRequest).containsKey("note")
+                                && Integer.valueOf(200).equals(properties(leaveRequest).get("note").get("maxLength")),
+                        "leave note max 200"),
+                () -> assertTrue(
+                        Integer.valueOf(3).equals(properties(leaveRequest).get("attachment_ids").get("maxItems")),
+                        "leave attachments max 3"),
+                () -> assertTrue(
+                        required(leaveEvidence).containsAll(List.of("id", "content_type", "size_bytes")),
+                        "leave evidence required fields"),
                 () -> assertTrue(
                         required(previewSchema).containsAll(List.of(
                                 "reason", "departure_at", "penalty_tier", "applied_delta",
@@ -406,11 +436,9 @@ class OpenApiTest {
         Map<String, Object> document = loadYaml(SPEC_PATH);
 
         // When
-        Map<String, Object> getMatches = operation(document, "/matches", "get");
         Map<String, Object> postApplications = operation(document, "/trips/{tripId}/applications", "post");
         Map<String, Object> postMessages = operation(document, "/trips/{tripId}/messages", "post");
         Map<String, Object> application = schema(document, "TripApplication");
-        Map<String, Object> match = schema(document, "Match");
         Map<String, Object> myTrips = schema(document, "MyTrips");
         Map<String, Object> pendingApplicationCount = schema(document, "PendingApplicationCount");
         Map<String, Object> reportRequest = schema(document, "ReportRequest");
@@ -419,25 +447,8 @@ class OpenApiTest {
         // Then
         assertAll(
                 () -> assertTrue(paths(document).containsKey("/me/trips"), "/me/trips declared"),
-                () -> assertTrue(paths(document).containsKey("/matches/{tripId}"), "match detail declared"),
                 () -> assertTrue(responses(postApplications).containsKey("201"), "apply returns 201"),
                 () -> assertTrue(responses(postMessages).containsKey("409"), "chat read-only conflict"),
-                () -> assertTrue(
-                        parameterNames(document, getMatches)
-                                .containsAll(List.of(
-                                        "X-User-Id", "destination_code", "date_from", "date_to", "tags",
-                                        "sort", "page", "size")),
-                        "match query parameters"),
-                () -> assertTrue(
-                        parameterNames(document, getMatches).containsAll(List.of("page", "size")),
-                        "match paging parameters"),
-                () -> assertTrue(
-                        required(schema(document, "MatchPage"))
-                                .containsAll(List.of("items", "page", "size", "total", "total_pages")),
-                        "match page envelope"),
-                () -> assertTrue(
-                        required(match).containsAll(List.of("score", "percentage", "reasons", "basis")),
-                        "match required fields"),
                 () -> assertTrue(
                         enums(properties(application).get("status"))
                                 .containsAll(List.of("pending", "accepted", "rejected", "cancelled", "left")),
@@ -730,7 +741,7 @@ class OpenApiTest {
 
         // Then
         assertAll(
-                () -> assertEquals("0.22.0", info.get("version"), "info.version"),
+                () -> assertEquals("0.24.0", info.get("version"), "info.version"),
                 () -> assertTrue(paths(document).keySet().containsAll(ADMIN_CONSOLE_PATHS), "admin console paths"),
                 () -> assertEquals(17L, adminOperations, "admin console operations"),
                 () -> assertTrue(
@@ -818,42 +829,106 @@ class OpenApiTest {
     }
 
     @Test
-    void in_openApiFile_out_travelerRecommendationContractDeclared() throws IOException {
+    void in_openApiFile_out_adminExperienceDeleteDeclared() throws IOException {
         // Given
         Map<String, Object> document = loadYaml(SPEC_PATH);
-        Map<String, Object> info = asMap(document.get("info"));
 
         // When
-        Map<String, Object> operation = operation(document, "/trips/{tripId}/recommendations", "get");
-        Map<String, Object> list = schema(document, "RecommendationList");
-        Map<String, Object> item = schema(document, "TravelerRecommendation");
-        Map<String, Object> breakdown = schema(document, "RecommendationBreakdown");
-        Map<String, Object> reference = schema(document, "RecommendationReference");
+        Map<String, Object> deleteExperience =
+                operation(document, "/admin/experiences/{experienceId}", "delete");
 
         // Then
         assertAll(
-                () -> assertEquals("0.22.0", info.get("version"), "info.version"),
-                () -> assertTrue(responses(operation).containsKey("200"), "200 response"),
-                () -> assertTrue(responses(operation).containsKey("401"), "401 response"),
-                () -> assertTrue(responses(operation).containsKey("404"), "404 response"),
-                () -> assertTrue(required(list).containsAll(List.of("reference", "items")), "list required fields"),
+                () -> assertEquals("deleteAdminExperience", deleteExperience.get("operationId"),
+                        "operationId"),
                 () -> assertTrue(
-                        required(item).containsAll(
-                                List.of("user", "trip", "score", "reasons", "breakdown", "shared_interests")),
-                        "item required fields"),
-                () -> assertEquals("integer", properties(item).get("score").get("type"), "score type"),
-                () -> assertEquals(0, properties(item).get("score").get("minimum"), "score minimum"),
-                () -> assertEquals(100, properties(item).get("score").get("maximum"), "score maximum"),
+                        parameterNames(document, deleteExperience).containsAll(
+                                List.of("Authorization", "experienceId")),
+                        "admin bearer + path id"),
                 () -> assertTrue(
-                        required(breakdown).containsAll(List.of("dimension", "label", "points")),
-                        "breakdown required fields"),
-                () -> assertEquals(
-                        List.of("destination", "date", "interest"),
-                        enums(properties(breakdown).get("dimension")),
-                        "dimension enum"),
+                        responses(deleteExperience).keySet().containsAll(
+                                List.of("204", "401", "403", "404", "500")),
+                        "delete status codes")
+        );
+    }
+
+    @Test
+    void in_openApiFile_out_creditRecoveryContractDeclared() throws IOException {
+        // Given
+        Map<String, Object> document = loadYaml(SPEC_PATH);
+
+        // When
+        Map<String, Object> startSession = operation(document, "/credit/learning/sessions", "post");
+        Map<String, Object> completeLessons =
+                operation(document, "/credit/learning/sessions/{sessionId}/lessons/complete", "post");
+        Map<String, Object> submitAnswers =
+                operation(document, "/credit/learning/sessions/{sessionId}/submission", "post");
+        Map<String, Object> postTrips = operation(document, "/trips", "post");
+        Map<String, Object> question = schema(document, "LearningQuestion");
+        Map<String, Object> session = schema(document, "LearningSession");
+        Map<String, Object> result = schema(document, "LearningResult");
+        Map<String, Object> answerDetail = schema(document, "LearningAnswerDetail");
+        Map<String, Object> errorSchema = schema(document, "Error");
+
+        // Then
+        assertAll(
+                () -> assertEquals("0.24.0", asMap(document.get("info")).get("version"), "info.version"),
+                () -> assertTrue(responses(startSession).containsKey("201"), "session start returns 201"),
                 () -> assertTrue(
-                        required(reference).containsAll(List.of("trip_id", "destination", "start_date", "interests")),
-                        "reference required fields"));
+                        responses(startSession).keySet().containsAll(List.of("401", "404", "409", "429")),
+                        "session start error statuses"),
+                () -> assertTrue(responses(completeLessons).containsKey("200"), "lessons complete returns 200"),
+                () -> assertTrue(
+                        responses(completeLessons).keySet().containsAll(List.of("401", "404")),
+                        "lessons complete error statuses"),
+                () -> assertTrue(responses(submitAnswers).containsKey("200"), "submission returns 200"),
+                () -> assertTrue(
+                        responses(submitAnswers).keySet().containsAll(List.of("400", "401", "404", "409")),
+                        "submission error statuses"),
+                () -> assertTrue(
+                        parameterNames(document, startSession).contains("X-User-Id"),
+                        "session start identity header"),
+                () -> assertTrue(
+                        parameterNames(document, completeLessons).containsAll(List.of("X-User-Id", "sessionId")),
+                        "lessons complete parameters"),
+                () -> assertTrue(
+                        parameterNames(document, submitAnswers).containsAll(List.of("X-User-Id", "sessionId")),
+                        "submission parameters"),
+                () -> assertTrue(responses(postTrips).containsKey("403"), "trip create returns 403"),
+                () -> assertTrue(
+                        required(question).containsAll(List.of("id", "category", "question", "options")),
+                        "learning question fields"),
+                () -> assertEquals(4, asMap(properties(question).get("options")).get("minItems"), "options size"),
+                () -> assertFalse(
+                        properties(question).keySet().stream()
+                                .anyMatch(name -> name.contains("answer") || name.contains("correct")),
+                        "question leaks no answer"),
+                () -> assertTrue(
+                        required(session).containsAll(List.of(
+                                "session_id", "questions", "exam_used", "exam_limit", "month", "learning_completed")),
+                        "learning session fields"),
+                () -> assertTrue(
+                        required(result).containsAll(List.of(
+                                "session_id", "passed", "score", "pass_line", "details",
+                                "recovery_applied", "credit_score", "credit_level")),
+                        "learning result fields"),
+                () -> assertTrue(
+                        required(answerDetail).containsAll(List.of("question_id", "correct")),
+                        "answer detail fields"),
+                () -> assertFalse(
+                        properties(answerDetail).keySet().stream()
+                                .anyMatch(name -> name.contains("answer") || name.contains("correct_answer")),
+                        "answer detail leaks no correct answer"),
+                () -> assertTrue(
+                        enums(properties(errorSchema).get("code")).containsAll(List.of(
+                                "CREDIT_RESTRICTED",
+                                "LEARNING_NOT_ELIGIBLE",
+                                "LEARNING_EXAM_QUOTA_EXCEEDED",
+                                "LEARNING_RECOVERY_QUOTA_EXCEEDED",
+                                "LEARNING_NOT_COMPLETED",
+                                "LEARNING_SESSION_NOT_FOUND")),
+                        "credit recovery error codes")
+        );
     }
 
     @Test

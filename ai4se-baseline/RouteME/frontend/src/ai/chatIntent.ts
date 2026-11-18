@@ -181,8 +181,8 @@ export type PlannerSuggestion = {
   text: string;
 };
 
-/** 欢迎语下方的示例问题：点击即发送对应文本（参考稿「试试这些灵感」）。 */
-export const PLANNER_SUGGESTIONS: readonly PlannerSuggestion[] = [
+/** 欢迎语的「试试这些灵感」胶囊：点击即发送对应文本（参考稿 v3）。 */
+export const PLANNER_INSPIRATIONS: readonly PlannerSuggestion[] = [
   {
     id: 'zhuhai-two-day',
     label: '珠海两天一夜',
@@ -204,18 +204,20 @@ export const PLANNER_SUGGESTIONS: readonly PlannerSuggestion[] = [
     text: '想拍城市夜景和海岸线，帮我规划深圳一天的拍照打卡路线。',
   },
   {
-    id: 'budget-student',
-    label: '学生党省钱',
-    text: '帮我规划一个适合学生党的低预算行程，广州一天，预算 200 元以内。',
+    id: 'graduation',
+    label: '毕业旅行',
+    text: '帮我们规划一个毕业旅行，两个人去厦门玩两天一夜，预算 800 元。',
   },
 ];
+
+/** 兼容旧引用。 */
+export const PLANNER_SUGGESTIONS = PLANNER_INSPIRATIONS;
 
 export type QuickAction = {
   id: string;
   label: string;
 };
-
-/** 输入框下方的高频动作（参考稿的快捷胶囊）。 */
+/** 输入框下方的高频动作（参考稿 v3 的快捷胶囊）。 */
 export const PLANNER_QUICK_ACTIONS: readonly QuickAction[] = [
   { id: 'more-stops', label: '+ 增加小众景点' },
   { id: 'family', label: '+ 换成亲子路线' },

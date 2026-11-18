@@ -138,7 +138,33 @@ async function installApiStubs(page: Page, state: StubState) {
 
 /* ---------- 页面操作助手 ---------- */
 
+/** 规划条件收在抽屉里（参考稿版式）：先展开，填完再收起，避免遮住预览。 */
+async function openConditions(page: Page) {
+  if ((await page.getByTestId('ai-generate').count()) === 0) {
+    await page.getByTestId('ai-conditions-toggle').click();
+  }
+  await expect(page.getByTestId('ai-generate')).toBeVisible();
+}
+
+async function closeConditions(page: Page) {
+  await page.keyboard.press('Escape');
+  await expect(page.getByTestId('ai-generate')).toHaveCount(0);
+}
+
+/** 地图编号 Marker 在「查看地图」弹窗里：读一遍再关掉。 */
+async function mapStopNumbers(page: Page): Promise<(string | null)[]> {
+  await page.getByTestId('ai-map-toggle').click();
+  await expect(page.locator('.amap-stop-number').first()).toBeVisible();
+  const numbers = await page
+    .locator('.amap-stop-number')
+    .evaluateAll((els) => els.map((el) => el.textContent));
+  await page.keyboard.press('Escape');
+  // Marker 的 DOM 顺序跟随创建顺序，调序后不一定等于编号顺序：按编号排序后再比较。
+  return [...numbers].sort((left, right) => Number(left) - Number(right));
+}
+
 async function pickAiPlace(page: Page, fieldTestid: string, name: string) {
+  await openConditions(page);
   const field = page.getByTestId(fieldTestid);
   const input = field.locator('input').first();
   await input.fill(name);
@@ -147,15 +173,10 @@ async function pickAiPlace(page: Page, fieldTestid: string, name: string) {
 }
 
 async function setAiDate(page: Page, day: string) {
+  await openConditions(page);
   const input = page.getByTestId('ai-date').locator('input');
   await input.fill(day);
   await input.press('Enter');
-}
-
-async function pickSelect(page: Page, testid: string, option: string) {
-  // antd v6 Select 不再渲染 .ant-select-selector，用 combobox 角色定位。
-  await page.getByTestId(testid).getByRole('combobox').click();
-  await page.locator('.ant-select-dropdown:visible .ant-select-item-option', { hasText: option }).first().click();
 }
 
 async function fillRequired(page: Page, day = DAY) {
@@ -167,7 +188,9 @@ async function fillRequired(page: Page, day = DAY) {
 }
 
 async function generate(page: Page) {
+  await openConditions(page);
   await page.getByTestId('ai-generate').click();
+  await closeConditions(page);
   await expect(page.getByTestId('ai-stop').first()).toBeVisible();
 }
 
@@ -177,6 +200,23 @@ async function stopNames(page: Page): Promise<(string | null)[]> {
 
 async function routeCallCount(page: Page): Promise<number> {
   return page.evaluate(() => (window as any).__amapRouteCalls.length);
+}
+
+/** 景点行拖拽排序：HTML5 DnD，按名称把 from 拖到 to 的位置。 */
+async function dragStop(page: Page, from: string, to: string) {
+  await page.evaluate(([fromName, toName]) => {
+    const rows = [...document.querySelectorAll('[data-testid="ai-stop"]')];
+    const src = rows.find((row) => row.getAttribute('data-name') === fromName);
+    const dst = rows.find((row) => row.getAttribute('data-name') === toName);
+    if (!src || !dst) {
+      throw new Error(`stop not found: ${fromName} / ${toName}`);
+    }
+    const dt = new DataTransfer();
+    src.dispatchEvent(new DragEvent('dragstart', { bubbles: true, cancelable: true, dataTransfer: dt }));
+    dst.dispatchEvent(new DragEvent('dragover', { bubbles: true, cancelable: true, dataTransfer: dt }));
+    dst.dispatchEvent(new DragEvent('drop', { bubbles: true, cancelable: true, dataTransfer: dt }));
+    src.dispatchEvent(new DragEvent('dragend', { bubbles: true, cancelable: true, dataTransfer: dt }));
+  }, [from, to]);
 }
 
 /** 发布页手选目的地（沿用 trips.spec.ts 的 AreaCascader 模式）。 */
@@ -216,6 +256,7 @@ test.beforeEach(async ({ page }) => {
 /* ---------- A1 门控与条件（E1/E3/E4/E5/E6） ---------- */
 
 test('A1 gates generation on required fields and carries optional conditions', async ({ page }) => {
+  await openConditions(page);
   const generateButton = page.getByTestId('ai-generate');
   await expect(generateButton).toBeDisabled();
 
@@ -223,9 +264,10 @@ test('A1 gates generation on required fields and carries optional conditions', a
   await expect(page.getByTestId('ai-origin-name')).toContainText('广州南站');
   await expect(generateButton).toBeDisabled();
 
+  // 日期默认今天，所以选完目的地就满足三个必填项。
   await pickAiPlace(page, 'ai-destination-field', '广州市');
   await expect(page.getByTestId('ai-destination-name')).toContainText('广州市');
-  await expect(generateButton).toBeDisabled();
+  await expect(generateButton).toBeEnabled();
 
   await setAiDate(page, DAY);
   await expect(generateButton).toBeEnabled();
@@ -233,10 +275,11 @@ test('A1 gates generation on required fields and carries optional conditions', a
   // 可选条件：预算 / 节奏 / 兴趣可改且进入请求体。
   await page.getByTestId('ai-budget').locator('input').fill('500');
   await page.getByTestId('ai-pace').getByText('紧凑', { exact: true }).click();
-  await pickSelect(page, 'ai-interests', '美食');
-  await page.keyboard.press('Escape');
+  // 兴趣是可点的胶囊选项（参考稿）：点一下即选中，不需要下拉。
+  await page.getByTestId('ai-interests').getByText('美食', { exact: true }).click();
 
   await generateButton.click();
+  await closeConditions(page);
   await expect(page.getByTestId('ai-stop').first()).toBeVisible();
   expect(state.aiRequests).toHaveLength(1);
   const request = state.aiRequests[0] as any;
@@ -250,13 +293,16 @@ test('A1 gates generation on required fields and carries optional conditions', a
   expect(request.interests).toEqual(['美食']);
   expect(request.reduce_budget).toBe(false);
 
-  // 地图点击选点（E3）：切到出发地槽位 → 点击地图 → 附近候选 → 确认。
+  // 地图点击选点（E3）：抽屉里的「地图选点」打开弹窗 → 切到出发地 → 点地图 → 候选 → 确认。
+  await openConditions(page);
   await page.getByTestId('ai-map-pick').click();
   await page.getByTestId('ai-map-pick-target').getByText('出发地', { exact: true }).click();
   await page.evaluate(() => (window as any).__amapClick(113.3236, 23.1203));
   const candidates = page.getByTestId('ai-map-candidates');
   await expect(candidates).toBeVisible();
   await candidates.getByRole('button', { name: /花城广场/ }).first().click();
+  await page.keyboard.press('Escape');
+  await openConditions(page);
   await expect(page.getByTestId('ai-origin-name')).toContainText('花城广场');
 });
 
@@ -266,6 +312,7 @@ test('A2 fills origin from geolocation and degrades gracefully when denied', asy
   await context.grantPermissions(['geolocation']);
   await context.setGeolocation({ latitude: 22.989, longitude: 113.269 });
 
+  await openConditions(page);
   await page.getByTestId('ai-origin-field').getByRole('button', { name: '使用当前定位' }).click();
   // 定位坐标反查附近 POI：替身最近点为广州南站。
   await expect(page.getByTestId('ai-origin-name')).toContainText('广州南站');
@@ -278,6 +325,7 @@ test('A2 fills origin from geolocation and degrades gracefully when denied', asy
     ) => error?.({ code: 1, message: 'User denied Geolocation' });
   });
   await page.reload();
+  await openConditions(page);
   await page.getByTestId('ai-origin-field').getByRole('button', { name: '使用当前定位' }).click();
   await expect(page.getByTestId('ai-origin-field').getByRole('alert')).toContainText('定位失败');
   await pickAiPlace(page, 'ai-origin-field', '广州南站');
@@ -317,7 +365,7 @@ test('A3 generates a complete itinerary with weather, budget and AMap stats', as
   await expect(packing).toContainText('帽子');
   await expect(packing).toContainText('饮用水');
 
-  // 预算四项 + 合计，恒标「AI 估算」。
+  // 预算四项 + 合计（参考稿不再挂「AI 估算」徽标，只标「参考估算」）。
   const budgetCard = page.getByTestId('ai-budget-card');
   await expect(budgetCard).toContainText('交通');
   await expect(budgetCard).toContainText('80');
@@ -327,7 +375,7 @@ test('A3 generates a complete itinerary with weather, budget and AMap stats', as
   await expect(budgetCard).toContainText('180');
   await expect(budgetCard).toContainText('其他');
   await expect(budgetCard).toContainText('460');
-  await expect(budgetCard).toContainText('AI 估算');
+  await expect(budgetCard).toContainText('参考估算');
 
   // 统计：距离 / 时间 = 高德替身之和（3 段 × 2100 米 / 900 秒）+「预计」。
   const stats = page.getByTestId('ai-stats');
@@ -336,7 +384,7 @@ test('A3 generates a complete itinerary with weather, budget and AMap stats', as
   await expect(stats).toContainText('45 分钟');
 
   // 地图编号 Marker 与列表顺序一致（stub 绕过 JS Key，CI 恒跑）。
-  await expect(page.locator('.amap-stop-number')).toHaveText(['1', '2', '3', '4']);
+  expect(await mapStopNumbers(page)).toEqual(['1', '2', '3', '4']);
   expect(await routeCallCount(page)).toBe(3);
 });
 
@@ -353,7 +401,7 @@ test('A4 keeps list numbering and flags unresolved POIs without fake coordinates
   await expect(unresolvedRow.getByRole('button', { name: '更换 神秘景点' })).toBeVisible();
 
   // 未定位 POI 不渲染 Marker，但保留列表序号：地图编号 1 / 3 / 4。
-  await expect(page.locator('.amap-stop-number')).toHaveText(['1', '3', '4']);
+  expect(await mapStopNumbers(page)).toEqual(['1', '3', '4']);
 
   // 路线按已解析子集（3 点 → 2 段 = 4200 米 / 1800 秒）。
   await expect(page.getByTestId('ai-stats')).toContainText('4.2 公里');
@@ -400,13 +448,15 @@ test('A5 weather drives indoor preference and packing advice', async ({ page }) 
 test('A6 recomputes the route after remove, replace and reorder', async ({ page }) => {
   await fillRequired(page);
   await generate(page);
+  // 路线是异步算的：先等统计出数，再核对高德调用次数。
+  await expect(page.getByTestId('ai-stats')).toContainText('6.3 公里');
   expect(await routeCallCount(page)).toBe(3);
 
   // 删除第 2 个 → 3 点重编号 → 重算。
   await page.getByRole('button', { name: '删除 海心沙' }).click();
   expect(await stopNames(page)).toEqual(['广州塔', '花城广场', '北京路步行街']);
   await expect(page.getByTestId('ai-stats')).toContainText('4.2 公里');
-  await expect(page.locator('.amap-stop-number')).toHaveText(['1', '2', '3']);
+  expect(await mapStopNumbers(page)).toEqual(['1', '2', '3']);
   expect(await routeCallCount(page)).toBe(5);
 
   // 更换第 2 个为「永庆坊」：顺序不变，新 POI 解析。
@@ -419,11 +469,12 @@ test('A6 recomputes the route after remove, replace and reorder', async ({ page 
   await expect(page.getByTestId('ai-stats')).toContainText('4.2 公里');
   expect(await routeCallCount(page)).toBe(7);
 
-  // 上移末位 → 广州塔 / 北京路步行街 / 永庆坊，编号同步。
-  await page.getByRole('button', { name: '上移 北京路步行街' }).click();
+  // 拖拽末位到第 2 位 → 广州塔 / 北京路步行街 / 永庆坊，编号同步。
+  await dragStop(page, '北京路步行街', '永庆坊');
   expect(await stopNames(page)).toEqual(['广州塔', '北京路步行街', '永庆坊']);
-  await expect(page.locator('.amap-stop-number')).toHaveText(['1', '2', '3']);
-  expect(await routeCallCount(page)).toBe(9);
+  expect(await mapStopNumbers(page)).toEqual(['1', '2', '3']);
+  // 重算按段串行请求（高德 3 QPS 限流），用轮询等最后一段到齐。
+  await expect.poll(() => routeCallCount(page), { timeout: 10_000 }).toBe(9);
 });
 
 /* ---------- A7 不足两个（E24） ---------- */
@@ -552,7 +603,7 @@ test('A11 saves the snapshot, publishes it and shows the AI badge', async ({ pag
   await expect(page.locator('#trip-budget-min')).toHaveValue('460');
   await expect(page.locator('#trip-budget-max')).toHaveValue('460');
 
-  await page.getByRole('button', { name: /^发\s*布$/ }).click();
+  await page.getByRole('button', { name: /^发\s*布/ }).click();
   await expect(page).toHaveURL(/#\/trips\/\d+$/);
   await expect(page.getByRole('heading', { name: title })).toBeVisible();
   await expect(page.getByText('招募中').first()).toBeVisible();
@@ -613,9 +664,9 @@ test('A12 rejects another user\'s snapshot link and keeps the snapshot retryable
   const title = `E2E AI 归属 ${Date.now()}`;
   await page.getByLabel('标题').fill(title);
   await pickDestination(page, '广东省', '珠海市');
-  await addRouteStop(page, '香洲港');
+await addRouteStop(page, '香洲港');
   await addRouteStop(page, '情侣路');
-  await page.getByRole('button', { name: /^发\s*布$/ }).click();
+  await page.getByRole('button', { name: /^发\s*布/ }).click();
 
   // 提交被后端拒绝（400），错误可读，URL 保留 ?ai= 可重试。
   await expect(page.getByRole('alert').filter({ hasText: 'AI 行程' })).toBeVisible();

@@ -145,10 +145,10 @@ test('publishes a trip and finds it in the home list', async ({ page }) => {
   await loginAs(page, 1);
   await page.goto('/#/trips/new');
 
+  // 参考稿 v3 的发布页是三张步骤卡：基本信息 / 路线规划 / 集合与预算（兴趣标签并入基本信息）。
   await expect(page.getByRole('heading', { name: '基本信息' })).toBeVisible();
   await expect(page.getByRole('heading', { name: '路线规划' })).toBeVisible();
-  await expect(page.getByRole('heading', { name: '同行与预算' })).toBeVisible();
-  await expect(page.getByRole('heading', { name: '兴趣标签' })).toBeVisible();
+await expect(page.getByRole('heading', { name: '集合与预算' })).toBeVisible();
   await expect(page.getByLabel('出发日期')).toHaveValue(todayIso());
   await expect(page.getByLabel('结束日期')).toHaveValue(todayIso());
   // 路线段就是探索页的编辑器：地图、搜索与途经点面板同源，未选目的地也可用。
@@ -171,7 +171,7 @@ test('publishes a trip and finds it in the home list', async ({ page }) => {
   await addRouteStop(page, '情侣路');
   await page.getByRole('checkbox', { name: '摄影', exact: true }).click();
 
-  await page.getByRole('button', { name: /^发\s*布$/ }).click();
+  await page.getByRole('button', { name: /^发\s*布/ }).click();
 
   await expect(page).toHaveURL(/#\/trips\/\d+$/);
   await expect(page.getByRole('heading', { name: title })).toBeVisible();
@@ -201,7 +201,7 @@ test('publishes with a meeting time and edits it from the detail page', async ({
   await page.getByLabel(/集合区域/).press('Enter');
   await expect(page.locator('.place-chip-name', { hasText: '香洲港客运站' })).toBeVisible();
   await setMeetingTime(page, `${day} 08:30`);
-  await page.getByRole('button', { name: /^发\s*布$/ }).click();
+  await page.getByRole('button', { name: /^发\s*布/ }).click();
 
   await expect(page.getByRole('heading', { name: title })).toBeVisible();
   await expect(page.locator('.detail-facts')).toContainText('香洲港客运站');
@@ -232,7 +232,7 @@ test('rejects a meeting time after the end date on the publish form', async ({ p
   await addRouteStop(page, '香洲港');
   await addRouteStop(page, '情侣路');
   await setMeetingTime(page, `${laterDay} 08:30`);
-  await page.getByRole('button', { name: /^发\s*布$/ }).click();
+  await page.getByRole('button', { name: /^发\s*布/ }).click();
 
   await expect(page.getByText('集合时间不能晚于结束日期')).toBeVisible();
   await expect(page).toHaveURL(/#\/trips\/new/);
@@ -257,7 +257,7 @@ test('blocks publishing and flags every missing required field', async ({ page }
   await loginAs(page, 1);
   await page.goto('/#/trips/new');
 
-  await page.getByRole('button', { name: /^发\s*布$/ }).click();
+  await page.getByRole('button', { name: /^发\s*布/ }).click();
 
   await expect(page).toHaveURL(/#\/trips\/new$/);
   await expect(page.getByLabel('标题')).toHaveAttribute('aria-invalid', 'true');
@@ -406,7 +406,7 @@ test('publishes a single meeting area and replaces it from the edit dialog', asy
   await draft.press('Enter');
   await expect(meetingPicker.locator('.place-chip-name')).toHaveCount(1);
   await expect(meetingPicker.locator('.place-chip-name', { hasText: '情侣路驿站' })).toBeVisible();
-  await page.getByRole('button', { name: /^发\s*布$/ }).click();
+  await page.getByRole('button', { name: /^发\s*布/ }).click();
 
   await expect(page.getByRole('heading', { name: title })).toBeVisible();
   await expect(page.locator('.detail-facts')).toContainText('情侣路驿站');
@@ -506,8 +506,8 @@ test('detail page keeps the map and warns when a stop is off the gazetteer', asy
   await expect(section).toBeVisible();
   await expect(section.locator('.amap-overlay-marker')).toHaveCount(1);
   await expect(section.locator('.amap-trip-alert')).toContainText('有 1 个途经点未能定位');
-  await expect(page.locator('.detail-stops')).toContainText('香洲港集合');
-  await expect(page.locator('.detail-stops')).toContainText('不存在的地点XYZ');
+  await expect(section.locator('.route-strip')).toContainText('香洲港集合');
+  await expect(section.locator('.route-strip')).toContainText('不存在的地点XYZ');
 });
 
 test('meeting edit replaces the single area and the API guards limit and ownership', async ({ page }) => {

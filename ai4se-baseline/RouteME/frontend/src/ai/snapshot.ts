@@ -121,7 +121,7 @@ export function toTripPrefill(snapshot: AiItinerarySnapshot): TripPrefill {
   if (snapshot.ai_budget !== null) {
     const estimate = snapshot.ai_budget;
     noteParts.push(
-      `预算为${aiMessages.aiEstimate}：交通 ${centsToYuan(estimate.transport_cents)} 元 / ` +
+      `预算为${aiMessages.budgetReference}：交通 ${centsToYuan(estimate.transport_cents)} 元 / ` +
         `门票 ${centsToYuan(estimate.tickets_cents)} 元 / 餐饮 ${centsToYuan(estimate.food_cents)} 元 / ` +
         `其他 ${centsToYuan(estimate.other_cents)} 元，合计 ${centsToYuan(sumBudgetCents(estimate))} 元` +
         '（无真实价格来源）。',

@@ -202,6 +202,15 @@ describe('AmapService mapping', () => {
     expect(amapErrorMessage(new AmapApiError('AMAP_ERROR', 'x', '20800'))).toContain('20800');
   });
 
+  it('keeps the raw upstream reason for unknown errors instead of a bare failure', () => {
+    const message = amapErrorMessage(
+      new AmapApiError('AMAP_ERROR', 'SERVICE_NOT_AVAILABLE', '10050'),
+    );
+    expect(message).toContain('10050');
+    expect(message).toContain('SERVICE_NOT_AVAILABLE');
+    expect(amapErrorMessage(new AmapApiError('UPSTREAM_BUSY', '高德服务繁忙'))).toContain('繁忙');
+  });
+
   it('names the backend proxy when it is unreachable', () => {
     const message = amapErrorMessage(new AmapApiError('PROXY_UNAVAILABLE', 'down'));
     expect(message).toContain('后端');

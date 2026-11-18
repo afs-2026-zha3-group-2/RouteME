@@ -6,13 +6,11 @@ import java.time.Clock;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.List;
-import java.util.Optional;
 
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
@@ -130,22 +128,6 @@ public class TripPlanServiceImpl extends AbstractServiceImpl<TripPlanMapper, Tri
 
     @Override
     @Transactional
-    public List<TripPlan> findOpen(TripQuery query) {
-        materializeExpired();
-        return baseMapper.selectOpenList(
-                        query.destinationCode(),
-                        query.dateFrom() == null ? null : query.dateFrom().toString(),
-                        query.dateTo() == null ? null : query.dateTo().toString(),
-                        List.copyOf(query.tags()),
-                        sortKey(query),
-                        today())
-                .stream()
-                .map(TripPlanEntity::toTripPlan)
-                .toList();
-    }
-
-    @Override
-    @Transactional
     public List<TripPlan> findAllTrips() {
         materializeExpired();
         return list(Wrappers.<TripPlanEntity>lambdaQuery()
@@ -197,21 +179,6 @@ public class TripPlanServiceImpl extends AbstractServiceImpl<TripPlanMapper, Tri
         for (Long id : baseMapper.selectExpiredIds(today())) {
             materializeIfExpired(id);
         }
-    }
-
-    @Override
-    @Transactional
-    public Optional<TripPlan> latestOpenByPublisher(long publisherId) {
-        materializeExpired();
-        LambdaQueryWrapper<TripPlanEntity> query = Wrappers.<TripPlanEntity>lambdaQuery()
-                .eq(TripPlanEntity::getPublisherId, publisherId)
-                .isNull(TripPlanEntity::getCompletedAt)
-                .isNull(TripPlanEntity::getCancelledAt)
-                .orderByDesc(TripPlanEntity::getCreatedAt)
-                .orderByDesc(TripPlanEntity::getId);
-        return page(new Page<TripPlanEntity>(1, 1, false), query).getRecords().stream()
-                .findFirst()
-                .map(TripPlanEntity::toTripPlan);
     }
 
     @Override

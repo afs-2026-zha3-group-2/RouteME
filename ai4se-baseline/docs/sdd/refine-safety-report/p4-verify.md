@@ -119,3 +119,7 @@
 | IO | WAYNE | 已知悉残余风险（E2E 不在 CI、共享数据库、并行会话在途改动） | 待确认 |
 
 **阶段结论：P4 完成（本地并已并入 `main`）。** T1–T6 全部收口；本 change 的 E2E 与改动的既有 spec 全绿，后端 246 项与前端 230 项全绿；全套 E2E 的 11 条失败全部来自并行会话在途的 `profile.spec.ts`（与 `origin/main` 逐字节一致），上一轮归属的两条 `trips.spec.ts` 失败已由上游修复。G2 待 VL Neal 签署，归档留在 P5。
+
+## 后续修订（2026-11-18）
+
+举报弹窗的紧急求助提示改为直接报警：`如果你正处于危险中，请立即拨打 110 报警；平台举报不能替代紧急求助。`（原「请先联系当地警方或学校保卫处」）。同步更新 `tripMessages.reportEmergencyNote`、`openspec/changes/refine-safety-report/design.md` D4/D5 与 `e2e/tests/safety-report.spec.ts`；受影响 E2E 7/7 绿。

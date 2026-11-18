@@ -5,7 +5,7 @@ import { useProfile } from '../profiles/ProfileContext';
 import { publisherSummary } from '../profile/profileDisplay';
 import { creditLine, creditRestrictedBadge, creditTone } from '../profile/creditDisplay';
 import { Avatar } from '../shell/Avatar';
-import type { Match, TripSummary, UserCreditEntry } from '../types';
+import type { TripSummary, UserCreditEntry } from '../types';
 import { cityPhoto } from './cityPhotos';
 import { coverTone } from './coverTone';
 import { StatusBadge } from './StatusBadge';
@@ -17,14 +17,13 @@ function dayLabel(iso: string): string {
 
 type Props = {
   trip: TripSummary;
-  match?: Match;
   /** 发布者信用状态；由页面层一次取数后下发，缺失时不展示。 */
   credit?: UserCreditEntry;
   /** 发布页实时预览：不跳详情、不打开资料弹窗。 */
   preview?: boolean;
 };
 
-export function TripCard({ trip, match, credit, preview = false }: Props) {
+export function TripCard({ trip, credit, preview = false }: Props) {
   const { openProfile } = useProfile();
   const joinedRate = trip.capacity === 0 ? 0 : Math.round((trip.joined_count / trip.capacity) * 100);
   const width = Math.min(100, Math.max(0, joinedRate));
@@ -72,22 +71,6 @@ export function TripCard({ trip, match, credit, preview = false }: Props) {
         <p className="tc-route">
           <b>路线</b> {trip.stops.join(' → ')}
         </p>
-
-        {match !== undefined && (
-          <div className="tc-match">
-            <span className="match-ring">
-              <Progress
-                type="circle"
-                percent={match.percentage}
-                size={34}
-                strokeWidth={10}
-                strokeColor="var(--warn)"
-                format={(percent) => percent}
-              />
-            </span>
-            <span className="match-reason">{match.reasons.join('，')}</span>
-          </div>
-        )}
 
         <div className="tc-foot">
           {preview ? (
