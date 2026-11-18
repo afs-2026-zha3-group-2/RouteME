@@ -24,7 +24,7 @@ import {
 } from '../ai/chatIntent';
 import { itineraryToMarkdown } from '../ai/exportItinerary';
 import { removeStop, replaceStop, resolvedCount } from '../ai/itineraryEdit';
-import { moveStopTo, retimeStops } from '../ai/itineraryTimeline';
+import { liftArrivalsToFloor, moveStopTo, nowFloorMinutes, retimeStops } from '../ai/itineraryTimeline';
 import {
   createPlannerSession,
   describeSession,
@@ -33,6 +33,7 @@ import {
   writeSessionStore,
   type PlannerChatMessage as ChatMessage,
   type PlannerPlanMeta as PlanMeta,
+  type PlannerPlanSnapshot,
   type PlannerSession,
   type PlannerSessionStore,
   type PlannerStop as DayStop,
@@ -40,7 +41,9 @@ import {
 import { resolveStops, type ResolvedStop } from '../ai/poiResolve';
 import {
   canGenerate,
+  clampPlanDate,
   defaultPlannerForm,
+  todayIso,
   toGenerateRequest,
   yuanToCents,
   type PlannerFormValues,
@@ -155,6 +158,40 @@ function isFoodStop(stop: DayStop): boolean {
 /** 会话 id → 会话；id 失效时退回第一份，保证页面永远有可用上下文。 */
 function pickActiveSession(store: PlannerSessionStore): PlannerSession {
   return store.sessions.find((session) => session.id === store.activeId) ?? store.sessions[0];
+}
+
+/**
+ * 历史方案气泡：只列那一刻的景点与到达时间。
+ *
+ * <p>不读页面当前 stops / planMeta —— 否则同一会话里每条方案消息都会渲染成
+ * 同一份最新方案，看起来就是「两条一模一样的回答」。
+ */
+function PlanHistoryBubble({ message }: { message: ChatMessage }) {
+  const plan = message.plan ?? null;
+  return (
+    <div className="ai-plan-history" data-testid="ai-plan-history">
+      <p className="ai-bubble-title">{message.text}</p>
+      {plan === null || plan.stops.length === 0 ? (
+        <p className="ai-bubble-text">{aiMessages.planHistoryLegacy}</p>
+      ) : (
+        <>
+          <p className="ai-bubble-text">
+            {aiMessages.planHistoryLead(plan.title, plan.dayCount)}
+          </p>
+          <ul className="ai-plan-history-list">
+            {plan.stops.map((stop) => (
+              <li key={`${stop.day}-${stop.arrival}-${stop.name}`}>
+                <span className="ai-reply-time">{stop.arrival}</span>
+                <span className="ai-reply-name">{stop.name}</span>
+                <span className="ai-plan-history-day">Day {stop.day}</span>
+              </li>
+            ))}
+          </ul>
+          <p className="ai-bubble-text ai-reply-foot">{aiMessages.planHistoryFoot}</p>
+        </>
+      )}
+    </div>
+  );
 }
 
 export function AiPlannerPage({ currentUser }: Props) {
@@ -280,14 +317,31 @@ export function AiPlannerPage({ currentUser }: Props) {
 
   const busy = generating || sending;
 
-  const pushMessage = useCallback((message: Pick<ChatMessage, 'role' | 'text' | 'tone'>) => {
-    const id = messageSeqRef.current;
-    messageSeqRef.current += 1;
-    setMessages((previous) => [
-      ...previous,
-      { id, time: clockNow(), tone: message.tone, role: message.role, text: message.text },
-    ]);
-  }, []);
+  const pushMessage = useCallback(
+    (
+      message: Pick<ChatMessage, 'role' | 'text' | 'tone'> & Partial<Pick<ChatMessage, 'plan'>>,
+    ) => {
+      const id = messageSeqRef.current;
+      messageSeqRef.current += 1;
+      setMessages((previous) => [
+        ...previous,
+        {
+          id,
+          time: clockNow(),
+          tone: message.tone,
+          role: message.role,
+          text: message.text,
+          plan: message.plan ?? null,
+        },
+      ]);
+    },
+    [],
+  );
+
+  /** 今天出行时首日从「此刻」起算，避免重排后第一站落在已经过去的时间。 */
+  const firstDayStart = useCallback((): number | undefined => {
+    return form.date === todayIso() ? nowFloorMinutes() : undefined;
+  }, [form.date]);
 
   /* ---------- 天气：预览（目的地 + 日期）→ generate 权威切换（L-02） ---------- */
 
@@ -394,10 +448,25 @@ export function AiPlannerPage({ currentUser }: Props) {
       });
       // POI 坐标逐个经高德解析；失败标「未定位」，不伪造坐标（AC6）。
       const resolved = await resolveStops(flat, activeForm.destination?.name);
-      const nextStops: DayStop[] = resolved.map((stop, index) => ({
+      const resolvedStops: DayStop[] = resolved.map((stop, index) => ({
         ...stop,
         day: dayOf[index] ?? 1,
       }));
+      // 旅行日期就是今天时，AI 并不知道用户此刻几点：把它给出的当天到达时间整体后移，
+      // 避免「已经 15:36 了，方案第一站却写着 09:30」这种排到过去的行程。
+      const nextStops = liftArrivalsToFloor(
+        resolvedStops,
+        activeForm.date === todayIso() ? nowFloorMinutes() : null,
+      );
+      const planSnapshot: PlannerPlanSnapshot = {
+        title: plan.title,
+        dayCount: plan.days.length,
+        stops: nextStops.map((stop) => ({
+          name: stop.name,
+          day: stop.day,
+          arrival: stop.arrival,
+        })),
+      };
       setPlanMeta({
         title: plan.title,
         tips: plan.tips,
@@ -418,6 +487,8 @@ export function AiPlannerPage({ currentUser }: Props) {
         role: 'assistant',
         tone: 'plan',
         text: note === undefined ? aiMessages.planReady : aiMessages.planReadyFor(note),
+        // 每条方案消息只认自己的快照，旧消息不会被最新方案覆盖成相同内容。
+        plan: planSnapshot,
       });
       void recalcRoute(nextStops, activeForm.travelMode);
       return nextStops;
@@ -525,6 +596,9 @@ export function AiPlannerPage({ currentUser }: Props) {
         destinationName: null,
         originName: null,
       });
+      // 对话里说了一个已经过去的日期（「11 月 1 日」而今天已 11 月 18 日）时按今天算，
+      // 不让 AI 去规划一份排在过去的行程。
+      nextForm = { ...nextForm, date: clampPlanDate(nextForm.date) };
 
       // 换了一个目的地且当前会话已有内容：开一份新会话，两段旅行互不覆盖。
       const currentDestination = form.destination?.name ?? '';
@@ -645,7 +719,7 @@ export function AiPlannerPage({ currentUser }: Props) {
 
   /** 任何顺序变化后都按新顺序重排时间，避免「09:00 → 16:00 → 11:30」的时间倒序。 */
   const applyStops = (next: ResolvedStop[]) => {
-    const dayStops = retimeStops(next as DayStop[]);
+    const dayStops = retimeStops(next as DayStop[], firstDayStart());
     setStops(dayStops);
     setReplaceIndex(null);
     setReplaceCandidates(null);
@@ -852,6 +926,17 @@ export function AiPlannerPage({ currentUser }: Props) {
 
   const themesSeed = useMemo(() => dayThemes(stops), [stops]);
   const replyDays = days.length > 0 ? days : [{ day: 1, stops: [] as DayStop[] }];
+  // 只有最新一条方案消息绑定页面上可交互的实时方案；历史方案渲染各自的快照，
+  // 否则同一会话里所有「已生成」气泡会长得一模一样（用户看到的就是「两条相同的回答」）。
+  const latestPlanId = useMemo(() => {
+    let latest: number | null = null;
+    for (const message of messages) {
+      if (message.tone === 'plan' && (latest === null || message.id > latest)) {
+        latest = message.id;
+      }
+    }
+    return latest;
+  }, [messages]);
 
   return (
     <main className="ai-page">
@@ -944,7 +1029,7 @@ export function AiPlannerPage({ currentUser }: Props) {
                     <BrandMark />
                   </span>
                   <div className="ai-bubble">
-                    {message.tone === 'plan' && planMeta !== null ? (
+                    {message.tone === 'plan' && message.id === latestPlanId && planMeta !== null ? (
                       <div className="ai-plan-reply">
                         <p className="ai-bubble-title">{message.text}</p>
                         <p className="ai-bubble-text">{aiMessages.planReplyLead}</p>
@@ -1097,6 +1182,8 @@ export function AiPlannerPage({ currentUser }: Props) {
 
                         <p className="ai-bubble-text ai-reply-foot">{aiMessages.planPreviewHint}</p>
                       </div>
+                    ) : message.tone === 'plan' ? (
+                      <PlanHistoryBubble message={message} />
                     ) : message.tone === 'error' ? (
                       <div className="ai-msg-error" role="alert">
                         <span>{message.text}</span>

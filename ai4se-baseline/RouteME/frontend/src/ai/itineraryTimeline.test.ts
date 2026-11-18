@@ -2,7 +2,9 @@ import { describe, expect, it } from 'vitest';
 import {
   DAY_START_MINUTES,
   formatClock,
+  liftArrivalsToFloor,
   moveStopTo,
+  nowFloorMinutes,
   parseClock,
   retimeStops,
 } from './itineraryTimeline';
@@ -44,6 +46,35 @@ describe('retimeStops', () => {
       mk('C', 2, '15:00', 90),
     ]);
     expect(next.map((stop) => stop.arrival)).toEqual(['09:00', '10:20', '09:00']);
+  });
+
+  it('starts the first day from the given clock but keeps later days at 09:00', () => {
+    const next = retimeStops(
+      [mk('A', 1, '09:00', 60), mk('B', 2, '09:00', 60)],
+      16 * 60,
+    );
+    expect(next.map((stop) => stop.arrival)).toEqual(['16:00', '09:00']);
+  });
+});
+
+describe('nowFloorMinutes / liftArrivalsToFloor', () => {
+  it('rounds the current time up to the next 10 minutes', () => {
+    expect(nowFloorMinutes(new Date(2026, 10, 18, 15, 36))).toBe(15 * 60 + 40);
+    expect(nowFloorMinutes(new Date(2026, 10, 18, 15, 40))).toBe(15 * 60 + 50);
+    expect(nowFloorMinutes(new Date(2026, 10, 18, 0, 1))).toBe(10);
+  });
+
+  it('shifts a day whose first arrival is already past, keeping the spacing', () => {
+    const stops = [mk('A', 1, '09:00', 60), mk('B', 1, '10:20', 60), mk('C', 2, '09:00')];
+    const next = liftArrivalsToFloor(stops, 15 * 60 + 40);
+    // 09:00 抬到 15:40，后续按原间隔（停留 60 + 在途 20）顺延；第二天不动。
+    expect(next.map((stop) => stop.arrival)).toEqual(['15:40', '17:00', '09:00']);
+  });
+
+  it('leaves stops untouched when they already start after the floor', () => {
+    const stops = [mk('A', 1, '18:00', 60)];
+    expect(liftArrivalsToFloor(stops, 15 * 60)).toBe(stops);
+    expect(liftArrivalsToFloor(stops, null)).toBe(stops);
   });
 });
 

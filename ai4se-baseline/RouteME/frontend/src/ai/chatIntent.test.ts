@@ -71,6 +71,12 @@ describe('parseDateInText', () => {
     expect(parseDateInText('2026-12-01 出发', now)).toBe('2026-12-01');
   });
 
+  it('never resolves a month/day mention to a date before today', () => {
+    // 今天 2026-11-18：本月已过的 11 月 1 日按今天算，不顺延到明年。
+    expect(parseDateInText('11月1日去珠海', now)).toBe('2026-11-18');
+    expect(parseDateInText('1月5日去珠海', now)).toBe('2026-11-18');
+  });
+
   it('resolves weekday and weekend mentions', () => {
     // 2026-11-18 是周三：本周六 = 11-21，下周六 = 11-28。
     expect(parseDateInText('本周六出发', now)).toBe('2026-11-21');

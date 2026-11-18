@@ -35,22 +35,78 @@ export function formatClock(minutes: number): string {
 }
 
 /**
- * 按当前顺序重排时间：每天从 09:00 开始，下一站 = 上一站到达 + 停留 + 在途缓冲。
+ * 按当前顺序重排时间：每天默认从 09:00 开始，下一站 = 上一站到达 + 停留 + 在途缓冲。
  * 顺序与 day 不变，只更新 arrival。
+ *
+ * <p>`firstDayStartMinutes` 用于「行程就从今天开始」的场景：已经 15:36 再把第一站排在
+ * 09:00 等于排到过去，因此首日从当前时刻（向前取整到 10 分钟）起算；后续日期仍按 09:00。
  */
-export function retimeStops<T extends PlannerStop>(stops: T[]): T[] {
+export function retimeStops<T extends PlannerStop>(
+  stops: T[],
+  firstDayStartMinutes: number = DAY_START_MINUTES,
+): T[] {
   let currentDay: number | null = null;
-  let cursor = DAY_START_MINUTES;
+  let cursor = firstDayStartMinutes;
   return stops.map((stop) => {
     if (stop.day !== currentDay) {
+      // 首日（列表里出现的第一天）用调用方给的起点，其余日期恢复 09:00。
+      cursor = currentDay === null ? firstDayStartMinutes : DAY_START_MINUTES;
       currentDay = stop.day;
-      cursor = DAY_START_MINUTES;
     }
     const stay = Number.isFinite(stop.stay_minutes) ? Math.max(0, Math.round(stop.stay_minutes)) : 0;
     const next = { ...stop, arrival: formatClock(cursor) };
     cursor += stay + TRANSFER_GAP_MINUTES;
     return next;
   });
+}
+
+/** 当前时刻 → 当日分钟数，向上取整到 10 分钟（15:36 → 15:40），保证严格晚于「此刻」。 */
+export function nowFloorMinutes(now: Date = new Date(), stepMinutes = 10): number {
+  const raw = now.getHours() * 60 + now.getMinutes();
+  const step = Math.max(1, Math.round(stepMinutes));
+  return Math.min(23 * 60 + 59, Math.ceil((raw + 1) / step) * step);
+}
+
+/**
+ * 把指定日期（默认首日）的到达时间整体抬到 `floorMinutes` 之后，保持原有相对间隔。
+ *
+ * <p>AI 只看到「旅行日期」，不知道用户此刻是几点；当天生成时它可能给出 09:00 这种
+ * 已经过去的到达时间。这里只平移不重排，保留 AI 自己的节奏。
+ */
+export function liftArrivalsToFloor<T extends PlannerStop>(
+  stops: T[],
+  floorMinutes: number | null,
+  day = stops[0]?.day ?? 1,
+): T[] {
+  if (floorMinutes === null) {
+    return stops;
+  }
+  const dayIndexes = stops
+    .map((stop, index) => ({ stop, index }))
+    .filter((entry) => entry.stop.day === day);
+  if (dayIndexes.length === 0) {
+    return stops;
+  }
+  const arrivals = dayIndexes
+    .map((entry) => parseClock(entry.stop.arrival))
+    .filter((value): value is number => value !== null);
+  if (arrivals.length === 0) {
+    return stops;
+  }
+  const earliest = Math.min(...arrivals);
+  if (earliest >= floorMinutes) {
+    return stops;
+  }
+  const shift = floorMinutes - earliest;
+  const next = [...stops];
+  for (const entry of dayIndexes) {
+    const arrival = parseClock(entry.stop.arrival);
+    if (arrival === null) {
+      continue;
+    }
+    next[entry.index] = { ...entry.stop, arrival: formatClock(arrival + shift) };
+  }
+  return next;
 }
 
 /**
