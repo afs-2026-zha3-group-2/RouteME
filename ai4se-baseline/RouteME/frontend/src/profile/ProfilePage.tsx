@@ -15,6 +15,7 @@ import {
 } from './profileDisplay';
 import { creditLine, creditRestrictionNote, creditRestrictedBadge, creditTone } from './creditDisplay';
 import { interestLabel } from './profileOptions';
+import { routeCompletionLine } from './routeCompletionDisplay';
 
 type Props = {
   currentUser: DemoUser;
@@ -87,6 +88,7 @@ export function ProfilePage({ currentUser, userId, canEdit }: Props) {
   const ageZodiac = ageZodiacLabel(profile);
   const schoolAndMajor = schoolMajor(profile);
   const summary = publisherSummary(profile);
+  const completion = routeCompletionLine(profile.route_completion_state, profile.route_completion_rate);
   const interests = profile.interests;
   const hasFacts =
     schoolAndMajor !== '' ||
@@ -123,6 +125,7 @@ export function ProfilePage({ currentUser, userId, canEdit }: Props) {
               </span>
             )}
           </p>
+          <p className={`profile-completion ${completion.tone}`}>{completion.text}</p>
           {isSelf && profile.credit_restricted && (
             <p className="restriction-note">
               {creditRestrictionNote(profile.credit_restriction_reason)}

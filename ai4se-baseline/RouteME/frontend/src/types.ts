@@ -1,4 +1,4 @@
-/**
+﻿/**
  * 列表接口的分页对象：total 是筛选后的命中数，total_pages 为向上取整的页数。
  */
 export type Page<T> = {
@@ -30,6 +30,9 @@ export type BanReasonCode =
 
 /** 信用等级：由后端按分数实时派生，前端只负责文案与配色映射。 */
 export type CreditLevel = 'excellent' | 'good' | 'fair' | 'low' | 'risk';
+
+/** 路线完成度状态：由后端派生，前端只做文案与配色映射。 */
+export type RouteCompletionState = 'good' | 'neutral' | 'watch' | 'insufficient';
 
 /** 批量信用状态项（`GET /api/users/credits`）；不含任何明细。 */
 export type UserCreditEntry = {
@@ -115,6 +118,10 @@ export type UserProfile = {
   credit_restricted: boolean;
   /** 限制原因；仅本人个人主页返回，他人响应省略。 */
   credit_restriction_reason?: 'CREDIT_SCORE_BELOW_60' | null;
+  /** 路线完成度状态；数据不足恒为 insufficient。 */
+  route_completion_state?: RouteCompletionState | null;
+  /** 路线完成度百分比；数据不足时后端省略该键。 */
+  route_completion_rate?: number | null;
   joined_at?: string | null;
   stats?: ProfileStats;
   /** 成长等级；本人额外含经验与满级标记，他人仅 level。 */
@@ -660,6 +667,21 @@ export type HelpReports = {
   total: number;
 };
 
+/**
+ * 举报人视角的举报（`GET /api/reports/mine`）。
+ * 只含举报人已经知道的业务事实；管理员备注、处理人与他人的处罚细节不下发。
+ */
+export type MyReport = {
+  id: number;
+  code: string;
+  target_type: ReportTargetType;
+  reason: ReportReason;
+  status: ReportStatus;
+  created_at: string;
+  processing_at: string | null;
+  resolved_at: string | null;
+};
+
 /** Open-Meteo 单日天气；上游缺省的字段为 null，页面不展示对应项。 */
 export type WeatherDaily = {
   weather_code: number | null;
@@ -700,6 +722,126 @@ export type WeatherForecast = {
   reminders: WeatherReminder[];
   source: 'open-meteo';
 };
+/** 通知业务域类型；wire 值固定，前端按原值分组与计数。未知值按防御性回退处理。 */
+export type NotificationType =
+  | 'TRIP'
+  | 'APPLICATION'
+  | 'CHAT'
+  | 'CREDIT'
+  | 'REPORT'
+  | 'ACCOUNT'
+  | 'SERVICE'
+  | 'SYSTEM';
+
+/** 通知中心按固定顺序展示的八类；计数对象八类齐备、零值不省略。 */
+export const NOTIFICATION_TYPES: readonly NotificationType[] = [
+  'TRIP',
+  'APPLICATION',
+  'CHAT',
+  'CREDIT',
+  'REPORT',
+  'ACCOUNT',
+  'SERVICE',
+  'SYSTEM',
+];
+
+/** 类型下的具体事件；wire 值固定，前端只做展示与断言。 */
+export type NotificationEventName =
+  | 'trip_full'
+  | 'trip_ongoing'
+  | 'trip_cancelled'
+  | 'trip_completed'
+  | 'application_received'
+  | 'application_accepted'
+  | 'application_rejected'
+  | 'application_closed'
+  | 'message'
+  | 'credit_changed'
+  | 'credit_recovered'
+  | 'report_submitted'
+  | 'report_processing'
+  | 'report_resolved'
+  | 'account_suspended'
+  | 'account_banned'
+  | 'account_restored'
+  | 'service_joined'
+  | 'service_reply'
+  | 'service_closed'
+  | 'safety_reminder'
+  | 'identity_verified';
+
+/** 优先级；信用分低于 60 等需要立即关注的事件为 HIGH。 */
+export type NotificationPriority = 'NORMAL' | 'HIGH';
+
+/** 状态由 `read_at` 派生；READ 不再计入未读。 */
+export type NotificationStatus = 'UNREAD' | 'READ';
+
+/** 跳转目标种类；前端按 kind 组装路由。 */
+export type NotificationTargetKind =
+  | 'trip'
+  | 'applications'
+  | 'chat'
+  | 'credit'
+  | 'report'
+  | 'account'
+  | 'support'
+  | 'identity';
+
+/** 跳转定位字段；与 kind 无关的字段为 null。 */
+export type NotificationTarget = {
+  kind: NotificationTargetKind;
+  trip_id: number | null;
+  other_user_id: number | null;
+  application_id: number | null;
+  report_id: number | null;
+  session_id: number | null;
+};
+
+/** 未读计数：总数与按八类拆分。 */
+export type NotificationCounts = {
+  total: number;
+  by_type: Record<NotificationType, number>;
+};
+
+/** 一条通知；标题与正文由后端生成，前端直接展示。 */
+export type AppNotification = {
+  id: number;
+  type: NotificationType | string;
+  event: NotificationEventName | string;
+  title: string;
+  content: string;
+  priority: NotificationPriority | string;
+  status: NotificationStatus | string;
+  created_at: string;
+  read_at: string | null;
+  actor: DemoUser | null;
+  trip_id: number | null;
+  trip_title: string | null;
+  application_id: number | null;
+  message_id: number | null;
+  report_id: number | null;
+  session_id: number | null;
+  target: NotificationTarget;
+  /** 关联业务当前是否仍可访问；false 时提示「相关内容当前不可查看」。 */
+  related_available: boolean;
+};
+
+/** GET /api/notifications：最新 50 条与计数同一快照返回。 */
+export type NotificationList = {
+  items: AppNotification[];
+  counts: NotificationCounts;
+};
+
+/** SSE 推送载荷；message 只在消息类事件出现。 */
+export type NotificationEvent = {
+  notification: AppNotification;
+  message: ChatMessage | null;
+};
+
+/** 标读请求：全部，或按「行程 + 对方」定位单个会话。 */
+export type NotificationReadRequest =
+  | { scope: 'all' }
+  | { scope: 'conversation'; trip_id: number; other_user_id: number };
 
 /** 安全学习题库的四类题材，与契约 `LearningQuestion.category` 同值。 */
 export type LearningCategory = 'travel_safety' | 'stranger_companion' | 'platform_rules' | 'privacy';
@@ -982,7 +1124,10 @@ export type TravelLoan = {
   principal_cents: number;
   service_fee_cents: number;
   disbursed_cents: number;
+  interest_cents: number;
   repay_cents: number;
+  penalty_cents: number;
+  total_repay_cents: number;
   term_days: LoanTermDays;
   status: LoanStatus;
   funded_at: string;

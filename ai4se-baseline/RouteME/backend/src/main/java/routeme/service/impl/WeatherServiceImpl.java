@@ -1,10 +1,14 @@
 package routeme.service.impl;
 
 import java.time.Clock;
+import java.time.Duration;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.util.List;
 
+import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.ResourceAccessException;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.client.RestClientException;
 
@@ -14,6 +18,7 @@ import lombok.extern.slf4j.Slf4j;
 import tools.jackson.databind.ObjectMapper;
 
 import routeme.area.AreaNames;
+import routeme.config.WeatherProperties;
 import routeme.constant.TripTimeZoneConstant;
 import routeme.exception.InvalidInputException;
 import routeme.exception.WeatherUpstreamException;
@@ -22,6 +27,7 @@ import routeme.pojo.WeatherDaily;
 import routeme.pojo.WeatherForecast;
 import routeme.pojo.WeatherLocation;
 import routeme.service.WeatherService;
+import routeme.utils.TtlCache;
 import routeme.utils.WeatherTextUtils;
 
 /**
@@ -29,6 +35,14 @@ import routeme.utils.WeatherTextUtils;
  *
  * <p>所有数值原样来自 Open-Meteo；只用 {@code start_date}/{@code end_date} 取请求日，
  * 找不到该日数据视为上游失败，绝不回落到其它日期。</p>
+ *
+ * <p>主用预报主机在部分网络会被阻断（TCP 可连但 TLS/HTTP 超时）。此时自动切换到同属
+ * Open-Meteo 的集合预报主机（{@code /v1/ensemble}，ICON 控制成员），数值仍来自 Open-Meteo
+ * 真实预报；集合接口不提供降雨概率，该字段按上游缺省处理（null），页面不展示。</p>
+ *
+ * <p>成功结果按「日期 + 经纬度（约 1 km）+ 上游来源」在进程内缓存，默认 30 分钟，
+ * 显著减少 Open-Meteo 调用次数。主用与备用来源分开存键，避免集合接口缺失的降雨概率
+ * 污染主用结果；只缓存成功响应，失败仍让用户重试时真正访问上游。</p>
  */
 @Slf4j
 @Service
@@ -36,6 +50,12 @@ public class WeatherServiceImpl implements WeatherService {
 
     /** Open-Meteo 预报窗口约 16 天，业务窗口收敛为今天起 15 天。 */
     static final int FORECAST_WINDOW_DAYS = 15;
+
+    /** 主用预报主机连接失败后，冷却期内直接走备用主机，避免每次请求都等超时。 */
+    static final Duration PRIMARY_COOLDOWN = Duration.ofMinutes(5);
+
+    /** 备用接口只支持具名集合模型；取全局 ICON 集合（覆盖中国）。 */
+    static final String ENSEMBLE_MODEL = "icon_seamless";
 
     private static final String DAILY_VARIABLES = String.join(",",
             "temperature_2m_max",
@@ -46,21 +66,48 @@ public class WeatherServiceImpl implements WeatherService {
             "wind_speed_10m_max",
             "uv_index_max");
 
+    /** 集合预报不支持 {@code precipitation_probability_max}，其余字段与主用接口同名。 */
+    private static final String ENSEMBLE_DAILY_VARIABLES = String.join(",",
+            "temperature_2m_max",
+            "temperature_2m_min",
+            "precipitation_sum",
+            "weather_code",
+            "wind_speed_10m_max",
+            "uv_index_max");
+
     private static final ObjectMapper MAPPER = new ObjectMapper();
 
     private final RestClient weatherRestClient;
+    private final RestClient weatherEnsembleRestClient;
     private final DestinationLocator destinationLocator;
     private final Clock clock;
+    private final TtlCache<String, WeatherDaily> forecastCache;
+    /** 主用预报主机在此时刻之前视为不可用；连接层失败才会写入。 */
+    private volatile Instant primaryRetryAfter = Instant.EPOCH;
 
     public WeatherServiceImpl(
-            RestClient weatherRestClient, DestinationLocator destinationLocator, Clock clock) {
+            RestClient weatherRestClient,
+            @Qualifier("weatherEnsembleRestClient") RestClient weatherEnsembleRestClient,
+            DestinationLocator destinationLocator,
+            Clock clock,
+            WeatherProperties properties) {
         this.weatherRestClient = weatherRestClient;
+        this.weatherEnsembleRestClient = weatherEnsembleRestClient;
         this.destinationLocator = destinationLocator;
         this.clock = clock;
+        this.forecastCache = new TtlCache<>(
+                Duration.ofMinutes(properties.cacheTtlMinutes()),
+                properties.cacheMaxEntries(),
+                clock);
     }
 
     @Override
     public WeatherForecast forecast(WeatherQuery query) {
+        return forecast(query, false);
+    }
+
+    @Override
+    public WeatherForecast forecast(WeatherQuery query, boolean refresh) {
         LocalDate date = query.date();
         String destinationCode = query.destinationCode() == null ? "" : query.destinationCode().trim();
         boolean hasPoint = query.lng() != null && query.lat() != null;
@@ -89,9 +136,16 @@ public class WeatherServiceImpl implements WeatherService {
                         query.lat(),
                         destinationCode.isEmpty() ? "" : AreaNames.cityDisplayNameOf(destinationCode))
                 : destinationLocator.locate(destinationCode);
-        WeatherDaily weather = fetchDaily(location, date);
+        WeatherDaily weather = fetchDailyWithFallback(location, date, refresh);
         return WeatherForecast.available(
                 date, destinationCode.isEmpty() ? null : destinationCode, location, weather);
+    }
+
+    @Override
+    public int clearCache() {
+        int cleared = forecastCache.clear();
+        log.info("weather forecast cache cleared: {} entries", cleared);
+        return cleared;
     }
 
     private static void requireValidPoint(double lng, double lat) {
@@ -103,27 +157,150 @@ public class WeatherServiceImpl implements WeatherService {
         }
     }
 
-    private WeatherDaily fetchDaily(WeatherLocation location, LocalDate date) {
+    /**
+     * 取单日天气：主用预报接口失败时切换到同一数据源的集合预报接口。
+     *
+     * <p>只有连接层失败（DNS / 连接或读取超时）才冷却主用主机；HTTP 4xx/5xx 属于上游
+     * 自身错误，冷却无意义，下一次请求仍先走主用接口。</p>
+     */
+    private WeatherDaily fetchDailyWithFallback(WeatherLocation location, LocalDate date, boolean refresh) {
+        WeatherUpstreamException primaryFailure = null;
+        if (primaryAvailable()) {
+            try {
+                return fetchDaily(location, date, refresh);
+            } catch (WeatherUpstreamException failure) {
+                primaryFailure = failure;
+                if (isConnectionFailure(failure)) {
+                    primaryRetryAfter = clock.instant().plus(PRIMARY_COOLDOWN);
+                    log.warn("Open-Meteo forecast host unreachable; using ensemble endpoint until {}",
+                            primaryRetryAfter);
+                }
+            }
+        } else {
+            log.debug("Open-Meteo forecast host cooling down until {}; using ensemble endpoint",
+                    primaryRetryAfter);
+        }
+        try {
+            return fetchEnsembleDaily(location, date, refresh);
+        } catch (WeatherUpstreamException fallbackFailure) {
+            if (primaryFailure == null) {
+                throw fallbackFailure;
+            }
+            primaryFailure.addSuppressed(fallbackFailure);
+            throw primaryFailure;
+        }
+    }
+
+    private boolean primaryAvailable() {
+        return !clock.instant().isBefore(primaryRetryAfter);
+    }
+
+    /** Spring 把 I/O 超时与 DNS 失败包成 {@link ResourceAccessException}；HTTP 错误不是。 */
+    private static boolean isConnectionFailure(Throwable failure) {
+        Throwable current = failure;
+        while (current != null) {
+            if (current instanceof ResourceAccessException) {
+                return true;
+            }
+            current = current.getCause();
+        }
+        return false;
+    }
+
+    private WeatherDaily fetchDaily(WeatherLocation location, LocalDate date, boolean refresh) {
+        String cacheKey = cacheKey("forecast", location, date);
+        WeatherDaily cached = readCache(cacheKey, refresh);
+        if (cached != null) {
+            return cached;
+        }
+        String body = requestForecast(
+                weatherRestClient, "/v1/forecast", DAILY_VARIABLES, null, location, date);
+        WeatherDaily weather = parseDaily(body, date);
+        forecastCache.put(cacheKey, weather);
+        return weather;
+    }
+
+    private WeatherDaily fetchEnsembleDaily(WeatherLocation location, LocalDate date, boolean refresh) {
+        String cacheKey = cacheKey("ensemble", location, date);
+        WeatherDaily cached = readCache(cacheKey, refresh);
+        if (cached != null) {
+            return cached;
+        }
+        String body = requestForecast(
+                weatherEnsembleRestClient,
+                "/v1/ensemble",
+                ENSEMBLE_DAILY_VARIABLES,
+                ENSEMBLE_MODEL,
+                location,
+                date);
+        WeatherDaily weather = parseDaily(body, date);
+        forecastCache.put(cacheKey, weather);
+        return weather;
+    }
+
+    private WeatherDaily readCache(String cacheKey, boolean refresh) {
+        if (refresh) {
+            return null;
+        }
+        WeatherDaily cached = forecastCache.get(cacheKey);
+        if (cached != null) {
+            log.debug("weather forecast cache hit: {}", cacheKey);
+        }
+        return cached;
+    }
+
+    /**
+     * 缓存键：上游来源 + 日期 + 经纬度（两位小数，约 1 km）。
+     *
+     * <p>来源必须分开：集合接口没有降雨概率，若与主用结果共用一个键，主用恢复后仍可能
+     * 拿到缺少降雨概率的旧值。</p>
+     */
+    private static String cacheKey(String source, WeatherLocation location, LocalDate date) {
+        return source + '|' + date + '|' + roundedCoordinate(location.lng()) + ','
+                + roundedCoordinate(location.lat());
+    }
+
+    private static long roundedCoordinate(Double value) {
+        return value == null ? 0L : Math.round(value * 100);
+    }
+
+    private String requestForecast(
+            RestClient client,
+            String path,
+            String dailyVariables,
+            String models,
+            WeatherLocation location,
+            LocalDate date) {
         String body;
         try {
-            body = weatherRestClient.get()
-                    .uri(builder -> builder.path("/v1/forecast")
-                            .queryParam("latitude", location.lat())
-                            .queryParam("longitude", location.lng())
-                            .queryParam("daily", DAILY_VARIABLES)
-                            .queryParam("timezone", TripTimeZoneConstant.ZONE.getId())
-                            .queryParam("start_date", date.toString())
-                            .queryParam("end_date", date.toString())
-                            .build())
+            body = client.get()
+                    .uri(builder -> {
+                        builder.path(path)
+                                .queryParam("latitude", location.lat())
+                                .queryParam("longitude", location.lng())
+                                .queryParam("daily", dailyVariables)
+                                .queryParam("timezone", TripTimeZoneConstant.ZONE.getId())
+                                .queryParam("start_date", date.toString())
+                                .queryParam("end_date", date.toString());
+                        if (models != null) {
+                            builder.queryParam("models", models);
+                        }
+                        return builder.build();
+                    })
                     .retrieve()
                     .body(String.class);
         } catch (RestClientException exception) {
-            log.warn("Open-Meteo forecast request failed for {} at {},{}", date, location.lng(), location.lat(), exception);
-            throw new WeatherUpstreamException("weather forecast unavailable");
+            log.warn("Open-Meteo forecast request failed for {} at {},{} via {}",
+                    date, location.lng(), location.lat(), path, exception);
+            throw new WeatherUpstreamException("weather forecast unavailable", exception);
         }
         if (body == null || body.isBlank()) {
             throw new WeatherUpstreamException("weather forecast returned an empty body");
         }
+        return body;
+    }
+
+    private WeatherDaily parseDaily(String body, LocalDate date) {
         OpenMeteoResponse response;
         try {
             response = MAPPER.readValue(body, OpenMeteoResponse.class);

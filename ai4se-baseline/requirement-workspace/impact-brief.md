@@ -1517,11 +1517,76 @@ REQ-010：聊天页按原型重构、聊天准入与退出语义调整、集合�
 - **质量自检（split-heuristics）：** 子目标一句话可说明 ✓；端到端可观察（选目的地 → 看到真实天气与具体提醒）✓；可独立运行 ✓；capability 名真实 ✓；无依赖环 ✓。
 - **质量自检（split-heuristics）：** 子目标一句话可说明 ✓；端到端可观察（发布者取消 → 首页下架 / 申请关闭 / 聊天只读 / 我的旅行保留）✓；可独立运行 ✓；capability 名真实 ✓；无依赖环 ✓。
 
+## 28. REQ-032 变更影响 — 实时通知中心与未读计数（迭代 3 / P0）
+
+### 28.1 as-is 盘点
+
+| 位置 | 现状 |
+|---|---|
+| 后端通知 | 无通知表、无通知服务、无推送通道；`routeme/mq/` 只有 `.gitkeep`；无 `@EnableScheduling` |
+| 后端事件源 | 行程（满员 / ONGOING / 取消 / 完成）、申请（到达 / 接受 / 拒绝 / 关闭）、聊天、信用变动、举报（提交 / 处理中 / 完成）、账号状态、客服会话、身份资料完成 |
+| 前端壳层 | `AppShell` 顶栏只有品牌与账号入口（主题切换已由 `main` 移除）；侧栏分组、账号菜单、≤900 px 底部 tab；无铃铛 / 徽标 / 面板 / 通知中心 |
+| 前端聊天 | `ChatPage` 打开会话后每 3 秒轮询**当前会话**；`ChatList` 只显示最后一条消息与消息总数，无未读 |
+| 前端申请 | 发布者需打开 `#/trips/{id}/applications` 才能看到新申请；申请者需重开 `#/mine` 才能看到裁决 |
+| 契约 / 迁移 | `openapi.yaml` 0.24.0（合并 main 后）；迁移最新 `V29__credit_exit_application.sql` |
+| 身份 | 用户端点用 `X-User-Id`；`EventSource` 不能带自定义头 |
+
+### 28.2 delta
+
+| 层 | 变更 |
+|---|---|
+| 能力 | 新增 `notifications`（ADDED：8 Requirement / 36 Scenario） |
+| 后端 | `NotificationService`（写 / 列表 / 计数 / 已读范围 / 去重）+ `NotificationStreamService`（按用户的 `SseEmitter` 注册表 + 心跳）+ `NotificationController`；八类生产方各追加一次通知调用；`NotificationLifecycleService` 惰性物化 ONGOING 与安全提醒 |
+| 前端 | `notifications/` 纯模型 + 提供者 + `EventSource` 生命周期 + 铃铛 / 面板 + 通知中心页；`AppShell` 通知入口与聊天徽标；`ChatPage` 打开即清未读 + 推送追加；`ChatList` 会话级未读；信用记录页与举报详情页承接跳转 |
+| 契约 | 0.29.0：新增列表 / 流 / 单条已读 / 范围已读 4 条路径与 8 类枚举、目标、优先级、`by_type`、`/reports/mine` |
+| 数据 | 新增 `notifications` 表（`V33__add_notifications.sql`），索引 `(recipient_id, created_at)` 与 `(recipient_id, read_at)`，`(recipient_id, dedupe_key)` 唯一 |
+| 文案 | 22 个事件的标题与正文由 `NotificationTextUtils` 统一生成；面板 / 通知中心空态、筛选、全部已读、不可用提示、类型标签 |
+
+### 28.3 blast radius
+
+| 受影响 | 影响方式 |
+|---|---|
+| `ApplicationServiceImpl` | 申请 / 裁决 / 取消 / 完成路径追加通知；状态机、异常与事务边界不变 |
+| `ChatServiceImpl` | 仅对非自消息追加通知；准入与只读规则不变 |
+| `TripController` | 读取详情时惰性物化 `trip_ongoing` + `safety_reminder`；详情响应不变 |
+| `AccountStatusService` | 暂停 / 封禁 / 恢复后追加通知；用 `ObjectProvider` 避免循环依赖 |
+| `ReportServiceImpl` / `AdminReportServiceImpl` | 提交、处理中、处理完成三段通知；只读安全字段 |
+| `CustomerServiceImpl` / `UserProfileServiceImpl` / `CreditChangedEvent` 监听 | 客服三段、身份认证、信用变动与恢复 |
+| `AppShell` | 顶栏铃铛、侧栏「通知中心」、账号菜单与聊天入口数字徽标；底部 tab 同口径 |
+| `ChatPage` / `ChatList` | 新增打开即读与推送追加；3 秒轮询保留为兜底 |
+| `openapi.yaml` / `OpenApiTest` | 新增路径与 schema；版本递增到 0.29.0 |
+| 迁移 | 新表；H2 与 SQLite 双引擎需同时通过 |
+| E2E | `notifications.spec.ts` 13 条（M1–M10 + N1–N3）与 `notifications-walkthrough.spec.ts` 4 条（V1–V4） |
+
+### 28.4 风险
+
+| 类型 | 说明 | 缓解 |
+|---|---|---|
+| Risk | 开发代理 / 生产反代缓冲 SSE，延迟或收不到 | 响应头禁缓冲（`X-Accel-Buffering: no`、`Cache-Control: no-cache`）+ ~20 s 心跳；P4 经 dev proxy 实测 |
+| Risk | 后端重启丢失内存中的 emitter | 单进程 demo 可接受；客户端每次 `open` 重新走 REST 对账（D3） |
+| Risk | 通知失败连带业务回滚 | D6：通知只是附属动作；`notify*` 内部捕获 + `log.warn` |
+| Risk | 自消息产生无意义通知 | `requireAccess` 允许自消息，需显式守卫（S33-36） |
+| Risk | 八类计数漂移 | 同一前端 store + 同一响应 / 事件载荷派生；纯函数单测覆盖 reducer |
+| Risk | 重复事件刷屏 | `(recipient_id, dedupe_key)` 唯一 + 先查后插 + `DuplicateKeyException` 兜底 |
+| Risk | 已读后旧快照复活计数 | `lastReadSeq` 护栏：标读后到达的在途快照只合并条目、不采用计数 |
+| Risk | 关联对象失效导致死链 | 后端 `related_available` + 前端提示「相关内容当前不可查看」，不跳转 |
+| Risk | 管理员备注 / 他人隐私进入通知 | 文案只使用结构化事实；封禁只展示原因码标签与恢复时间 |
+| Risk | 查询参数身份可伪造 | 与既有 `X-User-Id` 同等暴露；记录为真实认证 change 的输入 |
+| Risk | 契约 / 迁移号段与并行 change 冲突 | 取 0.29.0 / `V33__add_notifications.sql`，P3 排他确认并在 `design.md` 复述 |
+| Blocker | 无 | blocking OQ=0、DoR BLOCKER=0 |
+
+### 28.5 Suggested split boundaries
+
+- **不拆 change：** 八类记录 + 推送 + 计数 + 通知中心必须同批交付，否则「有推送没计数」或「有计数没入口」都不可验收。
+- **不拆故事到 change：** S33-1 ~ S33-8 共享一张表、一份计数口径与一个通知中心；按故事分层提交即可。
+- **后续候选（另开需求）：** 通知偏好、保留策略与清理、搜索、邮件 / 短信 / OS 推送、未读摘要、真实认证下的推送鉴权、通知分页加载更早历史。
+- **质量自检（split-heuristics）：** 子目标一句话可说明 ✓；端到端可观察（B 申请 → A 的铃铛 2 秒内 +1，点击进申请处理页）✓；可独立运行 ✓；capability 名真实 ✓；无依赖环（账号服务用 `ObjectProvider`）✓。
+
 ## 23. REQ-023 变更影响 — 旅行体验获赞增加信用分（issue #30）
 
 - **日期：** 2026-11-17 ｜ **触发：** `/sdd:p1`（GitHub issue #30 + 用户裁决 D1–D4）
 - **粒度：** 应用架构（点赞数据所有权 / 体验读取路径 / 信用结算集成点 / 两个展示面），非代码设计
-- **基线：** `origin/main@64b38da`（独立 worktree `.worktrees/add-experience-like-credit`，分支 `feature/add-experience-like-credit`）；2026-11-17 同步 `origin/main@b50e416`，编号顺延为 REQ-023 / 契约 0.18.0 / 迁移 V24
+- **基线：** `origin/main@64b38da`（独立 worktree `.worktrees/add-experience-like-credit`，分支 `feature/add-experience-like-credit`）；2026-11-17 同步 `origin/main@b50e416`，编号顺延为 REQ-023 / 契约 0.18.0 / 迁移 V30
 
 ### 23.1 Requirement set
 
@@ -1722,7 +1787,7 @@ REQ-010：聊天页按原型重构、聊天准入与退出语义调整、集合�
 
 ## 28. REQ-028 变更影响 — 旅行保障与小额借款（旅行金融迭代 1）
 
-> 合并说明（2026-11-18）：本 change 已 rebase 到 `origin/main@822471c`；编号由 REQ-024 / S25 顺延为 **REQ-028 / S29**，契约 **0.25.0** + 迁移 **`V30`**；下文「As-is」保留 P1 时点基线 `origin/main@b50e416` 的观察，不作为当前基线。
+> 合并说明（2026-11-18）：本 change 已 rebase 到 `origin/main@ea5493a`；编号由 REQ-024 / S25 顺延为 **REQ-028 / S29**；P1 时点拟定为契约 **0.25.0** + 迁移 **`V30`**，实现阶段增补借款利息 / 逾期罚息后落定为 **0.28.0 + `V32`**；下文「As-is」保留 P1 时点基线 `origin/main@b50e416` 的观察，不作为当前基线。
 
 - **日期：** 2026-11-17 ｜ **触发：** 发起人原始诉求（保险 + 小额借款 + 5% 服务费）+ `/sdd:p0` 裁决 D1–D10
 - **粒度：** 应用架构（钱包数据所有权 / 注册集成点 / 行程资格 / 页面与入口 / 收费口径），非代码设计
@@ -1733,7 +1798,7 @@ REQ-010：聊天页按原型重构、聊天准入与退出语义调整、集合�
 - `requirement-workspace/requirements/REQ-028-travel-finance.md`（Ready 条目，33 场景 S29-1 ~ S29-33，blocking OQ 0，DoR BLOCKER 0）
 - `requirement-workspace/intents/REQ-028-travel-finance.md`（意图捕获 + 证据锚点 + D1–D10）
 - 新增能力：`travel-finance`（ADDED）；只读依赖 `trip-plans` / `trip-companions`；`user-auth` 注册集成点；`user-credit` 仅作账本范式参照
-- 用户裁决：D1 演示钱包 / D2 保险 + 借款各收 5% / D3 借款 100–2,000 元整、7·14·30 天、0 利息、每人 1 笔进行中 / D4 三款固定保险 / D5 发布者 + ACCEPTED 同行者 + 三种行程状态 / D6 行程详情 + 账号菜单 / D7 `add-travel-finance` + `travel-finance` / D8 整数分 / D9 不对接真实机构 / D10 理赔退保罚息提现管理后台通知排除
+- 用户裁决：D1 演示钱包 / D2 借款收 5%、保险由第三方定价 / D3 借款 100–2,000 元整、7·14·30 天、利息 0.05%/日、逾期罚息 0.1%/日、每人 1 笔进行中 / D4 第三方保险入口 + 状态回写 / D5 发布者 + ACCEPTED 同行者 + 三种行程状态 / D6 行程详情 + 账号菜单 / D7 `add-travel-finance` + `travel-finance` / D8 整数分 / D9 不对接真实机构 / D10 理赔退保分期复利提现管理后台通知排除
 
 ### 28.2 As-is asset inventory（evidence paths）
 
@@ -1757,46 +1822,46 @@ REQ-010：聊天页按原型重构、聊天准入与退出语义调整、集合�
 
 | 资产 | As-is | Proposed delta |
 |---|---|---|
-| 数据表 | 无金融表 | **新增** `user_wallet`（每用户 1 条余额）+ `wallet_ledger`（append-only）+ `insurance_policy`（唯一约束用户 × 行程 × 风险）+ `travel_loan`（部分唯一索引用户 × `ACTIVE`）；**不改** `app_users` / 信用表 |
+| 数据表 | 无金融表 | **新增** `user_wallet`（每用户 1 条余额）+ `wallet_ledger`（append-only）+ `insurance_policy`（唯一约束用户 × 行程）+ `travel_loan`（唯一索引用户 × `ACTIVE`）；**不改** `app_users` / 信用表 |
 | 历史数据 | 无钱包 | 迁移按 `app_users` 全表回填 1,000,000 分 |
 | 注册链路 | 建账号 + 信用账户 | 同事务内追加钱包初始化；失败分支不落钱包 |
-| 保险 | 无 | 3 款固定商品常量；购买扣「保费 + 5%」；保单保障期 `max(购买日, start_date) ~ end_date` |
-| 借款 | 无 | 100–2,000 元整、7/14/30 天；服务费 5% 从本金扣；净额入账；应还 = 本金；到期 = 发放 + 期限；逾期派生无罚息 |
-| 钱包 | 无 | 余额只经保险 / 借款 / 还款变化；每笔写账本并可回算；无客户端直接改余额端点 |
-| 资格 | 无 | 发布者 + `ACCEPTED` 同行者；`recruiting` / `full` / `ongoing`；购买 / 借款要求 `ACTIVE`，还款不限状态 |
-| 契约 | 0.17.0 | 次版本 + 钱包 / 保险 / 借款端点与 schema；版本在 P3 排他确认 |
+| 保险 | 无 | 第三方入口 + 状态回写；提供方与入口来自配置；保障期 = 行程起止日；RouteME 不定价、不承保 |
+| 借款 | 无 | 100–2,000 元整、7/14/30 天；服务费 5% 从本金扣；净额入账；应还 = 本金 + 利息（0.05%/日 × 期限）；到期 = 发放 + 期限；逾期按 0.1%/日累计罚息并在还款时结清 |
+| 钱包 | 无 | 余额只经借款发放与还款变化；每笔写账本并可回算；无客户端直接改余额端点；投保不产生流水 |
+| 资格 | 无 | 发布者 + `ACCEPTED` 同行者；`recruiting` / `full` / `ongoing`；投保 / 借款要求 `ACTIVE`，还款不限状态 |
+| 契约 | 0.17.0 | 实施时升 **0.28.0** + 钱包 / 保险 / 借款端点与 schema（含利息 / 罚息 / 合计应还） |
 | 前端路由 | 无金融路由 | `#/trips/{tripId}/finance` + `#/finance`；`App.tsx` 渲染 |
 | 前端口 | 详情页无金融入口、账号菜单 2 项 | 详情页新增入口区块；账号菜单新增「旅行保障」 |
-| 原型 | 无 | P3 补钱包卡 / 商品卡 / 借款表单 / 保单与借款列表截点（rebase 后撤回：v1 已归档，界面证据以生产 UI 为准） |
+| 原型 | 无 | P3 补钱包卡 / 第三方保险面板 / 借款表单 / 保险与借款列表截点（rebase 后撤回：v1 已归档，界面证据以生产 UI 为准） |
 | 管理端 | 无金融视图 | **无 delta**（D10 排除） |
 
 ### 28.4 Blast radius（应用架构）
 
-- **后端（1 个新能力 + 2 处集成）：** 新增钱包 / 账本 / 保单 / 借款实体与 mapper、钱包服务、保险服务、借款服务；注册链路插入钱包初始化；行程读取路径拼接资格判断。
-- **数据（4 表 + 1 迁移）：** 建表 + 钱包回填；双引擎可执行。
+- **后端（1 个新能力 + 2 处集成）：** 新增钱包 / 账本 / 保险记录 / 借款实体与 mapper、钱包服务、保险服务、借款服务（含利息与罚息计算）；注册链路插入钱包初始化；行程读取路径拼接资格判断。
+- **数据（4 表 + 2 迁移）：** `V30` 建表 + 钱包回填，`V32` 重建 `travel_loan` 增补利息 / 罚息；双引擎可执行。
 - **契约（1 处扩展）：** 新增金融端点与 schema；`OpenApiTest` 版本断言同步。
 - **前端（2 页 + 2 入口 + 类型 / 文案）：** 行程维度保障页、账号聚合页；详情页入口与账号菜单；`api.ts` / `types.ts` / `i18n`。
 - **管理端（0）：** 不新增角色、端点与页面。
 - **不影响：** 首页、地图、行程创建 / 申请 / 聊天 / 体验 / 举报 / 信用分 / 管理后台的既有行为。
-- **运行时风险面：** 注册事务多一次写入；购买 / 借款 / 还款为高频一致性与并发敏感路径。
+- **运行时风险面：** 注册事务多一次写入；借款 / 还款为高频一致性与并发敏感路径。
 
 ### 28.5 Artifact impact（specs / tests / docs）
 
 | 工件 | 影响 |
 |---|---|
-| OpenSpec Delta | `travel-finance` **ADDED**（钱包与账本 / 保险商品与购买 / 保单查询 / 借款与还款 / 5% 服务费 / 资格与入口 / 精度与幂等）；无 MODIFIED、无 REMOVED |
+| OpenSpec Delta | `travel-finance` **ADDED**（钱包与账本 / 第三方保险入口与状态回写 / 借款与还款 / 5% 服务费 / 利息与逾期罚息 / 资格与入口 / 精度与幂等）；无 MODIFIED、无 REMOVED |
 | 长期规格 | 归档后新增 Living Spec `openspec/specs/travel-finance/spec.md` |
 | 契约 | `openapi.yaml` 次版本 + 钱包 / 保险 / 借款 schema；后端契约测试同步 |
-| 后端测试 | 钱包服务单测（初始化 / 扣款 / 入账 / 前后快照 / 并发 / 幂等）；保险服务（价格 / 保障期 / 重复 / 余额不足 / 资格）；借款服务（边界 / 净额 / 到期 / 单笔 / 还款 / 逾期）；注册集成；响应断言 |
-| 前端测试 | 费用与展示纯函数单测（5% 拆分、净额、应还、到期、状态文案、格式化） |
-| E2E | 购买保险 → 余额减少 → 保单可见；借款 → 净额到账 → 还款 → 已还清；余额不足 / 非同行者 / 已结束行程 / 逾期展示 |
+| 后端测试 | 钱包服务单测（初始化 / 扣款 / 入账 / 前后快照 / 并发 / 幂等）；保险服务（入口 / 保障期 / 重复 / 资格）；借款服务（边界 / 净额 / 利息 / 到期 / 单笔 / 还款 / 罚息）；注册集成；响应断言 |
+| 前端测试 | 费用与展示纯函数单测（5% 拆分、净额、利息、罚息、应还、到期、状态文案、格式化） |
+| E2E | 第三方投保跳转 → 演示回写 → 状态持久化；借款 → 净额到账 → 利息 / 应还展示 → 还款 → 已还清；余额不足 / 非同行者 / 已结束行程 |
 | 知识库 | `docs/knowledge/interfaces/README.md` 需登记新增金融端点 |
 | 阶段记录 | `docs/sdd/add-travel-finance/p1..p4`；`docs/sdd/README.md` 索引 |
 | 评审 | `docs/reviews/20261117-add-travel-finance-proposal-review.md` 等 |
 
 ### 28.6 Dual-track notes（OpenSpec vs agile）
 
-- **OpenSpec 轨：** 单 change `add-travel-finance`，单能力 `travel-finance`（ADDED）；保险与借款写在同一 Delta，避免钱包与费率双份定义。
+- **OpenSpec 轨：** 单 change `add-travel-finance`，单能力 `travel-finance`（ADDED）；保险入口与借款写在同一 Delta，避免钱包与资格双份定义。
 - **Agile 轨：** 故事 S29「旅行保障与小额借款」（旅行金融 1 / P0 / 5 点）即业务口径；不另拆多条故事。
 - **并列轨道：** 理赔、征信、真实机构对接、钱包充值提现、管理后台金融视图分属不同故事；本需求不预留空壳端点。
 
@@ -1804,25 +1869,125 @@ REQ-010：聊天页按原型重构、聊天准入与退出语义调整、集合�
 
 | 级别 | 项 | 说明 / 缓解 |
 |---|---|---|
-| Risk | 契约版本号撞号 | 在途 `add-realtime-notifications` 声明 0.18.0；本 change 在 P3 按合并顺序确认 |
-| Risk | 迁移号撞号 | 基线 V23、在途 V24；P3 排他确认，不预设 |
-| Risk | 「5%」在借款端被误解为加到还款额 | 需求与 Delta 同时写死「从发放额扣」；`repay_amount_cents = principal_cents` |
-| Risk | 余额并发双花 / 重复扣款 | 条件更新或事务内重读 + 保单唯一 + 借款部分唯一 + 还款状态迁移；单测覆盖 |
+| Risk | 契约版本号撞号 | 已按后到者顺延规则落定 0.28.0 + `V32`（判断时 main 为 0.27.0 + `V31`；其后通知变更到 0.29.0 + `V33`） |
+| Risk | 迁移号撞号 | 已落定 `V30`（建表）+ `V32`（利息 / 罚息），避开 `V31` |
+| Risk | 「5%」在借款端被误解为加到还款额 | 需求与 Delta 同时写死「从发放额扣」；`repay_cents = principal_cents + interest_cents` |
+| Risk | 余额并发双花 / 重复扣款 | 条件更新或事务内重读 + 保险唯一 + 借款唯一 + 还款状态迁移；单测覆盖 |
 | Risk | 封禁用户无法还款导致债务永续 | 还款不走 `assertCanWrite(BUSINESS)`；`S29-30` 显式验收 |
 | Risk | 汇率 / 浮点误差 | 全整数分；借款整元；后端禁止 `double` |
 | Risk | 非同行者通过直连端点绕过 UI | 服务端资格校验为唯一权威，UI 只做展示 |
 | Risk | 原型无金融骨架 | `@rule:prototype-ui-alignment`；P3 先补截点再实现 |
-| Risk | 与 `add-realtime-notifications` 同改 `openapi.yaml` | P3 / P4 合并时按顺序重排版本与迁移号，PR 描述记录 |
+| Risk | 与 `add-realtime-notifications` 同改 `openapi.yaml` | 合并时按后到者顺延版本与迁移号；PR 描述记录合并顺序 |
 | Blocker | 无 | blocking OQ = 0；DoR BLOCKER = 0；A0 ⑨–⑫ 全过 |
 
 ### 28.8 Suggested split boundaries（供 proposal-split / story-split）
 
 - **一个 change：** `add-travel-finance` ← REQ-028（旅行金融迭代 1 / S29）。
-- **不拆保险与借款：** 两者共用钱包、5% 费率、账本与页面；拆开会产生两套余额与收费逻辑。
+- **不拆保险与借款：** 两者共用钱包、资格、账本与页面；拆开会产生两套余额与资格逻辑。
 - **不并入理赔 / 征信 / 管理后台：** 这些是后续故事，本 change 不预留端点。
 - **阶段：** 单阶段；无归档前置依赖（`travel-finance` 全新能力），但需与在途 `add-realtime-notifications` 协调契约版本与迁移号。
-- **质量自检（split-heuristics）：** 子目标一句话可说明 ✓；端到端可观察（充值初始余额 → 买保险 / 借款 → 扣 5% → 还款）✓；可独立运行 ✓；capability 名真实（`travel-finance`）✓；无依赖环 ✓；33 场景接近单 change 上限，P2 可再合并同义场景。
+- **质量自检（split-heuristics）：** 子目标一句话可说明 ✓；端到端可观察（钱包初始余额 → 第三方投保 / 借款 → 扣 5% 与计息 → 还款）✓；可独立运行 ✓；capability 名真实（`travel-finance`）✓；无依赖环 ✓；33 场景接近单 change 上限，P2 可再合并同义场景。
 
+## 31. REQ-031 变更影响 — 路线完成度（S32 / issue #45）
+
+- **日期：** 2026-11-18 ｜ **触发：** GitHub issue #45「路线完成度」+ 用户裁决 D1–D8
+- **粒度：** 应用架构（资料响应契约 / 完成度派生归属 / 个人主页展示面 / 独立性边界），非代码设计
+- **基线：** `origin/main@aa320dc`（分支 `feature/add-route-completion`，独立 worktree）
+
+### 30.1 Requirement set
+
+- `requirement-workspace/requirements/REQ-031-route-completion.md`（Ready 条目，19 场景 S32-1 ~ S32-19，blocking OQ 0，DoR BLOCKER 0）
+- `requirement-workspace/intents/REQ-031-route-completion.md`（意图捕获 + 证据锚点 + D1–D8）
+- 新增能力：`route-completion`（ADDED）；只读依赖 `user-profile` / `user-profiles`（资料响应承载）；未来只读 `trip-plans` / `trip-companions`
+- 用户裁决：D1 仅预留 + 数据不足 / D2 阈值 ≥1 条已结束行程 / D3 本期不做列表 / D4 REQ-031·S32·`add-route-completion`·`route-completion` / D5 标签 + 百分比 / D6 发布者 + `ACCEPTED` 同行者 / D7 仅接口字段无迁移 / D8 本人他人同口径 + 状态码
+
+### 30.2 As-is asset inventory（evidence paths）
+
+| 资产 | 路径 | 现状 |
+|---|---|---|
+| 资料响应 | `backend/src/main/java/routeme/response/UserProfileResponse.java` | 已含资料、信用分、`joinedAt`、`stats`、账号状态；无完成度字段 |
+| 资料端点 | `backend/src/main/java/routeme/controller/UserProfileController.java` | `GET /users/{userId}/profile`；本人含生日，他人省生日 |
+| 个人主页 | `frontend/src/profile/ProfilePage.tsx` | hero 含头像、昵称、徽标、`.profile-credit` 信用行、chips；无完成度行 |
+| 状态映射范式 | `frontend/src/profile/creditDisplay.ts`、`i18n/tripMessages.ts` | 信用等级英文码 → 文案；可复用为完成度状态码 |
+| 前端类型 | `frontend/src/types.ts`、`api.ts` | `UserProfile` 与 `loadUserProfile`；无完成度字段 |
+| 契约 | `RouteME/openapi.yaml` | `info.version: 0.26.0`；`UserProfile` schema；`/users/{userId}/profile` |
+| 行程状态 | `openspec/changes/add-trip-completion/`（REQ-011） | `completed_at` + 四态派生；未来完成度样本来源 |
+| 同行关系 | Living Spec `openspec/specs/trip-companions/spec.md` | `ACCEPTED` 即同行者；未来样本范围 |
+| 信用分 | `openspec/changes/add-credit-account/`、`V20__add_credit_account.sql` | 独立账户 + 账本；本 change 不读不写 |
+| 推荐引擎 | 提交 `c516d76` | 同行者推荐 / 匹配引擎已全部移除；无「推荐列表」可承接 |
+| 完成度实现 | 全仓 grep `完成度 / completion_rate / route_completion` | **0 命中**（除地图注释与历史文档）：无任何完成度代码 |
+| 原型 | `docs/prototype/v1`（归档）、`v2`（六屏设计板） | 均无路线完成度元素；v1 不得结构性改动 |
+| 迁移 | `backend/src/main/resources/db/migration/` | 头为 `V30`；本 change **无迁移** |
+
+### 30.3 As-is → proposed delta（逐资产）
+
+| 资产 | As-is | Proposed delta |
+|---|---|---|
+| 资料响应 | 无完成度 | 增加 `route_completion_rate`（0–100 整数或 null）+ `route_completion_state`（`good` / `neutral` / `watch` / `insufficient`），只读 |
+| 后端派生 | 无 | 新增单点派生：样本 <1 或数值 null → `insufficient`；≥80 → `good`；70–79 → `neutral`；<70 → `watch`；非法值降级 `insufficient` |
+| 数据源 | 无打卡聚合 | 本期无源：恒返回 null + `insufficient`；不得用统计 / 已结束行程数伪造 |
+| 前端类型 | 无字段 | `UserProfile` 增加两字段（可选 / 可空），`loadUserProfile` 不变 |
+| 个人主页 | 信用行下方无内容 | 新增完成度行：四态文案 + 百分比；`insufficient` 只显示「暂无足够完成记录」 |
+| i18n | 无文案 | 新增「路线完成度」「信誉良好」「请留意行程完成情况」「暂无足够完成记录」 |
+| 契约 | 0.26.0 | 次版本（预计 0.30.0）+ `UserProfile` schema 两字段 + 示例；`OpenApiTest` 同步 |
+| 数据表 / 迁移 | 无 | **无 delta**（D7） |
+| 列表 / 弹窗 / 详情 | 无 | **无 delta**（D3） |
+| 信用分 / 统计 / 成长等级 | 既有 | **无 delta**；新增回归断言验独立性 |
+| 管理端 | 无 | **无 delta** |
+| 原型 | v1 归档 / v2 设计板 | **不修改**；P3 以 preview + 生产 UI 截图作为界面证据 |
+
+### 30.4 Blast radius（应用架构）
+
+- **后端（1 处响应扩展 + 1 个派生单点）：** `UserProfileResponse` 追加两个字段；完成度派生纯逻辑（新类 / 常量）；资料服务装配时调用（本期返回常量数据不足）。
+- **契约（1 处扩展）：** `openapi.yaml` `UserProfile` schema + 示例；`OpenApiTest` 版本断言。
+- **前端（1 页 + 类型 / 文案）：** `ProfilePage` hero 增加完成度行；`types.ts` / `tripMessages.ts`；无路由变化。
+- **数据（0）：** 无表、无列、无迁移。
+- **管理端（0）：** 无角色、端点与页面。
+- **不影响：** 登录 / 注册、发布、申请、聊天、体验、信用分、管理后台、首页列表、地图、资料弹窗与统计。
+- **运行时风险面：** 资料读取多一次纯函数调用；无写入、无并发敏感路径。
+
+### 30.5 Artifact impact（specs / tests / docs）
+
+| 工件 | 影响 |
+|---|---|
+| OpenSpec Delta | `route-completion` **ADDED**（字段预留与数据不足 / 阈值派生 / 个人主页展示 / 独立性 / 兼容）；无 MODIFIED、无 REMOVED |
+| 长期规格 | 归档后新增 Living Spec `openspec/specs/route-completion/spec.md` |
+| 契约 | `openapi.yaml` 次版本（预计 0.30.0）+ `UserProfile` schema；后端契约测试同步 |
+| 后端测试 | 派生单测（边界 80/79/70/69/0/null/非法）；资料 API 断言字段存在与类型；独立性回归（信用字段、`stats` 不变） |
+| 前端测试 | 状态 → 文案纯函数单测；个人主页渲染（四态 + 数据不足）；无 DOM 渲染层 |
+| E2E | `route-completion.spec.ts`：数据不足态、四态模拟（接口拦截或夹具）、本人 / 他人同口径、信用行保持不变 |
+| 知识库 | 无需新增接口文档（仅字段扩展）；`docs/knowledge/interfaces/README.md` 按需补一行 |
+| 阶段记录 | `docs/sdd/add-route-completion/p1-intent.md` 等；`docs/sdd/README.md` 索引 |
+| 评审 | `docs/reviews/20261118-add-route-completion-{proposal,spec}-review.md` |
+
+### 30.6 Dual-track notes（OpenSpec vs agile）
+
+- **OpenSpec 轨：** 单 change `add-route-completion`，单能力 `route-completion`（ADDED）；字段、派生与展示写在同一 Delta。
+- **Agile 轨：** 故事 S32「路线完成度」（迭代 3 / P1 / 3 点）；不另拆故事。
+- **并列轨道：** 人工打卡、聚合算法、列表 / 详情 / 弹窗展示、成长等级（issue #44）分属不同故事；本需求不预留空壳端点或字段。
+
+### 30.7 Risks & blockers
+
+| 级别 | 项 | 说明 / 缓解 |
+|---|---|---|
+| Risk | 「预留」被实现成假数据 | D1 写死；Delta 明确禁止；API 断言 null + insufficient |
+| Risk | 前端自行计算阈值 | Delta 规定只做字典映射；单测与代码审阅检查无 80 / 70 常量 |
+| Risk | 与信用分 / 统计误接 | 独立性场景 + 回归断言；不新增账本记录 |
+| Risk | 契约版本撞号 | 基线 0.26.0；P3 按合并顺序确认（预计 0.30.0） |
+| Risk | 展示行与 hero 版式冲突 | 复用 `.profile-credit` 行模式；P3 预览 + 四宽度 × 深浅色走查 |
+| Risk | 资料弹窗等既有面被误改 | Delta 明确 out of scope；E2E 断言弹窗不变 |
+| Risk | 未来聚合口径漂移 | D2 / D6 固化；聚合算法后续卡片 |
+| Risk | 「推荐列表」被误解为本期范围 | D3 写死：推荐引擎已移除，本期不做列表 |
+| Blocker | 无 | blocking OQ = 0；DoR BLOCKER = 0；A0 ⑨–⑫ 全过 |
+
+### 30.8 Suggested split boundaries（供 proposal-split / story-split）
+
+- **一个 change：** `add-route-completion` ← REQ-031（迭代 3 / S32）。
+- **不拆字段 / 派生 / 展示：** 三者是同一字段从后端到个人主页的端到端链路；拆开会产生「有字段无展示」或「有展示无来源」的不完整验收。
+- **不并入人工打卡与聚合：** 后续独立卡片；本 change 不预留表或端点。
+- **不并入列表 / 弹窗 / 详情展示：** D3 本期不做；未来可复用同一状态码另开增量。
+- **阶段：** 单阶段；无归档前置依赖（全新能力）；契约版本需与在途 change 按合并顺序协调。
+- **质量自检（split-heuristics）：** 子目标一句话可说明 ✓；端到端可观察（资料响应字段 → 个人主页行）✓；可独立运行 ✓；capability 名真实（`route-completion`）✓；无依赖环 ✓；19 场景适合单 change。
 ## 29. REQ-030 变更影响 — 举报违规扣减信用分（issue #29）
 
 > 编号说明（2026-11-18）：合并 `origin/main@2bf9148` 时 REQ-028 / S29 / V30 与 REQ-029 / S30 已被 `add-travel-finance` 占用，本节按「后到者顺延」改为 **REQ-030 / S31 / §29 / V31**。
@@ -1915,7 +2080,7 @@ REQ-010：聊天页按原型重构、聊天准入与退出语义调整、集合�
 - **依赖：** `user-credit`（账本 / 账户）、`admin-console`（举报处置）、`credit-enforcement`（低分联动）。
 - **质量自检（split-heuristics）：** 子目标一句话 ✓；端到端可观察（80 → 65；80 → 50 自动限制）✓；可独立运行 ✓；capability 名真实 ✓；无依赖环 ✓；场景 26 条在阈值内。
 
-## 30. REQ-031 变更影响 — 用户成长等级 LV1–LV5（issue #44）
+## 30. REQ-033 变更影响 — 用户成长等级 LV1–LV5（issue #44）
 
 - **日期：** 2026-11-18 ｜ **触发：** GitHub issue #44 + `/sdd:pre-spec-req` 用户裁决 D1–D15
 - **粒度：** 应用架构（成长数据所有权 / 事件挂接点 / 展示面 / 配置 / 契约与迁移），非代码设计
@@ -1923,8 +2088,8 @@ REQ-010：聊天页按原型重构、聊天准入与退出语义调整、集合�
 
 ### 30.1 Requirement set
 
-- `requirement-workspace/requirements/REQ-031-growth-level.md`（Ready 条目，41 场景 L / P / K / D / R / V / C / S，blocking OQ 0，DoR BLOCKER 0）
-- `requirement-workspace/intents/REQ-031-growth-level.md`（意图捕获 + 现状证据 + D1–D15）
+- `requirement-workspace/requirements/REQ-033-growth-level.md`（Ready 条目，41 场景 L / P / K / D / R / V / C / S，blocking OQ 0，DoR BLOCKER 0）
+- `requirement-workspace/intents/REQ-033-growth-level.md`（意图捕获 + 现状证据 + D1–D15）
 - 新增能力：`user-growth`（ADDED）；只读依赖 `trip-experiences` / `admin-console` / `user-profile` / `user-profiles`；`user-credit` 完全分离
 - 用户裁决：D1 与信用分分离 / D2 LV1–LV5 每 100 一级 / D3 LV5 后继续累计 / D4 初始 0 且不回填 / D5 发布经验默认 10 可配置 / D6 点赞单篇分档锁定 / D7 举报成立 −50 每份一次最低 0 / D8 每日 +20 上限按剩余额度截断 / D9 append-only 流水 / D10 后端计算且他人只见等级 / D11 6 处展示面 / D12 明细页排行榜通知权益管理端排除 / D13 独立于 #29 / D14 契约迁移 P3 排他 / D15 等级随经验回退
 
@@ -1954,7 +2119,7 @@ REQ-010：聊天页按原型重构、聊天准入与退出语义调整、集合�
 | 举报 | RESOLVED 已含扣信用分（#29） | 在同一 RESOLVED 分支并列追加被举报用户 −50 EXP；不覆盖既有扣信用分 |
 | 每日上限 | 无 | 从流水当日正向实发求和；+20 上限；跨档按剩余额度截断；档位仍锁定 |
 | 等级 | 无 | 由 `exp_total` 派生 LV1–LV5；不落库；扣经验后回退；LV5 后继续累计 |
-| 契约 | 0.26.0 | 次版本 + 个人主页成长字段 / 批量等级读取；P3 排他确认（预计 0.27.0） |
+| 契约 | 0.26.0 | 次版本 + 个人主页成长字段 / 批量等级读取；P3 排他确认（预计 0.30.0） |
 | 前端展示 | 5 处信用面 + 同行者卡片 | 6 处成长面（`LVn`）；本人主页 / 弹窗追加「当前经验 / 距下一级」；与信用分文案区分 |
 | 配置 | `routeme:` 根 | 新增 `routeme.growth.publish-exp`（默认 10）；无管理端 |
 | 原型 | 无成长截点（#29 原型改动已并入） | P3 先补原型截点（项目规则要求原型先行；在 #29 原型改动之上追加） |
@@ -1987,14 +2152,14 @@ REQ-010：聊天页按原型重构、聊天准入与退出语义调整、集合�
 ### 30.6 Dual-track notes（OpenSpec vs agile）
 
 - **OpenSpec 轨：** 单 change `add-growth-level`，单能力 `user-growth`（ADDED）；账户、流水、等级、三类事件与展示写在同一 Delta，避免经验口径分叉。
-- **Agile 轨：** 故事 S32「用户成长等级 LV1–LV5」（迭代 3 / P1 / 3 点）即业务口径；不另拆多条故事。
+- **Agile 轨：** 故事 S34「用户成长等级 LV1–LV5」（迭代 3 / P1 / 3 点）即业务口径；不另拆多条故事。
 - **并列轨道：** #45 路线完成度（REQ-032 / S33）、经验明细页、排行榜、通知、管理端均为独立故事或独立 change；本需求不预留空壳端点；#29 已并入 main，不再并行。
 
 ### 30.7 Risks & blockers
 
 | 级别 | 项 | 说明 / 缓解 |
 |---|---|---|
-| Risk | 契约 / 迁移号与并行 change 撞号 | 基线 0.26.0 + V31（#29 已并入 main 占用）；本 change 落定 **0.27.0 + V32**；P3 / P4 按合并顺序排他确认 |
+| Risk | 契约 / 迁移号与并行 change 撞号 | 基线 0.26.0 + V31（#29 已并入 main 占用）；本 change 落定 **0.30.0 + V34**；P3 / P4 按合并顺序排他确认 |
 | Risk | `AdminReportServiceImpl.resolve` 并列副作用 | #29 已并入 main 的「扣信用分」；本 change 在其后并列追加「扣成长经验」，不覆盖对方；P4 回归 #29 既有测试 |
 | Risk | 每日上限时区歧义 | 统一 `Asia/Shanghai`，与既有信用 / 出行业务日一致；`D-5` 断言 UTC 16:00 日界 |
 | Risk | 被截断的点赞档位次日被误解为可补发 | 档位幂等记录先于上限判断；零实发也留流水；`D-3` 显式验收 |
@@ -2007,7 +2172,7 @@ REQ-010：聊天页按原型重构、聊天准入与退出语义调整、集合�
 
 ### 30.8 Suggested split boundaries（供 proposal-split / story-split）
 
-- **一个 change：** `add-growth-level` ← REQ-031（迭代 3 / S32）。
+- **一个 change：** `add-growth-level` ← REQ-033（迭代 3 / S34）。
 - **不拆「账户 / 事件 / 展示」：** 三者共用同一经验口径与账本；拆开会出现「有经验没等级」或「有等级没流水」的不完整验收。
 - **不并入 #45 / 明细页 / 排行榜 / 通知 / 权益 / 管理端：** 均为独立故事或独立 change，本 change 不预留端点。
 - **阶段：** 单阶段；无归档前置依赖（`user-growth` 全新能力），但需与 #45（REQ-032 / S33）协调契约版本与迁移号；#29 已并入 main，其 `AdminReportServiceImpl.resolve` 冲突点已消除。

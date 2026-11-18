@@ -31,9 +31,13 @@ import type {
   LeaveReason,
   LeaveRecord,
   LeaveResult,
-  LoanCreateRequest,
+LoanCreateRequest,
   MyFinance,
+  MyReport,
   MyTrips,
+  NotificationCounts,
+  NotificationList,
+  NotificationReadRequest,
   Page,
   Paging,
   ReportRequest,
@@ -410,6 +414,55 @@ export async function sendMessage(
   return (await response.json()) as ChatMessage;
 }
 
+/**
+ * 我提交过的举报（`GET /reports/mine`）。
+ * 只含举报人已经知道的业务事实；管理员备注与处理人不会下发。
+ */
+export async function loadMyReports(userId: number, limit = 50): Promise<MyReport[]> {
+  const response = await request(`/reports/mine?limit=${limit}`, undefined, userId);
+  return (await response.json()) as MyReport[];
+}
+
+/** 最新 50 条通知与按类型拆分的未读计数（同一快照）。 */
+export async function loadNotifications(userId: number): Promise<NotificationList> {
+  const response = await request('/notifications', undefined, userId);
+  return (await response.json()) as NotificationList;
+}
+
+/** 单条通知标读；返回最新计数。 */
+export async function readNotification(
+  userId: number,
+  notificationId: number,
+): Promise<NotificationCounts> {
+  const response = await request(`/notifications/${notificationId}/read`, { method: 'POST' }, userId);
+  return (await response.json()) as NotificationCounts;
+}
+
+/** 全部标读或单会话标读；返回最新计数。 */
+export async function readNotifications(
+  userId: number,
+  body: NotificationReadRequest,
+): Promise<NotificationCounts> {
+  const response = await request(
+    '/notifications/read',
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    },
+    userId,
+  );
+  return (await response.json()) as NotificationCounts;
+}
+
+/**
+ * SSE 通道地址。`EventSource` 不能带请求头，因此按契约用 `user_id` 查询参数；
+ * 与既有 `X-User-Id` 同级的演示身份信任（design R-3 / D11）。
+ */
+export function notificationStreamUrl(userId: number): string {
+  return `/api/notifications/stream?user_id=${userId}`;
+}
+
 export async function submitReport(
   userId: number,
   body: ReportRequest,
@@ -708,11 +761,16 @@ export async function fetchWeatherForecast(
   destinationCode: string,
   date: string,
   point?: { lng: number; lat: number },
+  /** true 时跳过后端缓存，强制向上游重新获取并覆盖缓存。 */
+  refresh = false,
 ): Promise<WeatherForecast> {
   const params = new URLSearchParams({ destination_code: destinationCode, date });
   if (point !== undefined) {
     params.set('lng', String(point.lng));
     params.set('lat', String(point.lat));
+  }
+  if (refresh) {
+    params.set('refresh', 'true');
   }
   const response = await request(`/weather/forecast?${params.toString()}`);
   return (await response.json()) as WeatherForecast;

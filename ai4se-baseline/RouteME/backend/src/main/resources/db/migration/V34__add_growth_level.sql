@@ -1,4 +1,4 @@
--- 用户成长等级（REQ-031 / add-growth-level）。
+-- 用户成长等级（REQ-033 / add-growth-level）。
 -- 成长与信用分完全分离：经验真相在 user_growth_account，growth_exp_ledger 只追加。
 -- 脚本必须同时兼容 SQLite（开发/生产）与 H2（测试），只用两边都支持的语法。
 

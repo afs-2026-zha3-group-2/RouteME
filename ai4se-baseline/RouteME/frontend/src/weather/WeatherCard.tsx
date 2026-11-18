@@ -19,9 +19,10 @@ type Props = {
  * 目的地天气卡：发布页与详情页共用。
  *
  * 只渲染后端返回的真实天气与提醒；加载、失败、越界与未就绪四态都不展示任何天气数值。
+ * 可用态提供「刷新天气」：带 refresh=true 跳过服务端缓存，立即取最新预报。
  */
 export function WeatherCard({ destinationCode, date, className }: Props) {
-  const { state, retry } = useWeather(destinationCode, date);
+  const { state, retry, refresh } = useWeather(destinationCode, date);
   const classes = className === undefined ? 'panel weather-card' : `panel weather-card ${className}`;
 
   return (
@@ -29,7 +30,17 @@ export function WeatherCard({ destinationCode, date, className }: Props) {
       <div className="weather-head">
         <h3 className="panel-title">{weatherMessages.title}</h3>
         {state.kind === 'ready' && (
-          <Tag className="weather-source">{weatherMessages.source}</Tag>
+          <div className="weather-head-actions">
+            <Tag className="weather-source">{weatherMessages.source}</Tag>
+            <Button
+              type="link"
+              size="small"
+              onClick={refresh}
+              data-testid="weather-refresh"
+            >
+              {weatherMessages.refresh}
+            </Button>
+          </div>
         )}
       </div>
 

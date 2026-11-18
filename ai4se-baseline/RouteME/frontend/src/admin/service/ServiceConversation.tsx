@@ -4,7 +4,7 @@ import { adminErrorText } from '../adminFormat';
 import { sendServiceMessage } from '../../api';
 import { canSendMessage, MAX_CHAT_LENGTH, shouldSendOnEnter } from '../../chat/chatComposer';
 import { startChatPolling } from '../../chat/chatPolling';
-import { formatChatTime } from '../../chat/chatTime';
+import { formatChatTime } from '../../utils/chatTime';
 import { adminMessages } from '../../i18n/adminMessages';
 import type { ServiceSessionDetail } from '../../types';
 

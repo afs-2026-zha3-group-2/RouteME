@@ -131,6 +131,68 @@ class TravelFinanceMigrationSqliteTest {
                         "status outside ACTIVE / EXPIRED is rejected"));
     }
 
+    @Test
+    void in_upgradeFromV31_out_interestBackfilledAndPenaltyAdded() {
+        // Given：V31 时已有一笔 1,000 元 / 14 天借款（当时只有本金口径）。
+        String jdbcUrl = jdbcUrl("interest.db");
+        migrate(jdbcUrl, "31");
+        JdbcClient beforeUpgrade = JdbcClient.create(new DriverManagerDataSource(jdbcUrl));
+        beforeUpgrade.sql("""
+                        INSERT INTO travel_loan
+                            (id, user_id, trip_id, principal_cents, service_fee_cents, disbursed_cents,
+                             repay_cents, term_days, status, active_user_id, funded_at, due_at, repaid_at)
+                        VALUES
+                            (9001, 2, 3, 100000, 5000, 95000, 100000, 14, 'ACTIVE', 2,
+                             '2026-11-01T09:00:00Z', '2026-11-15T09:00:00Z', NULL)
+                        """)
+                .update();
+
+        // When
+        migrate(jdbcUrl, null);
+        JdbcClient afterUpgrade = JdbcClient.create(new DriverManagerDataSource(jdbcUrl));
+        List<String> columns = afterUpgrade.sql("PRAGMA table_info(travel_loan)")
+                .query((rs, rowNum) -> rs.getString("name"))
+                .list();
+
+        // Then
+        assertAll(
+                () -> assertTrue(
+                        columns.containsAll(List.of("interest_cents", "penalty_cents")),
+                        "interest and penalty columns present: " + columns),
+                () -> assertEquals(
+                        700,
+                        afterUpgrade.sql("SELECT interest_cents FROM travel_loan WHERE id = 9001")
+                                .query(Integer.class)
+                                .single(),
+                        "1,000 yuan over 14 days costs 7 yuan of interest"),
+                () -> assertEquals(
+                        100_700,
+                        afterUpgrade.sql("SELECT repay_cents FROM travel_loan WHERE id = 9001")
+                                .query(Integer.class)
+                                .single(),
+                        "repay is principal plus interest"),
+                () -> assertEquals(
+                        0,
+                        afterUpgrade.sql("SELECT penalty_cents FROM travel_loan WHERE id = 9001")
+                                .query(Integer.class)
+                                .single(),
+                        "no penalty before the due instant"),
+                () -> assertEquals(
+                        1,
+                        objectCount(afterUpgrade, "index", "ux_travel_loan_active_user"),
+                        "active-loan unique index survives the table rebuild"),
+                () -> assertThrows(
+                        DataAccessException.class,
+                        () -> afterUpgrade.sql("UPDATE travel_loan SET penalty_cents = -1 WHERE id = 9001")
+                                .update(),
+                        "negative penalty is rejected"),
+                () -> assertThrows(
+                        DataAccessException.class,
+                        () -> afterUpgrade.sql("UPDATE travel_loan SET repay_cents = principal_cents WHERE id = 9001")
+                                .update(),
+                        "repay must include interest"));
+    }
+
     private String jdbcUrl(String fileName) {
         String path = tempDirectory.resolve(fileName).toAbsolutePath().toString().replace('\\', '/');
         return "jdbc:sqlite:" + path;

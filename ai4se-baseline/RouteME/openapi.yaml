@@ -1,7 +1,7 @@
 openapi: 3.0.3
 info:
   title: RouteME API
-  version: 0.27.0
+  version: 0.30.0
   description: |
     RouteME 后端对外契约。本文件是前后端唯一事实源，字段名、类型、状态码与错误码只在这里定稿。
         当前包含：脚手架问候语、演示账户与账号认证（注册/登录/会话/退出）、旅行计划（浏览/筛选/发布/详情/结束），同行匹配、申请、退出、聊天、我的旅行与举报，游后体验分享与参考发布所需数据，管理后台（用户管理 / 举报处置 / 人工客服）与用户侧帮助入口，AI 智能行程推荐（生成/快照保存与读取，天气复用目的地天气接口），以及目的地天气提醒与信用分账户、安全学习恢复信用分的考试会话与判分，旅行保障（演示钱包 / 保险 / 借款 / 还款）。
@@ -257,6 +257,10 @@ paths:
                     interests: [摄影, 美食, 徒步]
                     travel_style: 休闲游
                     profile_complete: true
+                    credit_score: 85
+                    credit_level: good
+                    credit_restricted: false
+                    route_completion_state: insufficient
         '401':
           $ref: '#/components/responses/DemoUserRequired'
         '404':
@@ -2453,6 +2457,8 @@ paths:
         否则按 6 位区划码解析城市中心坐标，用户无需再次输入城市。
         日期窗口为今天 ≤ date ≤ 今天 + 15（`Asia/Shanghai`）；越界返回 200 且 `available=false`（`reason=OUT_OF_RANGE`），
         不返回任何天气数值与提醒。上游失败返回 502 `WEATHER_UPSTREAM_ERROR`，绝不伪造天气。
+        成功结果在服务端按「日期 + 坐标（约 1 km）」缓存，默认 30 分钟；`refresh=true` 跳过缓存读取并覆盖缓存，
+        `DELETE /weather/cache` 可清空全部缓存，便于上游预报更新后立即取新值。
       parameters:
         - name: destination_code
           in: query
@@ -2483,6 +2489,14 @@ paths:
           schema:
             type: number
             format: double
+        - name: refresh
+          in: query
+          required: false
+          description: |
+            `true` 时跳过后端缓存，强制向上游重新获取并用新结果覆盖缓存；默认 `false`（命中缓存直接返回）。
+          schema:
+            type: boolean
+            default: false
       responses:
         '200':
           description: 可用天气，或日期超出预报窗口的不可用状态
@@ -2537,6 +2551,33 @@ paths:
                 upstream:
                   value:
                     code: WEATHER_UPSTREAM_ERROR
+  /weather/cache:
+    delete:
+      operationId: clearWeatherCache
+      summary: 清空目的地天气缓存
+      description: |
+        清空服务端进程内的天气预报缓存，后续查询重新访问 Open-Meteo。
+        用于上游预报发生明显变化（如临近发布、极端天气预警）时立刻拉取最新数据；
+        只想刷新单个查询时优先使用 `/weather/forecast?refresh=true`，避免整体回源。
+      responses:
+        '200':
+          description: 清理完成，返回被移除的缓存条目数
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [cleared]
+                properties:
+                  cleared:
+                    type: integer
+                    minimum: 0
+                    description: 被清理的缓存条目数
+              examples:
+                cleared:
+                  value:
+                    cleared: 12
+        '500':
+          $ref: '#/components/responses/Unexpected'
   /ai/itineraries/generate:
     post:
       operationId: generateAiItinerary
@@ -3076,7 +3117,8 @@ paths:
       summary: 申请旅行借款
       description: |
         本金为 10,000–200,000 分（100–2,000 元）的整元金额，期限仅 7 / 14 / 30 天；
-        服务费为本金 5% 并从本金扣除，发放净额 = 本金 − 服务费，应还金额 = 本金。
+        服务费为本金 5% 并从本金扣除，发放净额 = 本金 − 服务费；
+        利息 = 本金 × 0.05% × 期限天数，应还金额 = 本金 + 利息（逾期罚息另计）。
         到期时刻由服务端按「发放时刻 + 期限」计算，客户端 `due_at` 被忽略。
         每个用户同一时刻最多一笔 `ACTIVE` 借款。
       parameters:
@@ -3113,7 +3155,10 @@ paths:
                     principal_cents: 100000
                     service_fee_cents: 5000
                     disbursed_cents: 95000
-                    repay_cents: 100000
+                    interest_cents: 700
+                    repay_cents: 100700
+                    penalty_cents: 0
+                    total_repay_cents: 100700
                     term_days: 14
                     status: active
                     funded_at: '2026-11-16T09:00:00Z'
@@ -3168,7 +3213,7 @@ paths:
       operationId: repayTravelLoan
       summary: 手动全额还清借款
       description: |
-        仅借款本人可还款；还款不收服务费与利息，扣减金额恒等于本金。
+        仅借款本人可还款；还款金额 = 本金 + 利息 + 截至还款时刻的逾期罚息（本金 × 0.1% × 已开始逾期天数）。
         还款不因账号 `SUSPENDED` / `BANNED` 被阻断，以保证债务可以结清。
         重复还款返回 409 `LOAN_NOT_ACTIVE`，不会二次扣款。
       parameters:
@@ -3194,7 +3239,10 @@ paths:
                     principal_cents: 100000
                     service_fee_cents: 5000
                     disbursed_cents: 95000
-                    repay_cents: 100000
+                    interest_cents: 700
+                    repay_cents: 100700
+                    penalty_cents: 0
+                    total_repay_cents: 100700
                     term_days: 14
                     status: repaid
                     funded_at: '2026-11-16T09:00:00Z'
@@ -3217,6 +3265,160 @@ paths:
                 loanNotActive:
                   value:
                     code: LOAN_NOT_ACTIVE
+        '500':
+          $ref: '#/components/responses/Unexpected'
+
+  /reports/mine:
+    get:
+      operationId: listMyReports
+      summary: 我提交过的举报
+      description: |
+        通知中心跳转的举报详情页使用。只返回举报人已经知道的业务事实：编号、对象类型、
+        原因、状态与时间；不返回管理员备注、处理人 id 或他人的处罚细节。
+      parameters:
+        - $ref: '#/components/parameters/DemoUserId'
+        - name: limit
+          in: query
+          required: false
+          description: 返回条数上限，默认与最大值为 50
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 50
+            default: 50
+      responses:
+        '200':
+          description: 当前用户提交的举报，最新在前
+          content:
+            application/json:
+              schema:
+                type: array
+                maxItems: 50
+                items:
+                  $ref: '#/components/schemas/MyReport'
+        '401':
+          $ref: '#/components/responses/DemoUserRequired'
+        '500':
+          $ref: '#/components/responses/Unexpected'
+  /notifications:
+    get:
+      operationId: listNotifications
+      summary: 最新通知与未读计数
+      description: |
+        返回当前用户最新 50 条通知与按类型拆分的未读计数（`total` + 八类 `by_type`）。
+        未读定义为 `read_at` 为空，状态派生为 `UNREAD` / `READ`；列表按创建时间倒序。
+        每条通知带 `target` 跳转目标与 `related_available`（关联业务是否仍可访问）。REST 列表不含消息正文。
+      parameters:
+        - $ref: '#/components/parameters/DemoUserId'
+      responses:
+        '200':
+          description: 最新通知与计数
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotificationList'
+        '401':
+          $ref: '#/components/responses/DemoUserRequired'
+        '500':
+          $ref: '#/components/responses/Unexpected'
+  /notifications/stream:
+    get:
+      operationId: streamNotifications
+      summary: 通知推送通道（SSE）
+      description: |
+        该用户的服务器推送通道，事件名固定 `notification`，`data` 为单行 `NotificationEvent` JSON。
+        连接期间约每 20 秒发送一次 `: ping` 心跳；不发送 `id:` 字段，重连正确性由客户端 REST 对账保证。
+      parameters:
+        - name: user_id
+          in: query
+          required: true
+          description: 接收推送的演示用户 id（app_users.id）；缺省或用户不存在返回 401
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: SSE 事件流
+          headers:
+            Cache-Control:
+              description: 固定 `no-cache`
+              schema:
+                type: string
+            X-Accel-Buffering:
+              description: 固定 `no`，禁止代理缓冲
+              schema:
+                type: string
+          content:
+            text/event-stream:
+              schema:
+                type: string
+              examples:
+                notification:
+                  value: |
+                    event: notification
+                    data: {"notification":{"id":7},"message":null}
+        '401':
+          $ref: '#/components/responses/DemoUserRequired'
+  /notifications/{notificationId}/read:
+    post:
+      operationId: readNotification
+      summary: 单条通知标读
+      description: 只把本人且未读的该条记录标记为已读；重复标读计数不变。标读不改变业务状态。返回最新计数。
+      parameters:
+        - $ref: '#/components/parameters/DemoUserId'
+        - name: notificationId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: 最新未读计数
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotificationCounts'
+        '401':
+          $ref: '#/components/responses/DemoUserRequired'
+        '404':
+          description: 通知不存在或不属于当前用户（不暴露他人通知存在性）
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                notFound:
+                  value:
+                    code: NOTIFICATION_NOT_FOUND
+        '500':
+          $ref: '#/components/responses/Unexpected'
+  /notifications/read:
+    post:
+      operationId: readNotifications
+      summary: 全部或单会话标读
+      description: |
+        `scope=all` 把本人全部未读标读并忽略定位字段；`scope=conversation` 需同时提供
+        `trip_id` 与 `other_user_id`，只清该会话的聊天类通知，缺一返回 400。返回最新计数。
+      parameters:
+        - $ref: '#/components/parameters/DemoUserId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NotificationReadRequest'
+      responses:
+        '200':
+          description: 最新未读计数
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/NotificationCounts'
+        '400':
+          $ref: '#/components/responses/InvalidInput'
+        '401':
+          $ref: '#/components/responses/DemoUserRequired'
         '500':
           $ref: '#/components/responses/Unexpected'
 
@@ -3470,7 +3672,7 @@ components:
           $ref: '#/components/schemas/AccountStatus'
     UserProfile:
       type: object
-      required: [id, nickname, avatar_initial, interests, profile_complete, credit_score, credit_level, credit_restricted]
+      required: [id, nickname, avatar_initial, interests, profile_complete, credit_score, credit_level, credit_restricted, route_completion_state]
       properties:
         id:
           type: integer
@@ -3601,6 +3803,18 @@ components:
           readOnly: true
           allOf:
             - $ref: '#/components/schemas/UserGrowth'
+        route_completion_state:
+          type: string
+          readOnly: true
+          enum: [good, neutral, watch, insufficient]
+          description: 路线完成度信誉状态，恒返回：good ≥80 / neutral 70–79 / watch <70 / insufficient 数据不足
+        route_completion_rate:
+          type: integer
+          minimum: 0
+          maximum: 100
+          nullable: true
+          readOnly: true
+          description: 路线完成度百分比 0–100；仅数据足够时出现，数据不足时省略该字段
     UserCreditEntry:
       type: object
       required: [user_id, credit_score, credit_level, credit_restricted]
@@ -6079,8 +6293,8 @@ components:
     TravelLoan:
       type: object
       required:
-        [id, trip_id, principal_cents, service_fee_cents, disbursed_cents, repay_cents, term_days, status,
-         funded_at, due_at, repaid_at]
+        [id, trip_id, principal_cents, service_fee_cents, disbursed_cents, interest_cents, repay_cents,
+         penalty_cents, total_repay_cents, term_days, status, funded_at, due_at, repaid_at]
       properties:
         id:
           type: integer
@@ -6105,11 +6319,26 @@ components:
           format: int32
           readOnly: true
           description: 发放净额 = 本金 − 服务费，整数分（CNY）
+        interest_cents:
+          type: integer
+          format: int32
+          readOnly: true
+          description: 利息 = 本金 × 0.05%/日 × 期限天数，四舍五入到分（CNY）
         repay_cents:
           type: integer
           format: int32
           readOnly: true
-          description: 应还金额，恒等于本金，整数分（CNY）
+          description: 应还金额 = 本金 + 利息，不含逾期罚息，整数分（CNY）
+        penalty_cents:
+          type: integer
+          format: int32
+          readOnly: true
+          description: 逾期罚息 = 本金 × 0.1%/日 × 已开始逾期天数；未逾期或已结清且未逾期时为 0
+        total_repay_cents:
+          type: integer
+          format: int32
+          readOnly: true
+          description: 本次还款合计 = 应还金额 + 当前应计逾期罚息，整数分（CNY）
         term_days:
           type: integer
           enum: [7, 14, 30]
@@ -6244,7 +6473,7 @@ components:
              ACCOUNT_BANNED, INVALID_STATUS_TRANSITION, CANNOT_TARGET_SELF, REPORT_NOT_FOUND, REPORT_NOT_PENDING,
              REPORT_NOT_PROCESSING, EMAIL_TAKEN, SESSION_ALREADY_HANDLING, SESSION_NOT_HANDLING, SESSION_CLOSED,
              CREDIT_RESTRICTED, LEARNING_NOT_ELIGIBLE, LEARNING_EXAM_QUOTA_EXCEEDED, LEARNING_RECOVERY_QUOTA_EXCEEDED,
-             LEARNING_NOT_COMPLETED, LEARNING_SESSION_NOT_FOUND, LEAVE_RECORD_NOT_FOUND,
+             LEARNING_NOT_COMPLETED, LEARNING_SESSION_NOT_FOUND, LEAVE_RECORD_NOT_FOUND, NOTIFICATION_NOT_FOUND,
              INSUFFICIENT_BALANCE, ACTIVE_LOAN_EXISTS, LOAN_NOT_ACTIVE]
         fields:
           type: object
@@ -6255,3 +6484,270 @@ components:
             type: string
             enum:
               [REQUIRED, TOO_LONG, INVALID_DATE, OUT_OF_RANGE, TOO_FEW, TOO_MANY, DUPLICATE, INVALID_OPTION]
+
+    MyReport:
+      type: object
+      required: [id, code, target_type, reason, status, created_at]
+      description: 举报人视角的举报；不含管理员备注、处理人 id 与他人的处罚细节
+      properties:
+        id:
+          type: integer
+          format: int64
+          readOnly: true
+        code:
+          type: string
+          readOnly: true
+          description: 举报编号，形如 `R-42`
+        target_type:
+          type: string
+          enum: [trip, user, experience]
+        reason:
+          type: string
+          enum: [harassment, fake, safety, other]
+        status:
+          $ref: '#/components/schemas/ReportStatus'
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        processing_at:
+          type: string
+          format: date-time
+          nullable: true
+          readOnly: true
+        resolved_at:
+          type: string
+          format: date-time
+          nullable: true
+          readOnly: true
+    NotificationType:
+      type: string
+      description: 通知业务域类型；wire 值固定，前端按原值分组与计数
+      enum: [TRIP, APPLICATION, CHAT, CREDIT, REPORT, ACCOUNT, SERVICE, SYSTEM]
+    NotificationEventName:
+      type: string
+      description: 类型下的具体事件；wire 值固定，前端只做展示与断言
+      enum:
+        - trip_full
+        - trip_ongoing
+        - trip_cancelled
+        - trip_completed
+        - application_received
+        - application_accepted
+        - application_rejected
+        - application_closed
+        - message
+        - credit_changed
+        - credit_recovered
+        - report_submitted
+        - report_processing
+        - report_resolved
+        - account_suspended
+        - account_banned
+        - account_restored
+        - service_joined
+        - service_reply
+        - service_closed
+        - safety_reminder
+        - identity_verified
+    NotificationPriority:
+      type: string
+      description: 优先级；信用分低于 60 等需要立即关注的事件为 HIGH
+      enum: [NORMAL, HIGH]
+    NotificationStatus:
+      type: string
+      description: 状态由 `read_at` 派生；READ 不再计入未读
+      enum: [UNREAD, READ]
+    NotificationTargetKind:
+      type: string
+      description: 跳转目标种类；前端按 kind 组装路由
+      enum: [trip, applications, chat, credit, report, account, support, identity]
+    NotificationTarget:
+      type: object
+      required: [kind]
+      description: 跳转定位字段；与 kind 无关的字段为 null
+      properties:
+        kind:
+          $ref: '#/components/schemas/NotificationTargetKind'
+        trip_id:
+          type: integer
+          format: int64
+          nullable: true
+          readOnly: true
+        other_user_id:
+          type: integer
+          format: int64
+          nullable: true
+          readOnly: true
+          description: 仅 `kind=chat`，会话另一方 id
+        application_id:
+          type: integer
+          format: int64
+          nullable: true
+          readOnly: true
+        report_id:
+          type: integer
+          format: int64
+          nullable: true
+          readOnly: true
+        session_id:
+          type: integer
+          format: int64
+          nullable: true
+          readOnly: true
+    Notification:
+      type: object
+      required:
+        [id, type, event, title, content, priority, status, created_at, target, related_available]
+      properties:
+        id:
+          type: integer
+          format: int64
+          readOnly: true
+        type:
+          $ref: '#/components/schemas/NotificationType'
+        event:
+          $ref: '#/components/schemas/NotificationEventName'
+        title:
+          type: string
+          readOnly: true
+          description: 后端生成的标题，唯一来源是后端通知文案函数
+        content:
+          type: string
+          readOnly: true
+          description: |
+            后端生成的正文，含取消原因 / 分数变化 / 恢复时间等业务事实；
+            不含管理员自由文本备注或他人的隐私信息
+        priority:
+          $ref: '#/components/schemas/NotificationPriority'
+        status:
+          $ref: '#/components/schemas/NotificationStatus'
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        read_at:
+          type: string
+          format: date-time
+          nullable: true
+          readOnly: true
+        actor:
+          allOf:
+            - $ref: '#/components/schemas/DemoUser'
+          nullable: true
+          description: 动作人；系统 / 信用 / 客服 / 认证类通知为 null
+        trip_id:
+          type: integer
+          format: int64
+          nullable: true
+          readOnly: true
+        trip_title:
+          type: string
+          nullable: true
+          readOnly: true
+        application_id:
+          type: integer
+          format: int64
+          nullable: true
+          readOnly: true
+        message_id:
+          type: integer
+          format: int64
+          nullable: true
+          readOnly: true
+        report_id:
+          type: integer
+          format: int64
+          nullable: true
+          readOnly: true
+        session_id:
+          type: integer
+          format: int64
+          nullable: true
+          readOnly: true
+        target:
+          $ref: '#/components/schemas/NotificationTarget'
+        related_available:
+          type: boolean
+          readOnly: true
+          description: |
+            关联业务当前是否仍可访问。false 时通知内容照常展示，
+            前端提示「相关内容当前不可查看」而不是报错
+    NotificationCounts:
+      type: object
+      required: [total, by_type]
+      properties:
+        total:
+          type: integer
+          minimum: 0
+          readOnly: true
+        by_type:
+          type: object
+          description: 按八类拆分的未读计数；八类始终齐备，零值不省略
+          required: [TRIP, APPLICATION, CHAT, CREDIT, REPORT, ACCOUNT, SERVICE, SYSTEM]
+          additionalProperties: false
+          properties:
+            TRIP:
+              type: integer
+              minimum: 0
+            APPLICATION:
+              type: integer
+              minimum: 0
+            CHAT:
+              type: integer
+              minimum: 0
+            CREDIT:
+              type: integer
+              minimum: 0
+            REPORT:
+              type: integer
+              minimum: 0
+            ACCOUNT:
+              type: integer
+              minimum: 0
+            SERVICE:
+              type: integer
+              minimum: 0
+            SYSTEM:
+              type: integer
+              minimum: 0
+    NotificationList:
+      type: object
+      required: [items, counts]
+      properties:
+        items:
+          type: array
+          maxItems: 50
+          items:
+            $ref: '#/components/schemas/Notification'
+        counts:
+          $ref: '#/components/schemas/NotificationCounts'
+    NotificationReadRequest:
+      type: object
+      required: [scope]
+      properties:
+        scope:
+          type: string
+          enum: [all, conversation]
+        trip_id:
+          type: integer
+          format: int64
+          nullable: true
+          description: 仅 `scope=conversation` 使用；与 `other_user_id` 同时必填
+        other_user_id:
+          type: integer
+          format: int64
+          nullable: true
+          description: 仅 `scope=conversation` 使用；与 `trip_id` 同时必填
+    NotificationEvent:
+      type: object
+      required: [notification]
+      properties:
+        notification:
+          $ref: '#/components/schemas/Notification'
+        message:
+          allOf:
+            - $ref: '#/components/schemas/ChatMessage'
+          nullable: true
+          description: 仅 `type=CHAT` 的推送出现，内容为刚保存的消息
+

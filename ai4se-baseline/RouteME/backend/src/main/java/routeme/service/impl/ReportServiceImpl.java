@@ -21,6 +21,7 @@ import routeme.pojo.Report;
 import routeme.request.ReportRequest;
 import routeme.service.AccountStatusService;
 import routeme.service.ChatService;
+import routeme.service.NotificationService;
 import routeme.service.ReportService;
 
 /**
@@ -38,12 +39,17 @@ public class ReportServiceImpl extends AbstractServiceImpl<ReportMapper, ReportE
     private final Clock clock;
     private final AccountStatusService accountStatusService;
     private final ChatService chatService;
+    private final NotificationService notificationService;
 
     public ReportServiceImpl(
-            Clock clock, AccountStatusService accountStatusService, ChatService chatService) {
+            Clock clock,
+            AccountStatusService accountStatusService,
+            ChatService chatService,
+            NotificationService notificationService) {
         this.clock = clock;
         this.accountStatusService = accountStatusService;
         this.chatService = chatService;
+        this.notificationService = notificationService;
     }
 
     @Override
@@ -76,6 +82,7 @@ public class ReportServiceImpl extends AbstractServiceImpl<ReportMapper, ReportE
                 null,
                 null);
         save(ReportEntity.from(report));
+        notificationService.notifyReportSubmitted(reporterId, report.id());
         return report;
     }
 

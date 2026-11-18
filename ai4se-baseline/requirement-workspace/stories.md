@@ -1,4 +1,4 @@
-# Story list — REQ-005（S03 灵感首页双视图）/ REQ-007（目的地与日期筛选）/ REQ-008（个人资料 S18）
+﻿# Story list — REQ-005（S03 灵感首页双视图）/ REQ-007（目的地与日期筛选）/ REQ-008（个人资料 S18）
 
 - **来源：** `docs/prototype/stories.html`（MVP 17 条故事拆解）
 - **口径：** 一条故事 = 一个页面 + 一份接口契约 + 一次状态迁移（本故事复用既有两份列表契约，只有页面视图状态迁移）
@@ -428,6 +428,49 @@
 
 ---
 
+# Story list — REQ-032（实时通知中心与未读计数）
+
+- **来源：** 发起人 2026-11-17 在 `#/chat` 的观察——「申请到达 / 我的申请被接受 / 收到新消息都没有实时提示，也没有显示收到几条通知的红点」；2026-11-18 追加要求：扩展为覆盖八类业务事件的完整通知中心；优先级 P0；迭代 3；8 点（S33-1 ~ S33-8 各 1 点）；落点页面：全局壳层、通知中心、聊天页、行程详情、信用记录、举报详情、账号菜单、客服
+- **Change：** `add-realtime-notifications`（`notifications` ADDED：8 Requirement / 36 Scenario）
+- **口径：** 一条故事 = 一条垂直切片（记录 → 八类事件接入 → 计数 → 通知中心与跳转 → 实时投递），拆为 S33-1 ~ S33-8 八个可独立验收的步骤
+- **需求编号说明：** 2026-11-17 起草时登记为 REQ-023；`main` 上 REQ-023 已被 `add-experience-like-credit` 占用，2026-11-18 扩围时按「后到者顺延」改为 **REQ-032 / S33**
+- **更新时间：** 2026-11-18
+
+| Story | Title | 角色 | Priority | Iteration | Points | Page | Parent REQ | Change | Status |
+|---|---|---|---|---|---|---|---|---|---|
+| S33-1 | 记录八类通知并保证去重与保留 | 平台用户 | P0 | 迭代 3 | 1 | 全局壳层 | REQ-032 | `add-realtime-notifications` | P4 verified（2026-11-18） |
+| S33-2 | 行程生命周期通知 | 发布者 / 同行者 | P0 | 迭代 3 | 1 | 行程详情 | REQ-032 | `add-realtime-notifications` | P4 verified（2026-11-18） |
+| S33-3 | 申请到达与裁决通知 | 发布者 / 申请者 | P0 | 迭代 3 | 1 | 申请处理 / 行程详情 | REQ-032 | `add-realtime-notifications` | P4 verified（2026-11-18） |
+| S33-4 | 聊天与信用通知 | 会话双方 / 信用变动用户 | P0 | 迭代 3 | 1 | 聊天页 / 信用记录 | REQ-032 | `add-realtime-notifications` | P4 verified（2026-11-18） |
+| S33-5 | 举报、账号、客服与系统通知 | 举报人 / 受限账号 / 客服用户 | P0 | 迭代 3 | 1 | 举报详情 / 账号 / 客服 | REQ-032 | `add-realtime-notifications` | P4 verified（2026-11-18） |
+| S33-6 | 通知中心、筛选与跳转 | 平台用户 | P0 | 迭代 3 | 1 | 通知中心 | REQ-032 | `add-realtime-notifications` | P4 verified（2026-11-18） |
+| S33-7 | 未读计数与标读规则 | 平台用户 | P0 | 迭代 3 | 1 | 全局壳层 / 通知中心 | REQ-032 | `add-realtime-notifications` | P4 verified（2026-11-18） |
+| S33-8 | 实时投递与失败隔离 | 平台用户 | P0 | 迭代 3 | 1 | 全局壳层 | REQ-032 | `add-realtime-notifications` | P4 verified（2026-11-18） |
+
+## Traceability（REQ-032）
+
+| Story | Requirement scenarios | Change spec | Story file |
+|---|---|---|---|
+| S33-1 | REQ-032 §4 S33-1 ~ S33-4 | `openspec/changes/add-realtime-notifications/specs/notifications/spec.md`（ADDED：通知记录与生命周期） | `stories/add-realtime-notifications.story.md` |
+| S33-2 | REQ-032 §4 S33-5 ~ S33-8、S33-12、S33-19 | 同上（行程生命周期事件） | 同上 |
+| S33-3 | REQ-032 §4 S33-9 ~ S33-12、S33-22 | 同上（申请与裁决事件） | 同上 |
+| S33-4 | REQ-032 §4 S33-13 ~ S33-15、S33-31 | 同上（聊天、信用、举报与账号事件、未读计数与标读规则） | 同上 |
+| S33-5 | REQ-032 §4 S33-16 ~ S33-20 | 同上（聊天、信用、举报与账号事件、客服与系统事件） | 同上 |
+| S33-6 | REQ-032 §4 S33-21 ~ S33-24、S33-28 | 同上（通知中心与跳转） | 同上 |
+| S33-7 | REQ-032 §4 S33-25 ~ S33-32 | 同上（计数与标读） | 同上 |
+| S33-8 | REQ-032 §4 S33-33 ~ S33-36 | 同上（实时与失败隔离） | 同上 |
+
+## Notes（REQ-032）
+
+- **不拆 change：** 八类事件共享同一张表、同一份计数口径、同一个通知中心与推送通道；拆分只会得到「有通知没入口」或「有入口没内容」的半成品。
+- **只读依赖既有能力：** 行程、申请、聊天、信用、举报、账号、客服与资料服务的业务规则保持不变，本 change 只在既有成功路径上追加通知；因此不 MODIFY `trip-companions`（其 Delta 未归档）。
+- **拒信也通知（D5）：** 发起人只点名「被接受」，但沉默地拒绝是更差的失败模式；Delta 把 reject 显式写成场景。
+- **类型跳转：** 由后端下发 `target.kind`，前端不自行猜测；目标失效时只提示不跳转。
+- **刻意排除：** 通知偏好、保留策略、搜索、邮件 / 短信 / OS 推送、浏览器关闭时的推送、WebSocket 与消息队列。
+- **降级口径：** 推送只是延迟优化，REST 列表才是真相；断线、后端重启、推送失败都不改变计数，也不影响业务动作本身。
+
+---
+
 # Story list — REQ-025（退出同行扣分与低信用自动限制）
 
 - **来源：** 用户当次会话 P0 卡片「[P0] 退出同行扣减信用分」；Story 4（信用系统迭代 2 / 5 点）与 Story 5（信用系统迭代 3 / 3 点）
@@ -500,13 +543,13 @@
 
 # Story list — REQ-028（旅行保障与小额借款 / 旅行金融迭代 1）
 
-> 合并说明（2026-11-18）：本 change 已 rebase 到 `origin/main@822471c`；编号由 REQ-024 / S25 顺延为 **REQ-028 / S29**，契约 **0.25.0** + 迁移 **`V30`**；故事行与追溯表同步顺延。同日保险收敛为「第三方入口 + 状态回写」，Delta 为 10 Requirement / 40 Scenario。
+> 合并说明（2026-11-18）：本 change 已 rebase 到 `origin/main@ea5493a`；编号由 REQ-024 / S25 顺延为 **REQ-028 / S29**；契约先落 0.25.0 + 迁移 `V30`，增补借款利息 / 逾期罚息后为 **0.28.0 + `V32`**；故事行与追溯表同步顺延。同日保险收敛为「第三方入口 + 状态回写」，Delta 为 10 Requirement / 40 Scenario。
 
 - **故事：** S29 旅行保障与小额借款（发起人 2026-11-17 原始诉求；优先级 P0；迭代 1；5 点；落点页面：行程详情 / 旅行保障页 / 账号聚合页）
 - **需求编号说明：** `main` 在 rebase 后已占用 REQ-001 ~ REQ-027，本需求按「后到者顺延」登记为 **REQ-028**、故事 **S29**（原 REQ-024 / S25）。
 - **Change：** `add-travel-finance`（`travel-finance` ADDED）
-- **垂直切片：** 只负责「钱包 → 第三方保险入口与状态回写 / 借小额 → 收 5% 服务费 → 还款 / 到期」；理赔、退保、罚息、充值提现、管理后台、通知与信用分影响不在本故事。
-- **规则口径：** 保险由第三方提供方定价与承保，RouteMe 只提供入口并回写状态、不向用户收平台费；借款本金扣 5% 后发放净额；每人 1 个钱包、最多 1 笔进行中借款；仅行程发布者与 `ACCEPTED` 同行者可用。
+- **垂直切片：** 只负责「钱包 → 第三方保险入口与状态回写 / 借小额 → 收 5% 服务费与按日利息 → 还款 / 到期 / 逾期罚息」；理赔、退保、分期复利、充值提现、管理后台、通知与信用分影响不在本故事。
+- **规则口径：** 保险由第三方提供方定价与承保，RouteMe 只提供入口并回写状态、不向用户收平台费；借款本金扣 5% 后发放净额，并按本金 × 0.05%/日 × 期限计息、逾期按 0.1%/日计罚息；每人 1 个钱包、最多 1 笔进行中借款；仅行程发布者与 `ACCEPTED` 同行者可用。
 
 # Story list — REQ-030（S31 举报违规扣减信用分）
 
@@ -546,16 +589,40 @@
 
 ## Notes（REQ-028）
 
-- **不拆故事：** 钱包、第三方保险入口与状态、借款、5% 收费与账本必须同批交付；拆开后会出现「能买不能借」「状态对不上账」的不完整验收。
+- **不拆故事：** 钱包、第三方保险入口与状态、借款、5% 收费、利息与罚息、账本必须同批交付；拆开后会出现「能借不能算」「状态对不上账」的不完整验收。
 - **单 capability：** 保险入口与借款共用钱包、资格与页面，合并为 `travel-finance`；不新建第二个金融 change。
-- **金额口径：** 整数分；借款只接受整元，保证 5% 恒为整数分，避免浮点与四舍五入争议；保险不出现金额字段。
-- **保留边界：** 真实保险机构 API / 核保 / 理赔、真实银行对接、征信、退保、罚息、钱包充值提现、管理后台金融视图与通知均排除（D10 / D12）。
+- **金额口径：** 整数分；借款只接受整元，保证 5% 恒为整数分；利息与罚息按整数分四舍五入；保险不出现金额字段。
+- **保留边界：** 真实保险机构 API / 核保 / 理赔、真实银行对接、征信、退保、分期复利、罚息封顶、钱包充值提现、管理后台金融视图与通知均排除（D10 / D12）。
 - **依赖：** `trip-plans` / `trip-companions` 只读；`user-auth` 注册事务内初始化钱包；`user-credit` 仅作账本范式参照，不读写信用分。
 
-## Traceability（REQ-030）
+---
+
+# Story list — REQ-031（路线完成度 / issue #45）
+
+- **故事：** S32 路线完成度（GitHub issue #45；优先级 P1；迭代 3；3 点；落点页面：个人主页。原 issue 另含推荐列表 / 行程详情，按用户裁决 D3 本期不做）
+- **需求编号说明：** `origin/main@8992853` 已用 REQ-029 / S30（`refine-publish-route-map`）与 REQ-030（`add-report-credit-deduction`）；本需求起草时登记为 REQ-029 / S30，同日两次顺延，按用户裁决最终为 **REQ-031 / S32**。
+- **Change：** `add-route-completion`（`route-completion` ADDED）
+- **垂直切片：** 只负责「后端完成度字段与状态派生 → 个人主页展示入口」；人工打卡、真实聚合、列表 / 详情 / 弹窗展示不在本故事。
+- **规则口径：** 本期无数据源，所有用户「暂无足够完成记录」；阈值 ≥80 信誉良好 / 70–79 中性 / <70 请留意；与信用分、资料统计、LV1–LV5 成长等级独立；状态码由后端返回，前端只映射。
+- **更新时间：** 2026-11-18
+
+| Story | Title | 角色 | Priority | Iteration | Points | Page | Parent REQ | Change | Status |
+|---|---|---|---|---|---|---|---|---|---|
+| S32 | 路线完成度 | 寻找旅行搭子的浏览者 | P1 | 迭代 3 | 3 | 个人主页 | REQ-031 | `add-route-completion` | P1 drafted（2026-11-18） |
+
+## Traceability（REQ-031）
 
 | Story | Requirement scenarios | Change spec | Story file |
 |---|---|---|---|
+| S32 | REQ-031 §4 S32-1 ~ S32-19 | `openspec/changes/add-route-completion/specs/route-completion/spec.md`（ADDED，P1 草稿） | 无独立故事文件：19 场景由 Ready 条目 + proposal + Delta 承接（与 REQ-012 / REQ-019 / REQ-027 同口径） |
+
+## Notes（REQ-031）
+
+- **不拆故事：** 字段、派生与个人主页展示是同一条端到端链路；拆开会产生「有字段无展示」或「有展示无来源」。
+- **单 capability：** `route-completion`（ADDED）；不改 `user-profile` / `user-profiles` / `user-credit` 的 Requirement。
+- **本期不做：** 人工打卡与聚合算法、推荐列表、资料弹窗、行程卡、行程详情、管理端、通知（D1 / D3 / D7）。
+- **独立性：** 不读写信用分与账本、不改 `stats`、不依赖成长等级（S32-17 / S32-18）。
+- **归档约束：** 全新能力，无前置归档依赖；Living Spec 归档后新增 `openspec/specs/route-completion/`。
 | S31 | REQ-030 §4 R-1 ~ R-26 | `openspec/changes/add-report-credit-deduction/specs/user-credit/spec.md` + `specs/admin-console/spec.md` | 无独立故事文件：以意图 + proposal + Delta 承接（与 REQ-012 / REQ-019 同口径） |
 
 ## Notes（REQ-030）
@@ -568,10 +635,10 @@
 
 - 未接入外部 ALM；本表为仓库内权威故事清单，ALM Sync 状态记为 Pending.
 
-# Story list — REQ-031（用户成长等级 LV1–LV5 / 迭代 3）
+# Story list — REQ-033（用户成长等级 LV1–LV5 / 迭代 3）
 
-- **故事：** S32 用户成长等级 LV1–LV5（GitHub issue #44；优先级 P1；迭代 3；3 点；落点页面：用户主页 / 行程详情 / 同行者信息）
-- **需求编号说明：** 合并说明（2026-11-18）：`main` 已占用 REQ-001 ~ REQ-030、S01 ~ S31（**REQ-029 / S30** = `refine-publish-route-map`，**REQ-030 / S31** = `add-report-credit-deduction`）；本需求按「后到者顺延」两次顺延，最终登记为 **REQ-031 / S32**；并行 #45 route-completion 顺延为 REQ-032 / S33。
+- **故事：** S34 用户成长等级 LV1–LV5（GitHub issue #44；优先级 P1；迭代 3；3 点；落点页面：用户主页 / 行程详情 / 同行者信息）
+- **需求编号说明：** 合并说明（2026-11-18）：`main` 已占用 REQ-001 ~ REQ-030、S01 ~ S31（**REQ-029 / S30** = `refine-publish-route-map`，**REQ-030 / S31** = `add-report-credit-deduction`）；本需求按「后到者顺延」四次顺延，最终登记为 **REQ-033 / S34**（REQ-031 / S32 由 add-route-completion 占用，REQ-032 / S33 由 add-realtime-notifications 占用）。
 - **Change：** `add-growth-level`（`user-growth` ADDED）
 - **垂直切片：** 只负责「经验事件 → 防刷 / 每日上限 → 经验流水 → 等级派生 → 6 处展示」；不含明细页 / 排行榜 / 通知 / 权益 / 管理端 / 回填 / #45。
 - **规则口径：** LV1–LV5，每 100 EXP 一级，LV5 后继续累计；发布已完成行程体验 +10（配置化）；单篇每 10 个有效赞 +5（档位锁定）；正向每日 +20（Asia/Shanghai，跨档按剩余额度截断）；举报成立 −50（每份一次，最低 0，等级随经验回退）；他人只见等级。
@@ -579,18 +646,18 @@
 
 | Story | Title | 角色 | Priority | Iteration | Points | Page | Parent REQ | Change | Status |
 |---|---|---|---|---|---|---|---|---|---|
-| S32 | 用户成长等级 LV1–LV5 | RouteMe 用户 / 其他用户 | P1 | 迭代 3 | 3 | 个人主页 / 行程详情 / 同行者信息 | REQ-031 | `add-growth-level` | P2 drafted（2026-11-18） |
+| S34 | 用户成长等级 LV1–LV5 | RouteMe 用户 / 其他用户 | P1 | 迭代 3 | 3 | 个人主页 / 行程详情 / 同行者信息 | REQ-033 | `add-growth-level` | P2 drafted（2026-11-18） |
 
-## Traceability（REQ-031）
+## Traceability（REQ-033）
 
 | Story | Requirement scenarios | Change spec | Story file |
 |---|---|---|---|
-| S32 | REQ-031 §4 L-1 ~ S-4（41 场景） | `openspec/changes/add-growth-level/specs/user-growth/spec.md`（P2 定稿） | `requirement-workspace/stories/REQ-031-growth-level.story.md` |
+| S34 | REQ-033 §4 L-1 ~ S-4（41 场景） | `openspec/changes/add-growth-level/specs/user-growth/spec.md`（P2 定稿） | `requirement-workspace/stories/REQ-033-growth-level.story.md` |
 
-## Notes（REQ-031）
+## Notes（REQ-033）
 
 - **不拆故事：** 账户、流水、等级、三类事件与展示共用同一经验口径；拆开会产生两套经验。
 - **单 capability：** `user-growth`；`trip-experiences` / `admin-console` / `user-profile` / `user-profiles` 只读消费，不改其 Requirement。
 - **与信用分分离：** 不读写 `user_credit_account` / `credit_ledger`；展示并列但文案区分。
 - **保留边界：** 经验明细页、排行榜、通知、等级权益、管理端、中文头衔、存量回填、#45 路线完成度均排除。
-- **依赖：** 体验发布 / 点赞 / 举报成立的既有事件；配置 `routeme.growth.publish-exp`；契约 / 迁移 P3 排他（预计 0.27.0 + V32）。
+- **依赖：** 体验发布 / 点赞 / 举报成立的既有事件；配置 `routeme.growth.publish-exp`；契约 / 迁移 P3 排他（预计 0.30.0 + V34）。

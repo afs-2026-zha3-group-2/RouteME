@@ -12,7 +12,7 @@ import {
 } from './growthSupport';
 
 /**
- * REQ-031 / add-growth-level 的端到端口径（E1–E8 + R1–R4）。
+ * REQ-033 / add-growth-level 的端到端口径（E1–E8 + R1–R4）。
  *
  * 造数：单日正向经验有上限（发布 +10 / 点赞分档），无法在一天内堆到 LV3，
  * 因此 E1 / E3 / E4 用 `seedExp` 直接写 `user_growth_account` + 种子账本行；

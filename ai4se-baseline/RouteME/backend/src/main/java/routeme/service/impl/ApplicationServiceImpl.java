@@ -33,6 +33,7 @@ import routeme.service.ApplicationService;
 import routeme.service.AccountStatusService;
 import routeme.service.CreditRestrictionGuard;
 import routeme.service.DemoUserService;
+import routeme.service.NotificationService;
 import routeme.service.TripCompletedEvent;
 import routeme.service.TripCancelledEvent;
 import routeme.service.TripPlanService;
@@ -53,18 +54,21 @@ public class ApplicationServiceImpl
     private final CreditRestrictionGuard creditRestrictionGuard;
     private final Clock clock;
     private final AccountStatusService accountStatusService;
+    private final NotificationService notificationService;
 
     public ApplicationServiceImpl(
             TripPlanService tripPlanService,
             DemoUserService demoUserService,
             CreditRestrictionGuard creditRestrictionGuard,
             Clock clock,
-            AccountStatusService accountStatusService) {
+            AccountStatusService accountStatusService,
+            NotificationService notificationService) {
         this.tripPlanService = tripPlanService;
         this.demoUserService = demoUserService;
         this.creditRestrictionGuard = creditRestrictionGuard;
         this.clock = clock;
         this.accountStatusService = accountStatusService;
+        this.notificationService = notificationService;
     }
 
     @Override
@@ -95,6 +99,8 @@ public class ApplicationServiceImpl
                 null,
                 null);
         save(TripApplicationEntity.from(created));
+        notificationService.notifyApplicationReceived(
+                trip.publisherId(), applicantId, trip.id(), created.id());
         return created;
     }
 
@@ -272,6 +278,19 @@ public class ApplicationServiceImpl
         }
         updateStatus(applicationId, next,
                 next == ApplicationStatusEnum.REJECTED ? "PUBLISHER_REJECT" : null, now);
+        if (next == ApplicationStatusEnum.ACCEPTED) {
+            notificationService.notifyApplicationAccepted(
+                    application.applicantId(), publisherId, trip.id(), application.id());
+            TripPlan updated = tripPlanService.require(trip.id());
+            if (updated.joinedCount() >= updated.capacity()) {
+                for (DemoUser participant : participants(trip.id())) {
+                    notificationService.notifyTripFull(participant.id(), publisherId, trip.id());
+                }
+            }
+        } else {
+            notificationService.notifyApplicationRejected(
+                    application.applicantId(), publisherId, trip.id(), application.id());
+        }
         return application.withStatus(
                 next, now, next == ApplicationStatusEnum.REJECTED ? "PUBLISHER_REJECT" : null);
     }
@@ -291,14 +310,42 @@ public class ApplicationServiceImpl
     @EventListener
     @Transactional
     public void onTripCompleted(TripCompletedEvent event) {
+        TripPlan trip = tripPlanService.require(event.tripId());
         cancelPending(event.tripId(), "TRIP_COMPLETED", event.completedAt());
+        for (TripApplication application : findByTrip(event.tripId())) {
+            if (application.isAccepted()) {
+                notificationService.notifyTripCompleted(
+                        application.applicantId(), trip.publisherId(), trip.id());
+            }
+        }
     }
 
     @EventListener
     @Transactional
     public void onTripCancelled(TripCancelledEvent event) {
         // 待处理申请随行程取消；原因属于行程（cancel_reason），不是申请人受限。
+        TripPlan trip = tripPlanService.require(event.tripId());
+        List<TripApplication> pending = findByTrip(event.tripId()).stream()
+                .filter(TripApplication::isPending)
+                .toList();
         cancelPending(event.tripId(), "TRIP_CANCELLED", event.cancelledAt());
+        for (TripApplication application : pending) {
+            notificationService.notifyApplicationClosed(
+                    application.applicantId(),
+                    trip.publisherId(),
+                    trip.id(),
+                    application.id(),
+                    event.cancelReason());
+        }
+        for (TripApplication application : findByTrip(event.tripId())) {
+            if (application.isAccepted()) {
+                notificationService.notifyTripCancelled(
+                        application.applicantId(),
+                        trip.publisherId(),
+                        trip.id(),
+                        event.cancelReason());
+            }
+        }
     }
 
     private List<TripApplication> findByTrip(long tripId) {

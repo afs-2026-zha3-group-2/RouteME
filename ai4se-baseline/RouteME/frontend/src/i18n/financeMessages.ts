@@ -63,7 +63,7 @@ export const financeMessages = {
   // 借款
   loanTitle: '小额旅行借款',
   loanHint:
-    '5% 服务费从本金扣除后发放；应还金额恒等于本金，0 利息、无罚息。每人同一时刻最多 1 笔进行中借款。',
+    '5% 服务费从本金扣除后发放；利息按本金 0.05%/日计收，逾期再加 0.1%/日罚息。每人同一时刻最多 1 笔进行中借款。',
   loanAmountLabel: '借款金额（元）',
   loanAmountHint: '100–2,000 元整',
   loanTermLabel: '期限',
@@ -71,7 +71,9 @@ export const financeMessages = {
   loanNetPreview: '到账',
   loanRepayPreview: '应还',
   loanFeePreview: '服务费',
-  loanNoInterest: '0 利息',
+  loanInterest: '利息',
+  loanPenalty: '逾期罚息',
+  loanOverdueNote: '已逾期，还款时一并结清。',
   loanSubmit: '申请借款',
   loanSubmitting: '提交中…',
   loanActiveHint: '你已有一笔进行中的借款，还清后才能再次申请。',
@@ -128,7 +130,7 @@ export const financeMessages = {
   // 费用口径
   feeNoteTitle: '费用口径',
   feeNote:
-    '保险由第三方定价与收取，RouteMe 不收保费也不参与理赔；借款按本金 − 5% 服务费 = 到账净额，应还 = 本金，0 利息、无罚息。',
+    '保险由第三方定价与收取，RouteMe 不收保费也不参与理赔；借款到账 = 本金 − 5% 服务费，应还 = 本金 + 利息（0.05%/日），逾期另加 0.1%/日罚息。',
   ineligibleTitle: '当前不可交易',
   ineligibleLedgerHint: '你仍可在账号聚合页查看自己的保险状态与借款。',
   openMyFinance: '打开我的旅行保障',

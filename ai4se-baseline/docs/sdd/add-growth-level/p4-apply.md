@@ -1,16 +1,16 @@
 # P4 实现与验证记录 — add-growth-level
 
-- **Change：** `add-growth-level`（REQ-031 / S32 用户成长等级 LV1–LV5）｜ **阶段：** P4（`/sdd:atdd-apply`）
+- **Change：** `add-growth-level`（REQ-033 / S34 用户成长等级 LV1–LV5）｜ **阶段：** P4（`/sdd:atdd-apply`）
 - **日期：** 2026-11-18 ｜ **记录人：** Jay（AO）
-- **基线：** P3 收口 `origin/main@8108481`（契约 0.26.0 / 迁移头 `V31__report_credit_deduction.sql`）；本 change 落定 **0.27.0 + `V32__add_growth_level.sql`**
+- **基线：** P3 收口 `origin/main@8108481`（契约 0.26.0 / 迁移头 `V31__report_credit_deduction.sql`）；本 change 落定 **0.30.0 + `V34__add_growth_level.sql`**
 - **计划来源：** [`tasks.md`](../../../openspec/changes/add-growth-level/tasks.md) 1.2–1.12；[`design.md`](../../../openspec/changes/add-growth-level/design.md) D1–D14；[`atdd-design.md`](../../../openspec/changes/add-growth-level/atdd-design.md) A1–A26 / E1–E8 / R1–R4
 
 ## 1. 执行切片与结果
 
 | 切片 | 内容 | 结果 |
 |---|---|---|
-| p4-1 | 契约 `0.27.0`：`/profile` 追加 `growth`、新增 `GET /users/growth`；`OpenApiTest` 版本 / 路径 / schema 断言先行 | Pass（`OpenApiTest` 19/19） |
-| p4-2 | `V32__add_growth_level.sql`：`user_growth_account` + `growth_exp_ledger`（唯一幂等键 / 等式 CHECK / 查询索引 / 存量 0 回填）；entity / mapper | Pass（`GrowthMigrationSqliteTest` 2/2：fresh + `V31 → V32` 升级） |
+| p4-1 | 契约 `0.30.0`：`/profile` 追加 `growth`、新增 `GET /users/growth`；`OpenApiTest` 版本 / 路径 / schema 断言先行 | Pass（`OpenApiTest` 19/19） |
+| p4-2 | `V34__add_growth_level.sql`：`user_growth_account` + `growth_exp_ledger`（唯一幂等键 / 等式 CHECK / 查询索引 / 存量 0 回填）；entity / mapper | Pass（`GrowthMigrationSqliteTest` 2/2：fresh + `V31 → V34` 升级） |
 | p4-3 | 等级纯函数、结算内核 `GrowthService.book`、`/profile` 读取、批量读取端点 | Pass（A1–A6 / A13–A15 / A19–A21） |
 | p4-4 | 三事件同事务挂接：发布 / 点赞分档 / 举报成立 −50 | Pass（A7–A12 / A16–A18；9/9） |
 | p4-5 | G1 C2 字段级可见性：本人含经验、他人仅 level、批量仅 level | Pass（`GrowthVisibilityApiTest` 3/3；批量缺参与超限 400 补测） |
@@ -21,8 +21,8 @@
 
 ## 2. 契约与迁移
 
-- **契约 0.27.0：** `/users/{userId}/profile` 的 `UserProfile` 追加可空只读 `growth`（`type: object` + `nullable` + `allOf: UserGrowth`）；新增 `GET /users/growth?ids=`（上限 50，缺参 / 超限 400，任一 id 不存在 404 `USER_NOT_FOUND`）；新增 `UserGrowth`（level 1–5、exp、exp_to_next、max_level）与 `UserGrowthEntry`（`user_id` + `level`）。
-- **迁移 V32：** 两表 append-only；`growth_exp_ledger` 唯一索引 `ux_growth_ledger_idempotency`、查询索引 `ix_growth_ledger_user_time`、等式 CHECK `exp_after = exp_before + applied_delta`、`exp_after >= 0`；存量账户回填 `WHERE NOT EXISTS`、固定时间戳、不补发历史事件。
+- **契约 0.30.0：** `/users/{userId}/profile` 的 `UserProfile` 追加可空只读 `growth`（`type: object` + `nullable` + `allOf: UserGrowth`）；新增 `GET /users/growth?ids=`（上限 50，缺参 / 超限 400，任一 id 不存在 404 `USER_NOT_FOUND`）；新增 `UserGrowth`（level 1–5、exp、exp_to_next、max_level）与 `UserGrowthEntry`（`user_id` + `level`）。
+- **迁移 V34：** 两表 append-only；`growth_exp_ledger` 唯一索引 `ux_growth_ledger_idempotency`、查询索引 `ix_growth_ledger_user_time`、等式 CHECK `exp_after = exp_before + applied_delta`、`exp_after >= 0`；存量账户回填 `WHERE NOT EXISTS`、固定时间戳、不补发历史事件。
 - **双引擎：** 迁移脚本只用 SQLite / H2 共同语法；SQLite 迁移测试 + H2 Flyway 启动均通过。
 
 ## 3. 结算口径落地
@@ -59,7 +59,7 @@
 | E2E 回归 | `profiles` / `detail-companions` / `experiences` / `experience-likes` / `admin-report-credit` / `trips` | 61 条中 59 passed；2 个失败均见 §6（既有债务 / 顺序耦合），分文件复核后 green |
 
 - 本地 8081 端口未生效（被本地配置覆盖），实际后端 8082 + 前端 5175；`ROUTEME_API_TARGET` / `ROUTEME_E2E_BASE_URL` / `ROUTEME_E2E_DB` 均指向独立实例与临时库，不污染开发库。
-- 迁移用例：`GrowthMigrationSqliteTest` 2/2（fresh 建表回填 0；`V31 → V32` 升级只补账户、无流水）。
+- 迁移用例：`GrowthMigrationSqliteTest` 2/2（fresh 建表回填 0；`V31 → V34` 升级只补账户、无流水）。
 
 ## 6. 偏差、说明与既有债务
 
@@ -80,7 +80,7 @@
 | 4 | 第 10 / 20 赞 +5，11–19 不增，取消不回滚，多篇分档 | `GrowthLikeApiTest`（3/3）；自赞拒绝沿用既有 `ExperienceLikeApiTest` |
 | 5 | 每日 +20 上限、截断、不补发、负向不受限 | `GrowthDailyCapApiTest`（A13–A15，`MutableClockConfig` 控日界） |
 | 6 | 举报 −50 / 幂等 / 驳回不扣 / 最低 0 / 等级回退 | `GrowthReportApiTest`（3/3）；`GrowthLevelApiTest.in_expDrops_out_levelFallsBack` |
-| 7 | 流水等式、非负、可回算 | `GrowthLedgerApiTest.in_mixedEvents_out_equationAndReversibleSum`；V32 CHECK 约束；`GrowthMigrationSqliteTest` |
+| 7 | 流水等式、非负、可回算 | `GrowthLedgerApiTest.in_mixedEvents_out_equationAndReversibleSum`；V34 CHECK 约束；`GrowthMigrationSqliteTest` |
 | 8 | 无客户端写入口 | `GrowthLedgerApiTest.in_clientWriteAttempt_out_noWriteEndpoint`；E2E R1/R2（405 / 404） |
 | 9 | 本人经验进度、他人仅 LVn | `GrowthVisibilityApiTest`（3/3）；E2E E1/E8 |
 | 10 | 4 处列表 / 详情展示 + 批量只返回等级 | E2E E4–E7；`GrowthLedgerApiTest.in_batchRead_out_onlyLevels` |
@@ -92,4 +92,4 @@
 
 - **P4 结论：Pass with documented debt**（仅 §6 的既有 E2E 债务，与本 change 无关）。
 - 未写 G2：按流程由 VL（Neal）签署；建议下一步 `/sdd:local-verify-report` 汇总本记录与门禁输出，再取 G2。
-- P5 归档（C1 已实现，无额外挂账）与 Living Spec 合并待 G3 / SA 指示；契约 0.27.0 + V32 已落地，后续 change 顺延需复核占用。
+- P5 归档（C1 已实现，无额外挂账）与 Living Spec 合并待 G3 / SA 指示；契约 0.30.0 + V34 已落地，后续 change 顺延需复核占用。

@@ -44,7 +44,7 @@ class TravelFinanceLoanApiTest {
     private JdbcClient jdbcClient;
 
     @Test
-    void in_borrowThousandFourteenDays_out_netDisbursedWithoutInterest() throws Exception {
+    void in_borrowThousandFourteenDays_out_netDisbursedWithTermInterest() throws Exception {
         mockMvc.perform(post("/api/trips/3/loans")
                         .header("X-User-Id", "2")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -54,7 +54,10 @@ class TravelFinanceLoanApiTest {
                 .andExpect(jsonPath("$.principal_cents").value(100_000))
                 .andExpect(jsonPath("$.service_fee_cents").value(5_000))
                 .andExpect(jsonPath("$.disbursed_cents").value(95_000))
-                .andExpect(jsonPath("$.repay_cents").value(100_000))
+                .andExpect(jsonPath("$.interest_cents").value(700))
+                .andExpect(jsonPath("$.repay_cents").value(100_700))
+                .andExpect(jsonPath("$.penalty_cents").value(0))
+                .andExpect(jsonPath("$.total_repay_cents").value(100_700))
                 .andExpect(jsonPath("$.term_days").value(14))
                 .andExpect(jsonPath("$.status").value("active"))
                 .andExpect(jsonPath("$.funded_at").value(NOW))
@@ -81,7 +84,8 @@ class TravelFinanceLoanApiTest {
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.service_fee_cents").value(5_000))
                 .andExpect(jsonPath("$.disbursed_cents").value(95_000))
-                .andExpect(jsonPath("$.repay_cents").value(100_000))
+                .andExpect(jsonPath("$.interest_cents").value(350))
+                .andExpect(jsonPath("$.repay_cents").value(100_350))
                 .andExpect(jsonPath("$.due_at").value("2026-11-23T09:00:00Z"));
     }
 
@@ -154,10 +158,10 @@ class TravelFinanceLoanApiTest {
                 .andExpect(jsonPath("$.repaid_at").value(NOW));
 
         assertAll(
-                () -> assertEquals(995_000, balanceOf(2), "1,095,000 - 100,000"),
+                () -> assertEquals(994_300, balanceOf(2), "1,095,000 - 100,700"),
                 () -> assertEquals(2, ledgerRows(2), "disbursement + repayment"),
                 () -> assertEquals("DEBIT", latestLedgerValue(2, "direction"), "repayment is a debit"),
-                () -> assertEquals(100_000, latestLedgerInt(2, "amount_cents"), "repay equals principal"),
+                () -> assertEquals(100_700, latestLedgerInt(2, "amount_cents"), "repay equals principal plus interest"),
                 () -> assertEquals("LOAN_REPAYMENT", latestLedgerValue(2, "entry_type"), "repayment type"),
                 () -> assertEquals("REPAID", loanValue(loanId, "status"), "stored status"),
                 () -> assertNull(loanValue(loanId, "active_user_id"), "active slot released"),
@@ -203,8 +207,8 @@ class TravelFinanceLoanApiTest {
     }
 
     @Test
-    void in_overdue_out_derivedStatusWithoutPenalty() throws Exception {
-        // Given：借 7 天，把到期时刻改到过去。
+    void in_overdue_out_derivedStatusWithAccruedPenalty() throws Exception {
+        // Given：借 7 天（利息 3.50），把到期时刻改到 6 天前。
         borrow(3, 2, 100_000, 7);
         long loanId = loanId(2);
         jdbcClient.sql("UPDATE travel_loan SET due_at = '2026-11-10T09:00:00Z' WHERE id = :id")
@@ -214,14 +218,40 @@ class TravelFinanceLoanApiTest {
         // When
         mockMvc.perform(get("/api/me/finance").header("X-User-Id", "2"))
                 .andExpect(status().isOk())
-                // Then
+                // Then：6 天 × 本金 1,000 元的 0.1% = 6 元罚息。
                 .andExpect(jsonPath("$.loans[0].status").value("overdue"))
-                .andExpect(jsonPath("$.loans[0].repay_cents").value(100_000));
+                .andExpect(jsonPath("$.loans[0].repay_cents").value(100_350))
+                .andExpect(jsonPath("$.loans[0].penalty_cents").value(600))
+                .andExpect(jsonPath("$.loans[0].total_repay_cents").value(100_950));
 
         assertAll(
-                () -> assertEquals(1_095_000, balanceOf(2), "overdue adds no charge"),
+                () -> assertEquals(1_095_000, balanceOf(2), "overdue accrual is read-only"),
                 () -> assertEquals("ACTIVE", loanValue(loanId, "status"), "overdue is not persisted"),
+                () -> assertEquals(0, penaltyCents(loanId), "accrued penalty is not persisted before repayment"),
                 () -> assertEquals(1, ledgerRows(2), "no penalty ledger row"));
+    }
+
+    @Test
+    void in_overdueRepay_out_principalInterestAndPenaltyCharged() throws Exception {
+        // Given：借 7 天，逾期 6 天后还款。
+        borrow(3, 2, 100_000, 7);
+        long loanId = loanId(2);
+        jdbcClient.sql("UPDATE travel_loan SET due_at = '2026-11-10T09:00:00Z' WHERE id = :id")
+                .param("id", loanId)
+                .update();
+
+        // When
+        mockMvc.perform(post("/api/loans/{loanId}/repay", loanId).header("X-User-Id", "2"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("repaid"))
+                .andExpect(jsonPath("$.penalty_cents").value(600))
+                .andExpect(jsonPath("$.total_repay_cents").value(100_950));
+
+        assertAll(
+                () -> assertEquals(994_050, balanceOf(2), "1,095,000 - 100,950"),
+                () -> assertEquals(2, ledgerRows(2), "disbursement + repayment"),
+                () -> assertEquals(100_950, latestLedgerInt(2, "amount_cents"), "principal + interest + penalty"),
+                () -> assertEquals(600, penaltyCents(loanId), "charged penalty is persisted"));
     }
 
     @Test
@@ -367,6 +397,13 @@ class TravelFinanceLoanApiTest {
                 .query(String.class)
                 .optional()
                 .orElse(null);
+    }
+
+    private int penaltyCents(long loanId) {
+        return jdbcClient.sql("SELECT penalty_cents FROM travel_loan WHERE id = :id")
+                .param("id", loanId)
+                .query(Integer.class)
+                .single();
     }
 
     private String ledgerValue(long userId, String column) {

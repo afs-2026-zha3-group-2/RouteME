@@ -92,7 +92,7 @@ RouteME/openapi.yaml   契约 SoT（info.version 0.6.0）
 
 | 包 | 现有成员 | 职责 |
 |---|---|---|
-| controller | 13 个 `XxxController` | 路由、参数绑定与校验、DTO↔领域转换、状态码映射；`WeatherController` 提供公开只读的 `GET /api/weather/forecast` |
+| controller | 13 个 `XxxController` | 路由、参数绑定与校验、DTO↔领域转换、状态码映射；`WeatherController` 提供公开只读的 `GET /api/weather/forecast` 与 `DELETE /api/weather/cache`；`AmapProxyController` 提供 `/_AMapService` 同源代理并对只读响应做短时缓存 |
 | param | `TripQueryParam`、`PageParam` | 入参解析（标签拆分、排序取值、分页校验、默认值），无业务判断 |
 | service | `ApplicationService`、`AuthService`、`ChatService`、`DemoUserService`、`ExperienceService`、`GreetingService`、`MyTripsService`、`ReportService`、`TripPlanService`（均为接口） | 业务规则与编排；拥有数据表的接口继承 `IService<XxxEntity>`，纯聚合服务（`MyTripsService`）不继承 |
 | service/impl | 9 个 `XxxServiceImpl` + `AbstractServiceImpl` | `extends ServiceImpl<XxxMapper, XxxEntity>` 实现接口，事务边界在这里；`AbstractServiceImpl` 只放 `nextId` / `firstBy` 这类跨表重复取数 |

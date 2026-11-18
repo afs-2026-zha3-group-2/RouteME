@@ -30,7 +30,7 @@ export function LoanList({ loans, tripTitles, busyLoanId, onRepay }: Props) {
     }
     Modal.confirm({
       title: m.repayConfirmTitle,
-      content: m.repayConfirmBody(money(loan.repay_cents)),
+      content: m.repayConfirmBody(money(loan.total_repay_cents)),
       okText: m.repay,
       cancelText: '取消',
       onOk: () => onRepay(loan),
@@ -55,11 +55,12 @@ export function LoanList({ loans, tripTitles, busyLoanId, onRepay }: Props) {
             <div className="fin-row-side">
               <span className="fin-repay">
                 <em>{m.loanRepayPreview}</em>
-                <b>{money(loan.repay_cents)}</b>
+                <b>{money(loan.total_repay_cents)}</b>
               </span>
               <span>
                 {m.loanNetPreview} {money(loan.disbursed_cents)} · {m.loanFeePreview}{' '}
-                {money(loan.service_fee_cents)}
+                {money(loan.service_fee_cents)} · {m.loanInterest} {money(loan.interest_cents)}
+                {loan.penalty_cents > 0 && ` · ${m.loanPenalty} ${money(loan.penalty_cents)}`}
               </span>
             </div>
             <div className="fin-row-meta">

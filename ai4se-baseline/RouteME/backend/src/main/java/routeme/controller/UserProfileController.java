@@ -33,6 +33,7 @@ import routeme.service.AuthService;
 import routeme.service.CreditService;
 import routeme.service.DemoUserService;
 import routeme.service.GrowthService;
+import routeme.service.RouteCompletionPolicy;
 import routeme.service.UserProfileService;
 import routeme.service.UserProfileStatsService;
 
@@ -85,7 +86,8 @@ public class UserProfileController {
                 self,
                 target.getCreatedAt(),
                 userProfileStatsService.stats(userId),
-                UserGrowthResponse.from(growth, self));
+                UserGrowthResponse.from(growth, self),
+                RouteCompletionPolicy.evaluate(null, 0));
     }
 
     /**
@@ -158,7 +160,10 @@ public class UserProfileController {
             @RequestHeader(value = "Authorization", required = false) String authorization,
             @RequestBody UserProfileUpdateRequest request) {
         DemoUser user = requireSessionUser(authorization);
-        return UserProfileResponse.from(userProfileService.save(user.id(), request), true);
+        return UserProfileResponse.from(
+                userProfileService.save(user.id(), request),
+                true,
+                RouteCompletionPolicy.evaluate(null, 0));
     }
 
     @PostMapping("/me/avatar")
@@ -166,7 +171,10 @@ public class UserProfileController {
             @RequestHeader(value = "Authorization", required = false) String authorization,
             @RequestParam("file") MultipartFile file) {
         DemoUser user = requireSessionUser(authorization);
-        return UserProfileResponse.from(userProfileService.uploadAvatar(user.id(), file), true);
+        return UserProfileResponse.from(
+                userProfileService.uploadAvatar(user.id(), file),
+                true,
+                RouteCompletionPolicy.evaluate(null, 0));
     }
 
     @GetMapping("/{userId}/avatar")

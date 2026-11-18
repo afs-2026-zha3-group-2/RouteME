@@ -5,8 +5,13 @@ import { useMyCredit } from '../credit/CreditContext';
 import { CreditRestrictionGate } from '../credit/CreditRestrictionGate';
 import { adminMessages } from '../i18n/adminMessages';
 import { financeMessages } from '../i18n/financeMessages';
+import { notificationMessages } from '../i18n/notificationMessages';
 import { GateScene } from '../identity/GateScene';
 import { tripMessages } from '../i18n/tripMessages';
+import { NotificationBadge } from '../notifications/NotificationBadge';
+import { NotificationBell } from '../notifications/NotificationBell';
+import { useNotifications } from '../notifications/NotificationContext';
+import { railBadgeCounts } from '../notifications/notificationModel';
 import { AccountStatusBanner } from '../profile/AccountStatusBanner';
 import { publisherSummary } from '../profile/profileDisplay';
 import type { Route } from '../route';
@@ -31,6 +36,7 @@ const NAV_ITEMS: NavItem[] = [
 const SUPPORT_ITEM: NavItem = { key: 'support', label: adminMessages.supportNav, href: '#/support' };
 
 // 侧栏比底部导航多一个客服入口：窄屏改用悬浮入口与账号菜单进入，避免底栏挤成 7 项。
+// 通知中心不占侧栏位置：从铃铛面板的「查看全部通知」与账号菜单进入。
 const RAIL_ITEMS: NavItem[] = [
   ...NAV_ITEMS,
   SUPPORT_ITEM,
@@ -206,6 +212,25 @@ export function AppShell({
   children,
 }: Props) {
   const active = activeKey(route);
+  const { counts } = useNotifications();
+  /**
+   * 侧栏按功能分摊未读数：行程与同行申请归「我的旅行」，聊天归「同行消息」，
+   * 客服归「联系客服」，其余（信用分 / 举报 / 账号 / 系统）归账号。
+   * 四项之和恒等于未读总数，与铃铛徽标一致。
+   */
+  const railBadges = railBadgeCounts(counts);
+  const railBadgeOf = (key: NavKey): number => {
+    if (key === 'mine') {
+      return railBadges.trips;
+    }
+    if (key === 'chat') {
+      return railBadges.chat;
+    }
+    if (key === 'support') {
+      return railBadges.support;
+    }
+    return 0;
+  };
   const isAdmin = currentUser.role === 'ADMIN';
   /** 管理员只保留浏览 / 规划 / 发布与后台入口；我的旅行、同行消息、联系客服不向管理员展示。 */
   const hiddenForAdmin: NavKey[] = ['mine', 'chat', 'support'];
@@ -374,6 +399,8 @@ export function AppShell({
         </a>
 
         <span className="topbar-spacer" />
+
+        <NotificationBell />
       </header>
 
       <aside className="rail" aria-label="主导航">
@@ -394,9 +421,23 @@ export function AppShell({
                     className={active === item.key ? 'rail-link active' : 'rail-link'}
                     href={item.href}
                     aria-current={active === item.key ? 'page' : undefined}
+                    aria-label={
+                      railBadgeOf(item.key) > 0
+                        ? item.key === 'chat'
+                          ? notificationMessages.chatUnreadLabel(railBadges.chat)
+                          : notificationMessages.entryUnread(item.label, railBadgeOf(item.key))
+                        : undefined
+                    }
                   >
                     <NavIcon name={item.key} />
                     <span>{item.label}</span>
+                    {item.key === 'chat' ? (
+                      <NotificationBadge count={railBadges.chat} testId="rail-chat-badge" />
+                    ) : item.key === 'mine' ? (
+                      <NotificationBadge count={railBadges.trips} testId="rail-trips-badge" />
+                    ) : item.key === 'support' ? (
+                      <NotificationBadge count={railBadges.support} testId="rail-support-badge" />
+                    ) : null}
                   </a>
                 ))}
               </div>
@@ -424,11 +465,20 @@ export function AppShell({
             className="rail-user"
             aria-haspopup="menu"
             aria-expanded={accountOpen}
-            aria-label={`账号：${currentUser.nickname}`}
+            aria-label={
+              railBadges.account > 0
+                ? `账号：${currentUser.nickname}，${railBadges.account} 条未读`
+                : `账号：${currentUser.nickname}`
+            }
             title="账号"
             onClick={toggleAccountMenu}
           >
             <Avatar user={currentUser} size="sm" />
+            <NotificationBadge
+              count={railBadges.account}
+              testId="rail-account-badge"
+              className="rail-user-badge"
+            />
             <span className="rail-user-text">
               <b>{currentUser.nickname}</b>
               <i>{publisherSummary(currentUser) || tripMessages.profileIncompleteShort}</i>
@@ -453,6 +503,24 @@ export function AppShell({
                 style={{ left: accountMenuAnchor.left, bottom: accountMenuAnchor.bottom }}
                 onKeyDown={moveAccountMenuFocus}
               >
+                <a
+                  className="rail-menu-item"
+                  role="menuitem"
+                  href="#/notifications"
+                  aria-label={
+                    counts.total > 0
+                      ? notificationMessages.centerEntryUnread(counts.total)
+                      : notificationMessages.centerEntry
+                  }
+                  onClick={() => setAccountOpen(false)}
+                >
+                  <svg viewBox="0 0 20 20" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M10 2.8a4.3 4.3 0 0 0-4.3 4.3v2.3L4 12.4h12l-1.7-3V9.4A4.3 4.3 0 0 0 10 2.8Z" />
+                    <path d="M8.2 15a1.9 1.9 0 0 0 3.6 0" />
+                  </svg>
+                  <span>{notificationMessages.centerEntry}</span>
+                  <NotificationBadge count={counts.total} testId="account-notification-badge" />
+                </a>
                 {!isAdmin && (
                   <a
                     className="rail-menu-item"
@@ -540,9 +608,17 @@ export function AppShell({
             className={active === item.key ? 'tab-link active' : 'tab-link'}
             href={item.href}
             aria-current={active === item.key ? 'page' : undefined}
+            aria-label={
+              item.key === 'chat' && counts.by_type.CHAT > 0
+                ? notificationMessages.chatUnreadLabel(counts.by_type.CHAT)
+                : undefined
+            }
           >
             <NavIcon name={item.key} />
             <span>{item.label}</span>
+            {item.key === 'chat' ? (
+              <NotificationBadge count={counts.by_type.CHAT} testId="tab-chat-badge" />
+            ) : null}
           </a>
         ))}
         {currentUser.role === 'ADMIN' && (

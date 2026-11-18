@@ -53,10 +53,20 @@ routeme:
     security-js-code: ${AMAP_SECURITY_JS_CODE:}
     # 私有网关或测试替身可覆盖；默认高德正式服务。
     base-url: ${AMAP_REST_BASE_URL:https://restapi.amap.com}
+    # 只读检索/路线响应按「路径 + 参数」在进程内缓存，减少高德配额消耗；
+    # 0 关闭缓存，请求带 refresh=true 可强制刷新（v3/ip 与 JSONP 埋点不缓存）。
+    cache-ttl-seconds: ${AMAP_CACHE_TTL_SECONDS:600}
+    cache-max-entries: ${AMAP_CACHE_MAX_ENTRIES:512}
   weather:
     # Open-Meteo 免 Key：预报与地理编码各一个地址，测试替身可用环境变量覆盖。
     base-url: ${OPEN_METEO_BASE_URL:https://api.open-meteo.com}
     geocoding-base-url: ${OPEN_METEO_GEOCODING_BASE_URL:https://geocoding-api.open-meteo.com}
+    # 备用预报主机（同一数据源的集合预报）：主用主机被网络阻断时自动切换，数值仍来自 Open-Meteo。
+    fallback-base-url: ${OPEN_METEO_FALLBACK_BASE_URL:https://ensemble-api.open-meteo.com}
+    # 预报表按「日期 + 经纬度（约 1 km）+ 上游来源」在进程内缓存，减少上游调用次数。
+    # 0 表示关闭缓存；请求带 refresh=true 可强制刷新，DELETE /api/weather/cache 可整体清空。
+    cache-ttl-minutes: ${WEATHER_CACHE_TTL_MINUTES:30}
+    cache-max-entries: ${WEATHER_CACHE_MAX_ENTRIES:2000}
 mybatis-plus:
   # 自定义分页查询的 XML 位置；其余查询由 BaseMapper 与 LambdaQueryWrapper 生成。
   mapper-locations: classpath*:mapper/**/*.xml

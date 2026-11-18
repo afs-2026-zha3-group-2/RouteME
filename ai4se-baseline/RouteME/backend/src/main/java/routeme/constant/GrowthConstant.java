@@ -3,7 +3,7 @@ package routeme.constant;
 import java.util.List;
 
 /**
- * 用户成长等级口径（REQ-031）：每 100 EXP 一级、单篇每 10 个有效赞 +5、
+ * 用户成长等级口径（REQ-033）：每 100 EXP 一级、单篇每 10 个有效赞 +5、
  * 正向每日上限 20、举报成立 −50；与信用分账本完全分离。
  */
 public final class GrowthConstant {

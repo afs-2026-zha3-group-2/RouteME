@@ -12,6 +12,7 @@ import { AdminUsersPage } from './admin/users/AdminUsersPage';
 import { loadSessionUser, loadUsers, logoutAccount } from './api';
 import { ChatPage } from './chat/ChatPage';
 import { LearningPage } from './credit/LearningPage';
+import { CreditRecordsPage } from './credit/CreditRecordsPage';
 import { CreditProvider } from './credit/CreditContext';
 import { FinancePage } from './finance/FinancePage';
 import { TripFinancePage } from './finance/TripFinancePage';
@@ -21,6 +22,9 @@ import { HomePage } from './home/HomePage';
 import { tripMessages } from './i18n/tripMessages';
 import { IdentityGate } from './identity/IdentityGate';
 import { MyTripsPage } from './mine/MyTripsPage';
+import { NotificationProvider } from './notifications/NotificationContext';
+import { NotificationCenterPage } from './notifications/NotificationCenterPage';
+import { ReportDetailPage } from './reports/ReportDetailPage';
 import { MapExplorerPage } from './pages/MapExplorerPage';
 import { AiPlannerPage } from './pages/AiPlannerPage';
 import { ProfilePage } from './profile/ProfilePage';
@@ -181,12 +185,13 @@ export function App() {
     return (
       <ProfileProvider currentUser={currentUser}>
         <CreditProvider currentUser={currentUser}>
-<AppShell
-            currentUser={currentUser}
-            isAuthenticated={authToken !== null}
-            onLogout={logout}
-            route={route}
-          >
+<NotificationProvider currentUser={currentUser}>
+            <AppShell
+              currentUser={currentUser}
+              isAuthenticated={authToken !== null}
+              onLogout={logout}
+              route={route}
+            >
             {route.name === 'home' && (
               <HomePage currentUser={currentUser} token={authToken} />
             )}
@@ -242,6 +247,11 @@ export function App() {
             {route.name === 'support' && (
               <SupportPage currentUser={currentUser} token={authToken} />
             )}
+            {route.name === 'notifications' && <NotificationCenterPage />}
+            {route.name === 'creditRecords' && <CreditRecordsPage />}
+            {route.name === 'reportDetail' && (
+              <ReportDetailPage currentUser={currentUser} reportId={route.reportId} />
+            )}
             {route.name === 'adminDashboard' && (
               <AdminGuard currentUser={currentUser} token={authToken}>
                 {(token) => <AdminDashboardPage token={token} />}
@@ -291,6 +301,7 @@ export function App() {
             )}
             {route.name === 'notFound' && <PlaceholderPage text={tripMessages.detailNotFound} />}
           </AppShell>
+          </NotificationProvider>
         </CreditProvider>
       </ProfileProvider>
     );

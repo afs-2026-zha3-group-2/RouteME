@@ -15,7 +15,7 @@
 | spec-first | 先写规格再写代码 | Critical | always | — |
 | artifact-review-gate | 每份工件生成后先评审、再按签署人矩阵签齐再进入下一步 | Critical | always | — |
 | tdd-cycle | TDD Red / Green / Refactor 循环 | Critical | always | — |
-| git-commit-conventions | 提交时机、commit message 与提交前检查 | Critical | always | — |
+| git-commit-conventions | 提交时机、commit message（必须英文）与提交前检查 | Critical | always | — |
 | git-branching-and-pr | 分支、PR、换行符与回滚 | High | always | — |
 | code-review-checklist | 评审方式与规则入口 | High | manual | — |
 
@@ -191,6 +191,7 @@ Archive  → /opsx archive 之后提交一次
 <type>(<stage>): <change-id> <description>
 ```
 
+- **message MUST 全英文（强制）。** 主题、正文、`<type>`、`<stage>`、`<change-id>`、`<description>` 都用英文，不得出现任何中文字符；城市、产品、模块等中文专名写成英文原词或拼音，不与汉字混写。此约束与格式约束同级，违反即不得提交，也不得用「先提交后改」绕过。
 - `stage` 只有两个：`verify`（规格 + 代码 + 测试 + 验证证据）、`archive`（归档目录、living spec、知识库）。
 - `type`：`test` / `feat` / `fix` / `refactor` / `docs` / `style` / `chore`。
 - `<change-id>` 与 `openspec/changes/` 目录名、分支名一致，从提交能回溯到 spec。
@@ -217,6 +218,7 @@ chore(archive): quote-shipping-rule archive change and merge delta into living s
 | verify 前是否已通过 `/opsx verify` 且完整测试集通过 | pr-merge |
 | archive 提交是否只含归档产物、living spec 与知识库更新 | pr-merge |
 | message 是否为 `<type>(<stage>): <change-id> <description>` | pr-merge |
+| message 是否全英文（主题与正文均无中文字符） | pr-merge |
 | 是否混入 WIP 中间提交、多个 spec 或无关修改 | pr-merge |
 | 改动 Java 源码后是否仍可编译，已启用的格式化/静态检查是否运行 | pr-merge |
 
@@ -234,6 +236,10 @@ feat(green): support free shipping for member goods of 80
 不推荐 — 时机或原子性错误
 feat: quote-shipping-rule done before verify
 feat(verify): quote-shipping-rule + promotion-rule
+
+不推荐 — message 不是英文
+fix(verify): add-trip-weather 天气上游不可用时切换备用预报主机
+feat(verify): add-trip-weather 支持降级
 ```
 
 ### 例外
@@ -359,3 +365,5 @@ target/  node_modules/  dist/  .metals/  *.mv.db  *.trace.db  .idea/  *.iml  e2e
 以 spec 为提交单元，让主干历史里每个提交都对应一个「已验证、可评审、可整体回滚」的业务变更，而不是实现过程中的中间态。代价是 Red / Green / Refactor 的思考过程不再留在 Git 历史里，因此 Red 证据必须记录在 verify 报告中，由报告承担过程可追溯性。分支与 PR 是 change 的外层容器：边界清楚，评审才能只针对一个变更判断。
 
 规则按主题只写一次、其余位置用锚点引用，是为了让同一条约束不会出现两个版本的措辞——重复的规范在修改时最容易分叉，而分叉后评审就失去唯一判据。
+
+commit message 强制英文，是为了让提交历史在 `git log`、CI 日志、PR 与评审工具里保持同一套可检索的关键词，与 `<type>(<stage>): <change-id> <description>` 这种英文骨架一致；需求与文档仍用中文，两者不混写。

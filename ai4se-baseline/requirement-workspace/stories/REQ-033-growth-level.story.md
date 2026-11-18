@@ -1,10 +1,10 @@
-# S32 — 用户成长等级 LV1–LV5
+# S34 — 用户成长等级 LV1–LV5
 
-- **Parent REQ：** REQ-031 `requirement-workspace/requirements/REQ-031-growth-level.md`
+- **Parent REQ：** REQ-033 `requirement-workspace/requirements/REQ-033-growth-level.md`
 - **Change：** `add-growth-level`（`user-growth` ADDED）
 - **Priority：** P1 ｜ **Iteration：** 迭代 3 ｜ **Points：** 3
 - **Page：** 个人主页 / 行程详情 / 同行者信息（落地 6 处展示面）
-- **Source：** GitHub Issue [#44](https://github.com/afs-2026-zha3-group-2/RouteME/issues/44)；意图 `requirement-workspace/intents/REQ-031-growth-level.md`；基线 `origin/main@f2bad40`（P1 起草于 `71f3ad4`）
+- **Source：** GitHub Issue [#44](https://github.com/afs-2026-zha3-group-2/RouteME/issues/44)；意图 `requirement-workspace/intents/REQ-033-growth-level.md`；基线 `origin/main@f2bad40`（P1 起草于 `71f3ad4`）
 - **Status：** P2 drafted（2026-11-18）
 
 ## Story statement
@@ -36,7 +36,7 @@
 
 ## Requirement traceability
 
-| Story AC | REQ-031 scenario | Change spec（P2 定稿后回填） |
+| Story AC | REQ-033 scenario | Change spec（P2 定稿后回填） |
 |---|---|---|
 | 等级与初始 | L-1 ~ L-6、R-6 | `openspec/changes/add-growth-level/specs/user-growth/spec.md`（P2 定稿） |
 | 发布经验 | P-1 ~ P-5 | 同上 |

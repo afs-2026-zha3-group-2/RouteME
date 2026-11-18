@@ -1,8 +1,8 @@
 import { useState } from 'react';
-import { Button, InputNumber, Select, Typography } from 'antd';
+import { Button, InputNumber, Segmented, Typography } from 'antd';
 import { financeMessages as m } from '../i18n/financeMessages';
 import type { LoanCreateRequest, LoanTermDays, TravelLoan } from '../types';
-import { feeOf, money, netOf } from './financeFormat';
+import { feeOf, interestOf, money, netOf } from './financeFormat';
 
 const TERMS: LoanTermDays[] = [7, 14, 30];
 const MIN_YUAN = 100;
@@ -30,9 +30,14 @@ export function LoanForm({ activeLoan, disabled, submitting, onSubmit }: Props) 
           {m.loanNetPreview} {money(activeLoan.disbursed_cents)} ·{' '}
           <span className="fin-repay">
             <em>{m.loanRepayPreview}</em>
-            <b>{money(activeLoan.repay_cents)}</b>
+            <b>{money(activeLoan.total_repay_cents)}</b>
           </span>
         </Typography.Text>
+        {activeLoan.penalty_cents > 0 && (
+          <p className="fin-hint">
+            {m.loanPenalty} {money(activeLoan.penalty_cents)} · {m.loanOverdueNote}
+          </p>
+        )}
         <a className="fin-link" href="#/finance">
           {m.loanActiveLink}
         </a>
@@ -42,6 +47,8 @@ export function LoanForm({ activeLoan, disabled, submitting, onSubmit }: Props) 
 
   const principalCents = Math.round((principalYuan ?? 0) * 100);
   const fee = feeOf(principalCents);
+  const interest = interestOf(principalCents, termDays);
+  const repay = principalCents + interest;
 
   const submit = () => {
     if (
@@ -80,24 +87,27 @@ export function LoanForm({ activeLoan, disabled, submitting, onSubmit }: Props) 
             }}
           />
         </label>
-        <label className="fin-field">
-          <span className="fin-label">{m.loanTermLabel}</span>
-          <Select<LoanTermDays>
+        <div className="fin-field">
+          <span className="fin-label" id="fin-loan-term-label">
+            {m.loanTermLabel}
+          </span>
+          <Segmented<LoanTermDays>
+            block
             value={termDays}
-            aria-label={m.loanTermLabel}
+            aria-labelledby="fin-loan-term-label"
             onChange={setTermDays}
             options={TERMS.map((days) => ({ value: days, label: `${days} ${m.loanTermUnit}` }))}
           />
-        </label>
+        </div>
       </div>
       {invalid && <p className="fin-error">{m.loanInvalidAmount}</p>}
       <p className="fin-preview" data-testid="loan-preview">
         {m.loanNetPreview} <b>{money(netOf(principalCents))}</b> ·{' '}
         <span className="fin-repay">
           <em>{m.loanRepayPreview}</em>
-          <b>{money(principalCents)}</b>
+          <b>{money(repay)}</b>
         </span>
-        （{m.loanFeePreview} {money(fee)}，{m.loanNoInterest}）
+        （{m.loanFeePreview} {money(fee)}，{m.loanInterest} {money(interest)}）
       </p>
       <Button
         type="primary"

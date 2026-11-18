@@ -5,15 +5,15 @@
 - **Artifact under review:** [specs/user-growth/spec.md](../../openspec/changes/add-growth-level/specs/user-growth/spec.md)
 - **Supporting inputs:**
   - [proposal.md](../../openspec/changes/add-growth-level/proposal.md)（同日提案）
-  - [requirements/REQ-031-growth-level.md](../../requirement-workspace/requirements/REQ-031-growth-level.md)（41 场景）
-  - [intents/REQ-031-growth-level.md](../../requirement-workspace/intents/REQ-031-growth-level.md)（D1–D15）
-  - [deep-dive.md](../../requirement-workspace/deep-dive.md)「REQ-031 增补」（①–④ 四表）
+  - [requirements/REQ-033-growth-level.md](../../requirement-workspace/requirements/REQ-033-growth-level.md)（41 场景）
+  - [intents/REQ-033-growth-level.md](../../requirement-workspace/intents/REQ-033-growth-level.md)（D1–D15）
+  - [deep-dive.md](../../requirement-workspace/deep-dive.md)「REQ-033 增补」（①–④ 四表）
   - [impact-brief.md](../../requirement-workspace/impact-brief.md) §30
   - 前序评审：[20261118-add-growth-level-proposal-review.md](20261118-add-growth-level-proposal-review.md)
 - **Evidence:**
   - `openspec validate add-growth-level --strict` → `Change 'add-growth-level' is valid`
   - Delta 统计：`user-growth` **ADDED**，9 Requirement / 41 Scenario；无 MODIFIED / REMOVED
-  - 需求映射：REQ-031 §4 的 L / P / K / D / R / V / C / S 八组均能在 Delta 中找到对应 Requirement / Scenario
+  - 需求映射：REQ-033 §4 的 L / P / K / D / R / V / C / S 八组均能在 Delta 中找到对应 Requirement / Scenario
   - 规则核对：`rules/process/rules.md#spec-first`、`#artifact-review-gate`；`rules/architecture/rules.md#api-contract`；`rules/testing/rules.md#java-testing`、`#web-testing`；`rules/documentation/rules.md#sdd-artifacts`、`#document-conventions`
   - 基线一致性：`openapi.yaml` 0.26.0；迁移头 V31（#29 已并入 main）；`origin/main@f2bad40`
 
@@ -56,6 +56,6 @@
 
 ## 编号顺延说明
 
-- **变更：** REQ-029 / S30 → REQ-030 / S31（合并 `8992853`）→ **REQ-031 / S32**（合并 `f2bad40`；REQ-030 / S31 已由 `add-report-credit-deduction`（#29）占用）。
+- **变更：** REQ-029 / S30 → REQ-030 / S31（合并 `8992853`）→ **REQ-033 / S34**（合并 `f2bad40`；REQ-030 / S31 已由 `add-report-credit-deduction`（#29）占用）。
 - **处理：** 本报告内的需求编号、路径与 `impact-brief` §30 引用已同步改号；评审结论与发现项不变。
 - **签署：** WAYNE + Jay（2026-11-18）按内容不变沿用。

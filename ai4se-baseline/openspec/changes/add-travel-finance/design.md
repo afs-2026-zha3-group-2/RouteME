@@ -13,7 +13,7 @@
 - 写守卫唯一入口是 `AccountStatusService.assertCanWrite(userId, WriteScopeEnum.BUSINESS)`：`BANNED` 全阻断，`SUSPENDED` 阻断 `BUSINESS`；没有全局拦截器，守卫由服务层调用。
 - 身份为演示级 `X-User-Id`；Jackson 全局 `SNAKE_CASE`；借款金额沿用整数分（`*_cents`，`INTEGER` 列）。
 - RouteME 不是保险机构：保险入口、提供方名称与条款 / 理赔 / 求助地址来自配置 `routeme.insurance.*`，RouteME 不参与定价、承保与理赔。
-- 契约基线 0.17.0、Flyway head `V23`（P3 时点）；rebase 后 main 为 0.24.0 + `V29`，本 change 落定 **0.25.0 + `V30`**；`OpenApiTest` 断言 `info.version`。
+- 契约基线 0.17.0、Flyway head `V23`（P3 时点）；rebase 后 main 为 0.24.0 + `V29`，本 change 落定 **0.25.0 + `V30`**；后续增补利息与逾期罚息，迁移 **`V32`**、契约 **0.28.0**；`OpenApiTest` 断言 `info.version`。
 - 迁移必须同时跑 SQLite（运行时 / 迁移测试）与 H2（Spring 测试）；两者都不支持可靠的部分唯一索引。
 - 原型：P3 时点完成过金融页面；rebase 后 `docs/prototype/v1` 已由 main 归档且禁止结构性改动，原型改动撤回，界面证据以生产 UI 与 E2E 为准。
 
@@ -51,7 +51,7 @@
   ```
 
   - `insurance_policy`：`id`、`user_id`、`trip_id`、`provider VARCHAR(128)`、`coverage_start VARCHAR(10)`、`coverage_end VARCHAR(10)`、`status VARCHAR(16)`、`confirmed_at VARCHAR(40)`。`CHECK (status IN ('ACTIVE', 'EXPIRED'))` 只约束取值；服务层只写 `ACTIVE`，`EXPIRED` 由读取时刻派生，不迁移。**不建**保费、保额、保单号、证件或银行卡列。
-  - `travel_loan`：`id`、`user_id`、`trip_id`、`principal_cents`、`service_fee_cents`、`disbursed_cents`、`repay_cents`、`term_days`、`status`、`active_user_id`、`funded_at`、`due_at`、`repaid_at`；`CHECK (principal_cents BETWEEN 10000 AND 200000)`、`CHECK (service_fee_cents = principal_cents * 5 / 100)`、`CHECK (disbursed_cents = principal_cents - service_fee_cents)`、`CHECK (repay_cents = principal_cents)`。
+  - `travel_loan`：`id`、`user_id`、`trip_id`、`principal_cents`、`service_fee_cents`、`disbursed_cents`、`interest_cents`、`repay_cents`、`penalty_cents`、`term_days`、`status`、`active_user_id`、`funded_at`、`due_at`、`repaid_at`；`CHECK (principal_cents BETWEEN 10000 AND 200000)`、`CHECK (service_fee_cents = principal_cents * 5 / 100)`、`CHECK (disbursed_cents = principal_cents - service_fee_cents)`、`CHECK (interest_cents = (principal_cents * 5 * term_days + 5000) / 10000)`、`CHECK (repay_cents = principal_cents + interest_cents)`、`CHECK (penalty_cents >= 0)`。`V30` 先建无息版本，`V32` 重建表并回填利息与 `repay_cents`（SQLite 不能就地删除旧 CHECK）。
   - 唯一索引：`ux_insurance_policy_user_trip (user_id, trip_id)`；`ux_travel_loan_active_user (active_user_id)`（`ACTIVE` 时等于 `user_id`，`REPAID` 时置 NULL，以此表达「每人最多 1 笔进行中」且不依赖部分索引）。
   - 普通索引：`ix_wallet_ledger_user_time (user_id, occurred_at)`、`ix_insurance_policy_user_time (user_id, confirmed_at)`、`ix_travel_loan_user_time (user_id, funded_at)`、`ix_travel_loan_trip (trip_id)`。
   - 四表均有 `FOREIGN KEY` 指向 `app_users`；保险与借款另指向 `trip_plans`。
@@ -84,7 +84,7 @@
 - **Decision：**
   - `InsuranceProperties`（`@ConfigurationProperties(prefix = "routeme.insurance")`）：`providerName`、`purchaseUrl`、`policyUrl`、`claimUrl`、`emergencyUrl`；空值回退到 `第三方保险机构（演示）` 与 `https://example.com/routeme/insurance/...`，生产通过环境变量覆盖。
   - `InsuranceProductEnum`：`ACCIDENT_MEDICAL`、`EMERGENCY_RESCUE`、`TRAVEL_BAGGAGE`（wire / 名称 / 范围摘要），**不含价格和保额**；只用于展示第三方保障类别。
-  - `FinanceFeeConstant.FEE_RATE_PERCENT = 5` 仅服务借款：`fee = principal * 5 / 100`，`net = principal - fee`，`repay = principal`；本金必须是 100 的倍数（整元），因此恒为整数。
+  - `FinanceFeeConstant.FEE_RATE_PERCENT = 5` 仅服务借款：`fee = principal * 5 / 100`，`net = principal - fee`；利息 `interestOf = 本金 × 0.05%/日 × 期限天数`（`DAILY_INTEREST_BPS = 5`），`repay = principal + interest`；逾期罚息 `penaltyOf = 本金 × 0.1%/日 × 已开始逾期天数`（`DAILY_PENALTY_BPS = 10`），`overdueDaysOf` 把到期后的任意一秒算作第 1 天，`totalRepay = repay + penalty`。所有金额用整数分并四舍五入到分；本金必须是 100 的倍数（整元），服务费恒为整数。
   - 投标入口只拼接 `trip_id`（URL 编码），不传用户身份、证件或保单信息。
 - **Alternatives：** 价格入库 / 枚举内置价格（RouteME 无权定价）；`BigDecimal`（整数运算已足够）。
 - **Impact：** `config/InsuranceProperties.java`、`config/InsuranceConfig.java`、`enums/InsuranceProductEnum.java`；`application.yml` 可覆盖但默认值即可运行。
@@ -103,28 +103,30 @@
 
 ### D5 借款发放：整元、净额、到期与单笔进行中
 
-- **Context：** 借款要把「5% 从本金扣」和「应还 = 本金」同时表达清楚，并保证一人一笔进行中。
+- **Context：** 借款要把「5% 从本金扣」「按日计息」和「应还 = 本金 + 利息」同时表达清楚，并保证一人一笔进行中。
 - **Decision：**
   - 入参 `principal_cents`（10,000–200,000，且 `% 100 == 0`）、`term_days ∈ {7, 14, 30}`；否则 400 `INVALID_INPUT`。
   - 顺序：入参 → `requireCurrent` → 同行者 → 行程状态 → `assertCanWrite(BUSINESS)` → 已有 `ACTIVE` 借款（409 `ACTIVE_LOAN_EXISTS`）→ 钱包入账净额（`principal - fee`）→ 插入借款。
+  - `interest_cents = interestOf(principal, termDays)`，`repay_cents = principal + interest_cents`，`penalty_cents = 0`；1,000 元 / 14 天示例 = 700 分利息、100,700 分应还。
   - `funded_at = clock.instant()`；`due_at = funded_at.plus(termDays, DAYS)`；忽略客户端 `due_at`。
   - 借款行 `status = ACTIVE`、`active_user_id = user_id`；插入命中 `ux_travel_loan_active_user` → 抛 `ActiveLoanExistsException`（409），事务回滚入账与流水。
   - 列表：`listByUser`、`listByTrip`，按 `funded_at DESC`；响应状态由 `status + due_at` 派生（见 D6）。
-- **Alternatives：** 允许非整元（5% 出现角分，需要额外舍入规则）；把服务费加到应还（与发起人口径相反）；允许并行多笔（演示无法验证债务叠加）。
+- **Alternatives：** 允许非整元（5% 出现角分，需要额外舍入规则）；把服务费加到应还（与发起人口径不同）；允许并行多笔（演示无法验证债务叠加）。
 - **Impact：** 新增 `TravelLoanEntity` / `TravelLoanMapper` / `LoanServiceImpl`、`TravelLoan` 领域对象与响应；`LoanStatusEnum` 只落 `ACTIVE` / `REPAID`。
 
 ### D6 还款、逾期派生与状态机
 
-- **Context：** 还款必须可结清、不可重复扣款；逾期只展示、不罚息。
+- **Context：** 还款必须可结清、不可重复扣款；逾期展示的同时必须累计罚息，并在还款时一并结清。
 - **Decision：**
   - 还款不调用 `assertCanWrite`，因此 `SUSPENDED` / `BANNED` 仍可还款；其余金融写操作保留 `BUSINESS` 守卫。
-  - `LoanService.repay(long userId, long loanId)`：加载借款；不存在或 `user_id != userId` → 403 `FORBIDDEN`（不新增「借款不存在」码，避免泄漏他人订单存在性）→ 状态非 `ACTIVE` → 409 `LOAN_NOT_ACTIVE` → 钱包扣 `repay_cents`（409 `INSUFFICIENT_BALANCE`）→ 条件更新：
+  - `LoanService.repay(long userId, long loanId)`：加载借款；不存在或 `user_id != userId` → 403 `FORBIDDEN`（不新增「借款不存在」码，避免泄漏他人订单存在性）→ 状态非 `ACTIVE` → 409 `LOAN_NOT_ACTIVE` → 计算 `penaltyCents = loan.accruedPenaltyCents(now)` 与 `totalRepayCents = repay_cents + penaltyCents` → 钱包扣 `totalRepayCents`（409 `INSUFFICIENT_BALANCE`）→ 条件更新：
     ```sql
-    UPDATE travel_loan SET status = 'REPAID', active_user_id = NULL, repaid_at = #{now}
+    UPDATE travel_loan
+    SET status = 'REPAID', active_user_id = NULL, repaid_at = #{now}, penalty_cents = #{penaltyCents}
     WHERE id = #{loanId} AND user_id = #{userId} AND status = 'ACTIVE'
     ```
     0 行 → 409 `LOAN_NOT_ACTIVE`（并发重复还款只成功一次，事务回滚扣款）。
-  - 响应状态派生：`REPAID` → `repaid`；`ACTIVE && now.isAfter(dueAt)` → `overdue`；否则 `active`。`repay_cents` 恒等于本金，不追加罚息、不自动扣款。
+  - 响应状态派生：`REPAID` → `repaid`；`ACTIVE && now.isAfter(dueAt)` → `overdue`；否则 `active`。进行中的逾期罚息在读取时按 `overdueDaysOf(dueAt, now)` 实时派生（到期后的任意一秒为第 1 天），仅在还款时落库到 `penalty_cents`；已还清借款返回落库值。`total_repay_cents = repay_cents + penalty_cents`。不自动扣款、不封禁。
 - **Alternatives：** 落独立 `OVERDUE` 状态（需定时任务与状态漂移处理）；按账号状态阻断还款（债务永续）。
 - **Impact：** 还款后 `active_user_id = NULL` 释放唯一索引，可再次借款；响应枚举含 `overdue`，DB 不含。
 
@@ -140,10 +142,10 @@
 - **Alternatives：** 前端隐藏即视为资格（可绕过）；用 `LocalDate.now()`（CI 时区漂移）；把账号状态并入 `is_eligible`（页面无法解释 403）。
 - **Impact：** 新增 `FinanceEligibility` 纯逻辑与 `ineligible_reason` 契约字段；控制器只做身份解析与响应组装。
 
-### D8 契约 0.25.0
+### D8 契约 0.28.0
 
-- **Context：** 新增 6 条路径、若干 schema 与 3 个业务码；需避开在途 0.18.0 + `V24`。
-- **Decision：** `RouteME/openapi.yaml`（`OpenApiTest` 以 `../openapi.yaml` 读取，相对 `backend/` 即仓库 `RouteME/` 根）由 0.17.0 升 **0.25.0**（`V30` 对应），新增：
+- **Context：** 新增 6 条路径、若干 schema 与 3 个业务码；需避开在途 0.18.0 + `V24`；后续增补借款利息与逾期罚息，版本顺延到 0.28.0。
+- **Decision：** `RouteME/openapi.yaml`（`OpenApiTest` 以 `../openapi.yaml` 读取，相对 `backend/` 即仓库 `RouteME/` 根）由 0.17.0 升 **0.28.0**（`V30` 建表、`V32` 增补利息与罚息），新增：
 
   | 方法与路径 | 成功 | 失败 |
   |---|---|---|
@@ -155,14 +157,14 @@
   | `POST /loans/{loanId}/repay` | 200 `TravelLoan` | 401、403 `FORBIDDEN`、409 `INSUFFICIENT_BALANCE` / `LOAN_NOT_ACTIVE` |
 
   - Schema：`Wallet`、`WalletLedgerEntry`、`InsurancePolicy`、`InsuranceProvider`、`InsuranceProduct`、`InsuranceSummary`、`InsuranceRedirect`、`TravelLoan`、`TripFinance`、`MyFinance`、`LoanCreateRequest`。删除 `FinanceCatalog` / `FinancePlan` / `InsurancePurchaseRequest` 与 `/finance/plans`。
-  - `InsurancePolicy.status` 枚举 `[active, expired]`（`expired` 只读派生）；`InsuranceSummary.status` 枚举 `[not_purchased, active, expired]`，`purchase_url` 与 `policy` 可空；`InsuranceProduct.code` 枚举 `[accident_medical, emergency_rescue, travel_baggage]`，不含价格 / 保额字段；`TravelLoan.status` 枚举 `[active, repaid, overdue]`；`LoanCreateRequest.term_days` 枚举 `[7, 14, 30]`，`principal_cents` 为 `multipleOf: 100` 且 10,000–200,000。
+  - `InsurancePolicy.status` 枚举 `[active, expired]`（`expired` 只读派生）；`InsuranceSummary.status` 枚举 `[not_purchased, active, expired]`，`purchase_url` 与 `policy` 可空；`InsuranceProduct.code` 枚举 `[accident_medical, emergency_rescue, travel_baggage]`，不含价格 / 保额字段；`TravelLoan.status` 枚举 `[active, repaid, overdue]`；`TravelLoan` 必填 `interest_cents`、`penalty_cents`、`total_repay_cents`，其中 `total_repay_cents = repay_cents + penalty_cents`；`LoanCreateRequest.term_days` 枚举 `[7, 14, 30]`，`principal_cents` 为 `multipleOf: 100` 且 10,000–200,000。
   - 所有金额字段 `type: integer`、`format: int32`，描述注明「整数分，CNY」；标识字段（`id` / `trip_id` / `loan_id`）`type: integer`、`format: int64`；`coverage_start` / `coverage_end` / `start_date` / `end_date` 为 `format: date`；`*_at` 为 `format: date-time`（UTC）。`Wallet.balance_cents` 最小值 0。
   - `WalletLedgerEntry` 枚举取 wire 小写：`direction ∈ [credit, debit]`、`entry_type ∈ [loan_disbursement, loan_repayment]`、`related_type ∈ [travel_loan]`；`related_id` 为字符串（与 `wallet_ledger.related_id VARCHAR(64)` 一致）。`MyFinance.ledger` 与 `WalletLedgerEntry` 集合描述均注明「按 `occurred_at` 升序（同刻按 `id` 升序）」，与 D2 的 `ledgerOf` 排序一致。
   - 每个响应 schema 写全 `required`；服务端生成字段（`id`、余额 / 费用、`status`、`*_at`、`coverage_*`、提供方名称与入口）标 `readOnly: true`。投保入口、状态回写与借款 POST、还款 POST 各给典型 `examples`；示例必须符合 schema（不写越界金额）。
   - `Error.code` 增加 `INSUFFICIENT_BALANCE`、`ACTIVE_LOAN_EXISTS`、`LOAN_NOT_ACTIVE`（均 409）；移除 `POLICY_EXISTS`。
   - `MyFinance` = `wallet + ledger + policies + loans`；`TripFinance` = `trip_id / trip_title / destination / trip_status / start_date / end_date / companion_count / is_eligible / ineligible_reason / wallet / insurance / loans`。
   - 演示阶段账本与列表不分页：单用户交易量受「行程数 + 单笔进行中借款」限制，规模有界；分页、审计导出与交易监控属 NFR，已在 `proposal.md` 列为 out of scope，P4 验证报告注明 deferred。若真实数据增长需另开 change 增加 `page` / `size`。
-  - `OpenApiTest` 的 `in_openApiFile_out_travelFinanceContractDeclared` 按新路径 / schema / 枚举断言，并断言 `POLICY_EXISTS` 已退休；版本断言为 `0.25.0`。
+  - `OpenApiTest` 的 `in_openApiFile_out_travelFinanceContractDeclared` 按新路径 / schema / 枚举断言，并断言 `POLICY_EXISTS` 已退休；版本断言为 `0.28.0`，并断言 `TravelLoan` 含 `interest_cents` / `penalty_cents` / `total_repay_cents`。
 - **Alternatives：** 0.18.0（与在途通知 change 冲突）；`V24`（冲突）；保留站内商品目录（越界承保）。
 - **Impact：** `OpenApiTest` 版本 / 路径 / schema / 错误码断言；Redocly lint；前端 `types.ts`；若合并顺序变化则整体顺延并在 PR 记录。
 
@@ -193,7 +195,7 @@
   - `AppShell`：账号菜单新增「旅行保障」项；侧边栏「我的旅行」下方新增常驻「旅行保障」→ `#/finance`；移动端底部导航不变。
   - 新目录 `frontend/src/finance/`：`TripFinancePage.tsx`（行程上下文、保险面板、借款表单、该行程借款）、`FinancePage.tsx`（钱包、流水、保险记录、借款、可交易行程入口）、`InsurancePanel.tsx`（状态、提供方、类别、保单 / 理赔 / 求助入口）、`WalletCard.tsx`、`LoanForm.tsx`、`PolicyList.tsx`、`LoanList.tsx`。
   - 投保交互：按钮调用 `POST /insurance/purchase` 后 `window.open(redirect_url, '_blank', 'noopener,noreferrer')`，不刷新、不扣款；演示「已完成投保（演示同步）」调用 `POST /insurance/confirm` 后重载状态。
-  - 纯逻辑：`financeFormat.ts`（`money` / `feeOf` / `netOf` / `loanStatusOf`）、`financeEligibility.ts`（行程可交易判定）；Vitest 覆盖。
+  - 纯逻辑：`financeFormat.ts`（`money` / `feeOf` / `netOf` / `interestOf` / `penaltyOf` / `overdueDaysOf` / `loanStatusOf`）、`financeEligibility.ts`（行程可交易判定）；Vitest 覆盖。
   - 可交易行程入口：复用 `loadMyTrips()`，前端过滤 `status ∈ {recruiting, full, ongoing}` 且当前用户在 participants / publisher 中；资格权威仍在服务端。
   - 错误文案：`INSUFFICIENT_BALANCE` / `ACTIVE_LOAN_EXISTS` / `LOAN_NOT_ACTIVE` 与 403 账号状态映射到 `financeMessages.ts`；提交中禁用按钮防双击。
 - **Alternatives：** 只做一个聚合页（行程上下文丢失）；把入口做成常驻导航（对无资格用户误导）。
@@ -214,7 +216,7 @@
 
 | 层 | 文件 |
 |---|---|
-| 迁移 | `backend/src/main/resources/db/migration/V30__add_travel_finance.sql` |
+| 迁移 | `backend/src/main/resources/db/migration/V30__add_travel_finance.sql`、`V32__add_loan_interest_penalty.sql` |
 | 配置 | `config/InsuranceProperties.java`、`config/InsuranceConfig.java` |
 | 领域 / 枚举 | `pojo/UserWallet.java`、`pojo/WalletLedgerEntry.java`、`pojo/InsurancePolicy.java`、`pojo/TravelLoan.java`、`pojo/WalletPosting.java`、`enums/InsuranceProductEnum.java`、`enums/WalletDirectionEnum.java`、`enums/WalletEntryTypeEnum.java`、`enums/LoanStatusEnum.java`、`constant/FinanceFeeConstant.java` |
 | 实体 / mapper | `entity/UserWalletEntity.java`、`WalletLedgerEntity.java`、`InsurancePolicyEntity.java`、`TravelLoanEntity.java`；`mapper/*Mapper.java` |
@@ -222,7 +224,7 @@
 | 注册集成 | `service/impl/AuthServiceImpl.java`（`ensureWallet`） |
 | 控制器 / 响应 | `controller/FinanceController.java`；`response/WalletResponse.java`、`WalletLedgerEntryResponse.java`、`InsurancePolicyResponse.java`、`InsuranceProviderResponse.java`、`InsuranceProductResponse.java`、`InsuranceSummaryResponse.java`、`InsuranceRedirectResponse.java`、`TravelLoanResponse.java`、`TripFinanceResponse.java`、`MyFinanceResponse.java`；`request/LoanCreateRequest.java` |
 | 异常 | `exception/InsufficientBalanceException.java`、`ActiveLoanExistsException.java`、`LoanNotActiveException.java`（均 409） |
-| 契约 | `openapi.yaml` 0.25.0、`OpenApiTest` |
+| 契约 | `openapi.yaml` 0.28.0、`OpenApiTest` |
 | 前端 | `types.ts`、`api.ts`、`route.ts`、`App.tsx`、`shell/AppShell.tsx`、`trips/TripDetailPage.tsx`、`finance/*`、`i18n/financeMessages.ts`、`styles.css` |
 | 原型 | 无新增（`docs/prototype/v1` 已归档） |
 | 测试 | 第 2 节 D12 所列后端 8 类、前端 4 文件、`e2e/tests/finance.spec.ts` |
@@ -238,7 +240,7 @@
 | 借款到期跨时区 | `due_at` 由 `Instant + DAYS` 生成，不做本地日期换算 |
 | 第三方入口不可达 | 配置默认 `example.com` 演示页；真实地址用环境变量覆盖；E2E 只断言新窗口地址含 `trip_id` |
 | 用户误以为 RouteME 承保 | 页面固定展示提供方名称与免责说明；契约与文案都不出现保费 / 保额 |
-| 契约 / 迁移号冲突 | 本 change 落定 0.25.0 + `V30`（main 已用 0.24.0 + `V29`）；再被抢占时整体顺延，PR 描述记录合并顺序 |
+| 契约 / 迁移号冲突 | 本 change 落定 0.25.0 + `V30`（main 已用 0.24.0 + `V29`）；后续利息 / 罚息顺延到 0.28.0 + `V32`；再被抢占时整体顺延，PR 描述记录合并顺序 |
 | 封禁用户无法还款 | 还款不调用 `assertCanWrite`；API 测试覆盖 `SUSPENDED` / `BANNED` |
 | 非同行者绕过 UI | 服务端资格判定为唯一权威；API 403 / `is_eligible=false` 双覆盖 |
 | 原型与实现漂移 | `docs/prototype/v1` 已归档；P4 以生产 UI 在 1440 / 1024 / 768 / 390 与深浅主题逐屏核对为准 |

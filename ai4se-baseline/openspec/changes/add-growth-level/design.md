@@ -1,6 +1,6 @@
 # 技术设计 — add-growth-level（P3）
 
-- **Change：** `add-growth-level`（REQ-031 / S32；`user-growth` ADDED）｜ **阶段：** P3 ｜ **日期：** 2026-11-18
+- **Change：** `add-growth-level`（REQ-033 / S34；`user-growth` ADDED）｜ **阶段：** P3 ｜ **日期：** 2026-11-18
 - **输入：** Delta（9 Requirement / 41 Scenario）、[`dov-ac-review.md`](dov-ac-review.md)、[`g1-decision.md`](g1-decision.md)（C1 / C2）、[`atdd-design.md`](atdd-design.md)、原型 `docs/prototype/growth-level.html`
 - **基线：** `origin/main@f2bad40`（契约 0.26.0 / 迁移头 `V31__report_credit_deduction.sql`）
 
@@ -14,11 +14,11 @@
 | D4 | 事件挂接与事务边界 | 发布 / 点赞 / 举报成立三处**同事务**结算（G1 WARNING 收口） |
 | D5 | 每日上限 | 当日正向实发求和，剩余额度截断；零实发也留流水 |
 | D6 | 举报重复处理（G1 C1） | 沿用 `ReportNotProcessingException`（409），至多扣一次 |
-| D7 | 契约形态 | `/profile` 追加 `growth`；新增 `GET /users/growth?ids=`（仅 level）；版本 0.27.0 |
+| D7 | 契约形态 | `/profile` 追加 `growth`；新增 `GET /users/growth?ids=`（仅 level）；版本 0.30.0 |
 | D8 | 字段级可见性（G1 C2） | 按 caller 分支：本人含经验，他人仅 level，批量仅 level |
 | D9 | 配置 | `routeme.growth.publish-exp` 默认 10 |
 | D10 | 前端展示 | `GrowthBadge` + 纯函数，6 处接入；样式令牌与原型一致 |
-| D11 | 迁移 | `V32__add_growth_level.sql`，建表 + 存量 0 账户回填 |
+| D11 | 迁移 | `V34__add_growth_level.sql`，建表 + 存量 0 账户回填 |
 | D12 | 并发 | 幂等键兜底 + 乐观条件更新；SQLite 单写者串行 |
 | D13 | 日志 | 结算 INFO / 异常 WARN；不新增指标（NFR 不纳入） |
 | D14 | 测试门禁 | 按 `atdd-design.md`（后端 verify / 前端 test+build / E2E / Redocly / OpenSpec） |
@@ -27,7 +27,7 @@
 
 **背景：** 成长等级与信用分必须彻底分离（issue 技术边界；D1 用户裁决）。信用侧已有 `user_credit_account` + `credit_ledger` 的 append-only 范式。
 
-**选择：** 新建两张表（`V32__add_growth_level.sql`）：
+**选择：** 新建两张表（`V34__add_growth_level.sql`）：
 
 - `user_growth_account`：`user_id`（PK）、`exp_total`（INT NOT NULL，≥0）、`created_at`、`updated_at`。
 - `growth_exp_ledger`：`id`（PK）、`user_id`、`reason_code`（`EXPERIENCE_PUBLISH` / `EXPERIENCE_LIKE` / `REPORT_VIOLATION`）、`applied_delta`（实发，可正可负可 0）、`exp_before`、`exp_after`、`related_type`（`TRIP` / `EXPERIENCE` / `REPORT`）、`related_id`、`idempotency_key`（UNIQUE）、`occurred_at`（ISO-8601 字符串，与 `credit_ledger` 一致）。
@@ -90,7 +90,7 @@
 
 **被拒方案：** 静默 no-op（改变既有 API 语义，影响管理端与 #29 已交付行为）。
 
-## D7 契约形态（0.27.0）
+## D7 契约形态（0.30.0）
 
 **选择：**
 
@@ -99,7 +99,7 @@
   - 他人：`{"level":3}`（其余字段省略，`@JsonInclude(NON_NULL)`）
 - 新增 `GET /api/users/growth?ids=1,2,3`（镜像 `/credits` 的批量范式）：`[{"user_id":1,"level":3}]`；`ids` 上限 50；缺 `ids` → `InvalidInputException`；不返回经验。
 - 不新增任何写端点。
-- `openapi.yaml` 升 **0.27.0**；`OpenApiTest` 版本断言同步。
+- `openapi.yaml` 升 **0.30.0**；`OpenApiTest` 版本断言同步。
 
 **被拒方案（用户裁决）：** 扩展 `/users/credits` 追加 `growthLevel`（污染信用语义、双语义字段）。
 
@@ -126,7 +126,7 @@
 
 ## D11 迁移
 
-**选择：** `V32__add_growth_level.sql`：建两表 + 索引 + 存量回填：
+**选择：** `V34__add_growth_level.sql`：建两表 + 索引 + 存量回填：
 
 ```sql
 INSERT OR IGNORE INTO user_growth_account (user_id, exp_total, created_at, updated_at)

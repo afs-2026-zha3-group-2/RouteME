@@ -102,7 +102,60 @@ npm run dev                          # http://localhost:5173，/api 代理到 80
 
 打开 <http://localhost:5173>，用种子账号登录（`linjianxia` / `chenyu` / `sunian` / `zhouye`，密码均为 `123456`）。
 
-冒烟接口：`GET /api/greeting`、`GET /api/users`、`GET /api/trips`、`GET /api/experiences`、`GET /api/weather/forecast`（`destination_code` + `date`，Open-Meteo 免 Key）。
+冒烟接口：`GET /api/greeting`、`GET /api/users`、`GET /api/trips`、`GET /api/experiences`、`GET /api/weather/forecast`（`destination_code` + `date`，Open-Meteo 免 Key）。天气主用 `api.open-meteo.com`；该主机在部分网络会被阻断，此时自动切到同一数据源的集合预报主机 `ensemble-api.open-meteo.com`（可用 `OPEN_METEO_FALLBACK_BASE_URL` 覆盖），集合接口不提供降雨概率，该字段返回 null。
+
+### 公司网络 / HTTPS 解密环境（SSL 证书不被信任）
+
+公司网络若做 HTTPS 解密（TLS 中间人），JDK 默认只信任自带 `cacerts`，调用 DeepSeek、Open-Meteo、高德等外部接口会报：
+
+```
+javax.net.ssl.SSLHandshakeException: PKIX path building failed:
+sun.security.provider.certpath.SunCertPathBuilderException: unable to find valid certification path to requested target
+```
+
+Windows 的根证书在系统证书存储里（含公司根 CA），让 JVM 直接读它即可，不必导出 `.cer` 再 `keytool -import`：
+
+```powershell
+cd ai4se-baseline/RouteME/backend
+$env:JAVA_TOOL_OPTIONS = "-Djavax.net.ssl.trustStoreType=Windows-ROOT"
+.\mvnw.cmd -Pdev-run spring-boot:run
+```
+
+或者只给应用 JVM 传（PowerShell 里**必须加引号**，否则 `-Dx.y=z` 会被拆开，报 `ClassNotFoundException`）：
+
+```powershell
+.\mvnw.cmd -Pdev-run "-Dspring-boot.run.jvmArguments=-Djavax.net.ssl.trustStoreType=Windows-ROOT" spring-boot:run
+```
+
+VS Code 里已内置，无需手敲：
+
+| 入口 | 说明 |
+|---|---|
+| 任务 `backend: run` / `dev: start` | 默认带上 `Windows-ROOT`（通过 `options.env.JAVA_TOOL_OPTIONS` 传，避免 PowerShell 拆参数） |
+| 任务 `backend: run (JDK cacerts)` | 不加任何信任覆盖；无 HTTPS 解密的机器、或排查信任链问题时用 |
+| 调试配置 `RouteME backend (公司网络 · Windows 证书信任)` | `.vscode/launch.json` 里的 `vmArgs: "-Djavax.net.ssl.trustStoreType=Windows-ROOT"` |
+
+注意：
+
+- `Windows-ROOT` 只有 Windows 的 JDK 支持。**Linux / macOS 不要加**，否则 JVM 会报 `KeyStoreException: Windows-ROOT not found`，反而所有 HTTPS 都失败。对应做法：macOS 用 `-Djavax.net.ssl.trustStoreType=KeychainStore`，Linux 用 `keytool -importcert -cacerts -alias corp-root -file corp-root.cer` 导入公司根证书。
+- 启动日志出现 `Picked up JAVA_TOOL_OPTIONS: -Djavax.net.ssl.trustStoreType=Windows-ROOT` 属正常，说明参数已生效。
+- 不要为此在代码里写 `trustAllCerts` 或关掉主机名校验，那会引入安全漏洞。
+- 这条参数与 `-Pdev-run` 无关；`dev-run` 只是把编译输出放到 `target-run/`，避免与 `mvn test` 抢 `target/classes`。
+
+### 上游响应缓存（省调用次数）
+
+| 上游 | 缓存内容 | 默认 TTL | 关闭方式 |
+|---|---|---|---|
+| Open-Meteo 天气 | 单日预报，键 = 日期 + 坐标（约 1 km 网格）+ 上游来源 | 30 分钟 | `WEATHER_CACHE_TTL_MINUTES=0` |
+| Open-Meteo 地理编码 | 区划码 → 城市中心坐标（静态事实，进程内长期） | 不过期 | — |
+| 高德代理 `/api/amap`、`/_AMapService` | 只读检索 / 地理编码 / 路线规划的成功响应 | 10 分钟 | `AMAP_CACHE_TTL_SECONDS=0` |
+| DeepSeek AI | 不缓存：每次生成都应是新方案 | — | — |
+
+- 失败响应不写缓存（含高德 `status=0` 与天气上游错误），恢复后立刻能取到新结果。
+- 高德 JSONP 代理不把 `callback` 转发给上游，缓存纯 JSON 后按本次回调名包裹，避免回调串号。
+- `v3/ip`（JS API Key 自检探针）与 `v3/log/*`（埋点）不缓存，避免掩盖配置错误。
+- 及时更新：`GET /api/weather/forecast?...&refresh=true` 只刷新该次查询；`DELETE /api/weather/cache` 与 `DELETE /api/amap/cache` 整体清空。天气卡右上角「刷新天气」按钮即发 `refresh=true`。
+- 容量上限：天气 `WEATHER_CACHE_MAX_ENTRIES`（默认 2000）、高德 `AMAP_CACHE_MAX_ENTRIES`（默认 512），超出按最早到期淘汰。
 
 ## SQLite 数据
 
@@ -119,8 +172,8 @@ npm run dev                          # http://localhost:5173，/api 代理到 80
 ## 测试与校验
 
 ```powershell
-cd ai4se-baseline/RouteME/backend;  .\mvnw.cmd -B verify          # 337 tests（H2 + SQLite）
-cd ai4se-baseline/RouteME/frontend; npm run build; npm test       # 293 tests + 类型检查
+cd ai4se-baseline/RouteME/backend;  .\mvnw.cmd -B verify          # 678 tests（H2 + SQLite）
+cd ai4se-baseline/RouteME/frontend; npm run build; npm test       # 514 tests + 类型检查
 cd ai4se-baseline/RouteME;          npx -y @redocly/cli lint openapi.yaml   # 0 error
 cd ai4se-baseline/RouteME/e2e;      npx playwright test           # 123 个用例，需前后端已启动
 ```

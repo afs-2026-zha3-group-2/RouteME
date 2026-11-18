@@ -3,12 +3,18 @@
   "tasks": [
     {
       "label": "backend: run",
-      "detail": "RouteME backend (Spring Boot, port 8080)",
+      "detail": "RouteME backend (Spring Boot, port 8080; 输出 target-run/，JVM 信任 Windows 根证书以通过公司 HTTPS 解密)",
       "type": "shell",
       "command": ".\\mvnw.cmd",
-      "args": ["spring-boot:run"],
+      "args": ["-Pdev-run", "spring-boot:run"],
       "options": {
-        "cwd": "${workspaceFolder}\\ai4se-baseline\\RouteME\\backend"
+        "cwd": "${workspaceFolder}\\ai4se-baseline\\RouteME\\backend",
+        // 公司网络做 HTTPS 解密时，JDK 自带 cacerts 不认公司根证书 → PKIX path building failed。
+        // Windows 根证书在系统存储里，Windows-ROOT 让 JVM 直接读它（JDK 9+，本项目 JDK 21）。
+        // 用 env 而不是命令行参数，避免 PowerShell 把未加引号的 -Dx.y=z 拆坏。
+        "env": {
+          "JAVA_TOOL_OPTIONS": "-Djavax.net.ssl.trustStoreType=Windows-ROOT"
+        }
       },
       "isBackground": true,
       "problemMatcher": {
@@ -49,6 +55,37 @@
           "activeOnStart": true,
           "beginsPattern": "VITE v|vite v",
           "endsPattern": "Local:\\s+http"
+        }
+      },
+      "presentation": {
+        "reveal": "always",
+        "panel": "dedicated",
+        "group": "routeme"
+      }
+    },
+    {
+      "label": "backend: run (JDK cacerts)",
+      "detail": "RouteME backend，只用 JDK 自带 cacerts（无公司 HTTPS 解密的机器 / 排查信任链问题时用）",
+      "type": "shell",
+      "command": ".\\mvnw.cmd",
+      "args": ["-Pdev-run", "spring-boot:run"],
+      "options": {
+        "cwd": "${workspaceFolder}\\ai4se-baseline\\RouteME\\backend",
+        "env": {
+          "JAVA_TOOL_OPTIONS": ""
+        }
+      },
+      "isBackground": true,
+      "problemMatcher": {
+        "owner": "routeme-backend-cacerts",
+        "pattern": {
+          "regexp": "^(?!.*)$",
+          "message": 1
+        },
+        "background": {
+          "activeOnStart": true,
+          "beginsPattern": "\\[INFO\\]|Building routeme-backend",
+          "endsPattern": "Started .*Application in|Tomcat started on port"
         }
       },
       "presentation": {

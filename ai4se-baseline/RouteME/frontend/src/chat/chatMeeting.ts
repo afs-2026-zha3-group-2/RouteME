@@ -1,4 +1,4 @@
-import { formatChatTime } from './chatTime';
+import { formatChatTime } from '../utils/chatTime';
 
 /** 集合信息为空时的展示文案，与原型一致。 */
 export const MEETING_PENDING = '待确认';

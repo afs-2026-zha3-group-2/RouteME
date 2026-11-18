@@ -1,6 +1,6 @@
 # ATDD 设计 — add-growth-level（P3）
 
-- **Change：** `add-growth-level`（REQ-031 / S32；`user-growth` ADDED）｜ **阶段：** P3 ｜ **日期：** 2026-11-18
+- **Change：** `add-growth-level`（REQ-033 / S34；`user-growth` ADDED）｜ **阶段：** P3 ｜ **日期：** 2026-11-18
 - **输入：** [`specs/user-growth/spec.md`](specs/user-growth/spec.md)（9 Requirement / 41 Scenario）；[`dov-ac-review.md`](dov-ac-review.md)；[`g1-decision.md`](g1-decision.md)（C1 / C2）
 - **原型：** `docs/prototype/growth-level.html`（6 处展示面 + 深浅色；走查图 `docs/preview/add-growth-level/growth-level-{1440,1024,768,390}-{light,dark}.png`）
 - **口径确认（用户）：** 批量读取用**新端点** `GET /api/users/growth?ids=`（只返回 `{userId, level}`）；NFR 测试**不纳入**本 change。
@@ -25,7 +25,7 @@
 
 - **API（后端集成测试，先红后绿）：** `GrowthAccountApiTest`（A1–A3）、`GrowthLevelApiTest`（A4–A6）、`GrowthPublishApiTest`（A7–A9）、`GrowthLikeApiTest`（A10–A12）、`GrowthDailyCapApiTest`（A13–A15）、`GrowthReportApiTest`（A16–A18）、`GrowthLedgerApiTest`（A19–A21）、`GrowthVisibilityApiTest`（A22–A23）、`GrowthConcurrencyTest`（A24–A26）。
 - **E2E（Playwright，先红后绿）：** `e2e/tests/growth-level.spec.ts`（E1–E8），新增 helper `e2e/tests/growthSupport.ts`（注册账号、造已完成行程 + 体验、点赞 N 次、读 `/users/growth`）。
-- **契约：** 先改 `openapi.yaml`（0.27.0：`/profile` 追加 `growth` 对象、新增 `/users/growth`），`OpenApiTest` 版本断言先行更新。
+- **契约：** 先改 `openapi.yaml`（0.30.0：`/profile` 追加 `growth` 对象、新增 `/users/growth`），`OpenApiTest` 版本断言先行更新。
 
 ## 3. 本地 / CI 门禁（沿用既有工程，不新增 CI 语义）
 

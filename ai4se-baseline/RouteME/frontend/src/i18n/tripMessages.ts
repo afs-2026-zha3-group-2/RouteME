@@ -491,6 +491,11 @@ routeSectionHint: '在地图上添加并排序途经点，实时查看路线与�
   // 成长等级（只用 LVn；与信用分文案分开）
   growthLevel: '成长等级',
   growthMaxBadge: '400+ · 已满级',
+  // 路线完成度（状态由后端派生，前端只做文案映射）
+  routeCompletionLabel: '路线完成度',
+  routeCompletionGood: '信誉良好',
+  routeCompletionWatch: '请留意行程完成情况',
+  routeCompletionInsufficient: '暂无足够完成记录',
   leaveReasonLabel: '退出原因（必选）',
   leaveReasonPlaceholder: '请选择退出原因',
   leaveReasonPersonal: '个人原因',

@@ -1,4 +1,4 @@
-# REQ-031 — 用户成长等级 LV1–LV5（Ready 需求）
+# REQ-033 — 用户成长等级 LV1–LV5（Ready 需求）
 
 - **能力：** `user-growth`（ADDED；独立于 `user-credit`）
 - **对应 OpenSpec change：** `add-growth-level`
@@ -14,12 +14,12 @@
 
 | 字段 | 内容 |
 |---|---|
-| id | REQ-031 |
+| id | REQ-033 |
 | statement | 系统 SHALL 为每个用户维护独立的成长经验账户：初始 LV1 / 0 EXP；每 100 EXP 升一级，最高 LV5（400+，之后继续累计经验）；发布「已完成行程」的体验 SHALL 首次获得配置化经验（默认 +10），每篇体验每累计 10 个有效点赞 SHALL 结算 +5（分档锁定、取消不回滚）；正向经验每自然日（Asia/Shanghai）SHALL 最多 +20，跨档按剩余额度截断；举报成立 SHALL 对被举报用户扣 50 EXP（每份一次、不受上限限制、最低 0）；每次经验变化 MUST 写入 append-only 流水；等级 MUST 由后端按总经验派生，前端不得加减；本人 SHALL 可见等级、当前经验与距下一级，他人 SHALL 只可见等级。 |
 | actors | 普通用户（发布体验、收到点赞、被举报扣分、查看自己的成长进度）；其他用户（在主页 / 详情 / 同行者卡片看到等级）；管理员（举报处置触发扣分，但不直接修改经验）；平台（结算、派生等级、展示数据）。 |
 | rationale | 信用分表达「可信 / 风险」，无法表达「持续参与与贡献」的正向成长；issue 明确要求成长等级与信用分分离。现有体验发布与点赞已有完整事件，可低成本接入一条独立的正向反馈链。 |
 | acceptance hints | 见 §4 场景 L-1 ~ L-6 / P-1 ~ P-5 / K-1 ~ K-6 / D-1 ~ D-5 / R-1 ~ R-6 / V-1 ~ V-6 / C-1 ~ C-3 / S-1 ~ S-4。 |
-| links to evidence | 见 §6 Context 与 `intents/REQ-031-growth-level.md` 的现状核对表。 |
+| links to evidence | 见 §6 Context 与 `intents/REQ-033-growth-level.md` 的现状核对表。 |
 
 ## 1. Intent
 
@@ -136,7 +136,7 @@
 - **配置：** `routeme.growth.publish-exp` 默认 10，正整数值；不提供管理端。
 - **不回填：** 历史发布 / 点赞 / 已处理举报不补发、不补扣。
 - **只读展示：** 他人只可见等级；本人可见当前经验与距下一级；具体字段形状 P3 定。
-- **契约 / 迁移排他：** 基线 `openapi.yaml` 0.26.0、Flyway 头 `V31__report_credit_deduction.sql`（#29 已并入 main）；本 change 落定 0.27.0 + V32，P3 排他确认。
+- **契约 / 迁移排他：** 基线 `openapi.yaml` 0.26.0、Flyway 头 `V31__report_credit_deduction.sql`（#29 已并入 main）；本 change 落定 0.30.0 + V34，P3 排他确认。
 - **#29 冲突：** #29 已并入 main（`f2bad40`），`AdminReportServiceImpl.resolve` 已有「扣信用分」；本 change 在其后并列追加「扣成长经验」，不覆盖既有副作用。
 
 ## 6. Context（证据）
@@ -203,7 +203,7 @@
 | 6 Results verifiable | Pass | 等级、经验、实发值、流水等式、展示字段均可断言 |
 | 7 Dependencies / touchpoints | Pass | 体验发布 / 点赞 / 举报成立 / 资料读取 / 配置 / 契约与迁移均已列出 |
 | 8 Open-questions gate | Pass | blocking 13 条全部 resolved；非阻塞 2 resolved + 8 deferred 有 owner |
-| 9 Data contract decided | Pass | 账户 / 流水 / 派生等级 / 配置 / 点赞来源均在 `deep-dive.md`「REQ-031 增补」 |
+| 9 Data contract decided | Pass | 账户 / 流水 / 派生等级 / 配置 / 点赞来源均在 `deep-dive.md`「REQ-033 增补」 |
 | 10 Boundary enumerated | Pass | 发布 / 点赞 / 上限 / 举报 / 展示 / 并发 / 数据边界逐分支归属 |
 | 11 Cross-REQ aligned | Pass | `user-credit` 分离、`trip-experiences` / `admin-console` / `user-profile` 只读消费 |
 | 12 Notification / display contract decided | Pass | 6 处展示面 × 本人 / 他人可见性 × 批量只读，均在 deep-dive ④ |

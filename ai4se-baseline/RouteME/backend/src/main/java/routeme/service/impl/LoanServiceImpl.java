@@ -116,6 +116,8 @@ public class LoanServiceImpl extends AbstractServiceImpl<TravelLoanMapper, Trave
 
         int serviceFeeCents = FinanceFeeConstant.feeOf(principalCents);
         int disbursedCents = principalCents - serviceFeeCents;
+        int interestCents = FinanceFeeConstant.interestOf(principalCents, termDays);
+        int repayCents = principalCents + interestCents;
         Instant dueAt = now.plus(termDays, ChronoUnit.DAYS);
 
         long loanId = nextId(TravelLoanEntity::getId);
@@ -132,7 +134,9 @@ public class LoanServiceImpl extends AbstractServiceImpl<TravelLoanMapper, Trave
                 principalCents,
                 serviceFeeCents,
                 disbursedCents,
-                principalCents,
+                interestCents,
+                repayCents,
+                0,
                 termDays,
                 LoanStatusEnum.ACTIVE,
                 now,
@@ -159,13 +163,19 @@ public class LoanServiceImpl extends AbstractServiceImpl<TravelLoanMapper, Trave
             throw new LoanNotActiveException(loanId);
         }
 
+        Instant now = clock.instant();
+        int penaltyCents = FinanceFeeConstant.penaltyOf(
+                loan.getPrincipalCents(),
+                FinanceFeeConstant.overdueDaysOf(Instant.parse(loan.getDueAt()), now));
+        int totalRepayCents = loan.getRepayCents() + penaltyCents;
+
         walletService.debit(
                 userId,
-                loan.getRepayCents(),
+                totalRepayCents,
                 WalletEntryTypeEnum.LOAN_REPAYMENT,
                 RELATED_TYPE,
                 String.valueOf(loanId));
-        int updated = baseMapper.repayIfActive(loanId, userId, clock.instant().toString());
+        int updated = baseMapper.repayIfActive(loanId, userId, now.toString(), penaltyCents);
         if (updated == 0) {
             // 并发重复还款只成功一次；事务回滚本次扣款。
             throw new LoanNotActiveException(loanId);
@@ -200,7 +210,9 @@ public class LoanServiceImpl extends AbstractServiceImpl<TravelLoanMapper, Trave
         entity.setPrincipalCents(loan.principalCents());
         entity.setServiceFeeCents(loan.serviceFeeCents());
         entity.setDisbursedCents(loan.disbursedCents());
+        entity.setInterestCents(loan.interestCents());
         entity.setRepayCents(loan.repayCents());
+        entity.setPenaltyCents(loan.penaltyCents());
         entity.setTermDays(loan.termDays());
         entity.setStatus(loan.storedStatus().name());
         entity.setActiveUserId(loan.storedStatus() == LoanStatusEnum.ACTIVE ? loan.userId() : null);
@@ -218,7 +230,9 @@ public class LoanServiceImpl extends AbstractServiceImpl<TravelLoanMapper, Trave
                 entity.getPrincipalCents(),
                 entity.getServiceFeeCents(),
                 entity.getDisbursedCents(),
+                entity.getInterestCents(),
                 entity.getRepayCents(),
+                entity.getPenaltyCents(),
                 entity.getTermDays(),
                 LoanStatusEnum.ofCode(entity.getStatus()),
                 Instant.parse(entity.getFundedAt()),
