@@ -78,7 +78,7 @@ class CreditLearningQuotaApiTest extends CreditLearningTestSupport {
         setScore(userId, 45);
         long november = startSessionId(userId);
         completeLessons(userId, november);
-        submitAnswers(userId, november, answersFor(november, 8))
+        submitAnswers(userId, november, answersFor(november, 10))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.credit_score").value(60));
 
@@ -89,7 +89,7 @@ class CreditLearningQuotaApiTest extends CreditLearningTestSupport {
         completeLessons(userId, december);
 
         // Then
-        submitAnswers(userId, december, answersFor(december, 8))
+        submitAnswers(userId, december, answersFor(december, 10))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.recovery_applied").value(true))
                 .andExpect(jsonPath("$.credit_score").value(60));

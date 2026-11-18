@@ -9,23 +9,8 @@
  * - 天气预览（目的地 + 日期）与 generate 响应的权威天气用 token 守卫切换（L-02）；
  * - 条件表单收进抽屉、地图收进弹窗：两者都不占参考稿的版式位置。
  */
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import {
-  Alert,
-  Button,
-  Card,
-  DatePicker,
-  Drawer,
-  Input,
-  InputNumber,
-  Modal,
-  Segmented,
-  Select,
-  Spin,
-  Tag,
-  Typography,
-} from 'antd';
-import zhCN from 'antd/es/locale/zh_CN';
+import { useCallback, useEffect, useMemo, useRef, useState, type DragEvent } from 'react';
+import { Alert, Button, Card, Drawer, Input, Modal, Spin, Tag, Typography } from 'antd';
 import dayjs from 'dayjs';
 import 'dayjs/locale/zh-cn';
 import { ApiError, fetchWeatherForecast, generateAiItinerary, saveAiItinerary } from '../api';
@@ -38,7 +23,20 @@ import {
   PLANNER_QUICK_ACTIONS,
 } from '../ai/chatIntent';
 import { itineraryToMarkdown } from '../ai/exportItinerary';
-import { moveStop, removeStop, replaceStop, resolvedCount } from '../ai/itineraryEdit';
+import { removeStop, replaceStop, resolvedCount } from '../ai/itineraryEdit';
+import { moveStopTo, retimeStops } from '../ai/itineraryTimeline';
+import {
+  createPlannerSession,
+  describeSession,
+  loadSessionStore,
+  upsertSession,
+  writeSessionStore,
+  type PlannerChatMessage as ChatMessage,
+  type PlannerPlanMeta as PlanMeta,
+  type PlannerSession,
+  type PlannerSessionStore,
+  type PlannerStop as DayStop,
+} from '../ai/plannerSession';
 import { resolveStops, type ResolvedStop } from '../ai/poiResolve';
 import {
   canGenerate,
@@ -67,9 +65,6 @@ import { BrandMark } from '../shell/BrandMark';
 import { cityPhoto } from '../trips/cityPhotos';
 import { formatMonthDay, weekdayLabel } from '../trips/tripDateFormat';
 import type {
-  AiBudget,
-  AiDuration,
-  AiPace,
   AiPlanStop,
   AiTravelMode,
   DemoUser,
@@ -78,8 +73,6 @@ import type {
   RouteWaypoint,
   WeatherForecast,
 } from '../types';
-import { appDatePickerProps } from '../utils/datePickerProps';
-import { dayjsToIso, isoToDayjs } from '../utils/dates';
 
 // 与发布页一致：日期弹层月份名保持中文。
 dayjs.locale('zh-cn');
@@ -88,53 +81,16 @@ type Props = {
   currentUser: DemoUser;
 };
 
-/** 时间轴按天分组：day 随景点对象在编辑（ spread / swap ）中保留。 */
-type DayStop = ResolvedStop & { day: number };
-
-type PlanMeta = {
-  title: string;
-  tips: string[];
-  packing: string[];
-  budget: AiBudget;
-  dayCount: number;
-};
-
-type PlaceSlot = 'origin' | 'destination';
-
-type ChatMessage = {
-  id: number;
-  role: 'assistant' | 'user';
-  text: string;
-  time: string;
-  tone: 'default' | 'plan' | 'error';
-};
-
 type ReplyTab = 'overview' | 'day' | 'food' | 'stay' | 'budget';
 
-type PlannerTab = 'plan' | 'inspire' | 'optimize';
-
 const DEFAULT_CENTER = { lng: 113.264, lat: 23.129 };
-
-/** 兴趣偏好：与发布页标签同一套口径（外加 City Walk / 亲子 / 小众），预填时不会丢标签。 */
-const INTEREST_OPTIONS = [
-  '美食',
-  '摄影',
-  '海边',
-  '夜景',
-  '历史',
-  '展览',
-  '自然',
-  'City Walk',
-  '亲子',
-  '小众',
-];
 
 function isResolved<T extends ResolvedStop>(stop: T): stop is T & { lng: number; lat: number } {
   return stop.resolved && stop.lng !== undefined && stop.lat !== undefined;
 }
 
 function toWaypoint(stop: ResolvedStop & { lng: number; lat: number }): RouteWaypoint {
-  return { id: `stop-${stop.order}`, name: stop.name, lng: stop.lng, lat: stop.lat };
+  return { id: `stop-${stop.order}`, name: stop.name, lng: stop.lng, lat: stop.lat, city: stop.city };
 }
 
 function clockNow(): string {
@@ -196,43 +152,123 @@ function isFoodStop(stop: DayStop): boolean {
   return /餐|美食|小吃|甜品|咖啡|茶餐厅|牛肉|烧鹅|火锅|粉|面/.test(`${stop.name}${stop.reason}`);
 }
 
-let messageSeq = 0;
+/** 会话 id → 会话；id 失效时退回第一份，保证页面永远有可用上下文。 */
+function pickActiveSession(store: PlannerSessionStore): PlannerSession {
+  return store.sessions.find((session) => session.id === store.activeId) ?? store.sessions[0];
+}
 
 export function AiPlannerPage({ currentUser }: Props) {
-  const [form, setForm] = useState<PlannerFormValues>(() => defaultPlannerForm());
+  // 每个用户一份本机会话列表：两段旅行各自一条会话，切换即切换整份上下文。
+  const [sessionStore, setSessionStore] = useState<PlannerSessionStore>(() =>
+    loadSessionStore(currentUser.id),
+  );
+  const initialSession = pickActiveSession(sessionStore);
+  const [activeSessionId, setActiveSessionId] = useState(initialSession.id);
+  const [form, setForm] = useState<PlannerFormValues>(initialSession.form);
   const [generating, setGenerating] = useState(false);
   const [generateError, setGenerateError] = useState<string | null>(null);
-  const [planMeta, setPlanMeta] = useState<PlanMeta | null>(null);
-  const [stops, setStops] = useState<DayStop[]>([]);
+  const [planMeta, setPlanMeta] = useState<PlanMeta | null>(initialSession.planMeta);
+  const [stops, setStops] = useState<DayStop[]>(initialSession.stops);
   const [route, setRoute] = useState<RoutePlan | null>(null);
   const [routeLoading, setRouteLoading] = useState(false);
   const [routeError, setRouteError] = useState<string | null>(null);
-  const [weather, setWeather] = useState<WeatherForecast | null>(null);
+  const [weather, setWeather] = useState<WeatherForecast | null>(initialSession.weather);
   const [weatherLoading, setWeatherLoading] = useState(false);
   const [weatherError, setWeatherError] = useState(false);
-  const [pickMode, setPickMode] = useState(false);
-  const [pickTarget, setPickTarget] = useState<PlaceSlot>('origin');
-  const [candidates, setCandidates] = useState<PlaceResult[] | null>(null);
-  const [candidatesLoading, setCandidatesLoading] = useState(false);
   const [replaceIndex, setReplaceIndex] = useState<number | null>(null);
+  const [replaceCandidates, setReplaceCandidates] = useState<PlaceResult[] | null>(null);
+  const [replaceLoading, setReplaceLoading] = useState(false);
+  const [dragIndex, setDragIndex] = useState<number | null>(null);
+  const [dropIndex, setDropIndex] = useState<number | null>(null);
   const [focusId, setFocusId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [map, setMap] = useState<AmapMap | null>(null);
-  const [locating, setLocating] = useState(false);
-  const [locateFailed, setLocateFailed] = useState(false);
+  const [replaceMap, setReplaceMap] = useState<AmapMap | null>(null);
   const [composer, setComposer] = useState('');
   const [sending, setSending] = useState(false);
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
-  const [plannerTab, setPlannerTab] = useState<PlannerTab>('plan');
+  const [messages, setMessages] = useState<ChatMessage[]>(initialSession.messages);
   const [replyTab, setReplyTab] = useState<ReplyTab>('overview');
   const [replyDay, setReplyDay] = useState(1);
-  const [conditionsOpen, setConditionsOpen] = useState(false);
+  const [historyOpen, setHistoryOpen] = useState(false);
   const [mapOpen, setMapOpen] = useState(false);
 
   const routeTokenRef = useRef(0);
   const weatherTokenRef = useRef(0);
   const threadEndRef = useRef<HTMLDivElement | null>(null);
+  const dragFromRef = useRef<number | null>(null);
+  const hydratingRef = useRef(false);
+  const userIdRef = useRef(currentUser.id);
+  const messageSeqRef = useRef(
+    initialSession.messages.reduce((max, message) => Math.max(max, message.id), 0) + 1,
+  );
+
+  /** 把一份会话装载进页面状态（切换历史 / 新建对话 / 换用户都走这里）。 */
+  const hydrate = useCallback((session: PlannerSession) => {
+    hydratingRef.current = true;
+    // 切换会话时让上一会话仍在飞行的路线 / 天气请求失效，避免串到新会话。
+    routeTokenRef.current += 1;
+    weatherTokenRef.current += 1;
+    setActiveSessionId(session.id);
+    setForm(session.form);
+    setMessages(session.messages);
+    setPlanMeta(session.planMeta);
+    setStops(session.stops);
+    setWeather(session.weather);
+    setWeatherLoading(false);
+    setWeatherError(false);
+    setGenerateError(null);
+    setSaveError(null);
+    setRoute(null);
+    setRouteError(null);
+    setReplaceIndex(null);
+    setReplaceCandidates(null);
+    setFocusId(null);
+    setReplyTab('overview');
+    setReplyDay(1);
+    messageSeqRef.current =
+      session.messages.reduce((max, message) => Math.max(max, message.id), 0) + 1;
+    window.setTimeout(() => {
+      hydratingRef.current = false;
+    }, 0);
+  }, []);
+
+  // 换用户：各自读取自己的历史，绝不把上一个用户的上下文带过去。
+  useEffect(() => {
+    if (userIdRef.current === currentUser.id) {
+      return;
+    }
+    userIdRef.current = currentUser.id;
+    const next = loadSessionStore(currentUser.id);
+    setSessionStore(next);
+    hydrate(pickActiveSession(next));
+  }, [currentUser.id, hydrate]);
+
+  // 会话状态变化 → 写回本机（按用户隔离）。hydrate 期间跳过，避免把旧会话写成新会话。
+  useEffect(() => {
+    if (hydratingRef.current) {
+      return;
+    }
+    setSessionStore((previous) => {
+      const current = previous.sessions.find((session) => session.id === activeSessionId);
+      if (current === undefined) {
+        return previous;
+      }
+      const nextSession: PlannerSession = {
+        ...current,
+        title: describeSession(form, messages),
+        updatedAt: Date.now(),
+        form,
+        messages,
+        planMeta,
+        stops,
+        weather,
+      };
+      const nextStore = upsertSession(previous, nextSession);
+      writeSessionStore(currentUser.id, nextStore);
+      return nextStore;
+    });
+  }, [activeSessionId, currentUser.id, form, messages, planMeta, stops, weather]);
 
   useEffect(() => {
     // 首屏不滚动（欢迎语已可见），只在有新消息 / 生成中时把最新一条带进视野。
@@ -242,86 +278,16 @@ export function AiPlannerPage({ currentUser }: Props) {
     threadEndRef.current?.scrollIntoView({ block: 'nearest' });
   }, [messages.length, generating]);
 
-  const update = (patch: Partial<PlannerFormValues>) => {
-    setForm((previous) => ({ ...previous, ...patch }));
-  };
+  const busy = generating || sending;
 
   const pushMessage = useCallback((message: Pick<ChatMessage, 'role' | 'text' | 'tone'>) => {
-    messageSeq += 1;
-    const id = messageSeq;
+    const id = messageSeqRef.current;
+    messageSeqRef.current += 1;
     setMessages((previous) => [
       ...previous,
       { id, time: clockNow(), tone: message.tone, role: message.role, text: message.text },
     ]);
   }, []);
-
-  /* ---------- 地点：搜索 / 定位 / 地图点击 ---------- */
-
-  const pickPlace = (slot: PlaceSlot) => (place: PlaceResult) => {
-    update({ [slot]: { name: place.name, lng: place.lng, lat: place.lat } });
-  };
-
-  const onMapClick = (point: LngLat) => {
-    if (!pickMode) {
-      return;
-    }
-    setCandidatesLoading(true);
-    setCandidates([]);
-    // 点击点本身永远可选（坐标精确等于点击位置），附近 POI 只是额外候选。
-    Promise.all([
-      reverseGeocode(point[0], point[1]).catch(() => null),
-      aroundPlaces(point[0], point[1], 500).catch(() => [] as PlaceResult[]),
-    ])
-      .then(([exact, nearby]) => {
-        const list: PlaceResult[] = exact === null ? [] : [exact];
-        for (const place of nearby) {
-          if (!list.some((item) => item.id === place.id)) {
-            list.push(place);
-          }
-        }
-        setCandidates(list);
-      })
-      .finally(() => setCandidatesLoading(false));
-  };
-
-  const pickCandidate = (place: PlaceResult) => {
-    pickPlace(pickTarget)(place);
-    setCandidates(null);
-  };
-
-  const locateOrigin = () => {
-    if (!('geolocation' in navigator)) {
-      setLocateFailed(true);
-      return;
-    }
-    setLocating(true);
-    setLocateFailed(false);
-    navigator.geolocation.getCurrentPosition(
-      (position) => {
-        const lng = position.coords.longitude;
-        const lat = position.coords.latitude;
-        reverseGeocode(lng, lat)
-          .then((place) => {
-            update({ origin: { name: place.name, lng: place.lng, lat: place.lat } });
-          })
-          .catch(() => {
-            update({
-              origin: {
-                name: aiMessages.currentLocation,
-                lng: Number(lng.toFixed(6)),
-                lat: Number(lat.toFixed(6)),
-              },
-            });
-          })
-          .finally(() => setLocating(false));
-      },
-      () => {
-        setLocating(false);
-        setLocateFailed(true);
-      },
-      { timeout: 8000 },
-    );
-  };
 
   /* ---------- 天气：预览（目的地 + 日期）→ generate 权威切换（L-02） ---------- */
 
@@ -387,6 +353,14 @@ export function AiPlannerPage({ currentUser }: Props) {
     [form.destination],
   );
 
+  // 切到带行程的历史会话 / 用户时补算路线；路线体积大且可重算，不进本机存储。
+  useEffect(() => {
+    if (stops.filter(isResolved).length >= 2) {
+      void recalcRoute(stops, form.travelMode);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeSessionId]);
+
   /* ---------- 生成 / 重新生成 / 降预算 ---------- */
 
   const generate = async (
@@ -410,12 +384,14 @@ export function AiPlannerPage({ currentUser }: Props) {
       const plan = response.plan;
       const flat: AiPlanStop[] = [];
       const dayOf: number[] = [];
-      for (const day of plan.days) {
+      // 天序号按返回顺序归一为 1..n：AI 偶尔只回 day:2（两日行程缺第一天），
+      // 直接照抄会出现「只有 Day 2」或空白的诡异时间轴。
+      plan.days.forEach((day, dayIndex) => {
         for (const stop of day.stops) {
           flat.push(stop);
-          dayOf.push(day.day);
+          dayOf.push(dayIndex + 1);
         }
-      }
+      });
       // POI 坐标逐个经高德解析；失败标「未定位」，不伪造坐标（AC6）。
       const resolved = await resolveStops(flat, activeForm.destination?.name);
       const nextStops: DayStop[] = resolved.map((stop, index) => ({
@@ -444,16 +420,63 @@ export function AiPlannerPage({ currentUser }: Props) {
         text: note === undefined ? aiMessages.planReady : aiMessages.planReadyFor(note),
       });
       void recalcRoute(nextStops, activeForm.travelMode);
+      return nextStops;
     } catch (error: unknown) {
       const code = error instanceof ApiError ? error.code : 'UNKNOWN_ERROR';
       setGenerateError(code);
       pushMessage({ role: 'assistant', tone: 'error', text: aiErrorMessage(code) });
+      return null;
     } finally {
       setGenerating(false);
     }
   };
 
-  /* ---------- 对话：自然语言 → 条件 → 生成 ---------- */
+  /* ---------- 多会话：切换 / 新建 ---------- */
+
+  const beginSession = useCallback(
+    (session: PlannerSession) => {
+      setSessionStore((previous) => {
+        const next = {
+          activeId: session.id,
+          sessions: [session, ...previous.sessions.filter((entry) => entry.id !== session.id)],
+        };
+        writeSessionStore(currentUser.id, next);
+        return next;
+      });
+      hydrate(session);
+    },
+    [currentUser.id, hydrate],
+  );
+
+  const newChat = () => {
+    if (busy) {
+      return;
+    }
+    beginSession(createPlannerSession(defaultPlannerForm()));
+    setComposer('');
+    window.setTimeout(() => document.getElementById('ai-composer-input')?.focus(), 0);
+  };
+
+  /** 从历史抽屉切回某段对话：整份上下文一起换回来，旧对话不会被清空。 */
+  const openSession = (id: string) => {
+    if (busy || id === activeSessionId) {
+      setHistoryOpen(false);
+      return;
+    }
+    const target = sessionStore.sessions.find((session) => session.id === id);
+    if (target === undefined) {
+      return;
+    }
+    hydrate(target);
+    setSessionStore((previous) => {
+      const next = { ...previous, activeId: id };
+      writeSessionStore(currentUser.id, next);
+      return next;
+    });
+    setHistoryOpen(false);
+  };
+
+  /* ---------- 对话：像助手一样理解条件、主动追问、直接出方案 ---------- */
 
   const sendChat = async (raw: string) => {
     const text = raw.trim();
@@ -466,64 +489,118 @@ export function AiPlannerPage({ currentUser }: Props) {
     try {
       const intent = parsePlanIntent(text);
       let nextForm = form;
+      let resolvedDestination: string | null = null;
+      let unresolvedDestination: string | null = null;
+
       if (intent.destinationName !== null) {
         const place = await resolveCityPlace(intent.destinationName);
         if (place !== null) {
+          resolvedDestination = place.name;
           nextForm = {
             ...nextForm,
             destination: { name: place.name, lng: place.lng, lat: place.lat },
           };
-          if (nextForm.origin === null) {
-            // 纯对话模式下没有出发地：先用同城中心起步，用户可在「规划条件」里改。
-            nextForm = {
-              ...nextForm,
-              origin: { name: place.name, lng: place.lng, lat: place.lat },
-            };
-          }
         } else {
-          pushMessage({
-            role: 'assistant',
-            tone: 'default',
-            text: aiMessages.intentDestinationMissing(intent.destinationName),
-          });
+          unresolvedDestination = intent.destinationName;
         }
       }
-      nextForm = applyIntent(nextForm, { ...intent, destinationName: null });
+
+      let resolvedOrigin: string | null = null;
+      let unresolvedOrigin: string | null = null;
+      if (intent.originName !== null) {
+        const place = await resolveCityPlace(intent.originName);
+        if (place !== null) {
+          resolvedOrigin = place.name;
+          nextForm = {
+            ...nextForm,
+            origin: { name: place.name, lng: place.lng, lat: place.lat },
+          };
+        } else {
+          unresolvedOrigin = intent.originName;
+        }
+      }
+
+      nextForm = applyIntent(nextForm, {
+        ...intent,
+        destinationName: null,
+        originName: null,
+      });
+
+      // 换了一个目的地且当前会话已有内容：开一份新会话，两段旅行互不覆盖。
+      const currentDestination = form.destination?.name ?? '';
+      const startsNewTrip =
+        resolvedDestination !== null &&
+        resolvedDestination !== currentDestination &&
+        resolvedDestination !== '' &&
+        (messages.length > 0 || planMeta !== null);
+      if (startsNewTrip) {
+        beginSession(createPlannerSession(nextForm));
+      }
+
       setForm(nextForm);
+
+      if (unresolvedDestination !== null) {
+        pushMessage({
+          role: 'assistant',
+          tone: 'default',
+          text: aiMessages.intentDestinationMissing(unresolvedDestination),
+        });
+        return;
+      }
+      if (unresolvedOrigin !== null) {
+        pushMessage({
+          role: 'assistant',
+          tone: 'default',
+          text: aiMessages.intentOriginMissing(unresolvedOrigin),
+        });
+        return;
+      }
+
+      // 没提出发地：默认从目的地同城出发，并在消息里说明（agent 不静默替用户决定）。
+      let originNote: string | null = null;
+      if (nextForm.origin === null && nextForm.destination !== null) {
+        const assumed = nextForm.destination;
+        nextForm = { ...nextForm, origin: assumed };
+        originNote = aiMessages.originAssumed(assumed.name);
+      }
+
       const summary = aiMessages.intentSummary([
-        intent.destinationName,
+        resolvedDestination ?? intent.destinationName,
+        resolvedOrigin,
+        intent.date === null ? null : intent.date,
         intent.duration === null ? null : aiMessages.durationLabels[intent.duration],
         intent.budgetYuan === null ? null : aiMessages.intentBudget(intent.budgetYuan),
         intent.pace === null ? null : aiMessages.paceOptions[intent.pace],
         intent.interests.length === 0 ? null : intent.interests.join('、'),
       ]);
+
       if (!canGenerate(nextForm)) {
-        const missing = [
-          nextForm.origin === null ? '出发地' : null,
-          nextForm.destination === null ? '目的地' : null,
-          nextForm.date === '' ? '日期' : null,
-        ].filter((item): item is string => item !== null);
+        // 还缺关键条件：像一个助理那样把问题问清楚，而不是让用户去找表单。
         pushMessage({
           role: 'assistant',
           tone: 'default',
-          text: aiMessages.chatMissing(missing.join('、')),
+          text: aiMessages.agentAskDestination,
         });
         return;
       }
+
       await generate(false, nextForm, summary === '' ? undefined : summary);
+      if (originNote !== null) {
+        pushMessage({ role: 'assistant', tone: 'default', text: originNote });
+      }
     } finally {
       setSending(false);
     }
   };
 
-  /* ---------- 快捷动作 ---------- */
+  /* ---------- 快捷动作 / 行程优化 ---------- */
 
   const runQuickAction = async (id: string) => {
     const action = PLANNER_QUICK_ACTIONS.find((entry) => entry.id === id);
     if (action === undefined || generating || sending) {
       return;
     }
-    pushMessage({ role: 'user', tone: 'default', text: action.label });
+    pushMessage({ role: 'user', tone: 'default', text: aiMessages.quickPrompts[id] ?? action.label });
     if (id === 'export') {
       exportItinerary();
       return;
@@ -542,19 +619,109 @@ export function AiPlannerPage({ currentUser }: Props) {
     const nextForm = { ...form, ...patch };
     setForm(nextForm);
     if (!canGenerate(nextForm)) {
-      pushMessage({ role: 'assistant', tone: 'default', text: aiMessages.chatMissing('出发地、目的地或日期') });
+      pushMessage({ role: 'assistant', tone: 'default', text: aiMessages.agentAskDestination });
       return;
     }
-    await generate(false, nextForm, action.label.replace(/^\+\s*/, ''));
+    setSending(true);
+    try {
+      const before = new Set(stops.map((stop) => stop.name));
+      const nextStops = await generate(false, nextForm, action.label.replace(/^\+\s*/, ''));
+      if (Array.isArray(nextStops)) {
+        const added = nextStops
+          .map((stop) => stop.name)
+          .filter((name) => !before.has(name));
+        pushMessage({
+          role: 'assistant',
+          tone: 'default',
+          text: aiMessages.quickApplied(id, added),
+        });
+      }
+    } finally {
+      setSending(false);
+    }
   };
 
-  /* ---------- 编辑：删除 / 更换 / 上移 / 下移 ---------- */
+  /* ---------- 编辑：删除 / 更换 / 上移 / 下移 / 拖拽 ---------- */
 
+  /** 任何顺序变化后都按新顺序重排时间，避免「09:00 → 16:00 → 11:30」的时间倒序。 */
   const applyStops = (next: ResolvedStop[]) => {
-    const dayStops = next as DayStop[];
+    const dayStops = retimeStops(next as DayStop[]);
     setStops(dayStops);
     setReplaceIndex(null);
+    setReplaceCandidates(null);
+    setFocusId(null);
+    setDropIndex(null);
+    setDragIndex(null);
     void recalcRoute(dayStops, form.travelMode);
+  };
+
+  const onStopDragStart = (event: DragEvent<HTMLLIElement>, index: number) => {
+    dragFromRef.current = index;
+    setDragIndex(index);
+    setDropIndex(index);
+    event.dataTransfer.effectAllowed = 'move';
+    // 拖拽预览：克隆整行做半透明浮层，用户能看清正在拖哪一条。
+    const row = event.currentTarget;
+    const ghost = row.cloneNode(true) as HTMLElement;
+    ghost.classList.add('ai-drag-ghost');
+    ghost.style.width = `${row.getBoundingClientRect().width}px`;
+    document.body.appendChild(ghost);
+    event.dataTransfer.setDragImage(ghost, 28, 22);
+    window.setTimeout(() => ghost.remove(), 0);
+  };
+
+  const onStopDragOver = (event: DragEvent<HTMLLIElement>, index: number) => {
+    if (dragFromRef.current === null) {
+      return;
+    }
+    event.preventDefault();
+    event.dataTransfer.dropEffect = 'move';
+    if (dropIndex !== index) {
+      setDropIndex(index);
+    }
+  };
+
+  const onStopDrop = (event: DragEvent<HTMLLIElement>, index: number) => {
+    event.preventDefault();
+    const from = dragFromRef.current;
+    dragFromRef.current = null;
+    setDragIndex(null);
+    setDropIndex(null);
+    if (from === null || from === index) {
+      return;
+    }
+    applyStops(moveStopTo(stops, from, index));
+  };
+
+  const endDrag = () => {
+    dragFromRef.current = null;
+    setDragIndex(null);
+    setDropIndex(null);
+  };
+
+  const openReplace = (index: number) => {
+    setReplaceIndex((previous) => (previous === index ? null : index));
+    setReplaceCandidates(null);
+    setReplaceLoading(false);
+  };
+
+  const handleReplaceMapClick = (point: LngLat) => {
+    setReplaceLoading(true);
+    setReplaceCandidates([]);
+    Promise.all([
+      reverseGeocode(point[0], point[1]).catch(() => null),
+      aroundPlaces(point[0], point[1], 500).catch(() => [] as PlaceResult[]),
+    ])
+      .then(([exact, nearby]) => {
+        const list: PlaceResult[] = exact === null ? [] : [exact];
+        for (const place of nearby) {
+          if (!list.some((item) => item.id === place.id)) {
+            list.push(place);
+          }
+        }
+        setReplaceCandidates(list);
+      })
+      .finally(() => setReplaceLoading(false));
   };
 
   const onReplacePick = (index: number) => (place: PlaceResult) => {
@@ -648,7 +815,6 @@ export function AiPlannerPage({ currentUser }: Props) {
   const overBudget =
     planMeta === null ? null : overBudgetCents(planMeta.budget, userBudgetCents);
   const canSave = planMeta !== null && resolvedCount(stops) >= 2 && !saving && !generating;
-  const busy = generating || sending;
 
   const days = useMemo(() => {
     const grouped: Array<{ day: number; stops: DayStop[] }> = [];
@@ -705,24 +871,26 @@ export function AiPlannerPage({ currentUser }: Props) {
         {/* ==================== 左：对话规划 ==================== */}
         <Card className="panel ai-chat-card" data-testid="ai-thread-card">
           <div className="ai-chat-toolbar">
-            <Segmented
-              className="ai-mode-tabs"
-              value={plannerTab}
-              onChange={(value) => setPlannerTab(value as PlannerTab)}
-              options={[
-                { label: aiMessages.tabPlan, value: 'plan' },
-                { label: aiMessages.tabInspire, value: 'inspire' },
-                { label: aiMessages.tabOptimize, value: 'optimize' },
-              ]}
-            />
-            <Button
-              size="small"
-              type="text"
-              data-testid="ai-conditions-toggle"
-              onClick={() => setConditionsOpen(true)}
-            >
-              {aiMessages.conditionsEntry}
-            </Button>
+            <span className="ai-chat-toolbar-title">{aiMessages.tabPlan}</span>
+            <div className="ai-chat-toolbar-actions">
+              <Button
+                size="small"
+                data-testid="ai-history-toggle"
+                disabled={busy}
+                onClick={() => setHistoryOpen(true)}
+              >
+                {aiMessages.historyEntry(sessionStore.sessions.length)}
+              </Button>
+              <Button
+                size="small"
+                type="primary"
+                data-testid="ai-new-chat"
+                disabled={busy}
+                onClick={newChat}
+              >
+                {aiMessages.newChat}
+              </Button>
+            </div>
           </div>
 
           <div className="ai-inspiration-row" data-testid="ai-suggestions">
@@ -969,12 +1137,13 @@ export function AiPlannerPage({ currentUser }: Props) {
 
           <div className="ai-composer">
             <Input.TextArea
+              id="ai-composer-input"
               value={composer}
               data-testid="ai-composer"
               aria-label={aiMessages.composerLabel}
               className="ai-composer-input"
               placeholder={aiMessages.composerPlaceholder}
-              autoSize={{ minRows: 1, maxRows: 4 }}
+              autoSize={{ minRows: 2, maxRows: 6 }}
               onChange={(event) => setComposer(event.target.value)}
               onPressEnter={(event) => {
                 if (!event.shiftKey) {
@@ -986,16 +1155,16 @@ export function AiPlannerPage({ currentUser }: Props) {
             <Button
               className="ai-send"
               type="primary"
-              shape="circle"
               data-testid="ai-send"
               aria-label={aiMessages.send}
               disabled={composer.trim() === '' || busy}
               loading={sending}
               onClick={() => void sendChat(composer)}
             >
-              ➤
+              {aiMessages.send}
             </Button>
           </div>
+          <div className="ai-composer-hint">{aiMessages.composerEnterHint}</div>
           <div className="ai-quick-row">
             {PLANNER_QUICK_ACTIONS.map((action) => (
               <button
@@ -1144,14 +1313,26 @@ export function AiPlannerPage({ currentUser }: Props) {
                               data-testid="ai-stop"
                               data-name={stop.name}
                               data-indoor={stop.indoor}
+                              draggable
+                              onDragStart={(event) => onStopDragStart(event, index)}
+                              onDragOver={(event) => onStopDragOver(event, index)}
+                              onDrop={(event) => onStopDrop(event, index)}
+                              onDragEnd={endDrag}
                               className={[
                                 'ai-stop-row',
                                 stop.resolved ? '' : 'is-unresolved',
                                 focusId === `stop-${stop.order}` ? 'is-active' : '',
+                                dragIndex === index ? 'is-dragging' : '',
+                                dropIndex === index && dragIndex !== null && dragIndex !== index
+                                  ? 'is-drop-target'
+                                  : '',
                               ]
                                 .filter((entry) => entry !== '')
                                 .join(' ')}
                             >
+                              <span className="ai-drag-handle" title={aiMessages.dragHint} aria-hidden="true">
+                                ⠿
+                              </span>
                               <span className="ai-stop-chip" aria-hidden="true">
                                 {stop.arrival}
                               </span>
@@ -1192,51 +1373,11 @@ export function AiPlannerPage({ currentUser }: Props) {
                                   size="small"
                                   type="text"
                                   aria-label={aiMessages.replace(stop.name)}
-                                  onClick={() =>
-                                    setReplaceIndex((previous) =>
-                                      previous === index ? null : index,
-                                    )
-                                  }
+                                  onClick={() => openReplace(index)}
                                 >
                                   更换
                                 </Button>
-                                <Button
-                                  size="small"
-                                  type="text"
-                                  aria-label={aiMessages.moveUp(stop.name)}
-                                  disabled={index === 0}
-                                  onClick={() => applyStops(moveStop(stops, index, -1))}
-                                >
-                                  上移
-                                </Button>
-                                <Button
-                                  size="small"
-                                  type="text"
-                                  aria-label={aiMessages.moveDown(stop.name)}
-                                  disabled={index === stops.length - 1}
-                                  onClick={() => applyStops(moveStop(stops, index, 1))}
-                                >
-                                  下移
-                                </Button>
                               </div>
-                              {replaceIndex === index && (
-                                <div className="ai-replace-panel" data-testid="ai-replace-search">
-                                  <PlaceSearchBox
-                                    inputId={`ai-replace-input-${index}`}
-                                    ariaLabel={aiMessages.replace(stop.name)}
-                                    placeholder={aiMessages.replaceSearchPlaceholder}
-                                    city={form.destination?.name}
-                                    onPick={onReplacePick(index)}
-                                  />
-                                  <Button
-                                    size="small"
-                                    type="text"
-                                    onClick={() => setReplaceIndex(null)}
-                                  >
-                                    {aiMessages.replaceCancel}
-                                  </Button>
-                                </div>
-                              )}
                             </li>
                           );
                         })}
@@ -1258,6 +1399,9 @@ export function AiPlannerPage({ currentUser }: Props) {
                   <span className="ai-route-strip-source">
                     {routeLoading ? aiMessages.routeLoading : aiMessages.statsSource}
                   </span>
+                  {route?.estimated === true && (
+                    <span className="ai-route-strip-estimated">{aiMessages.routeEstimated}</span>
+                  )}
                   <Button
                     size="small"
                     type="text"
@@ -1369,249 +1513,65 @@ export function AiPlannerPage({ currentUser }: Props) {
         </section>
       </div>
 
-      {/* ==================== 规划条件（抽屉） ==================== */}
+      {/* ==================== 历史对话（抽屉） ==================== */}
       <Drawer
-        title={aiMessages.conditionsTitle}
-        open={conditionsOpen}
-        onClose={() => setConditionsOpen(false)}
-        width={400}
-        className="ai-conditions-drawer"
+        title={aiMessages.historyTitle}
+        open={historyOpen}
+        onClose={() => setHistoryOpen(false)}
+        width={360}
+        className="ai-history-drawer"
+        destroyOnHidden
       >
-        <p className="form-hint">{aiMessages.conditionsHint}</p>
-        <div className="ai-condition-grid">
-          <div className="form-field ai-place-field" data-testid="ai-origin-field">
-            <label className="form-label" htmlFor="ai-origin-input">
-              <span>{aiMessages.originLabel}</span>
-              <span className="req" aria-hidden="true">*</span>
-            </label>
-            <PlaceSearchBox
-              inputId="ai-origin-input"
-              ariaLabel={aiMessages.originLabel}
-              placeholder={aiMessages.placeSearchPlaceholder}
-              onPick={pickPlace('origin')}
-            />
-            <div className="ai-origin-tools">
-              <Button size="small" type="text" loading={locating} onClick={locateOrigin}>
-                {locating ? aiMessages.locateLoading : aiMessages.useCurrentLocation}
-              </Button>
-              {locateFailed && (
-                <span className="ai-inline-error" role="alert">
-                  {aiMessages.locateFailed}
-                </span>
-              )}
-            </div>
-            {form.origin !== null && (
-              <div className="ai-selected-place">
-                <span className="ai-place-chip" data-testid="ai-origin-name">
-                  {form.origin.name}
-                </span>
-                <span className="ai-place-coords">
-                  {form.origin.lng.toFixed(4)}, {form.origin.lat.toFixed(4)}
-                </span>
-              </div>
-            )}
-          </div>
-
-          <div className="form-field ai-place-field" data-testid="ai-destination-field">
-            <label className="form-label" htmlFor="ai-destination-input">
-              <span>{aiMessages.destinationLabel}</span>
-              <span className="req" aria-hidden="true">*</span>
-            </label>
-            <PlaceSearchBox
-              inputId="ai-destination-input"
-              ariaLabel={aiMessages.destinationLabel}
-              placeholder={aiMessages.placeSearchPlaceholder}
-              onPick={pickPlace('destination')}
-            />
-            {form.destination !== null && (
-              <div className="ai-selected-place">
-                <span className="ai-place-chip" data-testid="ai-destination-name">
-                  {form.destination.name}
-                </span>
-                <span className="ai-place-coords">
-                  {form.destination.lng.toFixed(4)}, {form.destination.lat.toFixed(4)}
-                </span>
-              </div>
-            )}
-          </div>
-
-          <div className="form-field">
-            <label className="form-label" htmlFor="ai-date-input">
-              <span>{aiMessages.dateLabel}</span>
-              <span className="req" aria-hidden="true">*</span>
-            </label>
-            <div className="trip-date-anchor" data-testid="ai-date">
-              <DatePicker
-                {...appDatePickerProps}
-                id="ai-date-input"
-                className="trip-date"
-                format="YYYY-MM-DD"
-                placeholder="选择日期"
-                locale={zhCN.DatePicker}
-                needConfirm
-                allowClear={false}
-                minDate={dayjs()}
-                maxDate={dayjs().add(16, 'day')}
-                value={isoToDayjs(form.date)}
-                onChange={(value) => update({ date: dayjsToIso(value) })}
-              />
-            </div>
-          </div>
-
-          <div className="form-field">
-            <span className="form-label">{aiMessages.durationLabel}</span>
-            <div data-testid="ai-duration">
-              <Segmented
-                block
-                options={Object.entries(aiMessages.durationOptions).map(([value, label]) => ({
-                  label,
-                  value,
-                }))}
-                value={form.duration}
-                onChange={(value) => update({ duration: value as AiDuration })}
-              />
-            </div>
-          </div>
-
-          <div className="form-field">
-            <label className="form-label" htmlFor="ai-budget-input">
-              <span>{aiMessages.budgetLabel}</span>
-              <span className="opt">选填</span>
-            </label>
-            <div data-testid="ai-budget">
-              <InputNumber
-                id="ai-budget-input"
-                min={0}
-                precision={0}
-                style={{ width: '100%' }}
-                placeholder="如 500"
-                value={form.budgetYuan === '' ? null : Number(form.budgetYuan)}
-                onChange={(value) => update({ budgetYuan: value === null ? '' : String(value) })}
-              />
-            </div>
-          </div>
-
-          <div className="form-field">
-            <span className="form-label">{aiMessages.modeLabel}</span>
-            <div data-testid="ai-mode">
-              <Select
-                aria-label={aiMessages.modeLabel}
-                style={{ width: '100%' }}
-                options={Object.entries(aiMessages.modeOptions).map(([value, label]) => ({
-                  label,
-                  value,
-                }))}
-                value={form.travelMode}
-                onChange={(value) => update({ travelMode: value as AiTravelMode })}
-              />
-            </div>
-          </div>
-
-          <div className="form-field">
-            <span className="form-label">{aiMessages.interestsLabel}</span>
-            <div
-              className="chip-row ai-interest-chips"
-              data-testid="ai-interests"
-              role="group"
-              aria-label={aiMessages.interestsLabel}
-            >
-              {INTEREST_OPTIONS.map((tag) => (
-                <Tag.CheckableTag
-                  key={tag}
-                  checked={form.interests.includes(tag)}
-                  onChange={() =>
-                    update({
-                      interests: form.interests.includes(tag)
-                        ? form.interests.filter((item) => item !== tag)
-                        : [...form.interests, tag],
-                    })
-                  }
-                >
-                  {tag}
-                </Tag.CheckableTag>
-              ))}
-            </div>
-            <span className="form-hint">{aiMessages.interestsHint}</span>
-          </div>
-
-          <div className="form-field">
-            <span className="form-label">{aiMessages.paceLabel}</span>
-            <div data-testid="ai-pace">
-              <Segmented
-                block
-                options={Object.entries(aiMessages.paceOptions).map(([value, label]) => ({
-                  label,
-                  value,
-                }))}
-                value={form.pace}
-                onChange={(value) => update({ pace: value as AiPace })}
-              />
-            </div>
-          </div>
-        </div>
-
-        <div className="ai-condition-actions">
-          <Button
-            data-testid="ai-map-pick"
-            aria-pressed={mapOpen && pickMode}
-            type={pickMode ? 'primary' : 'default'}
-            onClick={() => {
-              setPickMode(true);
-              setMapOpen(true);
-              setConditionsOpen(false);
-            }}
-          >
-            {aiMessages.mapPick}
-          </Button>
+        <div className="ai-history-actions">
           <Button
             type="primary"
-            data-testid="ai-generate"
-            disabled={!canGenerate(form) || busy}
-            loading={generating}
-            onClick={() => void generate(false)}
+            block
+            disabled={busy}
+            onClick={() => {
+              setHistoryOpen(false);
+              newChat();
+            }}
           >
-            {aiMessages.generate}
+            {aiMessages.newChat}
           </Button>
         </div>
-        {!canGenerate(form) && <p className="form-hint">{aiMessages.requiredHint}</p>}
+        <ul className="ai-history-list" data-testid="ai-history-list">
+          {sessionStore.sessions.map((session) => {
+            const active = session.id === activeSessionId;
+            const last = session.messages[session.messages.length - 1];
+            const preview = last === undefined ? aiMessages.historyEmpty : last.text;
+            return (
+              <li key={session.id}>
+                <button
+                  type="button"
+                  className={active ? 'ai-history-item is-active' : 'ai-history-item'}
+                  aria-current={active ? 'true' : undefined}
+                  onClick={() => openSession(session.id)}
+                >
+                  <span className="ai-history-title">{session.title}</span>
+                  <span className="ai-history-preview">{preview}</span>
+                  <span className="ai-history-meta">
+                    {session.stops.length > 0
+                      ? aiMessages.historyStops(session.stops.length)
+                      : aiMessages.historyNoPlan}
+                  </span>
+                </button>
+              </li>
+            );
+          })}
+        </ul>
       </Drawer>
 
-      {/* ==================== 路线地图（弹窗） ==================== */}
+      {/* ==================== 路线地图（只读查看，不再承担选点） ==================== */}
       <Modal
         open={mapOpen}
-        onCancel={() => {
-          setMapOpen(false);
-          setPickMode(false);
-          setCandidates(null);
-        }}
+        onCancel={() => setMapOpen(false)}
         footer={null}
         width={860}
         title={aiMessages.mapModalTitle}
         className="ai-map-modal"
         destroyOnHidden
       >
-        <div className="ai-map-toolbar">
-          <Segmented
-            data-testid="ai-map-pick-target"
-            options={[aiMessages.originLabel, aiMessages.destinationLabel]}
-            value={pickTarget === 'origin' ? aiMessages.originLabel : aiMessages.destinationLabel}
-            onChange={(value) =>
-              setPickTarget(value === aiMessages.originLabel ? 'origin' : 'destination')
-            }
-          />
-          <Button
-            size="small"
-            type={pickMode ? 'primary' : 'default'}
-            aria-pressed={pickMode}
-            onClick={() => {
-              setPickMode((previous) => !previous);
-              setCandidates(null);
-            }}
-          >
-            {pickMode ? aiMessages.mapPickStop : aiMessages.mapPick}
-          </Button>
-          <span className="form-hint">{aiMessages.mapPickHint}</span>
-        </div>
         <div className="ai-map-wrap">
           <AmapContainer
             className="ai-map-container"
@@ -1620,7 +1580,6 @@ export function AiPlannerPage({ currentUser }: Props) {
             zoom={11}
             ariaLabel={aiMessages.mapAriaLabel}
             onReady={setMap}
-            onMapClick={onMapClick}
           >
             <RouteLayer
               map={map}
@@ -1630,45 +1589,96 @@ export function AiPlannerPage({ currentUser }: Props) {
               onFocus={setFocusId}
               numbers={numbers}
             />
-            {pickMode && candidates !== null && (
-              <div
-                className="ai-map-candidates"
-                data-testid="ai-map-candidates"
-                role="dialog"
-                aria-label={aiMessages.mapCandidates}
-              >
-                <div className="ai-candidates-head">
-                  <span>{aiMessages.mapCandidates}</span>
-                  <button
-                    type="button"
-                    aria-label={aiMessages.closeCandidates}
-                    onClick={() => setCandidates(null)}
-                  >
-                    ×
-                  </button>
-                </div>
-                {candidatesLoading ? (
-                  <div className="ai-candidates-state" role="status">
-                    <Spin size="small" />
-                  </div>
-                ) : candidates.length === 0 ? (
-                  <p className="ai-candidates-state">{aiMessages.mapCandidatesEmpty}</p>
-                ) : (
-                  <ul className="ai-candidates-list">
-                    {candidates.map((place) => (
-                      <li key={place.id}>
-                        <button type="button" onClick={() => pickCandidate(place)}>
-                          <span className="ai-candidate-name">{place.name}</span>
-                          <span className="ai-candidate-meta">{place.address}</span>
-                        </button>
-                      </li>
-                    ))}
-                  </ul>
-                )}
-              </div>
-            )}
           </AmapContainer>
         </div>
+      </Modal>
+
+      {/* ==================== 更换地点（大搜索框 + 地图选点） ==================== */}
+      <Modal
+        open={replaceIndex !== null}
+        onCancel={() => {
+          setReplaceIndex(null);
+          setReplaceCandidates(null);
+        }}
+        footer={null}
+        width={820}
+        title={aiMessages.replaceMapTitle}
+        className="ai-map-modal ai-replace-modal"
+        destroyOnHidden
+      >
+        {replaceIndex !== null && stops[replaceIndex] !== undefined && (
+          <div className="ai-replace-body">
+            <div className="ai-replace-search" data-testid="ai-replace-search">
+              <PlaceSearchBox
+                inputId={`ai-replace-input-${replaceIndex}`}
+                ariaLabel={aiMessages.replace(stops[replaceIndex].name)}
+                placeholder={aiMessages.replaceSearchPlaceholder}
+                city={form.destination?.name}
+                size="large"
+                autoFocus
+                onPick={onReplacePick(replaceIndex)}
+              />
+            </div>
+            <span className="form-hint">{aiMessages.replaceMapHint}</span>
+            <div className="ai-map-wrap">
+              <AmapContainer
+                className="ai-map-container"
+                lng={stops[replaceIndex].lng ?? center.lng}
+                lat={stops[replaceIndex].lat ?? center.lat}
+                zoom={12}
+                ariaLabel={aiMessages.replaceMapTitle}
+                onReady={setReplaceMap}
+                onMapClick={handleReplaceMapClick}
+              >
+                <RouteLayer
+                  map={replaceMap}
+                  waypoints={waypoints}
+                  route={route}
+                  focusId={focusId}
+                  onFocus={setFocusId}
+                  numbers={numbers}
+                />
+                {replaceCandidates !== null && (
+                  <div
+                    className="ai-map-candidates"
+                    data-testid="ai-replace-candidates"
+                    role="dialog"
+                    aria-label={aiMessages.replaceMapCandidates}
+                  >
+                    <div className="ai-candidates-head">
+                      <span>{aiMessages.replaceMapCandidates}</span>
+                      <button
+                        type="button"
+                        aria-label={aiMessages.closeCandidates}
+                        onClick={() => setReplaceCandidates(null)}
+                      >
+                        ×
+                      </button>
+                    </div>
+                    {replaceLoading ? (
+                      <div className="ai-candidates-state" role="status">
+                        <Spin size="small" />
+                      </div>
+                    ) : replaceCandidates.length === 0 ? (
+                      <p className="ai-candidates-state">{aiMessages.replaceMapEmpty}</p>
+                    ) : (
+                      <ul className="ai-candidates-list">
+                        {replaceCandidates.map((place) => (
+                          <li key={place.id}>
+                            <button type="button" onClick={() => onReplacePick(replaceIndex)(place)}>
+                              <span className="ai-candidate-name">{place.name}</span>
+                              <span className="ai-candidate-meta">{place.address}</span>
+                            </button>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
+                  </div>
+                )}
+              </AmapContainer>
+            </div>
+          </div>
+        )}
       </Modal>
     </main>
   );

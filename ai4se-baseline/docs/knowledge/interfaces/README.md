@@ -60,9 +60,9 @@ API、事件与集成契约。字段一律 snake_case；时间字段为 RFC3339 
 - 加 / 扣分明细、原因、历史与变更记录只在服务端账本（`credit_ledger`）留存，不对外返回；管理端能力尚未交付。
 - 详情（阈值、账本字段、越界裁断、零变化留痕）以 `openapi.yaml` 与 `openspec/specs/user-credit/spec.md`（归档后）为准。
 
-## RouteME 通知中心与未读计数（2026-11-18，`notifications` / REQ-028）
+## RouteME 通知中心与未读计数（2026-11-18，`notifications` / REQ-029）
 
-契约源：`RouteME/openapi.yaml`（v0.25.0）。校验：`cd RouteME/backend; .\mvnw.cmd -Dtest=OpenApiTest test`。
+契约源：`RouteME/openapi.yaml`（v0.26.0）。校验：`cd RouteME/backend; .\mvnw.cmd -Dtest=OpenApiTest test`。
 
 | 方法 | 路径 | 说明 |
 |---|---|---|
@@ -97,6 +97,26 @@ API、事件与集成契约。字段一律 snake_case；时间字段为 RFC3339 
 - 状态口径：账号取 `AccountStatusService.effectiveStatus`（已到期封禁计入 `ACTIVE`）；行程取 `TripPlan.status(now)` 五态；键名保持既有 wire 大小写。
 - 新增窗口：`new_last_7_days` / `new_last_30_days`（仅 users / trips / experiences），按 `Asia/Shanghai` 自然日、以 `created_at` 计算，解析失败的记录不计入新增但保留在 `total`。
 - 每次请求即时聚合，不缓存、不物化、不写库；不含昵称、邮箱、头像等明细。前端只在进入页面与手动刷新时请求，不自动轮询。
+
+## RouteME 旅行保障（2026-11-18，`travel-finance` / REQ-028）
+
+契约源：`RouteME/openapi.yaml`（v0.25.0）。校验：`cd RouteME/backend; .\mvnw.cmd -Dtest=OpenApiTest test`。
+
+| 方法 | 路径 | 说明 |
+|---|---|---|
+| GET | `/trips/{tripId}/finance` | 行程维度保障页：资格、钱包、保险摘要、本行程借款 |
+| POST | `/trips/{tripId}/insurance/purchase` | 返回第三方投保地址（附 `trip_id`）；不扣款、不写记录 |
+| POST | `/trips/{tripId}/insurance/confirm` | 演示 / 第三方确认后回写状态；幂等，每 (user, trip) 1 条 |
+| POST | `/trips/{tripId}/loans` | 申请借款（本金整元 100–2,000，期限 7 / 14 / 30 天） |
+| GET | `/me/finance` | 账号聚合页：钱包、全部流水、保险记录与借款 |
+| POST | `/loans/{loanId}/repay` | 手动还款（按本金全额扣款，0 利息） |
+
+- 金额一律为整数分（`*_cents`）；借款 5% 从本金扣除后发放净额；应还 = 本金；保险不出现金额字段。
+- 保险由第三方提供方承保与定价，提供方名称与投保 / 保单 / 理赔 / 求助地址来自 `routeme.insurance.*` 配置；保障期取行程起止日，`EXPIRED` 在读取时派生；不保存保单号 / 证件 / 银行卡 / 保费 / 保额。
+- 资格：行程发布者或 `ACCEPTED` 同行者，且行程 `recruiting` / `full` / `ongoing`；投保入口 / 回写 / 借款要求账号 `ACTIVE`，还款不因账号状态阻断。
+- 演示钱包每用户 1 个（初始 10,000 元）；同一用户至多 1 笔进行中借款。
+- 业务拒绝返回 409：`INSUFFICIENT_BALANCE`、`ACTIVE_LOAN_EXISTS`、`LOAN_NOT_ACTIVE`、`TRIP_NOT_OPEN`。
+- 详情以 `openapi.yaml` 与 Delta（`openspec/changes/add-travel-finance/specs/travel-finance/spec.md`）为准。
 
 ## REST 面
 

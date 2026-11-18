@@ -83,7 +83,7 @@ class CreditPublishGuardApiTest extends CreditLearningTestSupport {
 
         long sessionId = startSessionId(userId);
         completeLessons(userId, sessionId);
-        submitAnswers(userId, sessionId, answersFor(sessionId, CreditLearningConstant.PASS_LINE))
+        submitAnswers(userId, sessionId, answersFor(sessionId, CreditLearningConstant.QUESTION_COUNT))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.passed").value(true))
                 .andExpect(jsonPath("$.credit_score").value(CreditLearningConstant.RECOVERY_TARGET_SCORE));

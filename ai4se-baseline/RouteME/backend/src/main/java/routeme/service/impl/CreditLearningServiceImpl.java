@@ -77,6 +77,10 @@ public class CreditLearningServiceImpl
             throw new LearningNotEligibleException(credit.score());
         }
         String monthKey = CreditMonth.monthKey(clock.instant());
+        // 本月已用掉恢复额度且分数仍未到 60：再考也无处加分，直接告知配额用完，避免浪费考试次数。
+        if (creditService.recorded(CreditLearningKey.recoveryKey(userId, monthKey))) {
+            throw new LearningRecoveryQuotaExceededException(monthKey);
+        }
         int used = examUsed(userId, monthKey);
         if (used >= CreditLearningConstant.EXAMS_PER_MONTH) {
             throw new LearningExamQuotaExceededException(monthKey);
@@ -144,7 +148,7 @@ public class CreditLearningServiceImpl
         UserCredit after = creditService.book(new CreditBooking(
                 userId,
                 CreditLearningConstant.REASON_SAFETY_LEARNING_RECOVERY,
-                CreditLearningConstant.RECOVERY_TARGET_SCORE - before.score(),
+                Math.min(CreditLearningConstant.RECOVERY_TARGET_SCORE - before.score(), recoveryBonus(score)),
                 CreditLearningConstant.RELATED_TYPE_LEARNING_SESSION,
                 String.valueOf(session.getId()),
                 recoveryKey));
@@ -160,6 +164,17 @@ public class CreditLearningServiceImpl
             throw new LearningSessionNotFoundException(sessionId);
         }
         return session;
+    }
+
+    /** 恢复加分梯度：8 题 +10、9 题 +15、10 题 +20；写入账本时再按与 60 的缺口封顶。 */
+    private static int recoveryBonus(int correct) {
+        if (correct >= CreditLearningConstant.QUESTION_COUNT) {
+            return CreditLearningConstant.RECOVERY_BONUS_PERFECT;
+        }
+        if (correct > CreditLearningConstant.PASS_LINE) {
+            return CreditLearningConstant.RECOVERY_BONUS_GOOD;
+        }
+        return CreditLearningConstant.RECOVERY_BONUS_PASS;
     }
 
     private int examUsed(long userId, String monthKey) {

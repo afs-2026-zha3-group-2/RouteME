@@ -59,5 +59,8 @@ mybatis-plus:
   mapper-locations: classpath*:mapper/**/*.xml
   configuration:
     map-underscore-to-camel-case: true
+    # Spring 复用同一 SqlSession 时，一级缓存会让事务内的重复查询读到旧行；
+    # 账号状态、到期时间等可能被同事务内的写入改变，故按语句清空缓存。
+    local-cache-scope: statement
 server:
   port: ${PORT:8080}

@@ -21,6 +21,8 @@ import type {
   ExperiencePhoto,
   ExperienceWriteRequest,
   HelpReports,
+  InsurancePolicy,
+  InsuranceRedirect,
   LeaveEvidence,
   LeavePayload,
   LearningResult,
@@ -29,6 +31,8 @@ import type {
   LeaveReason,
   LeaveRecord,
   LeaveResult,
+LoanCreateRequest,
+  MyFinance,
   MyReport,
   MyTrips,
   NotificationCounts,
@@ -40,11 +44,13 @@ import type {
   ServiceMessage,
   ServiceSessionDetail,
   ServiceSessionSummary,
+  TravelLoan,
   TripApplication,
   TripCancelRequest,
   TripCreateRequest,
   TripDetail,
   TripFilters,
+  TripFinance,
   TripMeetingRequest,
   TripSummary,
   UserCreditEntry,
@@ -831,4 +837,66 @@ export async function loadAiItinerary(
 ): Promise<AiItinerarySnapshot> {
   const response = await request(`/ai/itineraries/${itineraryId}`, undefined, userId);
   return (await response.json()) as AiItinerarySnapshot;
+}
+
+/** 单行程保障页：返回资格、钱包、第三方保险摘要与借款。 */
+export async function loadTripFinance(userId: number, tripId: number): Promise<TripFinance> {
+  const response = await request(`/trips/${tripId}/finance`, undefined, userId);
+  return (await response.json()) as TripFinance;
+}
+
+/** 校验资格并取回第三方投保地址；不扣款、不生成记录。 */
+export async function openInsurancePurchase(
+  userId: number,
+  tripId: number,
+): Promise<InsuranceRedirect> {
+  const response = await request(
+    `/trips/${tripId}/insurance/purchase`,
+    { method: 'POST' },
+    userId,
+  );
+  return (await response.json()) as InsuranceRedirect;
+}
+
+/** 第三方确认投保后的状态回写；同一行程同一用户幂等。 */
+export async function confirmInsurance(
+  userId: number,
+  tripId: number,
+): Promise<InsurancePolicy> {
+  const response = await request(
+    `/trips/${tripId}/insurance/confirm`,
+    { method: 'POST' },
+    userId,
+  );
+  return (await response.json()) as InsurancePolicy;
+}
+
+/** 申请借款：本金必须是整元，期限固定 7 / 14 / 30 天。 */
+export async function createLoan(
+  userId: number,
+  tripId: number,
+  body: LoanCreateRequest,
+): Promise<TravelLoan> {
+  const response = await request(
+    `/trips/${tripId}/loans`,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    },
+    userId,
+  );
+  return (await response.json()) as TravelLoan;
+}
+
+/** 账号聚合页：钱包、全部流水、全部保单与借款。 */
+export async function loadMyFinance(userId: number): Promise<MyFinance> {
+  const response = await request('/me/finance', undefined, userId);
+  return (await response.json()) as MyFinance;
+}
+
+/** 手动还款：按本金全额扣款，不产生利息或罚息。 */
+export async function repayLoan(userId: number, loanId: number): Promise<TravelLoan> {
+  const response = await request(`/loans/${loanId}/repay`, { method: 'POST' }, userId);
+  return (await response.json()) as TravelLoan;
 }

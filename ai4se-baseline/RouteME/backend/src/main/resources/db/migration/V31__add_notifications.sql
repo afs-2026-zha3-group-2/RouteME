@@ -1,4 +1,4 @@
--- REQ-028 通知中心：每个业务事件一行持久化记录。
+-- REQ-029 通知中心：每个业务事件一行持久化记录。
 -- 双引擎（SQLite 运行时与迁移测试 / H2 Spring 测试）只用 INTEGER / VARCHAR / CREATE INDEX。
 -- 状态只存 read_at（NULL = UNREAD），READ 不再计入未读；
 -- 同一业务事件按 (recipient_id, dedupe_key) 唯一，保证不重复生成。

@@ -166,3 +166,18 @@
 | 注意 | `V27__add_credit_learning.sql` 首行注释改动会变更 Flyway 校验和，本地旧库需删库重建后再启动 |
 
 - **仍未签署：G2（VL）、E3；本记录不代签。**
+
+## 9. 恢复加分梯度修订（2026-11-18）
+
+原规则「一次通过直接补到 60」存在逆向激励：0 分一次 +60、59 分只 +1，且 8/10 与 10/10 同酬。经确认改为梯度加分：
+
+| 答对题数 | 加分 | 示例（45 分） |
+|---|---|---|
+| 8 | +10 | 45 → 55（仍受限） |
+| 9 | +15 | 45 → 60 |
+| 10 | +20 | 45 → 60（按缺口 15 封顶） |
+
+- 实际生效量：`min(60 - before, bonus)`，不超 60；
+- 月度恢复次数仍为 1 次：部分恢复后本月不可再考，`start` 直接返回 `LEARNING_RECOVERY_QUOTA_EXCEEDED`，避免浪费考试次数；
+- 前端：部分恢复停在结果页（不播报“已恢复”），提示下月继续；只有到 60 才显示“去发布行程”；
+- 影响面：`CreditLearningConstant`、`CreditLearningServiceImpl`、`LearningPage`/`learningState`/`tripMessages`、契约描述、`CreditLearningRecoveryApiTest` 等测试与 E2E。

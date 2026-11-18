@@ -1,6 +1,6 @@
 # P3 设计记录 — add-realtime-notifications
 
-- **Change：** `add-realtime-notifications`（REQ-028 / 实时通知中心与未读计数）｜ **阶段：** P3（Delta Spec → Design / ATDD / Tasks）
+- **Change：** `add-realtime-notifications`（REQ-029 / 实时通知中心与未读计数）｜ **阶段：** P3（Delta Spec → Design / ATDD / Tasks）
 - **日期：** 2026-11-17（首版）；2026-11-18（八类扩围） ｜ **记录人：** Karena（当前开发者，已向发起人确认）
 - **前置：** P2 Delta Spec 与 G1 已通过（`docs/reviews/20261117-add-realtime-notifications-spec-review.md` §6，2026-11-17T16:44+0800；`openspec/changes/add-realtime-notifications/g1-decision.md`，2026-11-17T16:48+0800；扩围复核 `docs/reviews/20261118-add-realtime-notifications-expansion-review.md`）
 
@@ -36,7 +36,7 @@
 | D9 | 标读三范围：单条 / 全部 / 单个会话（`trip_id` + 对方 `user_id`），全部按 `recipient_id` 限定 | `design.md` §5.5 |
 | D10 / D10b | 保留既有 3 秒轮询兜底；`formatChatTime` 迁到叶子 `utils/chatTime.ts` 以断开依赖环 | `design.md` §6.5、§10 R-10 |
 | D11 | 流端点用 `user_id` 查询参数（与既有 `X-User-Id` 同级信任，见 R-3） | `design.md` §4.4 |
-| D12 | 契约 0.25.0 + 迁移 `V30__add_notifications.sql`，开工前复检排他 | `design.md` §3、`tasks.md` §3 |
+| D12 | 契约 0.26.0 + 迁移 `V31__add_notifications.sql`，开工前复检排他 | `design.md` §3、`tasks.md` §3 |
 | D13 | 列表取最新 50 条，不做清理任务；ONGOING 与安全提醒在读取详情时惰性物化 | `design.md` §5.3、§10 R-5 |
 | D14 | 提示条：非聊天类总是提示；聊天类仅在对应会话未打开时提示 | `design.md` §6.1、§6.5 |
 | D15 | 跳转由后端 `target.kind` 决定；未知目标回通知中心 | `design.md` §5.4、§6.4 |
@@ -56,19 +56,19 @@
 
 | 项 | 内容 |
 |---|---|
-| 契约版本 | `openapi.yaml` 0.24.0 → **0.25.0**（`OpenApiTest` 版本断言同步） |
+| 契约版本 | `openapi.yaml` 0.24.0 → **0.26.0**（`OpenApiTest` 版本断言同步） |
 | 新增路径 | `GET /notifications`、`GET /notifications/stream`、`POST /notifications/{id}/read`、`POST /notifications/read`、`GET /reports/mine` |
 | 新增 schema | `NotificationType`、`NotificationEventName`、`NotificationPriority`、`NotificationStatus`、`NotificationTargetKind`、`NotificationTarget`、`Notification`、`NotificationCounts`、`NotificationList`、`NotificationReadRequest`、`NotificationEvent` |
 | 枚举规模 | 8 类型 / 22 事件 / 2 优先级 / 2 状态 / 8 目标种类 |
 | 错误码 | `NOTIFICATION_NOT_FOUND`（越权一律 404，不暴露存在性）；`scope=conversation` 缺定位字段 400；`scope=all` 忽略定位字段 |
-| 迁移 | `V30__add_notifications.sql`；只用 `INTEGER` / `VARCHAR` / `CREATE INDEX`，双引擎（SQLite + H2） |
+| 迁移 | `V31__add_notifications.sql`；只用 `INTEGER` / `VARCHAR` / `CREATE INDEX`，双引擎（SQLite + H2） |
 | 索引 | 唯一索引 `(recipient_id, dedupe_key)`；查询索引 `(recipient_id, read_at)` |
 | 实时线格式 | `text/event-stream`，`Cache-Control: no-cache`，`X-Accel-Buffering: no`，20 s 心跳，单 emitter 失败隔离 |
 
 ## 5. 覆盖与顺序
 
 - **Requirement：** 8 / 8 均有设计章节、任务与至少一个自动化验收层；没有只靠人工走查兜底的场景。
-- **场景：** REQ-028 §4 的 S29-1 ~ S29-36 逐条对应 `tasks.md` §3 与 `atdd-design.md` 的 U / S / H / B / F / M / N / V 用例。
+- **场景：** REQ-029 §4 的 S30-1 ~ S30-36 逐条对应 `tasks.md` §3 与 `atdd-design.md` 的 U / S / H / B / F / M / N / V 用例。
 - **任务顺序：** T1 契约 → T2 迁移 → T3 后端纯函数 → T4 服务 → T5 申请与裁决钩子 → T6 其余域钩子 → T7 失败隔离 → T8 流服务与接口 → T9 前端纯函数 → T10 `chatTime` 迁移 → T11 壳层 → T12 通知中心与跳转页 → T13 聊天整合 → T14 E2E → T15 文档 → T16 回归与走查。
 - **交互确认：** 铃铛位于顶栏账号入口旁，**click 展开**（签署时确认，不做 hover）；Escape 关闭并把焦点还给铃铛。通知中心入口在侧栏与账号菜单各一处，数字来自同一 store。
 - **扩围影响：** 首版设计只覆盖四类事件；扩围后新增 `NotificationLifecycleService`、`NotificationEventListener`、六处徽标、通知中心页、目标解析与不可用判定，D1–D18 / P3-1–P3-8 为最终口径。
@@ -76,7 +76,7 @@
 ## 6. 校验
 
 - `openspec validate add-realtime-notifications --strict` → `Change 'add-realtime-notifications' is valid`。
-- 契约 / 迁移排他复检：全仓 `V30__add_notifications` 与 `0.25.0` 仅出现在本 change 工件与本需求记录中，无其它 change 占用。
+- 契约 / 迁移排他复检：全仓 `V30__add_notifications` 与 `0.26.0` 仅出现在本 change 工件与本需求记录中，无其它 change 占用。
 - 本阶段无生产代码、无 `openapi.yaml`、无迁移变更，回归沿用 P0 基线（后端 434 / 前端 344 全绿），不重跑。
 
 ## 7. 签署
@@ -98,5 +98,5 @@
 ## 8. 下一步
 
 1. P4 按 T1 → T16 顺序执行；每个切片先 Red 并记录失败原因，再 Green。
-2. T1 先复检 0.25.0 / `V30__add_notifications.sql` 排他，再改契约。
+2. T1 先复检 0.26.0 / `V31__add_notifications.sql` 排他，再改契约。
 3. T15 的 `registry.md` 更新放在 T16 通过之后；P4 结束写 `docs/sdd/add-realtime-notifications/p4-implementation.md`。

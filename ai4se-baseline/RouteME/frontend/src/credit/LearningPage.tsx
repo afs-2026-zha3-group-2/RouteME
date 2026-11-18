@@ -17,6 +17,7 @@ import {
   errorMessage,
   isReadyToSubmit,
   phase,
+  PUBLISH_MIN_SCORE,
   quizProgress,
   toViewModel,
   unansweredCount,
@@ -388,6 +389,7 @@ export function LearningPage({ currentUser }: Props) {
     }
     const passed = result.passed;
     const delta = Math.max(0, result.credit_score - baseline);
+    const reachedTarget = result.credit_score >= PUBLISH_MIN_SCORE;
     return (
       <>
         <div className={`cl-result ${passed ? 'is-pass' : 'is-fail'}`}>
@@ -396,18 +398,24 @@ export function LearningPage({ currentUser }: Props) {
           </span>
           <div>
             <h2>
-              {passed ? tripMessages.creditLearningResultPass : tripMessages.creditLearningResultFail}
-            </h2>
-            <p>
               {passed
-                ? result.recovery_applied
-                  ? tripMessages.creditLearningResultPassText
-                      .replace('{before}', String(baseline))
-                      .replace('{delta}', String(delta))
-                  : tripMessages.creditLearningResultRepeatText.replace(
+                ? reachedTarget
+                  ? tripMessages.creditLearningResultPass
+                  : tripMessages.creditLearningResultPartialTitle.replace(
                       '{score}',
                       String(result.credit_score),
                     )
+                : tripMessages.creditLearningResultFail}
+            </h2>
+            <p>
+              {passed
+                ? reachedTarget
+                  ? tripMessages.creditLearningResultPassText
+                      .replace('{delta}', String(delta))
+                      .replace('{after}', String(result.credit_score))
+                  : tripMessages.creditLearningResultPartialText
+                      .replace('{score}', String(result.score))
+                      .replace('{delta}', String(delta))
                 : tripMessages.creditLearningResultFailText
                     .replace('{score}', String(result.score))
                     .replace('{passLine}', String(result.pass_line))
@@ -438,10 +446,14 @@ export function LearningPage({ currentUser }: Props) {
         </div>
 
         <div className="cl-actions">
-          <span className="cl-hint">{tripMessages.creditLearningLearnHint}</span>
-          {passed ? (
+          {!passed && <span className="cl-hint">{tripMessages.creditLearningLearnHint}</span>}
+          {passed && reachedTarget ? (
             <Button type="primary" href="#/trips/new">
               {tripMessages.creditLearningGoPublish}
+            </Button>
+          ) : passed ? (
+            <Button type="primary" href="#/">
+              {tripMessages.creditLearningBackHome}
             </Button>
           ) : (
             <Button type="primary" loading={busy} onClick={() => void retry()}>

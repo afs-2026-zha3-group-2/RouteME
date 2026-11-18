@@ -3,6 +3,8 @@ export type Route =
   | { name: 'create'; fromTripId?: number; aiItineraryId?: number }
   | { name: 'aiPlanner' }
   | { name: 'detail'; tripId: number }
+  | { name: 'tripFinance'; tripId: number }
+  | { name: 'finance' }
   | { name: 'applications'; tripId: number }
   | { name: 'mine' }
   | { name: 'chat'; tripId?: number; userId?: number }
@@ -49,6 +51,9 @@ export function parseRoute(hash: string): Route {
   if (path === '/mine') {
     return { name: 'mine' };
   }
+  if (path === '/finance') {
+    return { name: 'finance' };
+  }
   // 三级旅行地图：#/map（中国）→ #/map/{省码} → #/map/{省码}/{市码}。
   const map = /^\/map(?:\/(\d{6}))?(?:\/(\d{6}))?$/.exec(path);
   if (map) {
@@ -60,7 +65,7 @@ export function parseRoute(hash: string): Route {
   if (path === '/support') {
     return { name: 'support' };
   }
-  // 通知中心与通知跳转的独立页面（REQ-028）。
+  // 通知中心与通知跳转的独立页面（REQ-029）。
   if (path === '/notifications') {
     return { name: 'notifications' };
   }
@@ -118,6 +123,10 @@ export function parseRoute(hash: string): Route {
   if (applications) {
     return { name: 'applications', tripId: Number(applications[1]) };
   }
+  const tripFinance = /^\/trips\/(\d+)\/finance$/.exec(path);
+  if (tripFinance) {
+    return { name: 'tripFinance', tripId: Number(tripFinance[1]) };
+  }
   const detail = /^\/trips\/(\d+)$/.exec(path);
   if (detail) {
     return { name: 'detail', tripId: Number(detail[1]) };
@@ -148,6 +157,12 @@ export function routeToHash(route: Route): string {
   }
   if (route.name === 'applications') {
     return `#/trips/${route.tripId}/applications`;
+  }
+  if (route.name === 'tripFinance') {
+    return `#/trips/${route.tripId}/finance`;
+  }
+  if (route.name === 'finance') {
+    return '#/finance';
   }
   if (route.name === 'detail') {
     return `#/trips/${route.tripId}`;

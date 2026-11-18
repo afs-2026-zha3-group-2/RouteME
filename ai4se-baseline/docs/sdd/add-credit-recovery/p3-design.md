@@ -35,7 +35,7 @@
 ## 4. 关键技术结论（详见 `design.md`）
 
 - **唯一拦截面**：`CreditGateService.assertCanPublish` 只在 `TripController.create` 调用，`TripPlanService` 其余入口零改动；`app_users` 不加限制列。
-- **恢复口径**：`delta = 60 - before` 经 `CreditService.book` 落账本（`SAFETY_LEARNING_RECOVERY` / `relatedId = sessionId`），不使用固定加分；会话结果与记账同事务。
+- **恢复口径（2026-11-18 修订）**：`delta = min(60 - before, bonus)`，`bonus` = 8 题 +10 / 9 题 +15 / 10 题 +20；仍经 `CreditService.book` 落账本（`SAFETY_LEARNING_RECOVERY` / `relatedId = sessionId`），会话结果与记账同事务。首版曾为「一次性补到 60」，因逆向激励（分越低补越多）调整为梯度加分。
 - **月度唯一**：幂等键 `learning-recovery:<userId>:<monthKey>` 一份键承担「每月 1 次恢复」与「并发只生效一次」；考试次数由会话表 `(user_id, month_key)` 计数派生，不建计数表。
 - **时间窗口**：`CreditMonth.monthKey(Instant)` 复用 `TripTimeZoneConstant.ZONE`（Asia/Shanghai），SQL 内不做月份换算。
 - **契约**：3 端点 / 4 schema / 6 错误码；`LearningQuestion` 与 `LearningAnswerDetail` 的属性集合**不含答案**，由 `OpenApiTest` 精确断言。

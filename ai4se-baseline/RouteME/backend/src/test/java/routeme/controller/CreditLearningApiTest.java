@@ -122,7 +122,7 @@ class CreditLearningApiTest extends CreditLearningTestSupport {
     }
 
     @Test
-    void in_eightCorrect_out_passedAndRecoveredToSixty() throws Exception {
+    void in_eightCorrect_out_passedWithPartialRecovery() throws Exception {
         // Given
         long userId = register("LearnPass");
         setScore(userId, 45);
@@ -138,11 +138,11 @@ class CreditLearningApiTest extends CreditLearningTestSupport {
                 .andExpect(jsonPath("$.pass_line").value(8))
                 .andExpect(jsonPath("$.details.length()").value(10))
                 .andExpect(jsonPath("$.recovery_applied").value(true))
-                .andExpect(jsonPath("$.credit_score").value(60))
-                .andExpect(jsonPath("$.credit_level").value("fair"));
+                .andExpect(jsonPath("$.credit_score").value(55))
+                .andExpect(jsonPath("$.credit_level").value("low"));
 
         assertAll(
-                () -> assertEquals(60, creditService.read(userId).score(), "score recovered"),
+                () -> assertEquals(55, creditService.read(userId).score(), "partial recovery: +10"),
                 () -> assertEquals(1, submissionCount(userId), "session submitted once"));
     }
 
@@ -188,7 +188,7 @@ class CreditLearningApiTest extends CreditLearningTestSupport {
         completeLessons(userId, retakeId.longValue());
 
         // Then
-        submitAnswers(userId, retakeId.longValue(), answersFor(retakeId.longValue(), 8))
+        submitAnswers(userId, retakeId.longValue(), answersFor(retakeId.longValue(), 10))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.passed").value(true))
                 .andExpect(jsonPath("$.credit_score").value(60));

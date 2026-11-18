@@ -50,7 +50,7 @@ suite is deliberately excluded — see residual risk 3.
   that the transaction could still roll back.
 - `notify` is called with the caller's transaction; `NotificationEntity` writes
   go through the same `NotificationMapper` + MyBatis-Plus conventions as the
-  neighbouring entities, and `V30__add_notifications.sql` stays
+  neighbouring entities, and `V31__add_notifications.sql` stays
   `INTEGER` / `VARCHAR` / `CREATE INDEX` only so SQLite and H2 both migrate.
 - Frontend state keeps one reducer (`applySnapshot`) plus a `lastReadSeq` guard,
   which is what makes an in-flight snapshot unable to resurrect a count that was

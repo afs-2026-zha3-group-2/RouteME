@@ -2,7 +2,9 @@ import { useEffect, useRef, useState, type KeyboardEvent as ReactKeyboardEvent, 
 import { createPortal } from 'react-dom';
 import { loadUserProfile } from '../api';
 import { useMyCredit } from '../credit/CreditContext';
+import { CreditRestrictionGate } from '../credit/CreditRestrictionGate';
 import { adminMessages } from '../i18n/adminMessages';
+import { financeMessages } from '../i18n/financeMessages';
 import { notificationMessages } from '../i18n/notificationMessages';
 import { GateScene } from '../identity/GateScene';
 import { tripMessages } from '../i18n/tripMessages';
@@ -10,7 +12,6 @@ import { NotificationBadge } from '../notifications/NotificationBadge';
 import { NotificationBell } from '../notifications/NotificationBell';
 import { useNotifications } from '../notifications/NotificationContext';
 import { AccountStatusBanner } from '../profile/AccountStatusBanner';
-import { creditRestrictedActionMessage } from '../profile/creditDisplay';
 import { publisherSummary } from '../profile/profileDisplay';
 import type { Route } from '../route';
 import type { DemoUser, UserProfile } from '../types';
@@ -23,6 +24,7 @@ type NavKey =
   | 'create'
   | 'aiPlanner'
   | 'mine'
+  | 'finance'
   | 'chat'
   | 'notifications'
   | 'support'
@@ -36,6 +38,7 @@ const NAV_ITEMS: NavItem[] = [
   { key: 'create', label: tripMessages.publish, href: '#/trips/new' },
   { key: 'aiPlanner', label: 'AI 规划', href: '#/ai-planner' },
   { key: 'mine', label: tripMessages.mineTitle, href: '#/mine' },
+  { key: 'finance', label: financeMessages.navEntry, href: '#/finance' },
   { key: 'chat', label: tripMessages.chatNav, href: '#/chat' },
 ];
 
@@ -58,7 +61,7 @@ const RAIL_ITEMS: NavItem[] = [
 const NAV_GROUPS: Array<{ title: string; items: NavItem[] }> = [
   { title: '浏览', items: RAIL_ITEMS.filter((item) => item.key === 'discover' || item.key === 'map') },
   { title: '规划', items: RAIL_ITEMS.filter((item) => item.key === 'create' || item.key === 'aiPlanner') },
-  { title: '我的', items: RAIL_ITEMS.filter((item) => item.key === 'mine' || item.key === 'chat' || item.key === 'notifications' || item.key === 'support') },
+  { title: '我的', items: RAIL_ITEMS.filter((item) => item.key === 'mine' || item.key === 'finance' || item.key === 'chat' || item.key === 'notifications' || item.key === 'support') },
 ];
 
 function activeKey(route: Route): NavKey | null {
@@ -76,6 +79,9 @@ function activeKey(route: Route): NavKey | null {
   }
   if (route.name === 'mine') {
     return 'mine';
+  }
+  if (route.name === 'finance' || route.name === 'tripFinance') {
+    return 'finance';
   }
   if (route.name === 'chat') {
     return 'chat';
@@ -148,6 +154,22 @@ function NavIcon({ name }: { name: NavKey }) {
       >
         <path d="M10 3.2 11.6 8l4.8 1.6-4.8 1.6L10 16l-1.6-4.8L3.6 9.6 8.4 8Z" />
         <path d="M15.6 3v3M14.1 4.5h3" />
+      </svg>
+    );
+  }
+  if (name === 'finance') {
+    return (
+      <svg
+        viewBox="0 0 20 20"
+        aria-hidden="true"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.7"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      >
+        <path d="M3.5 7.5A2.5 2.5 0 0 1 6 5h8.5A2 2 0 0 1 16.5 7v7a2 2 0 0 1-2 2H6a2.5 2.5 0 0 1-2.5-2.5z" />
+        <path d="M3.5 8.5h13M13.2 12h.9" />
       </svg>
     );
   }
@@ -246,8 +268,6 @@ export function AppShell({ currentUser, onLogout, route, children }: Props) {
   /** 管理员只保留浏览 / 规划 / 发布与后台入口；我的旅行、同行消息、联系客服不向管理员展示。 */
   const hiddenForAdmin: NavKey[] = ['mine', 'chat', 'support'];
   const { restricted } = useMyCredit();
-  const navBlockedTitle = (item: NavItem) =>
-    restricted && item.key === 'create' ? creditRestrictedActionMessage() : undefined;
 
 
   const [accountOpen, setAccountOpen] = useState(false);
@@ -431,12 +451,7 @@ export function AppShell({ currentUser, onLogout, route, children }: Props) {
                 {items.map((item) => (
                   <a
                     key={item.key}
-                    className={[
-                      active === item.key ? 'rail-link active' : 'rail-link',
-                      navBlockedTitle(item) !== undefined ? 'is-disabled' : '',
-                    ]
-                      .filter((name) => name !== '')
-                      .join(' ')}
+                    className={active === item.key ? 'rail-link active' : 'rail-link'}
                     href={item.href}
                     aria-current={active === item.key ? 'page' : undefined}
                     aria-label={
@@ -446,13 +461,6 @@ export function AppShell({ currentUser, onLogout, route, children }: Props) {
                           ? notificationMessages.centerEntryUnread(counts.total)
                           : undefined
                     }
-                    aria-disabled={navBlockedTitle(item) !== undefined || undefined}
-                    title={navBlockedTitle(item)}
-                    onClick={(event) => {
-                      if (navBlockedTitle(item) !== undefined) {
-                        event.preventDefault();
-                      }
-                    }}
                   >
                     <NavIcon name={item.key} />
                     <span>{item.label}</span>
@@ -562,6 +570,18 @@ export function AppShell({ currentUser, onLogout, route, children }: Props) {
                   </svg>
                   <span>编辑我的资料</span>
                 </a>
+                <a
+                  className="rail-menu-item"
+                  role="menuitem"
+                  href="#/finance"
+                  onClick={() => setAccountOpen(false)}
+                >
+                  <svg viewBox="0 0 20 20" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M3.5 7.5A2.5 2.5 0 0 1 6 5h8.5A2 2 0 0 1 16.5 7v7a2 2 0 0 1-2 2H6a2.5 2.5 0 0 1-2.5-2.5z" />
+                    <path d="M3.5 8.5h13M13.2 12h.9" />
+                  </svg>
+                  <span>{financeMessages.navEntry}</span>
+                </a>
                 <div className="rail-menu-sep" role="separator" />
                 <button
                   type="button"
@@ -591,23 +611,19 @@ export function AppShell({ currentUser, onLogout, route, children }: Props) {
           banExpiresAt={selfProfile?.ban_expires_at}
           className="view-status-notice"
         />
-        {children}
+        {restricted && route.name !== 'creditLearning' ? <CreditRestrictionGate /> : children}
       </div>
 
       <nav className="tabbar" aria-label="底部导航">
         {NAV_ITEMS.filter(
           (item) =>
             item.key !== 'aiPlanner' &&
+            item.key !== 'finance' &&
             !(isAdmin && (item.key === 'mine' || item.key === 'chat')),
         ).map((item) => (
           <a
             key={item.key}
-            className={[
-              active === item.key ? 'tab-link active' : 'tab-link',
-              navBlockedTitle(item) !== undefined ? 'is-disabled' : '',
-            ]
-              .filter((name) => name !== '')
-              .join(' ')}
+            className={active === item.key ? 'tab-link active' : 'tab-link'}
             href={item.href}
             aria-current={active === item.key ? 'page' : undefined}
             aria-label={
@@ -615,13 +631,6 @@ export function AppShell({ currentUser, onLogout, route, children }: Props) {
                 ? notificationMessages.chatUnreadLabel(counts.by_type.CHAT)
                 : undefined
             }
-            aria-disabled={navBlockedTitle(item) !== undefined || undefined}
-            title={navBlockedTitle(item)}
-            onClick={(event) => {
-              if (navBlockedTitle(item) !== undefined) {
-                event.preventDefault();
-              }
-            }}
           >
             <NavIcon name={item.key} />
             <span>{item.label}</span>

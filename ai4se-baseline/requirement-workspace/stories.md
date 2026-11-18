@@ -428,39 +428,39 @@
 
 ---
 
-# Story list — REQ-028（实时通知中心与未读计数）
+# Story list — REQ-029（实时通知中心与未读计数）
 
-- **来源：** 发起人 2026-11-17 在 `#/chat` 的观察——「申请到达 / 我的申请被接受 / 收到新消息都没有实时提示，也没有显示收到几条通知的红点」；2026-11-18 追加要求：扩展为覆盖八类业务事件的完整通知中心；优先级 P0；迭代 3；8 点（S29-1 ~ S29-8 各 1 点）；落点页面：全局壳层、通知中心、聊天页、行程详情、信用记录、举报详情、账号菜单、客服
+- **来源：** 发起人 2026-11-17 在 `#/chat` 的观察——「申请到达 / 我的申请被接受 / 收到新消息都没有实时提示，也没有显示收到几条通知的红点」；2026-11-18 追加要求：扩展为覆盖八类业务事件的完整通知中心；优先级 P0；迭代 3；8 点（S30-1 ~ S30-8 各 1 点）；落点页面：全局壳层、通知中心、聊天页、行程详情、信用记录、举报详情、账号菜单、客服
 - **Change：** `add-realtime-notifications`（`notifications` ADDED：8 Requirement / 36 Scenario）
-- **口径：** 一条故事 = 一条垂直切片（记录 → 八类事件接入 → 计数 → 通知中心与跳转 → 实时投递），拆为 S29-1 ~ S29-8 八个可独立验收的步骤
-- **需求编号说明：** 2026-11-17 起草时登记为 REQ-023；`main` 上 REQ-023 已被 `add-experience-like-credit` 占用，2026-11-18 扩围时按「后到者顺延」改为 **REQ-028 / S29**
+- **口径：** 一条故事 = 一条垂直切片（记录 → 八类事件接入 → 计数 → 通知中心与跳转 → 实时投递），拆为 S30-1 ~ S30-8 八个可独立验收的步骤
+- **需求编号说明：** 2026-11-17 起草时登记为 REQ-023；`main` 上 REQ-023 已被 `add-experience-like-credit` 占用，2026-11-18 扩围时按「后到者顺延」改为 **REQ-029 / S30**
 - **更新时间：** 2026-11-18
 
 | Story | Title | 角色 | Priority | Iteration | Points | Page | Parent REQ | Change | Status |
 |---|---|---|---|---|---|---|---|---|---|
-| S29-1 | 记录八类通知并保证去重与保留 | 平台用户 | P0 | 迭代 3 | 1 | 全局壳层 | REQ-028 | `add-realtime-notifications` | P4 verified（2026-11-18） |
-| S29-2 | 行程生命周期通知 | 发布者 / 同行者 | P0 | 迭代 3 | 1 | 行程详情 | REQ-028 | `add-realtime-notifications` | P4 verified（2026-11-18） |
-| S29-3 | 申请到达与裁决通知 | 发布者 / 申请者 | P0 | 迭代 3 | 1 | 申请处理 / 行程详情 | REQ-028 | `add-realtime-notifications` | P4 verified（2026-11-18） |
-| S29-4 | 聊天与信用通知 | 会话双方 / 信用变动用户 | P0 | 迭代 3 | 1 | 聊天页 / 信用记录 | REQ-028 | `add-realtime-notifications` | P4 verified（2026-11-18） |
-| S29-5 | 举报、账号、客服与系统通知 | 举报人 / 受限账号 / 客服用户 | P0 | 迭代 3 | 1 | 举报详情 / 账号 / 客服 | REQ-028 | `add-realtime-notifications` | P4 verified（2026-11-18） |
-| S29-6 | 通知中心、筛选与跳转 | 平台用户 | P0 | 迭代 3 | 1 | 通知中心 | REQ-028 | `add-realtime-notifications` | P4 verified（2026-11-18） |
-| S29-7 | 未读计数与标读规则 | 平台用户 | P0 | 迭代 3 | 1 | 全局壳层 / 通知中心 | REQ-028 | `add-realtime-notifications` | P4 verified（2026-11-18） |
-| S29-8 | 实时投递与失败隔离 | 平台用户 | P0 | 迭代 3 | 1 | 全局壳层 | REQ-028 | `add-realtime-notifications` | P4 verified（2026-11-18） |
+| S30-1 | 记录八类通知并保证去重与保留 | 平台用户 | P0 | 迭代 3 | 1 | 全局壳层 | REQ-029 | `add-realtime-notifications` | P4 verified（2026-11-18） |
+| S30-2 | 行程生命周期通知 | 发布者 / 同行者 | P0 | 迭代 3 | 1 | 行程详情 | REQ-029 | `add-realtime-notifications` | P4 verified（2026-11-18） |
+| S30-3 | 申请到达与裁决通知 | 发布者 / 申请者 | P0 | 迭代 3 | 1 | 申请处理 / 行程详情 | REQ-029 | `add-realtime-notifications` | P4 verified（2026-11-18） |
+| S30-4 | 聊天与信用通知 | 会话双方 / 信用变动用户 | P0 | 迭代 3 | 1 | 聊天页 / 信用记录 | REQ-029 | `add-realtime-notifications` | P4 verified（2026-11-18） |
+| S30-5 | 举报、账号、客服与系统通知 | 举报人 / 受限账号 / 客服用户 | P0 | 迭代 3 | 1 | 举报详情 / 账号 / 客服 | REQ-029 | `add-realtime-notifications` | P4 verified（2026-11-18） |
+| S30-6 | 通知中心、筛选与跳转 | 平台用户 | P0 | 迭代 3 | 1 | 通知中心 | REQ-029 | `add-realtime-notifications` | P4 verified（2026-11-18） |
+| S30-7 | 未读计数与标读规则 | 平台用户 | P0 | 迭代 3 | 1 | 全局壳层 / 通知中心 | REQ-029 | `add-realtime-notifications` | P4 verified（2026-11-18） |
+| S30-8 | 实时投递与失败隔离 | 平台用户 | P0 | 迭代 3 | 1 | 全局壳层 | REQ-029 | `add-realtime-notifications` | P4 verified（2026-11-18） |
 
-## Traceability（REQ-028）
+## Traceability（REQ-029）
 
 | Story | Requirement scenarios | Change spec | Story file |
 |---|---|---|---|
-| S29-1 | REQ-028 §4 S29-1 ~ S29-4 | `openspec/changes/add-realtime-notifications/specs/notifications/spec.md`（ADDED：通知记录与生命周期） | `stories/add-realtime-notifications.story.md` |
-| S29-2 | REQ-028 §4 S29-5 ~ S29-8、S29-12、S29-19 | 同上（行程生命周期事件） | 同上 |
-| S29-3 | REQ-028 §4 S29-9 ~ S29-12、S29-22 | 同上（申请与裁决事件） | 同上 |
-| S29-4 | REQ-028 §4 S29-13 ~ S29-15、S29-31 | 同上（聊天、信用、举报与账号事件、未读计数与标读规则） | 同上 |
-| S29-5 | REQ-028 §4 S29-16 ~ S29-20 | 同上（聊天、信用、举报与账号事件、客服与系统事件） | 同上 |
-| S29-6 | REQ-028 §4 S29-21 ~ S29-24、S29-28 | 同上（通知中心与跳转） | 同上 |
-| S29-7 | REQ-028 §4 S29-25 ~ S29-32 | 同上（计数与标读） | 同上 |
-| S29-8 | REQ-028 §4 S29-33 ~ S29-36 | 同上（实时与失败隔离） | 同上 |
+| S30-1 | REQ-029 §4 S30-1 ~ S30-4 | `openspec/changes/add-realtime-notifications/specs/notifications/spec.md`（ADDED：通知记录与生命周期） | `stories/add-realtime-notifications.story.md` |
+| S30-2 | REQ-029 §4 S30-5 ~ S30-8、S30-12、S30-19 | 同上（行程生命周期事件） | 同上 |
+| S30-3 | REQ-029 §4 S30-9 ~ S30-12、S30-22 | 同上（申请与裁决事件） | 同上 |
+| S30-4 | REQ-029 §4 S30-13 ~ S30-15、S30-31 | 同上（聊天、信用、举报与账号事件、未读计数与标读规则） | 同上 |
+| S30-5 | REQ-029 §4 S30-16 ~ S30-20 | 同上（聊天、信用、举报与账号事件、客服与系统事件） | 同上 |
+| S30-6 | REQ-029 §4 S30-21 ~ S30-24、S30-28 | 同上（通知中心与跳转） | 同上 |
+| S30-7 | REQ-029 §4 S30-25 ~ S30-32 | 同上（计数与标读） | 同上 |
+| S30-8 | REQ-029 §4 S30-33 ~ S30-36 | 同上（实时与失败隔离） | 同上 |
 
-## Notes（REQ-028）
+## Notes（REQ-029）
 
 - **不拆 change：** 八类事件共享同一张表、同一份计数口径、同一个通知中心与推送通道；拆分只会得到「有通知没入口」或「有入口没内容」的半成品。
 - **只读依赖既有能力：** 行程、申请、聊天、信用、举报、账号、客服与资料服务的业务规则保持不变，本 change 只在既有成功路径上追加通知；因此不 MODIFY `trip-companions`（其 Delta 未归档）。
@@ -528,3 +528,34 @@
 - **口径依赖既有能力：** 账号有效状态复用 `admin-console` 的惰性恢复；行程状态复用 `TripPlan.status` 的四态推导；本故事不重复定义。
 - **边界：** 趋势图、时间范围选择、导出、自动刷新与更多维度统计均不在本故事。
 - 未接入外部 ALM；本表为仓库内权威故事清单，ALM Sync 状态记为 Pending。
+
+---
+
+# Story list — REQ-028（旅行保障与小额借款 / 旅行金融迭代 1）
+
+> 合并说明（2026-11-18）：本 change 已 rebase 到 `origin/main@822471c`；编号由 REQ-024 / S25 顺延为 **REQ-028 / S29**，契约 **0.25.0** + 迁移 **`V30`**；故事行与追溯表同步顺延。同日保险收敛为「第三方入口 + 状态回写」，Delta 为 10 Requirement / 40 Scenario。
+
+- **故事：** S29 旅行保障与小额借款（发起人 2026-11-17 原始诉求；优先级 P0；迭代 1；5 点；落点页面：行程详情 / 旅行保障页 / 账号聚合页）
+- **需求编号说明：** `main` 在 rebase 后已占用 REQ-001 ~ REQ-027，本需求按「后到者顺延」登记为 **REQ-028**、故事 **S29**（原 REQ-024 / S25）。
+- **Change：** `add-travel-finance`（`travel-finance` ADDED）
+- **垂直切片：** 只负责「钱包 → 第三方保险入口与状态回写 / 借小额 → 收 5% 服务费 → 还款 / 到期」；理赔、退保、罚息、充值提现、管理后台、通知与信用分影响不在本故事。
+- **规则口径：** 保险由第三方提供方定价与承保，RouteMe 只提供入口并回写状态、不向用户收平台费；借款本金扣 5% 后发放净额；每人 1 个钱包、最多 1 笔进行中借款；仅行程发布者与 `ACCEPTED` 同行者可用。
+- **更新时间：** 2026-11-18
+
+| Story | Title | 角色 | Priority | Iteration | Points | Page | Parent REQ | Change | Status |
+|---|---|---|---|---|---|---|---|---|---|
+| S29 | 旅行保障与小额借款 | 行程发布者 / 已加入同行者 | P0 | 旅行金融 1 | 5 | 行程详情 / 旅行保障页 / 账号聚合页 | REQ-028 | `add-travel-finance` | P4 implemented（2026-11-18） |
+
+## Traceability（REQ-028）
+
+| Story | Requirement scenarios | Change spec | Story file |
+|---|---|---|---|
+| S29 | REQ-028 §4 S29-1 ~ S29-33 | `openspec/changes/add-travel-finance/specs/travel-finance/spec.md`（ADDED，P2 定稿） | `requirement-workspace/stories/add-travel-finance.story.md` |
+
+## Notes（REQ-028）
+
+- **不拆故事：** 钱包、第三方保险入口与状态、借款、5% 收费与账本必须同批交付；拆开后会出现「能买不能借」「状态对不上账」的不完整验收。
+- **单 capability：** 保险入口与借款共用钱包、资格与页面，合并为 `travel-finance`；不新建第二个金融 change。
+- **金额口径：** 整数分；借款只接受整元，保证 5% 恒为整数分，避免浮点与四舍五入争议；保险不出现金额字段。
+- **保留边界：** 真实保险机构 API / 核保 / 理赔、真实银行对接、征信、退保、罚息、钱包充值提现、管理后台金融视图与通知均排除（D10 / D12）。
+- **依赖：** `trip-plans` / `trip-companions` 只读；`user-auth` 注册事务内初始化钱包；`user-credit` 仅作账本范式参照，不读写信用分。
