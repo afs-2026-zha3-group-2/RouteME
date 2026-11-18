@@ -84,6 +84,16 @@ describe('phase', () => {
     ).toBe('result');
   });
 
+  it('keeps a partial recovery in result instead of claiming done', () => {
+    expect(
+      phase({
+        creditScore: 55,
+        session: session(),
+        result: result({ score: 8, recovery_applied: true, credit_score: 55 }),
+      }),
+    ).toBe('result');
+  });
+
   it('returns result for a failed attempt without claiming a recovery', () => {
     const failed = result({ passed: false, score: 7, recovery_applied: false, credit_score: 45 });
     expect(phase({ creditScore: 45, session: session(), result: failed })).toBe('result');

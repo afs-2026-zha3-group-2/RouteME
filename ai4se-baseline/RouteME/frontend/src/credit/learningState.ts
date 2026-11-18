@@ -16,12 +16,14 @@ export type PhaseInput = {
 };
 
 /**
- * 五态判定：未通过落在 result（可重考）；通过且本次真的记了恢复才进 done。
- * 并发下 `recovery_applied === false` 时不得播报「已恢复」，因此留在 result。
+ * 五态判定：未通过落在 result（可重考）；通过、本次记了恢复且分数已到 60 才进 done。
+ * 部分恢复（如 8 题 +10，45→55）仍留在 result，避免提前播报「已恢复」。
  */
 export function phase({ creditScore, session, result }: PhaseInput): LearningPhase {
   if (result !== null) {
-    return result.passed && result.recovery_applied ? 'done' : 'result';
+    return result.passed && result.recovery_applied && result.credit_score >= PUBLISH_MIN_SCORE
+      ? 'done'
+      : 'result';
   }
   if (session === null) {
     return creditScore >= PUBLISH_MIN_SCORE ? 'eligible' : 'intro';

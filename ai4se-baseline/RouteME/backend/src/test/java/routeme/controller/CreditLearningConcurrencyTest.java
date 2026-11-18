@@ -117,7 +117,7 @@ class CreditLearningConcurrencyTest extends CreditLearningTestSupport {
         int rejectedCount = rejected;
         assertAll(
                 () -> assertEquals(1, recoveryRows(USER_ID).size(), "single recovery row"),
-                () -> assertEquals(60, creditService.read(USER_ID).score(), "score capped at the target"),
+                () -> assertEquals(55, creditService.read(USER_ID).score(), "eight correct = +10, only one row"),
                 () -> assertEquals(1, appliedCount, "exactly one submission applied the recovery"),
                 () -> assertEquals(2, rejectedCount + applied.size(), "both submissions answered"));
     }

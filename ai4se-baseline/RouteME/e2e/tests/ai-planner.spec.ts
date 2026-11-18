@@ -731,7 +731,7 @@ test('A11 saves the snapshot, publishes it and shows the AI badge', async ({ pag
   await expect(page.locator('#trip-budget-min')).toHaveValue('460');
   await expect(page.locator('#trip-budget-max')).toHaveValue('460');
 
-  await page.getByRole('button', { name: /^发\s*布$/ }).click();
+  await page.getByRole('button', { name: /^发\s*布/ }).click();
   await expect(page).toHaveURL(/#\/trips\/\d+$/);
   await expect(page.getByRole('heading', { name: title })).toBeVisible();
   await expect(page.getByText('招募中').first()).toBeVisible();
@@ -794,7 +794,7 @@ test('A12 rejects another user\'s snapshot link and keeps the snapshot retryable
   await pickDestination(page, '广东省', '珠海市');
   await pickPlace(page, '途经点', '香洲港');
   await pickPlace(page, '途经点', '情侣路');
-  await page.getByRole('button', { name: /^发\s*布$/ }).click();
+  await page.getByRole('button', { name: /^发\s*布/ }).click();
 
   // 提交被后端拒绝（400），错误可读，URL 保留 ?ai= 可重试。
   await expect(page.getByRole('alert').filter({ hasText: 'AI 行程' })).toBeVisible();

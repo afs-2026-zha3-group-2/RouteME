@@ -21,7 +21,7 @@ const API = process.env.ROUTEME_E2E_API_BASE ? `${process.env.ROUTEME_E2E_API_BA
 const DB_PATH = process.env.ROUTEME_E2E_DB ?? resolve(HERE, '../../SqlLite/routeme.db');
 const BANK_PATH = resolve(HERE, '../../backend/src/main/resources/credit/learning-questions.json');
 const PASSWORD = 'credit-learn-123';
-const PASS_LINE = 8;
+const PERFECT = 10;
 const OPTION_COUNT = 4;
 
 type BankQuestion = { question: string; answerIndex: number };
@@ -115,30 +115,34 @@ async function answerQuiz(page: Page, correctCount: number): Promise<void> {
 
 test.describe.configure({ mode: 'serial' });
 
-test('45 分发布被拦 → 安全学习通过 → 同页恢复后发布成功', async ({ page }) => {
+test('45 分全局学习门禁 → 学习通过 → 发布成功', async ({ page }) => {
   const account = await registerViaApi(page);
   seedScore(account.userId, 45);
   await useAccount(page, account);
 
   const title = `信用恢复行程 ${Date.now()}`;
-  await page.goto('/#/trips/new');
+  // 受限时侧栏保留，但内容区全部换成学习门禁。
+  await page.goto('/');
+  const gate = page.locator('.credit-gate');
+  await expect(gate).toBeVisible();
+  await expect(gate).toContainText('账号功能已暂停');
+  await expect(gate).toContainText('当前信用分 45 / 100');
+  await expect(page.locator('.trip-card')).toHaveCount(0);
 
-  const notice = page.locator('.blocked-notice');
-  await expect(notice).toBeVisible();
-  await expect(notice).toContainText('信用分低于 60，当前账号仅可查看');
-  const guard = page.locator('.publish-guard-note');
-  await expect(guard).toContainText('未通过不占用恢复次数，分数不变。');
-  await expect(page.getByRole('button', { name: /^发\s*布$/ })).toBeDisabled();
+  await page.getByRole('link', { name: '发布行程' }).first().click();
   await expect(page).toHaveURL(/#\/trips\/new$/);
+  await expect(page.locator('.credit-gate')).toBeVisible();
+  await expect(page.getByRole('button', { name: /^发\s*布/ })).toHaveCount(0);
 
-  await guard.getByRole('link', { name: '去安全学习' }).click();
+  await page.locator('.credit-gate').getByRole('link', { name: '去安全学习' }).click();
   await expect(page).toHaveURL(/#\/credit\/learning$/);
+  await expect(page.locator('.credit-gate')).toHaveCount(0);
   await expect(page.getByText('先花 3 分钟看完这四类风险，再开始答题')).toBeVisible();
   await expect(page.locator('.cl-credit-num')).toHaveText('45 / 100');
 
   await page.getByRole('button', { name: '我已学完，开始答题' }).click();
   await expect(page.locator('.cl-q')).toBeVisible();
-  await answerQuiz(page, PASS_LINE);
+  await answerQuiz(page, PERFECT);
   await page.getByRole('button', { name: '提交作答' }).click();
 
   await expect(page.locator('.cl-done')).toBeVisible();
@@ -152,7 +156,7 @@ test('45 分发布被拦 → 安全学习通过 → 同页恢复后发布成功'
   await page.getByRole('link', { name: '去发布行程' }).click();
   await expect(page).toHaveURL(/#\/trips\/new$/);
   await fillPublishForm(page, title);
-  await page.getByRole('button', { name: /^发\s*布$/ }).click();
+  await page.getByRole('button', { name: /^发\s*布/ }).click();
   await expect(page.getByRole('heading', { name: title })).toBeVisible();
 
   await page.goto(`/#/users/${account.userId}`);
@@ -163,6 +167,27 @@ test('45 分发布被拦 → 安全学习通过 → 同页恢复后发布成功'
   await expect(
     page.locator('.trip-card', { hasText: title }).locator('.tc-credit').first(),
   ).toHaveText('信用分：60 / 100 · 信用一般');
+});
+
+test('45 分答对 8 题只部分恢复到 55，门禁仍在', async ({ page }) => {
+  const account = await registerViaApi(page);
+  seedScore(account.userId, 45);
+  await useAccount(page, account);
+
+  await page.goto('/');
+  await page.locator('.credit-gate').getByRole('link', { name: '去安全学习' }).click();
+  await page.getByRole('button', { name: '我已学完，开始答题' }).click();
+  await expect(page.locator('.cl-q')).toBeVisible();
+  await answerQuiz(page, 8);
+  await page.getByRole('button', { name: '提交作答' }).click();
+
+  await expect(page.locator('.cl-result.is-pass')).toContainText('信用分恢复至 55');
+  await expect(page.locator('.cl-result')).toContainText('本次恢复 +10');
+  await expect(page.getByRole('link', { name: '去发布行程' })).toHaveCount(0);
+  await expect(page.getByRole('link', { name: '返回首页' })).toBeVisible();
+
+  await page.getByRole('link', { name: '返回首页' }).click();
+  await expect(page.locator('.credit-gate')).toContainText('当前信用分 55 / 100');
 });
 
 test('62 分深链进入安全学习页只看到「当前无需恢复」', async ({ page }) => {
@@ -180,15 +205,23 @@ test('62 分深链进入安全学习页只看到「当前无需恢复」', async
   await expect(page.locator('.cl-credit-num')).toHaveText('62 / 100');
 });
 
-test('低分不在首页 / 我的旅行 / 聊天新增受限横幅与学习入口', async ({ page }) => {
+test('低分登录后每个路由都只显示学习门禁，并可跳转学习页', async ({ page }) => {
   const account = await registerViaApi(page);
   seedScore(account.userId, 45);
   await useAccount(page, account);
 
   for (const path of ['/', '/#/mine', '/#/chat']) {
     await page.goto(path);
-    await expect(page.getByText('去安全学习')).toHaveCount(0);
-    await expect(page.getByText(/信用分低于 60/)).toHaveCount(0);
-    await expect(page.getByText(/安全学习/)).toHaveCount(0);
+    const gate = page.locator('.credit-gate');
+    await expect(gate).toBeVisible();
+    await expect(gate.locator('.credit-gate-icon')).toBeVisible();
+    await expect(gate).toContainText('账号功能已暂停');
+    await expect(gate.getByRole('link', { name: '去安全学习' })).toBeVisible();
   }
+
+  // 直接从首页门禁进入学习页，且学习页不重复渲染门禁。
+  await page.goto('/');
+  await page.locator('.credit-gate').getByRole('link', { name: '去安全学习' }).click();
+  await expect(page).toHaveURL(/#\/credit\/learning$/);
+  await expect(page.locator('.credit-gate')).toHaveCount(0);
 });
