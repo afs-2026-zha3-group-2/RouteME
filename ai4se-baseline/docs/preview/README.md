@@ -12,6 +12,7 @@
 |---|---|---|---|---|
 | `add-ai-itinerary/` | `add-ai-itinerary`（REQ-017） | AI 规划页与详情 9 张走查截图 + 预填 + `walkthrough-report.json`；`ref-ai-planner.png` 为设计参考 | Jay | 2026-11-17 |
 | `add-trip-weather/` | `add-trip-weather`（REQ-022） | 发布页天气卡三档视口 × 双主题 6 张 | Jay | 2026-11-17 |
+| `refine-publish-route-map/` | `refine-publish-route-map`（REQ-027） | 发布页路线编辑器三档视口 × 双主题 6 张 | Jacky | 2026-11-18 |
 | `publish-redesign/` | 待补 change（发布页改版进行中） | 参考稿三张：六屏总览、发布页基础版、发布页完整版 | Jay | 2026-11-17 |
 
 新增子目录时同步本表一行；change 归档后把该行标注「已归档」，目录本身不移动。

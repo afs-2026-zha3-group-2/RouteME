@@ -46,3 +46,8 @@ export const TRIP_TRAVEL_MODE_LABELS: Record<TripTravelMode, string> = {
   bicycling: '骑行',
   transit: '公共交通',
 };
+
+/** 共享地图面板回传的是 `TravelMode`（含步行）；发布页用它收窄到三档。 */
+export function isTripTravelMode(value: unknown): value is TripTravelMode {
+  return value === 'driving' || value === 'bicycling' || value === 'transit';
+}

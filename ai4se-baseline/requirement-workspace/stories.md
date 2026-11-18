@@ -488,6 +488,16 @@
 
 ---
 
+# Story list — REQ-029（S30 发布行程在地图上规划路线）
+
+- **来源：** 发起人 2026-11-18 验收反馈「旅行地图有点冗余，但它在地图上显示路线、添加目的地的能力很好，用它替掉发布行程里的简单路线」
+- **Change：** `refine-publish-route-map`（`trip-plans` MODIFIED：1 Requirement / 18 Scenario）
+- **口径：** 一条故事 = 发布页一个段落（路线规划）+ 一条既有提交链路（`stops` + `travel_mode`）；不新增能力、不改契约、不加迁移
+- **编号说明：** 合并说明（2026-11-18）：`main` 上 **REQ-027 / S28** 已由 `add-credit-recovery`（安全学习恢复信用分）占用、**REQ-028 / S29** 由 `add-travel-finance` 占用，本故事按「后到者顺延」改为 **REQ-029 / S30**
+- **更新时间：** 2026-11-18
+
+---
+
 # Story list — REQ-028（旅行保障与小额借款 / 旅行金融迭代 1）
 
 > 合并说明（2026-11-18）：本 change 已 rebase 到 `origin/main@822471c`；编号由 REQ-024 / S25 顺延为 **REQ-028 / S29**，契约 **0.25.0** + 迁移 **`V30`**；故事行与追溯表同步顺延。同日保险收敛为「第三方入口 + 状态回写」，Delta 为 10 Requirement / 40 Scenario。
@@ -501,7 +511,24 @@
 
 | Story | Title | 角色 | Priority | Iteration | Points | Page | Parent REQ | Change | Status |
 |---|---|---|---|---|---|---|---|---|---|
+| S30 | 发布行程在地图上规划路线 | 发布者 | P0 | 迭代 3 | 3 | 发布行程 · 路线规划段 | REQ-029 | `refine-publish-route-map` | P4 implemented（2026-11-18） |
 | S29 | 旅行保障与小额借款 | 行程发布者 / 已加入同行者 | P0 | 旅行金融 1 | 5 | 行程详情 / 旅行保障页 / 账号聚合页 | REQ-028 | `add-travel-finance` | P4 implemented（2026-11-18） |
+
+## Traceability（REQ-029）
+
+| Story | Requirement scenarios | Change spec | Story file |
+|---|---|---|---|
+| S30 | REQ-029 §4 S30-1 ~ S30-11（+ 基线 7 场景保留） | `openspec/changes/refine-publish-route-map/specs/trip-plans/spec.md`（MODIFIED：1 Requirement / 18 Scenario） | `requirement-workspace/stories/refine-publish-route-map.story.md` |
+
+## Notes（REQ-029）
+
+- **不拆故事：** 「加点 → 排序 → 看到路线 → 提交」是同一条垂直切片；只换面板不做提交校验，会把占位名带进详情页。
+- **复用探索页面板：** `已选途经点`、`出行方式`、`重新生成旅行路线`、`已按直线显示路线`、`行程顺序` 五块直接复用；差异只来自注入的 `modes` / `modeLabels` 与降级文案。
+- **不引入坐标：** 编辑期 `RouteWaypoint[]` 只在内存，提交仍为 `stops: string[]`；契约 0.22.0 与 `trip_plans` 表不变。
+- **页面保留：** 只移除一级导航入口；`#/map` 与省 / 市深链不删。
+- **占位名边界：** 探索页不落库，坐标名只是临时显示；发布侧由提交校验承担，不改 `pointFallbackName` 本体。
+- **边界：** 路线持久化 / 收藏 / 分享、同行者匹配进发布页、AI 规划页改造均不在本故事。
+- 未接入外部 ALM；本表为仓库内权威故事清单，ALM Sync 状态记为 Pending。
 
 ## Traceability（REQ-028）
 
@@ -516,3 +543,4 @@
 - **金额口径：** 整数分；借款只接受整元，保证 5% 恒为整数分，避免浮点与四舍五入争议；保险不出现金额字段。
 - **保留边界：** 真实保险机构 API / 核保 / 理赔、真实银行对接、征信、退保、罚息、钱包充值提现、管理后台金融视图与通知均排除（D10 / D12）。
 - **依赖：** `trip-plans` / `trip-companions` 只读；`user-auth` 注册事务内初始化钱包；`user-credit` 仅作账本范式参照，不读写信用分。
+- 未接入外部 ALM；本表为仓库内权威故事清单，ALM Sync 状态记为 Pending。

@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { tripMessages } from '../i18n/tripMessages';
 import {
   addTag,
   emptyTripForm,
@@ -71,6 +72,31 @@ describe('validateTripForm', () => {
     const errors = validateTripForm({ ...validForm, stops: ['只有一处'] });
     expect(errors.stops).toBeDefined();
     expect(validateTripForm({ ...validForm, stops: ['一处', '  '] }).stops).toBeDefined();
+  });
+
+  it('rejects a stop that is still a coordinate placeholder', () => {
+    expect(tripMessages.errorStopsPlaceholder).toBeDefined();
+    const errors = validateTripForm({
+      ...validForm,
+      stops: ['地图选点 113.57670, 22.28590', '情侣路'],
+    });
+    expect(errors.stops).toBe(tripMessages.errorStopsPlaceholder);
+  });
+
+  it('accepts a readable name that contains coordinates in parentheses', () => {
+    const errors = validateTripForm({
+      ...validForm,
+      stops: ['中山路（113.27000, 23.12000）', '情侣路'],
+    });
+    expect(errors.stops).toBeUndefined();
+  });
+
+  it('still requires at least two stops before the placeholder check', () => {
+    const errors = validateTripForm({
+      ...validForm,
+      stops: ['地图选点 113.57670, 22.28590'],
+    });
+    expect(errors.stops).toBe(tripMessages.errorStopsRequired);
   });
 
   it('bounds the capacity to the contract range', () => {

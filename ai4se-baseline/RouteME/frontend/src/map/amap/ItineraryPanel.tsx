@@ -5,6 +5,7 @@ import {
   formatDuration,
   type RoutePlan,
   type RouteWaypoint,
+  type TravelMode,
 } from './AmapService';
 import { MODE_LABELS } from './WaypointPanel';
 
@@ -13,15 +14,18 @@ type Props = {
   route: RoutePlan | null;
   focusId: string | null;
   onFocus: (id: string) => void;
+  /** 与调用方的模式标签保持一致；缺省用 MODE_LABELS。 */
+  modeLabels?: Partial<Record<TravelMode, string>>;
 };
 
-export function ItineraryPanel({ waypoints, route, focusId, onFocus }: Props) {
+export function ItineraryPanel({ waypoints, route, focusId, onFocus, modeLabels }: Props) {
+  const modeLabel = (mode: TravelMode) => modeLabels?.[mode] ?? MODE_LABELS[mode];
   return (
     <section className="amap-side-card" data-testid="amap-itinerary-panel">
       <header className="amap-side-head">
         <div>
           <b>行程顺序</b>
-          <span>{route === null ? '生成路线后显示真实距离与时间' : MODE_LABELS[route.mode]}</span>
+          <span>{route === null ? '生成路线后显示真实距离与时间' : modeLabel(route.mode)}</span>
         </div>
       </header>
 
@@ -53,7 +57,7 @@ export function ItineraryPanel({ waypoints, route, focusId, onFocus }: Props) {
                   <b>{waypoint.name}</b>
                   {route !== null && leg !== undefined && (
                     <span>
-                      {MODE_LABELS[route.mode]} {formatDistance(leg.distanceMeters)} ·{' '}
+                      {modeLabel(route.mode)} {formatDistance(leg.distanceMeters)} ·{' '}
                       {formatDuration(leg.durationSeconds)}
                     </span>
                   )}

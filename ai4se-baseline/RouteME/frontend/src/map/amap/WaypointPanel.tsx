@@ -19,7 +19,18 @@ type Props = {
   onClear: () => void;
   onFocus: (id: string) => void;
   onGenerate: () => void;
+  /** 默认步行 / 驾车 / 骑行（探索页）；发布页注入自己的三档。 */
+  modes?: readonly TravelMode[];
+  /** 与 `modes` 配套的标签；缺省用 MODE_LABELS。 */
+  modeLabels?: Partial<Record<TravelMode, string>>;
+  /** 空态提示；缺省为探索页文案。 */
+  emptyHint?: string;
+  /** 出行方式分组的可访问名，只影响读屏。 */
+  modeAriaLabel?: string;
 };
+
+const DEFAULT_MODES: readonly TravelMode[] = ['walking', 'driving', 'bicycling'];
+const DEFAULT_EMPTY_HINT = '搜索城市或景点，点击结果加入途经点；至少两个才能生成路线。';
 
 export const MODE_LABELS: Record<TravelMode, string> = {
   walking: '步行',
@@ -40,6 +51,10 @@ export function WaypointPanel({
   onClear,
   onFocus,
   onGenerate,
+  modes = DEFAULT_MODES,
+  modeLabels,
+  emptyHint = DEFAULT_EMPTY_HINT,
+  modeAriaLabel = '出行方式',
 }: Props) {
   const [dragIndex, setDragIndex] = useState<number | null>(null);
   const [overIndex, setOverIndex] = useState<number | null>(null);
@@ -70,7 +85,7 @@ export function WaypointPanel({
 
       {waypoints.length === 0 ? (
         <Typography.Text type="secondary" className="amap-side-empty">
-          搜索城市或景点，点击结果加入途经点；至少两个才能生成路线。
+          {emptyHint}
         </Typography.Text>
       ) : (
         <ol className="amap-waypoint-list" aria-label="途经点顺序">
@@ -143,13 +158,13 @@ export function WaypointPanel({
         <span className="amap-mode-label">出行方式</span>
         <Segmented
           size="small"
+          aria-label={modeAriaLabel}
           value={mode}
           onChange={(value) => onModeChange(value as TravelMode)}
-          options={[
-            { label: MODE_LABELS.walking, value: 'walking' },
-            { label: MODE_LABELS.driving, value: 'driving' },
-            { label: MODE_LABELS.bicycling, value: 'bicycling' },
-          ]}
+          options={modes.map((value) => ({
+            label: modeLabels?.[value] ?? MODE_LABELS[value],
+            value,
+          }))}
         />
       </div>
 

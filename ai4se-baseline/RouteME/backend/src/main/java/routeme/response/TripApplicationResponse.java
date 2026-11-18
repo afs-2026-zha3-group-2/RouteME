@@ -14,6 +14,7 @@ public record TripApplicationResponse(
         String status,
         Instant createdAt,
         Instant decidedAt,
+        String statusReason,
         TripSummaryResponse trip) {
 
     public static TripApplicationResponse from(
@@ -26,6 +27,7 @@ public record TripApplicationResponse(
                 application.status().wireValue(),
                 application.createdAt(),
                 application.decidedAt(),
+                application.statusReason(),
                 TripSummaryResponse.from(trip, publisher, now));
     }
 }
