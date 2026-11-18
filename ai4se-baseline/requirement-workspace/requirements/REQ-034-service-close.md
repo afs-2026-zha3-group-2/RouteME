@@ -1,6 +1,6 @@
 # REQ-034 — 客服会话结束权交由用户（Ready 需求）
 
-> 编号说明（2026-11-18）：起草时登记 REQ-028 / S29；合并 main 时 REQ-028 / S29 / V30 已被 `add-travel-finance` 占用，按「后到者顺延」改为 **REQ-034 / S35 / V36**（change id 不变；契约并入 main 0.30.0）。
+> 编号说明（2026-11-18）：起草时登记 REQ-028 / S29；合并 main 时 REQ-028 / S29 / V30 已被 `add-travel-finance` 占用，按「后到者顺延」改为 **REQ-034 / S35 / V36**（change id 不变；契约并入 main 0.30.0，后随 growth 第五次顺延升至 0.31.0）。
 
 - **能力：** `customer-service`（ADDED Requirements；既有 Requirement 由未归档 `add-admin-console` 提供）
 - **对应 OpenSpec change：** `refine-service-close`
@@ -122,7 +122,7 @@
 - **状态码长度：** `RESOLVED` 8 字符，符合 `VARCHAR(12)`；不新增表。
 - **完成留痕可清空：** `RESOLVED → HANDLING` 时清空 `resolved_*`，历史通过消息时间线追溯。
 - **不引入定时任务。**
-- **契约与迁移排他：** 起草时 `openapi.yaml` 0.24.0、Flyway head `V29`，暂定 `0.25.0 + V30`；合并 main 后顺延落定 **V36**，契约并入 main **0.30.0**。
+- **契约与迁移排他：** 起草时 `openapi.yaml` 0.24.0、Flyway head `V29`，暂定 `0.25.0 + V30`；合并 main 后顺延落定 **V36**，契约并入 main **0.31.0**（合并时 0.30.0，后随 growth 第五次顺延升版）。
 - **未归档 Delta：** 不改 `add-admin-console` / `refine-service-workbench-live` / `refine-service-inbox-unread` / `refine-user-support-entry` 的 Delta；本 change 追加 ADDED 并声明取代关系；归档顺序排在 `add-admin-console` 之后。
 - **原型：** 原型无客服会话界面，不做原型先行；视觉沿用现有 `help-chat` / `admin-service` 样式与 antd 组件。
 
@@ -157,7 +157,7 @@
 | blocking | — | 无 | — | D1–D9 已由用户 2026-11-18 裁决 |
 | non-blocking | open（OQ-1） | 客服在 `RESOLVED` 状态发消息是否也回到 `HANDLING` | IO / SA | 默认按对称行为（M-2）；若只允许用户触发回迁，M-2 改为「客服可回复但状态保持待确认」 |
 | non-blocking | deferred（OQ-2） | 用户端是否展示「哪位客服标记完成」 | IO | 默认不展示，只展示 `resolved_at` 触发提示 |
-| non-blocking | deferred（OQ-3） | 契约版本与迁移号 | Dev | 已收口：合并顺延为 V36，契约并入 main 0.30.0（2026-11-18） |
+| non-blocking | deferred（OQ-3） | 契约版本与迁移号 | Dev | 已收口：合并顺延为 V36，契约并入 main 0.31.0（2026-11-18；合并时 0.30.0，后随 growth 第五次顺延升版） |
 | non-blocking | deferred（OQ-4） | 结束确认文案与三态差异化提示 | IO | P3 文案定稿 |
 | non-blocking | deferred（OQ-5） | 是否在消息流插入系统提示消息 | SA | 默认不插入，仅状态与提示区变化 |
 | non-blocking | deferred（OQ-6） | 队列排序中 `RESOLVED` 的位置 | SA | 默认与 `CLOSED` 同组倒序；`WAITING` 仍置顶 |

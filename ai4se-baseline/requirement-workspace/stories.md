@@ -559,7 +559,7 @@
 - **编号说明：** 合并 `origin/main` 时 REQ-028 / S29 已被 `add-travel-finance` 占用、REQ-029 / S30 又由 `refine-publish-route-map` 占用，本需求按「后到者顺延」改为 **REQ-030 / S31**（change id 不变）。
 # Story list — REQ-034（issue #38 客服会话结束权交由用户）
 
-> 编号说明（2026-11-18 合并收口）：起草时登记 REQ-028 / S29；合并 main 时号段被 `add-travel-finance` 占用，按「后到者顺延」改为 **REQ-034 / S35**（契约并入 main 0.30.0 + V36）。
+> 编号说明（2026-11-18 合并收口）：起草时登记 REQ-028 / S29；合并 main 时号段被 `add-travel-finance` 占用，按「后到者顺延」改为 **REQ-034 / S35**（契约并入 main 0.31.0 + V36（合并时 0.30.0，后随 growth 第五次顺延升版））。
 
 - **来源：** issue #38「客服服务BUG-客服无法结束会话」（无标签；P0 / 迭代 2 / 2 点，2026-11-18 经 IO 确认）
 - **Change：** `refine-service-close`（`customer-service` ADDED Requirement）
@@ -647,7 +647,7 @@
 # Story list — REQ-033（用户成长等级 LV1–LV5 / 迭代 3）
 
 - **故事：** S34 用户成长等级 LV1–LV5（GitHub issue #44；优先级 P1；迭代 3；3 点；落点页面：用户主页 / 行程详情 / 同行者信息）
-- **需求编号说明：** 合并说明（2026-11-18）：`main` 已占用 REQ-001 ~ REQ-030、S01 ~ S31（**REQ-029 / S30** = `refine-publish-route-map`，**REQ-030 / S31** = `add-report-credit-deduction`）；本需求按「后到者顺延」四次顺延，最终登记为 **REQ-033 / S34**（REQ-031 / S32 由 add-route-completion 占用，REQ-032 / S33 由 add-realtime-notifications 占用）。
+- **需求编号说明：** 合并说明（2026-11-18）：`main` 已占用 REQ-001 ~ REQ-030、S01 ~ S31（**REQ-029 / S30** = `refine-publish-route-map`，**REQ-030 / S31** = `add-report-credit-deduction`）；本需求按「后到者顺延」第五次顺延，最终登记为 **REQ-033 / S34**（REQ-031 / S32 由 add-route-completion 占用，REQ-032 / S33 由 add-realtime-notifications 占用）。
 - **Change：** `add-growth-level`（`user-growth` ADDED）
 - **垂直切片：** 只负责「经验事件 → 防刷 / 每日上限 → 经验流水 → 等级派生 → 6 处展示」；不含明细页 / 排行榜 / 通知 / 权益 / 管理端 / 回填 / #45。
 - **规则口径：** LV1–LV5，每 100 EXP 一级，LV5 后继续累计；发布已完成行程体验 +10（配置化）；单篇每 10 个有效赞 +5（档位锁定）；正向每日 +20（Asia/Shanghai，跨档按剩余额度截断）；举报成立 −50（每份一次，最低 0，等级随经验回退）；他人只见等级。
@@ -669,7 +669,7 @@
 - **单 capability：** `user-growth`；`trip-experiences` / `admin-console` / `user-profile` / `user-profiles` 只读消费，不改其 Requirement。
 - **与信用分分离：** 不读写 `user_credit_account` / `credit_ledger`；展示并列但文案区分。
 - **保留边界：** 经验明细页、排行榜、通知、等级权益、管理端、中文头衔、存量回填、#45 路线完成度均排除。
-- **依赖：** 体验发布 / 点赞 / 举报成立的既有事件；配置 `routeme.growth.publish-exp`；契约 / 迁移 P3 排他（预计 0.30.0 + V34；合并后迁移顺延 V35）。
+- **依赖：** 体验发布 / 点赞 / 举报成立的既有事件；配置 `routeme.growth.publish-exp`；契约 / 迁移 P3 排他（预计 0.31.0 + V35）。
 
 ## Traceability（REQ-034）
 

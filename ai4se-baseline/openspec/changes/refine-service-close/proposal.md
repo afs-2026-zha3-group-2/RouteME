@@ -1,6 +1,6 @@
 # 变更提案：refine-service-close
 
-> **编号顺延（2026-11-18 合并收口）：** 本 change 起草时登记 REQ-028 / S29，契约 0.25.0 + 迁移 V30；合并 main 时号段被 `add-travel-finance` 占用，按「后到者顺延」落定 **REQ-034 / S35 / V36**，契约并入 main **0.30.0**。下文与已签工件保留当时编号作为历史快照；活跃登记见 `requirement-workspace/registry.md`。
+> **编号顺延（2026-11-18 合并收口）：** 本 change 起草时登记 REQ-028 / S29，契约 0.25.0 + 迁移 V30；合并 main 时号段被 `add-travel-finance` 占用，按「后到者顺延」落定 **REQ-034 / S35 / V36**，契约并入 main **0.31.0**（合并时 0.30.0，后随 growth 第五次顺延升版）。下文与已签工件保留当时编号作为历史快照；活跃登记见 `requirement-workspace/registry.md`。
 
 - **需求来源：** GitHub Issue [#38](https://github.com/afs-2026-zha3-group-2/RouteME/issues/38)「客服服务BUG-客服无法结束会话」｜ **需求条目：** `requirement-workspace/requirements/REQ-028-service-close.md`（S29）
 - **能力：** `customer-service`（**ADDED Requirements**）；依赖 `user-support`（入口，未归档）、`user-auth`（已归档）、`trip-companions`（隔离不变量，已归档）

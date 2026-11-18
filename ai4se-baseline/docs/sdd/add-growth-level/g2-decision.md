@@ -32,8 +32,9 @@
 
 **G2：Pass。**
 
-- 验证范围：契约 0.30.0 / V34 迁移、成长内核与三事件、C2 字段级可见性、并发幂等、前端 6 展示面、本 change E2E 5/5 与合并后 28/28（重跑）。
+- 验证范围：契约 0.31.0 / V35 迁移、成长内核与三事件、C2 字段级可见性、并发幂等、前端 6 展示面、本 change E2E 5/5 与合并后 28/28（重跑）。
 - 合并后复验（`origin/main@693e0943`）：后端 766 / 前端 561（typecheck 通过）/ 定向 E2E（growth-level + route-completion）11/11。
+- 合并后复验（`origin/main@e9341e23`，student-verification）：后端 771 / 前端 571（typecheck 通过）/ 白名单 E2E 28/28；成长 E2E 账号按新认证门禁置为已认证（`growthSupport.markStudentVerified`）。
 - 未覆盖：远端 CI（push 后执行）、全量 E2E 基线、P5 归档。
 
 ## 4. 签署

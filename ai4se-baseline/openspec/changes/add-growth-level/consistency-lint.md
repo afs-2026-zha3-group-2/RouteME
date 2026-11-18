@@ -40,7 +40,7 @@
 ## 4. Residual risks
 
 - 重复处理已成立举报的响应形态（既有异常 vs no-op）与字段级可见性未在 Delta 写死 → 已列入 `dov-ac-review.md` §4，由 P3 design 收口（owner：Jay；复核：WAYNE）。
-- 契约版本 / 迁移号按「落定 0.30.0 + V34」占位（基线 0.26.0 + V31，已随 #29 并入 main）；P3 排他确认，若 origin/main 再前进需顺延。
+- 契约版本 / 迁移号按「落定 0.31.0 + V35」占位（基线 0.26.0 + V31，已随 #29 并入 main）；P3 排他确认，若 origin/main 再前进需顺延。
 - 展示面涉及 6 处跨页面改动，视觉回归依赖 P3 原型截点与 P4 E2E；本阶段无代码证据。
 
 ## 5. Reviewer metadata

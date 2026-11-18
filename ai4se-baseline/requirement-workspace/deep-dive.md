@@ -1464,7 +1464,7 @@ MVP 无推送、无通知；以下为点赞与信用状态的展示面契约。
 - **未收敛 ✗：** 无。
 ## REQ-034 增补 — 客服会话结束权交由用户（issue #38）
 
-> 编号说明（2026-11-18 合并收口）：原 REQ-028 / S29 / V30 被 `add-travel-finance` 占用，按「后到者顺延」改为 **REQ-034 / S35 / V36**（契约并入 main 0.30.0）。
+> 编号说明（2026-11-18 合并收口）：原 REQ-028 / S29 / V30 被 `add-travel-finance` 占用，按「后到者顺延」改为 **REQ-034 / S35 / V36**（契约并入 main 0.31.0（合并时 0.30.0，后随 growth 第五次顺延升版））。
 > 日期：2026-11-18 ｜ 基线 `origin/main@822471c` ｜ 需求 `requirements/REQ-034-service-close.md` ｜ 能力 `customer-service`
 
 ### ① 数据契约（Data contract）
@@ -1845,7 +1845,7 @@ MVP 无推送、无通知；以下为完成度的 UI 展示面契约。
 - **每日额度：** 从 `growth_exp_ledger` 当日 `applied_delta > 0` 求和派生；不建计数表；日界 `Asia/Shanghai`，复用 `TripTimeZoneConstant.ZONE` 或等价常量。
 - **并发：** 幂等键唯一索引兜底；账户更新用条件更新 / 事务内重读，避免双发；点赞档位并发由唯一键防重。
 - **账本时间：** `occurred_at` 存 ISO-8601 字符串，与 `credit_ledger` 口径一致；日界过滤用 `Instant`。
-- **契约 / 迁移排他：** 基线 0.26.0 + V31（#29 已并入 main 占用）；本 change 落定 0.30.0 + V35（原 V34 顺延）；P3 排他确认。
+- **契约 / 迁移排他：** 基线 0.26.0 + V31（#29 已并入 main 占用）；本 change 落定 0.31.0 + V35；P3 排他确认。
 - **原型缺口：** `docs/prototype` 无成长等级截点；P3 先补原型再实现（项目规则要求原型先行）。
 - **E2E 影响：** 新增成长 E2E（发布 → 点赞 → 升级 → 展示；举报成立扣经验）；既有 `credit.spec.ts` / `trips.spec.ts` / `detail-companions.spec.ts` 可能因新增徽标产生断言漂移，P3 评估。
 - `{TBD}`：无。非阻塞项（契约 / 迁移号、端点与字段形状、原型截点、配置命名）已在 REQ-031 §8 标 deferred。

@@ -1,6 +1,6 @@
 # P1 意图记录 — add-growth-level
 
-- **Change：** `add-growth-level`（REQ-033 / S34 用户成长等级 LV1–LV5；编号四次顺延：REQ-029 / S30 → REQ-030 / S31 → REQ-033 / S34）｜ **阶段：** P1（Intent & proposal）
+- **Change：** `add-growth-level`（REQ-033 / S34 用户成长等级 LV1–LV5；编号第五次顺延：REQ-029 / S30 → REQ-030 / S31 → REQ-033 / S34）｜ **阶段：** P1（Intent & proposal）
 - **日期：** 2026-11-18 ｜ **记录人：** Jay（AO）
 - **基点：** `origin/main@71f3ad4`（独立 worktree `.worktrees/add-growth-level`，分支 `feature/add-growth-level`）；2026-11-18 先后合并 `origin/main@8992853` / `origin/main@f2bad40`（契约 0.26.0 / 迁移头 V31）
 
@@ -36,14 +36,14 @@
 - **计算与可见性（D10 / D11）：** 后端统一计算，前端不得加减；本人可见等级 + 当前经验 + 距下一级，他人只见等级；6 处展示面（主页 / 弹窗 / 详情发布者 / 行程卡 / 申请者行 / 同行者卡片）；头衔只用 `LVn`。
 - **明确不做（D12）：** 经验明细页 / 排行榜 / 通知 / 等级权益 / 管理端 / 中文头衔 / 经验购买 / 等级影响信用分。
 - **#29 关系（D13）：** #29 已并入 main（`f2bad40`）；其「扣信用分」已在 `AdminReportServiceImpl.resolve`，本 change 在其后并列追加「扣成长经验」，不覆盖。
-- **契约 / 迁移（D14）：** 基线 0.26.0 + V31（#29 已并入 main）；本 change 落定 0.30.0 + V34；P3 排他确认。
+- **契约 / 迁移（D14）：** 基线 0.26.0 + V31（#29 已并入 main）；本 change 落定 0.31.0 + V35；P3 排他确认。
 
 ## 4. 校验
 
 - `openspec validate add-growth-level --strict` → `Change 'add-growth-level' is valid`（Delta 纯 ADDED，9 Requirement / 41 Scenario）。
 - 空白基线：backend / frontend grep `user_growth` / `growth_level` / `exp_total` / `成长等级` → 0 命中（合并 `8992853` / `f2bad40` 后复核仍为 0）。
 - 事件挂接点：`ExperienceServiceImpl.upsert`（`created`）、`ExperienceLikeServiceImpl.like`（`created` + 自赞拒绝）、`AdminReportServiceImpl.resolve`（`RESOLVED`）、`ReportTargetService.reportedUserId`。
-- 契约与迁移排他：`openapi.yaml` 0.26.0；Flyway 头 `V31__report_credit_deduction.sql`（#29 已并入 main）；本 change 落定 0.30.0 + V34，P3 / P4 排他确认。
+- 契约与迁移排他：`openapi.yaml` 0.26.0；Flyway 头 `V31__report_credit_deduction.sql`（#29 已并入 main）；本 change 落定 0.31.0 + V35，P3 / P4 排他确认。
 - 已知工具偏差：`openspec show --json` 对中文 `## 问题` 标题报 `Why section`，属项目既有约定差异；`validate --strict` 不受影响。
 - 质量检查：`docs/ai4se-plugins/20261118-125043-quality-checklist-report.md` Overall Pass（P1-1 ~ P1-4 Pass；P1-5 / P1-6 Skipped）。
 
@@ -61,8 +61,8 @@
 
 | 项 | 说明 | 落点 |
 |---|---|---|
-| 契约版本号 | `openapi.yaml` 现 0.26.0；本 change 落定 0.30.0 | P3 排他确认 |
-| 迁移号 | main 头 V31；本 change 落定 V34 | P3 排他确认 |
+| 契约版本号 | `openapi.yaml` 现 0.26.0；本 change 落定 0.31.0 | P3 排他确认 |
+| 迁移号 | main 头 V31；本 change 落定 V35 | P3 排他确认 |
 | 批量读取形状 | 扩展现有 `/users/credits` vs 新端点；只返回等级 | P3 设计 |
 | 字段命名与端点路径 | `growth_level` / `growth_exp` / `growth_exp_to_next` 等待定 | P3 设计 |
 | 事务边界 | 发布 / 点赞 / 举报事件与成长结算是否同事务 | P3 `design.md` 明确；优先同事务 |
@@ -75,11 +75,11 @@
 - `62095f2`：`docs(p1): add-growth-level add REQ-029 proposal and delta`（P1 产物首提，当时编号 REQ-029 / S30）。
 - 2026-11-18 合并 `origin/main@8992853`：解决 `docs/sdd/README.md` / `requirement-workspace/stories.md` 两处冲突；因 origin/main 已由 `refine-publish-route-map` 占用 REQ-029 / S30，本 change 按「后到者顺延」改为 **REQ-030 / S31**（并行 #45 `add-route-completion` 顺延为 REQ-033 / S34）；本文件、两份评审、登记台账与登记路径同步改号；签署按内容不变沿用。
 - `fb86a81` / `bf74658`：P1 合并提交与「P2 规格记录」提交（编号 REQ-030 / S31）。
-- 2026-11-18 合并 `origin/main@f2bad40`（含 #29）：再次解决 `docs/sdd/README.md` / `requirement-workspace/stories.md` / `requirement-workspace/impact-brief.md` 三处冲突；因 #29 已占用 REQ-030 / S31，本 change 再顺延为 **REQ-033 / S34**（并行 #45 顺延为 REQ-032 / S33）；契约 0.26.0 / 迁移 V31 已由 #29 占用，本 change 落定 0.30.0 + V34；P1 / P2 签署按内容不变沿用。
+- 2026-11-18 合并 `origin/main@f2bad40`（含 #29）：再次解决 `docs/sdd/README.md` / `requirement-workspace/stories.md` / `requirement-workspace/impact-brief.md` 三处冲突；因 #29 已占用 REQ-030 / S31，本 change 再顺延为 **REQ-033 / S34**（并行 #45 顺延为 REQ-032 / S33）；契约 0.26.0 / 迁移 V31 已由 #29 占用，本 change 落定 0.31.0 + V35；P1 / P2 签署按内容不变沿用。
 
 ## 8. 编号顺延说明
 
 - **变更：** REQ-029 / S30 → REQ-030 / S31（合并 `8992853`）→ **REQ-033 / S34**（合并 `f2bad40`，2026-11-18）。
 - **原因：** `8992853` 上 REQ-029 / S30 已由 `refine-publish-route-map` 登记；`f2bad40` 上 REQ-030 / S31 已由 `add-report-credit-deduction`（#29）登记；均按「后到者顺延」处理。
-- **影响：** 意图 / Ready / 故事文件改名；`deep-dive.md`「REQ-033 增补」、`impact-brief.md` §30、`registry.md` / `handoff.md` / `stories.md` / `docs/sdd/README.md` 登记行同步改号；契约 0.30.0 + V34。
+- **影响：** 意图 / Ready / 故事文件改名；`deep-dive.md`「REQ-033 增补」、`impact-brief.md` §30、`registry.md` / `handoff.md` / `stories.md` / `docs/sdd/README.md` 登记行同步改号；契约 0.31.0 + V35。
 - **签署：** WAYNE + Jay（2026-11-18）按内容不变沿用，不重新索取签署。

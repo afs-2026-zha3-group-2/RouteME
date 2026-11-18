@@ -2,7 +2,7 @@
 
 - **Change：** `add-growth-level`（REQ-033 / S34 用户成长等级 LV1–LV5）｜ **阶段：** P3（原型先行 + ATDD 设计 + 技术设计 + 任务 + 评审）
 - **日期：** 2026-11-18 ｜ **记录人：** Jay（AO）
-- **基线：** `origin/main@f2bad40`（契约 0.26.0 / 迁移头 `V31__report_credit_deduction.sql`）；P3 收口前合并 `origin/main@5f0ef7d`（清理已下线的离线 SVG 地图与相关样式，未触及本 change 工件）；本 change 落定 **0.30.0 + `V34__add_growth_level.sql`**
+- **基线：** `origin/main@f2bad40`（契约 0.26.0 / 迁移头 `V31__report_credit_deduction.sql`）；P3 收口前合并 `origin/main@5f0ef7d`（清理已下线的离线 SVG 地图与相关样式，未触及本 change 工件）；本 change 落定 **0.31.0 + `V35__add_growth_level.sql`**
 
 ## 1. 阶段目标
 
@@ -15,7 +15,7 @@
 | 原型 | [`growth-level.html`](../../prototype/growth-level.html) | 6 处展示面（个人主页 / 资料弹窗 / 详情发布者区 / 首页行程卡 / 申请者行 / 同行者卡片）+ 设计口径 + 主题切换；断点 1024 / 768 / 390 |
 | 走查图 | `docs/preview/add-growth-level/` | 1440 / 1024 / 768 / 390 × 浅 / 深色共 8 图；`scrollWidth == innerWidth` 零横向溢出 |
 | ATDD 设计 | [`atdd-design.md`](../../../openspec/changes/add-growth-level/atdd-design.md) | A1–A26 API / E1–E8 E2E / R1–R4 反向 / Defer-UT 列表 / 门禁 / fixtures；NFR 不纳入 |
-| 技术设计 | [`design.md`](../../../openspec/changes/add-growth-level/design.md) | D1–D14：两张成长表、等级纯函数、单一 `book` 入口、三事件同事务、每日上限、C1 / C2 收口、契约 0.30.0、前端 6 处接入 |
+| 技术设计 | [`design.md`](../../../openspec/changes/add-growth-level/design.md) | D1–D14：两张成长表、等级纯函数、单一 `book` 入口、三事件同事务、每日上限、C1 / C2 收口、契约 0.31.0、前端 6 处接入 |
 | 任务清单 | [`tasks.md`](../../../openspec/changes/add-growth-level/tasks.md) | 1.1–1.12（1.1 原型已完成）；覆盖自检 + Alignment self-check 10/10 |
 | 设计评审 | [`design-review`](../../reviews/20261118-add-growth-level-design-review.md) | Pass；0 BLOCKER / 0 WARNING / 5 SUGGESTION |
 | 任务评审 | [`tasks-review`](../../reviews/20261118-add-growth-level-tasks-review.md) | Pass；0 BLOCKER / 0 WARNING / 5 SUGGESTION |
@@ -46,8 +46,8 @@
 - **每日上限（D5）。** `Asia/Shanghai` 自然日，正向实发求和；跨档按剩余额度截断、零实发留流水、不补发；负向不受限。
 - **C1 收口（D6）。** 重复处理已成立举报沿用 `ReportNotProcessingException`（409），至多扣一次；E2E 只断言经验不变。
 - **C2 收口（D8）。** `/profile` 本人含经验，他人仅 `level`，批量仅 `level`；`@JsonInclude(NON_NULL)`。
-- **契约（D7）。** 0.30.0：`/profile` 追加 `growth`；新增 `GET /users/growth?ids=`（上限 50）。
-- **迁移（D11）。** `V34__add_growth_level.sql` 建表 + 存量 0 账户回填；不回填历史事件。
+- **契约（D7）。** 0.31.0：`/profile` 追加 `growth`；新增 `GET /users/growth?ids=`（上限 50）。
+- **迁移（D11）。** `V35__add_growth_level.sql` 建表 + 存量 0 账户回填；不回填历史事件。
 - **前端（D10）。** `GrowthBadge` + `growth.ts` 纯函数；6 处接入；列表单次批量读取。
 
 ## 6. 对齐自检
@@ -68,7 +68,7 @@
 ## 8. 流程偏差
 
 - **评审顺序：** design 与 tasks 两份工件与两份评审报告在同一 P3 会话内补齐，未按「一份工件一次拦截」逐次停下；四组签署位已在同一次询问中按矩阵一次问齐（Jay + Karena / WAYNE + Jay），结论与范围见 §7。
-- **编号顺延：** 本 change 由 REQ-029 / S30 四次顺延至 **REQ-033 / S34**；P3 工件与评审报告均已使用最终编号。
+- **编号顺延：** 本 change 由 REQ-029 / S30 第五次顺延至 **REQ-033 / S34**；P3 工件与评审报告均已使用最终编号。
 - **NFR：** 按用户裁决不纳入；`atdd-design.md` §5 与 `tasks.md` 均显式记录。
 
 ## 9. 残余风险
@@ -76,7 +76,7 @@
 - D11 的 SQLite / H2 方言差异；P4 双引擎验证，必要时测试库改用 SQLite 并登记偏差。
 - 同事务结算给发布 / 点赞 / 举报增加失败点；P4 回归既有三套件并补失败注入（design S-1）。
 - 6 处展示面视觉漂移；P4 按 8 张基线图逐屏走查。
-- 契约 0.30.0 / 迁移 V34 仍可能被远端占用；P4 开工前复核。
+- 契约 0.31.0 / 迁移 V35 仍可能被远端占用；P4 开工前复核。
 
 ## 10. 签署
 

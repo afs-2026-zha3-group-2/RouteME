@@ -26,7 +26,22 @@ export async function registerAccount(page: Page, nicknamePrefix = '成长'): Pr
   });
   expect(response.status()).toBe(201);
   const session = (await response.json()) as { token: string; user: { id: number } };
+  markStudentVerified(session.user.id);
   return { userId: session.user.id, token: session.token, nickname };
+}
+
+/**
+ * main 的 student-verification 门禁要求发布 / 申请 / 聊天前完成认证；
+ * 成长 E2E 不覆盖认证流程，注册后直接把账号置为已认证（同 `seedExp` 的造数口径）。
+ */
+function markStudentVerified(userId: number): void {
+  const database = new DatabaseSync(DB_PATH);
+  try {
+    database.exec('PRAGMA busy_timeout = 5000;');
+    database.prepare('UPDATE app_users SET student_verified = 1 WHERE id = ?').run(userId);
+  } finally {
+    database.close();
+  }
 }
 
 /** 把身份写进 localStorage，再落到首页。 */

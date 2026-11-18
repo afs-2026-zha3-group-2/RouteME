@@ -1,7 +1,7 @@
 # G1 decision — add-growth-level
 
 - **Gate：** G1（Align）
-- **Change：** `add-growth-level`（`user-growth` ADDED；REQ-033 / S34，编号四次顺延）
+- **Change：** `add-growth-level`（`user-growth` ADDED；REQ-033 / S34，编号第五次顺延）
 - **Input artifacts：**
   - Delta：[`specs/user-growth/spec.md`](specs/user-growth/spec.md)（9 Requirement / 41 Scenario；`openspec validate add-growth-level --strict` = valid）
   - AC / DoV：[`dov-ac-review.md`](dov-ac-review.md)（AC 4/4 Pass；DoV 5/5 Pass；41 场景映射齐全；G1-ready）

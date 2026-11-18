@@ -4,7 +4,7 @@
 - **来源：** GitHub Issue [#38](https://github.com/afs-2026-zha3-group-2/RouteME/issues/38)「客服服务BUG-客服无法结束会话」（`afs-2026-zha3-group-2/RouteME`，2026-11-18 读取；正文：Lewis 表示结束会话应放到客户端，不应该是客服结束会话；客服点击结束会话没反应）
 - **捕获日期：** 2026-11-18 ｜ **记录人：** Lewis Liu（当前开发者）
 - **分支：** `feature/refine-service-close`（独立 worktree `.worktrees/refine-service-close`，从 `origin/main@822471c` 切出）
-- **编号说明：** 起草时 `origin/main@822471c` 最大需求号为 REQ-027，登记为 REQ-028 / S29；2026-11-18 合并 main 时 REQ-028 / S29 / V30 已被 `add-travel-finance` 占用，按「后到者顺延」改为 **REQ-034 / S35 / V36**（change id 不变；契约并入 main 0.30.0）。
+- **编号说明：** 起草时 `origin/main@822471c` 最大需求号为 REQ-027，登记为 REQ-028 / S29；2026-11-18 合并 main 时 REQ-028 / S29 / V30 已被 `add-travel-finance` 占用，按「后到者顺延」改为 **REQ-034 / S35 / V36**（change id 不变；契约并入 main 0.31.0（合并时 0.30.0，后随 growth 第五次顺延升版））。
 - **范围说明：** issue 表面是「客服无法结束会话」的缺陷，用户当次把方向定为产品决策变更——**结束权从客服移到用户**，客服侧改为「标记处理完成」。issue 中「点击没反应」不单独修复，随管理端按钮下线一并消失（D1）。
 
 ## 原始意图（一句话）
