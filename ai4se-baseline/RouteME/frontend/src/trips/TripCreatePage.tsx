@@ -26,7 +26,7 @@ import { tripMessages } from '../i18n/tripMessages';
 import { AmapPlacePicker } from '../map/amap/AmapPlacePicker';
 import type { DemoUser, TripSummary, TripTravelMode } from '../types';
 import { WeatherCard } from '../weather/WeatherCard';
-import { appDatePickerProps, appDateTimePickerProps } from '../utils/datePickerProps';
+import { appDatePickerProps, appDateTimePickerProps, appSelectProps } from '../utils/datePickerProps';
 import {
   dayjsToIso,
   dayjsToLocalDateTime,
@@ -769,6 +769,7 @@ export function TripCreatePage({ currentUser, fromTripId, aiItineraryId }: Props
                   <span>{tripMessages.sideMembers}</span>
                 </label>
                 <Select
+                  {...appSelectProps}
                   id="trip-capacity"
                   aria-label={tripMessages.sideMembers}
                   className="publish-select"
@@ -786,6 +787,7 @@ export function TripCreatePage({ currentUser, fromTripId, aiItineraryId }: Props
                   <span>{tripMessages.sideTravelMode}</span>
                 </label>
                 <Select
+                  {...appSelectProps}
                   id="trip-travel-mode"
                   aria-label={tripMessages.fieldTravelMode}
                   className="publish-select"
@@ -802,6 +804,7 @@ export function TripCreatePage({ currentUser, fromTripId, aiItineraryId }: Props
                   <span>{tripMessages.sideDifficulty}</span>
                 </label>
                 <Select
+                  {...appSelectProps}
                   id="trip-difficulty"
                   aria-label={tripMessages.sideDifficulty}
                   className="publish-select"
