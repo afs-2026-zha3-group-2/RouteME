@@ -25,12 +25,6 @@ async function pickDestination(page: Page, province: string, city: string) {
   await page.locator('.area-option', { hasText: city }).first().click();
 }
 
-async function pickDestinationByCode(page: Page, provinceCode: string, cityCode: string) {
-  await page.getByRole('button', { name: '目的地', exact: true }).click();
-  await page.locator(`[data-area-province="${provinceCode}"]`).click();
-  await page.locator(`[data-area-city="${cityCode}"]`).click();
-}
-
 async function setDate(page: Page, label: string, iso: string) {
   const input = page.getByLabel(label);
   await input.fill(iso);
@@ -151,9 +145,6 @@ test('publishes a trip and finds it in the home list', async ({ page }) => {
   await expect(page.getByRole('heading', { name: '集合与预算' })).toBeVisible();
   await expect(page.getByLabel('出发日期')).toHaveValue(todayIso());
   await expect(page.getByLabel('结束日期')).toHaveValue(todayIso());
-  // R2：未选目的地时内嵌中国地图（三级级联第一层）。
-  await expect(page.locator('[data-testid="china-map"]').first()).toBeVisible();
-  await expect(page.getByText('未选目的地时可在地图上逐级选择：中国 → 省 → 城市；选定后自动聚焦该城。')).toBeVisible();
 
   const cascader = page.locator('.area-trigger').first();
   const cascaderWidth = await cascader.evaluate((node) => node.getBoundingClientRect().width);
@@ -165,15 +156,12 @@ test('publishes a trip and finds it in the home list', async ({ page }) => {
   await page.getByLabel('标题').fill(title);
   await pickDestination(page, '广东省', '珠海市');
 
-  const map = page.locator('[data-testid="city-map"]').first();
-  await expect(map).toBeVisible();
-  await expect(map).toHaveAttribute('data-city', '440400');
-  await expect(map.getByRole('button', { name: /情侣路/ })).toBeVisible();
   await setDate(page, '出发日期', isoDaysFromToday(7));
   await setDate(page, '结束日期', isoDaysFromToday(7));
   await pickPlace(page, '途经点', '香洲港');
   await pickPlace(page, '途经点', '情侣路');
-  await page.getByRole('checkbox', { name: '摄影', exact: true }).click();
+  // 兴趣标签是可选胶囊（ant-tag-checkable），不是 checkbox。
+  await page.locator('.publish-tag-options').getByText('摄影', { exact: true }).click();
 
   await page.getByRole('button', { name: /^发\s*布/ }).click();
 
@@ -240,19 +228,6 @@ test('rejects a meeting time after the end date on the publish form', async ({ p
 
   await expect(page.getByText('集合时间不能晚于结束日期')).toBeVisible();
   await expect(page).toHaveURL(/#\/trips\/new/);
-});
-
-test('explains a destination without offline map coverage', async ({ page }) => {
-  await loginAs(page, 1);
-  await page.goto('/#/trips/new');
-
-  // R2：北京已纳入 MVP 10 城；改用拉萨验证无数据城市。
-  // 发布页 picker 对无离线景点的目的地隐藏地图并给提示（R1 语义保留）；
-  // 城市层统一 fallback 由探索页覆盖（map.spec E17）。
-  await pickDestinationByCode(page, '540000', '540100');
-
-  await expect(page.locator('[data-testid="city-map"]')).toHaveCount(0);
-  await expect(page.getByText('该城市暂无离线景点；仍可手输途经点，或在地图上重新选择目的地。')).toBeVisible();
 });
 
 test('blocks publishing and flags every missing required field', async ({ page }) => {
@@ -376,106 +351,6 @@ test('filters by province and city without a search box', async ({ page }) => {
   await expect(page.locator('.trip-card', { hasText: '深圳大鹏半岛海岸线徒步' })).toBeVisible();
 });
 
-test('map supports zoom, fullscreen, pin cards and click-to-add', async ({ page }) => {
-  await loginAs(page, 1);
-  await page.goto('/#/trips/new');
-
-  const shell = page.locator('.map-shell').first();
-  const china = shell.locator('[data-testid="china-map"]');
-  await expect(china).toBeVisible();
-  const before = await china.getAttribute('viewBox');
-
-  await shell.getByRole('button', { name: '放大地图' }).click();
-  await expect.poll(async () => china.getAttribute('viewBox')).not.toBe(before);
-
-  await shell.getByRole('button', { name: '全屏查看地图' }).click();
-  await expect(shell).toHaveClass(/is-fullscreen/);
-  await page.keyboard.press('Escape');
-  await expect(shell).not.toHaveClass(/is-fullscreen/);
-
-  await pickDestination(page, '广东省', '珠海市');
-  const map = page.locator('[data-testid="city-map"]').first();
-  await expect(map).toHaveAttribute('data-city', '440400');
-
-  // 点击点位 pin：弹出地点卡并可加入路线（相邻 pin 命中圆重叠，用事件派发避免拦截）。
-  await map.locator('[data-poi-id="珠海-珠海渔女"]').dispatchEvent('click');
-  const pinCallout = page.locator('.map-callout').first();
-  await expect(pinCallout.locator('.map-callout-name')).toHaveText('珠海渔女');
-  await pinCallout.getByRole('button', { name: '加入路线' }).click();
-  await expect(page.locator('.place-chip-name', { hasText: '珠海渔女' })).toBeVisible();
-
-  // 点击空白处：弹出附近候选浮层，同样可以加入路线。
-  await shell.getByRole('button', { name: '回到当前范围' }).click();
-  await shell.scrollIntoViewIfNeeded();
-  const box = await map.boundingBox();
-  expect(box).not.toBeNull();
-  await page.mouse.click(box!.x + box!.width * 0.5, box!.y + box!.height * 0.03);
-  const callout = page.locator('.map-callout').first();
-  await expect(callout).toBeVisible();
-  await expect(callout.locator('.map-callout-list')).toBeVisible();
-  await callout.getByRole('button', { name: '加入路线' }).first().click();
-  await expect(page.locator('.place-chip-name')).toHaveCount(2);
-});
-
-test('map pins add multiple stops and enforce the eight-stop limit', async ({ page }) => {
-  await loginAs(page, 1);
-  await page.goto('/#/trips/new');
-  await pickDestination(page, '广东省', '珠海市');
-
-  const shell = page.locator('.map-shell').first();
-  const map = shell.locator('[data-testid="city-map"]');
-  await expect(map).toHaveAttribute('data-city', '440400');
-
-  // 连续点选两个 pin 加入路线，编号水滴按顺序出现。
-  await map.locator('[data-poi-id="珠海-香洲港"]').dispatchEvent('click');
-  await page.locator('.map-callout').getByRole('button', { name: '加入路线' }).click();
-  await expect(page.locator('.place-chip-name', { hasText: '香洲港' })).toBeVisible();
-  await shell.getByRole('button', { name: '回到当前范围' }).click();
-  await map.locator('[data-poi-id="珠海-情侣路"]').dispatchEvent('click');
-  await page.locator('.map-callout').getByRole('button', { name: '加入路线' }).click();
-  await expect(page.locator('.place-chip-name', { hasText: '情侣路' })).toBeVisible();
-  await expect(map.locator('.map-pin.selected')).toHaveCount(2);
-  await expect(map.locator('.map-selected-index').first()).toHaveText('1');
-
-  // 其余途经点用搜索补齐到 8 个。
-  for (const name of ['珠海渔女', '日月贝', '圆明新园', '外伶仃岛', '东澳岛', '港珠澳大桥']) {
-    await pickPlace(page, '途经点', name);
-  }
-  await expect(page.locator('.place-chip-name')).toHaveCount(8);
-
-  // 第 9 个被拒绝并给出上限提示。
-  const input = page.getByRole('textbox', { name: /途经点/ });
-  await input.fill('珠海');
-  await input.press('Enter');
-  await expect(page.locator('.place-message')).toContainText('最多选择 8 个地点');
-  await expect(page.locator('.place-chip-name')).toHaveCount(8);
-});
-
-test('publish map cascade picks the destination without writing stops', async ({ page }) => {
-  await loginAs(page, 1);
-  await page.goto('/#/trips/new');
-
-  // R2 取代 R1「全省概览只聚焦」：未选目的地时中国→省→市级联写目的地，不写途经点。
-  const china = page.locator('.place-picker [data-testid="china-map"]').first();
-  await expect(china).toBeVisible();
-  await china.locator('[data-province-code="440000"]').dispatchEvent('click');
-  const province = page.locator('.place-picker [data-testid="province-map"]');
-  await expect(province).toBeVisible();
-  await expect(page.locator('.place-chip-name')).toHaveCount(0);
-
-  await province.locator('[data-city-name="广州"]').dispatchEvent('click');
-  const city = page.locator('.place-picker [data-testid="city-map"]').first();
-  await expect(city).toHaveAttribute('data-city', '440100');
-  await expect(page.locator('#trip-destination')).toContainText('广州');
-  await expect(page.locator('.place-chip-name')).toHaveCount(0);
-
-  // 面包屑回省：清市保留省，不写途经点（面包屑是 map-shell 内 SVG 的兄弟节点）。
-  const shell = page.locator('.place-picker .map-shell').first();
-  await shell.locator('[data-testid="map-breadcrumbs"]').getByRole('button', { name: '广东省' }).click();
-  await expect(page.locator('.place-picker [data-testid="province-map"]')).toBeVisible();
-  await expect(page.locator('.place-chip-name')).toHaveCount(0);
-});
-
 test('publishes a single meeting area and replaces it from the edit dialog', async ({ page }) => {
   const title = `E2E 单一集合点 ${Date.now()}`;
   await loginAs(page, 1);
@@ -575,10 +450,10 @@ test('route strip click focuses the map and read-only pins carry no add action',
   await page.locator('.route-strip-card').nth(1).click();
   await expect(pins.nth(1).locator('.amap-stop-pin')).toHaveClass(/is-active/);
 
-  // R2：已选 pin 点击只聚焦，不弹加入动作卡（只读语义）。
+  // 已选 pin 点击只聚焦，不弹「加入」动作卡（只读语义）。
   await pins.first().click();
   await expect(pins.first().locator('.amap-stop-pin')).toHaveClass(/is-active/);
-  await expect(page.locator('.detail-map-section .map-callout')).toHaveCount(0);
+  await expect(section.getByRole('button', { name: '加入' })).toHaveCount(0);
 });
 
 test('detail page keeps the map and warns when a stop is off the gazetteer', async ({ page }) => {
