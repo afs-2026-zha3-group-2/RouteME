@@ -2,7 +2,14 @@ import { findCity } from '../area/areaOptions';
 import { tripMessages } from '../i18n/tripMessages';
 import type { TripCreateRequest, TripTravelMode } from '../types';
 import { validateMeetingForm } from './meetingForm';
-import { MAX_CAPACITY, MAX_TAGS, MAX_TITLE_LENGTH, MIN_CAPACITY, MIN_STOPS } from './tripOptions';
+import {
+  DEFAULT_DIFFICULTY,
+  MAX_CAPACITY,
+  MAX_TAGS,
+  MAX_TITLE_LENGTH,
+  MIN_CAPACITY,
+  MIN_STOPS,
+} from './tripOptions';
 
 export type TripFormValues = {
   title: string;
@@ -56,6 +63,8 @@ export function initialTripForm(now: Date = new Date()): TripFormValues {
     startDate: today,
     endDate: today,
     meetingTime: `${today}T${DEFAULT_MEETING_TIME}`,
+    // 同行设置的默认难度也要真的进标签，否则下拉框会显示一个并未提交的值。
+    tags: [DEFAULT_DIFFICULTY],
   };
 }
 
