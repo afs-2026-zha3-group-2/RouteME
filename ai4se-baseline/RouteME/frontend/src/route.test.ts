@@ -88,6 +88,13 @@ describe('parseRoute', () => {
       });
     });
 
+    it('maps the finance paths', () => {
+      expect(parseRoute('#/finance')).toEqual({ name: 'finance' });
+      expect(parseRoute('#/trips/12/finance')).toEqual({ name: 'tripFinance', tripId: 12 });
+      expect(parseRoute('#/trips/abc/finance')).toEqual({ name: 'notFound' });
+      expect(parseRoute('#/trip/12/finance')).toEqual({ name: 'notFound' });
+    });
+
     it('round-trips every route through its hash', () => {
       const routes = [
         { name: 'home' as const },
@@ -96,6 +103,8 @@ describe('parseRoute', () => {
         { name: 'create' as const, aiItineraryId: 12 },
         { name: 'aiPlanner' as const },
         { name: 'detail' as const, tripId: 7 },
+        { name: 'tripFinance' as const, tripId: 7 },
+        { name: 'finance' as const },
         { name: 'applications' as const, tripId: 7 },
         { name: 'mine' as const },
         { name: 'chat' as const, tripId: 7, userId: 2 },
