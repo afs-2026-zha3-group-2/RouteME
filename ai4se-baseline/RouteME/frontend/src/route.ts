@@ -11,7 +11,6 @@ export type Route =
   | { name: 'userProfile'; userId: number }
   | { name: 'creditLearning' }
   | { name: 'map'; provinceCode?: string; cityCode?: string }
-  | { name: 'help' }
   | { name: 'support' }
   | { name: 'adminDashboard' }
   | { name: 'adminUsers' }
@@ -54,9 +53,6 @@ export function parseRoute(hash: string): Route {
   }
   if (path === '/profile/setup') {
     return { name: 'profileSetup' };
-  }
-  if (path === '/help') {
-    return { name: 'help' };
   }
   if (path === '/support') {
     return { name: 'support' };
@@ -144,9 +140,6 @@ export function routeToHash(route: Route): string {
   }
   if (route.name === 'profileSetup') {
     return '#/profile/setup';
-  }
-  if (route.name === 'help') {
-    return '#/help';
   }
   if (route.name === 'support') {
     return '#/support';

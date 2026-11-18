@@ -13,7 +13,7 @@ import type { DemoUser, UserProfile } from '../types';
 import { Avatar } from './Avatar';
 import { BrandMark } from './BrandMark';
 
-type NavKey = 'discover' | 'map' | 'create' | 'aiPlanner' | 'mine' | 'chat' | 'support' | 'help' | 'admin';
+type NavKey = 'discover' | 'map' | 'create' | 'aiPlanner' | 'mine' | 'chat' | 'support' | 'admin';
 
 type NavItem = { key: NavKey; label: string; href: string };
 
@@ -62,9 +62,6 @@ function activeKey(route: Route): NavKey | null {
   }
   if (route.name === 'support') {
     return 'support';
-  }
-  if (route.name === 'help') {
-    return 'help';
   }
   if (route.name.startsWith('admin')) {
     return 'admin';
@@ -156,22 +153,6 @@ function NavIcon({ name }: { name: NavKey }) {
         <rect x="2.8" y="10.6" width="3.1" height="5" rx="1.5" />
         <rect x="14.1" y="10.6" width="3.1" height="5" rx="1.5" />
         <path d="M15.6 15.6v.5a2 2 0 0 1-2 2h-2.4" />
-      </svg>
-    );
-  }
-  if (name === 'help') {
-    return (
-      <svg
-        viewBox="0 0 20 20"
-        aria-hidden="true"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="1.7"
-        strokeLinecap="round"
-      >
-        <circle cx="10" cy="10" r="7" />
-        <path d="M7.8 7.6a2.4 2.4 0 1 1 3.4 2.5c-.7.4-1.2.9-1.2 1.9" />
-        <circle cx="10" cy="14.4" r=".9" fill="currentColor" stroke="none" />
       </svg>
     );
   }
@@ -437,14 +418,6 @@ export function AppShell({ currentUser, onLogout, route, children }: Props) {
               >
                 <NavIcon name="admin" />
                 <span>{adminMessages.title}</span>
-              </a>
-              <a
-                className={active === 'help' ? 'rail-link active' : 'rail-link'}
-                href="#/help"
-                aria-current={active === 'help' ? 'page' : undefined}
-              >
-                <NavIcon name="help" />
-                <span>{adminMessages.helpTitle}</span>
               </a>
             </div>
           )}

@@ -73,8 +73,8 @@ async function resolveReport(
   expect(response.ok()).toBeTruthy();
 }
 
-test.describe('[C] help centre and customer service', () => {
-  test('[C1] keeps the help centre for admins only and gives users a dedicated service entry', async ({ page }) => {
+test.describe('[C] customer service', () => {
+  test('[C1] gives users a dedicated service entry and retires the help centre', async ({ page }) => {
     const reporter = await createUserViaApi(page, `举报状态_${Date.now()}`);
     const reported = await createUserViaApi(page, `举报对象_${Date.now()}`);
     const hiddenNote = '管理员处理备注不应出现在用户侧';
@@ -92,7 +92,7 @@ test.describe('[C] help centre and customer service', () => {
     const resolved = await helpReports(page, reporter);
     expect(resolved.items.find((item) => item.id === pending.id)?.status).toBe('RESOLVED');
 
-    // 用户侧：只有「联系客服」，不再有「帮助与反馈」。
+    // 用户侧：只有「联系客服」，帮助与反馈已下线。
     await loginAsAccount(page, reporter);
     await expect(page.locator('.rail-link').filter({ hasText: '联系客服' })).toBeVisible();
     await expect(page.locator('.rail-link').filter({ hasText: '帮助与反馈' })).toHaveCount(0);
@@ -102,15 +102,16 @@ test.describe('[C] help centre and customer service', () => {
     await expect(page.getByRole('heading', { name: '我的举报' })).toHaveCount(0);
     await expect(page.getByText(hiddenNote)).toHaveCount(0);
 
-    // 深链也拦住：非管理员打开 #/help 只能看到权限提示。
+    // 帮助与反馈已下线：旧深链对普通用户与管理员都落到不存在页。
     await page.goto('/#/help');
-    await expect(page.getByText('该页面仅对管理员开放。')).toBeVisible();
+    await expect(page.getByRole('heading', { name: '行程不存在' })).toBeVisible();
 
-    // 管理员保留帮助与反馈（含举报进度）。
     await loginAsAdmin(page);
+    await expect(page.locator('.rail-link').filter({ hasText: '帮助与反馈' })).toHaveCount(0);
+    await page.goto('/#/admin');
+    await expect(page.locator('.admin-tab').filter({ hasText: '帮助与反馈' })).toHaveCount(0);
     await page.goto('/#/help');
-    await expect(page.getByRole('heading', { name: '帮助与反馈' })).toBeVisible();
-    await expect(page.getByRole('heading', { name: '我的举报' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: '行程不存在' })).toBeVisible();
   });
 
   test('[C3] starts, reuses, chats in and reopens a service session', async ({ page }) => {

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Alert, Button, Skeleton } from 'antd';
 import { loadAdminServiceSession, loadAdminServiceSessions } from '../../api';
 import { startChatPolling } from '../../chat/chatPolling';
@@ -40,7 +40,47 @@ export function AdminServicePage({ token, currentUser }: Props) {
   const [detail, setDetail] = useState<ServiceSessionDetail | null>(null);
   const [detailError, setDetailError] = useState<string | null>(null);
   const [waitingTotal, setWaitingTotal] = useState(0);
+  const [unread, setUnread] = useState<Record<number, number>>({});
   const narrow = useIsNarrow();
+
+  /** 会话消息条数基线：轮询时数量增长即视为「有新消息」。 */
+  const prevCountsRef = useRef<Map<number, number> | null>(null);
+  const selectedRef = useRef<number | null>(null);
+  selectedRef.current = selectedId;
+
+  const trackUnread = useCallback((items: ServiceSessionSummary[]) => {
+    const previous = prevCountsRef.current;
+    const next = new Map<number, number>();
+    const fresh: Array<[number, number]> = [];
+    items.forEach((item) => {
+      next.set(item.id, item.message_count);
+      if (item.id === selectedRef.current) {
+        return;
+      }
+      const before = previous?.get(item.id);
+      if (before === undefined) {
+        // 首次建立基线不标未读；之后新出现的会话若已带消息则提醒。
+        if (previous !== null && item.message_count > 0 && item.status !== 'CLOSED') {
+          fresh.push([item.id, item.message_count]);
+        }
+        return;
+      }
+      if (item.message_count > before) {
+        fresh.push([item.id, item.message_count - before]);
+      }
+    });
+    prevCountsRef.current = next;
+    setUnread((current) => {
+      const merged = { ...current };
+      fresh.forEach(([id, count]) => {
+        merged[id] = (merged[id] ?? 0) + count;
+      });
+      if (selectedRef.current !== null) {
+        delete merged[selectedRef.current];
+      }
+      return merged;
+    });
+  }, []);
 
   /** 最新筛选条件：轮询回调不重建定时器，也能拿到当前页与状态。 */
   const filtersRef = useRef({ status, page, size });
@@ -54,6 +94,7 @@ export function AdminServicePage({ token, currentUser }: Props) {
       .then((loaded) => {
         if (active) {
           setData(loaded);
+          trackUnread(loaded.items);
         }
       })
       .catch((caught: unknown) => {
@@ -69,7 +110,7 @@ export function AdminServicePage({ token, currentUser }: Props) {
     return () => {
       active = false;
     };
-  }, [token, status, page, size, reloadKey]);
+  }, [token, status, page, size, reloadKey, trackUnread]);
 
   useEffect(() => {
     if (selectedId === null) {
@@ -97,12 +138,31 @@ export function AdminServicePage({ token, currentUser }: Props) {
   }, [token, selectedId]);
 
   const pick = (id: number) => {
+    setUnread((current) => {
+      if (current[id] === undefined) {
+        return current;
+      }
+      const next = { ...current };
+      delete next[id];
+      return next;
+    });
     if (narrow) {
       window.location.hash = `#/admin/service/${id}`;
       return;
     }
     setSelectedId(id);
   };
+
+  /** 有未读消息的会话置顶；同一分组内保持服务端顺序。 */
+  const ordered = useMemo(() => {
+    if (data === null) {
+      return [];
+    }
+    return [...data.items].sort(
+      (left, right) =>
+        Number((unread[right.id] ?? 0) > 0) - Number((unread[left.id] ?? 0) > 0),
+    );
+  }, [data, unread]);
 
   /** 队列静默轮询：用户新发的消息 / 新会话不需要手动点「刷新」即可出现。 */
   useEffect(() => {
@@ -116,6 +176,7 @@ export function AdminServicePage({ token, currentUser }: Props) {
         .then((loaded) => {
           if (alive) {
             setData(loaded);
+            trackUnread(loaded.items);
           }
         })
         .catch(() => undefined);
@@ -133,7 +194,7 @@ export function AdminServicePage({ token, currentUser }: Props) {
       alive = false;
       stop();
     };
-  }, [token]);
+  }, [token, trackUnread]);
 
   const refreshList = () => {
     setReloadKey((previous) => previous + 1);
@@ -181,8 +242,6 @@ export function AdminServicePage({ token, currentUser }: Props) {
         </Button>
       </div>
 
-      <p className="admin-note admin-service-live-hint">{adminMessages.serviceLiveHint}</p>
-
       {error !== null && (
         <Alert
           type="error"
@@ -209,7 +268,7 @@ export function AdminServicePage({ token, currentUser }: Props) {
         <>
           <div className="admin-service-workspace">
             <div className="admin-queue" aria-label={adminMessages.serviceQueue}>
-              {data.items.map((session) => (
+              {ordered.map((session) => (
                 <button
                   key={session.id}
                   type="button"
@@ -234,6 +293,15 @@ export function AdminServicePage({ token, currentUser }: Props) {
                   <span className="admin-queue-count">
                     {session.message_count} {adminMessages.serviceMessageCount}
                   </span>
+                  {unread[session.id] > 0 && (
+                    <span
+                      className="admin-queue-bubble"
+                      aria-label={`${unread[session.id]} ${adminMessages.serviceUnreadLabel}`}
+                      title={`${unread[session.id]} ${adminMessages.serviceUnreadLabel}`}
+                    >
+                      {unread[session.id]}
+                    </span>
+                  )}
                 </button>
               ))}
             </div>

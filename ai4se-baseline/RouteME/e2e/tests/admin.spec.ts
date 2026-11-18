@@ -233,11 +233,14 @@ test.describe('[M] admin dashboard overview', () => {
     await expect(rail.filter({ hasText: '发布行程' })).toBeVisible();
     await expect(rail.filter({ hasText: 'AI 规划' })).toBeVisible();
     await expect(rail.filter({ hasText: '管理后台' })).toBeVisible();
-    await expect(rail.filter({ hasText: '帮助与反馈' })).toBeVisible();
+    await expect(rail.filter({ hasText: '帮助与反馈' })).toHaveCount(0);
     await expect(rail.filter({ hasText: '我的旅行' })).toHaveCount(0);
     await expect(rail.filter({ hasText: '同行消息' })).toHaveCount(0);
     await expect(rail.filter({ hasText: '联系客服' })).toHaveCount(0);
     await expect(page.locator('.support-fab')).toHaveCount(0);
+
+    await page.goto('/#/admin');
+    await expect(page.locator('.admin-tab').filter({ hasText: '帮助与反馈' })).toHaveCount(0);
   });
 });
 
@@ -630,7 +633,13 @@ test.describe('[I3] customer service workbench', () => {
     await expect(queueItem).toBeVisible({ timeout: 10000 });
     await expect(page.locator('.admin-tab-badge').first()).toContainText(/\d+/);
     await expect(page.getByText('有会话正在等待接入')).toBeVisible();
+    // 旧的刷新提示语已移除。
+    await expect(page.getByText('队列与消息每 3 秒自动刷新')).toHaveCount(0);
+    // 新消息置顶 + 气泡提示。
+    await expect(page.locator('.admin-queue-item').first()).toContainText(user.nickname);
+    await expect(queueItem.locator('.admin-queue-bubble')).toContainText('1');
     await queueItem.click();
+    await expect(queueItem.locator('.admin-queue-bubble')).toHaveCount(0);
 
     // 接入前就能读到用户消息（只读预览，不要求先接入）。
     await expect(page.locator('.service-chat .bubble').filter({ hasText: userMessage })).toBeVisible();

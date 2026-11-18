@@ -100,10 +100,6 @@ export function AdminLayout({ active, title, subtitle, children }: Props) {
             )}
           </a>
         ))}
-        {/* 帮助与反馈仅内部管理员可见；它复用前台页面样式，所以作为跳转页签。 */}
-        <a className="admin-tab" href="#/help">
-          {adminMessages.helpTitle}
-        </a>
       </nav>
 
       <div className="admin-body">{children}</div>

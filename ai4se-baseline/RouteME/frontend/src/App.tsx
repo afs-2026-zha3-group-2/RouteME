@@ -14,7 +14,6 @@ import { ChatPage } from './chat/ChatPage';
 import { LearningPage } from './credit/LearningPage';
 import { CreditProvider } from './credit/CreditContext';
 import { ShareExperiencePage } from './experiences/ShareExperiencePage';
-import { HelpPage } from './help/HelpPage';
 import { SupportPage } from './help/SupportPage';
 import { HomePage } from './home/HomePage';
 import { tripMessages } from './i18n/tripMessages';
@@ -231,11 +230,6 @@ export function App() {
             )}
             {route.name === 'support' && (
               <SupportPage currentUser={currentUser} token={authToken} />
-            )}
-            {route.name === 'help' && (
-              <AdminGuard currentUser={currentUser} token={authToken}>
-                {(token) => <HelpPage currentUser={currentUser} token={token} />}
-              </AdminGuard>
             )}
             {route.name === 'adminDashboard' && (
               <AdminGuard currentUser={currentUser} token={authToken}>

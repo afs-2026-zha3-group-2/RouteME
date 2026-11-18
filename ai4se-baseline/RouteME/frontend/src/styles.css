@@ -7640,10 +7640,6 @@ svg {
   color: var(--ink-2);
 }
 
-.admin-service-live-hint {
-  margin: -6px 2px 0;
-}
-
 .admin-body {
   display: grid;
   gap: 16px;
@@ -8079,6 +8075,7 @@ svg {
 }
 
 .admin-queue-item {
+  position: relative;
   display: grid;
   grid-template-columns: auto minmax(0, 1fr);
   gap: 4px 9px;
@@ -8130,6 +8127,38 @@ svg {
   flex-wrap: wrap;
   font-size: 11px;
   color: var(--ink-3);
+}
+
+/* 新消息气泡：未读会话置顶并在这里显示条数，点击后清除。 */
+.admin-queue-bubble {
+  position: absolute;
+  top: 6px;
+  right: 8px;
+  min-width: 19px;
+  height: 19px;
+  padding: 0 5px;
+  display: inline-grid;
+  place-items: center;
+  border-radius: 999px;
+  font-size: 10.5px;
+  font-weight: 800;
+  line-height: 1;
+  color: #fff;
+  background: var(--danger);
+  box-shadow: 0 0 0 2px var(--surface), 0 6px 14px -8px rgba(224, 72, 58, 0.8);
+  animation: queue-bubble-in 0.22s var(--ease-out) both;
+}
+
+@keyframes queue-bubble-in {
+  from {
+    opacity: 0;
+    transform: scale(0.6);
+  }
+
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
 }
 
 /* 目的地天气卡：发布页侧栏与行程详情页共用（真实数据 + 后端提醒，不伪造数值）。 */
