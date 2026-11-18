@@ -1588,7 +1588,6 @@ svg {
   width: 100%;
 }
 
-.detail-stops,
 .detail-participants {
   margin: 0;
   padding-left: 20px;
@@ -2207,46 +2206,6 @@ svg {
   color: var(--t-lagoon);
   background: var(--lagoon-soft);
   border-color: color-mix(in srgb, var(--lagoon) 20%, transparent);
-}
-
-.tc-match {
-  display: flex;
-  align-items: center;
-  gap: 9px;
-  padding: 9px 11px;
-  border-radius: 11px;
-  background: color-mix(in srgb, var(--amber) 11%, transparent);
-  border: 1px solid color-mix(in srgb, var(--amber) 24%, transparent);
-}
-
-.match-ring {
-  width: 34px;
-  height: 34px;
-  flex: none;
-  position: relative;
-}
-
-.match-ring .ant-progress,
-.match-ring .ant-progress-inner {
-  display: block;
-}
-
-.match-ring .ant-progress-indicator {
-  font-family: var(--font-num);
-  font-size: 10px;
-  font-weight: 800;
-  color: var(--t-warn);
-}
-
-.match-ring .ant-progress-circle-rail {
-  stroke: color-mix(in srgb, var(--warn) 22%, transparent);
-}
-
-
-.match-reason {
-  font-size: 11.5px;
-  line-height: 1.45;
-  color: var(--ink-2);
 }
 
 .tc-foot {
@@ -3567,7 +3526,6 @@ svg {
   box-shadow: var(--sh-1);
 }
 
-.detail-stops li,
 .detail-participants li {
   font-size: 13.5px;
   line-height: 1.7;
@@ -3584,35 +3542,6 @@ svg {
 .detail-participant-chat {
   margin-top: 0;
   font-size: 12.5px;
-}
-
-.match-summary {
-  display: flex;
-  align-items: center;
-  gap: 18px;
-  flex-wrap: wrap;
-}
-
-.match-summary .ant-progress-circle-rail {
-  stroke: color-mix(in srgb, var(--warn) 22%, transparent);
-}
-
-
-.match-summary .match-reason {
-  font-size: 13px;
-  line-height: 1.55;
-  color: var(--ink-2);
-}
-
-.match-summary .ant-progress-indicator {
-  font-family: var(--font-num);
-  font-size: 14px;
-  font-weight: 800;
-  color: var(--t-warn);
-}
-
-.match-rule {
-  margin-top: 6px;
 }
 
 .safety-note {
@@ -5651,17 +5580,6 @@ svg {
   font-size: 10.5px;
   color: var(--ink-3);
   white-space: nowrap;
-}
-
-.detail-stop-button {
-  border: 0;
-  background: transparent;
-  padding: 0;
-  color: var(--map-route);
-  font: inherit;
-  cursor: pointer;
-  text-decoration: underline;
-  text-underline-offset: 3px;
 }
 
 @media (max-width: 700px) {
@@ -11633,6 +11551,179 @@ a.admin-metric-card:focus-visible {
   margin-top: 6px;
 }
 
+.leave-note,
+.leave-evidence {
+  display: block;
+  margin-top: 12px;
+}
+
+.leave-note .hint,
+.leave-evidence .hint {
+  display: block;
+  margin-top: 4px;
+  font-size: 11.5px;
+  color: var(--ink-3);
+}
+
+.leave-note .hint.danger,
+.leave-evidence .hint.danger {
+  color: var(--t-danger);
+}
+
+.leave-evidence-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  margin-top: 6px;
+}
+
+/* 原生 file input 铺满可见按钮：点击即直接唤起系统选择器，不依赖脚本触发 */
+.leave-evidence-add {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 28px;
+  padding: 0 12px;
+  overflow: hidden;
+  border: 1px dashed var(--line);
+  border-radius: 999px;
+  background: var(--surface-2);
+  color: var(--ink-2);
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.leave-evidence-add:hover {
+  border-color: var(--lagoon);
+  color: var(--lagoon);
+}
+
+.leave-evidence-input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  opacity: 0;
+  cursor: pointer;
+  font-size: 0;
+}
+
+.leave-record dl {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+}
+
+.leave-record dl > div {
+  display: grid;
+  grid-template-columns: 84px 1fr;
+  gap: 8px;
+  align-items: start;
+}
+
+.leave-record dt {
+  color: var(--ink-3);
+  font-size: 12px;
+}
+
+.leave-record dd {
+  margin: 0;
+  color: var(--ink);
+  font-size: 13px;
+  line-height: 1.6;
+  overflow-wrap: anywhere;
+}
+
+.leave-record .hint {
+  display: block;
+  margin-top: 2px;
+  color: var(--ink-3);
+  font-size: 11.5px;
+}
+
+.leave-record-images {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.leave-record-images .ant-image-img {
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  object-fit: cover;
+}
+
+.leave-record .ant-btn {
+  margin-top: 14px;
+}
+
+.leave-record-count {
+  margin: 0 0 8px;
+  color: var(--ink-3);
+  font-size: 12px;
+}
+
+.leave-record-item {
+  padding: 10px 0;
+  border-top: 1px dashed var(--line);
+}
+
+.leave-record-item:first-of-type {
+  padding-top: 0;
+  border-top: 0;
+}
+
+.leave-record-item-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: 0 0 8px;
+  color: var(--ink-2);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.leave-record-item-head .hint {
+  margin: 0;
+  color: var(--ink-3);
+  font-size: 11.5px;
+  font-weight: 400;
+}
+
+.leave-evidence-item {
+  position: relative;
+  width: 64px;
+  height: 64px;
+  overflow: hidden;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+}
+
+.leave-evidence-item img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.leave-evidence-remove {
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  width: 20px;
+  height: 20px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: rgb(0 0 0 / 55%);
+  color: #fff;
+  font-size: 14px;
+  line-height: 1;
+  cursor: pointer;
+}
+
 /* 受限账号的「发布行程」导航入口：仍可见，但不可点开 */
 .rail-link.is-disabled,
 .tab-link.is-disabled {
@@ -11643,15 +11734,6 @@ a.admin-metric-card:focus-visible {
 .rail-link.is-disabled:hover {
   background: transparent;
   color: inherit;
-}
-
-/* 同行者推荐：分值与分项全部来自后端，这里只负责排版。 */
-.recommendation-list {
-  display: grid;
-  gap: 10px;
-  margin: 10px 0 0;
-  padding: 0;
-  list-style: none;
 }
 
 .admin-metric-total {
@@ -11694,104 +11776,6 @@ a.admin-metric-card:focus-visible {
   margin: 0;
   padding: 0;
   list-style: none;
-}
-
-.recommendation-row {
-  display: grid;
-  gap: 8px;
-  padding: 12px;
-  border: 1px solid var(--line);
-  border-radius: var(--r);
-  background: var(--surface-2);
-}
-
-.recommendation-user {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 0;
-  border: 0;
-  background: transparent;
-  text-align: left;
-  cursor: pointer;
-}
-
-.recommendation-user:hover .publisher-name {
-  text-decoration: underline;
-}
-
-.recommendation-user-body {
-  display: grid;
-  gap: 2px;
-  min-width: 0;
-}
-
-.recommendation-trip {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  gap: 8px;
-  font-size: 13px;
-}
-
-.recommendation-score {
-  display: grid;
-  gap: 4px;
-}
-
-.recommendation-score-value {
-  font-family: var(--font-num);
-  font-size: 18px;
-  font-weight: 800;
-  color: var(--t-warn);
-}
-
-.recommendation-reasons {
-  font-size: 12.5px;
-  line-height: 1.5;
-  color: var(--ink-2);
-}
-
-.recommendation-interest {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 4px;
-}
-
-.recommendation-breakdown {
-  font-size: 12.5px;
-  color: var(--ink-2);
-}
-
-.recommendation-breakdown summary {
-  width: fit-content;
-  color: var(--brand-ink);
-  cursor: pointer;
-}
-
-.recommendation-breakdown-list {
-  display: grid;
-  gap: 2px;
-  margin: 6px 0 0;
-  padding: 0;
-  list-style: none;
-}
-
-.recommendation-breakdown-list li {
-  display: block;
-  line-height: 1.6;
-}
-
-.recommendation-breakdown-points {
-  font-family: var(--font-num);
-  font-variant-numeric: tabular-nums;
-  color: var(--t-warn);
-}
-
-@media (max-width: 900px) {
-  .recommendation-row {
-    padding: 10px;
-  }
 }
 
 .admin-chart-legend li {
@@ -11977,5 +11961,285 @@ a.admin-metric-card:focus-visible {
 
   .admin-metric-card {
     padding: 16px;
+  }
+}
+
+/* ============================================================
+   AI 规划体验优化（2026-11-18）
+   - 对话历史 / 新建对话 / 条件下沉为常驻摘要
+   - 灵感生成、行程优化页签有独立内容
+   - 景点行可拖拽排序（含拖拽预览），并显示插入位置
+   - 更换地点改为大搜索框 + 地图选点的弹窗
+   ============================================================ */
+
+.ai-chat-toolbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.ai-session-select {
+  min-width: 128px;
+  max-width: 190px;
+}
+
+.ai-session-select .ant-select-selector {
+  border-radius: 999px !important;
+}
+
+/* 规划条件：常驻可见的高对比摘要 */
+.ai-condition-summary {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  padding: 7px 10px;
+  border: 1px solid color-mix(in srgb, var(--lagoon) 20%, var(--line));
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--lagoon) 5%, var(--surface));
+}
+
+.ai-condition-chip {
+  display: inline-flex;
+  align-items: center;
+  max-width: 170px;
+  padding: 2px 9px;
+  border-radius: 999px;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  font-size: 11.5px;
+  color: var(--ink-2);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ai-condition-chip.is-missing {
+  border-color: color-mix(in srgb, var(--warn) 40%, transparent);
+  color: var(--t-warn);
+  background: color-mix(in srgb, var(--warn) 8%, var(--surface));
+}
+
+.ai-condition-missing {
+  font-size: 11.5px;
+  font-weight: 700;
+  color: var(--t-warn);
+}
+
+.ai-conditions-btn.ant-btn {
+  margin-left: auto;
+  min-height: 28px;
+  padding: 0 16px;
+  border-radius: 999px;
+  font-weight: 700;
+}
+
+/* 灵感生成 / 行程优化页签 */
+.ai-tab-panel {
+  display: grid;
+  gap: 8px;
+  max-height: 196px;
+  overflow-y: auto;
+  padding: 10px 12px;
+  border: 1px dashed color-mix(in srgb, var(--lagoon) 26%, var(--line));
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--lagoon) 4%, var(--surface));
+}
+
+.ai-tab-panel-title {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 800;
+  color: var(--t-lagoon);
+}
+
+.ai-inspire-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 8px;
+}
+
+.ai-inspire-card,
+.ai-optimize-card {
+  display: grid;
+  gap: 3px;
+  padding: 9px 11px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface);
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 0.16s var(--ease), box-shadow 0.16s var(--ease);
+}
+
+.ai-inspire-card:hover:not(:disabled),
+.ai-optimize-card:hover:not(:disabled) {
+  border-color: color-mix(in srgb, var(--lagoon) 45%, transparent);
+  box-shadow: var(--sh-1);
+}
+
+.ai-inspire-card:disabled,
+.ai-optimize-card:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.ai-inspire-card strong,
+.ai-optimize-card strong {
+  font-size: 12.5px;
+  color: var(--ink);
+}
+
+.ai-inspire-card span,
+.ai-optimize-card span {
+  font-size: 11px;
+  line-height: 1.55;
+  color: var(--ink-3);
+}
+
+.ai-optimize-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 8px;
+}
+
+/* 对话区：气泡更宽、输入区更舒展 */
+.ai-thread {
+  min-height: 300px;
+  padding: 8px 10px 4px 4px;
+}
+
+.ai-bubble {
+  max-width: min(680px, 92%);
+}
+
+.ai-composer {
+  align-items: center;
+  padding: 8px 10px 8px 14px;
+}
+
+.ai-composer-input.ant-input {
+  min-height: 44px;
+  font-size: 13.5px;
+  line-height: 1.6;
+}
+
+.ai-send.ant-btn {
+  height: 40px;
+  padding: 0 20px;
+  border-radius: 10px;
+  font-weight: 700;
+}
+
+.ai-composer-hint {
+  margin-top: -4px;
+  font-size: 10.5px;
+  color: var(--ink-3);
+  text-align: right;
+}
+
+.ai-quick-row {
+  padding-top: 2px;
+}
+
+/* 拖拽排序：手柄 + 半透明浮层 + 插入位置 */
+.ai-stop-row {
+  grid-template-columns: 14px 48px minmax(0, 1fr) auto;
+  cursor: grab;
+}
+
+.ai-stop-row:active {
+  cursor: grabbing;
+}
+
+.ai-drag-handle {
+  align-self: center;
+  display: grid;
+  place-items: center;
+  width: 14px;
+  height: 24px;
+  color: var(--ink-3);
+  font-size: 13px;
+  line-height: 1;
+  user-select: none;
+}
+
+.ai-stop-row.is-dragging {
+  opacity: 0.38;
+}
+
+.ai-stop-row.is-drop-target {
+  background: color-mix(in srgb, var(--lagoon) 9%, var(--surface));
+  box-shadow: inset 0 2px 0 var(--lagoon);
+}
+
+.ai-drag-ghost {
+  position: fixed;
+  top: -1000px;
+  left: -1000px;
+  z-index: 9999;
+  display: grid;
+  grid-template-columns: 14px 48px minmax(0, 1fr) auto;
+  gap: 10px;
+  align-items: start;
+  padding: 8px 10px;
+  border: 1px solid color-mix(in srgb, var(--lagoon) 45%, transparent);
+  border-radius: 12px;
+  background: var(--surface);
+  box-shadow: var(--sh-2, 0 12px 28px rgba(10, 30, 50, 0.18));
+  opacity: 0.95;
+  pointer-events: none;
+}
+
+.ai-route-strip-estimated {
+  padding: 1px 8px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--warn) 14%, var(--surface));
+  color: var(--t-warn);
+  font-size: 10.5px;
+  font-weight: 700;
+}
+
+/* 更换地点弹窗：大搜索框 + 地图候选 */
+.ai-replace-body {
+  display: grid;
+  gap: 10px;
+}
+
+.ai-replace-search .amap-search-box .ant-input,
+.ai-replace-search .ant-input-affix-wrapper {
+  min-height: 46px;
+  font-size: 14px;
+  border-radius: 12px;
+}
+
+.ai-replace-search .amap-search-panel {
+  max-height: 280px;
+}
+
+/* 条件抽屉里的地点搜索也放大一档：小输入框很难点中候选项 */
+.ai-conditions-drawer .amap-search-box .ant-input,
+.ai-conditions-drawer .amap-search-box .ant-input-affix-wrapper {
+  min-height: 40px;
+  border-radius: 10px;
+}
+
+@media (max-width: 768px) {
+  .ai-stop-row {
+    grid-template-columns: 14px 46px minmax(0, 1fr);
+  }
+
+  .ai-stop-row .ai-stop-actions {
+    grid-column: 2 / -1;
+  }
+
+  .ai-condition-summary {
+    align-items: flex-start;
+  }
+
+  .ai-conditions-btn.ant-btn {
+    margin-left: 0;
   }
 }

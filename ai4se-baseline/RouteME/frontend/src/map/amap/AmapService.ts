@@ -48,6 +48,8 @@ export type RouteWaypoint = {
   address?: string;
   lng: number;
   lat: number;
+  /** 该点的城市名：公共交通按段换乘时用来限定搜索范围（跨城行程必需）。 */
+  city?: string;
 };
 
 export type RoutePlan = {
@@ -1332,9 +1334,57 @@ const ROUTE_SERVICES: Record<TravelMode, 'Walking' | 'Driving' | 'Riding' | 'Tra
 };
 
 /**
+ * 单段规划：失败时按「本方式 → 备选方式 → 直线估算」逐级降级。
+ *
+ * <p>真实行程里经常出现一两段路线插件不支持的情况（跨城公共交通、步行距离过长、
+ * 景区内部道路等）。整条路线因此失败会让用户什么也看不到，所以只在**至少有一段**
+ * 成功时对失败段做直线估算；若全部段都失败仍抛错，避免把估算伪装成高德结果。
+ */
+const ROUTE_FALLBACK_CHAIN: Record<TravelMode, TravelMode[]> = {
+  walking: ['walking', 'transit', 'driving'],
+  transit: ['transit', 'driving'],
+  driving: ['driving'],
+  bicycling: ['bicycling', 'driving'],
+};
+
+/** 与途经点无关的全局失败（Key / 配额 / 网络）：继续换方式只会重复失败。 */
+const ROUTE_FATAL_CODES = new Set<string>([
+  'AUTH',
+  'QUOTA',
+  'NOT_CONFIGURED',
+  'MISSING_JS_KEY',
+  'NETWORK',
+  'PROXY_UNAVAILABLE',
+  'UPSTREAM_UNAVAILABLE',
+  'UPSTREAM_BUSY',
+]);
+
+function isFatalRouteError(error: unknown): boolean {
+  return error instanceof AmapApiError && ROUTE_FATAL_CODES.has(error.code);
+}
+
+type RouteLeg = { distanceMeters: number; durationSeconds: number; path: LngLat[] };
+
+/** 一段路线的直线估算：只在前一段没拿到高德数据时兜底。 */
+function estimateRouteLeg(mode: TravelMode, start: RouteWaypoint, end: RouteWaypoint): RouteLeg {
+  const distanceMeters = Math.round(
+    haversineMeters([start.lng, start.lat], [end.lng, end.lat]),
+  );
+  const durationSeconds = Math.round(distanceMeters / MODE_SPEED_MPS[mode]);
+  return {
+    distanceMeters,
+    durationSeconds,
+    path: [
+      [start.lng, start.lat],
+      [end.lng, end.lat],
+    ],
+  };
+}
+
+/**
  * 逐段规划路线并按顺序拼成一条。高德路线插件对途经点支持不一致，逐段请求
  * 可以保证顺序、距离和时长口径一致；8 个途经点最多 7 次请求。
- * transit 需要目的地城市名（city）限定换乘搜索范围。
+ * transit 需要城市名限定换乘搜索范围：按每一段的起点城市设置，跨城段退回驾车。
  */
 export async function planRoute(
   mode: TravelMode,
@@ -1344,23 +1394,24 @@ export async function planRoute(
   if (waypoints.length < 2) {
     throw new AmapApiError('INVALID_WAYPOINTS', '至少需要两个途经点才能规划路线');
   }
-  // 公共交通必须限定城市：city 为空时 Transfer 插件会在客户端直接回调 error，
-  // 连请求都不会发出，用户只能看到「高德服务返回错误」。
-  const scopedCity = (city ?? '').trim();
-  if (mode === 'transit' && scopedCity === '') {
-    throw new AmapApiError('MISSING_CITY', '公共交通需要目的地城市');
-  }
+  // 公共交通必须限定城市：city 为空时 Transfer 插件会在客户端直接回调 error。
+  // 优先用调用方给的城市，其次用途经点自带城市；两者都没有时退回驾车，而不是直接失败。
+  const waypointCity = waypoints.find((waypoint) => (waypoint.city ?? '').trim() !== '')?.city ?? '';
+  const scopedCity = (city ?? '').trim() || waypointCity.trim();
+  const chain =
+    mode === 'transit' && scopedCity === ''
+      ? (['driving'] as TravelMode[])
+      : ROUTE_FALLBACK_CHAIN[mode];
   const sdk = await loadSdk();
-  const Service = sdk[ROUTE_SERVICES[mode]];
-  const service =
-    mode === 'transit'
-      ? new Service({ city: scopedCity, policy: 0, extensions: 'all' })
-      : new Service(mode === 'driving' ? { policy: 0, extensions: 'base' } : {});
 
   let distanceMeters = 0;
   let durationSeconds = 0;
   const path: LngLat[] = [];
   const legs: RoutePlan['legs'] = [];
+  /** 真正由高德返回的段数；直线兜底段不计入。 */
+  let realLegs = 0;
+  let estimated = false;
+  let firstError: unknown = null;
 
   for (let index = 0; index < waypoints.length - 1; index += 1) {
     const start = waypoints[index];
@@ -1368,36 +1419,76 @@ export async function planRoute(
     const origin: LngLat = [start.lng, start.lat];
     const destination: LngLat = [end.lng, end.lat];
 
-    const leg = await new Promise<ReturnType<typeof toRouteLeg>>((resolve, reject) => {
-      void runAmapCall(
-        () =>
-          new Promise<ReturnType<typeof toRouteLeg>>((innerResolve, innerReject) => {
-            service.search(origin, destination, (status, result) => {
-              if (status === 'no_data') {
-                innerReject(new AmapApiError('ROUTE_NOT_FOUND', '没有找到可用路线'));
-                return;
-              }
-              if (status !== 'complete') {
-                innerReject(sdkError(status, result?.info, result?.infocode));
-                return;
-              }
-              try {
-                innerResolve(
-                  mode === 'transit'
-                    ? parseTransitLeg(firstTransit(result), origin, destination)
-                    : toRouteLeg(result?.routes?.[0], origin, destination),
-                );
-              } catch (error: unknown) {
-                innerReject(
-                  error instanceof Error
-                    ? error
-                    : new AmapApiError('ROUTE_NOT_FOUND', '没有找到可用路线'),
-                );
-              }
-            });
-          }),
-      ).then(resolve, reject);
-    });
+    let leg: RouteLeg | null = null;
+    let usedMode: TravelMode = mode;
+    let fromAmap = false;
+
+    for (const candidate of chain) {
+      const transitCity = `${start.city ?? end.city ?? scopedCity}`.trim();
+      if (candidate === 'transit' && transitCity === '') {
+        // 缺城市无法发起 Transfer：直接尝试下一种方式。
+        continue;
+      }
+      const Service = sdk[ROUTE_SERVICES[candidate]];
+      const service =
+        candidate === 'transit'
+          ? new Service({ city: transitCity, policy: 0, extensions: 'all' })
+          : new Service(candidate === 'driving' ? { policy: 0, extensions: 'base' } : {});
+      try {
+        leg = await new Promise<RouteLeg>((resolve, reject) => {
+          void runAmapCall(
+            () =>
+              new Promise<RouteLeg>((innerResolve, innerReject) => {
+                service.search(origin, destination, (status, result) => {
+                  if (status === 'no_data') {
+                    innerReject(new AmapApiError('ROUTE_NOT_FOUND', '没有找到可用路线'));
+                    return;
+                  }
+                  if (status !== 'complete') {
+                    innerReject(sdkError(status, result?.info, result?.infocode));
+                    return;
+                  }
+                  try {
+                    innerResolve(
+                      candidate === 'transit'
+                        ? parseTransitLeg(firstTransit(result), origin, destination)
+                        : toRouteLeg(result?.routes?.[0], origin, destination),
+                    );
+                  } catch (error: unknown) {
+                    innerReject(
+                      error instanceof Error
+                        ? error
+                        : new AmapApiError('ROUTE_NOT_FOUND', '没有找到可用路线'),
+                    );
+                  }
+                });
+              }),
+          ).then(resolve, reject);
+        });
+        usedMode = candidate;
+        fromAmap = true;
+        break;
+      } catch (error: unknown) {
+        if (isFatalRouteError(error)) {
+          throw error;
+        }
+        if (firstError === null) {
+          firstError = error;
+        }
+      }
+    }
+
+    if (leg === null) {
+      // 全部方式都失败：先记为直线估算，等确认「还有别的段成功」后再采用。
+      leg = estimateRouteLeg(mode, start, end);
+      estimated = true;
+    } else if (usedMode !== mode) {
+      // 换过方式（如跨城公共交通 → 驾车）时距离/时长口径已变，明确标注为参考。
+      estimated = true;
+    }
+    if (fromAmap) {
+      realLegs += 1;
+    }
 
     distanceMeters += leg.distanceMeters;
     durationSeconds += leg.durationSeconds;
@@ -1415,7 +1506,12 @@ export async function planRoute(
     }
   }
 
-  return { mode, distanceMeters, durationSeconds, path, legs };
+  if (realLegs === 0) {
+    // 所有段都没拿到高德数据：整条失败，绝不用直线估算冒充真实路线。
+    throw firstError ?? new AmapApiError('ROUTE_NOT_FOUND', '没有找到可用路线');
+  }
+
+  return { mode, distanceMeters, durationSeconds, path, estimated, legs };
 }
 
 export function formatDistance(meters: number): string {

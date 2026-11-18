@@ -305,10 +305,10 @@ test('guides an empty filter state to publish from both views', async ({ page })
 });
 
 test('shows skeletons instead of the previous view while lists load', async ({ page }) => {
-  const matchesGate = createGate();
+  const tripsGate = createGate();
   const experiencesGate = createGate();
-  await page.route('**/api/matches**', async (route) => {
-    await matchesGate.opened;
+  await page.route('**/api/trips**', async (route) => {
+    await tripsGate.opened;
     await route.continue();
   });
   await page.route('**/api/experiences**', async (route) => {
@@ -330,7 +330,7 @@ test('shows skeletons instead of the previous view while lists load', async ({ p
   ).toBeVisible();
   await expect(page.locator('.trip-card')).toHaveCount(0);
 
-  matchesGate.release();
+  tripsGate.release();
   experiencesGate.release();
   await expect(page.locator('.exp-card').first()).toBeVisible();
   await expect(page.locator('[aria-busy="true"]')).toHaveCount(0);

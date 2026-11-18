@@ -234,6 +234,38 @@ export type LeaveResult = {
   message_code: LeaveMessageCode;
 };
 
+export type LeaveEvidence = {
+  id: number;
+  original_name: string | null;
+  content_type: string;
+  size_bytes: number;
+};
+
+export type LeavePayload = {
+  reason: LeaveReason;
+  note: string | null;
+  attachment_ids: number[];
+};
+
+export type LeaveRecordAttachment = {
+  id: number;
+  original_name: string | null;
+  content_type: string;
+  size_bytes: number;
+  url: string;
+};
+
+export type LeaveRecord = {
+  reason: LeaveReason;
+  note: string | null;
+  exit_at: string;
+  review_status: LeaveStatus;
+  theoretical_delta: number;
+  applied_delta: number;
+  monthly_ordinal: number;
+  attachments: LeaveRecordAttachment[];
+};
+
 export type TripCreateRequest = {
   title: string;
   destination_code: string;
@@ -262,52 +294,7 @@ export type TripFilters = {
   date_from?: string;
   date_to?: string;
   tags?: string[];
-  sort?: 'match' | 'date' | 'new';
-};
-
-export type Match = {
-  score: number;
-  percentage: number;
-  reasons: string[];
-  basis: string;
-};
-
-export type MatchCandidate = {
-  trip: TripSummary;
-  match: Match;
-};
-
-/** 推荐分项维度：目的地 / 日期 / 共同兴趣。 */
-export type RecommendationDimension = 'destination' | 'date' | 'interest';
-
-/** 推荐分项：标签与得分均由后端返回，前端只负责展示。 */
-export type RecommendationBreakdown = {
-  dimension: RecommendationDimension;
-  label: string;
-  points: number;
-};
-
-/** 推荐参照：当前行程的目的地、出发日期与当前用户兴趣。 */
-export type RecommendationReference = {
-  trip_id: number;
-  destination: string;
-  start_date: string;
-  interests: string[];
-};
-
-/** 一条同行者推荐：用户 + 关联行程 + 后端算好的分值与解释。 */
-export type TravelerRecommendation = {
-  user: DemoUser;
-  trip: TripSummary;
-  score: number;
-  reasons: string[];
-  breakdown: RecommendationBreakdown[];
-  shared_interests: string[];
-};
-
-export type RecommendationList = {
-  reference: RecommendationReference;
-  items: TravelerRecommendation[];
+  sort?: 'date' | 'new';
 };
 
 export type ApplicationStatus = 'pending' | 'accepted' | 'rejected' | 'cancelled' | 'left';

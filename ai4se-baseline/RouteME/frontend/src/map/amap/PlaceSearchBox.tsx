@@ -18,6 +18,9 @@ type Props = {
   inputId?: string;
   ariaLabel?: string;
   invalid?: boolean;
+  /** 对话框里用 large 让输入框更显眼（AI 更换地点弹窗）。 */
+  size?: 'middle' | 'large';
+  autoFocus?: boolean;
 };
 
 export function PlaceSearchBox({
@@ -27,6 +30,8 @@ export function PlaceSearchBox({
   inputId = 'amap-place-search',
   ariaLabel = '搜索城市、景点或地址',
   invalid = false,
+  size = 'middle',
+  autoFocus = false,
 }: Props) {
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<PlaceResult[]>([]);
@@ -128,6 +133,8 @@ export function PlaceSearchBox({
         id={inputId}
         value={query}
         allowClear
+        size={size}
+        autoFocus={autoFocus}
         aria-invalid={invalid || undefined}
         placeholder={placeholder}
         aria-label={ariaLabel}

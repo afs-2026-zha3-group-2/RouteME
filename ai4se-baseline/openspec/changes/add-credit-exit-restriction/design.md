@@ -263,7 +263,40 @@ service
 
 ## 11. 对齐自检
 
-- **Spec ↔ Design：** 9 Requirement / 46 Scenario 均有设计落点；无新增 Requirement；无静默删减。
-- **Design ↔ ATDD：** A1–A5 / E1–E3 覆盖 46 场景；Defer UT 只列纯逻辑；Non-goal 反向验证表齐备。
+- **Spec ↔ Design：** 11 Requirement / 61 Scenario 均有设计落点；R2 新增「退出说明与证明材料」（R3 补充本人回看 / 仅本人 / 只读 / 系统清退无记录；R4 补充同一行程多次退出与全量记录）；无静默删减。
+- **Design ↔ ATDD：** A1–A8 / E1–E6 覆盖 61 场景；Defer UT 只列纯逻辑；Non-goal 反向验证表齐备。
 - **Tasks ↔ Design：** `tasks.md` 每条任务标注层（backend / frontend / contract / docs）与验证命令；契约与迁移排在两端之前。
 - **未决：** 无阻塞；契约 / 迁移号与低信用测试数据为 P4 前置确认项。
+
+## 12. R2 验收修订（2026-11-17）
+
+用户验收提出 3 点问题：下拉占位把标签当成选项、未选原因时确认按钮仍可点、待核实预览多出一行说明；同时安全原因 / 不可抗力需要补充说明与可上传图片。按照确认后的口径：
+
+- **交互：** 标签只做文字；下拉占位改为「请选择退出原因」；未选原因或必填说明未填时确认按钮置灰。
+- **说明：** 安全原因 / 不可抗力必填（≤200 字）；个人原因选填；三种原因都可填。
+- **证明材料：** 最多 3 张、单张 ≤5MB、仅 JPEG / PNG / WebP；文件本体落 `SqlLite/uploads/exit-evidence/`，数据库只存元数据；仅落库供后续核实，不在详情页 / 个人主页公开。
+- **待核实：** 预览只保留「暂不扣分，待核实」，删除第二行流程说明。
+- **实现：** 新增 `credit_exit_attachment` 与 `credit_exit_event.exit_note`（V26）；新增 `POST /api/trips/{tripId}/leave-evidence`（201）；`POST /leave` 新增 `note` 与 `attachment_ids`（≤3）；上传复用 `PhotoMagic` 魔数与 `PhotoMetadataStripper`，孤儿 24h 懒清理。
+- **契约：** 0.20.0 → 0.21.0。
+- **验证：** 后端 `CreditExitApiTest` 新增 4 个用例、迁移测试升级到 V26；前端 `leaveForm.test.ts`；E2E 更新不可抗力流程并覆盖置灰 / 上传 / 删说明。
+
+## 13. R3 本人回看退出记录（2026-11-17）
+
+用户验收指出：原因 / 说明 / 图片只有写入，没有给本人查看的入口。确认口径：仅本人、只读，入口在「我的旅行 → 我申请的（已退出）」行，展示原因、说明、时间、信用影响与证明材料（可看大图）。
+
+- **接口：** `GET /trips/{tripId}/leave-record`（本人，按 `exit:{userId}:{tripId}` 查退出事件；无事件 404 `LEAVE_RECORD_NOT_FOUND`）；`GET /leave-evidence/{attachmentId}`（本人，二进制图片；非本人 403）。
+- **数据：** 无新表 / 新列；读取 `credit_exit_event`、`credit_exit_attachment` 与磁盘文件。
+- **前端：** `LeaveRecordModal`（加载中 / 404 提示 / 只读展示；图片带用户头取回后转 object URL，避免 `<img>` 无法发送 `X-User-Id`）；`MyTripsPage` 已退出行新增「查看退出记录」。
+- **可见性：** 发布者 / 其他同行者不可见；系统清退无退出事件 → 404 并提示「没有可查看的退出记录」。
+- **契约：** 0.21.0 → 0.22.0；新增两条 GET 路径与 `LeaveRecord` / `LeaveRecordAttachment`。
+- **验证：** `CreditExitApiTest` 新增本人读取 / 他人 404 / 图片 403 用例；E2E 在不可抗力流程末尾回看记录并断言原因、说明、待核实与 1 张图片。
+
+## 14. R4 同一行程多次退出（2026-11-17）
+
+用户验收发现：退出后可再次被接受，但第二次退出时后端按 `exit:{userId}:{tripId}` 命中首次事件并幂等返回，未解除新的同行关系。确认口径：允许再次加入并退出；每次计入当月次数；查看记录列出全部退出。
+
+- **数据：** V27 给 `credit_exit_event` 增加 `application_id`（旧数据回填最近一条申请）；幂等键改为 `exit:{userId}:{tripId}:{applicationId}`；唯一索引保持不变（key 已含关系维度）。
+- **退出：** 先按当前 ACCEPTED 申请确定幂等键；无 ACCEPTED 时返回该 user+trip 最近一次事件（重试幂等），否则 403。月度计数仍按事件全量统计，同行程重复退出照常参与翻倍。
+- **记录：** `leaveRecords` 返回该 user+trip 全部事件（时间倒序）；前端弹窗按「共 N 次退出」逐条展示。
+- **契约：** 0.22.0 → 0.23.0；`GET /leave-record` 响应改为数组。
+- **验证：** `CreditExitApiTest` 覆盖再申请→第二次退出（-10 / 月序号 2）→全量记录→重试幂等；迁移测试升级至 V27；E2E 新增再次加入并退出、断言 2 条记录。

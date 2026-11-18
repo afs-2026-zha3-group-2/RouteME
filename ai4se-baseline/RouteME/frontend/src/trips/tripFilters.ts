@@ -7,7 +7,7 @@ export type FilterState = {
   dateFrom: string;
   dateTo: string;
   tags: string[];
-  sort: 'match' | 'date' | 'new';
+  sort: 'date' | 'new';
 };
 
 export const emptyFilterState: FilterState = {
@@ -15,7 +15,7 @@ export const emptyFilterState: FilterState = {
   dateFrom: '',
   dateTo: '',
   tags: [],
-  sort: 'match',
+  sort: 'new',
 };
 
 export function normalizeRange(dateFrom: string, dateTo: string): [string, string] {
@@ -42,7 +42,7 @@ export function hasActiveFilters(state: FilterState): boolean {
     state.dateFrom !== '' ||
     state.dateTo !== '' ||
     state.tags.length > 0 ||
-    state.sort !== 'match'
+    state.sort !== 'new'
   );
 }
 
@@ -51,7 +51,6 @@ export function toggleTag(tags: string[], tag: string): string[] {
 }
 
 const SORT_LABELS: Record<FilterState['sort'], string> = {
-  match: tripMessages.sortMatch,
   date: tripMessages.sortDate,
   new: tripMessages.sortNew,
 };
@@ -74,7 +73,7 @@ export function describeFilters(state: FilterState): string {
   if (state.tags.length > 0) {
     parts.push(`兴趣 ${state.tags.join(' / ')}`);
   }
-  if (state.sort !== 'match') {
+  if (state.sort !== 'new') {
     parts.push(SORT_LABELS[state.sort]);
   }
   return parts.join(' · ');

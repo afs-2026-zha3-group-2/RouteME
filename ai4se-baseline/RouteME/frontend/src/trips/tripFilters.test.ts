@@ -15,7 +15,7 @@ describe('toTripFilters', () => {
       date_from: undefined,
       date_to: undefined,
       tags: undefined,
-      sort: 'match',
+      sort: 'new',
     });
   });
 
@@ -51,7 +51,7 @@ describe('hasActiveFilters', () => {
   it('is false for the default state and true once a filter changes', () => {
     expect(hasActiveFilters(emptyFilterState)).toBe(false);
     expect(hasActiveFilters({ ...emptyFilterState, tags: ['摄影'] })).toBe(true);
-    expect(hasActiveFilters({ ...emptyFilterState, sort: 'new' })).toBe(true);
+    expect(hasActiveFilters({ ...emptyFilterState, sort: 'date' })).toBe(true);
   });
 });
 
@@ -67,11 +67,11 @@ describe('describeFilters', () => {
       dateFrom: '2026-11-16',
       dateTo: '2026-11-20',
       tags: ['摄影', '海边'],
-      sort: 'new',
+      sort: 'date',
     });
 
     expect(summary).toBe(
-      '目的地 广东省 / 珠海市 · 出发不早于 2026-11-16 · 出发不晚于 2026-11-20 · 兴趣 摄影 / 海边 · 按最新发布',
+      '目的地 广东省 / 珠海市 · 出发不早于 2026-11-16 · 出发不晚于 2026-11-20 · 兴趣 摄影 / 海边 · 按出发日期',
     );
   });
 });

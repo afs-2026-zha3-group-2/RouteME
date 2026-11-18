@@ -139,6 +139,7 @@ test('leaves a matched trip from my trips', async ({ page }) => {
   const leaveDialog = page.getByRole('dialog');
   await leaveDialog.locator('[data-leave-reason]').selectOption('force_majeure');
   await expect(leaveDialog.locator('[data-leave-preview]')).toContainText('暂不扣分，待核实');
+  await leaveDialog.locator('[data-leave-note]').fill('台风停航，无法出发');
   await leaveDialog.getByRole('button', { name: '退出同行' }).click();
   await expect(page.locator('.mine-row', { hasText: title })).toHaveCount(0);
 });

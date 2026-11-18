@@ -1,7 +1,7 @@
 openapi: 3.0.3
 info:
   title: RouteME API
-  version: 0.23.0
+  version: 0.24.0
   description: |
     RouteME 后端对外契约。本文件是前后端唯一事实源，字段名、类型、状态码与错误码只在这里定稿。
         当前包含：脚手架问候语、演示账户与账号认证（注册/登录/会话/退出）、旅行计划（浏览/筛选/发布/详情/结束），同行匹配、申请、退出、聊天、我的旅行与举报，游后体验分享与参考发布所需数据，管理后台（用户管理 / 举报处置 / 人工客服）与用户侧帮助入口，AI 智能行程推荐（生成/快照保存与读取，天气复用目的地天气接口），以及目的地天气提醒与信用分账户、安全学习恢复信用分的考试会话与判分。
@@ -974,114 +974,6 @@ paths:
                 unexpected:
                   value:
                     code: INTERNAL_ERROR
-  /matches:
-    get:
-      operationId: loadMatches
-      summary: 浏览带匹配原因的候选行程
-      description: |
-        在未结束行程上追加匹配分与理由：目的地相同 50、出发日期相同 30、相差一天 20、
-        共同兴趣每项 10 且合计不超过 20；默认按匹配分倒序。筛选参数与 /trips 相同。
-        匹配分在应用层计算，因此先算完整候选再切页；`total` 仍是筛选后的命中数。
-      parameters:
-        - $ref: '#/components/parameters/DemoUserId'
-        - $ref: '#/components/parameters/Page'
-        - $ref: '#/components/parameters/Size'
-        - name: destination_code
-          in: query
-          description: 目的地 6 位行政区划代码（二级）
-          schema:
-            type: string
-            pattern: '^[0-9]{6}$'
-            example: '440400'
-        - name: date_from
-          in: query
-          schema:
-            type: string
-            format: date
-        - name: date_to
-          in: query
-          schema:
-            type: string
-            format: date
-        - name: tags
-          in: query
-          schema:
-            type: string
-        - name: sort
-          in: query
-          schema:
-            type: string
-            enum: [match, date, new]
-            default: match
-      responses:
-        '200':
-          description: 候选行程与匹配信息的一页
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/MatchPage'
-        '400':
-          $ref: '#/components/responses/InvalidInput'
-        '401':
-          $ref: '#/components/responses/DemoUserRequired'
-        '500':
-          $ref: '#/components/responses/Unexpected'
-  /matches/{tripId}:
-    get:
-      operationId: loadMatch
-      summary: 查看单条行程的匹配信息
-      parameters:
-        - $ref: '#/components/parameters/DemoUserId'
-        - name: tripId
-          in: path
-          required: true
-          schema:
-            type: integer
-            format: int64
-      responses:
-        '200':
-          description: 匹配信息
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/MatchCandidate'
-        '401':
-          $ref: '#/components/responses/DemoUserRequired'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '500':
-          $ref: '#/components/responses/Unexpected'
-  /trips/{tripId}/recommendations:
-    get:
-      operationId: loadTripRecommendations
-      summary: 推荐与当前行程相近的其他旅行者
-      description: |
-        以当前行程的目的地与出发日期为参照、以当前用户的旅行兴趣为兴趣集合，
-        从开放行程中筛选其他旅行者并按固定规则打分：目的地相同 50、出发日期相同 30、
-        相差一天 20、共同兴趣每项 10 且合计不超过 20。结果按总分倒序，
-        同分优先旅行日期更接近；同一发布者只保留匹配分最高的一条行程。
-        没有候选时返回空数组，不以虚假推荐填充。
-      parameters:
-        - $ref: '#/components/parameters/DemoUserId'
-        - name: tripId
-          in: path
-          required: true
-          schema:
-            type: integer
-            format: int64
-      responses:
-        '200':
-          description: 参照说明与推荐列表
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/RecommendationList'
-        '401':
-          $ref: '#/components/responses/DemoUserRequired'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '500':
-          $ref: '#/components/responses/Unexpected'
   /trips/{tripId}/applications:
     get:
       operationId: loadTripApplications
@@ -1336,6 +1228,11 @@ paths:
               personal:
                 value:
                   reason: personal
+              force_majeure:
+                value:
+                  reason: force_majeure
+                  note: 台风停航，无法出发
+                  attachment_ids: [12]
       responses:
         '200':
           description: 退出成功与实际信用结果
@@ -1364,6 +1261,106 @@ paths:
           $ref: '#/components/responses/NotFound'
         '409':
           $ref: '#/components/responses/Conflict'
+  /trips/{tripId}/leave-evidence:
+    post:
+      operationId: uploadLeaveEvidence
+      summary: 上传退出证明图片（仅落库供核实，不对外提供读取）
+      parameters:
+        - $ref: '#/components/parameters/DemoUserId'
+        - name: tripId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [file]
+              properties:
+                file:
+                  type: string
+                  format: binary
+                  description: JPEG / PNG / WebP，单张 ≤5MB；每人每行程最多 3 张
+      responses:
+        '201':
+          description: 上传成功；返回元数据，文件本身不对外提供
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LeaveEvidence'
+        '400':
+          $ref: '#/components/responses/InvalidInput'
+        '401':
+          $ref: '#/components/responses/DemoUserRequired'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+  /trips/{tripId}/leave-record:
+    get:
+      operationId: loadLeaveRecord
+      summary: 本人查看自己的退出记录（只读）
+      parameters:
+        - $ref: '#/components/parameters/DemoUserId'
+        - name: tripId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: 本人退出记录（同一行程可多次，按时间倒序）
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/LeaveRecord'
+        '401':
+          $ref: '#/components/responses/DemoUserRequired'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /leave-evidence/{attachmentId}:
+    get:
+      operationId: loadLeaveEvidence
+      summary: 本人读取退出证明材料（图片）
+      parameters:
+        - $ref: '#/components/parameters/DemoUserId'
+        - name: attachmentId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: 图片二进制
+          content:
+            image/jpeg:
+              schema:
+                type: string
+                format: binary
+            image/png:
+              schema:
+                type: string
+                format: binary
+            image/webp:
+              schema:
+                type: string
+                format: binary
+        '401':
+          $ref: '#/components/responses/DemoUserRequired'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
   /trips/{tripId}/messages:
     get:
       operationId: loadMessages
@@ -3391,6 +3388,33 @@ components:
           description: 过期时间，UTC；默认签发后 7 天
         user:
           $ref: '#/components/schemas/DemoUser'
+    TripPage:
+      type: object
+      required: [items, page, size, total, total_pages]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/TripPlan'
+          description: 当前页的行程
+        page:
+          type: integer
+          minimum: 1
+          description: 当前页码，从 1 起
+        size:
+          type: integer
+          minimum: 1
+          maximum: 50
+          description: 每页条数
+        total:
+          type: integer
+          format: int64
+          minimum: 0
+          description: 筛选后的命中总数，不是全量行程数
+        total_pages:
+          type: integer
+          minimum: 0
+          description: 命中总数按 size 向上取整的页数
     TripPlan:
       type: object
       required:
@@ -3664,6 +3688,85 @@ components:
       properties:
         reason:
           $ref: '#/components/schemas/LeaveReason'
+        note:
+          type: string
+          nullable: true
+          maxLength: 200
+          description: 退出说明；安全原因 / 不可抗力必填，个人原因选填
+        attachment_ids:
+          type: array
+          maxItems: 3
+          description: 已通过 /leave-evidence 上传的证明图片 id
+          items:
+            type: integer
+            format: int64
+    LeaveEvidence:
+      type: object
+      required: [id, content_type, size_bytes]
+      properties:
+        id:
+          type: integer
+          format: int64
+          description: 证明图片 id，提交退出时放入 attachment_ids
+        original_name:
+          type: string
+          nullable: true
+          description: 原始文件名，仅用于核实
+        content_type:
+          type: string
+          enum: [image/jpeg, image/png, image/webp]
+        size_bytes:
+          type: integer
+          format: int64
+          minimum: 1
+          maximum: 5242880
+    LeaveRecord:
+      type: object
+      required: [reason, exit_at, review_status, theoretical_delta, applied_delta, monthly_ordinal, attachments]
+      properties:
+        reason:
+          $ref: '#/components/schemas/LeaveReason'
+        note:
+          type: string
+          nullable: true
+          maxLength: 200
+        exit_at:
+          type: string
+          format: date-time
+        review_status:
+          type: string
+          enum: [not_required, pending, verified_true, verified_false]
+        theoretical_delta:
+          type: integer
+        applied_delta:
+          type: integer
+        monthly_ordinal:
+          type: integer
+          minimum: 0
+        attachments:
+          type: array
+          items:
+            $ref: '#/components/schemas/LeaveRecordAttachment'
+    LeaveRecordAttachment:
+      type: object
+      required: [id, content_type, size_bytes, url]
+      properties:
+        id:
+          type: integer
+          format: int64
+        original_name:
+          type: string
+          nullable: true
+        content_type:
+          type: string
+          enum: [image/jpeg, image/png, image/webp]
+        size_bytes:
+          type: integer
+          format: int64
+        url:
+          type: string
+          readOnly: true
+          description: 本人读取图片的接口路径，需带演示用户头
     LeavePreview:
       type: object
       required: [reason, departure_at, penalty_tier, theoretical_delta, applied_delta, monthly_ordinal, monthly_doubled, counted, review_status, resulting_score, message_code]
@@ -3741,159 +3844,6 @@ components:
           type: string
           enum: [penalty, penalty_doubled, no_penalty, during_trip, pending_review, at_floor]
           description: 展示用结果码
-    Match:
-      type: object
-      required: [score, percentage, reasons, basis]
-      properties:
-        score:
-          type: integer
-          minimum: 0
-          maximum: 100
-        percentage:
-          type: integer
-          minimum: 0
-          maximum: 100
-        reasons:
-          type: array
-          items:
-            type: string
-        basis:
-          type: string
-          description: 参照物说明：最近一条未结束的已发布行程，或你的旅行兴趣；筛选与排序不影响匹配分
-    MatchCandidate:
-      type: object
-      required: [trip, match]
-      properties:
-        trip:
-          $ref: '#/components/schemas/TripPlan'
-        match:
-          $ref: '#/components/schemas/Match'
-    TripPage:
-      type: object
-      required: [items, page, size, total, total_pages]
-      properties:
-        items:
-          type: array
-          items:
-            $ref: '#/components/schemas/TripPlan'
-          description: 当前页的行程
-        page:
-          type: integer
-          minimum: 1
-          description: 当前页码，从 1 起
-        size:
-          type: integer
-          minimum: 1
-          maximum: 50
-          description: 每页条数
-        total:
-          type: integer
-          format: int64
-          minimum: 0
-          description: 筛选后的命中总数，不是全量行程数
-        total_pages:
-          type: integer
-          minimum: 0
-          description: 命中总数按 size 向上取整的页数
-    MatchPage:
-      type: object
-      required: [items, page, size, total, total_pages]
-      properties:
-        items:
-          type: array
-          items:
-            $ref: '#/components/schemas/MatchCandidate'
-        page:
-          type: integer
-          minimum: 1
-        size:
-          type: integer
-          minimum: 1
-          maximum: 50
-        total:
-          type: integer
-          format: int64
-          minimum: 0
-          description: 筛选后的候选总数
-        total_pages:
-          type: integer
-          minimum: 0
-    RecommendationReference:
-      type: object
-      required: [trip_id, destination, start_date, interests]
-      properties:
-        trip_id:
-          type: integer
-          format: int64
-          readOnly: true
-        destination:
-          type: string
-          readOnly: true
-        start_date:
-          type: string
-          format: date
-          readOnly: true
-        interests:
-          type: array
-          items:
-            type: string
-          readOnly: true
-    RecommendationBreakdown:
-      type: object
-      required: [dimension, label, points]
-      properties:
-        dimension:
-          type: string
-          enum: [destination, date, interest]
-          readOnly: true
-        label:
-          type: string
-          readOnly: true
-          description: 可读维度文案，例如「目的地相同」「旅行日期相差 1 天」「共同兴趣摄影」
-        points:
-          type: integer
-          minimum: 0
-          maximum: 50
-          readOnly: true
-    TravelerRecommendation:
-      type: object
-      required: [user, trip, score, reasons, breakdown, shared_interests]
-      properties:
-        user:
-          $ref: '#/components/schemas/DemoUser'
-        trip:
-          $ref: '#/components/schemas/TripPlan'
-        score:
-          type: integer
-          minimum: 0
-          maximum: 100
-          readOnly: true
-        reasons:
-          type: array
-          items:
-            type: string
-          readOnly: true
-          description: 逐项原因，例如「目的地相同 +50」；前端 MUST 只拼装这些命中项，不得自行推断或补写理由
-        breakdown:
-          type: array
-          items:
-            $ref: '#/components/schemas/RecommendationBreakdown'
-          readOnly: true
-        shared_interests:
-          type: array
-          items:
-            type: string
-          readOnly: true
-    RecommendationList:
-      type: object
-      required: [reference, items]
-      properties:
-        reference:
-          $ref: '#/components/schemas/RecommendationReference'
-        items:
-          type: array
-          items:
-            $ref: '#/components/schemas/TravelerRecommendation'
     ApplicationCreateRequest:
       type: object
       properties:
@@ -5549,7 +5499,7 @@ components:
              ACCOUNT_BANNED, INVALID_STATUS_TRANSITION, CANNOT_TARGET_SELF, REPORT_NOT_FOUND, REPORT_NOT_PENDING,
              REPORT_NOT_PROCESSING, EMAIL_TAKEN, SESSION_ALREADY_HANDLING, SESSION_NOT_HANDLING, SESSION_CLOSED,
              CREDIT_RESTRICTED, LEARNING_NOT_ELIGIBLE, LEARNING_EXAM_QUOTA_EXCEEDED, LEARNING_RECOVERY_QUOTA_EXCEEDED,
-             LEARNING_NOT_COMPLETED, LEARNING_SESSION_NOT_FOUND]
+             LEARNING_NOT_COMPLETED, LEARNING_SESSION_NOT_FOUND, LEAVE_RECORD_NOT_FOUND]
         fields:
           type: object
           description: |
