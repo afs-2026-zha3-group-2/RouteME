@@ -73,7 +73,7 @@
 
 ### Requirement: 客服标记处理完成与待用户确认
 
-系统 SHALL 允许客服在 `HANDLING` 状态把会话标记为「处理完成」。标记 MUST 使状态变为 `RESOLVED`（待用户确认），并 MUST 写入 `resolved_at` 与 `resolved_by`；该动作 MUST 直接生效，不需要二次确认。非 `HANDLING` 状态 MUST NOT 允许标记；重复标记 MUST 被拒绝且 MUST NOT 覆盖既有 `resolved_*`。`RESOLVED` 状态下用户或客服发送消息 MUST 使会话回到 `HANDLING`，并 MUST 清空 `resolved_at` / `resolved_by`。系统 MUST NOT 因超时自动关闭 `RESOLVED` 会话。客服 MUST NOT 拥有结束会话的能力或接口。
+系统 SHALL 允许客服在 `HANDLING` 状态把会话标记为「处理完成」。标记 MUST 使状态变为 `RESOLVED`（待用户确认），并 MUST 写入 `resolved_at` 与 `resolved_by`；该动作 MUST 直接生效，不需要二次确认。非 `HANDLING` 状态 MUST NOT 允许标记；重复标记 MUST 被拒绝且 MUST NOT 覆盖既有 `resolved_*`。`RESOLVED` 状态下用户或客服发送消息 MUST 使会话回到 `HANDLING`，并 MUST 清空 `resolved_at` / `resolved_by`。系统 MUST NOT 因超时自动关闭 `RESOLVED` 会话。客服 MUST 也可以直接结束会话，见「客服结束客服会话」。
 
 #### Scenario: 处理中标记完成
 
@@ -129,12 +129,13 @@
 - **Then** 3 秒内看到新消息
 - **And** 看到状态恢复为「处理中」
 
-#### Scenario: 管理端没有结束入口
+#### Scenario: 管理端结束入口按状态可见
 
-- **Given** 客服打开任一状态的会话
+- **Given** 客服打开任一未结束的会话
 - **When** 查看会话头动作区
-- **Then** MUST NOT 出现「结束会话」按钮
-- **And** `HANDLING` 时只出现「标记处理完成」
+- **Then** MUST 出现「结束会话」按钮
+- **And** `HANDLING` 时同时出现「标记处理完成」
+- **And** `CLOSED` 时不出现任何结束类按钮
 
 #### Scenario: 标记完成按钮仅处理中可见
 
@@ -156,9 +157,57 @@
 - **When** 查看后台页签徽标
 - **Then** 徽标 MUST NOT 计入 `RESOLVED`
 
+### Requirement: 客服结束客服会话
+
+系统 SHALL 允许客服在客服会话未结束时直接结束会话。`WAITING`、`HANDLING` 与待用户确认（`RESOLVED`）三种状态 MUST 均可结束；结束前 MUST 由前端二次确认，取消确认时 MUST NOT 改变任何数据。结束 MUST 写入 `closed_at` 与 `closed_by`（客服 id），并 MUST 使会话状态变为 `CLOSED`；`CLOSED` 后双方消息只读，历史消息 MUST 保留。重复结束 MUST 被拒绝且 MUST NOT 覆盖既有 `closed_*`。
+
+#### Scenario: 等待接入时由客服结束（取消排队）
+
+- **Given** 会话状态为 `WAITING`
+- **When** 客服点击「结束会话」并确认
+- **Then** 会话状态变为 `CLOSED`
+- **And** `closed_at` 有值，`closed_by` 为该客服 id
+- **And** 管理端队列中该会话显示「已结束」
+
+#### Scenario: 处理中由客服结束
+
+- **Given** 会话状态为 `HANDLING`
+- **When** 客服点击「结束会话」并确认
+- **Then** 会话状态变为 `CLOSED`
+- **And** 双方消息区变为只读
+- **And** 历史消息全部保留
+
+#### Scenario: 待用户确认时由客服结束
+
+- **Given** 会话状态为 `RESOLVED`
+- **When** 客服点击「结束会话」并确认
+- **Then** 会话状态变为 `CLOSED`
+- **And** 既有 `resolved_at` / `resolved_by` 保留
+- **And** `closed_at` / `closed_by` 写入
+
+#### Scenario: 客服结束的确认弹窗可取消
+
+- **Given** 客服点击「结束会话」
+- **When** 客服在确认弹窗选择取消
+- **Then** 会话状态、`resolved_*` 与 `closed_*` 均不改变
+
+#### Scenario: 客服重复结束被拒绝
+
+- **Given** 会话已经是 `CLOSED`
+- **When** 客服再次调用结束接口
+- **Then** 返回 409 `SESSION_CLOSED`
+- **And** 既有 `closed_at` / `closed_by` 不被覆盖
+
+#### Scenario: 客服结束后用户端 3 秒内可见
+
+- **Given** 用户停留在 `#/support` 的会话页
+- **When** 客服结束会话
+- **Then** 用户端 MUST 在 3 秒内变为「已结束」
+- **And** 输入区只读并可「重新发起会话」
+
 ### Requirement: 会话状态机与留痕
 
-会话状态 MUST 只取 `WAITING` / `HANDLING` / `RESOLVED` / `CLOSED` 四值，迁移 MUST 限定为 `WAITING → HANDLING`、`WAITING → CLOSED`、`HANDLING → RESOLVED`、`HANDLING → CLOSED`、`RESOLVED → HANDLING`、`RESOLVED → CLOSED`。同一用户同时 MUST NOT 拥有多条未结束会话；`GET /api/service/sessions/current` 与幂等创建 MUST 同时识别 `WAITING` / `HANDLING` / `RESOLVED`。`closed_by` MUST 只记录用户 id；`resolved_by` MUST 只记录客服 id。`CLOSED` 会话 MUST 拒绝新消息并保留完整历史；客服会话与行程聊天 MUST 保持隔离。
+会话状态 MUST 只取 `WAITING` / `HANDLING` / `RESOLVED` / `CLOSED` 四值，迁移 MUST 限定为 `WAITING → HANDLING`、`WAITING → CLOSED`、`HANDLING → RESOLVED`、`HANDLING → CLOSED`、`RESOLVED → HANDLING`、`RESOLVED → CLOSED`。同一用户同时 MUST NOT 拥有多条未结束会话；`GET /api/service/sessions/current` 与幂等创建 MUST 同时识别 `WAITING` / `HANDLING` / `RESOLVED`。`closed_by` MUST 记录结束操作者 id（用户或客服）；`resolved_by` MUST 只记录客服 id。`CLOSED` 会话 MUST 拒绝新消息并保留完整历史；客服会话与行程聊天 MUST 保持隔离。
 
 #### Scenario: 合法迁移闭集
 
@@ -187,12 +236,12 @@
 - **When** 读取会话
 - **Then** `resolved_at` 与 `resolved_by` 为空
 
-#### Scenario: 结束操作人只记用户
+#### Scenario: 结束操作人记录实际操作者
 
-- **Given** 用户结束了一次会话
+- **Given** 用户或客服结束了一次会话
 - **When** 读取会话审计字段
-- **Then** `closed_by` 为用户 id
-- **And** 客服没有任何写入 `closed_by` 的路径
+- **Then** `closed_by` 为实际操作者 id（用户或客服）
+- **And** 状态变为 `CLOSED` 且历史消息保留
 
 #### Scenario: 已结束不可发言
 
@@ -223,12 +272,12 @@
 - **And** 该会话计入 `RESOLVED` 桶
 - **And** `service_sessions.total` MUST 等于四个分桶之和
 
-#### Scenario: 管理端 close 路径下线
+#### Scenario: 管理端 close 路径可用
 
-- **Given** 旧客户端仍调用 `POST /api/admin/service/sessions/{sessionId}/close`
+- **Given** 客服对未结束会话调用 `POST /api/admin/service/sessions/{sessionId}/close`
 - **When** 请求到达服务端
-- **Then** 返回 404
-- **And** 会话状态不变
+- **Then** 返回 200 且状态变为 `CLOSED`
+- **And** `closed_by` 为该客服 id
 
 #### Scenario: 客服会话与行程聊天隔离
 

@@ -24,18 +24,41 @@ type Props = {
   growth?: UserGrowthEntry;
   /** 发布页实时预览：不跳详情、不打开资料弹窗。 */
   preview?: boolean;
+  /** 首页推荐匹配度（前端启发式）；缺失时不展示徽标。 */
+  matchScore?: number;
+  /** 首页收藏态；与 onToggleFavorite 同时提供时才渲染心形按钮。 */
+  favorited?: boolean;
+  onToggleFavorite?: (trip: TripSummary) => void;
+  /** 首页卡片底部的「查看详情」动作按钮。 */
+  detailAction?: boolean;
 };
 
-export function TripCard({ trip, credit, growth, preview = false }: Props) {
+export function TripCard({
+  trip,
+  credit,
+  growth,
+  preview = false,
+  matchScore,
+  favorited = false,
+  onToggleFavorite,
+  detailAction = false,
+}: Props) {
   const { openProfile } = useProfile();
   const joinedRate = trip.capacity === 0 ? 0 : Math.round((trip.joined_count / trip.capacity) * 100);
   const width = Math.min(100, Math.max(0, joinedRate));
   const isFull = trip.status === 'full' || (trip.capacity > 0 && trip.joined_count >= trip.capacity);
   const destination = cityLabel(trip.destination_code) || trip.destination;
   const photo = cityPhoto(destination, trip.destination);
+  const cardClass = [
+    'trip-card',
+    isFull ? 'is-full' : '',
+    matchScore !== undefined ? 'has-match' : '',
+  ]
+    .filter(Boolean)
+    .join(' ');
 
   return (
-    <article className={isFull ? 'trip-card is-full' : 'trip-card'}>
+    <article className={cardClass}>
       {preview ? (
         <span className="tc-overlay" aria-hidden="true" />
       ) : (
@@ -46,7 +69,25 @@ export function TripCard({ trip, credit, growth, preview = false }: Props) {
           <img className="tc-photo" src={photo} alt={`${destination}城市照片`} loading="lazy" />
         )}
         <span className="tc-cover-shade" aria-hidden="true" />
+        {matchScore !== undefined && (
+          <span className="tc-match">
+            {tripMessages.homeMatchLabel} {matchScore}%
+          </span>
+        )}
         <StatusBadge status={trip.status} />
+        {!preview && onToggleFavorite !== undefined && (
+          <button
+            type="button"
+            className={favorited ? 'tc-fav is-on' : 'tc-fav'}
+            aria-pressed={favorited}
+            aria-label={favorited ? tripMessages.homeFavoriteRemove : tripMessages.homeFavoriteAdd}
+            onClick={() => onToggleFavorite(trip)}
+          >
+            <svg viewBox="0 0 20 20" aria-hidden="true">
+              <path d="M10 16.4 4.8 11a3.6 3.6 0 0 1 0-5.1 3.5 3.5 0 0 1 5 0l.2.2.2-.2a3.5 3.5 0 0 1 5 0 3.6 3.6 0 0 1 0 5.1Z" />
+            </svg>
+          </button>
+        )}
         <span className="tc-dest">{destination}</span>
       </div>
 
@@ -116,6 +157,15 @@ export function TripCard({ trip, credit, growth, preview = false }: Props) {
             </span>
           </span>
         </div>
+
+        {detailAction && !preview && (
+          <a className="tc-detail" href={`#/trips/${trip.id}`}>
+            {tripMessages.homeDetailAction}
+            <svg viewBox="0 0 12 12" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+              <path d="m4.5 2.5 3.5 3.5-3.5 3.5" />
+            </svg>
+          </a>
+        )}
       </div>
     </article>
   );

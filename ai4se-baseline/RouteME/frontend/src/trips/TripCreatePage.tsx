@@ -77,8 +77,9 @@ type Props = {
 export function TripCreatePage({ currentUser, fromTripId, aiItineraryId }: Props) {
   // AI 预填失败时保留 initialTripForm（今天日期），用户仍可手动填写发布（A12 / L-04）。
   const { restricted } = useMyCredit();
+  // 参考发布不预填人数：初始就是空值，避免先闪一个默认 4 人再被清空。
   const [values, setValues] = useState<TripFormValues>(() =>
-    fromTripId === undefined ? initialTripForm() : emptyTripForm,
+    fromTripId === undefined ? initialTripForm() : { ...emptyTripForm, capacity: '' },
   );
   const [errors, setErrors] = useState<TripFieldErrors>({});
   const [submitError, setSubmitError] = useState<string | null>(null);
@@ -221,7 +222,9 @@ export function TripCreatePage({ currentUser, fromTripId, aiItineraryId }: Props
 
   const destination = cityLabel(values.destinationCode) || '目的地';
   const cover = cityPhoto(destination, destination.replace(/市$/, ''));
-  const capacity = Number(values.capacity) || MIN_CAPACITY;
+  /** 预览卡的人数：null 表示还没选（参考发布不预填人数），不能把空值伪装成 2 人。 */
+  const chosenCapacity = values.capacity.trim() === '' ? null : Number(values.capacity);
+  const previewCapacity = chosenCapacity === null ? MIN_CAPACITY : chosenCapacity;
   const previewTrip: TripSummary = {
     id: 0,
     title: values.title.trim() === '' ? '你的行程标题' : values.title,
@@ -236,7 +239,7 @@ export function TripCreatePage({ currentUser, fromTripId, aiItineraryId }: Props
     meeting_areas: values.meetingAreas,
     meeting_time: values.meetingTime.trim() === '' ? null : values.meetingTime,
     tags: values.tags,
-    capacity,
+    capacity: previewCapacity,
     joined_count: 1,
     status: 'recruiting',
     ending_soon: false,
@@ -732,10 +735,16 @@ invalid={errors.stops !== undefined}
               )}
               <div className="ppc-foot">
                 <span className="ppc-people">
-                  1 / {capacity} {tripMessages.peopleUnit}
+                  {chosenCapacity === null
+                    ? tripMessages.previewCapacityPending
+                    : `1 / ${chosenCapacity} ${tripMessages.peopleUnit}`}
                 </span>
                 <Progress
-                  percent={Math.round((1 / Math.max(capacity, 1)) * 100)}
+                  percent={
+                    chosenCapacity === null
+                      ? 0
+                      : Math.round((1 / Math.max(chosenCapacity, 1)) * 100)
+                  }
                   size="small"
                   showInfo={false}
                 />
@@ -768,7 +777,8 @@ invalid={errors.stops !== undefined}
                   id="trip-capacity"
                   aria-label={tripMessages.sideMembers}
                   className="publish-select"
-                  value={values.capacity === '' ? MIN_CAPACITY : Number(values.capacity)}
+                  value={values.capacity.trim() === '' ? undefined : Number(values.capacity)}
+                  placeholder={tripMessages.capacityPlaceholder}
                   status={errors.capacity === undefined ? undefined : 'error'}
                   onChange={(value) => update({ capacity: String(value) })}
                   options={Array.from(

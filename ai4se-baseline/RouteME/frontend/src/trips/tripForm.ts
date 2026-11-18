@@ -93,8 +93,11 @@ export function validateTripForm(values: TripFormValues): TripFieldErrors {
     // 地图点选兜底：坐标占位名在加入时就该改名，这里拦住预填 / 草稿等旁路。
     errors.stops = tripMessages.errorStopsPlaceholder;
   }
+  // 空值只可能是「参考此行程发布」未预填人数，提示去选，而不是笼统报范围。
   const capacity = Number(values.capacity);
-  if (!Number.isInteger(capacity) || capacity < MIN_CAPACITY || capacity > MAX_CAPACITY) {
+  if (values.capacity.trim() === '') {
+    errors.capacity = tripMessages.errorCapacityRequired;
+  } else if (!Number.isInteger(capacity) || capacity < MIN_CAPACITY || capacity > MAX_CAPACITY) {
     errors.capacity = tripMessages.errorCapacityRange;
   }
   const budgetMin = parseYuan(values.budgetMin);

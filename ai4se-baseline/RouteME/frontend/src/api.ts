@@ -725,6 +725,18 @@ export async function closeServiceSession(
   return (await response.json()) as ServiceSessionDetail;
 }
 
+/** 客服结束会话：管理端可直接把未结束会话置为 CLOSED。 */
+export async function closeServiceSessionByAdmin(
+  token: string,
+  sessionId: number,
+): Promise<ServiceSessionDetail> {
+  const response = await request(
+    `/admin/service/sessions/${sessionId}/close`,
+    bearerInit(token, { method: 'POST' }),
+  );
+  return (await response.json()) as ServiceSessionDetail;
+}
+
 /** 客服标记处理完成：HANDLING → RESOLVED。 */
 export async function resolveServiceSession(
   token: string,

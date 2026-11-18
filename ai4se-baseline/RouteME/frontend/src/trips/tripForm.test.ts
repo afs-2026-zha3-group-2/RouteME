@@ -107,6 +107,15 @@ describe('validateTripForm', () => {
       expect(validateTripForm({ ...validForm, capacity: '12' }).capacity).toBeUndefined();
     });
 
+  it('asks for a capacity instead of blaming the range when nothing is chosen', () => {
+    expect(validateTripForm({ ...validForm, capacity: '' }).capacity).toBe(
+      tripMessages.errorCapacityRequired,
+    );
+    expect(validateTripForm({ ...validForm, capacity: '1' }).capacity).toBe(
+      tripMessages.errorCapacityRange,
+    );
+  });
+
   it('rejects an inverted budget range', () => {
     const errors = validateTripForm({ ...validForm, budgetMin: '200', budgetMax: '100' });
     expect(errors.budget).toBeDefined();

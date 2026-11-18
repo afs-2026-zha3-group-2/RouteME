@@ -124,18 +124,23 @@ test('shares an experience and reuses it to publish a new plan', async ({ page }
   await page.getByRole('button', { name: '参考此行程发布' }).click();
   await expect(page.getByRole('heading', { name: '发布一条想走的路' })).toBeVisible();
   await expect(page.getByText(/已预填目的地、途经点与兴趣/)).toBeVisible();
-  // v3 发布页把「招募人数」收进侧栏卡片，默认 2 人（不再留空输入框）。
+  // 参考发布不预填人数：下拉框显示占位而不是假值，避免看起来已经选好。
   await expect(page.getByText('招募人数').first()).toBeVisible();
-  await expect(page.locator('.publish-companions-card')).toContainText('2 人');
+  await expect(page.locator('.publish-companions-card')).toContainText('请选择人数');
   await expect(page.getByLabel('标题')).toHaveValue('');
-  await expect(page.locator('.place-chip-name', { hasText: '香洲港集合' }).first()).toBeVisible();
+  // v3 发布页的途经点在路线编辑器里，旧版 .place-chip-name 已不存在。
+  await expect(
+    page.locator('.publish-route-editor .amap-waypoint-text b', { hasText: '香洲港集合' }).first(),
+  ).toBeVisible();
   // v3 已选标签以可关闭标签展示，不再出现在下方可选复选框里。
   const selectedTag = page.locator('.publish-tag-row .ant-tag').filter({ hasText: '摄影' });
   await expect(selectedTag).toBeVisible();
   await expect(selectedTag.locator('.ant-tag-close-icon')).toBeVisible();
 
   await page.getByRole('button', { name: /^发\s*布/ }).click();
-  await expect(page.getByText(/给这条路线起个名字|请选择出发日期|含你在内至少 2 人/).first()).toBeVisible();
+  // 没选人数时给出「请选择招募人数」，而不是笼统的 2–12 范围提示。
+  await expect(page.getByText('请选择招募人数')).toBeVisible();
+  await expect(page.getByText(/给这条路线起个名字|请选择出发日期/).first()).toBeVisible();
 });
 
 test('renders the share page with the prototype layout', async ({ page }) => {

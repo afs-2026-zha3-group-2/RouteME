@@ -94,6 +94,15 @@ public interface CustomerService {
     Optional<ServiceSessionDetailResponse> closeByUser(long sessionId, long userId);
 
     /**
+     * 客服结束会话：{@code WAITING / HANDLING / RESOLVED → CLOSED}。
+     *
+     * @param sessionId 会话 id
+     * @param adminId   管理员 id
+     * @return 详情；会话不存在时为空
+     */
+    Optional<ServiceSessionDetailResponse> closeByAdmin(long sessionId, long adminId);
+
+    /**
      * 客服标记处理完成：{@code HANDLING → RESOLVED}。
      *
      * @param sessionId 会话 id

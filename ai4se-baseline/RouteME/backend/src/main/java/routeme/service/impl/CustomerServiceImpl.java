@@ -204,6 +204,29 @@ public class CustomerServiceImpl implements CustomerService {
 
     @Override
     @Transactional
+    public Optional<ServiceSessionDetailResponse> closeByAdmin(long sessionId, long adminId) {
+        CustomerServiceSessionEntity entity = sessionMapper.selectById(sessionId);
+        if (entity == null) {
+            return Optional.empty();
+        }
+        boolean updated = sessionMapper.update(null, Wrappers.<CustomerServiceSessionEntity>lambdaUpdate()
+                .eq(CustomerServiceSessionEntity::getId, sessionId)
+                .in(CustomerServiceSessionEntity::getStatus,
+                        ServiceSessionStatusEnum.WAITING.code(),
+                        ServiceSessionStatusEnum.HANDLING.code(),
+                        ServiceSessionStatusEnum.RESOLVED.code())
+                .set(CustomerServiceSessionEntity::getStatus, ServiceSessionStatusEnum.CLOSED.code())
+                .set(CustomerServiceSessionEntity::getClosedBy, adminId)
+                .set(CustomerServiceSessionEntity::getClosedAt, clock.instant().toString())) > 0;
+        if (!updated) {
+            throw new SessionClosedException(sessionId);
+        }
+        notificationService.notifyServiceClosed(entity.getUserId(), sessionId);
+        return Optional.of(detail(sessionMapper.selectById(sessionId).toSession(), true));
+    }
+
+    @Override
+    @Transactional
     public Optional<ServiceSessionDetailResponse> resolve(long sessionId, long adminId) {
         CustomerServiceSessionEntity entity = sessionMapper.selectById(sessionId);
         if (entity == null) {

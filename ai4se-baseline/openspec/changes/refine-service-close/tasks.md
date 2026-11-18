@@ -1,6 +1,6 @@
 ﻿# 任务：refine-service-close
 
-- **依据：** [`specs/customer-service/spec.md`](specs/customer-service/spec.md)（ADDED 3 Requirement / 31 Scenario）、[`proposal.md`](proposal.md)、[`design.md`](design.md)、[`atdd-design.md`](atdd-design.md)
+- **依据：** [`specs/customer-service/spec.md`](specs/customer-service/spec.md)（ADDED 4 Requirement / 37 Scenario）、[`proposal.md`](proposal.md)、[`design.md`](design.md)、[`atdd-design.md`](atdd-design.md)
 - **Owner：** Lewis Liu（当前开发者）｜ **协助：** Neal（VL）在 P4 独立验证
 - **顺序：** 契约（T1）与迁移（T2）先行 → 后端状态机与端点（T3–T6）→ 前端（T7–T9）→ E2E（T10）→ 收口（T11）；每片先写失败验收（red）再实现
 - **契约：** `openapi.yaml` **0.25.0**；迁移 **`V30__add_service_session_resolve.sql`**
@@ -121,11 +121,36 @@
 
 **验证：** 记录与实际命令输出一致；不代签 G2。
 
+## T12 [backend] 恢复客服结束会话端点（2026-11-18 修正）
+
+- [x] `CustomerService.closeByAdmin`：`WAITING` / `HANDLING` / `RESOLVED` 三态 CAS → `CLOSED`，`closed_at` / `closed_by=客服`，并通知用户；0 行 → `SessionClosedException`。
+- [x] `AdminServiceController` 恢复 `POST /{sessionId}/close`（ADMIN）。
+- [x] `AdminServiceControllerTest`：改为 `in_adminCloseWaiting_out_closed` / `in_adminCloseHandling_out_closed` / `in_adminCloseResolved_out_closed` / `in_adminCloseTwice_out_sessionClosed` / `in_adminCloseUnknown_out_notFound`。
+
+**背景：** proposal 声明「管理端结束会话能力保留」，T4/T9/T10 误将其删除；本次按 proposal 与修订后的 Delta 恢复。
+**验证：** `cd ai4se-baseline/RouteME/backend; .\mvnw.cmd -B -ntp -Dtest=AdminServiceControllerTest test`
+
+## T13 [frontend] 管理端结束入口
+
+- [x] `api.ts` 新增 `closeServiceSessionByAdmin`，指向 `/admin/service/sessions/{sessionId}/close`。
+- [x] `AdminServiceDetailPage`：未结束状态显示「结束会话」`Popconfirm`（`WAITING` 用取消排队文案）；成功 `message.success(serviceCloseToast)`；`HANDLING` 同时保留「标记处理完成」。
+- [x] 文案复用既有 `serviceClose*`，不新增色值与像素。
+
+**验证：** `cd ai4se-baseline/RouteME/frontend; npm.cmd run build`
+
+## T14 [contract/e2e] 契约与端到端回归
+
+- [x] `openapi.yaml` 增 `/admin/service/sessions/{sessionId}/close`，版本 `0.32.0`；`OpenApiTest` 同步路径白名单与「两个 close 端点并存」断言。
+- [x] `customer-service.spec.ts` `[C3]`：admin close 期望由 404 改为 200；`[C4]` 增「客服结束 → 用户端 3 秒内已结束」。
+- [x] `admin.spec.ts` `[I3]`：按钮断言改为「存在结束会话」，并走一次客服结束闭环。
+
+**验证：** `cd ai4se-baseline/RouteME/e2e; npx.cmd playwright test tests/customer-service.spec.ts tests/admin.spec.ts`
+
 ## 对齐自检（Spec ↔ Design ↔ Tasks ↔ ATDD）
 
 | 检查项 | 结论 |
 |---|---|
-| Delta 31 场景全部有 ATDD 行 | Pass：ATDD §2 的 U1–U9 / A1–A11 / S1–S11 共 31 行 |
+| Delta 场景全部有 ATDD 行 | Pass：ATDD §2 共 31 行 + T12–T14 新增 6 行客服结束场景 |
 | Design 与 Delta 一致 | Pass：状态机 6 条迁移、2 个新端点、1 个删除端点、`resolved_at` / `resolved_by`、概览四桶均有对应 |
 | Tasks 与 Design 一致 | Pass：T1–T10 逐项覆盖 design §2–§9；无未承接的设计项 |
 | ATDD 与 Tasks 一致 | Pass：ATDD §3 的 red 顺序 = T1 → T2 → T4–T6 → T7–T10 |

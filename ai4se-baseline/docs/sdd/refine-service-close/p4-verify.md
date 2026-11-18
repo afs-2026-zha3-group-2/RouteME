@@ -100,3 +100,13 @@
 
 - G2 已签署；按用户要求**不执行 P5、不归档**，等待 `add-admin-console` 归档顺序满足后再处理。
 - issue #38 处置：管理端「结束会话」按钮与 `/admin/service/sessions/{id}/close` 已删除；用户在三态可自行结束；客服以「标记处理完成」进入待用户确认。
+
+## 9. P4 修正：客服也可结束会话（2026-11-18）
+
+- **变更缘起：** 用户反馈「客服也要能终止对话」。复核发现 proposal 原本声明「管理端结束会话能力保留」，但 T4/T9/T10 将管理端 close 端点与按钮一并删除，属于实现偏离规格。
+- **规格修订：** `specs/customer-service/spec.md` 改为 4 Requirement / 37 Scenario：新增「客服结束客服会话」，管理端入口与 close 路径改为可用，`closed_by` 记录实际操作者（用户或客服）。
+- **实现：** `CustomerService.closeByAdmin`（三态 CAS → `CLOSED`，通知用户）+ `AdminServiceController POST /{sessionId}/close`；前端新增 `closeServiceSessionByAdmin`，`AdminServiceDetailPage` 在未结束状态显示「结束会话」`Popconfirm`（WAITING 用取消排队文案），`HANDLING` 与「标记处理完成」并存。
+- **契约：** `openapi.yaml` 0.32.0 新增 `/admin/service/sessions/{sessionId}/close`；`OpenApiTest` 改为「两个 close 端点并存」。
+- **验证：** `AdminServiceControllerTest` 17/17、`OpenApiTest` 20/20；前端 `tsc --noEmit` + `vite build` 通过、单测 572/572；接口闭环实测（新建 → 接入 → 客服结束 → 用户 `current` 为空体 → 重复结束 409）；管理端页面走查确认按钮、Popconfirm、只读态与「已结束」筛选均正常。
+- **边界：** 本节仅修正实现与已批准 proposal 的偏差，不代为签署 G2/G3；「结束权归用户」的口径按用户本次要求修订为「用户与客服均可结束」。
+

@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="zh-CN" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>RouteMe 路觅 · 管理后台</title>
+<meta name="description" content="RouteMe 路觅管理后台原型：用户管理、账号处罚、举报处理与人工客服，与用户端共享同一份本地数据。">
+<link rel="stylesheet" href="styles.css?v=20261117a">
+<link rel="stylesheet" href="admin.css?v=20261117a">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%230f4c5c'/%3E%3Cpath d='M8 22c4-10 12-10 16 0' stroke='%23ff6b35' stroke-width='3' fill='none' stroke-linecap='round'/%3E%3Ccircle cx='16' cy='11' r='3' fill='%23ffb703'/%3E%3C/svg%3E">
+</head>
+<body>
+
+<div class="ambient" aria-hidden="true">
+  <div class="ambient-mesh"></div>
+  <div class="ambient-drift d1"></div>
+  <div class="ambient-drift d2"></div>
+  <div class="ambient-drift d3"></div>
+  <div class="ambient-grain"></div>
+</div>
+
+<!-- ============ 管理员登录门（仅管理员可访问） ============ -->
+<section id="agate" class="gate a-gate" aria-label="管理员登录"></section>
+
+<!-- ============ 后台外壳 ============ -->
+<div id="aconsole" class="aconsole" hidden>
+  <aside class="a-side" aria-label="后台导航">
+    <a class="a-brand" href="#/overview" aria-label="RouteMe 管理后台首页">
+      <svg class="brand-bare" viewBox="0 0 32 32" aria-hidden="true"><path d="M5 24c5-13 17-13 22 0" fill="none" stroke="var(--coral)" stroke-width="3" stroke-linecap="round"/><circle cx="16" cy="10" r="3.4" fill="var(--amber)"/></svg>
+      <span class="a-brand-text"><b>RouteMe</b><i>路觅 · 管理后台</i></span>
+    </a>
+    <nav class="a-nav" id="anav" aria-label="管理模块"></nav>
+    <div class="a-side-foot">
+      <div class="a-sync" id="async-hint"></div>
+      <div class="a-admin-chip">
+        <span class="a-admin-ava" aria-hidden="true">管</span>
+        <span class="a-admin-name"><b id="a-admin-name">平台管理员</b><i>admin</i></span>
+      </div>
+      <div class="a-side-actions">
+        <a class="ghost-btn a-side-btn" href="prototype.html" title="打开用户端原型">
+          <svg viewBox="0 0 20 20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12.4 3.6h3a1.6 1.6 0 0 1 1.6 1.6v9.6a1.6 1.6 0 0 1-1.6 1.6h-3"/><path d="M8 13.4 4.6 10 8 6.6M4.6 10h8"/></svg>
+          <span>用户端</span>
+        </a>
+        <button class="icon-btn a-side-btn" data-action="toggle-theme" type="button" aria-label="切换深色模式" title="切换深色模式">
+          <svg class="i-sun" viewBox="0 0 20 20" aria-hidden="true"><circle cx="10" cy="10" r="4" fill="none" stroke="currentColor" stroke-width="1.7"/><path d="M10 1.6v2.2M10 16.2v2.2M1.6 10h2.2M16.2 10h2.2M4.1 4.1l1.6 1.6M14.3 14.3l1.6 1.6M15.9 4.1l-1.6 1.6M5.7 14.3l-1.6 1.6" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
+          <svg class="i-moon" viewBox="0 0 20 20" aria-hidden="true"><path d="M16 12.4A6.8 6.8 0 0 1 7.6 4a6.9 6.9 0 1 0 8.4 8.4Z" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></svg>
+        </button>
+        <button class="ghost-btn a-side-btn" data-action="a-logout" type="button" title="退出登录">
+          <svg viewBox="0 0 20 20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M7.6 3.6h-3A1.6 1.6 0 0 0 3 5.2v9.6a1.6 1.6 0 0 0 1.6 1.6h3"/><path d="M12 13.4 15.4 10 12 6.6M15.4 10h-8"/></svg>
+          <span>退出</span>
+        </button>
+      </div>
+    </div>
+  </aside>
+
+  <div class="a-main">
+    <header class="a-topbar">
+      <div class="a-topbar-title">
+        <h1 id="a-title">总览</h1>
+        <p id="a-crumb">管理后台</p>
+      </div>
+      <div class="a-topbar-spacer"></div>
+      <span class="a-live" id="a-live" title="与用户端共享同一份本地数据，跨标签页实时同步"></span>
+    </header>
+    <main id="aview" class="a-view" tabindex="-1"></main>
+  </div>
+</div>
+
+<div id="amodal-root"></div>
+<div id="atoast-root" class="toast-root" role="status" aria-live="polite"></div>
+
+<script src="data.js?v=20261117a"></script>
+<script src="store.js?v=20261117a"></script>
+<script src="ui.js?v=20261117a"></script>
+<script src="admin.js?v=20261117a"></script>
+</body>
+</html>

@@ -25,7 +25,7 @@ class OpenApiTest {
 
     // Single source for version assertions: bump openapi.yaml info.version and this
     // constant together (one edit point instead of five scattered literals).
-    private static final String CONTRACT_VERSION = "0.31.0";
+    private static final String CONTRACT_VERSION = "0.32.0";
 
     private static final List<String> HTTP_METHODS = List.of("get", "post", "put", "patch", "delete");
 
@@ -40,6 +40,7 @@ class OpenApiTest {
             "/admin/reports/{reportId}/resolve",
             "/admin/service/sessions",
             "/admin/service/sessions/{sessionId}",
+            "/admin/service/sessions/{sessionId}/close",
             "/admin/service/sessions/{sessionId}/join",
             "/admin/service/sessions/{sessionId}/resolve",
             "/help/reports",
@@ -792,7 +793,7 @@ class OpenApiTest {
         assertAll(
                 () -> assertEquals(CONTRACT_VERSION, info.get("version"), "info.version"),
                 () -> assertTrue(paths(document).keySet().containsAll(ADMIN_CONSOLE_PATHS), "admin console paths"),
-                () -> assertEquals(17L, adminOperations, "admin console operations"),
+                () -> assertEquals(18L, adminOperations, "admin console operations"),
                 () -> assertTrue(
                         ADMIN_CONSOLE_PATHS.stream()
                                 .map(path -> asMap(paths(document).get(path)))
@@ -868,8 +869,8 @@ class OpenApiTest {
                         "service session summary carries resolved_at"),
                 () -> assertTrue(
                         paths(document).containsKey("/service/sessions/{sessionId}/close")
-                                && !paths(document).containsKey("/admin/service/sessions/{sessionId}/close"),
-                        "user close endpoint replaces admin close"),
+                                && paths(document).containsKey("/admin/service/sessions/{sessionId}/close"),
+                        "user and admin close endpoints coexist"),
                 () -> assertTrue(
                         required(demoUser).containsAll(List.of("role", "status")),
                         "demo user carries role and status"),

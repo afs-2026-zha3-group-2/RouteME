@@ -49,6 +49,30 @@ export function findCity(code?: string): AreaCity | undefined {
   return code === undefined || code === '' ? undefined : cityByCode.get(code);
 }
 
+/**
+ * 首页搜索：按名字反查城市代码（忽略「市」后缀）。
+ * 先精确后包含，避免「广州」误命中「广州湾」这类长名；查不到返回空串。
+ */
+export function cityCodeByName(name: string): string {
+  const key = name.replace(/市$/u, '').trim();
+  if (key === '') {
+    return '';
+  }
+  let partial = '';
+  for (const province of AREA_OPTIONS) {
+    for (const city of province.children ?? []) {
+      const label = city.label.replace(/市$/u, '');
+      if (label === key) {
+        return city.value;
+      }
+      if (partial === '' && (label.includes(key) || key.includes(label))) {
+        partial = city.value;
+      }
+    }
+  }
+  return partial;
+}
+
 export function cascaderValueOf(code?: string): string[] {
   const city = findCity(code);
   return city === undefined ? [] : [city.provinceCode, city.cityCode];

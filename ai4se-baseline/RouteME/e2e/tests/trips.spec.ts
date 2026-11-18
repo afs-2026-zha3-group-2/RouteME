@@ -113,7 +113,7 @@ test('shows the identity gate with login form and the unfinished trip list', asy
   await page.reload();
   await expandPageSize(page);
 
-  await expect(page.getByRole('heading', { level: 1 })).toContainText('今天想走哪条路');
+  await expect(page.getByRole('heading', { level: 1 })).toContainText('下一程，和谁一起出发');
   // 种子行程 3/4 的出发日 2026-11-16 会随机器日期翻篇退出招募列表，
   // 改用未来日期的种子行程 5/6 保证用例不受运行日期影响。
   await expect(page.locator('.trip-card', { hasText: '深圳大鹏半岛海岸线徒步' })).toBeVisible();

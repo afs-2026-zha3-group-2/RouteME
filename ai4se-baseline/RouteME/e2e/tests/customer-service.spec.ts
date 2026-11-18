@@ -199,11 +199,6 @@ test.describe('[C] customer service', () => {
     expect(partners.ok()).toBeTruthy();
     expect((await partners.json()) as unknown[]).toEqual([]);
 
-    const closed = await page.request.post(`${API}/admin/service/sessions/${first.id}/close`, {
-      headers: bearer(token),
-    });
-    expect(closed.status()).toBe(404);
-
     await page.getByRole('button', { name: '结束会话' }).click();
     // 昵称 / 其他按钮的可见文案也可能含「确认」，限定到 Popconfirm 内的确认按钮。
     await page.locator('.ant-popconfirm').getByRole('button', { name: /确\s*认/ }).click();
@@ -419,5 +414,39 @@ test.describe('[C] customer service', () => {
     expect(body.status).toBe('CLOSED');
     expect(body.resolved_at).toBeTruthy();
     expect(body.messages.some((message) => message.content === '问题还没解决')).toBe(true);
+  });
+
+  test('[C5] lets an agent close a session and the user sees it read-only', async ({ page }) => {
+    const user = await createUserViaApi(page, `客服结束_${Date.now()}`);
+
+    await loginAsAccount(page, user);
+    await page.goto('/#/support');
+    await page.getByRole('button', { name: '开始对话' }).click();
+    await expect(page.locator('.help-chat-head')).toContainText('等待客服接入');
+
+    const current = await page.request.get(`${API}/service/sessions/current`, {
+      headers: bearer(user.token),
+    });
+    const session = (await current.json()) as { id: number; status: string };
+
+    const token = await adminToken(page);
+    const joined = await page.request.post(`${API}/admin/service/sessions/${session.id}/join`, {
+      headers: bearer(token),
+    });
+    expect(joined.ok()).toBeTruthy();
+
+    const closed = await page.request.post(`${API}/admin/service/sessions/${session.id}/close`, {
+      headers: bearer(token),
+    });
+    expect(closed.ok()).toBeTruthy();
+    const closedBody = (await closed.json()) as { status: string; closed_at?: string };
+    expect(closedBody.status).toBe('CLOSED');
+    expect(closedBody.closed_at).toBeTruthy();
+
+    // 用户端轮询 3 秒内转为已结束，输入区只读且可重新发起。
+    await expect(page.locator('.help-chat-head')).toContainText('已结束', { timeout: 8_000 });
+    await expect(page.getByText('会话已结束，只能查看历史消息。')).toBeVisible({ timeout: 8_000 });
+    await page.getByRole('button', { name: '重新发起会话' }).click();
+    await expect(page.locator('.help-chat-head')).toContainText('等待客服接入');
   });
 });

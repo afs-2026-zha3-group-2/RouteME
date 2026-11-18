@@ -22,7 +22,7 @@ test('publisher opens third-party insurance, syncs the state, borrows and repays
   page,
 }) => {
   const account = await createUserViaApi(page, nickname('finance'));
-  const trip = await createTripViaApi(page, account.id, `旅行保障演示 ${Date.now()}`);
+  const trip = await createTripViaApi(page, account.id, `旅行保障测试 ${Date.now()}`);
   await loginAsAccount(page, account);
 
   // 左侧栏「我的旅行」下方常驻旅行保障入口，直达账号聚合页。
@@ -59,7 +59,7 @@ test('publisher opens third-party insurance, syncs the state, borrows and repays
   await expect(page.getByTestId('insurance-status')).toContainText('未购买');
 
   // 第三方确认投保后回写状态：保障中，展示保障期间与保单 / 理赔 / 求助入口。
-  await page.getByRole('button', { name: '已完成投保（演示同步）' }).click();
+  await page.getByRole('button', { name: '已完成投保' }).click();
   await expect(page.getByTestId('insurance-status')).toContainText('保障中');
   await expect(page.getByText('保障期间：')).toBeVisible();
   await expect(page.getByRole('link', { name: '查看保单' })).toBeVisible();
@@ -70,7 +70,7 @@ test('publisher opens third-party insurance, syncs the state, borrows and repays
   // 状态持久化到服务端：刷新后仍是保障中，且不再出现「已完成投保」。
   await page.reload();
   await expect(page.getByTestId('insurance-status')).toContainText('保障中');
-  await expect(page.getByRole('button', { name: '已完成投保（演示同步）' })).toHaveCount(0);
+  await expect(page.getByRole('button', { name: '已完成投保' })).toHaveCount(0);
 
   // 期限是三档常驻选项（7 / 14 / 30 天），点击即可切换，不需要打开下拉。
   const termGroup = page.getByRole('radiogroup', { name: '期限' });
@@ -123,7 +123,7 @@ test('publisher opens third-party insurance, syncs the state, borrows and repays
 test('non-participant sees no entry and no insurance or loan actions', async ({ page }) => {
   const publisher = await createUserViaApi(page, nickname('owner'));
   const visitor = await createUserViaApi(page, nickname('visitor'));
-  const trip = await createTripViaApi(page, publisher.id, `无资格演示 ${Date.now()}`);
+  const trip = await createTripViaApi(page, publisher.id, `无资格校验 ${Date.now()}`);
 
   await loginAsAccount(page, visitor);
 
@@ -135,7 +135,7 @@ test('non-participant sees no entry and no insurance or loan actions', async ({ 
     page.getByText('只有该行程的发布者或已接受的同行者才能购买保障或借款。'),
   ).toBeVisible();
   await expect(page.getByRole('button', { name: '前往第三方购买' })).toHaveCount(0);
-  await expect(page.getByRole('button', { name: '已完成投保（演示同步）' })).toHaveCount(0);
+  await expect(page.getByRole('button', { name: '已完成投保' })).toHaveCount(0);
   await expect(page.getByRole('button', { name: '申请借款' })).toHaveCount(0);
 
   // 非同行者不能基于该行程创建保险记录。

@@ -158,7 +158,7 @@ describe('finance api', () => {
 
         fetchMock.mockResolvedValueOnce(
           new Response(
-            JSON.stringify({ id: 11, status: 'active', provider: '第三方保险机构（演示）' }),
+            JSON.stringify({ id: 11, status: 'active', provider: '第三方保险机构' }),
             { status: 200, headers: { 'Content-Type': 'application/json' } },
           ),
         );

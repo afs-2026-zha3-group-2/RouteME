@@ -326,7 +326,7 @@ test.fixme('skips setup and completes the profile later from mine', async ({ pag
 
   await page.getByRole('button', { name: '跳过，先去逛逛' }).click();
   await expect(page).toHaveURL(/#\/$/);
-  await expect(page.getByRole('heading', { level: 1 })).toContainText('今天想走哪条路');
+  await expect(page.getByRole('heading', { level: 1 })).toContainText('下一程，和谁一起出发');
 
   await page.goto('/#/mine');
   const mineCard = page.locator('.mine-profile-card');

@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
-import { Alert, Button, Skeleton, message } from 'antd';
+import { Alert, Button, Popconfirm, Skeleton, message } from 'antd';
 import {
+  closeServiceSessionByAdmin,
   joinServiceSession,
   loadAdminServiceSession,
   resolveServiceSession,
@@ -67,6 +68,19 @@ export function ServiceSessionPanel({
     }
   };
 
+  const close = async () => {
+    setActing(true);
+    try {
+      const next = await closeServiceSessionByAdmin(token, session.id);
+      onSessionChange(next);
+      message.success(adminMessages.serviceCloseToast);
+    } catch (caught: unknown) {
+      handleFailure(caught);
+    } finally {
+      setActing(false);
+    }
+  };
+
   const resolve = async () => {
     setActing(true);
     try {
@@ -112,6 +126,27 @@ export function ServiceSessionPanel({
           )}
           {session.status === 'RESOLVED' && (
             <span className="admin-note">{adminMessages.serviceResolvedHint}</span>
+          )}
+          {session.status !== 'CLOSED' && (
+            <Popconfirm
+              title={
+                session.status === 'WAITING'
+                  ? adminMessages.serviceCloseWaitTitle
+                  : adminMessages.serviceCloseTitle
+              }
+              description={
+                session.status === 'WAITING'
+                  ? adminMessages.serviceCloseWaitBody
+                  : adminMessages.serviceCloseBody
+              }
+              okText={adminMessages.confirm}
+              cancelText={adminMessages.cancel}
+              onConfirm={close}
+            >
+              <Button danger loading={acting}>
+                {adminMessages.serviceClose}
+              </Button>
+            </Popconfirm>
           )}
         </div>
       </header>

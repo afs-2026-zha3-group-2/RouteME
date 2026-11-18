@@ -277,6 +277,22 @@ class TripControllerTest {
     }
 
     @Test
+    void in_capacityZero_out_invalidInput() throws Exception {
+        // 前端未选人数时 Number('') 会落到 0：后端必须拒绝，不能落库。
+        String body = VALID_TRIP.replace("\"capacity\": 4", "\"capacity\": 0");
+        postTrip(body, "1").andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("INVALID_INPUT"));
+    }
+
+    @Test
+    void in_capacityMissing_out_invalidInput() throws Exception {
+        // capacity 缺失按 null 处理（TripPlan.create 归一为 0），同样要被拦下。
+        String body = VALID_TRIP.replace("\"capacity\": 4,\n", "");
+        postTrip(body, "1").andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("INVALID_INPUT"));
+    }
+
+    @Test
     void in_budgetInverted_out_invalidInput() throws Exception {
         String body = VALID_TRIP.replace("\"budget_min_cents\": 8000", "\"budget_min_cents\": 20000");
         postTrip(body, "1").andExpect(status().isBadRequest())

@@ -682,13 +682,12 @@ test.describe('[I3] customer service workbench', () => {
 
     await page.getByRole('button', { name: '标记处理完成' }).click();
     await expect(page.getByText('待用户确认').first()).toBeVisible();
-    await expect(page.getByRole('button', { name: '结束会话' })).toHaveCount(0);
+    // 客服也能直接结束会话：两个动作并存。
+    await expect(page.getByRole('button', { name: '结束会话' })).toBeVisible();
 
-    // 用户看到待确认后结束会话，管理端 3 秒内转为只读。
-    const userClosed = await page.request.post(`${API}/service/sessions/${session.id}/close`, {
-      headers: bearer(user.token),
-    });
-    expect(userClosed.ok()).toBeTruthy();
+    // 客服结束会话：确认后管理端 3 秒内转为只读。
+    await page.getByRole('button', { name: '结束会话' }).click();
+    await page.locator('.ant-popconfirm').getByRole('button', { name: /确\s*认/ }).click();
     await expect(page.getByText('会话已结束，只能查看历史消息。')).toBeVisible({ timeout: 6000 });
     await expect(page.locator('.service-chat .bubble').filter({ hasText: userMessage })).toBeVisible();
 

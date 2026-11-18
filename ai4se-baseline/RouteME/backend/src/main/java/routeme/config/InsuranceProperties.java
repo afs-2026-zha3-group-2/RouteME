@@ -16,7 +16,7 @@ public record InsuranceProperties(
         String claimUrl,
         String emergencyUrl) {
 
-    private static final String DEFAULT_PROVIDER_NAME = "第三方保险机构（演示）";
+    private static final String DEFAULT_PROVIDER_NAME = "第三方保险机构";
     private static final String DEFAULT_PURCHASE_URL = "https://example.com/routeme/insurance/purchase";
     private static final String DEFAULT_POLICY_URL = "https://example.com/routeme/insurance/policy";
     private static final String DEFAULT_CLAIM_URL = "https://example.com/routeme/insurance/claims";

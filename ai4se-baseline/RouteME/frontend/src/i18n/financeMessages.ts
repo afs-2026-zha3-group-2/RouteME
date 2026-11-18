@@ -7,7 +7,7 @@
 export const financeMessages = {
   title: '旅行保障',
   myTitle: '我的旅行保障',
-  subtitle: '演示钱包、第三方旅行保险入口与小额借款都在这里。',
+  subtitle: '钱包、第三方旅行保险入口与小额借款都在这里。',
   tripSubtitle: '保险由第三方承保并理赔；钱包只记录借款到账与还款。',
   loadFailed: '保障信息加载失败',
   retry: '重试',
@@ -17,7 +17,7 @@ export const financeMessages = {
 
   // 钱包
   walletTitle: '钱包',
-  walletBalanceLabel: '可用余额 · 演示钱包',
+  walletBalanceLabel: '可用余额 · 钱包',
   walletCurrency: '币种 CNY',
   walletScope: '仅用于借款',
   walletLedgerLink: '查看全部流水',
@@ -41,7 +41,7 @@ export const financeMessages = {
   insuranceProductsHint: '具体保障项目、保额与免责内容以实际接入的保险产品为准。',
   insuranceBuy: '前往第三方购买',
   insuranceBuying: '正在打开第三方页面…',
-  insuranceConfirmDemo: '已完成投保（演示同步）',
+  insuranceConfirmDone: '已完成投保',
   insuranceConfirming: '同步中…',
   insuranceConfirmSuccess: '保险状态已更新为保障中',
   insuranceProviderLabel: '保险服务提供方',
@@ -50,8 +50,8 @@ export const financeMessages = {
   insuranceViewPolicy: '查看保单',
   insuranceClaim: '理赔指引',
   insuranceEmergency: '紧急求助',
-  insuranceDemoNote:
-    '演示环境不会真实扣款：前往第三方页面完成投保后，用「已完成投保」把状态同步回 RouteMe。',
+  insuranceSyncNote:
+    '本页不会真实扣款：前往第三方页面完成投保后，用「已完成投保」把状态同步回 RouteMe。',
   insuranceOpenThirdParty: '已打开第三方投保页面，请在新窗口完成投保。',
   insuranceEntryNotPurchased: '未购买',
   insuranceEntryHint: '为本次同行旅行增加一份额外保障',

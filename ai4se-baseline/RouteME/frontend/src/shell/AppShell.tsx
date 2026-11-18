@@ -19,6 +19,7 @@ import type { Route } from '../route';
 import type { DemoUser, UserProfile } from '../types';
 import { Avatar } from './Avatar';
 import { BrandMark } from './BrandMark';
+import { RailScene } from '../home/HomeScene';
 
 type NavKey = 'discover' | 'create' | 'aiPlanner' | 'mine' | 'finance' | 'chat' | 'support' | 'admin';
 
@@ -44,7 +45,7 @@ const RAIL_ITEMS: NavItem[] = [
 ];
 
 const NAV_GROUPS: Array<{ title: string; items: NavItem[] }> = [
-  { title: '浏览', items: RAIL_ITEMS.filter((item) => item.key === 'discover') },
+  { title: tripMessages.homeGroupDiscover, items: RAIL_ITEMS.filter((item) => item.key === 'discover') },
   { title: '规划', items: RAIL_ITEMS.filter((item) => item.key === 'create' || item.key === 'aiPlanner') },
   { title: '我的', items: RAIL_ITEMS.filter((item) => item.key === 'mine' || item.key === 'finance' || item.key === 'chat' || item.key === 'support') },
 ];
@@ -458,6 +459,18 @@ export function AppShell({
             </div>
           )}
         </nav>
+
+        {/* 侧栏底部品牌手写 slogan 与徒步插画（参考稿）；纯装饰，不占导航语义。 */}
+        <div className="rail-slogan" aria-hidden="true">
+          <p>
+            {tripMessages.homeRailSlogan1}
+            <br />
+            {tripMessages.homeRailSlogan2}
+            <br />
+            {tripMessages.homeRailSlogan3}
+          </p>
+          <RailScene />
+        </div>
 
         <div className="rail-foot">
           <button

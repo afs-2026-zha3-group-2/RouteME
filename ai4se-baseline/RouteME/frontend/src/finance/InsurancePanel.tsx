@@ -99,11 +99,11 @@ export function InsurancePanel({
         </Button>
         {!purchased && (
           <Button disabled={disabled} loading={confirming} onClick={onConfirm}>
-            {confirming ? m.insuranceConfirming : m.insuranceConfirmDemo}
+            {confirming ? m.insuranceConfirming : m.insuranceConfirmDone}
           </Button>
         )}
       </div>
-      {!purchased && <p className="fin-hint">{m.insuranceDemoNote}</p>}
+      {!purchased && <p className="fin-hint">{m.insuranceSyncNote}</p>}
 
       <p className="fin-provider" data-testid="insurance-provider">
         {m.insuranceProviderLabel}：<b>{summary.provider.name}</b>

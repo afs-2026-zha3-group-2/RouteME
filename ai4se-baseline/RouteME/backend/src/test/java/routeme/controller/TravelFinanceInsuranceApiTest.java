@@ -46,7 +46,7 @@ class TravelFinanceInsuranceApiTest {
                 .andExpect(jsonPath("$.companion_count").isNumber())
                 .andExpect(jsonPath("$.insurance.status").value("not_purchased"))
                 .andExpect(jsonPath("$.insurance.policy").doesNotExist())
-                .andExpect(jsonPath("$.insurance.provider.name").value("第三方保险机构（演示）"))
+                .andExpect(jsonPath("$.insurance.provider.name").value("第三方保险机构"))
                 .andExpect(jsonPath("$.insurance.provider.claim_url").exists())
                 .andExpect(jsonPath("$.insurance.products.length()").value(3))
                 .andExpect(jsonPath("$.insurance.products[0].code").exists())
@@ -74,7 +74,7 @@ class TravelFinanceInsuranceApiTest {
         mockMvc.perform(post("/api/trips/3/insurance/confirm").header("X-User-Id", "2"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.trip_id").value(3))
-                .andExpect(jsonPath("$.provider").value("第三方保险机构（演示）"))
+                .andExpect(jsonPath("$.provider").value("第三方保险机构"))
                 .andExpect(jsonPath("$.coverage_start").value("2026-11-16"))
                 .andExpect(jsonPath("$.coverage_end").value("2026-11-16"))
                 .andExpect(jsonPath("$.status").value("active"))
@@ -241,7 +241,7 @@ class TravelFinanceInsuranceApiTest {
                         INSERT INTO insurance_policy
                             (id, user_id, trip_id, provider, coverage_start, coverage_end, status, confirmed_at)
                         VALUES
-                            (9001, :userId, :tripId, '第三方保险机构（演示）', :start, :end, 'ACTIVE',
+                            (9001, :userId, :tripId, '第三方保险机构', :start, :end, 'ACTIVE',
                              '2026-11-14T00:00:00Z')
                         """)
                 .param("userId", userId)

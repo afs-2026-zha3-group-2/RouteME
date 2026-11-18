@@ -2,6 +2,7 @@ package routeme.controller;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -121,14 +122,71 @@ class AdminServiceControllerTest {
     }
 
     @Test
-    void in_adminCloseEndpoint_out_notFound() throws Exception {
+    void in_adminCloseWaiting_out_closed() throws Exception {
         String admin = login("admin", "admin12345");
-        String user = register("CsAdminCloseGone");
+        String user = register("CsAdminCloseWait");
         long sessionId = openSession(user);
 
-        mockMvc.perform(post("/api/admin/service/sessions/" + sessionId + "/close")
-                        .header("Authorization", bearer(admin)))
-                .andExpect(status().isNotFound());
+        close(admin, sessionId)
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("CLOSED"))
+                .andExpect(jsonPath("$.closed_at").value(FixedClockTestConfig.NOW.toString()));
+
+        mockMvc.perform(get("/api/service/sessions/current").header("Authorization", bearer(user)))
+                .andExpect(status().isOk())
+                .andExpect(content().string(""));
+    }
+
+    @Test
+    void in_adminCloseHandling_out_closed() throws Exception {
+        String admin = login("admin", "admin12345");
+        String user = register("CsAdminCloseHandling");
+        long sessionId = openSession(user);
+        join(admin, sessionId).andExpect(status().isOk());
+        sendMessage(user, sessionId, "still there?").andExpect(status().isCreated());
+
+        close(admin, sessionId)
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("CLOSED"))
+                .andExpect(jsonPath("$.message_count").value(1));
+
+        sendMessage(user, sessionId, "hello again")
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.code").value("SESSION_CLOSED"));
+    }
+
+    @Test
+    void in_adminCloseResolved_out_closedAndKeepsResolved() throws Exception {
+        String admin = login("admin", "admin12345");
+        String user = register("CsAdminCloseResolved");
+        long sessionId = openSession(user);
+        join(admin, sessionId).andExpect(status().isOk());
+        resolve(admin, sessionId).andExpect(status().isOk());
+
+        close(admin, sessionId)
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("CLOSED"))
+                .andExpect(jsonPath("$.resolved_at").value(FixedClockTestConfig.NOW.toString()))
+                .andExpect(jsonPath("$.closed_at").value(FixedClockTestConfig.NOW.toString()));
+    }
+
+    @Test
+    void in_adminCloseTwice_out_sessionClosed() throws Exception {
+        String admin = login("admin", "admin12345");
+        String user = register("CsAdminCloseTwice");
+        long sessionId = openSession(user);
+        close(admin, sessionId).andExpect(status().isOk());
+
+        close(admin, sessionId)
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.code").value("SESSION_CLOSED"));
+    }
+
+    @Test
+    void in_adminCloseUnknown_out_notFound() throws Exception {
+        String admin = login("admin", "admin12345");
+
+        close(admin, 999999).andExpect(status().isNotFound());
     }
 
     @Test
@@ -244,6 +302,12 @@ class AdminServiceControllerTest {
     private org.springframework.test.web.servlet.ResultActions resolve(String admin, long sessionId)
             throws Exception {
         return mockMvc.perform(post("/api/admin/service/sessions/" + sessionId + "/resolve")
+                .header("Authorization", bearer(admin)));
+    }
+
+    private org.springframework.test.web.servlet.ResultActions close(String admin, long sessionId)
+            throws Exception {
+        return mockMvc.perform(post("/api/admin/service/sessions/" + sessionId + "/close")
                 .header("Authorization", bearer(admin)));
     }
 
