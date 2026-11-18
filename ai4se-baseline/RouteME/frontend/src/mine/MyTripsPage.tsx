@@ -11,6 +11,7 @@ import { cityPhoto } from '../trips/cityPhotos';
 import { coverTone } from '../trips/coverTone';
 import { StatusBadge } from '../trips/StatusBadge';
 import { TripCancelModal } from '../trips/TripCancelModal';
+import { LeaveRecordModal } from '../trips/LeaveRecordModal';
 import { TripLeaveModal } from '../trips/TripLeaveModal';
 import type { DemoUser, Experience, MyTrips, TripApplication, TripSummary } from '../types';
 import {
@@ -45,6 +46,7 @@ export function MyTripsPage({ currentUser }: Props) {
   const [busyKey, setBusyKey] = useState<string | null>(null);
   const [confirmAction, setConfirmAction] = useState<ConfirmAction | null>(null);
   const [leaveTarget, setLeaveTarget] = useState<TripSummary | null>(null);
+  const [recordTarget, setRecordTarget] = useState<TripSummary | null>(null);
   const [cancelTarget, setCancelTarget] = useState<TripSummary | null>(null);
   const inFlight = useRef<Promise<void> | null>(null);
 
@@ -256,7 +258,14 @@ export function MyTripsPage({ currentUser }: Props) {
             </p>
           )}
         </div>
-        <div className="mr-actions">{renderActions(trip, application)}</div>
+        <div className="mr-actions">
+          {renderActions(trip, application)}
+          {tab === 'applied' && application?.status === 'left' && (
+            <Button size="small" onClick={() => setRecordTarget(trip)}>
+              {tripMessages.mineViewLeaveRecord}
+            </Button>
+          )}
+        </div>
       </article>
     );
   };
@@ -491,6 +500,14 @@ export function MyTripsPage({ currentUser }: Props) {
           refreshCredit();
           void reload(true);
         }}
+      />
+
+      <LeaveRecordModal
+        open={recordTarget !== null}
+        userId={currentUser.id}
+        tripId={recordTarget?.id ?? 0}
+        title={recordTarget?.title}
+        onClose={() => setRecordTarget(null)}
       />
     </main>
   );

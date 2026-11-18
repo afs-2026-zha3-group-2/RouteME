@@ -102,6 +102,66 @@
 - `g2-decision.md`（VL=Neal）；`docs/sdd/add-credit-exit-restriction/p4-verify.md`；提交 `feat(p4)`。
 - **验证：** G2 签署；阶段提交链完整。
 
+## T15 — R2 规格 / 契约
+
+- [x] **层：** spec / contract ｜ **Owner：** Lewis Liu
+- Delta 新增「退出说明与证明材料」Requirement 与 7 个 Scenario；`openapi.yaml` 0.21.0；`LeaveRequest.note` / `attachment_ids`；`POST /trips/{tripId}/leave-evidence` + `LeaveEvidence`。
+- **验证：** `openspec validate add-credit-exit-restriction --strict`；`npx.cmd @redocly/cli lint openapi.yaml`；`OpenApiTest`。
+
+## T16 — R2 迁移 / 后端
+
+- [x] **层：** backend ｜ **Owner：** Lewis Liu
+- V26：`credit_exit_event.exit_note` 与 `credit_exit_attachment`；`ExitEvidenceStorage`（磁盘文件）；`uploadEvidence` 魔数 / 5MB / 3 张 / 24h 孤儿清理；`leave` 校验说明（安全 / 不可抗力必填）并绑定附件。
+- **验证：** `CreditExitApiTest`、`CreditEnforcementMigrationSqliteTest`。
+
+## T17 — R2 前端
+
+- [x] **层：** frontend ｜ **Owner：** Lewis Liu
+- 标签纯文字 + 「请选择退出原因」占位；未选原因 / 必填说明未填时确认置灰；说明 TextArea（≤200）；图片选择 / 预览 / 移除（≤3、≤5MB、JPEG/PNG/WebP）；待核实删第二行。
+- **验证：** `leaveForm.test.ts`；`npm.cmd test`；`npm.cmd run build`。
+
+## T18 — R2 E2E 与记录
+
+- [x] **层：** e2e / docs ｜ **Owner：** Lewis Liu
+- `credit-exit.spec.ts` 覆盖置灰 / 占位 / 删说明 / 说明必填 / 上传；`companions.spec.ts` / `mine.spec.ts` 补说明；P4 记录追加 R2。
+- **验证：** 隔离环境 `playwright test`；`p4-verify.md` §R2。
+
+## T19 — R3 契约 / 后端读取接口
+
+- [x] **层：** contract / backend ｜ **Owner：** Lewis Liu
+- `GET /trips/{tripId}/leave-record`（本人；无记录 404 `LEAVE_RECORD_NOT_FOUND`）；`GET /leave-evidence/{attachmentId}`（本人二进制，非本人 403）；契约 0.22.0 + `LeaveRecord` / `LeaveRecordAttachment`。
+- **验证：** `CreditExitApiTest`；`OpenApiTest`；Redocly。
+
+## T20 — R3 前端回看入口
+
+- [x] **层：** frontend ｜ **Owner：** Lewis Liu
+- `LeaveRecordModal`（只读；原因 / 说明 / 时间 / 影响 / 缩略图可预览；404 提示）；`MyTripsPage` 已退出行「查看退出记录」；图片带用户头取回。
+- **验证：** `npm.cmd test`；`npm.cmd run build`。
+
+## T21 — R3 E2E 与记录
+
+- [x] **层：** e2e / docs ｜ **Owner：** Lewis Liu
+- `credit-exit.spec.ts` 追加本人回看断言；P4 / G2 / registry / handoff 追加 R3（契约 0.22.0，无新迁移）。
+- **验证：** 隔离环境 `playwright test tests/credit-exit.spec.ts`。
+
+## T22 — R4 迁移 / 后端多次退出
+
+- [x] **层：** backend ｜ **Owner：** Lewis Liu
+- V27 `credit_exit_event.application_id`（旧数据回填）；幂等键改为 `exit:{userId}:{tripId}:{applicationId}`；无 ACCEPTED 时返回最近一次事件（重试幂等）；记录接口返回全部事件。
+- **验证：** `CreditExitApiTest`（再次退出 -10 / 月序号 2 / 2 条记录 / 重试幂等）；`CreditEnforcementMigrationSqliteTest`。
+
+## T23 — R4 前端全量记录
+
+- [x] **层：** frontend ｜ **Owner：** Lewis Liu
+- `LeaveRecordModal` 支持多条记录（时间倒序、每次独立原因 / 说明 / 影响 / 图片）；`loadLeaveRecords` 返回数组。
+- **验证：** `npm.cmd test`；`npm.cmd run build`。
+
+## T24 — R4 契约 / E2E 与记录
+
+- [x] **层：** contract / e2e / docs ｜ **Owner：** Lewis Liu
+- 契约 0.23.0（`leave-record` 响应数组）；E2E 新增再次申请→再次退出→2 条记录；P4 / G2 / registry / handoff 追加 R4。
+- **验证：** `OpenApiTest`；Redocly；隔离环境 `playwright test tests/credit-exit.spec.ts`。
+
 ## 对齐自检（Spec ↔ Design ↔ Tasks ↔ ATDD）
 
 | # | 检查 | 结果 | 证据 |
@@ -116,3 +176,6 @@
 | 8 | 原型先行 | Pass | T0 已完成，P4 不重复改原型 |
 | 9 | 契约 / 迁移号可排他 | Pass | T1 / T2 前置确认 |
 | 10 | 未归档 Delta 不被修改 | Pass | 仅新增 `credit-enforcement`；无 MODIFIED |
+| 11 | R2 说明 / 证据与交互一致 | Pass | T15–T18；Delta 第 10 个 Requirement；契约 0.21.0；V26 |
+| 12 | R3 本人回看仅本人只读 | Pass | T19–T21；契约 0.22.0；无新迁移 |
+| 13 | R4 同行程多次退出与全量记录 | Pass | T22–T24；契约 0.23.0；V27 |

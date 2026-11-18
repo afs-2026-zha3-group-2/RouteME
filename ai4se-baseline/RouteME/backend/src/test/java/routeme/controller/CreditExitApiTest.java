@@ -2,8 +2,12 @@ package routeme.controller;
 
 import static org.junit.jupiter.api.Assertions.assertAll;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -19,6 +23,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
+import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -26,9 +31,11 @@ import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 
 import routeme.config.FixedClockTestConfig;
 import routeme.constant.TripTimeZoneConstant;
+import routeme.entity.CreditExitAttachmentEntity;
 import routeme.entity.CreditExitEventEntity;
 import routeme.entity.CreditLedgerEntity;
 import routeme.enums.CreditExitReviewStatus;
+import routeme.mapper.CreditExitAttachmentMapper;
 import routeme.mapper.CreditExitEventMapper;
 import routeme.mapper.CreditLedgerMapper;
 import routeme.pojo.CreditExitEvent;
@@ -45,7 +52,7 @@ import routeme.service.TripPlanService;
 /**
  * 退出扣分的 API 验收：六档、月度翻倍、待核实、集合时间优先、旅行中 -15。
  */
-@SpringBootTest
+@SpringBootTest(properties = "routeme.credit.exit-evidence-dir=target/test-exit-evidence")
 @AutoConfigureMockMvc
 @Transactional
 @Import(FixedClockTestConfig.class)
@@ -53,6 +60,10 @@ class CreditExitApiTest {
 
     private static final long PUBLISHER = 3L;
     private static final long APPLICANT = 1L;
+    private static final byte[] PNG_BYTES = {
+            (byte) 0x89, 'P', 'N', 'G', 0x0D, 0x0A, 0x1A, 0x0A,
+            0, 0, 0, 0, 'I', 'E', 'N', 'D', (byte) 0xAE, 0x42, 0x60, (byte) 0x82
+    };
 
     @Autowired
     private MockMvc mockMvc;
@@ -71,6 +82,9 @@ class CreditExitApiTest {
 
     @Autowired
     private CreditExitEventMapper exitEventMapper;
+
+    @Autowired
+    private CreditExitAttachmentMapper attachmentMapper;
 
     @Autowired
     private CreditLedgerMapper ledgerMapper;
@@ -171,7 +185,7 @@ class CreditExitApiTest {
         mockMvc.perform(post("/api/trips/" + pendingTrue + "/leave")
                         .header("X-User-Id", String.valueOf(APPLICANT))
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"reason\":\"force_majeure\"}"))
+                        .content("{\"reason\":\"force_majeure\",\"note\":\"台风停航\"}"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.credit_score").value(80))
                 .andExpect(jsonPath("$.applied_delta").value(0))
@@ -192,7 +206,7 @@ class CreditExitApiTest {
         mockMvc.perform(post("/api/trips/" + pendingFalse + "/leave")
                         .header("X-User-Id", String.valueOf(APPLICANT))
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"reason\":\"safety\"}"))
+                        .content("{\"reason\":\"safety\",\"note\":\"有人在集合点尾随\"}"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.credit_score").value(75))
                 .andExpect(jsonPath("$.review_status").value("pending"));
@@ -241,6 +255,189 @@ class CreditExitApiTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.credit_score").value(60))
                 .andExpect(jsonPath("$.applied_delta").value(-15));
+    }
+
+    @Test
+    void in_safetyOrForceMajeureWithoutNote_out400AndNoEvent() throws Exception {
+        long safetyTrip = createTripAndAccept(Duration.ofHours(48));
+        mockMvc.perform(post("/api/trips/" + safetyTrip + "/leave")
+                        .header("X-User-Id", String.valueOf(APPLICANT))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"reason\":\"safety\"}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("INVALID_INPUT"));
+
+        long forceTrip = createTripAndAccept(Duration.ofHours(48));
+        mockMvc.perform(post("/api/trips/" + forceTrip + "/leave")
+                        .header("X-User-Id", String.valueOf(APPLICANT))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"reason\":\"force_majeure\"}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("INVALID_INPUT"));
+
+        assertAll(
+                () -> assertEquals(0, exitEventMapper.selectCount(Wrappers.<CreditExitEventEntity>lambdaQuery()
+                        .eq(CreditExitEventEntity::getUserId, APPLICANT)), "no exit event written"),
+                () -> assertEquals(80, creditService.read(APPLICANT).score(), "score unchanged"));
+    }
+
+    @Test
+    void in_noteTooLong_out400() throws Exception {
+        long tripId = createTripAndAccept(Duration.ofHours(48));
+        String longNote = "说".repeat(201);
+        mockMvc.perform(post("/api/trips/" + tripId + "/leave")
+                        .header("X-User-Id", String.valueOf(APPLICANT))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"reason\":\"personal\",\"note\":\"" + longNote + "\"}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("INVALID_INPUT"));
+    }
+
+    @Test
+    void in_personalWithNoteAndEvidence_outBoundToExitEvent() throws Exception {
+        long tripId = createTripAndAccept(Duration.ofHours(48));
+        long first = uploadEvidence(tripId, "proof-1.png");
+        long second = uploadEvidence(tripId, "proof-2.png");
+
+        mockMvc.perform(post("/api/trips/" + tripId + "/leave")
+                        .header("X-User-Id", String.valueOf(APPLICANT))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"reason\":\"personal\",\"note\":\"临时加班\","
+                                + "\"attachment_ids\":[" + first + "," + second + "]}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.applied_delta").value(-5));
+
+        CreditExitEvent event = exitEvent(tripId);
+        List<CreditExitAttachmentEntity> rows = attachments(APPLICANT, tripId);
+        assertAll(
+                () -> assertEquals("临时加班", event.exitNote()),
+                () -> assertEquals(2, rows.size()),
+                () -> assertTrue(rows.stream().allMatch(row -> event.id() == row.getExitEventId())));
+    }
+
+    @Test
+    void in_evidenceUpload_outLimitsAndMagicChecked() throws Exception {
+        long tripId = createTripAndAccept(Duration.ofHours(48));
+        uploadEvidence(tripId, "proof-1.png");
+        uploadEvidence(tripId, "proof-2.png");
+        uploadEvidence(tripId, "proof-3.png");
+
+        mockMvc.perform(multipart("/api/trips/" + tripId + "/leave-evidence")
+                        .file(new MockMultipartFile("file", "proof-4.png", "image/png", PNG_BYTES))
+                        .header("X-User-Id", String.valueOf(APPLICANT)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("INVALID_INPUT"));
+
+        long otherTrip = createTripAndAccept(Duration.ofHours(48));
+        mockMvc.perform(multipart("/api/trips/" + otherTrip + "/leave-evidence")
+                        .file(new MockMultipartFile("file", "fake.png", "image/png", "not-an-image".getBytes()))
+                        .header("X-User-Id", String.valueOf(APPLICANT)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("INVALID_INPUT"));
+    }
+
+    @Test
+    void in_ownerCanReadLeaveRecordAndEvidence_outOthersCannot() throws Exception {
+        long tripId = createTripAndAccept(Duration.ofHours(48));
+        long first = uploadEvidence(tripId, "proof-1.png");
+        long second = uploadEvidence(tripId, "proof-2.png");
+        mockMvc.perform(post("/api/trips/" + tripId + "/leave")
+                        .header("X-User-Id", String.valueOf(APPLICANT))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"reason\":\"personal\",\"note\":\"临时加班\","
+                                + "\"attachment_ids\":[" + first + "," + second + "]}"))
+                .andExpect(status().isOk());
+
+        mockMvc.perform(get("/api/trips/" + tripId + "/leave-record")
+                        .header("X-User-Id", String.valueOf(APPLICANT)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].reason").value("personal"))
+                .andExpect(jsonPath("$[0].note").value("临时加班"))
+                .andExpect(jsonPath("$[0].review_status").value("not_required"))
+                .andExpect(jsonPath("$[0].theoretical_delta").value(-5))
+                .andExpect(jsonPath("$[0].applied_delta").value(-5))
+                .andExpect(jsonPath("$[0].monthly_ordinal").value(1))
+                .andExpect(jsonPath("$[0].attachments.length()").value(2))
+                .andExpect(jsonPath("$[0].attachments[0].url").value("/api/leave-evidence/" + first));
+
+        mockMvc.perform(get("/api/leave-evidence/" + first)
+                        .header("X-User-Id", String.valueOf(APPLICANT)))
+                .andExpect(status().isOk())
+                .andExpect(content().contentType("image/png"))
+                .andExpect(content().bytes(PNG_BYTES));
+
+        mockMvc.perform(get("/api/trips/" + tripId + "/leave-record")
+                        .header("X-User-Id", String.valueOf(PUBLISHER)))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.code").value("LEAVE_RECORD_NOT_FOUND"));
+
+        mockMvc.perform(get("/api/leave-evidence/" + first)
+                        .header("X-User-Id", String.valueOf(PUBLISHER)))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.code").value("FORBIDDEN"));
+    }
+
+    @Test
+    void in_rejoinSameTrip_outSecondExitCountsAndListsBothRecords() throws Exception {
+        long tripId = createTripAndAccept(Duration.ofHours(48));
+        mockMvc.perform(post("/api/trips/" + tripId + "/leave")
+                        .header("X-User-Id", String.valueOf(APPLICANT))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"reason\":\"personal\",\"note\":\"第一次退出\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.credit_score").value(75))
+                .andExpect(jsonPath("$.monthly_ordinal").value(1));
+
+        TripApplication again = applicationService.apply(
+                tripId, APPLICANT, new ApplicationCreateRequest("再次申请"));
+        applicationService.accept(again.id(), PUBLISHER);
+
+        mockMvc.perform(post("/api/trips/" + tripId + "/leave")
+                        .header("X-User-Id", String.valueOf(APPLICANT))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"reason\":\"personal\",\"note\":\"第二次退出\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.credit_score").value(65))
+                .andExpect(jsonPath("$.applied_delta").value(-10))
+                .andExpect(jsonPath("$.monthly_ordinal").value(2))
+                .andExpect(jsonPath("$.message_code").value("penalty_doubled"));
+
+        mockMvc.perform(get("/api/trips/" + tripId + "/leave-record")
+                        .header("X-User-Id", String.valueOf(APPLICANT)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(2))
+                .andExpect(jsonPath("$[0].note").value("第二次退出"))
+                .andExpect(jsonPath("$[0].monthly_ordinal").value(2))
+                .andExpect(jsonPath("$[1].note").value("第一次退出"));
+
+        // 同一关系重试：幂等返回最新结果，不再新增事件
+        mockMvc.perform(post("/api/trips/" + tripId + "/leave")
+                        .header("X-User-Id", String.valueOf(APPLICANT))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"reason\":\"personal\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.credit_score").value(65));
+        assertEquals(2, exitEventMapper.selectCount(Wrappers.<CreditExitEventEntity>lambdaQuery()
+                .eq(CreditExitEventEntity::getUserId, APPLICANT)
+                .eq(CreditExitEventEntity::getTripId, tripId)));
+    }
+
+    private long uploadEvidence(long tripId, String fileName) throws Exception {
+        mockMvc.perform(multipart("/api/trips/" + tripId + "/leave-evidence")
+                        .file(new MockMultipartFile("file", fileName, "image/png", PNG_BYTES))
+                        .header("X-User-Id", String.valueOf(APPLICANT)))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.id").isNumber());
+        List<CreditExitAttachmentEntity> rows = attachments(APPLICANT, tripId);
+        assertNotNull(rows);
+        return rows.getLast().getId();
+    }
+
+    private List<CreditExitAttachmentEntity> attachments(long userId, long tripId) {
+        return attachmentMapper.selectList(Wrappers.<CreditExitAttachmentEntity>lambdaQuery()
+                .eq(CreditExitAttachmentEntity::getUserId, userId)
+                .eq(CreditExitAttachmentEntity::getTripId, tripId)
+                .orderByAsc(CreditExitAttachmentEntity::getId));
     }
 
     private long createTripAndAccept(Duration untilMeeting) {

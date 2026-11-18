@@ -28,6 +28,9 @@ routeme:
   experience:
     # 游后体验图片落盘目录；uploads/ 已 gitignore。
     photo-dir: ${ROUTEME_EXPERIENCE_PHOTO_DIR:../SqlLite/uploads/experience-photos}
+  credit:
+    # 退出同行证明图片落盘目录；仅存文件，不对外提供读取入口。
+    exit-evidence-dir: ${ROUTEME_EXIT_EVIDENCE_DIR:../SqlLite/uploads/exit-evidence}
   amap:
     # 高德 Web 服务 Key：只允许后端代理使用，不下发到浏览器。
     web-service-key: ${AMAP_WEB_SERVICE_KEY:}

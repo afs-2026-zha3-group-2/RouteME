@@ -16,8 +16,11 @@ import type {
   ExperiencePhoto,
   ExperienceWriteRequest,
   HelpReports,
+  LeaveEvidence,
+  LeavePayload,
   LeavePreview,
   LeaveReason,
+  LeaveRecord,
   LeaveResult,
   MatchCandidate,
   MyTrips,
@@ -326,18 +329,42 @@ export async function loadLeavePreview(
 export async function leaveTrip(
   userId: number,
   tripId: number,
-  reason: LeaveReason,
+  payload: LeavePayload,
 ): Promise<LeaveResult> {
   const response = await request(
     `/trips/${tripId}/leave`,
     {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ reason }),
+      body: JSON.stringify(payload),
     },
     userId,
   );
   return (await response.json()) as LeaveResult;
+}
+
+export async function loadLeaveRecords(userId: number, tripId: number): Promise<LeaveRecord[]> {
+  const response = await request(`/trips/${tripId}/leave-record`, undefined, userId);
+  return (await response.json()) as LeaveRecord[];
+}
+
+export async function fetchLeaveEvidence(userId: number, attachmentId: number): Promise<Blob> {
+  const response = await request(`/leave-evidence/${attachmentId}`, undefined, userId);
+  return await response.blob();
+}
+export async function uploadLeaveEvidence(
+  userId: number,
+  tripId: number,
+  file: File,
+): Promise<LeaveEvidence> {
+  const form = new FormData();
+  form.append('file', file);
+  const response = await request(
+    `/trips/${tripId}/leave-evidence`,
+    { method: 'POST', body: form },
+    userId,
+  );
+  return (await response.json()) as LeaveEvidence;
 }
 
 export async function loadMyTrips(userId: number): Promise<MyTrips> {

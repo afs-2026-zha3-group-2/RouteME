@@ -81,3 +81,44 @@ T1–T14 全部完成，`tasks.md` 复选框已勾选。T0（原型/预览）在
 ## 9. 阶段结论
 
 **P4 Pass with documented debt（本地）。** T1–T14 完成，合并前后端 337 / 前端 293 / 新增 E2E 7 条与相关回归 23 条通过；合并 `origin/main`（两次）后复验后端 510 / 前端 356 全绿，契约 0.20.0 + V25。全量 E2E 的 24 条失败均有干净库证据归因为既有地图渲染与共享库累积债务。G2 待 VL=Neal 签署；按用户要求不提交 P5、不归档。
+
+## 10. R2 验收修订（2026-11-17，本地未提交）
+
+用户验收指出的 3 个问题已在同一 change 内修正，未 pull / 未 push：
+
+| 项 | 处理 | 证据 |
+|---|---|---|
+| 标签被当成下拉选项 | 标签只做文字；占位改为「请选择退出原因」 | `credit-exit.spec.ts` 断言首项文本且无标签选项 |
+| 未选原因仍可点确认 | 未选原因、或安全 / 不可抗力未填说明时确认置灰 | `leaveForm.test.ts` + E2E 置灰断言 |
+| 待核实多出一行 | 删除「退出后进入待核实；核实前不扣分，也不计入当月次数」 | E2E `not.toContainText` |
+| 缺少说明与图片 | 三原因都可填说明（安全 / 不可抗力必填，≤200 字）；图片 ≤3 张、≤5MB、JPEG/PNG/WebP；磁盘存文件 + SQLite 存元数据，不公开展示；上传控件用原生 file input 铺满可见按钮，点击直接唤起系统选择器（不依赖脚本触发） | V26；`POST /leave-evidence`；`CreditExitApiTest`；E2E 真实点击 + `filechooser`（Chromium / Edge） |
+
+复验结果：后端 **514 tests / 0 failures**（`mvnw verify`）；前端 **49 files / 362 tests**；`npm run build` 通过；Redocly valid（0 error / 23 warnings）；`openspec validate --strict` valid；隔离环境 E2E **23/23**（credit-exit / companions / mine）。契约 **0.21.0**，迁移 **V26**。
+
+## 11. R3 本人回看退出记录（2026-11-17，本地未提交）
+
+用户验收指出：退出原因 / 说明 / 图片只有写入，没有本人查看入口。确认口径为**仅本人、只读**，入口在「我的旅行 → 我申请的（已退出）」。
+
+| 项 | 处理 | 证据 |
+|---|---|---|
+| 本人查看 | `GET /trips/{tripId}/leave-record`：原因 / 说明 / 时间 / 评审状态 / 预计与实际影响 / 附件列表 | `CreditExitApiTest` |
+| 图片查看 | `GET /leave-evidence/{attachmentId}`：带用户头返回二进制；前端转 object URL，可点开大图 | `CreditExitApiTest` + E2E |
+| 仅本人 | 他人读记录 404 `LEAVE_RECORD_NOT_FOUND`、读图片 403 `FORBIDDEN` | `CreditExitApiTest` |
+| 只读入口 | `MyTripsPage` 已退出行「查看退出记录」；`LeaveRecordModal` 无编辑 / 重新上传 | E2E |
+| 系统清退 | 无主动退出事件 → 404，前端提示「没有可查看的退出记录」 | 前端错误映射 |
+
+复验结果：后端 **515 tests / 0 failures**；前端 **49 files / 362 tests**；`npm run build` 通过；Redocly valid（0 error / 23 warnings）；`openspec validate --strict` valid；隔离 E2E **credit-exit 4/4**（含回看记录与图片）。契约 **0.22.0**；无新迁移（读取 V26 已有表）。按用户指示未 pull / 未 push。
+
+## 12. R4 同一行程多次退出（2026-11-17，本地未提交）
+
+用户验收：退出后再次加入并被接受，第二次退出不生效。根因：幂等键只按 `user + trip`，命中首次事件后直接返回旧结果，未解除新的同行关系。确认口径：**允许再次加入并退出、每次计入当月次数、记录列出全部**。
+
+| 项 | 处理 | 证据 |
+|---|---|---|
+| 多次退出 | V27 `application_id`；幂等键 `exit:{userId}:{tripId}:{applicationId}`；每次退出独立解除关系与结算 | `CreditExitApiTest` |
+| 月度计数 | 同行程再次退出照常计入当月序号，第 2 次翻倍（-10） | `CreditExitApiTest` / E2E 预览 `-10` |
+| 全量记录 | `GET /leave-record` 返回数组（时间倒序），弹窗按「共 N 次退出」逐条展示 | 后端测试 + E2E 2 条 |
+| 重试幂等 | 无 ACCEPTED 时返回最近一次事件，不新增事件、不重复扣分 | `CreditExitApiTest` |
+| 旧数据 | V27 回填最近一条 `trip_applications.id` | 迁移测试 |
+
+复验结果：后端 **516 tests / 0 failures**；前端 **49 files / 362 tests**；`npm run build` 通过；Redocly valid（0 error / 23 warnings）；`openspec validate --strict` valid；隔离 E2E **credit-exit 5/5**（含再次加入并退出、记录 2 条）。契约 **0.23.0**；迁移 **V27**。按用户指示未 pull / 未 push。

@@ -154,8 +154,16 @@ export async function acceptApplicationViaApi(
     headers: { 'X-User-Id': String(publisherId) },
   });
   expect(listResponse.ok()).toBeTruthy();
-  const applications = (await listResponse.json()) as { id: number; applicant: { id: number } }[];
-  const target = applications.find((application) => application.applicant.id === applicantId);
+  const applications = (await listResponse.json()) as {
+    id: number;
+    status?: string;
+    applicant: { id: number };
+  }[];
+  // 同一行程可能有一条旧的 LEFT 与一条新的 PENDING：优先接受待处理那条。
+  const target =
+    applications.find(
+      (application) => application.applicant.id === applicantId && application.status === 'pending',
+    ) ?? [...applications].reverse().find((application) => application.applicant.id === applicantId);
   expect(target).toBeTruthy();
   const response = await page.request.post(`${API}/applications/${target!.id}/accept`, {
     headers: { 'X-User-Id': String(publisherId) },
