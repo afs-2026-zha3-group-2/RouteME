@@ -22,5 +22,7 @@ public record AdminReportDetailResponse(
         String processingAt,
         String resolvedAt,
         String resolutionNote,
-        String resolutionAction) {
+        String resolutionAction,
+        String violationType,
+        Integer appliedDeduction) {
 }

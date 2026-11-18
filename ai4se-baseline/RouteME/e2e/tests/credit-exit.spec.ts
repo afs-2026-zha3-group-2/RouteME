@@ -99,12 +99,12 @@ test('leaves from my trips with force majeure and stays unpenalized pending revi
   expect(after.credit_score).toBe(80);
   expect(after.credit_restricted).toBe(false);
 
-  // 本人可在「我的旅行 → 我申请的」查看自己的退出记录（原因 / 说明 / 待核实 / 图片）
+  // 本人可在「我的旅行 → 我申请的」查看同行记录（申请 + 退出，含原因 / 说明 / 待核实 / 图片）
   await page.goto('/#/mine');
   await page.locator('.ant-segmented-item', { hasText: '我申请的' }).click();
   const appliedRow = page.locator('.mine-row', { hasText: title });
-  await appliedRow.getByRole('button', { name: '查看退出记录' }).click();
-  const recordDialog = page.getByRole('dialog', { name: '退出记录' });
+  await appliedRow.getByRole('button', { name: '查看记录' }).click();
+  const recordDialog = page.getByRole('dialog', { name: '同行记录' });
   await expect(recordDialog.locator('[data-leave-record]')).toContainText('不可抗力');
   await expect(recordDialog.locator('[data-leave-record]')).toContainText('台风停航，无法出发');
   await expect(recordDialog.locator('[data-leave-record]')).toContainText('待核实，暂不扣分');
@@ -164,8 +164,8 @@ test('rejoins and exits the same trip twice, doubling the second exit', async ({
   // 同一行程的两次退出都保留在记录里
   await page.goto('/#/mine');
   await page.locator('.ant-segmented-item', { hasText: '我申请的' }).click();
-  await page.locator('.mine-row', { hasText: title }).getByRole('button', { name: '查看退出记录' }).first().click();
-  const recordDialog = page.getByRole('dialog', { name: '退出记录' });
+  await page.locator('.mine-row', { hasText: title }).getByRole('button', { name: '查看记录' }).first().click();
+  const recordDialog = page.getByRole('dialog', { name: '同行记录' });
   await expect(recordDialog.locator('[data-leave-record-item]')).toHaveCount(2);
   await expect(recordDialog).toContainText('第二次退出');
   await expect(recordDialog).toContainText('第一次退出');

@@ -15,7 +15,7 @@ import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.jdbc.datasource.DriverManagerDataSource;
 
 /**
- * Verifies V31 adds the notifications table, the recipient/read index and the
+ * Verifies V32 adds the notifications table, the recipient/read index and the
  * (recipient, dedupe_key) unique index on SQLite, and that the table supports the
  * insert / list / mark-read statements the notification service relies on.
  */
@@ -100,8 +100,8 @@ class NotificationMigrationSqliteTest {
         int remaining = jdbcClient.sql("SELECT COUNT(*) FROM notifications WHERE recipient_id = 7 AND read_at IS NULL")
                 .query(Integer.class)
                 .single();
-        int v30Applied = jdbcClient.sql(
-                        "SELECT COUNT(*) FROM flyway_schema_history WHERE version = '31' AND success = 1")
+        int v32Applied = jdbcClient.sql(
+                        "SELECT COUNT(*) FROM flyway_schema_history WHERE version = '32' AND success = 1")
                 .query(Integer.class)
                 .single();
 
@@ -112,7 +112,7 @@ class NotificationMigrationSqliteTest {
                                 "id", "recipient_id", "type", "event", "title", "content",
                                 "priority", "actor_id", "trip_id", "application_id", "message_id",
                                 "report_id", "session_id", "dedupe_key", "created_at", "read_at")),
-                        "V31 creates notification columns"),
+                        "V32 creates notification columns"),
                 () -> assertTrue(
                         notNullColumns.containsAll(List.of(
                                 "id", "recipient_id", "type", "event", "title", "content",
@@ -125,7 +125,7 @@ class NotificationMigrationSqliteTest {
                 () -> assertEquals(List.of(901L, 900L), orderedIds, "list orders newest first"),
                 () -> assertEquals("2026-11-17T09:10:00Z", readAt, "repeated mark-read keeps the first timestamp"),
                 () -> assertEquals(1, remaining, "mark-read only clears the targeted row"),
-                () -> assertEquals(1, v30Applied, "V31 recorded in flyway history"));
+                () -> assertEquals(1, v32Applied, "V32 recorded in flyway history"));
     }
 
     private String toSqlitePath(Path path) {

@@ -1,13 +1,13 @@
 # G1 决策 — add-realtime-notifications
 
-- **Change：** `add-realtime-notifications`（`notifications` ADDED，REQ-029 / 实时通知中心与未读计数）
+- **Change：** `add-realtime-notifications`（`notifications` ADDED，REQ-031 / 实时通知中心与未读计数）
 - **阶段：** P2 → P3 的准入决策（Proposal + Delta Spec 通过后进入设计）
 - **Decision：** **Pass**（无条件）
 - **Timestamp：** 2026-11-17T16:48+0800；2026-11-18 扩围复核（同一 change，不另开 PR）
 
 ## 1. 决策
 
-Delta Spec `openspec/changes/add-realtime-notifications/specs/notifications/spec.md`（ADDED 8 Requirement / 36 Scenario）与提案、REQ-029、8 条故事一致，AC 覆盖 36/36，DoV 5/5，一致性检查 0 BLOCKER / 0 WARNING。准予进入 P3（`design.md` / `atdd-design.md` / `tasks.md`）。
+Delta Spec `openspec/changes/add-realtime-notifications/specs/notifications/spec.md`（ADDED 8 Requirement / 36 Scenario）与提案、REQ-031、8 条故事一致，AC 覆盖 36/36，DoV 5/5，一致性检查 0 BLOCKER / 0 WARNING。准予进入 P3（`design.md` / `atdd-design.md` / `tasks.md`）。
 
 2026-11-18 发起人要求把范围从「三类事件的提示」扩展为「八类业务事件的完整通知中心」。扩围后重新执行 AC / DoV / 一致性检查，结论仍为 Pass；扩围过程记录在 `proposal.md`「变更历史」、`dov-ac-review.md` AC-6 与 `p4-implementation.md`。
 
@@ -28,9 +28,9 @@ Delta Spec `openspec/changes/add-realtime-notifications/specs/notifications/spec
 | id | 事项 | P3 落点 |
 |---|---|---|
 | L-01 / S-01 | 「短提示（D14）」尚未有 Delta 场景 | `design.md` §6.1 / §6.5 定触发条件与断言口径；`tasks.md` T13 + E2E M8 |
-| L-02 / S-02 | 失败隔离只写在申请类 Requirement | Delta S30-36 扩展为八类生产方；`design.md` §5.2；`NotificationFailureIsolationTest` |
+| L-02 / S-02 | 失败隔离只写在申请类 Requirement | Delta S32-36 扩展为八类生产方；`design.md` §5.2；`NotificationFailureIsolationTest` |
 | L-03 / S-03 | 契约增量需回指 Requirement | `design.md` §7 出「端点 → Requirement → 场景」对照表 |
-| D12 | 契约 0.26.0 / 迁移 `V31__add_notifications.sql` 的排他性 | P3 用 `grep` 复核后写进 `design.md` §3 |
+| D12 | 契约 0.27.0 / 迁移 `V32__add_notifications.sql` 的排他性 | P3 用 `grep` 复核后写进 `design.md` §3 |
 | 测量点 | 「3 秒内」的测量口径 | `design.md` §5.7 固定「生产方响应返回 → 客户端徽标更新」 |
 | 扩围 | 八类事件、通知中心页、目标跳转、优先级、去重 | `proposal.md` D1–D18；`design.md` §5 – §6；`tasks.md` T1–T16 |
 

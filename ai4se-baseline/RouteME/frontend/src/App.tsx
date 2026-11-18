@@ -185,8 +185,13 @@ export function App() {
     return (
       <ProfileProvider currentUser={currentUser}>
         <CreditProvider currentUser={currentUser}>
-          <NotificationProvider currentUser={currentUser}>
-            <AppShell currentUser={currentUser} onLogout={logout} route={route}>
+<NotificationProvider currentUser={currentUser}>
+            <AppShell
+              currentUser={currentUser}
+              isAuthenticated={authToken !== null}
+              onLogout={logout}
+              route={route}
+            >
             {route.name === 'home' && (
               <HomePage currentUser={currentUser} token={authToken} />
             )}

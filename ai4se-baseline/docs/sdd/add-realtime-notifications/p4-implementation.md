@@ -1,6 +1,6 @@
 # P4 实现与验证记录 — add-realtime-notifications
 
-- **Change：** `add-realtime-notifications`（REQ-029 / 实时通知中心与未读计数）｜ **能力：** `notifications`（ADDED，8 Requirement / 36 Scenario）
+- **Change：** `add-realtime-notifications`（REQ-031 / 实时通知中心与未读计数）｜ **能力：** `notifications`（ADDED，8 Requirement / 36 Scenario）
 - **阶段：** P4（Apply & verify / G2）｜ **日期：** 2026-11-17（首版四类）｜ **扩围：** 2026-11-18（八类通知中心，同一 PR #40）｜ **记录人：** Karena（当前开发者）
 - **分支：** `feature/add-realtime-notifications`（worktree `teamRepo/RouteME-notifications`；P3 前合流 `main@357f5e2` 后继续同步 `origin/main`）
 - **任务清单：** [`tasks.md`](../../../openspec/changes/add-realtime-notifications/tasks.md)（T1–T16 全部 `[x]`）
@@ -10,7 +10,7 @@
 
 按 `design.md`、`atdd-design.md` 与 `tasks.md` 以 Red → Green 落地一条完整垂直切片：**八类业务事件 → 持久化通知 → 按用户 SSE 推送 → 未读计数（总数 + 八类）→ 通知中心与按目标跳转 → 聊天会话级未读**，并用后端 / 前端 / 契约 / E2E 四层证据与浅色三档走查收口 G2。
 
-首版（2026-11-17）只覆盖申请到达 / 裁决 / 聊天消息三类事件；2026-11-18 发起人要求扩展为覆盖八类业务事件的完整通知中心，按指示在**同一 change、同一 PR #40** 内完成，不另开 change。需求编号随之由 REQ-023 顺延为 **REQ-029 / S30**（`main` 上 REQ-023 已被 `add-experience-like-credit` 占用）。
+首版（2026-11-17）只覆盖申请到达 / 裁决 / 聊天消息三类事件；2026-11-18 发起人要求扩展为覆盖八类业务事件的完整通知中心，按指示在**同一 change、同一 PR #40** 内完成，不另开 change。需求编号随之由 REQ-023 顺延为 **REQ-031 / S32**（`main` 上 REQ-023 已被 `add-experience-like-credit` 占用）。
 
 范围外（P1 已确认）：邮件 / 短信 / OS 推送、通知历史分页、搜索、通知偏好、保留 / 清理任务、WebSocket 与消息队列；申请、聊天、行程、信用、举报、账号、客服、资料规则一律不改。
 
@@ -20,8 +20,8 @@
 
 | 任务 | 落点 | 结果 |
 |---|---|---|
-| T1 契约 | `openapi.yaml` 0.24.0 → **0.26.0**：`GET /notifications`、`GET /notifications/stream`、`POST /notifications/{notificationId}/read`、`POST /notifications/read`、`GET /reports/mine`；`NotificationType`（8）/ `NotificationEventName`（22）/ `NotificationPriority` / `NotificationStatus` / `NotificationTargetKind`（8）等 schema；错误码 `NOTIFICATION_NOT_FOUND` | Pass |
-| T2 持久化 | `V31__add_notifications.sql`：`notifications` 表（收件人、类型、事件、标题、正文、优先级、动作人、行程 / 申请 / 消息 / 举报 / 客服关联、去重键、创建 / 已读时间）；唯一索引 `(recipient_id, dedupe_key)`、查询索引 `(recipient_id, read_at)`；仅 `INTEGER` / `VARCHAR` / `CREATE INDEX`，SQLite + H2 双引擎；`NotificationEntity` + `NotificationMapper` | Pass |
+| T1 契约 | `openapi.yaml` 0.24.0 → **0.27.0**：`GET /notifications`、`GET /notifications/stream`、`POST /notifications/{notificationId}/read`、`POST /notifications/read`、`GET /reports/mine`；`NotificationType`（8）/ `NotificationEventName`（22）/ `NotificationPriority` / `NotificationStatus` / `NotificationTargetKind`（8）等 schema；错误码 `NOTIFICATION_NOT_FOUND` | Pass |
+| T2 持久化 | `V32__add_notifications.sql`：`notifications` 表（收件人、类型、事件、标题、正文、优先级、动作人、行程 / 申请 / 消息 / 举报 / 客服关联、去重键、创建 / 已读时间）；唯一索引 `(recipient_id, dedupe_key)`、查询索引 `(recipient_id, read_at)`；仅 `INTEGER` / `VARCHAR` / `CREATE INDEX`，SQLite + H2 双引擎；`NotificationEntity` + `NotificationMapper` | Pass |
 | T3 纯函数 | `NotificationTypeEnum`（8 值）、`NotificationEventEnum`（22 事件 + 所属类型）、`NotificationPriorityEnum`、`NotificationStatusEnum`、`NotificationTargetKindEnum`；`NotificationTextUtils` 22 段中文标题 / 正文（含原因码回退、账号受限只写结构化事实）；`Notification` record 与实体往返 | Pass |
 | T4 通知服务 | `NotificationServiceImpl`：`write()` 自事件抑制（`actorId == recipientId` 直接丢弃）→ 先查 `(recipient_id, dedupe_key)` → 插入 → `DuplicateKeyException` 视为已去重 → 其它异常 `log.warn` 吞掉；`list` 最新 50 条 + `describe()` 补动作人、行程标题、`target`、`related_available`；`counts` 八类零填充；单条 / 全部 / 单会话三种标读（`read_at IS NULL` 条件，天然幂等，越权 404） | Pass |
 | T5 申请与行程钩子 | `ApplicationServiceImpl`：申请 → 发布者 `application_received`（目标 `applications`）；裁决 → 申请者 `application_accepted` / `application_rejected`（目标 `trip`）；接受致满员 → 除动作人外已接受参与者 `trip_full`；`onTripCancelled` → 同行者 `trip_cancelled`（含原因）+ 待处理申请者 `application_closed`；`onTripCompleted` → 同行者 `trip_completed` | Pass |
@@ -45,18 +45,18 @@
 |---|---|---|
 | T14 功能 E2E | `e2e/tests/notifications.spec.ts` **13 条**：M1 三秒内到达；M2 接受 / 拒绝 + 满员；M3 聊天外消息点亮聊天徽标与提示条；M4 计数分型 + 自消息拒绝；M5 读一条 / 重复标读 / 全部已读 / 刷新不回弹；M6 分会话标读；M7 刷新不重复；M8 当前会话即时与提示抑制；M9 T0→T1 三秒预算；M10 窄屏 tab 徽标与面板；N1 通知中心八类筛选 + 全部已读；N2 类型跳转；N3 目标不可用 | Pass（13/13） |
 | T14 走查 E2E | `e2e/tests/notifications-walkthrough.spec.ts` **4 条**：V1 1440 / 768 / 390 浅色截图与溢出断言；V2 焦点 / Escape；V3 通道中断保留计数与恢复对账；V4 双标签页同用户多 emitter | Pass（4/4） |
-| T15 文档 | `docs/knowledge/interfaces/README.md` 通知中心小节（八类计数、22 事件、`/reports/mine`、跳转与徽标口径）；`docs/knowledge/_LOG.md` 追加扩围条目；`requirement-workspace/*`（REQ-029 / S30、registry、handoff、deep-dive、impact-brief §28、stories）与 `docs/sdd/p0`–`p4` 同步 | Pass |
+| T15 文档 | `docs/knowledge/interfaces/README.md` 通知中心小节（八类计数、22 事件、`/reports/mine`、跳转与徽标口径）；`docs/knowledge/_LOG.md` 追加扩围条目；`requirement-workspace/*`（REQ-031 / S32、registry、handoff、deep-dive、impact-brief §28、stories）与 `docs/sdd/p0`–`p4` 同步 | Pass |
 | T16 回归与走查 | 后端全量、前端 typecheck / build / 单测、通知 E2E、浅色三档截图、停后端重连、双标签页 | Pass（见 §3） |
 
 ## 3. 验证证据
 
 | 层 | 命令 | 结果 |
 |---|---|---|
-| 后端全量（C2） | `backend/mvnw.cmd -B -ntp test` | **671 tests / 0 failures / 0 errors**（100 个 surefire 报告；2026-11-18 合流 `origin/main` 后 `clean test` 全量复跑） |
+| 后端全量（C2） | `backend/mvnw.cmd -B -ntp test` | **691 tests / 0 failures / 0 errors**（含 route-map 与 report-credit 两次合流的新增用例；2026-11-18 合流 `origin/main` 后 `clean test` 全量复跑） |
 | 通知相关后端测试 | `target/surefire-reports/*Notification*.txt` | **10 个文件 / 48 条**：Controller 9、Service 10、Producer 6、Hook 3、FailureIsolation 3、Stream 3、TextUtils 7、TypeEnum 4、Entity 2、Migration 1 |
-| 契约与接口子集 | `mvnw.cmd -B -ntp test -Dtest=OpenApiTest,NotificationControllerTest,ReportControllerTest` | **40/40**（`OpenApiTest` 含 0.26.0、4 条通知路径、`/reports/mine`、枚举与 `maxItems=50` 断言） |
+| 契约与接口子集 | `mvnw.cmd -B -ntp test -Dtest=OpenApiTest,NotificationControllerTest,ReportControllerTest` | **40/40**（`OpenApiTest` 含 0.27.0、4 条通知路径、`/reports/mine`、枚举与 `maxItems=50` 断言） |
 | 前端类型（C3） | `frontend/npm run typecheck` | Pass（`tsc --noEmit`，无输出） |
-| 前端单测（C3） | `frontend/npm test` | **533 tests / 63 files Pass**（新增 `notificationModel.test.ts`；含 `railBadgeCounts` 3 条；合流 `add-travel-finance` 的 39 条 / 4 文件） |
+| 前端单测（C3） | `frontend/npm test` | **532 tests / 61 files Pass**（新增 `notificationModel.test.ts`；含 `railBadgeCounts` 3 条；合流 `add-travel-finance` 的 39 条 / 4 文件） |
 | 前端构建（C3） | `frontend/npm run build` | Pass：`dist/assets/index-*.js` 1,783.40 kB / gzip 554.38 kB、`index-*.css` 189.51 kB / gzip 33.07 kB；仅有既有 chunk 体积 warning |
 | 通知功能 E2E（C4） | `npx playwright test tests/notifications.spec.ts --workers=1` | **13 passed**（M1–M10 + N1–N3；合流后对空库 `e2e-notif-8081.db` 复跑） |
 | 走查 E2E（C5） | `npx playwright test tests/notifications-walkthrough.spec.ts --workers=1` | **4 passed**（V1–V4，约 25 s；重出浅色三档截图） |
@@ -82,16 +82,16 @@
 | D-5 | 客户端追加消息 | 推送 payload 的 `NotificationEvent` 内嵌 `message`（`ChatMessageResponse`），`ChatPage` 直接追加；`unreadRef` 让轮询与推送收敛 | 与 D14 / §6.5 一致 |
 | D-6 | 证据目录共用 | `weather-walkthrough.spec.ts` 与通知走查都写 `docs/preview/`；跑全量会重写天气截图 | 提交前已还原天气截图，只提交通知截图 |
 | D-7 | 面板定位（G2 后修复） | antd `Popover` 入场动画在后台标签页被 rAF 节流，停在 `opacity: 0` 且盒子落到视口外；改为与账号菜单同构的 `createPortal` + `position: fixed` 自算坐标（下方不足时向上展开），关闭走外部 `mousedown` 与 Escape；同时补条目类型标签，不以颜色为唯一信息 | 已修复并复跑；打开时不抢焦点，V2 断言不变 |
-| D-8 | 范围扩围 | 2026-11-18 发起人要求由四类事件扩为八类完整通知中心；需求编号由 REQ-023 顺延为 **REQ-029 / S30**，Delta 由 6 / 26 改写为 **8 / 36**；按指示在**同一 PR #40** 内交付，不另开 change | `proposal.md`「变更历史」、`dov-ac-review.md` AC-6、expansion review |
+| D-8 | 范围扩围 | 2026-11-18 发起人要求由四类事件扩为八类完整通知中心；需求编号由 REQ-023 顺延为 **REQ-031 / S32**，Delta 由 6 / 26 改写为 **8 / 36**；按指示在**同一 PR #40** 内交付，不另开 change | `proposal.md`「变更历史」、`dov-ac-review.md` AC-6、expansion review |
 | D-9 | ONGOING 物化 | `ONGOING` 与安全提醒没有显式写入动作（状态由时间推导），改为 `TripController.detail` 读取时经 `NotificationLifecycleService` 惰性物化；去重键保证重复读取不重复生成 | 与 `design.md` §5.3 / D13 一致 |
 | D-10 | 自事件抑制 | `write()` 对 `actorId == recipientId` 直接丢弃；容量 2 的行程被接受时，发布者只收到 `application_received`，同行者收到 `application_accepted` + `trip_full` | 与 D7 一致；`NotificationHookTest` 3/3 覆盖 |
 | D-11 | 依赖方向 | `AccountStatusService` 用 `ObjectProvider<NotificationService>` 延迟取依赖，`NotificationServiceImpl` 用 mapper 判定举报 / 客服可用性，避免「账号 → 通知 → 账号」与「通知 → 业务服务」循环 | 与 `design.md` §5.1 / R-11 一致 |
 | D-12 | 走查证据收敛 | `main` 已移除壳层主题切换；本 change 只保留浅色 1440 / 768 / 390 三张截图，删除三张深色 PNG，并在 `proposal.md` / `design.md` / `tasks.md` 同步 | V1 只断言浅色三档 |
 | D-13 | 跳转承接页 | `CREDIT` 与 `REPORT` 在基线没有可落地页面；新增 `CreditRecordsPage` 与 `ReportDetailPage`，并补 `GET /reports/mine` 让举报详情只读本人数据 | 与 D15 / D16 一致；E2E N2 / N3 覆盖 |
-| D-14 | 徽标数字 | `badgeLabel` 返回原始数字（0 为空串），不做 `99+` 截断；数字是唯一计数信息载体，颜色只作强调 | 与 S30-26 一致 |
-| D-15 | 身份认证只发一次 | `identity_verified` 只在资料首次变为完整时产生；去重键 `system_identity:{userId}` 兜底，后续修改资料不重复通知 | 与 S30-20 一致 |
-| D-16 | 合流后编号顺延 | 2026-11-18 合流 `origin/main` 时 `add-travel-finance`（PR #42，契约 0.25.0 / `V30__add_travel_finance.sql` / REQ-028 / S29）先入 `main`，本 change 按「后到者顺延」改为 **REQ-029 / S30 / 契约 0.26.0 / `V31__add_notifications.sql`**；迁移、枚举注释、`OpenApiTest`、OpenSpec 工件、`requirement-workspace` 与知识库同步改号 | `proposal.md`「变更历史」、`registry.md`、`docs/sdd/README.md`；后端与契约全量复跑 |
-| D-17 | 侧栏徽标改为按功能分摊 | 2026-11-18 G2 后发起人要求「左栏不要通知中心入口，且左栏各功能数字之和等于铃铛」：移除 `RAIL_ITEMS` 里的通知中心入口（仍可从铃铛面板「查看全部通知」与账号菜单进入），把八类未读分区到「我的旅行 = `TRIP`+`APPLICATION`」「同行消息 = `CHAT`」「联系客服 = `SERVICE`」「账号 = `CREDIT`+`REPORT`+`ACCOUNT`+`SYSTEM`」四个入口，分区逻辑收敛到 `notificationModel.railBadgeCounts`（穷尽八类、每类只落一个入口），四项之和恒等于 `counts.total`；E2E 增 `rail-trips-badge` / `rail-support-badge` / `rail-account-badge` 与 `railBadgeSum` 断言 | 回写 `spec.md` S30-26 与计数 Requirement、`design.md` §6.3 / §6.7 / R-4、`atdd-design.md` M4 / M10、`proposal.md` D19；前端 533/533、通知 E2E 13 + 走查 4 全绿 |
+| D-14 | 徽标数字 | `badgeLabel` 返回原始数字（0 为空串），不做 `99+` 截断；数字是唯一计数信息载体，颜色只作强调 | 与 S32-26 一致 |
+| D-15 | 身份认证只发一次 | `identity_verified` 只在资料首次变为完整时产生；去重键 `system_identity:{userId}` 兜底，后续修改资料不重复通知 | 与 S32-20 一致 |
+| D-16 | 合流后编号顺延 | 2026-11-18 两次合流 `origin/main` 都触发「后到者顺延」：第一次 `add-travel-finance`（PR #42，契约 0.25.0 / `V30__add_travel_finance.sql` / REQ-028 / S29）已占用上一档，本 change 由 REQ-023 / V30 / 0.18.0 改为 REQ-029 / S30 / 0.26.0 / `V31__add_notifications.sql`；第二次 `refine-publish-route-map`（REQ-029 / S30）与 `add-report-credit-deduction`（REQ-030 / S31 / 0.26.0 / `V31__report_credit_deduction.sql`）先入 `main`，本 change 再顺延为 **REQ-031 / S32 / 契约 0.27.0 / `V32__add_notifications.sql`**；迁移、枚举注释、`OpenApiTest`、OpenSpec 工件、`requirement-workspace` 与知识库同步改号 | `proposal.md`「变更历史」、`registry.md`、`docs/sdd/README.md`；后端与契约全量复跑 |
+| D-17 | 侧栏徽标改为按功能分摊 | 2026-11-18 G2 后发起人要求「左栏不要通知中心入口，且左栏各功能数字之和等于铃铛」：移除 `RAIL_ITEMS` 里的通知中心入口（仍可从铃铛面板「查看全部通知」与账号菜单进入），把八类未读分区到「我的旅行 = `TRIP`+`APPLICATION`」「同行消息 = `CHAT`」「联系客服 = `SERVICE`」「账号 = `CREDIT`+`REPORT`+`ACCOUNT`+`SYSTEM`」四个入口，分区逻辑收敛到 `notificationModel.railBadgeCounts`（穷尽八类、每类只落一个入口），四项之和恒等于 `counts.total`；E2E 增 `rail-trips-badge` / `rail-support-badge` / `rail-account-badge` 与 `railBadgeSum` 断言 | 回写 `spec.md` S32-26 与计数 Requirement、`design.md` §6.3 / §6.7 / R-4、`atdd-design.md` M4 / M10、`proposal.md` D19；前端 532/532、通知 E2E 13 + 走查 4 全绿 |
 
 ## 6. 残余风险
 
@@ -121,7 +121,7 @@
 | 角色 | 批准人 | 确认内容 | 批准时间 |
 |---|---|---|---|
 | 发起人 / IO | WAYNE | 扩围范围（八类 / 22 事件 / 通知中心 / 目标跳转）、规格与一致性复核 0 BLOCKER | 2026-11-18T10:20+0800 |
-| 开发者 / SA | Karena | 扩围实现与四层证据（后端 671 / 前端 533 / E2E 13 + 4 / 浅色三档）、偏差 D-8…D-17 | 2026-11-18（扩围） |
+| 开发者 / SA | Karena | 扩围实现与四层证据（后端 691 / 前端 532 / E2E 13 + 4 / 浅色三档）、偏差 D-8…D-17 | 2026-11-18（扩围） |
 
 **G2 结论：Pass**。门禁口径经签署确认：以「通知 E2E 13 条全绿 + 走查 4 条全绿 + 失败集与基线同构」判定，不要求全量 0 失败。
 
@@ -137,8 +137,8 @@
 | P4 文档与登记（T13） | `f30e95c` docs(notifications): record the P4 verification and walkthrough evidence |
 | G2 签署 | `29e811b` docs(p4): sign off G2 and mark REQ-023 p4-pass |
 | G2 后修正（D-7） | `0f9b4de` fix(notifications): anchor the bell panel like the account menu |
-| 八类扩围（D-8…D-15） | `2652bfe` feat(notifications): expand to the eight-type notification centre（含 REQ-029 / S30 工件、契约 0.26.0、前端通知中心与跳转页、E2E 13 + 4、浅色三档截图） |
-| 合流 `origin/main`（D-16） | `72ff75d` merge: 合并 `add-travel-finance`（PR #42）后按「后到者顺延」改为 REQ-029 / S30 / 0.26.0 / `V31`，并解 `AppShell` / `openapi.yaml` / `OpenApiTest` / `registry` 冲突；合流后后端 `clean test` 671/671、前端 530/530 |
+| 八类扩围（D-8…D-15） | `2652bfe` feat(notifications): expand to the eight-type notification centre（含 REQ-031 / S32 工件、契约 0.27.0、前端通知中心与跳转页、E2E 13 + 4、浅色三档截图） |
+| 合流 `origin/main`（D-16） | `72ff75d` merge: 合并 `add-travel-finance`（PR #42）后按「后到者顺延」改为 REQ-031 / S32 / 0.27.0 / `V32`，并解 `AppShell` / `openapi.yaml` / `OpenApiTest` / `registry` 冲突；合流后后端 `clean test` 691/691、前端 530/530 |
 | 走查证据刷新 | `bf2fe23` test(notifications): 合流后重跑 `notifications.spec.ts` 13/13 与 `notifications-walkthrough.spec.ts` 4/4，重出浅色三档截图 |
 
 ## 9. 下一步

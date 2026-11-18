@@ -75,7 +75,7 @@ class NotificationHookTest {
         adminReportService.resolve(
                 report.id(),
                 target.id(),
-                new AdminReportResolveRequest("REJECTED", "内部备注XYZ", null, null, null, null));
+                new AdminReportResolveRequest("REJECTED", "内部备注XYZ", null, null));
 
         // Then
         List<NotificationResponse> items = notificationService.list(reporter.id()).items();

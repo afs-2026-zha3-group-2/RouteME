@@ -43,6 +43,10 @@ public class ReportEntity {
 
     private String resolutionAction;
 
+    private String violationType;
+
+    private Integer appliedDeduction;
+
     public static ReportEntity from(Report report) {
         ReportEntity entity = new ReportEntity();
         entity.setId(report.id());
@@ -59,6 +63,8 @@ public class ReportEntity {
         entity.setResolvedAt(report.resolvedAt() == null ? null : report.resolvedAt().toString());
         entity.setResolutionNote(report.resolutionNote());
         entity.setResolutionAction(report.resolutionAction());
+        entity.setViolationType(report.violationType());
+        entity.setAppliedDeduction(report.appliedDeduction());
         return entity;
     }
 
@@ -77,7 +83,9 @@ public class ReportEntity {
                 processingAt == null ? null : Instant.parse(processingAt),
                 resolvedAt == null ? null : Instant.parse(resolvedAt),
                 resolutionNote,
-                resolutionAction);
+                resolutionAction,
+                violationType,
+                appliedDeduction);
     }
 
     public Long getId() {
@@ -190,5 +198,21 @@ public class ReportEntity {
 
     public void setResolutionAction(String resolutionAction) {
         this.resolutionAction = resolutionAction;
+    }
+
+    public String getViolationType() {
+        return violationType;
+    }
+
+    public void setViolationType(String violationType) {
+        this.violationType = violationType;
+    }
+
+    public Integer getAppliedDeduction() {
+        return appliedDeduction;
+    }
+
+    public void setAppliedDeduction(Integer appliedDeduction) {
+        this.appliedDeduction = appliedDeduction;
     }
 }

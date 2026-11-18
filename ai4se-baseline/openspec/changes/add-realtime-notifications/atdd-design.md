@@ -1,6 +1,6 @@
 # ATDD 设计：add-realtime-notifications
 
-- **Change：** `add-realtime-notifications`（`notifications` ADDED，REQ-029）
+- **Change：** `add-realtime-notifications`（`notifications` ADDED，REQ-031）
 - **输入：** Delta Spec（8 Requirement / 36 Scenario）、`design.md`、`stories/add-realtime-notifications.story.md`
 - **分层：** 后端纯函数（U）/ 后端服务、钩子与接口（S / H / B）/ 前端纯函数（F）/ E2E（M / N）/ 人工走查（V）
 
@@ -8,44 +8,44 @@
 
 | # | Scenario（Delta） | 层 | 验收点 |
 |---|---|---|---|
-| S30-1 | 八类与两态 | U / S / B | 类型 ∈ 八类；状态与 `read_at` 一致 |
-| S30-2 | 字段完整 | S / B / F | 标题、正文、优先级、目标、`related_available` 齐全 |
-| S30-3 | 同一事件只一行 | S / M | 重复触发后行数不变、计数不变 |
-| S30-4 | 只增不删 | S / M | 取消 / 完成 / 处理完成 / 标读后行仍在、正文不变 |
-| S30-5 | 行程满员 | S / H / M2 | 容量 2 时同行者 1 条 `trip_full`；发布者无 |
-| S30-6 | 行程开始与安全提醒 | S / H / B | 每位参与者各 1 条 `trip_ongoing` + 1 条 `safety_reminder`；重复读取不变 |
-| S30-7 | 行程取消 | S / H | 同行者 1 条 `trip_cancelled`，正文含原因 |
-| S30-8 | 行程结束 | S / H | 同行者 1 条 `trip_completed`，目标为行程 |
-| S30-9 | 申请到达 | S / H / B / M1 | 发布者 1 条；目标为 `applications` |
-| S30-10 | 申请通过 | S / H / M2 | 申请者 1 条；目标为 `trip` |
-| S30-11 | 申请被拒 | S / H / M2 | 申请者 1 条；正文不含内部理由码 |
-| S30-12 | 申请关闭 | S / H / N1 | 申请者 1 条 `application_closed`，含取消原因 |
-| S30-13 | 聊天消息 | S / H / M3 / M4 | 接收方 1 条；自消息 0 条 |
-| S30-14 | 信用变动 | U / S / N1 | 正文含变化量 / 原因 / 分数；< 60 → `HIGH` |
-| S30-15 | 信用恢复 | U / S / N1 | `credit_recovered` + `HIGH` |
-| S30-16 | 举报全流程 | S / B / N1 / N2 | 三段通知；正文含编号与结论 |
-| S30-17 | 账号状态 | U / S / N1 | 三态各 1 条；含受限内容与恢复时间；无管理员备注 |
-| S30-18 | 客服会话 | S / N1 | 三段通知；目标为 `support` |
-| S30-19 | 系统安全提醒 | S / H / N1 | 1 条 `safety_reminder`；目标为行程 |
-| S30-20 | 身份认证 | S / H / N1 | 首次完整 1 条；重复补全不重复 |
-| S30-21 | 行程类跳转 | F / N2 | `notificationHref` → `#/trips/{id}` |
-| S30-22 | 申请类跳转 | F / N2 | `applications` → 处理页；其余 → 行程 |
-| S30-23 | 其它类型跳转 | F / N2 | 六类目标逐一命中 |
-| S30-24 | 目标不可用 | S / F / N3 | `related_available=false`；提示、不跳转、仍标读 |
-| S30-25 | 八类计数 | S / B / F / N1 | `total` = 八项和；零值键存在 |
-| S30-26 | 徽标口径 | F / M1 / M3 / M4 / M10 | 通知入口 = total；侧栏四入口按功能分摊且和为 total；聊天入口 / 会话行 = `CHAT` |
-| S30-27 | 读一条 | S / B / F / M5 / N1 | 总数与所属类型各 −1 |
-| S30-28 | 全部已读 | S / B / F / M5 / N1 | 全部归零，徽标消失 |
-| S30-29 | 幂等 | S / B / F / M5 | 重复标读计数不变 |
-| S30-30 | 按用户隔离 | S / B | 他人计数不变；越权 404 |
-| S30-31 | 会话范围 | S / B / F / M6 | 只清 `(trip_id, actor_id)`；其它不变 |
-| S30-32 | 计数不回弹 | F / M5 / M7 | 刷新与在途快照都不复活已读 |
-| S30-33 | 三秒内只推收件人 | S / M1 / M9 | 3 秒内只到收件人 |
-| S30-34 | 重连对账 | F / M7 / V3 | 断连期间事件在重连后收敛，不重复 |
-| S30-35 | 通道失败可控 | S / M / V3 | 业务可用、计数保留、无阻塞弹窗 |
-| S30-36 | 失败隔离 | S / H | 八类生产方在通知抛错时仍成功 |
+| S32-1 | 八类与两态 | U / S / B | 类型 ∈ 八类；状态与 `read_at` 一致 |
+| S32-2 | 字段完整 | S / B / F | 标题、正文、优先级、目标、`related_available` 齐全 |
+| S32-3 | 同一事件只一行 | S / M | 重复触发后行数不变、计数不变 |
+| S32-4 | 只增不删 | S / M | 取消 / 完成 / 处理完成 / 标读后行仍在、正文不变 |
+| S32-5 | 行程满员 | S / H / M2 | 容量 2 时同行者 1 条 `trip_full`；发布者无 |
+| S32-6 | 行程开始与安全提醒 | S / H / B | 每位参与者各 1 条 `trip_ongoing` + 1 条 `safety_reminder`；重复读取不变 |
+| S32-7 | 行程取消 | S / H | 同行者 1 条 `trip_cancelled`，正文含原因 |
+| S32-8 | 行程结束 | S / H | 同行者 1 条 `trip_completed`，目标为行程 |
+| S32-9 | 申请到达 | S / H / B / M1 | 发布者 1 条；目标为 `applications` |
+| S32-10 | 申请通过 | S / H / M2 | 申请者 1 条；目标为 `trip` |
+| S32-11 | 申请被拒 | S / H / M2 | 申请者 1 条；正文不含内部理由码 |
+| S32-12 | 申请关闭 | S / H / N1 | 申请者 1 条 `application_closed`，含取消原因 |
+| S32-13 | 聊天消息 | S / H / M3 / M4 | 接收方 1 条；自消息 0 条 |
+| S32-14 | 信用变动 | U / S / N1 | 正文含变化量 / 原因 / 分数；< 60 → `HIGH` |
+| S32-15 | 信用恢复 | U / S / N1 | `credit_recovered` + `HIGH` |
+| S32-16 | 举报全流程 | S / B / N1 / N2 | 三段通知；正文含编号与结论 |
+| S32-17 | 账号状态 | U / S / N1 | 三态各 1 条；含受限内容与恢复时间；无管理员备注 |
+| S32-18 | 客服会话 | S / N1 | 三段通知；目标为 `support` |
+| S32-19 | 系统安全提醒 | S / H / N1 | 1 条 `safety_reminder`；目标为行程 |
+| S32-20 | 身份认证 | S / H / N1 | 首次完整 1 条；重复补全不重复 |
+| S32-21 | 行程类跳转 | F / N2 | `notificationHref` → `#/trips/{id}` |
+| S32-22 | 申请类跳转 | F / N2 | `applications` → 处理页；其余 → 行程 |
+| S32-23 | 其它类型跳转 | F / N2 | 六类目标逐一命中 |
+| S32-24 | 目标不可用 | S / F / N3 | `related_available=false`；提示、不跳转、仍标读 |
+| S32-25 | 八类计数 | S / B / F / N1 | `total` = 八项和；零值键存在 |
+| S32-26 | 徽标口径 | F / M1 / M3 / M4 / M10 | 通知入口 = total；侧栏四入口按功能分摊且和为 total；聊天入口 / 会话行 = `CHAT` |
+| S32-27 | 读一条 | S / B / F / M5 / N1 | 总数与所属类型各 −1 |
+| S32-28 | 全部已读 | S / B / F / M5 / N1 | 全部归零，徽标消失 |
+| S32-29 | 幂等 | S / B / F / M5 | 重复标读计数不变 |
+| S32-30 | 按用户隔离 | S / B | 他人计数不变；越权 404 |
+| S32-31 | 会话范围 | S / B / F / M6 | 只清 `(trip_id, actor_id)`；其它不变 |
+| S32-32 | 计数不回弹 | F / M5 / M7 | 刷新与在途快照都不复活已读 |
+| S32-33 | 三秒内只推收件人 | S / M1 / M9 | 3 秒内只到收件人 |
+| S32-34 | 重连对账 | F / M7 / V3 | 断连期间事件在重连后收敛，不重复 |
+| S32-35 | 通道失败可控 | S / M / V3 | 业务可用、计数保留、无阻塞弹窗 |
+| S32-36 | 失败隔离 | S / H | 八类生产方在通知抛错时仍成功 |
 
-- **编号口径：** 表中 `S30-x` 使用 `requirements/REQ-029-realtime-notifications.md` §4 的编号，与 Delta Spec 的场景标题一一对应。
+- **编号口径：** 表中 `S32-x` 使用 `requirements/REQ-031-realtime-notifications.md` §4 的编号，与 Delta Spec 的场景标题一一对应。
 - **覆盖率：** 36/36；没有只靠人工走查兜底的场景（窄屏、焦点、断网、多标签页同时有自动化或 E2E 断言）。
 
 ## 2. Red / Green 切片顺序
@@ -54,8 +54,8 @@
 
 | 切片 | Red 测试（先写） | 预期失败原因 | Green 最小实现 |
 |---|---|---|---|
-| D1 | `OpenApiTest.in_openApiFile_out_notificationContractDeclared` | 路径 / schema / 版本不存在 | `openapi.yaml` → 0.26.0，补 4 路径、`/reports/mine` 与 schema；两处版本断言同步 |
-| D2 | `NotificationMigrationSqliteTest` | `notifications` 表不存在 | `V31__add_notifications.sql` + `NotificationEntity` / `NotificationMapper` |
+| D1 | `OpenApiTest.in_openApiFile_out_notificationContractDeclared` | 路径 / schema / 版本不存在 | `openapi.yaml` → 0.27.0，补 4 路径、`/reports/mine` 与 schema；两处版本断言同步 |
+| D2 | `NotificationMigrationSqliteTest` | `notifications` 表不存在 | `V32__add_notifications.sql` + `NotificationEntity` / `NotificationMapper` |
 | D3 | `NotificationTextUtilsTest`、`NotificationTypeEnumTest` | 枚举与文案类不存在 | 5 个枚举 + `NotificationTextUtils`（22 段文案 + 回退） |
 | D4 | `NotificationServiceTest`（写入 / 去重 / 自事件抑制） | 表存在但服务不存在 | `NotificationService.write`：自事件抑制 → 先查去重 → 插入 → 冲突兜底 |
 | D5 | `NotificationServiceTest`（计数 / 列表 / 标读） | 计数与标读端点缺失 | `counts`（八类零填充）、`list`（50 条）、三种标读 |
@@ -126,7 +126,7 @@
 | B4 | `POST /notifications/read` `{scope:"conversation",trip_id,other_user_id}` → 只清该会话 |
 | B5 | `scope` 非法 / 缺定位 → 400 `INVALID_INPUT` |
 | B6 | `GET /notifications/stream?user_id=` → `asyncStarted`，响应头 `text/event-stream`、`Cache-Control: no-cache`、`X-Accel-Buffering: no`；缺 `user_id` → 401 |
-| B7 | `OpenApiTest`：0.26.0、4 条通知路径、`/reports/mine`、schema 必需字段、`NotificationList.items.maxItems=50`、八类 / 22 事件 / 8 目标枚举 |
+| B7 | `OpenApiTest`：0.27.0、4 条通知路径、`/reports/mine`、schema 必需字段、`NotificationList.items.maxItems=50`、八类 / 22 事件 / 8 目标枚举 |
 | B8 | `ReportControllerTest`：`GET /reports/mine` 只返回本人举报，含编号与状态 |
 | B9 | `NotificationMigrationSqliteTest`：SQLite 执行 `V30` → 表与两个索引存在；插入、按收件人查询、标读更新可用 |
 
@@ -150,19 +150,19 @@
 
 | id | 场景 | 步骤与断言 |
 |---|---|---|
-| M1 | 申请到达（S30-9 / S30-33） | A 停在首页；B 申请 → ≤3 s 内 A 的 `notification-badge` 变 1；面板出现申请条目 |
-| M2 | 接受 / 拒绝（S30-10、S30-11、S30-5） | A 接受 B → B 条目为通过；换人拒绝 → 条目为拒绝；容量满时同行者另有满员条目 |
-| M3 | 消息到非聊天页（S30-13、S30-26） | B 发消息；A 在地图页 → `rail-chat-badge` / `tab-chat-badge` = 1，提示条出现；打开会话后该会话归零 |
-| M4 | 计数拆分（S30-25、S30-26） | 2 条申请 + 3 条消息 → `GET /notifications` 返回 total 5、`APPLICATION`=2、`CHAT`=3；铃铛 5、「我的旅行」2、「同行消息」3，侧栏四入口之和 = 5 |
-| M5 | 读一条 / 全部 / 幂等 / 不回弹（S30-27 ～ S30-29、S30-32） | 点一条 → 总数 −1；重复标读不变；全部已读 → 0 且徽标消失；紧接着刷新计数不回弹 |
-| M6 | 会话范围（S30-31） | A 与 B、C 各一个会话；打开 B 的会话 → B 归零，C 与其它类型不变 |
-| M7 | 刷新与重连（S30-32、S30-34） | 有未读时刷新 → 计数不变；`page.reload()` 后无重复条目 |
-| M8 | 当前会话即时与提示抑制（S30-13、S30-35） | A 打开 B 的会话；B 发消息 → 消息即刻出现、会话徽标 0、提示条不增加 |
-| M9 | 3 秒口径（S30-33） | 记录生产请求返回时刻，`toHaveText('1', { timeout: 3000 })` |
-| M10 | 窄屏（S30-26） | 390 px 下 `tab-chat-badge` 与侧栏聊天入口同数；侧栏四入口之和 = 铃铛；铃铛可点开；无横向滚动 |
-| N1 | 通知中心（S30-1、S30-14 ～ S30-20、S30-25、S30-27、S30-28） | 八类筛选带数字；逐类可筛；重要标记与未读文字可见；全部已读归零 |
-| N2 | 类型跳转（S30-21 ～ S30-23） | 行程 → 详情；申请 → 处理页 / 行程；举报 → 举报详情；各类型目标逐一命中 |
-| N3 | 目标不可用（S30-24） | 目标删除后条目保留正文、提示「相关内容当前不可查看」、URL 不变、条目转为已读 |
+| M1 | 申请到达（S32-9 / S32-33） | A 停在首页；B 申请 → ≤3 s 内 A 的 `notification-badge` 变 1；面板出现申请条目 |
+| M2 | 接受 / 拒绝（S32-10、S32-11、S32-5） | A 接受 B → B 条目为通过；换人拒绝 → 条目为拒绝；容量满时同行者另有满员条目 |
+| M3 | 消息到非聊天页（S32-13、S32-26） | B 发消息；A 在地图页 → `rail-chat-badge` / `tab-chat-badge` = 1，提示条出现；打开会话后该会话归零 |
+| M4 | 计数拆分（S32-25、S32-26） | 2 条申请 + 3 条消息 → `GET /notifications` 返回 total 5、`APPLICATION`=2、`CHAT`=3；铃铛 5、「我的旅行」2、「同行消息」3，侧栏四入口之和 = 5 |
+| M5 | 读一条 / 全部 / 幂等 / 不回弹（S32-27 ～ S32-29、S32-32） | 点一条 → 总数 −1；重复标读不变；全部已读 → 0 且徽标消失；紧接着刷新计数不回弹 |
+| M6 | 会话范围（S32-31） | A 与 B、C 各一个会话；打开 B 的会话 → B 归零，C 与其它类型不变 |
+| M7 | 刷新与重连（S32-32、S32-34） | 有未读时刷新 → 计数不变；`page.reload()` 后无重复条目 |
+| M8 | 当前会话即时与提示抑制（S32-13、S32-35） | A 打开 B 的会话；B 发消息 → 消息即刻出现、会话徽标 0、提示条不增加 |
+| M9 | 3 秒口径（S32-33） | 记录生产请求返回时刻，`toHaveText('1', { timeout: 3000 })` |
+| M10 | 窄屏（S32-26） | 390 px 下 `tab-chat-badge` 与侧栏聊天入口同数；侧栏四入口之和 = 铃铛；铃铛可点开；无横向滚动 |
+| N1 | 通知中心（S32-1、S32-14 ～ S32-20、S32-25、S32-27、S32-28） | 八类筛选带数字；逐类可筛；重要标记与未读文字可见；全部已读归零 |
+| N2 | 类型跳转（S32-21 ～ S32-23） | 行程 → 详情；申请 → 处理页 / 行程；举报 → 举报详情；各类型目标逐一命中 |
+| N3 | 目标不可用（S32-24） | 目标删除后条目保留正文、提示「相关内容当前不可查看」、URL 不变、条目转为已读 |
 
 ## 7. 人工走查（V）
 
@@ -184,10 +184,10 @@
 | 51 条通知 | 列表上限 | 服务层循环写入，断言 50 条与排序 |
 | 两会话 | 会话标读 | B、C 各被接受并各发 1 条消息 |
 | 自消息 | 聊天守卫 | 准入层允许自消息；服务层直接调用 `notifyMessage(A, A, …)` 断言 0 行 |
-| 通知写入失败 | S30-36 / S30-35 | `@Primary` 桩服务抛错；不修改生产代码 |
-| 已满 / 已关闭行程 | S30-12 | 用服务层构造状态，断言 0 行；不新增接口 |
-| 举报 + 删除目标 | S30-24 / N3 | 提交举报后由管理员删除关联行程，断言提示与不跳转 |
-| 账号三态 | S30-17 | 管理端 API 执行 SUSPEND / BAN / RESTORE，断言本人通知 |
+| 通知写入失败 | S32-36 / S32-35 | `@Primary` 桩服务抛错；不修改生产代码 |
+| 已满 / 已关闭行程 | S32-12 | 用服务层构造状态，断言 0 行；不新增接口 |
+| 举报 + 删除目标 | S32-24 / N3 | 提交举报后由管理员删除关联行程，断言提示与不跳转 |
+| 账号三态 | S32-17 | 管理端 API 执行 SUSPEND / BAN / RESTORE，断言本人通知 |
 
 ## 9. 追溯矩阵
 

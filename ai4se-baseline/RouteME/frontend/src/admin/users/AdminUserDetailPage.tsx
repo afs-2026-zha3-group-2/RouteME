@@ -235,7 +235,7 @@ export function AdminUserDetailPage({ token, userId, currentUser }: Props) {
                 type={action === 'RESTORE' ? 'default' : 'primary'}
                 onClick={() => setPendingAction(action)}
               >
-                {statusActionLabel(action)}
+                {statusActionLabel(action, effective)}
               </Button>
             ))}
           </div>

@@ -3,10 +3,10 @@
   "tasks": [
     {
       "label": "backend: run",
-      "detail": "RouteME backend (Spring Boot, port 8080)",
+      "detail": "RouteME backend (Spring Boot, port 8080; 输出 target-run/ 以免被 mvn test 清掉 class)",
       "type": "shell",
       "command": ".\\mvnw.cmd",
-      "args": ["spring-boot:run"],
+      "args": ["-Pdev-run", "spring-boot:run"],
       "options": {
         "cwd": "${workspaceFolder}\\ai4se-baseline\\RouteME\\backend"
       },

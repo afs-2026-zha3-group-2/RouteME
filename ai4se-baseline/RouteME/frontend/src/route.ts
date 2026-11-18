@@ -65,7 +65,7 @@ export function parseRoute(hash: string): Route {
   if (path === '/support') {
     return { name: 'support' };
   }
-  // 通知中心与通知跳转的独立页面（REQ-029）。
+  // 通知中心与通知跳转的独立页面（REQ-031）。
   if (path === '/notifications') {
     return { name: 'notifications' };
   }

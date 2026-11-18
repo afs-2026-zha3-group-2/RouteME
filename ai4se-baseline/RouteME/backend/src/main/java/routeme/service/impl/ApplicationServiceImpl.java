@@ -96,6 +96,7 @@ public class ApplicationServiceImpl
                 normalizeMessage(request == null ? null : request.message()),
                 ApplicationStatusEnum.PENDING,
                 now,
+                null,
                 null);
         save(TripApplicationEntity.from(created));
         notificationService.notifyApplicationReceived(
@@ -116,7 +117,7 @@ public class ApplicationServiceImpl
         }
         Instant now = clock.instant();
         updateStatus(applicationId, ApplicationStatusEnum.CANCELLED, "USER_CANCEL", now);
-        return application.withStatus(ApplicationStatusEnum.CANCELLED, now);
+        return application.withStatus(ApplicationStatusEnum.CANCELLED, now, "USER_CANCEL");
     }
 
     @Override
@@ -275,7 +276,7 @@ public class ApplicationServiceImpl
             }
             tripPlanService.addCompanion(trip.id());
         }
-updateStatus(applicationId, next,
+        updateStatus(applicationId, next,
                 next == ApplicationStatusEnum.REJECTED ? "PUBLISHER_REJECT" : null, now);
         if (next == ApplicationStatusEnum.ACCEPTED) {
             notificationService.notifyApplicationAccepted(
@@ -290,7 +291,8 @@ updateStatus(applicationId, next,
             notificationService.notifyApplicationRejected(
                     application.applicantId(), publisherId, trip.id(), application.id());
         }
-        return application.withStatus(next, now);
+        return application.withStatus(
+                next, now, next == ApplicationStatusEnum.REJECTED ? "PUBLISHER_REJECT" : null);
     }
 
     @Override

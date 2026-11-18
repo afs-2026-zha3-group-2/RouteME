@@ -26,3 +26,13 @@ export const appDateTimePickerProps = {
   showTime: { format: 'HH:mm' },
   needConfirm: false,
 } as const;
+
+/**
+ * antd 6.7 的 Select 也吃同一个「减少动态效果」缺陷：下拉层被固定到
+ * `-1000vw / -1000vh`，用户点开看不到任何选项（同行设置等下拉全部失效）。
+ * 与日期控件同口径：把弹层挂到字段容器，再由 CSS 固定在字段下方。
+ */
+export const appSelectProps = {
+  classNames: { popup: { root: 'app-select-popup' } },
+  getPopupContainer: (trigger: HTMLElement) => trigger.parentElement ?? document.body,
+} as const;

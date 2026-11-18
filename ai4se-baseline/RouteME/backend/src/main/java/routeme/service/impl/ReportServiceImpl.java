@@ -78,6 +78,8 @@ public class ReportServiceImpl extends AbstractServiceImpl<ReportMapper, ReportE
                 null,
                 null,
                 null,
+                null,
+                null,
                 null);
         save(ReportEntity.from(report));
         notificationService.notifyReportSubmitted(reporterId, report.id());
