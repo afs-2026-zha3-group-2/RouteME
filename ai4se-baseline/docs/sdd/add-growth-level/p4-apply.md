@@ -2,7 +2,7 @@
 
 - **Change：** `add-growth-level`（REQ-033 / S34 用户成长等级 LV1–LV5）｜ **阶段：** P4（`/sdd:atdd-apply`）
 - **日期：** 2026-11-18 ｜ **记录人：** Jay（AO）
-- **基线：** P3 收口 `origin/main@8108481`（契约 0.26.0 / 迁移头 `V31__report_credit_deduction.sql`）；P4 收口合并 `origin/main@e6ffb406`（其中 `add-route-completion` 占 0.27.0、`add-loan-interest-penalty` 占 0.28.0 + `V32`、`add-realtime-notifications` 占 0.29.0 + `V33`）后第四次顺延，本 change 落定 **0.30.0 + `V34__add_growth_level.sql`**
+- **基线：** P3 收口 `origin/main@8108481`（契约 0.26.0 / 迁移头 `V31__report_credit_deduction.sql`）；P4 收口合并 `origin/main@ef23f6cf`（其中 `add-route-completion` 占 0.27.0、`add-loan-interest-penalty` 占 0.28.0 + `V32`、`add-realtime-notifications` 占 0.29.0 + `V33`）后第四次顺延，本 change 落定 **0.30.0 + `V34__add_growth_level.sql`**
 - **计划来源：** [`tasks.md`](../../../openspec/changes/add-growth-level/tasks.md) 1.2–1.12；[`design.md`](../../../openspec/changes/add-growth-level/design.md) D1–D14；[`atdd-design.md`](../../../openspec/changes/add-growth-level/atdd-design.md) A1–A26 / E1–E8 / R1–R4
 
 ## 1. 执行切片与结果
@@ -17,7 +17,7 @@
 | p4-6 | 并发与幂等兜底：同档 / 同举报 / 同发布 8 线程各只结算一次 | Pass（`GrowthConcurrencyTest` 3/3，非事务真实提交 + 按用户清理） |
 | p4-7 | 前端 `growth.ts` + `GrowthBadge` + `GrowthProgressBlock` + `useGrowthLevels` + 6 处展示面 + 令牌样式 | Pass（`growth.test.ts` 7/7；合并后 typecheck / 63 文件 552 单测 / build 全绿） |
 | p4-8 | E2E `growth-level.spec.ts` + `growthSupport.ts`（注册 / 造已完成行程与体验 / 点赞 / 批量读取 / SQL 种子） | Pass（5/5；E1–E8 + R1–R4） |
-| p4-9 | 门禁、P4 记录、台账更新、合并 `origin/main@e6ffb406`（9 冲突文件 + 第四次顺延改号 / 改迁移）、提交推送 | 本文件（合并后重跑全部门禁；修复 SQLite 唯一键未翻译为 `DuplicateKeyException` 的首次读并发 500；顺带补齐 main 两个通知 schema 的 `type: object` 以保持 lint 0 error） |
+| p4-9 | 门禁、P4 记录、台账更新、合并 `origin/main@ef23f6cf`（9 冲突文件 + 第四次顺延改号 / 改迁移）、提交推送 | 本文件（合并后重跑全部门禁；修复 SQLite 唯一键未翻译为 `DuplicateKeyException` 的首次读并发 500；顺带补齐 main 两个通知 schema 的 `type: object` 以保持 lint 0 error） |
 
 ## 2. 契约与迁移
 
@@ -71,10 +71,11 @@
 4. **既有顺序耦合：** `detail-companions.spec` 会把 seed 用户 4 接受进多条行程，污染随后 `profiles.spec` 的「参与同行 = 0」断言；分文件单跑 `profiles.spec` 8/8 绿，属既有测试顺序问题，登记债务。
 5. **环境变量陷阱：** 本机 shell 遗留 `SPRING_DATASOURCE_URL`（指向另一 worktree 的 SQLite）会让 `mvnw verify` 的 H2 测试 context 全部失败；门禁执行前已清除该变量，记录以便复现。
 6. **G1 Conditional 收口：** C1 重复处理沿用 409 `ReportNotProcessingException`（API 用例 A18 覆盖）；C2 字段级可见性由 `GrowthVisibilityApiTest` + E2E E1/E8 覆盖。
-7. **既有债务（合并后新发现）：** `profile.spec.ts:318` / `:496` 依赖 `.mine-profile-card`，但 `origin/main@e6ffb406` 的「我的旅行」页已无该节点（全仓仅测试引用）；与本 change 无关，登记债务。
+7. **既有债务（合并后新发现）：** `profile.spec.ts:318` / `:496` 依赖 `.mine-profile-card`，但 `origin/main@ef23f6cf` 的「我的旅行」页已无该节点（全仓仅测试引用）；与本 change 无关，登记债务。
 8. **缺陷修复（本 change）：** 合并后定向 E2E 发现新注册用户首次读 `/profile` 时并发懒建账户在 SQLite 上 500（唯一键冲突只抛 `UncategorizedSQLException`）；改为捕获 `DataAccessException` + 重读判定，新增 `GrowthServiceImplTest` 2/2；修复后 8 并发探针 16/16 均 200。
 9. **迁移改名陷阱：** `V32 → V34` 改名后必须 `clean`：`target/classes` 残留旧脚本会让 Flyway 报 `Found more than one migration with version NN`（首次合并后 verify 的 555 errors 即由此而来）。
 10. **main 契约 lint 既有错误：** `add-realtime-notifications` 的 `Notification.actor` 与推送 `message` 在 `allOf` + `nullable` 旁缺 `type: object`，使 `nullable-type-sibling` 报 2 error；本 change 合并时补齐（不改语义），使契约门禁回到 0 error。
+11. **合并提交说明：** 提交 `97f79aa5` 的主题记录抓取目标 `@e6ffb406`，但实际第二父提交为 `ef23f6cf`（含 `add-realtime-notifications` 与 finance 文档收口）；以 `git log -1 --format=%p 97f79aa5` 为准。
 
 ## 7. proposal 13 条验收信号 ↔ 证据（L-02）
 
