@@ -14,7 +14,7 @@
 | 项 | P1 | P2 | 说明 |
 |---|---|---|---|
 | Requirement | 3 | 3 | 用户结束 / 客服标记完成 / 状态机与留痕 |
-| Scenario | 28 | 30 | 补 2 条 UI 场景（三个未结束状态都有结束入口、标记完成按钮仅处理中可见）；待确认提示场景补 MUST NOT 展示客服身份 |
+| Scenario | 28 | 30 | P2 补 2 条 UI 场景（三个未结束状态都有结束入口、标记完成按钮仅处理中可见）；待确认提示场景补 MUST NOT 展示客服身份；P3 开工前增补 1 条概览分桶场景 → 31 |
 | `validate --strict` | valid | valid | 复跑通过 |
 
 - 路径：`openspec/changes/refine-service-close/specs/customer-service/spec.md`。
@@ -26,18 +26,19 @@
 
 - AC 4/4 Pass。
 - DoV 5/5 Pass。
-- Ready 36 场景 → Delta 30 场景映射 36/36 有落点；无孤儿场景。
+- Ready 36 场景 → Delta 31 场景映射 36/36 有落点；无孤儿场景。
 - 残余风险：`customer-service` 未进 Living Spec、契约 / 迁移号待 P3、文案与排序待 P3、客服发言回迁按对称口径、原 issue 缺陷随按钮下线。
 
 ## 4. 一致性检查
 
 `openspec/changes/refine-service-close/consistency-lint.md`：
 
-- Verdict Pass：BLOCKER 0 / WARNING 1（已收口）/ SUGGESTION 5 / N/A 6。
+- Verdict Pass：BLOCKER 0 / WARNING 1（已收口）/ SUGGESTION 6 / N/A 6。
 - L-01：Delta 首段说明会被 OpenSpec 丢弃 → 已移除，取代声明保留在 proposal。
-- L-02：Ready 36 与 Delta 30 不等长 → 映射表收口。
+- L-02：Ready 36 与 Delta 31 不等长 → 映射表收口。
 - L-03：`customer-service` 未归档 → 归档顺序 `add-admin-console` → 本 change，P5 写入 Living Spec。
 - L-04 / L-05：文案与排序、契约 / 迁移号 → P3。
+- L-06：概览 `by_status` 三键无法容纳 `RESOLVED` → Delta 补 1 条分桶场景（P3 开工前，用户已确认）。
 
 ## 5. G1 状态
 
@@ -51,10 +52,12 @@
 ## 6. 质量检查
 
 - `docs/ai4se-plugins/20261118-102430-quality-checklist-checkpoints.md`（checkpoint）。
-- `docs/ai4se-plugins/20261118-102457-quality-checklist-report.md`：P2-1 Pass、P2-2 Pass、P2-3 Skipped（G1 未声称）、P2-4 Pass；**Overall Pass**。
+- `docs/ai4se-plugins/20261118-102457-quality-checklist-report.md`：P2-1 Pass、P2-2 Pass、P2-3 Pass（G1 = Pass，IO=WAYNE / SA=Jacky）、P2-4 Pass；**Overall Pass**。
 
 ## 7. 下一步
 
 1. 取得 G1 具名签署，回填 `g1-decision.md`。
 2. P3：`atdd-design.md` / `design.md`（单一状态机表 + 契约 0.25.0 + V30 排他）/ `tasks.md`，并按签署矩阵取得 design / tasks 与两份评审报告签署。
 3. P4：实现、迁移、契约、前端两页与 E2E 改写。
+
+**P3 开工前增补（2026-11-18）：** 复核概览契约发现 `by_status` 三键与 `add-admin-dashboard` 的「不省略任何状态键 / 总数 = 分桶之和」口径冲突，Delta 补 1 条「概览统计包含待用户确认分桶」，30 → 31；用户确认概览加「待用户确认」第四段；`validate --strict` 复跑 valid。

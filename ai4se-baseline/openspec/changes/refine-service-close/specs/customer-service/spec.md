@@ -215,6 +215,14 @@
 - **And** 摘要与详情包含可空 `resolved_at`
 - **And** 用户端与客服端字段同名
 
+#### Scenario: 概览统计包含待用户确认分桶
+
+- **Given** 存在 `RESOLVED` 会话
+- **When** 管理员请求概览统计
+- **Then** `service_sessions.by_status` MUST 包含 `RESOLVED` 键
+- **And** 该会话计入 `RESOLVED` 桶
+- **And** `service_sessions.total` MUST 等于四个分桶之和
+
 #### Scenario: 管理端 close 路径下线
 
 - **Given** 旧客户端仍调用 `POST /api/admin/service/sessions/{sessionId}/close`

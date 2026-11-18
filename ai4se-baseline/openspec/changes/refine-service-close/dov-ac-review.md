@@ -2,20 +2,20 @@
 
 - **Change:** `refine-service-close`（`customer-service` ADDED）
 - **Phase:** p2
-- **Delta:** `openspec/changes/refine-service-close/specs/customer-service/spec.md`（3 Requirement / 30 Scenario）
+- **Delta:** `openspec/changes/refine-service-close/specs/customer-service/spec.md`（3 Requirement / 31 Scenario；P3 开工前增补 1 条概览分桶场景）
 - **Requirements:** `requirement-workspace/requirements/REQ-028-service-close.md`（36 场景）
 - **Timestamp:** 2026-11-18T10:30+08:00
 - **Tooling:** `openspec validate refine-service-close --strict` → `Change 'refine-service-close' is valid`
 
 ## Verdict
 
-**AC 4/4 Pass；DoV 5/5 Pass；映射 36/36 有落点；Delta 30 条无孤儿。**
+**AC 4/4 Pass；DoV 5/5 Pass；映射 36/36 有落点；Delta 31 条无孤儿（含 P3 开工前增补的概览分桶场景）。**
 
 ## AC
 
 | Item | Result | Evidence | Notes |
 |---|---|---|---|
-| AC-1 每条 Requirement 至少一个可测 AC | Pass | Delta 3 条 Requirement 分别有 9 / 11 / 10 条 Scenario | 最小 9 条，无空 Requirement |
+| AC-1 每条 Requirement 至少一个可测 AC | Pass | Delta 3 条 Requirement 分别有 9 / 11 / 11 条 Scenario | 最小 9 条，无空 Requirement |
 | AC-2 AC 可观察 | Pass | 状态值、`resolved_at` / `resolved_by`、`closed_at` / `closed_by`、HTTP 404 / 409 / 401、徽标计数、按钮可见性 | 无「工作良好」「适当」类措辞 |
 | AC-3 高风险负向 / 边界已列出 | Pass | 非本人结束、未登录、重复结束、非处理中标记、重复标记、已结束发言、非法迁移、旧路径 404 | 覆盖权限、幂等与状态闭集 |
 | AC-4 不伪装实现细节 | Pass | 场景只写行为与字段，未指定类名 / SQL / 组件内部结构 | `resolved_at` / `resolved_by` 为数据契约，已在 deep-dive 定 |
@@ -30,7 +30,7 @@
 | DoV-4 未声称业务实现已完成 | Pass | 本阶段只评审 Delta，无代码改动 | — |
 | DoV-5 Requirement 可追溯到提案 / 批准需求 | Pass | 3/3 Requirement 对应 proposal §What Changes；36/36 Ready 场景有落点（见下表） | — |
 
-## Ready 36 场景 → Delta 30 场景映射
+## Ready 36 场景 → Delta 31 场景映射
 
 | Ready 场景 | Delta 场景 | 说明 |
 |---|---|---|
@@ -70,8 +70,9 @@
 | R-2 管理端 close 下线 | 管理端 close 路径下线 | 1:1 |
 | R-3 会话隔离不变量 | 客服会话与行程聊天隔离 | 1:1 |
 | R-4 历史保留 | 历史会话保留 | 1:1 |
+| （P3 增补）概览分桶 | 概览统计包含待用户确认分桶 | `add-admin-dashboard` 要求「不省略任何状态键 / 总数 = 分桶之和」；新增 RESOLVED 后必然要扩桶。用户 2026-11-18 确认 |
 
-- **Delta 孤儿场景：** 无（30 条均可在 Ready 或 P2 UI 缺口修复中找到来源）。
+- **Delta 孤儿场景：** 无（31 条均可在 Ready、P2 UI 缺口修复或 `add-admin-dashboard` 口径延伸中找到来源）。
 - **未映射 Ready 场景：** 无（36/36 有落点；5 组按上表合并）。
 
 ## Residual risks
@@ -87,3 +88,5 @@
 ## 结论
 
 Delta 与提案 / Ready 需求一致，无 blocking 缺口；满足 G1 输入条件。G1 结论由 IO + SA 具名签署，本文不做 Gate 决定。
+
+**Post-G1 addendum（2026-11-18）：** P3 开工前复核既有概览契约时发现 `add-admin-dashboard` Delta 要求「不省略任何状态键 / 总数 = 分桶之和」，而 `AdminDashboardServiceSessions.by_status` 为三键且 `additionalProperties: false`；新增 `RESOLVED` 后必须扩桶。已补 1 条 Scenario（概览统计包含待用户确认分桶），Delta 30 → 31，用户（IO/SA 当次会话）确认选取「加待用户确认第四段」，`openspec validate --strict` 复跑 valid。

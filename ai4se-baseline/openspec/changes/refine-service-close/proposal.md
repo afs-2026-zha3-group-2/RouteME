@@ -2,7 +2,7 @@
 
 - **需求来源：** GitHub Issue [#38](https://github.com/afs-2026-zha3-group-2/RouteME/issues/38)「客服服务BUG-客服无法结束会话」｜ **需求条目：** `requirement-workspace/requirements/REQ-028-service-close.md`（S29）
 - **能力：** `customer-service`（**ADDED Requirements**）；依赖 `user-support`（入口，未归档）、`user-auth`（已归档）、`trip-companions`（隔离不变量，已归档）
-- **规模：** M（新增 1 组 ADDED Requirement / 30 Scenario；新增 `V30` 迁移 + 契约 0.25.0；用户端结束、客服标记完成、四态状态机、两个新端点、删除一个端点）
+- **规模：** M（新增 1 组 ADDED Requirement / 31 Scenario；新增 `V30` 迁移 + 契约 0.25.0；用户端结束、客服标记完成、四态状态机、两个新端点、删除一个端点、概览分桶增一态）
 - **规则：** `@rule:spec-first`、`@rule:api-contract`、`@rule:java-patterns`、`@rule:web-coding-style`、`@rule:security-baseline`、`@rule:tdd-cycle`、`@rule:sdd-artifacts`
 
 ## Why
@@ -20,7 +20,7 @@
 - **待用户确认状态**：`RESOLVED` 纳入 `openSession`（`current` 与幂等创建都能看到）；用户或客服发送消息后回到 `HANDLING` 并清空 `resolved_*`；不自动关闭、无定时任务。
 - **管理端下线结束能力**：移除「结束会话」按钮；删除 `POST /api/admin/service/sessions/{sessionId}/close`；队列筛选项增加「待用户确认」；待接入徽标仍只统计 `WAITING`。
 - **用户端展示**：会话头在三个未结束状态统一显示「结束会话」；`RESOLVED` 显示「客服已标记处理完成，如问题已解决请结束会话」；`CLOSED` 只读与「重新发起会话」沿用。
-- **数据 / 契约**：`V30` 给 `customer_service_sessions` 增加 `resolved_at` / `resolved_by`；`openapi.yaml` 升 0.25.0，`ServiceSessionStatus` 增 `RESOLVED`，摘要 / 详情增 `resolved_at`，新增两个端点、删除管理端 close。
+- **数据 / 契约**：`V30` 给 `customer_service_sessions` 增加 `resolved_at` / `resolved_by`；`openapi.yaml` 升 0.25.0，`ServiceSessionStatus` 增 `RESOLVED`，摘要 / 详情增 `resolved_at`，新增两个端点、删除管理端 close；概览 `service_sessions.by_status` 增 `RESOLVED` 分桶。
 - **规格承载**：`customer-service` 尚未进入 Living Spec，本 change 用 ADDED 追加新 Requirement，并在本提案「与既有规格的关系」中显式声明取代 `add-admin-console` Delta 的两条旧表述。
 
 ## Out of Scope
@@ -55,9 +55,9 @@
 | `frontend/src/help/ServiceChat.tsx` / `SupportPage.tsx` | 三态结束按钮 + 二次确认；`RESOLVED` 提示；`reloadSession` 不再误判待确认 |
 | `frontend/src/admin/service/AdminServiceDetailPage.tsx` / `AdminServicePage.tsx` | 移除结束按钮；新增「标记处理完成」；筛选四态；待确认文案与徽标 |
 | `frontend/src/i18n/adminMessages.ts` / `api.ts` / `types.ts` | 新文案、新接口、状态 union |
-| `openapi.yaml` | 0.25.0；`ServiceSessionStatus` 增 `RESOLVED`；两个新端点；删除 close；摘要 / 详情增 `resolved_at` |
+| `openapi.yaml` | 0.25.0；`ServiceSessionStatus` 增 `RESOLVED`；两个新端点；删除 close；摘要 / 详情增 `resolved_at`；`AdminDashboardServiceSessions.by_status` 增 `RESOLVED`（required 四键） |
 | 测试 | 后端状态机 / API / 迁移双引擎；前端状态派生纯函数；E2E `customer-service` / `admin` 改写 |
-| `openspec/changes/refine-service-close/specs/customer-service/spec.md` | ADDED：3 Requirement / 30 Scenario（P2 收敛补 2 条 UI 场景与 1 条 MUST NOT 断言） |
+| `openspec/changes/refine-service-close/specs/customer-service/spec.md` | ADDED：3 Requirement / 31 Scenario（P2 收敛补 2 条 UI 场景与 1 条 MUST NOT 断言；P3 增补 1 条概览分桶场景） |
 
 ## 决策
 
@@ -72,7 +72,7 @@
 | 完成留痕 | `resolved_at` / `resolved_by`（用户 D7） | 可追溯何时、哪位客服标记完成。 |
 | 结束操作人 | `closed_by` 只记用户（用户 D8） | 审计语义与「用户结束」一致。 |
 | 规格承载 | ADDED + 声明取代旧 Delta（按未归档 Delta 的承载惯例） | `customer-service` 未进 Living Spec，不能写 MODIFIED。 |
-| 契约 / 迁移 | 暂定 0.25.0 + V30，P3 排他确认 | `origin/main` 当前 0.24.0 / V29。 |
+| 契约 / 迁移 | 暂定 0.25.0 + V30，P3 排他确认 | `origin/main@9a13fe4` 当前 0.24.0 / V29（P3 已复核未变）。 |
 
 ## 验收信号
 
@@ -82,12 +82,14 @@
 4. 客服在 `HANDLING` 点「标记处理完成」→ 用户点「结束会话」→ 双方只读，历史消息完整保留。
 5. 管理端不再出现「结束会话」按钮；直接请求 `POST /api/admin/service/sessions/{id}/close` 返回 404。
 6. `RESOLVED` 会话不计入待接入徽标；筛选「待用户确认」可列出该会话。
+7. 管理后台概览的客服会话环形图出现「待用户确认」第四段，四段之和等于会话总数。
 
 ## 与既有规格的关系（取代声明）
 
 - 本 change 的 Delta 为 `customer-service` **ADDED**，新增 Requirement「用户结束客服会话」「客服标记处理完成与待用户确认」「会话状态机与留痕」。
 - **显式取代：** `openspec/changes/add-admin-console/specs/customer-service/spec.md` 的「人工客服会话生命周期」中「用户 MUST NOT 自行关闭会话」与 Scenario「会话结束（客服结束会话）」由本 change 取代；归档时以本 change 为准。
 - **归档顺序：** `customer-service` 尚未进入 `openspec/specs/`；本 change MUST 在 `add-admin-console` 之后归档，并与 `refine-service-workbench-live` / `refine-service-inbox-unread` / `refine-user-support-entry` 的归档顺序协调。
+- **兼容扩展：** `add-admin-dashboard` Delta 要求客服会话组「不省略任何状态键」「总数 = 分桶之和」；本 change 让 `service_sessions.by_status` 增 `RESOLVED` 键，是该口径的必然延伸，不构成冲突，不改其 Delta 正文。
 - **不改：** `user-support` 入口与访问控制、`user-auth` 会话契约、`trip-companions` 行程聊天隔离。
 
 ## 风险与依赖

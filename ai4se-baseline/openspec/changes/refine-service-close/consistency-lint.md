@@ -9,7 +9,7 @@
 
 ## Verdict
 
-**Pass** — BLOCKER 0 / WARNING 1（已收口）/ SUGGESTION 5 / N/A 6
+**Pass** — BLOCKER 0 / WARNING 1（已收口）/ SUGGESTION 6 / N/A 6（含 P3 开工前增补 L-06）
 
 | Condition | Result |
 |---|---|
@@ -23,10 +23,11 @@
 | id | Severity | Phase | Location | Issue | Suggested fix | Evidence | Authority | Type |
 |---|---|---|---|---|---|---|---|---|
 | L-01 | WARNING（已收口） | p2 | Delta 文件首段（`## ADDED Requirements` 之前） | 取代声明写在第一个 `##` 之前，OpenSpec 警告「Text above the first section is not carried into the main spec by archive」；归档时会丢失 | 已删除 Delta 首段说明，取代声明保留在 `proposal.md`「与既有规格的关系」；`validate --strict` 复跑 valid | Delta 文件头；`openspec validate` 输出 | spec | [fact] |
-| L-02 | SUGGESTION | p2 | Ready §4（36 条）↔ Delta（30 Scenario） | 两层编号不等长（A-2+A-4、G-3+G-5 合并，D-3 / D-4 / D-5 拆并），逐条对号容易误读为「场景丢失」 | 已在 `dov-ac-review.md` 给出 36 → 30 逐条映射；P3 起引用统一用「Requirement + Scenario 名」 | 两份文件实际条数 | spec | [fact] |
+| L-02 | SUGGESTION | p2 | Ready §4（36 条）↔ Delta（31 Scenario） | 两层编号不等长（A-2+A-4、G-3+G-5 合并，D-3 / D-4 / D-5 拆并），逐条对号容易误读为「场景丢失」 | 已在 `dov-ac-review.md` 给出 36 → 31 逐条映射；P3 起引用统一用「Requirement + Scenario 名」 | 两份文件实际条数 | spec | [fact] |
 | L-03 | SUGGESTION | p2 | Delta `customer-service` ↔ `openspec/specs/` | `customer-service` 尚未进入 Living Spec；本 Delta 为 ADDED，归档时若 `add-admin-console` 的旧 Requirement 先落地，语义可能被覆盖 | 归档顺序 MUST 为 `add-admin-console` → `refine-service-close`；P5 归档时把取代关系写入 Living Spec | `openspec/specs/` 目录；`add-admin-console/specs/customer-service/spec.md` | spec | [fact] |
 | L-04 | SUGGESTION | p2 | Ready §8 OQ-4 / OQ-6 ↔ Delta 场景 | 结束确认文案与 `RESOLVED` 在队列中的排序位置未定；P4 前若不定会出现「行为对、文案或排序不一致」 | P3 `design.md` 定稿文案与排序（建议 `RESOLVED` 与 `CLOSED` 同组倒序） | Ready §8；Delta「管理端筛选与待确认可见」 | spec | [inference] |
 | L-05 | SUGGESTION | p2 | Ready §5「契约与迁移排他」↔ `handoff.md` | 契约 0.25.0 + V30 为暂定；并行 change 可能占用 | P3 设计先查 `origin/main` 最大迁移号与 `openapi.yaml` 版本，再回写 registry | `openapi.yaml` 0.24.0；migration 最大号 V29 | spec | [fact] |
+| L-06 | SUGGESTION（已收口） | p3 | 概览契约 `AdminDashboardServiceSessions.by_status` ↔ `add-admin-dashboard` Delta | 新增 `RESOLVED` 后三键 `by_status`（`additionalProperties: false`）无处安放；既有 Delta 要求「不省略任何状态键 / 总数 = 分桶之和」 | Delta 补 1 条「概览统计包含待用户确认分桶」；契约 required 改四键，后端零填充与前端图例同步；用户 2026-11-18 确认 | `openapi.yaml` 4583–4603；`AdminDashboardServiceImpl` 常量；`AdminDashboardPage` 图例 | spec | [fact] |
 
 ## Checklist coverage
 
