@@ -37,7 +37,8 @@ API、事件与集成契约。字段一律 snake_case；时间字段为 RFC3339 
 | POST | `/trips/{tripId}/experiences` | 发布或修改我的体验；首次 201、更新 200 ；`{content, intensity, advice}` |
 | POST | `/experiences/{experienceId}/likes` | 点赞他人体验；首次 201、已赞 200，返回 `{experience_id, like_count, is_liked}`；自赞 403、体验不存在 404 |
 | DELETE | `/experiences/{experienceId}/likes` | 取消点赞；未赞也幂等 204；体验不存在 404 |
-| GET | `/weather/forecast` | 目的地单日天气（Open-Meteo，公开只读）；`destination_code` 与可选 `lng`/`lat` 至少一组 + `date` ；越界 200 + `available=false`（`OUT_OF_RANGE`），上游失败 502 `WEATHER_UPSTREAM_ERROR`；主用 `api.open-meteo.com` 连接层失败时自动切到同一数据源的集合接口 `ensemble-api.open-meteo.com`（`source` 仍为 `open-meteo`，不提供降雨概率时为 null） |
+| GET | `/weather/forecast` | 目的地单日天气（Open-Meteo，公开只读）；`destination_code` 与可选 `lng`/`lat` 至少一组 + `date` ；越界 200 + `available=false`（`OUT_OF_RANGE`），上游失败 502 `WEATHER_UPSTREAM_ERROR`；主用 `api.open-meteo.com` 连接层失败时自动切到同一数据源的集合接口 `ensemble-api.open-meteo.com`（`source` 仍为 `open-meteo`，不提供降雨概率时为 null）；成功结果按「日期 + 坐标（约 1 km）+ 上游来源」进程内缓存，`refresh=true` 跳过缓存 |
+| DELETE | `/weather/cache` | 清空天气缓存，返回 `{cleared}`；用于上游预报更新后立刻回源 |
 - 所有 `/trips*`、`/matches*`、`/me/*`、`/applications/*`、`/reports` 请求要求 `X-User-Id`（`app_users.id`）；缺失或未知返回 401 `DEMO_USER_REQUIRED`。
 - 列表只返回未结束行程；`sort` 非法返回 400。
 - 分页：`/trips`、`/matches`、`/experiences` 返回 `{items, page, size, total, total_pages}`；`page` 从 1 起、`size` 默认 20 且上限 50，越界返回 400 `INVALID_INPUT`。`/me/*` 与 `/trips/{id}/experiences` 仍返回数组。

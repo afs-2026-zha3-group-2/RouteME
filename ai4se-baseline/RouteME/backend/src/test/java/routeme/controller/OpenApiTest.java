@@ -215,6 +215,7 @@ class OpenApiTest {
 
         // When
         Map<String, Object> forecast = operation(document, "/weather/forecast", "get");
+        Map<String, Object> clearCache = operation(document, "/weather/cache", "delete");
         Map<String, Object> forecastSchema = schema(document, "WeatherForecast");
         Map<String, Object> dailySchema = schema(document, "WeatherDaily");
         Map<String, Object> reminderSchema = schema(document, "WeatherReminder");
@@ -224,11 +225,15 @@ class OpenApiTest {
         assertAll(
                 () -> assertTrue(paths(document).containsKey("/weather/forecast"), "weather path declared"),
                 () -> assertTrue(
-                        parameterNames(document, forecast).containsAll(List.of("destination_code", "date", "lng", "lat")),
+                        parameterNames(document, forecast)
+                                .containsAll(List.of("destination_code", "date", "lng", "lat", "refresh")),
                         "weather query parameters"),
                 () -> assertTrue(responses(forecast).containsKey("200"), "weather returns 200"),
                 () -> assertTrue(responses(forecast).containsKey("400"), "weather returns 400"),
                 () -> assertTrue(responses(forecast).containsKey("502"), "weather returns 502"),
+                () -> assertTrue(
+                        paths(document).containsKey("/weather/cache"), "weather cache clear path declared"),
+                () -> assertTrue(responses(clearCache).containsKey("200"), "weather cache clear returns 200"),
                 () -> assertTrue(
                         required(forecastSchema).containsAll(List.of("date", "available", "reminders", "source")),
                         "weather required fields"),

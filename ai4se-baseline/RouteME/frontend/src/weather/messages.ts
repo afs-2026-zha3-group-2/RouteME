@@ -9,6 +9,8 @@ export const weatherMessages = {
   loading: '正在获取目的地天气…',
   failed: '天气暂时获取不到，可以重试；不影响继续编辑路线。',
   retry: '重试',
+  refresh: '刷新天气',
+  refreshing: '正在刷新…',
   outOfRange: '暂无该日期天气预报。',
   outOfRangeHint: 'Open-Meteo 只提供未来约 16 天的预报，可以换一个更近的日期。',
   rain: '雨',

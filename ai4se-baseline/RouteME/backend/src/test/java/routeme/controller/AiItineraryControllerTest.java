@@ -19,6 +19,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import org.springframework.transaction.annotation.Transactional;
 
 import routeme.config.FixedClockTestConfig;
+import routeme.service.WeatherService;
 import routeme.stub.UpstreamStubs;
 
 /**
@@ -57,9 +58,14 @@ class AiItineraryControllerTest {
     @Autowired
     private MockMvc mockMvc;
 
+    @Autowired
+    private WeatherService weatherService;
+
     @BeforeEach
     void resetStubs() {
         UpstreamStubs.reset();
+        // 天气预报在进程内缓存；不复位会让天气失败用例读到上一个用例的成功缓存。
+        weatherService.clearCache();
     }
 
     @Test

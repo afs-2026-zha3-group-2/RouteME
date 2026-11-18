@@ -694,11 +694,16 @@ export async function fetchWeatherForecast(
   destinationCode: string,
   date: string,
   point?: { lng: number; lat: number },
+  /** true 时跳过后端缓存，强制向上游重新获取并覆盖缓存。 */
+  refresh = false,
 ): Promise<WeatherForecast> {
   const params = new URLSearchParams({ destination_code: destinationCode, date });
   if (point !== undefined) {
     params.set('lng', String(point.lng));
     params.set('lat', String(point.lat));
+  }
+  if (refresh) {
+    params.set('refresh', 'true');
   }
   const response = await request(`/weather/forecast?${params.toString()}`);
   return (await response.json()) as WeatherForecast;

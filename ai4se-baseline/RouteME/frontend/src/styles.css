@@ -7171,6 +7171,13 @@ svg {
   gap: 8px;
 }
 
+/* 来源标签与「刷新天气」并排，避免与标题三分天下。 */
+.weather-card .weather-head-actions {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
 .weather-source {
   border: none;
   background: var(--lagoon-soft);

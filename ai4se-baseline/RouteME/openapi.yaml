@@ -2397,6 +2397,8 @@ paths:
         否则按 6 位区划码解析城市中心坐标，用户无需再次输入城市。
         日期窗口为今天 ≤ date ≤ 今天 + 15（`Asia/Shanghai`）；越界返回 200 且 `available=false`（`reason=OUT_OF_RANGE`），
         不返回任何天气数值与提醒。上游失败返回 502 `WEATHER_UPSTREAM_ERROR`，绝不伪造天气。
+        成功结果在服务端按「日期 + 坐标（约 1 km）」缓存，默认 30 分钟；`refresh=true` 跳过缓存读取并覆盖缓存，
+        `DELETE /weather/cache` 可清空全部缓存，便于上游预报更新后立即取新值。
       parameters:
         - name: destination_code
           in: query
@@ -2427,6 +2429,14 @@ paths:
           schema:
             type: number
             format: double
+        - name: refresh
+          in: query
+          required: false
+          description: |
+            `true` 时跳过后端缓存，强制向上游重新获取并用新结果覆盖缓存；默认 `false`（命中缓存直接返回）。
+          schema:
+            type: boolean
+            default: false
       responses:
         '200':
           description: 可用天气，或日期超出预报窗口的不可用状态
@@ -2481,6 +2491,33 @@ paths:
                 upstream:
                   value:
                     code: WEATHER_UPSTREAM_ERROR
+  /weather/cache:
+    delete:
+      operationId: clearWeatherCache
+      summary: 清空目的地天气缓存
+      description: |
+        清空服务端进程内的天气预报缓存，后续查询重新访问 Open-Meteo。
+        用于上游预报发生明显变化（如临近发布、极端天气预警）时立刻拉取最新数据；
+        只想刷新单个查询时优先使用 `/weather/forecast?refresh=true`，避免整体回源。
+      responses:
+        '200':
+          description: 清理完成，返回被移除的缓存条目数
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [cleared]
+                properties:
+                  cleared:
+                    type: integer
+                    minimum: 0
+                    description: 被清理的缓存条目数
+              examples:
+                cleared:
+                  value:
+                    cleared: 12
+        '500':
+          $ref: '#/components/responses/Unexpected'
   /ai/itineraries/generate:
     post:
       operationId: generateAiItinerary

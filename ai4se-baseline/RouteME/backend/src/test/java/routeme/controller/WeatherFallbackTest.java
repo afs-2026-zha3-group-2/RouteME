@@ -18,6 +18,7 @@ import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
 
+import routeme.service.WeatherService;
 import routeme.stub.UpstreamStubs;
 
 /**
@@ -43,9 +44,13 @@ class WeatherFallbackTest {
     @Autowired
     private MockMvc mockMvc;
 
+    @Autowired
+    private WeatherService weatherService;
+
     @BeforeEach
     void resetUpstream() {
         UpstreamStubs.reset();
+        weatherService.clearCache();
         UpstreamStubs.weatherBody = """
                 {"daily":{"time":["%s"],"temperature_2m_max":[26.0],"temperature_2m_min":[18.0],
                  "precipitation_sum":[0.0],"weather_code":[1],"wind_speed_10m_max":[9.0],"uv_index_max":[4.0]}}
@@ -72,7 +77,7 @@ class WeatherFallbackTest {
     }
 
     @Test
-    void in_primaryHostStillUnreachable_out_keepsServingEnsemble() throws Exception {
+    void in_primaryHostStillUnreachable_out_secondRequestServedFromCache() throws Exception {
         for (int attempt = 0; attempt < 2; attempt++) {
             mockMvc.perform(get("/api/weather/forecast")
                             .param("lng", "113.2644")
@@ -82,6 +87,24 @@ class WeatherFallbackTest {
                     .andExpect(jsonPath("$.available").value(true));
         }
 
-        assertEquals(2, UpstreamStubs.WEATHER_QUERIES.size(), "both requests should be served by the fallback");
+        assertEquals(
+                1,
+                UpstreamStubs.WEATHER_QUERIES.size(),
+                "identical repeat query should be served from the forecast cache");
+    }
+
+    @Test
+    void in_refreshTrue_out_reachesFallbackAgain() throws Exception {
+        for (int attempt = 0; attempt < 2; attempt++) {
+            mockMvc.perform(get("/api/weather/forecast")
+                            .param("lng", "113.2644")
+                            .param("lat", "23.1291")
+                            .param("date", DATE)
+                            .param("refresh", "true"))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.available").value(true));
+        }
+
+        assertEquals(2, UpstreamStubs.WEATHER_QUERIES.size(), "refresh=true must bypass the cache");
     }
 }

@@ -2,6 +2,7 @@ package routeme.controller;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -18,6 +19,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -28,6 +30,8 @@ import org.springframework.test.web.servlet.MockMvc;
 
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpServer;
+
+import routeme.service.WeatherService;
 
 /**
  * 天气接口：Open-Meteo 预报与地理编码都走本地替身，不依赖外网与真实 Key。
@@ -71,6 +75,14 @@ class WeatherControllerTest {
 
     @Autowired
     private MockMvc mockMvc;
+
+    @Autowired
+    private WeatherService weatherService;
+
+    @BeforeEach
+    void clearForecastCache() {
+        weatherService.clearCache();
+    }
 
     @AfterEach
     void resetUpstream() {
@@ -226,6 +238,111 @@ class WeatherControllerTest {
                         .param("destination_code", "440100"))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value("INVALID_INPUT"));
+    }
+
+    @Test
+    void in_sameCityAndDateTwice_out_secondServedFromCache() throws Exception {
+        // Given
+        String date = LocalDate.now(ZONE).plusDays(4).toString();
+        int before = FORECAST_CALLS.get();
+
+        // When
+        for (int attempt = 0; attempt < 3; attempt++) {
+            mockMvc.perform(get("/api/weather/forecast")
+                            .param("destination_code", "330100")
+                            .param("date", date))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.available").value(true));
+        }
+
+        // Then
+        assertEquals(1, FORECAST_CALLS.get() - before, "identical query must hit the cache");
+    }
+
+    @Test
+    void in_refreshTrue_out_bypassesCache() throws Exception {
+        // Given
+        String date = LocalDate.now(ZONE).plusDays(5).toString();
+        int before = FORECAST_CALLS.get();
+
+        // When
+        for (int attempt = 0; attempt < 2; attempt++) {
+            mockMvc.perform(get("/api/weather/forecast")
+                            .param("destination_code", "320100")
+                            .param("date", date)
+                            .param("refresh", "true"))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.available").value(true));
+        }
+
+        // Then
+        assertEquals(2, FORECAST_CALLS.get() - before, "refresh=true must always reach the upstream");
+    }
+
+    @Test
+    void in_clearCacheEndpoint_out_nextQueryRefetches() throws Exception {
+        // Given
+        String date = LocalDate.now(ZONE).plusDays(6).toString();
+        int before = FORECAST_CALLS.get();
+        mockMvc.perform(get("/api/weather/forecast")
+                        .param("destination_code", "420100")
+                        .param("date", date))
+                .andExpect(status().isOk());
+
+        // When
+        mockMvc.perform(delete("/api/weather/cache"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.cleared").isNumber());
+
+        // Then
+        mockMvc.perform(get("/api/weather/forecast")
+                        .param("destination_code", "420100")
+                        .param("date", date))
+                .andExpect(status().isOk());
+        assertEquals(2, FORECAST_CALLS.get() - before, "cleared cache must be rebuilt from the upstream");
+    }
+
+    @Test
+    void in_differentCoordinatesSameDate_out_separateCacheEntries() throws Exception {
+        // Given：同一天、两个不同坐标点必须各自缓存，不能互相命中。
+        String date = LocalDate.now(ZONE).plusDays(7).toString();
+        int before = FORECAST_CALLS.get();
+
+        // When
+        mockMvc.perform(get("/api/weather/forecast")
+                        .param("lng", "113.2644")
+                        .param("lat", "23.1291")
+                        .param("date", date))
+                .andExpect(status().isOk());
+        mockMvc.perform(get("/api/weather/forecast")
+                        .param("lng", "121.4737")
+                        .param("lat", "31.2304")
+                        .param("date", date))
+                .andExpect(status().isOk());
+
+        // Then
+        assertEquals(2, FORECAST_CALLS.get() - before, "different points must not share a cache entry");
+    }
+
+    @Test
+    void in_upstreamFailure_out_resultNotCached() throws Exception {
+        // Given：失败不写缓存，恢复后立刻能拿到数据。
+        String date = LocalDate.now(ZONE).plusDays(8).toString();
+        MODE.set(UpstreamMode.ERROR);
+        mockMvc.perform(get("/api/weather/forecast")
+                        .param("destination_code", "370200")
+                        .param("date", date))
+                .andExpect(status().isBadGateway());
+
+        // When
+        MODE.set(UpstreamMode.OK);
+
+        // Then
+        mockMvc.perform(get("/api/weather/forecast")
+                        .param("destination_code", "370200")
+                        .param("date", date))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.available").value(true));
     }
 
     @Test

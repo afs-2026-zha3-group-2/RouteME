@@ -142,6 +142,21 @@ VS Code 里已内置，无需手敲：
 - 不要为此在代码里写 `trustAllCerts` 或关掉主机名校验，那会引入安全漏洞。
 - 这条参数与 `-Pdev-run` 无关；`dev-run` 只是把编译输出放到 `target-run/`，避免与 `mvn test` 抢 `target/classes`。
 
+### 上游响应缓存（省调用次数）
+
+| 上游 | 缓存内容 | 默认 TTL | 关闭方式 |
+|---|---|---|---|
+| Open-Meteo 天气 | 单日预报，键 = 日期 + 坐标（约 1 km 网格）+ 上游来源 | 30 分钟 | `WEATHER_CACHE_TTL_MINUTES=0` |
+| Open-Meteo 地理编码 | 区划码 → 城市中心坐标（静态事实，进程内长期） | 不过期 | — |
+| 高德代理 `/api/amap`、`/_AMapService` | 只读检索 / 地理编码 / 路线规划的成功响应 | 10 分钟 | `AMAP_CACHE_TTL_SECONDS=0` |
+| DeepSeek AI | 不缓存：每次生成都应是新方案 | — | — |
+
+- 失败响应不写缓存（含高德 `status=0` 与天气上游错误），恢复后立刻能取到新结果。
+- 高德 JSONP 代理不把 `callback` 转发给上游，缓存纯 JSON 后按本次回调名包裹，避免回调串号。
+- `v3/ip`（JS API Key 自检探针）与 `v3/log/*`（埋点）不缓存，避免掩盖配置错误。
+- 及时更新：`GET /api/weather/forecast?...&refresh=true` 只刷新该次查询；`DELETE /api/weather/cache` 与 `DELETE /api/amap/cache` 整体清空。天气卡右上角「刷新天气」按钮即发 `refresh=true`。
+- 容量上限：天气 `WEATHER_CACHE_MAX_ENTRIES`（默认 2000）、高德 `AMAP_CACHE_MAX_ENTRIES`（默认 512），超出按最早到期淘汰。
+
 ## SQLite 数据
 
 | 场景 | 路径 | 说明 |
@@ -157,8 +172,8 @@ VS Code 里已内置，无需手敲：
 ## 测试与校验
 
 ```powershell
-cd ai4se-baseline/RouteME/backend;  .\mvnw.cmd -B verify          # 337 tests（H2 + SQLite）
-cd ai4se-baseline/RouteME/frontend; npm run build; npm test       # 293 tests + 类型检查
+cd ai4se-baseline/RouteME/backend;  .\mvnw.cmd -B verify          # 678 tests（H2 + SQLite）
+cd ai4se-baseline/RouteME/frontend; npm run build; npm test       # 514 tests + 类型检查
 cd ai4se-baseline/RouteME;          npx -y @redocly/cli lint openapi.yaml   # 0 error
 cd ai4se-baseline/RouteME/e2e;      npx playwright test           # 123 个用例，需前后端已启动
 ```
