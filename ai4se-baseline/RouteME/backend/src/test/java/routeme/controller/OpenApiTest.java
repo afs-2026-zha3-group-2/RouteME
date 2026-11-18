@@ -79,7 +79,7 @@ class OpenApiTest {
 
         // Then
         assertAll(
-                () -> assertEquals("0.28.0", info.get("version"), "info.version"),
+                () -> assertEquals("0.29.0", info.get("version"), "info.version"),
                 () -> assertTrue(responses(likeExperience).containsKey("201"), "first like returns 201"),
                 () -> assertTrue(responses(likeExperience).containsKey("200"), "duplicate like returns 200"),
                 () -> assertTrue(responses(likeExperience).containsKey("403"), "self like returns 403"),
@@ -156,7 +156,7 @@ class OpenApiTest {
 
         // Then
         assertAll(
-                () -> assertEquals("0.28.0", info.get("version"), "info.version"),
+                () -> assertEquals("0.29.0", info.get("version"), "info.version"),
                 () -> assertTrue(paths(document).containsKey("/users"), "/users declared"),
                 () -> assertTrue(paths(document).containsKey("/trips/{tripId}"), "detail path declared"),
                 () -> assertTrue(
@@ -754,7 +754,7 @@ class OpenApiTest {
 
         // Then
         assertAll(
-                () -> assertEquals("0.28.0", info.get("version"), "info.version"),
+                () -> assertEquals("0.29.0", info.get("version"), "info.version"),
                 () -> assertTrue(paths(document).keySet().containsAll(ADMIN_CONSOLE_PATHS), "admin console paths"),
                 () -> assertEquals(17L, adminOperations, "admin console operations"),
                 () -> assertTrue(
@@ -885,7 +885,7 @@ class OpenApiTest {
 
         // Then
         assertAll(
-                () -> assertEquals("0.28.0", asMap(document.get("info")).get("version"), "info.version"),
+                () -> assertEquals("0.29.0", asMap(document.get("info")).get("version"), "info.version"),
                 () -> assertTrue(responses(startSession).containsKey("201"), "session start returns 201"),
                 () -> assertTrue(
                         responses(startSession).keySet().containsAll(List.of("401", "404", "409", "429")),
@@ -1061,7 +1061,7 @@ class OpenApiTest {
 
         // Then
         assertAll(
-                () -> assertEquals("0.28.0", info.get("version"), "info.version"),
+                () -> assertEquals("0.29.0", info.get("version"), "info.version"),
                 () -> assertTrue(
                         paths(document).keySet().containsAll(List.of(
                                 "/trips/{tripId}/finance",
@@ -1290,4 +1290,115 @@ class OpenApiTest {
     private Map<String, Object> asMap(Object value) {
         return (Map<String, Object>) value;
     }
+
+    @Test
+    void in_openApiFile_out_notificationContractDeclared() throws IOException {
+        // Given
+        Map<String, Object> document = loadYaml(SPEC_PATH);
+        Map<String, Object> info = asMap(document.get("info"));
+        Map<String, Object> notification = schema(document, "Notification");
+        Map<String, Object> target = schema(document, "NotificationTarget");
+        Map<String, Object> counts = schema(document, "NotificationCounts");
+        Map<String, Object> list = schema(document, "NotificationList");
+        Map<String, Object> readRequest = schema(document, "NotificationReadRequest");
+        Map<String, Object> event = schema(document, "NotificationEvent");
+        Map<String, Object> myReport = schema(document, "MyReport");
+
+        // When
+        Map<String, Object> collection = operation(document, "/notifications", "get");
+        Map<String, Object> stream = operation(document, "/notifications/stream", "get");
+        Map<String, Object> readOne = operation(document, "/notifications/{notificationId}/read", "post");
+        Map<String, Object> readScoped = operation(document, "/notifications/read", "post");
+        Map<String, Object> items = asMap(properties(list).get("items"));
+        Map<String, Object> byType = asMap(properties(counts).get("by_type"));
+
+        // Then
+        assertAll(
+                () -> assertEquals("0.29.0", info.get("version"), "info.version"),
+                () -> assertTrue(
+                        paths(document).containsKey("/notifications")
+                                && paths(document).containsKey("/notifications/stream")
+                                && paths(document).containsKey("/notifications/{notificationId}/read")
+                                && paths(document).containsKey("/notifications/read")
+                                && paths(document).containsKey("/reports/mine"),
+                        "notification and my-reports paths declared"),
+                () -> assertEquals(
+                        List.of("TRIP", "APPLICATION", "CHAT", "CREDIT",
+                                "REPORT", "ACCOUNT", "SERVICE", "SYSTEM"),
+                        enums(schema(document, "NotificationType")),
+                        "notification types"),
+                () -> assertTrue(
+                        enums(schema(document, "NotificationEventName")).containsAll(List.of(
+                                "trip_cancelled", "application_closed", "message",
+                                "credit_recovered", "report_resolved", "account_banned",
+                                "service_reply", "identity_verified")),
+                        "event names declared"),
+                () -> assertEquals(
+                        List.of("NORMAL", "HIGH"),
+                        enums(schema(document, "NotificationPriority")),
+                        "priorities"),
+                () -> assertEquals(
+                        List.of("UNREAD", "READ"),
+                        enums(schema(document, "NotificationStatus")),
+                        "statuses"),
+                () -> assertEquals(
+                        List.of("trip", "applications", "chat", "credit",
+                                "report", "account", "support", "identity"),
+                        enums(schema(document, "NotificationTargetKind")),
+                        "target kinds"),
+                () -> assertTrue(
+                        required(notification).containsAll(List.of(
+                                "id", "type", "event", "title", "content", "priority",
+                                "status", "created_at", "target", "related_available")),
+                        "notification required fields"),
+                () -> assertTrue(
+                        required(target).contains("kind"), "target always names a kind"),
+                () -> assertTrue(
+                        required(counts).containsAll(List.of("total", "by_type")),
+                        "notification counts required fields"),
+                () -> assertTrue(
+                        asMap(byType).get("required") instanceof List<?> requiredTypes
+                                && requiredTypes.containsAll(List.of(
+                                        "TRIP", "APPLICATION", "CHAT", "CREDIT",
+                                        "REPORT", "ACCOUNT", "SERVICE", "SYSTEM")),
+                        "all eight counters are required"),
+                () -> assertEquals(0, properties(counts).get("total").get("minimum"), "total minimum"),
+                () -> assertTrue(
+                        required(list).containsAll(List.of("items", "counts")),
+                        "notification list required fields"),
+                () -> assertEquals(50, items.get("maxItems"), "notification list maxItems"),
+                () -> assertEquals(
+                        List.of("all", "conversation"),
+                        enums(properties(readRequest).get("scope")),
+                        "read scopes"),
+                () -> assertTrue(required(event).contains("notification"), "notification event payload"),
+                () -> assertTrue(
+                        required(myReport).containsAll(List.of(
+                                "id", "code", "target_type", "reason", "status", "created_at")),
+                        "my report required fields"),
+                () -> assertTrue(
+                        !properties(myReport).containsKey("resolution_note"),
+                        "my report never exposes the admin note"),
+                () -> assertTrue(responses(collection).containsKey("200"), "collection returns 200"),
+                () -> assertTrue(responses(collection).containsKey("401"), "collection returns 401"),
+                () -> assertTrue(responses(stream).containsKey("200"), "stream returns 200"),
+                () -> assertTrue(responses(readOne).containsKey("404"), "single read returns 404"),
+                () -> assertTrue(responses(readScoped).containsKey("400"), "scoped read returns 400"),
+                () -> assertTrue(
+                        parameterNames(document, stream).contains("user_id"),
+                        "stream takes user_id"),
+                () -> assertTrue(
+                        parameterNames(document, collection).contains("X-User-Id"),
+                        "collection takes X-User-Id"),
+                () -> assertTrue(
+                        enums(properties(schema(document, "Error")).get("code"))
+                                .contains("NOTIFICATION_NOT_FOUND"),
+                        "notification error code"),
+                () -> assertEquals(
+                        "#/components/schemas/NotificationStatus",
+                        asMap(properties(notification).get("status")).get("$ref"),
+                        "status references the enum schema")
+        );
+    }
 }
+

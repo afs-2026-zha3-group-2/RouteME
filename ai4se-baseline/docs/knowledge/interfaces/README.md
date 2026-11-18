@@ -61,9 +61,33 @@ API、事件与集成契约。字段一律 snake_case；时间字段为 RFC3339 
 - 加 / 扣分明细、原因、历史与变更记录只在服务端账本（`credit_ledger`）留存，不对外返回；管理端能力尚未交付。
 - 详情（阈值、账本字段、越界裁断、零变化留痕）以 `openapi.yaml` 与 `openspec/specs/user-credit/spec.md`（归档后）为准。
 
-## RouteME 管理后台概览（2026-11-17，`add-admin-dashboard` / REQ-023）
+## RouteME 通知中心与未读计数（2026-11-18，`notifications` / REQ-029）
 
-契约源：`RouteME/openapi.yaml`（v0.18.0）。校验：`cd RouteME/backend; .\mvnw.cmd -Dtest=OpenApiTest test`。
+契约源：`RouteME/openapi.yaml`（v0.26.0）。校验：`cd RouteME/backend; .\mvnw.cmd -Dtest=OpenApiTest test`。
+
+| 方法 | 路径 | 说明 |
+|---|---|---|
+| GET | `/notifications` | 最新 50 条通知 + 未读计数（`total` + 八类 `by_type`，零值不省略） |
+| GET | `/notifications/stream?user_id={id}` | SSE 通道；事件名固定 `notification`，约 20 s 一次 `: ping` 心跳，不下发 `id:` |
+| POST | `/notifications/{notificationId}/read` | 单条标读；返回最新计数，重复标读幂等 |
+| POST | `/notifications/read` | `{scope:"all"}` 全部标读；`{scope:"conversation",trip_id,other_user_id}` 只清该会话 |
+| GET | `/reports/mine` | 举报人自查（举报编号 + 当前状态），承接 `REPORT` 类跳转 |
+
+- 八类通知：`TRIP` / `APPLICATION` / `CHAT` / `CREDIT` / `REPORT` / `ACCOUNT` / `SERVICE` / `SYSTEM`；`event` 为 snake_case 具体事件（22 个，契约枚举即事实来源）。
+- 每条事件一行持久化记录，未读定义为 `read_at IS NULL`，`status` 由它派生为 `UNREAD` / `READ`；`(recipient_id, dedupe_key)` 唯一，重复触发不增加行数与计数。
+- `Notification` 字段：`type` / `event` / `title` / `content` / `priority`（`NORMAL` / `HIGH`）/ `status` / `created_at` / `read_at` / `actor`（可空）/ 关联 id（`trip_id` / `application_id` / `message_id` / `report_id` / `session_id`）/ `target`（`kind` + 定位字段）/ `related_available`。
+- 标题与正文由后端 `NotificationTextUtils` 统一生成，前端直接展示；账号受限只写受限内容与恢复时间，举报只写编号与结论，不含管理员备注或他人数据。
+- 优先级：信用分变动后低于 60 与安全学习恢复通知为 `HIGH`，其余 `NORMAL`。
+- 计数：`total` = 八类未读之和；`by_type` 八个键恒出现。列表按 `created_at DESC, id DESC`，最多 50 条，不含消息正文。
+- 跳转：`target.kind` ∈ `trip` / `applications` / `chat` / `credit` / `report` / `account` / `support` / `identity`，前端据此组装路由；`related_available=false` 时保留正文、提示「相关内容当前不可查看」、不跳转，仍标读。
+- 权限：REST 端点要求 `X-User-Id`；SSE 因 `EventSource` 无法带请求头，改用 `user_id` 查询参数（与 `X-User-Id` 同级的演示身份信任）。单条标读只允许本人记录，越权与不存在统一 404 `NOTIFICATION_NOT_FOUND`。
+- `scope=conversation` 缺 `trip_id` 或 `other_user_id`、`scope` 非法返回 400 `INVALID_INPUT`。
+- SSE 响应头固定 `Cache-Control: no-cache` 与 `X-Accel-Buffering: no`；重连正确性由客户端 REST 对账保证，不依赖 Last-Event-ID。
+- 通知写入与业务同事务，推送在 `afterCommit` 后发出；通知写入失败只记日志、不回滚申请 / 裁决 / 发消息 / 信用 / 举报 / 账号 / 客服动作；动作人即收件人时直接丢弃（自消息、发布者自己的接受动作不通知本人）。
+- 生产方：行程满员 / 开始 / 取消 / 完成、申请到达 / 通过 / 拒绝 / 关闭、聊天消息、信用变动 / 恢复、举报提交 / 处理中 / 完成、账号暂停 / 封禁 / 恢复、客服接入 / 回复 / 结束、资料首次完整（身份认证）。
+- 前端徽标口径：顶栏铃铛、侧栏「通知中心」入口、账号菜单入口 = `total`；侧栏 / 移动 tab 的聊天入口与会话列表 = `CHAT`；数字为唯一信息载体（不截断为 `99+`），颜色只作强调，0 时不渲染。
+
+## RouteME 管理后台概览（2026-11-17，`add-admin-dashboard` / REQ-026）
 
 | 方法 | 路径 | 说明 |
 |---|---|---|

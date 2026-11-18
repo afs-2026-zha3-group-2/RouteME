@@ -40,6 +40,7 @@ import routeme.service.AccountStatusService;
 import routeme.service.AdminReportService;
 import routeme.service.CustomerService;
 import routeme.service.DemoUserService;
+import routeme.service.NotificationService;
 import routeme.service.ReportTargetService;
 
 /** 客服会话与消息实现（design §5.6）。 */
@@ -55,6 +56,7 @@ public class CustomerServiceImpl implements CustomerService {
     private final AccountStatusService accountStatusService;
     private final AdminReportService adminReportService;
     private final ReportTargetService reportTargetService;
+    private final NotificationService notificationService;
     private final Clock clock;
 
     public CustomerServiceImpl(
@@ -64,6 +66,7 @@ public class CustomerServiceImpl implements CustomerService {
             AccountStatusService accountStatusService,
             AdminReportService adminReportService,
             ReportTargetService reportTargetService,
+            NotificationService notificationService,
             Clock clock) {
         this.sessionMapper = sessionMapper;
         this.messageMapper = messageMapper;
@@ -71,6 +74,7 @@ public class CustomerServiceImpl implements CustomerService {
         this.accountStatusService = accountStatusService;
         this.adminReportService = adminReportService;
         this.reportTargetService = reportTargetService;
+        this.notificationService = notificationService;
         this.clock = clock;
     }
 
@@ -123,7 +127,9 @@ public class CustomerServiceImpl implements CustomerService {
             return Optional.empty();
         }
         CustomerServiceSession session = entity.toSession();
-        return Optional.of(appendMessage(session, AccountRoleEnum.ADMIN.code(), adminId, content));
+        ServiceMessageResponse reply = appendMessage(session, AccountRoleEnum.ADMIN.code(), adminId, content);
+        notificationService.notifyServiceReply(session.userId(), sessionId, reply.id());
+        return Optional.of(reply);
     }
 
     @Override
@@ -167,6 +173,7 @@ public class CustomerServiceImpl implements CustomerService {
         if (!updated) {
             throw new SessionAlreadyHandlingException(sessionId);
         }
+        notificationService.notifyServiceJoined(entity.getUserId(), sessionId);
         return adminDetail(sessionId);
     }
 
@@ -186,6 +193,7 @@ public class CustomerServiceImpl implements CustomerService {
         if (!updated) {
             throw new SessionNotHandlingException(sessionId);
         }
+        notificationService.notifyServiceClosed(entity.getUserId(), sessionId);
         return adminDetail(sessionId);
     }
 

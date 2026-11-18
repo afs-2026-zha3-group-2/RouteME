@@ -32,6 +32,7 @@ import routeme.param.TripQueryParam;
 import routeme.service.ApplicationService;
 import routeme.service.DemoUserService;
 import routeme.service.TripPlanService;
+import routeme.service.impl.NotificationLifecycleService;
 
 @RestController
 @RequestMapping("/api/trips")
@@ -40,16 +41,19 @@ public class TripController {
     private final DemoUserService demoUserService;
     private final TripPlanService tripPlanService;
     private final ApplicationService applicationService;
+    private final NotificationLifecycleService notificationLifecycleService;
     private final Clock clock;
 
     public TripController(
             DemoUserService demoUserService,
             TripPlanService tripPlanService,
             ApplicationService applicationService,
+            NotificationLifecycleService notificationLifecycleService,
             Clock clock) {
         this.demoUserService = demoUserService;
         this.tripPlanService = tripPlanService;
         this.applicationService = applicationService;
+        this.notificationLifecycleService = notificationLifecycleService;
         this.clock = clock;
     }
 
@@ -78,6 +82,7 @@ public class TripController {
             @PathVariable long tripId) {
         demoUserService.require(userId);
         TripPlan trip = tripPlanService.requireCurrent(tripId);
+        notificationLifecycleService.materializeOngoing(tripId);
         DemoUser publisher = tripPlanService.publisherOf(trip);
         boolean includeCancelDetail = trip.publisherId() == userId
                 || applicationService.isAccepted(tripId, userId);

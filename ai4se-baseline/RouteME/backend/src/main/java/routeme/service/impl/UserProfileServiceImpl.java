@@ -35,6 +35,7 @@ import routeme.service.AccountStatusService;
 import routeme.service.CreditRestrictionGuard;
 import routeme.service.CreditService;
 import routeme.service.DemoUserService;
+import routeme.service.NotificationService;
 import routeme.service.UserProfileService;
 import routeme.utils.JsonListUtils;
 
@@ -52,6 +53,7 @@ public class UserProfileServiceImpl implements UserProfileService {
     private final AccountStatusService accountStatusService;
     private final CreditService creditService;
     private final CreditRestrictionGuard creditRestrictionGuard;
+    private final NotificationService notificationService;
     private final Clock clock;
     private final Path avatarDirectory;
 
@@ -60,12 +62,14 @@ public class UserProfileServiceImpl implements UserProfileService {
             AccountStatusService accountStatusService,
             CreditService creditService,
             CreditRestrictionGuard creditRestrictionGuard,
+            NotificationService notificationService,
             Clock clock,
             @Value("${routeme.profile.avatar-dir:../SqlLite/uploads/avatars}") String avatarDirectory) {
         this.demoUserService = demoUserService;
         this.accountStatusService = accountStatusService;
         this.creditService = creditService;
         this.creditRestrictionGuard = creditRestrictionGuard;
+        this.notificationService = notificationService;
         this.clock = clock;
         this.avatarDirectory = Path.of(avatarDirectory).toAbsolutePath().normalize();
         try {
@@ -89,6 +93,7 @@ public class UserProfileServiceImpl implements UserProfileService {
             throw new InvalidProfileException(fields);
         }
         UserEntity entity = requireEntity(userId);
+        boolean wasComplete = isComplete(entity);
         List<String> interests = ProfileRules.normalizeInterests(request.interests());
         String nickname = ProfileRules.trimToEmpty(request.nickname());
 
@@ -119,6 +124,9 @@ public class UserProfileServiceImpl implements UserProfileService {
                 .set(UserEntity::getInterests, entity.getInterests())
                 .set(UserEntity::getTravelStyle, entity.getTravelStyle())
                 .set(UserEntity::getBio, entity.getBio()));
+        if (!wasComplete && isComplete(entity)) {
+            notificationService.notifyIdentityVerified(userId);
+        }
         return toProfile(entity, true);
     }
 
@@ -185,6 +193,17 @@ public class UserProfileServiceImpl implements UserProfileService {
             throw new UserNotFoundException(userId);
         }
         return entity;
+    }
+
+    private boolean isComplete(UserEntity entity) {
+        return ProfileRules.complete(
+                entity.getNickname(),
+                entity.getBirthday(),
+                entity.getGender(),
+                entity.getCity(),
+                JsonListUtils.parse(entity.getInterests()),
+                entity.getTravelStyle(),
+                clock);
     }
 
     /**

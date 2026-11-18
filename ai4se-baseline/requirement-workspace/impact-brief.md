@@ -1517,11 +1517,76 @@ REQ-010：聊天页按原型重构、聊天准入与退出语义调整、集合�
 - **质量自检（split-heuristics）：** 子目标一句话可说明 ✓；端到端可观察（选目的地 → 看到真实天气与具体提醒）✓；可独立运行 ✓；capability 名真实 ✓；无依赖环 ✓。
 - **质量自检（split-heuristics）：** 子目标一句话可说明 ✓；端到端可观察（发布者取消 → 首页下架 / 申请关闭 / 聊天只读 / 我的旅行保留）✓；可独立运行 ✓；capability 名真实 ✓；无依赖环 ✓。
 
+## 28. REQ-032 变更影响 — 实时通知中心与未读计数（迭代 3 / P0）
+
+### 28.1 as-is 盘点
+
+| 位置 | 现状 |
+|---|---|
+| 后端通知 | 无通知表、无通知服务、无推送通道；`routeme/mq/` 只有 `.gitkeep`；无 `@EnableScheduling` |
+| 后端事件源 | 行程（满员 / ONGOING / 取消 / 完成）、申请（到达 / 接受 / 拒绝 / 关闭）、聊天、信用变动、举报（提交 / 处理中 / 完成）、账号状态、客服会话、身份资料完成 |
+| 前端壳层 | `AppShell` 顶栏只有品牌与账号入口（主题切换已由 `main` 移除）；侧栏分组、账号菜单、≤900 px 底部 tab；无铃铛 / 徽标 / 面板 / 通知中心 |
+| 前端聊天 | `ChatPage` 打开会话后每 3 秒轮询**当前会话**；`ChatList` 只显示最后一条消息与消息总数，无未读 |
+| 前端申请 | 发布者需打开 `#/trips/{id}/applications` 才能看到新申请；申请者需重开 `#/mine` 才能看到裁决 |
+| 契约 / 迁移 | `openapi.yaml` 0.24.0（合并 main 后）；迁移最新 `V29__credit_exit_application.sql` |
+| 身份 | 用户端点用 `X-User-Id`；`EventSource` 不能带自定义头 |
+
+### 28.2 delta
+
+| 层 | 变更 |
+|---|---|
+| 能力 | 新增 `notifications`（ADDED：8 Requirement / 36 Scenario） |
+| 后端 | `NotificationService`（写 / 列表 / 计数 / 已读范围 / 去重）+ `NotificationStreamService`（按用户的 `SseEmitter` 注册表 + 心跳）+ `NotificationController`；八类生产方各追加一次通知调用；`NotificationLifecycleService` 惰性物化 ONGOING 与安全提醒 |
+| 前端 | `notifications/` 纯模型 + 提供者 + `EventSource` 生命周期 + 铃铛 / 面板 + 通知中心页；`AppShell` 通知入口与聊天徽标；`ChatPage` 打开即清未读 + 推送追加；`ChatList` 会话级未读；信用记录页与举报详情页承接跳转 |
+| 契约 | 0.29.0：新增列表 / 流 / 单条已读 / 范围已读 4 条路径与 8 类枚举、目标、优先级、`by_type`、`/reports/mine` |
+| 数据 | 新增 `notifications` 表（`V33__add_notifications.sql`），索引 `(recipient_id, created_at)` 与 `(recipient_id, read_at)`，`(recipient_id, dedupe_key)` 唯一 |
+| 文案 | 22 个事件的标题与正文由 `NotificationTextUtils` 统一生成；面板 / 通知中心空态、筛选、全部已读、不可用提示、类型标签 |
+
+### 28.3 blast radius
+
+| 受影响 | 影响方式 |
+|---|---|
+| `ApplicationServiceImpl` | 申请 / 裁决 / 取消 / 完成路径追加通知；状态机、异常与事务边界不变 |
+| `ChatServiceImpl` | 仅对非自消息追加通知；准入与只读规则不变 |
+| `TripController` | 读取详情时惰性物化 `trip_ongoing` + `safety_reminder`；详情响应不变 |
+| `AccountStatusService` | 暂停 / 封禁 / 恢复后追加通知；用 `ObjectProvider` 避免循环依赖 |
+| `ReportServiceImpl` / `AdminReportServiceImpl` | 提交、处理中、处理完成三段通知；只读安全字段 |
+| `CustomerServiceImpl` / `UserProfileServiceImpl` / `CreditChangedEvent` 监听 | 客服三段、身份认证、信用变动与恢复 |
+| `AppShell` | 顶栏铃铛、侧栏「通知中心」、账号菜单与聊天入口数字徽标；底部 tab 同口径 |
+| `ChatPage` / `ChatList` | 新增打开即读与推送追加；3 秒轮询保留为兜底 |
+| `openapi.yaml` / `OpenApiTest` | 新增路径与 schema；版本递增到 0.29.0 |
+| 迁移 | 新表；H2 与 SQLite 双引擎需同时通过 |
+| E2E | `notifications.spec.ts` 13 条（M1–M10 + N1–N3）与 `notifications-walkthrough.spec.ts` 4 条（V1–V4） |
+
+### 28.4 风险
+
+| 类型 | 说明 | 缓解 |
+|---|---|---|
+| Risk | 开发代理 / 生产反代缓冲 SSE，延迟或收不到 | 响应头禁缓冲（`X-Accel-Buffering: no`、`Cache-Control: no-cache`）+ ~20 s 心跳；P4 经 dev proxy 实测 |
+| Risk | 后端重启丢失内存中的 emitter | 单进程 demo 可接受；客户端每次 `open` 重新走 REST 对账（D3） |
+| Risk | 通知失败连带业务回滚 | D6：通知只是附属动作；`notify*` 内部捕获 + `log.warn` |
+| Risk | 自消息产生无意义通知 | `requireAccess` 允许自消息，需显式守卫（S33-36） |
+| Risk | 八类计数漂移 | 同一前端 store + 同一响应 / 事件载荷派生；纯函数单测覆盖 reducer |
+| Risk | 重复事件刷屏 | `(recipient_id, dedupe_key)` 唯一 + 先查后插 + `DuplicateKeyException` 兜底 |
+| Risk | 已读后旧快照复活计数 | `lastReadSeq` 护栏：标读后到达的在途快照只合并条目、不采用计数 |
+| Risk | 关联对象失效导致死链 | 后端 `related_available` + 前端提示「相关内容当前不可查看」，不跳转 |
+| Risk | 管理员备注 / 他人隐私进入通知 | 文案只使用结构化事实；封禁只展示原因码标签与恢复时间 |
+| Risk | 查询参数身份可伪造 | 与既有 `X-User-Id` 同等暴露；记录为真实认证 change 的输入 |
+| Risk | 契约 / 迁移号段与并行 change 冲突 | 取 0.29.0 / `V33__add_notifications.sql`，P3 排他确认并在 `design.md` 复述 |
+| Blocker | 无 | blocking OQ=0、DoR BLOCKER=0 |
+
+### 28.5 Suggested split boundaries
+
+- **不拆 change：** 八类记录 + 推送 + 计数 + 通知中心必须同批交付，否则「有推送没计数」或「有计数没入口」都不可验收。
+- **不拆故事到 change：** S33-1 ~ S33-8 共享一张表、一份计数口径与一个通知中心；按故事分层提交即可。
+- **后续候选（另开需求）：** 通知偏好、保留策略与清理、搜索、邮件 / 短信 / OS 推送、未读摘要、真实认证下的推送鉴权、通知分页加载更早历史。
+- **质量自检（split-heuristics）：** 子目标一句话可说明 ✓；端到端可观察（B 申请 → A 的铃铛 2 秒内 +1，点击进申请处理页）✓；可独立运行 ✓；capability 名真实 ✓；无依赖环（账号服务用 `ObjectProvider`）✓。
+
 ## 23. REQ-023 变更影响 — 旅行体验获赞增加信用分（issue #30）
 
 - **日期：** 2026-11-17 ｜ **触发：** `/sdd:p1`（GitHub issue #30 + 用户裁决 D1–D4）
 - **粒度：** 应用架构（点赞数据所有权 / 体验读取路径 / 信用结算集成点 / 两个展示面），非代码设计
-- **基线：** `origin/main@64b38da`（独立 worktree `.worktrees/add-experience-like-credit`，分支 `feature/add-experience-like-credit`）；2026-11-17 同步 `origin/main@b50e416`，编号顺延为 REQ-023 / 契约 0.18.0 / 迁移 V24
+- **基线：** `origin/main@64b38da`（独立 worktree `.worktrees/add-experience-like-credit`，分支 `feature/add-experience-like-credit`）；2026-11-17 同步 `origin/main@b50e416`，编号顺延为 REQ-023 / 契约 0.18.0 / 迁移 V30
 
 ### 23.1 Requirement set
 

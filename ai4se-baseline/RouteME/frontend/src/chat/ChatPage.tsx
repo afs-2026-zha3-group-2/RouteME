@@ -1,8 +1,10 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Alert, Button, Skeleton, Typography } from 'antd';
 import { loadChatPartners, loadMessages, loadTrip, sendMessage } from '../api';
 import { useMyCredit } from '../credit/CreditContext';
 import { tripMessages } from '../i18n/tripMessages';
+import { conversationKey } from '../notifications/notificationModel';
+import { useNotifications } from '../notifications/NotificationContext';
 import { useProfile } from '../profiles/ProfileContext';
 import { ReportModal } from '../safety/ReportModal';
 import { TripLeaveModal } from '../trips/TripLeaveModal';
@@ -25,6 +27,12 @@ type Props = {
  */
 export function ChatPage({ currentUser, tripId, otherUserId }: Props) {
   const { openProfile } = useProfile();
+const {
+    unreadConversations,
+    setActiveConversation,
+    markConversationRead,
+    lastMessageEvent,
+  } = useNotifications();
   const { restricted, refresh: refreshCredit } = useMyCredit();
   const [partners, setPartners] = useState<ChatPartner[] | null>(null);
   const [partnersError, setPartnersError] = useState<string | null>(null);
@@ -52,6 +60,12 @@ export function ChatPage({ currentUser, tripId, otherUserId }: Props) {
   const activeTripId = partner?.trip.id ?? tripId ?? 0;
   const activeOtherId = partner?.other.id ?? otherUserId ?? 0;
 
+  // 轮询保底标读：读消息时若本地该会话仍有未读，再清一次，覆盖推送漏掉的路径。
+  const unreadRef = useRef(unreadConversations);
+  useEffect(() => {
+    unreadRef.current = unreadConversations;
+  }, [unreadConversations]);
+
   const reloadPartners = useCallback(() => {
     loadChatPartners(currentUser.id)
       .then((loaded) => {
@@ -76,12 +90,16 @@ export function ChatPage({ currentUser, tripId, otherUserId }: Props) {
       .then((loaded) => {
         setMessages(loaded);
         setMessagesError(null);
+        const key = conversationKey(partner.trip.id, partner.other.id);
+        if ((unreadRef.current.get(key) ?? 0) > 0) {
+          markConversationRead(partner.trip.id, partner.other.id);
+        }
       })
       .catch((caught: unknown) => {
         setMessages(null);
         setMessagesError(caught instanceof Error ? caught.message : 'UNKNOWN_ERROR');
       });
-  }, [partner, currentUser.id]);
+  }, [partner, currentUser.id, markConversationRead]);
 
   useEffect(() => {
     if (partner === null) {
@@ -104,6 +122,37 @@ export function ChatPage({ currentUser, tripId, otherUserId }: Props) {
     }
     return startChatPolling(reloadMessages);
   }, [partner, trip, reloadMessages]);
+
+  // 打开会话：登记为活动会话并标读；离开时清空，让后续消息重新进入未读提示。
+  useEffect(() => {
+    if (partner === null) {
+      return;
+    }
+    setActiveConversation(conversationKey(partner.trip.id, partner.other.id));
+    markConversationRead(partner.trip.id, partner.other.id);
+    return () => setActiveConversation(null);
+  }, [partner, setActiveConversation, markConversationRead]);
+
+  // 活动会话的推送直接追加到消息列表，不提示、不累计未读（D14 / S23-24）。
+  useEffect(() => {
+    if (lastMessageEvent === null || partner === null) {
+      return;
+    }
+    if (
+      lastMessageEvent.tripId !== partner.trip.id
+      || lastMessageEvent.otherId !== partner.other.id
+    ) {
+      return;
+    }
+    setMessages((previous) => {
+      const current = previous ?? [];
+      if (current.some((message) => message.id === lastMessageEvent.message.id)) {
+        return current;
+      }
+      return [...current, lastMessageEvent.message];
+    });
+    markConversationRead(partner.trip.id, partner.other.id);
+  }, [lastMessageEvent, partner, markConversationRead]);
 
   const send = async () => {
     if (!canSendMessage(content) || sending || partner === null) {

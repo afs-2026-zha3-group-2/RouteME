@@ -3,6 +3,7 @@ package routeme.service;
 import java.time.Clock;
 import java.time.Instant;
 
+import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -14,6 +15,7 @@ import routeme.exception.AccountBannedException;
 import routeme.exception.AccountSuspendedException;
 import routeme.exception.InvalidStatusTransitionException;
 import routeme.exception.UserNotFoundException;
+import routeme.service.NotificationService;
 
 /**
  * Single source of truth for account status transitions, lazy ban expiry and write guards
@@ -25,10 +27,15 @@ public class AccountStatusService {
     private static final String RESTORE_REASON_FALLBACK = "管理员恢复账号";
 
     private final DemoUserService demoUserService;
+    private final ObjectProvider<NotificationService> notificationServiceProvider;
     private final Clock clock;
 
-    public AccountStatusService(DemoUserService demoUserService, Clock clock) {
+    public AccountStatusService(
+            DemoUserService demoUserService,
+            ObjectProvider<NotificationService> notificationServiceProvider,
+            Clock clock) {
         this.demoUserService = demoUserService;
+        this.notificationServiceProvider = notificationServiceProvider;
         this.clock = clock;
     }
 
@@ -59,6 +66,7 @@ public class AccountStatusService {
         if (AccountStatusEnum.BANNED.code().equals(entity.getStatus()) && isBanExpired(entity)) {
             entity.setStatus(AccountStatusEnum.ACTIVE.code());
             demoUserService.updateById(entity);
+            notifyStatus(entity);
         }
         return entity;
     }
@@ -153,7 +161,24 @@ public class AccountStatusService {
         }
         // Otherwise ban_reason_code / ban_reason_note / ban_expires_at stay as history (design D4).
         demoUserService.updateById(entity);
+        notifyStatus(entity);
         return entity;
+    }
+
+    /**
+     * 账号状态通知：只带状态、结构化封禁原因与恢复时间；管理员备注与操作者信息不外发。
+     */
+    private void notifyStatus(UserEntity entity) {
+        NotificationService notificationService = notificationServiceProvider.getIfAvailable();
+        if (notificationService == null || entity.getId() == null) {
+            return;
+        }
+        notificationService.notifyAccountStatus(
+                entity.getId(),
+                AccountStatusEnum.of(entity.getStatus()),
+                entity.getBanReasonCode(),
+                entity.getBanExpiresAt(),
+                entity.getStatusUpdatedAt());
     }
 
     private boolean isBanExpired(UserEntity entity) {

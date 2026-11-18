@@ -763,6 +763,7 @@ svg {
   text-align: left;
   color: var(--ink-2);
   cursor: pointer;
+  position: relative;
   transition: background 0.16s, color 0.16s, box-shadow 0.18s, transform 0.18s;
 }
 
@@ -908,6 +909,10 @@ svg {
   flex: none;
 }
 
+.rail-menu-item .count-badge {
+  margin-left: auto;
+}
+
 .rail-menu-item:hover,
 .rail-menu-item:focus-visible {
   background: var(--surface-2);
@@ -951,6 +956,511 @@ svg {
   display: none;
 }
 
+/* ---------- 通知（顶栏铃铛 / 面板 / 数字徽标） ---------- */
+.count-badge {
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  border-radius: 999px;
+  background: var(--danger);
+  color: var(--on-deep);
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 18px;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+  box-shadow: 0 0 0 2px var(--surface);
+}
+
+.rail-link .count-badge {
+  margin-left: auto;
+}
+
+/* 侧栏账号入口的徽标贴在头像右上角，与铃铛徽标同一套视觉。 */
+.rail-user .count-badge.rail-user-badge {
+  position: absolute;
+  top: 2px;
+  left: 27px;
+  pointer-events: none;
+}
+
+.notification-bell {
+  position: relative;
+}
+
+.notification-bell .count-badge {
+  position: absolute;
+  top: 1px;
+  right: 1px;
+  pointer-events: none;
+}
+
+.tab-link {
+  position: relative;
+}
+
+.tab-link .count-badge {
+  position: absolute;
+  top: -2px;
+  right: calc(50% - 22px);
+}
+
+/* 面板外框：与左下角账号菜单同构（portal + fixed）；宽、高、位置由铃铛按视口算。 */
+.notification-pop {
+  position: fixed;
+  z-index: 130;
+  display: flex;
+  min-width: 0;
+  padding: 12px;
+  border: 1px solid var(--line-2);
+  border-radius: 14px;
+  background: var(--surface);
+  box-shadow: var(--sh-3);
+}
+
+[data-theme="dark"] .notification-pop {
+  background: var(--surface-2);
+}
+
+.notification-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+  min-height: 0;
+  max-height: 100%;
+}
+
+.notification-panel-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.notification-panel-title {
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.notification-mark-all {
+  padding: 2px 6px;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 650;
+  color: var(--t-lagoon);
+  cursor: pointer;
+}
+
+.notification-mark-all:hover:not(:disabled) {
+  background: var(--surface-2);
+}
+
+.notification-mark-all:disabled {
+  color: var(--ink-3);
+  cursor: default;
+}
+
+.notification-panel-list {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  gap: 4px;
+  min-height: 0;
+  overflow-y: auto;
+}
+
+.notification-item {
+  display: grid;
+  gap: 3px;
+  width: 100%;
+  padding: 9px 10px;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  background: transparent;
+  font-family: inherit;
+  font-size: 12.5px;
+  line-height: 1.5;
+  text-align: left;
+  color: var(--ink-2);
+  cursor: pointer;
+}
+
+.notification-item:hover {
+  background: var(--surface-2);
+  border-color: var(--line);
+}
+
+.notification-item.is-unread {
+  background: color-mix(in srgb, var(--t-lagoon) 8%, transparent);
+  border-color: color-mix(in srgb, var(--t-lagoon) 24%, transparent);
+}
+
+.notification-item-text {
+  color: var(--ink);
+}
+
+.notification-item-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11.5px;
+  color: var(--ink-3);
+}
+
+/* 八类通知的标签；颜色只是辅助，文字本身已区分类型。 */
+.notification-item-kind {
+  padding: 1px 7px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--surface-2);
+  font-size: 10.5px;
+  font-weight: 700;
+  color: var(--ink-2);
+}
+
+.notification-item-kind[data-kind='APPLICATION'] {
+  border-color: color-mix(in srgb, var(--lagoon) 34%, transparent);
+  background: color-mix(in srgb, var(--lagoon) 12%, transparent);
+  color: var(--t-lagoon);
+}
+
+.notification-item-kind[data-kind='CHAT'] {
+  border-color: color-mix(in srgb, var(--amber) 40%, transparent);
+  background: color-mix(in srgb, var(--amber) 14%, transparent);
+  color: var(--ink);
+}
+
+.notification-item-kind[data-kind='CREDIT'],
+.notification-item-kind[data-kind='ACCOUNT'] {
+  border-color: color-mix(in srgb, var(--danger) 34%, transparent);
+  background: color-mix(in srgb, var(--danger) 12%, transparent);
+  color: var(--t-danger);
+}
+
+.notification-item-kind[data-kind='REPORT'] {
+  border-color: color-mix(in srgb, var(--t-lagoon) 26%, transparent);
+  background: color-mix(in srgb, var(--t-lagoon) 8%, transparent);
+}
+
+.notification-item-kind[data-kind='SERVICE'],
+.notification-item-kind[data-kind='SYSTEM'] {
+  border-color: color-mix(in srgb, var(--line-2) 80%, transparent);
+}
+
+.notification-item-title {
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.notification-item-text {
+  color: var(--ink-2);
+}
+
+.notification-priority-flag,
+.notification-status-flag {
+  color: var(--ink-3);
+  font-weight: 700;
+}
+
+.notification-priority-flag {
+  color: var(--t-danger);
+}
+
+.notification-unread-flag {
+  color: var(--danger);
+  font-weight: 700;
+}
+
+.notification-unavailable {
+  color: var(--t-danger);
+  font-weight: 650;
+}
+
+.notification-empty,
+.notification-error {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 14px 10px;
+  font-size: 12.5px;
+  color: var(--ink-3);
+}
+
+.notification-panel-foot {
+  display: flex;
+  justify-content: center;
+  padding-top: 2px;
+}
+
+.notification-view-all {
+  font-size: 12px;
+  font-weight: 650;
+  color: var(--t-lagoon);
+  text-decoration: none;
+}
+
+.notification-view-all:hover {
+  text-decoration: underline;
+}
+
+/* ---------- 通知中心 / 信用记录 / 举报详情 ---------- */
+.notification-center,
+.credit-records,
+.report-detail {
+  display: grid;
+  gap: 16px;
+  align-content: start;
+}
+
+.notification-center-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.notification-center-sub {
+  margin: 4px 0 0;
+  font-size: 13px;
+  color: var(--ink-3);
+}
+
+.notification-center-mark-all {
+  padding: 7px 14px;
+  border: 1px solid var(--line-2);
+  border-radius: 10px;
+  background: var(--surface);
+  font-family: inherit;
+  font-size: 12.5px;
+  font-weight: 650;
+  color: var(--ink-2);
+  cursor: pointer;
+}
+
+.notification-center-mark-all:hover:not(:disabled) {
+  background: var(--surface-2);
+  color: var(--ink);
+}
+
+.notification-center-mark-all:disabled {
+  color: var(--ink-3);
+  cursor: default;
+}
+
+.notification-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.notification-filter {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 11px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--surface);
+  font-family: inherit;
+  font-size: 12.5px;
+  color: var(--ink-2);
+  cursor: pointer;
+}
+
+.notification-filter.is-active {
+  border-color: color-mix(in srgb, var(--t-lagoon) 44%, transparent);
+  background: color-mix(in srgb, var(--t-lagoon) 12%, transparent);
+  color: var(--t-lagoon);
+}
+
+.notification-filter-count {
+  min-width: 18px;
+  padding: 0 5px;
+  border-radius: 999px;
+  background: var(--surface-2);
+  font-size: 11px;
+  font-weight: 700;
+  text-align: center;
+  font-variant-numeric: tabular-nums;
+}
+
+.notification-filter.is-active .notification-filter-count {
+  background: color-mix(in srgb, var(--t-lagoon) 20%, transparent);
+  color: var(--ink);
+}
+
+.notification-center-list {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.notification-row {
+  display: flex;
+  width: 100%;
+  padding: 13px 15px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface);
+  font-family: inherit;
+  font-size: 13px;
+  line-height: 1.55;
+  text-align: left;
+  color: var(--ink-2);
+  cursor: default;
+}
+
+button.notification-row {
+  cursor: pointer;
+}
+
+button.notification-row:hover {
+  border-color: var(--line-2);
+  background: var(--surface-2);
+}
+
+.notification-row.is-unread {
+  border-color: color-mix(in srgb, var(--t-lagoon) 30%, transparent);
+  background: color-mix(in srgb, var(--t-lagoon) 7%, transparent);
+}
+
+.notification-row-main {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.notification-row-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.notification-row-content {
+  color: var(--ink-2);
+}
+
+.notification-center-empty,
+.notification-center-error {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 28px 18px;
+  border: 1px dashed var(--line-2);
+  border-radius: 14px;
+  font-size: 13px;
+  color: var(--ink-3);
+}
+
+.notification-center-back {
+  margin: 0;
+}
+
+.report-detail-loading {
+  padding: 24px;
+}
+
+.report-detail-card {
+  display: grid;
+  gap: 14px;
+  padding: 18px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--surface);
+}
+
+.report-detail-code {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin: 0;
+  font-size: 14px;
+  color: var(--ink-3);
+}
+
+.report-detail-code span {
+  font-size: 20px;
+  font-weight: 800;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+
+.report-detail-fields {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 12px;
+  margin: 0;
+}
+
+.report-detail-fields div {
+  display: grid;
+  gap: 2px;
+}
+
+.report-detail-fields dt {
+  font-size: 11.5px;
+  color: var(--ink-3);
+}
+
+.report-detail-fields dd {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 650;
+  color: var(--ink);
+}
+
+.report-detail-history {
+  display: grid;
+  gap: 8px;
+}
+
+.report-detail-history h2 {
+  margin: 0;
+  font-size: 15px;
+  color: var(--ink);
+}
+
+.report-detail-history ul {
+  display: grid;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.report-detail-link {
+  display: grid;
+  grid-template-columns: 72px 1fr 1fr auto;
+  gap: 10px;
+  padding: 9px 12px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  font-size: 12.5px;
+  color: var(--ink-2);
+  text-decoration: none;
+}
+
+.report-detail-link:hover,
+.report-detail-link.is-active {
+  border-color: color-mix(in srgb, var(--t-lagoon) 34%, transparent);
+  background: color-mix(in srgb, var(--t-lagoon) 7%, transparent);
+  color: var(--ink);
+}
+
+@media (max-width: 680px) {
+  .report-detail-link {
+    grid-template-columns: 1fr;
+  }
+}
 /* ---------- 身份进入页 ---------- */
 .gate {
   position: relative;

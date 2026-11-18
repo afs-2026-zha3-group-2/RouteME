@@ -1261,6 +1261,59 @@ MVP 无推送、无通知；以下为点赞与信用状态的展示面契约。
 | 状态 | 未就绪（缺目的地或日期）、加载中、成功、暂无该日期天气预报、失败 + 重试 |
 | 探针 | `data-testid="weather-card"`、`weather-loading`、`weather-error`、`weather-retry`、`weather-reminder`、`weather-out-of-range` |
 
+## REQ-032 增补 — 实时通知中心与未读计数
+
+### ① 数据契约
+
+| 事实 | 证据 | 约束 |
+|---|---|---|
+| 八类事件都已有成功路径，但没有落任何「通知」痕迹 | `ApplicationServiceImpl`、`ChatServiceImpl`、`NotificationEventListener`、`ReportServiceImpl` / `AdminReportServiceImpl`、`AccountStatusService`、`CustomerServiceImpl`、`UserProfileServiceImpl`、`TripController` | 通知必须在既有成功路径上追加，不复制业务判定 |
+| 申请、裁决、行程取消 / 完成在业务事务里完成 | 各服务的 `@Transactional` 与 `TripCancelledEvent` / `TripCompletedEvent` 监听 | 通知行与事件同事务写入；通知失败不连带回滚（D6） |
+| ONGOING 没有显式写入动作 | `TripPlan.status(now)` 按时间推导 | 读取行程详情时惰性物化 `trip_ongoing` + `safety_reminder`，去重键保证只生成一次 |
+| 聊天消息落库后由接收方下次轮询才看到 | `ChatServiceImpl.send` | 消息通知必须携带 `trip_id` 与消息 id，才能定位会话并可跳转 |
+| 会话由 `(trip_id, 双方)` 唯一确定 | `ChatService.requireAccess`、`ChatPartnerResponse` | 「读某个会话」的判定键是 `trip_id` + 对方 id，不是消息 id |
+| 允许给自己发消息 | `ChatServiceImpl.requireAccess` 中 `userId == withUserId` 不抛异常 | 自消息必须显式不产生通知（S33-36） |
+| 通知要覆盖信用、举报、账号、客服与系统 | `CreditChangedEvent`、`ReportEntity`、`AppUser.status`、`customer_service_session`、`ProfileRules.complete` | 只读取结构化事实；管理员备注与他人隐私不进入通知 |
+| 无可复用的通知表或未读字段 | `V1`–`V29` 无 `notification*` 表；`app_users` 无计数列 | 新增一张表；未读由 `read_at IS NULL` 派生，不另设计数器 |
+| 迁移必须同时跑 SQLite 与 H2 | `mvnw test` 从空库迁移 H2；本地为 SQLite | 列类型与索引写法需两库通用 |
+| 契约由测试断言 | `OpenApiTest` 断言 `info.version` 与关键 schema | 新路径与 schema 必须进 `openapi.yaml`，版本号同步到 0.29.0 |
+
+### ② 边界归属
+
+| 关注点 | 归属 | 说明 |
+|---|---|---|
+| 谁该被通知、何时算成功 | 八类既有业务规则（只读） | 通知只在既有成功路径之后追加，不重新判定 |
+| 通知记录、未读计数、已读范围、去重 | 新能力 `notifications` | 唯一写入口是 `NotificationService` |
+| 实时投递 | 新能力 `notifications`（SSE 注册表） | 推送只是延迟优化，REST 列表是真相（D3） |
+| 跳转目标 | 后端下发 `target.kind` | 前端只按 `target` 拼 hash，不自行推断 |
+| 邮件 / 短信 / OS 推送 | 外部系统 | 明确不在本 change |
+
+### ③ 跨 REQ 一致性
+
+| 相关 REQ | 关系 |
+|---|---|
+| REQ-003 / REQ-013（申请与聊天） | 只读依赖；不 MODIFY 其 Delta（未归档），通知语义由新能力承接（D1） |
+| REQ-010（申请入口） | 申请按钮与重复申请拦截口径不变；被拦截的请求不产生通知（S33-9 的失败分支） |
+| REQ-015（我的旅行） | 「待处理申请」计数仍来自既有接口；本 change 的铃铛计数是另一份口径，不得互相替代 |
+| REQ-021（取消行程） | 取消后既有会话可继续；通知记录不因取消删除或改写 |
+| REQ-027（信用恢复） | 安全学习完成通过 `CreditChangedEvent` 产生 `credit_recovered`；不改其记账与配额规则 |
+| REQ-018（管理后台举报） | 处理中 / 处理完成由管理端动作触发举报人通知；通知只含举报编号与结论 |
+
+### ④ 展示契约 + 探针
+
+| 展示 | 口径 |
+|---|---|
+| 顶栏铃铛 | 数字 = 未读总数；0 时不显示徽标；点击打开通知面板 |
+| 侧栏「通知中心」与账号菜单入口 | 数字 = 未读总数；与铃铛同源 |
+| 通知面板 | 最新 50 条，逐条给类型标签 / 标题 / 正文 / 相对时间 / 未读标记；顶部「全部已读」与「查看全部通知」 |
+| 通知中心 `#/notifications` | 八类筛选（带数字）+ 全部已读；每行类型、时间、重要标记、未读 / 已读文字、正文、不可用提示 |
+| 侧栏与移动 tab 聊天入口 | 数字 = `CHAT` 未读数；与铃铛同源，不各自计数 |
+| 会话列表行 | 每个会话的未读聊天数；打开会话后归零 |
+| 提示条 | 聊天类只在对应会话未打开时提示；其余类型恒提示（D14） |
+| 不可用 | 保留正文、显示「相关内容当前不可查看」、不跳转、仍标读 |
+| 空态 / 失败 | 无通知时给空态；推送断开时保留最后一次计数，不显示错误弹窗 |
+| 探针 | `notification-bell`、`notification-badge`、`notification-panel`、`notification-item`、`notification-mark-all`、`notification-center`、`notification-filter-<TYPE>`、`notification-center-item`、`rail-trips-badge`、`rail-support-badge`、`rail-account-badge`、`account-notification-badge`、`rail-chat-badge`、`tab-chat-badge`、`chat-unread-badge` |
+
 ## REQ-025 增补 — 退出同行扣分与低信用自动限制
 
 ### ① 数据契约（Data contract）
