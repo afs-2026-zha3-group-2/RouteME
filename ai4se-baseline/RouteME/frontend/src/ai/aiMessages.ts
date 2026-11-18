@@ -20,6 +20,28 @@ export const aiMessages = {
   loading: 'AI 正在结合天气与地图生成推荐行程…',
   generatingHint: '通常需要 10–30 秒，请稍候',
 
+  /** 快捷动作发送给 AI 的自然语言（与按钮文案分开，回答才能对得上）。 */
+  quickPrompts: {
+    'more-stops': '帮我增加一些小众景点，节奏放宽一点',
+    family: '帮我换成亲子路线，减少长距离步行',
+    compact: '帮我把行程排得更紧凑，少走回头路',
+  } as Record<string, string>,
+
+  /** 快捷动作的独立回答：说明这次到底改了什么，而不是笼统的「已重新生成」。 */
+  quickApplied: (id: string, added: string[]) => {
+    const names = added.length > 0 ? `本轮新增：${added.slice(0, 4).join('、')}。` : '';
+    switch (id) {
+      case 'more-stops':
+        return `已按「小众 + 宽松」重新规划。${names}优先安排冷门街区与在地小店，热门景点只保留 1–2 个。`;
+      case 'family':
+        return `已切换为亲子路线：节奏放宽、减少长距离步行，并优先室内与自然类景点。${names}`;
+      case 'compact':
+        return `已把行程排得更紧凑：同区域景点相邻，减少往返与空档。${names}`;
+      default:
+        return `已按你的要求重新规划。${names}`;
+    }
+  },
+
   /* ---------- 对话式布局（参考稿 v3） ---------- */
   chatTitle: '用 AI，规划你的专属旅程',
   chatSubtitle: '告诉我你的想法，生成路线、美食、景点和实用建议。',
@@ -30,6 +52,16 @@ export const aiMessages = {
   conditionsEntry: '规划条件',
   conditionsTitle: '规划条件',
   conditionsHint: '目的地与日期越明确，路线越贴合你；也可以直接在对话里说。',
+  conditionMissing: '还缺必填条件',
+  sessionLabel: '对话历史',
+  newChat: '＋ 新对话',
+  inspireTitle: '挑一个灵感，直接开始一段新旅程',
+  optimizeTitle: '在现有行程上做定向优化',
+  dragHint: '拖动景点可调整顺序',
+  composerEnterHint: 'Enter 发送 · Shift + Enter 换行',
+  replaceMapTitle: '更换地点',
+  replaceMapHint: '可以搜索地点，也可以直接点地图选精确位置',
+  replaceMapCandidates: '地图上的候选地点',
   welcomeTitle: '你好！我是 RouteMe AI 旅行助手 ✨',
   welcomeIntro: '我可以帮你快速规划专属的旅行路线，包括景点、美食、交通、预算和实用建议。',
   welcomePrompt: '你可以这样告诉我你的需求：',
@@ -146,6 +178,7 @@ export const aiMessages = {
   statsTotal: '预计总时长',
   statsSource: '距离与时间来自高德地图',
   routeLoading: '路线计算中…',
+  routeEstimated: '部分路段为估算',
 
   saveFailed: '保存失败，请重试。',
   prefillBanner: '来自 AI 推荐方案，可修改后发布',
