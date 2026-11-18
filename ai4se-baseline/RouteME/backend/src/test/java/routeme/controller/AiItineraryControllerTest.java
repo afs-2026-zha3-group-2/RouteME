@@ -51,6 +51,7 @@ class AiItineraryControllerTest {
         registry.add("routeme.ai.api-key", () -> "test-key");
         registry.add("routeme.ai.timeout-seconds", () -> "1");
         registry.add("routeme.weather.base-url", UpstreamStubs::weatherBaseUrl);
+        registry.add("routeme.weather.fallback-base-url", UpstreamStubs::weatherBaseUrl);
     }
 
     @Autowired

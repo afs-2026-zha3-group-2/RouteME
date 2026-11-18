@@ -43,6 +43,7 @@ class WeatherControllerTest {
 
     private static final AtomicInteger GEOCODING_CALLS = new AtomicInteger();
     private static final AtomicInteger FORECAST_CALLS = new AtomicInteger();
+    private static final AtomicInteger ENSEMBLE_CALLS = new AtomicInteger();
     private static final AtomicReference<UpstreamMode> MODE = new AtomicReference<>(UpstreamMode.OK);
     private static final String BASE_URL;
 
@@ -56,6 +57,7 @@ class WeatherControllerTest {
         }
         SERVER.createContext("/v1/search", WeatherControllerTest::handleGeocoding);
         SERVER.createContext("/v1/forecast", WeatherControllerTest::handleForecast);
+        SERVER.createContext("/v1/ensemble", WeatherControllerTest::handleEnsemble);
         SERVER.start();
         BASE_URL = "http://127.0.0.1:" + SERVER.getAddress().getPort();
     }
@@ -64,6 +66,7 @@ class WeatherControllerTest {
     static void weatherProperties(DynamicPropertyRegistry registry) {
         registry.add("routeme.weather.base-url", () -> BASE_URL);
         registry.add("routeme.weather.geocoding-base-url", () -> BASE_URL);
+        registry.add("routeme.weather.fallback-base-url", () -> BASE_URL);
     }
 
     @Autowired
@@ -196,6 +199,28 @@ class WeatherControllerTest {
     }
 
     @Test
+    void in_primaryForecastError_out_fallsBackToEnsemble() throws Exception {
+        // Given：主用接口 500，备用集合接口正常；用坐标绕开地理编码替身。
+        MODE.set(UpstreamMode.PRIMARY_ERROR);
+        String date = LocalDate.now(ZONE).plusDays(3).toString();
+        int ensembleBefore = ENSEMBLE_CALLS.get();
+
+        // When / Then
+        mockMvc.perform(get("/api/weather/forecast")
+                        .param("lng", "113.2644")
+                        .param("lat", "23.1291")
+                        .param("date", date))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.available").value(true))
+                .andExpect(jsonPath("$.source").value("open-meteo"))
+                .andExpect(jsonPath("$.weather.temp_max_c").value(22.0))
+                .andExpect(jsonPath("$.weather.temp_min_c").value(15.0))
+                .andExpect(jsonPath("$.weather.weather_code").value(2))
+                .andExpect(jsonPath("$.weather.precipitation_probability_pct").doesNotExist());
+        assertEquals(ensembleBefore + 1, ENSEMBLE_CALLS.get(), "fallback endpoint should serve the forecast");
+    }
+
+    @Test
     void in_missingDate_out_badRequest() throws Exception {
         mockMvc.perform(get("/api/weather/forecast")
                         .param("destination_code", "440100"))
@@ -237,11 +262,12 @@ class WeatherControllerTest {
                 .andExpect(jsonPath("$.code").value("INVALID_INPUT"));
     }
 
-    /** 替身模式：正常 / 上游 500 / 没有请求日数据。 */
+    /** 替身模式：正常 / 上游 500 / 没有请求日数据 / 仅主用接口 500。 */
     private enum UpstreamMode {
         OK,
         ERROR,
-        NO_DATA
+        NO_DATA,
+        PRIMARY_ERROR
     }
 
     private static void handleGeocoding(HttpExchange exchange) throws IOException {
@@ -258,10 +284,8 @@ class WeatherControllerTest {
 
     private static void handleForecast(HttpExchange exchange) throws IOException {
         FORECAST_CALLS.incrementAndGet();
-        String rawQuery = exchange.getRequestURI().getRawQuery();
-        Matcher matcher = START_DATE.matcher(rawQuery == null ? "" : rawQuery);
-        String startDate = matcher.find() ? matcher.group(1) : LocalDate.now(ZONE).toString();
-        if (MODE.get() == UpstreamMode.ERROR) {
+        String startDate = startDateOf(exchange);
+        if (MODE.get() == UpstreamMode.ERROR || MODE.get() == UpstreamMode.PRIMARY_ERROR) {
             exchange.sendResponseHeaders(500, -1);
             exchange.close();
             return;
@@ -279,6 +303,35 @@ class WeatherControllerTest {
                  "precipitation_probability_max":[80],"precipitation_sum":[5.2],
                  "weather_code":[61],"wind_speed_10m_max":[18.0],"uv_index_max":[3.0]}}"""
                 .formatted(startDate));
+    }
+
+    /** 备用集合接口：字段与主用接口同名，但不提供降雨概率。 */
+    private static void handleEnsemble(HttpExchange exchange) throws IOException {
+        ENSEMBLE_CALLS.incrementAndGet();
+        String startDate = startDateOf(exchange);
+        if (MODE.get() == UpstreamMode.ERROR) {
+            exchange.sendResponseHeaders(500, -1);
+            exchange.close();
+            return;
+        }
+        if (MODE.get() == UpstreamMode.NO_DATA) {
+            respond(exchange, """
+                    {"daily":{"time":["2020-01-01"],
+                    "temperature_2m_max":[20.0],"temperature_2m_min":[10.0]}}""");
+            return;
+        }
+        respond(exchange, """
+                {"daily":{"time":["%s"],
+                 "temperature_2m_max":[22.0],"temperature_2m_min":[15.0],
+                 "precipitation_sum":[0.0],"weather_code":[2],
+                 "wind_speed_10m_max":[10.0],"uv_index_max":[5.0]}}"""
+                .formatted(startDate));
+    }
+
+    private static String startDateOf(HttpExchange exchange) {
+        String rawQuery = exchange.getRequestURI().getRawQuery();
+        Matcher matcher = START_DATE.matcher(rawQuery == null ? "" : rawQuery);
+        return matcher.find() ? matcher.group(1) : LocalDate.now(ZONE).toString();
     }
 
     private static void respond(HttpExchange exchange, String body) throws IOException {
