@@ -1,6 +1,7 @@
 export type Route =
   | { name: 'home' }
-  | { name: 'create'; fromTripId?: number }
+  | { name: 'create'; fromTripId?: number; aiItineraryId?: number }
+  | { name: 'aiPlanner' }
   | { name: 'detail'; tripId: number }
   | { name: 'applications'; tripId: number }
   | { name: 'mine' }
@@ -8,8 +9,10 @@ export type Route =
   | { name: 'share'; tripId: number }
   | { name: 'profileSetup' }
   | { name: 'userProfile'; userId: number }
+  | { name: 'creditLearning' }
   | { name: 'map'; provinceCode?: string; cityCode?: string }
-  | { name: 'help' }
+  | { name: 'support' }
+  | { name: 'adminDashboard' }
   | { name: 'adminUsers' }
   | { name: 'adminUserDetail'; userId: number }
   | { name: 'adminReports' }
@@ -27,10 +30,18 @@ export function parseRoute(hash: string): Route {
     return { name: 'home' };
   }
   if (path === '/trips/new') {
+    // AI 快照来源优先于参考行程来源（design §4.4）。
+    const ai = Number(params.get('ai'));
+    if (Number.isInteger(ai) && ai > 0) {
+      return { name: 'create', aiItineraryId: ai };
+    }
     const source = Number(params.get('from'));
     return Number.isInteger(source) && source > 0
       ? { name: 'create', fromTripId: source }
       : { name: 'create' };
+  }
+  if (path === '/ai-planner') {
+    return { name: 'aiPlanner' };
   }
   if (path === '/mine') {
     return { name: 'mine' };
@@ -43,8 +54,11 @@ export function parseRoute(hash: string): Route {
   if (path === '/profile/setup') {
     return { name: 'profileSetup' };
   }
-  if (path === '/help') {
-    return { name: 'help' };
+  if (path === '/support') {
+    return { name: 'support' };
+  }
+  if (path === '/admin') {
+    return { name: 'adminDashboard' };
   }
   if (path === '/admin/users') {
     return { name: 'adminUsers' };
@@ -66,6 +80,10 @@ export function parseRoute(hash: string): Route {
   const adminServiceDetail = /^\/admin\/service\/(\d+)$/.exec(path);
   if (adminServiceDetail) {
     return { name: 'adminServiceDetail', sessionId: Number(adminServiceDetail[1]) };
+  }
+  // 安全学习独立页：入口只在发布行程被拦截时出现，但页面可直接深链。（REQ-027 / OQ-6）
+  if (path === '/credit/learning') {
+    return { name: 'creditLearning' };
   }
   const profile = /^\/users\/(\d+)$/.exec(path);
   if (profile) {
@@ -95,7 +113,13 @@ export function parseRoute(hash: string): Route {
 
 export function routeToHash(route: Route): string {
   if (route.name === 'create') {
+    if (route.aiItineraryId !== undefined) {
+      return `#/trips/new?ai=${route.aiItineraryId}`;
+    }
     return route.fromTripId === undefined ? '#/trips/new' : `#/trips/new?from=${route.fromTripId}`;
+  }
+  if (route.name === 'aiPlanner') {
+    return '#/ai-planner';
   }
   if (route.name === 'mine') {
     return '#/mine';
@@ -117,8 +141,11 @@ export function routeToHash(route: Route): string {
   if (route.name === 'profileSetup') {
     return '#/profile/setup';
   }
-  if (route.name === 'help') {
-    return '#/help';
+  if (route.name === 'support') {
+    return '#/support';
+  }
+  if (route.name === 'adminDashboard') {
+    return '#/admin';
   }
   if (route.name === 'adminUsers') {
     return '#/admin/users';
@@ -137,6 +164,9 @@ export function routeToHash(route: Route): string {
   }
   if (route.name === 'adminServiceDetail') {
     return `#/admin/service/${route.sessionId}`;
+  }
+  if (route.name === 'creditLearning') {
+    return '#/credit/learning';
   }
   if (route.name === 'userProfile') {
     return `#/users/${route.userId}`;

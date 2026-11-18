@@ -28,7 +28,7 @@ Delta Spec `openspec/changes/add-realtime-notifications/specs/notifications/spec
 | L-01 / S-01 | 「短提示（D14）」尚未有 Delta 场景 | `design.md` 定触发条件与断言口径；`tasks.md` + E2E 落一条 |
 | L-02 / S-02 | 失败隔离只写在申请类 Requirement | `design.md` 写成跨生产方约束；消息路径补反向断言 |
 | L-03 / S-03 | 契约增量需回指 Requirement | `design.md` 出「端点 → Requirement → 场景」对照表 |
-| D12 | 契约 0.18.0 / 迁移 `V24` 的排他性 | P3 用 `grep` 复核后写进 `design.md` |
+| D12 | 契约 0.18.0 / 迁移 `V30` 的排他性 | P3 用 `grep` 复核后写进 `design.md` |
 | 测量点 | 「3 秒内」的测量口径 | `design.md` 固定「服务端写入完成 → 客户端 store 更新」 |
 
 ## 4. 不在本决策内

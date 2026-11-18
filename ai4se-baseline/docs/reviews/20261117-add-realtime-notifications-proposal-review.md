@@ -18,7 +18,7 @@
 | S-01 | SUGGESTION | `stories/add-realtime-notifications.story.md`、`stories.md` | 初稿只拆 S23-1 ~ S23-4，S23-5（自消息不通知）与 S23-6（每条消息一行）没有落在任何故事下，属于「场景无归宿」的可追溯缺口 | 新增 S23-5「收到新消息时告知接收方」承接 S23-5 / S23-6 / S23-10 / S23-23 / S23-24，并同步 `stories.md` 表与矩阵、`handoff.md`、`p1-intent.md` | Karena | 已修（评审前） |
 | S-02 | SUGGESTION | `proposal.md` §影响面（`service/NotificationBroker.java`） | 把 `NotificationBroker`（按用户的 `SseEmitter` 注册表）放在 `service/` 下会与「service 是接口、实现放 impl、服务依赖接口」的既有约定混层；它更像基础设施 | P3 `design.md` 明确落点（例如 `routeme/notification/` 或 `service/NotificationStream` 接口 + `service/impl` 实现），并说明为何不引入新分层 | Karena | 待 P3 |
 | S-03 | SUGGESTION | `openspec` 校验 | `openspec validate add-realtime-notifications --strict` 报「Change must have at least one delta」；这是 P1 未落 Delta 的正常结果而非工件缺陷（`docs/sdd/README.md` 把 Delta 划到 P2） | P2 写完 `specs/notifications/spec.md` 后重跑 `validate --strict` 并把输出记进 P2 记录 | Karena | 待 P2 |
-| S-04 | SUGGESTION | `proposal.md` D12；`impact-brief.md` §23.4 | `openapi.yaml` 0.18.0 与迁移 `V24` 只是「当前最大值的下一个」，并行 change（`refine-trip-chat` / `add-ai-itinerary` 等）仍可能在 P4 前占用 | P3 落笔前用 `grep` 复核 `info.version` 与 `db/migration/` 最大值，排他确认后写进 `design.md` 并复述到 `g1-decision.md` | Karena | 待 P3 |
+| S-04 | SUGGESTION | `proposal.md` D12；`impact-brief.md` §23.4 | `openapi.yaml` 0.18.0 与迁移 `V30` 只是「当前最大值的下一个」，并行 change（`refine-trip-chat` / `add-ai-itinerary` 等）仍可能在 P4 前占用 | P3 落笔前用 `grep` 复核 `info.version` 与 `db/migration/` 最大值，排他确认后写进 `design.md` 并复述到 `g1-decision.md` | Karena | 待 P3 |
 
 ## 3. 逐维核对
 
@@ -52,7 +52,7 @@
 
 - **SSE 经代理的真实延迟未验证。** 提案写了响应头禁缓冲与约 20 秒心跳，但开发代理与生产反代的差异只能在 P4 用实测证明；若 P4 不通过，需要一个降级方案（例如降为 5 秒轮询计数）并在 `design.md` 记备选。
 - **内存 emitter 与单进程假设。** 后端重启、或多实例部署时推送层失效；D3 的 REST 对账把「丢事件」降级为「延迟」，但计数正确性依赖客户端每次 `open` 都重新拉取。
-- **尚未验证的编号独占性。** 0.18.0 / `V24` 是当前最大值的下一个，不是已预约（S-04）。
+- **尚未验证的编号独占性。** 0.18.0 / `V30` 是当前最大值的下一个，不是已预约（S-04）。
 - **身份模型未变。** 查询参数身份与既有 `X-User-Id` 同等级，任何能构造该参数的人都能读取他人的通知；这是既有 demo 的已知局限，不是本 change 引入的新风险，但必须在真实鉴权 change 中一并收口。
 
 ## 6. 签署记录

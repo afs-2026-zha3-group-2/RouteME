@@ -1,4 +1,4 @@
-/**
+﻿/**
  * 列表接口的分页对象：total 是筛选后的命中数，total_pages 为向上取整的页数。
  */
 export type Page<T> = {
@@ -36,6 +36,8 @@ export type UserCreditEntry = {
   user_id: number;
   credit_score: number;
   credit_level: CreditLevel;
+  /** 分数低于 60 时为 true；五个展示面据此显示「限制中」徽标。 */
+  credit_restricted: boolean;
 };
 
 /**
@@ -92,6 +94,10 @@ export type UserProfile = {
   /** 信用分，0–100；本人与他人视角均返回。 */
   credit_score: number;
   credit_level: CreditLevel;
+  /** 当前是否处于信用限制。 */
+  credit_restricted: boolean;
+  /** 限制原因；仅本人个人主页返回，他人响应省略。 */
+  credit_restriction_reason?: 'CREDIT_SCORE_BELOW_60' | null;
   joined_at?: string | null;
   stats?: ProfileStats;
   /** 账号状态：SUSPENDED 只回 status；BANNED 同时回理由与解封时间。 */
@@ -154,6 +160,8 @@ export type TripSummary = {
   ending_soon: boolean;
   publisher: DemoUser;
   created_at: string;
+  /** 来源 AI 行程快照 id；非 AI 发布的行程为 null（契约 0.12.0 加性字段）。 */
+  ai_itinerary_id?: number | null;
 };
 
 export type TripDetail = TripSummary & {
@@ -177,11 +185,85 @@ export type TripCancelReason =
   | 'weather'
   | 'illness'
   | 'safety'
-  | 'other';
+  | 'other'
+  | 'credit_restricted';
+
+/** 发布者可选的 8 项；credit_restricted 只由系统写入。 */
+export type UserTripCancelReason = Exclude<TripCancelReason, 'credit_restricted'>;
 
 export type TripCancelRequest = {
-  reason: TripCancelReason;
+  reason: UserTripCancelReason;
   note?: string | null;
+};
+
+/** 退出同行的原因。 */
+export type LeaveReason = 'personal' | 'force_majeure' | 'safety';
+
+export type LeaveStatus = 'not_required' | 'pending' | 'verified_true' | 'verified_false';
+
+export type LeaveMessageCode =
+  | 'penalty'
+  | 'penalty_doubled'
+  | 'no_penalty'
+  | 'during_trip'
+  | 'pending_review'
+  | 'at_floor';
+
+export type LeavePreview = {
+  reason: LeaveReason;
+  departure_at: string;
+  penalty_tier: 'ge7d' | 'd3to7d' | 'h24to72' | 'h12to24' | 'lt12h' | 'during';
+  theoretical_delta: number;
+  applied_delta: number;
+  monthly_ordinal: number;
+  monthly_doubled: boolean;
+  counted: boolean;
+  review_status: LeaveStatus;
+  resulting_score: number;
+  message_code: LeaveMessageCode;
+};
+
+export type LeaveResult = {
+  credit_score: number;
+  credit_level: CreditLevel;
+  credit_restricted: boolean;
+  theoretical_delta: number;
+  applied_delta: number;
+  monthly_ordinal: number;
+  review_status: LeaveStatus;
+  message_code: LeaveMessageCode;
+};
+
+export type LeaveEvidence = {
+  id: number;
+  original_name: string | null;
+  content_type: string;
+  size_bytes: number;
+};
+
+export type LeavePayload = {
+  reason: LeaveReason;
+  note: string | null;
+  attachment_ids: number[];
+};
+
+export type LeaveRecordAttachment = {
+  id: number;
+  original_name: string | null;
+  content_type: string;
+  size_bytes: number;
+  url: string;
+};
+
+export type LeaveRecord = {
+  reason: LeaveReason;
+  note: string | null;
+  exit_at: string;
+  review_status: LeaveStatus;
+  theoretical_delta: number;
+  applied_delta: number;
+  monthly_ordinal: number;
+  attachments: LeaveRecordAttachment[];
 };
 
 export type TripCreateRequest = {
@@ -198,6 +280,8 @@ export type TripCreateRequest = {
   budget_max_cents?: number | null;
   tags: string[];
   capacity: number;
+  /** 关联的 AI 行程快照 id；后端校验归属，非本人快照 400。 */
+  ai_itinerary_id?: number | null;
 };
 
 export type TripMeetingRequest = {
@@ -210,19 +294,7 @@ export type TripFilters = {
   date_from?: string;
   date_to?: string;
   tags?: string[];
-  sort?: 'match' | 'date' | 'new';
-};
-
-export type Match = {
-  score: number;
-  percentage: number;
-  reasons: string[];
-  basis: string;
-};
-
-export type MatchCandidate = {
-  trip: TripSummary;
-  match: Match;
+  sort?: 'date' | 'new';
 };
 
 export type ApplicationStatus = 'pending' | 'accepted' | 'rejected' | 'cancelled' | 'left';
@@ -298,8 +370,19 @@ export type Experience = {
   intensity: ExperienceIntensity;
   advice: string;
   photos: ExperiencePhoto[];
+  /** 当前体验的点赞记录数；无记录为 0。 */
+  like_count: number;
+  /** 当前请求用户是否已点赞；自己的体验恒为 false。 */
+  is_liked: boolean;
   created_at: string;
   updated_at: string;
+};
+
+/** 点赞 / 取消点赞后的最新状态（`POST /api/experiences/{id}/likes`）。 */
+export type ExperienceLikeResult = {
+  experience_id: number;
+  like_count: number;
+  is_liked: boolean;
 };
 
 export type ExperienceWriteRequest = {
@@ -607,3 +690,198 @@ export type NotificationEvent = {
 export type NotificationReadRequest =
   | { scope: 'all' }
   | { scope: 'conversation'; trip_id: number; other_user_id: number };
+
+/** 安全学习题库的四类题材，与契约 `LearningQuestion.category` 同值。 */
+export type LearningCategory = 'travel_safety' | 'stranger_companion' | 'platform_rules' | 'privacy';
+
+/** 下发的题目：选项顺序即作答下标，响应不含正确答案。 */
+export type LearningQuestion = {
+  id: string;
+  category: LearningCategory;
+  question: string;
+  options: string[];
+};
+
+/** 考试会话（`LearningSession`）：`learning_completed` 为 false 时提交作答会被拒。 */
+export type LearningSession = {
+  session_id: number;
+  questions: LearningQuestion[];
+  exam_used: number;
+  exam_limit: number;
+  month: string;
+  learning_completed: boolean;
+};
+
+/** 逐题对错：`question_id` 对应下发题目，正确答案不下发。 */
+export type LearningAnswerDetail = {
+  question_id: string;
+  correct: boolean;
+};
+
+/** 判分结果（`LearningResult`）：`recovery_applied` 为 false 时不得播报「已恢复」。 */
+export type LearningResult = {
+  session_id: number;
+  passed: boolean;
+  score: number;
+  pass_line: number;
+  details: LearningAnswerDetail[];
+  recovery_applied: boolean;
+  credit_score: number;
+  credit_level: CreditLevel;
+};
+/* ---------- AI 智能规划（add-ai-itinerary，契约 0.17.0；天气复用 add-trip-weather） ---------- */
+
+export type AiDuration = 'half_day' | 'one_day' | 'two_day';
+export type AiTravelMode = 'transit' | 'walking' | 'driving';
+export type AiPace = 'relaxed' | 'moderate' | 'compact';
+
+/** 出发地 / 目的地：坐标必须来自高德（搜索 / 定位 / 地图点击），AI 不得虚构。 */
+export type AiPlace = {
+  name: string;
+  lng: number;
+  lat: number;
+};
+
+/** AI 只产出名称 / 理由 / 时间 / 估算；坐标由前端另行经高德解析。 */
+export type AiPlanStop = {
+  name: string;
+  reason: string;
+  arrival: string;
+  stay_minutes: number;
+  indoor: boolean;
+};
+
+export type AiPlanDay = {
+  day: number;
+  stops: AiPlanStop[];
+};
+
+/** 预算四项均为 AI 估算（整数分）；合计不信任 AI 字段，展示前重算。 */
+export type AiBudget = {
+  transport_cents: number;
+  tickets_cents: number;
+  food_cents: number;
+  other_cents: number;
+  total_cents: number;
+};
+
+export type AiPlan = {
+  title: string;
+  days: AiPlanDay[];
+  tips: string[];
+  packing: string[];
+  budget: AiBudget;
+};
+
+export type AiGenerateRequest = {
+  origin: AiPlace;
+  destination: AiPlace;
+  date: string;
+  duration: AiDuration;
+  budget_cents: number | null;
+  travel_mode: AiTravelMode;
+  interests: string[];
+  pace: AiPace;
+  reduce_budget: boolean;
+};
+
+/** weather 为本次生成后端实际注入提示词的权威天气摘要（add-trip-weather 嵌套契约）。 */
+export type AiGenerateResponse = {
+  plan: AiPlan;
+  weather: WeatherForecast;
+};
+
+/** 快照景点：resolved=true 时 lng/lat 必须为数值；未解析不伪造坐标。 */
+export type AiSnapshotStop = AiPlanStop & {
+  order: number;
+  resolved: boolean;
+  lng?: number | null;
+  lat?: number | null;
+};
+
+export type AiRouteLeg = {
+  from_id: string;
+  to_id: string;
+  distance_meters: number;
+  duration_seconds: number;
+};
+
+/** 高德真实路线结果；距离 / 时间只能来自高德，不得由 AI 产出。 */
+export type AiSnapshotRoute = {
+  mode: AiTravelMode;
+  distance_meters: number;
+  duration_seconds: number;
+  legs: AiRouteLeg[];
+};
+
+/** 完整快照；route / weather / ai_budget 在对应服务失败时可为 null，不伪造数据。 */
+export type AiItinerarySnapshot = {
+  origin: AiPlace;
+  destination: AiPlace;
+  date: string;
+  duration: AiDuration;
+  travel_mode: AiTravelMode;
+  interests: string[];
+  pace: AiPace;
+  budget_cents: number | null;
+  stops: AiSnapshotStop[];
+  route: AiSnapshotRoute | null;
+  weather: WeatherForecast | null;
+  tips: string[];
+  packing: string[];
+  ai_budget: AiBudget | null;
+};
+
+export type AiItinerarySaved = {
+  id: number;
+};
+
+/** 地图数据模型统一从 types 取用，业务层不直接依赖 AmapService 路径。 */
+export type { PlaceResult, RoutePlan, RouteWaypoint, TravelMode } from './map/amap/AmapService';
+
+/** 管理后台概览（`GET /admin/dashboard`）：一次请求一个时刻的只读快照。 */
+export type AdminDashboardUsers = {
+  total: number;
+  by_role: Record<AccountRole, number>;
+  by_status: Record<AccountStatus, number>;
+  new_last_7_days: number;
+  new_last_30_days: number;
+};
+
+export type AdminDashboardTrips = {
+  total: number;
+  by_status: Record<TripStatus, number>;
+  new_last_7_days: number;
+  new_last_30_days: number;
+};
+
+export type AdminDashboardApplications = {
+  total: number;
+  by_status: Record<ApplicationStatus, number>;
+};
+
+export type AdminDashboardExperiences = {
+  total: number;
+  new_last_7_days: number;
+  new_last_30_days: number;
+};
+
+export type AdminDashboardReports = {
+  total: number;
+  by_status: Record<ReportStatus, number>;
+};
+
+export type AdminDashboardServiceSessions = {
+  total: number;
+  by_status: Record<ServiceSessionStatus, number>;
+};
+
+export type AdminDashboard = {
+  users: AdminDashboardUsers;
+  trips: AdminDashboardTrips;
+  applications: AdminDashboardApplications;
+  experiences: AdminDashboardExperiences;
+  reports: AdminDashboardReports;
+  service_sessions: AdminDashboardServiceSessions;
+  generated_at: string;
+};

@@ -274,5 +274,5 @@ test('E18 detail keeps the read-only city map and degrades for uncovered cities'
   const trip = (await created.json()) as { id: number };
   await page.goto(`/#/trips/${trip.id}`);
   await expect(page.locator('.detail-map-section')).toHaveCount(0);
-  await expect(page.locator('.detail-stops')).toContainText('布达拉宫');
+  await expect(page.locator('.route-strip')).toContainText('布达拉宫');
 });

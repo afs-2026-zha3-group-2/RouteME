@@ -68,6 +68,9 @@ public class TripPlanEntity {
 
     private String updatedAt;
 
+    /** AI 行程快照链接（V18）；普通发布为 null。 */
+    private Long aiItineraryId;
+
     public static TripPlanEntity from(TripPlan trip) {
         TripPlanEntity entity = new TripPlanEntity();
         entity.setId(trip.id());
@@ -93,6 +96,7 @@ public class TripPlanEntity {
         entity.setCancelNote(trip.cancelNote());
         entity.setCreatedAt(trip.createdAt().toString());
         entity.setUpdatedAt(trip.updatedAt().toString());
+        entity.setAiItineraryId(trip.aiItineraryId());
         return entity;
     }
 
@@ -120,7 +124,8 @@ public class TripPlanEntity {
                 Instant.parse(updatedAt),
                 cancelledAt == null ? null : Instant.parse(cancelledAt),
                 cancelReason,
-                cancelNote);
+                cancelNote,
+                aiItineraryId);
     }
 
     public Long getId() {
@@ -305,5 +310,13 @@ public class TripPlanEntity {
 
     public void setUpdatedAt(String updatedAt) {
         this.updatedAt = updatedAt;
+    }
+
+    public Long getAiItineraryId() {
+        return aiItineraryId;
+    }
+
+    public void setAiItineraryId(Long aiItineraryId) {
+        this.aiItineraryId = aiItineraryId;
     }
 }

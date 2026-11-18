@@ -1,10 +1,15 @@
 import type {
+  AdminDashboard,
   AdminReportDetail,
   AdminReportResolveRequest,
   AdminReportSummary,
   AdminUserDetail,
   AdminUserStatusRequest,
   AdminUserSummary,
+  AiGenerateRequest,
+  AiGenerateResponse,
+  AiItinerarySaved,
+  AiItinerarySnapshot,
   AuthRegisterRequest,
   AuthSession,
   ChatMessage,
@@ -12,10 +17,18 @@ import type {
   DemoUser,
   Experience,
   ExperienceFilters,
+  ExperienceLikeResult,
   ExperiencePhoto,
   ExperienceWriteRequest,
   HelpReports,
-  MatchCandidate,
+  LeaveEvidence,
+  LeavePayload,
+  LearningResult,
+  LearningSession,
+  LeavePreview,
+  LeaveReason,
+  LeaveRecord,
+  LeaveResult,
   MyTrips,
   NotificationCounts,
   NotificationList,
@@ -45,12 +58,15 @@ import type {
 export class ApiError extends Error {
   readonly code: string;
   readonly fields?: Record<string, string>;
+  /** 后端 ErrorResponse.message 的可读文案；展示层优先于稳定错误码。 */
+  readonly detail?: string;
 
-  constructor(code: string, fields?: Record<string, string>) {
+  constructor(code: string, fields?: Record<string, string>, detail?: string) {
     super(code);
     this.name = 'ApiError';
     this.code = code;
     this.fields = fields;
+    this.detail = detail;
   }
 }
 
@@ -62,10 +78,9 @@ export async function request(path: string, init?: RequestInit, userId?: number)
   const requestInit = init === undefined && userId === undefined ? undefined : { ...init, headers };
   const response = await fetch(`/api${path}`, requestInit);
   if (!response.ok) {
-    const body: { code?: string; fields?: Record<string, string> } | null = await response
-      .json()
-      .catch(() => null);
-    throw new ApiError(body?.code || `HTTP ${response.status}`, body?.fields);
+    const body: { code?: string; message?: string; fields?: Record<string, string> } | null =
+      await response.json().catch(() => null);
+    throw new ApiError(body?.code || `HTTP ${response.status}`, body?.fields, body?.message);
   }
   return response;
 }
@@ -191,20 +206,6 @@ export async function loadTrips(
   return (await response.json()) as Page<TripSummary>;
 }
 
-export async function loadMatches(
-  userId: number,
-  filters: TripFilters = {},
-  paging?: Paging,
-): Promise<Page<MatchCandidate>> {
-  const response = await request(`/matches${tripQuery(filters, paging)}`, undefined, userId);
-  return (await response.json()) as Page<MatchCandidate>;
-}
-
-export async function loadMatch(userId: number, tripId: number): Promise<MatchCandidate> {
-  const response = await request(`/matches/${tripId}`, undefined, userId);
-  return (await response.json()) as MatchCandidate;
-}
-
 export async function loadTrip(userId: number, tripId: number): Promise<TripDetail> {
   const response = await request(`/trips/${tripId}`, undefined, userId);
   return (await response.json()) as TripDetail;
@@ -304,8 +305,54 @@ export async function rejectApplication(userId: number, applicationId: number): 
   return (await response.json()) as TripApplication;
 }
 
-export async function leaveTrip(userId: number, tripId: number): Promise<void> {
-  await request(`/trips/${tripId}/leave`, { method: 'POST' }, userId);
+export async function loadLeavePreview(
+  userId: number,
+  tripId: number,
+  reason: LeaveReason,
+): Promise<LeavePreview> {
+  const response = await request(`/trips/${tripId}/leave-preview?reason=${reason}`, undefined, userId);
+  return (await response.json()) as LeavePreview;
+}
+
+export async function leaveTrip(
+  userId: number,
+  tripId: number,
+  payload: LeavePayload,
+): Promise<LeaveResult> {
+  const response = await request(
+    `/trips/${tripId}/leave`,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    },
+    userId,
+  );
+  return (await response.json()) as LeaveResult;
+}
+
+export async function loadLeaveRecords(userId: number, tripId: number): Promise<LeaveRecord[]> {
+  const response = await request(`/trips/${tripId}/leave-record`, undefined, userId);
+  return (await response.json()) as LeaveRecord[];
+}
+
+export async function fetchLeaveEvidence(userId: number, attachmentId: number): Promise<Blob> {
+  const response = await request(`/leave-evidence/${attachmentId}`, undefined, userId);
+  return await response.blob();
+}
+export async function uploadLeaveEvidence(
+  userId: number,
+  tripId: number,
+  file: File,
+): Promise<LeaveEvidence> {
+  const form = new FormData();
+  form.append('file', file);
+  const response = await request(
+    `/trips/${tripId}/leave-evidence`,
+    { method: 'POST', body: form },
+    userId,
+  );
+  return (await response.json()) as LeaveEvidence;
 }
 
 export async function loadMyTrips(userId: number): Promise<MyTrips> {
@@ -439,6 +486,14 @@ export async function loadMyExperiences(userId: number): Promise<Experience[]> {
   return (await response.json()) as Experience[];
 }
 
+/** 管理员删除任意一条旅行灵感（后端会同步清理图片与点赞）。 */
+export async function deleteAdminExperience(
+  token: string,
+  experienceId: number,
+): Promise<void> {
+  await request(`/admin/experiences/${experienceId}`, bearerInit(token, { method: 'DELETE' }));
+}
+
 export async function shareExperience(
   userId: number,
   tripId: number,
@@ -454,6 +509,18 @@ export async function shareExperience(
     userId,
   );
   return (await response.json()) as Experience;
+}
+
+export async function likeExperience(
+  userId: number,
+  experienceId: number,
+): Promise<ExperienceLikeResult> {
+  const response = await request(`/experiences/${experienceId}/likes`, { method: 'POST' }, userId);
+  return (await response.json()) as ExperienceLikeResult;
+}
+
+export async function unlikeExperience(userId: number, experienceId: number): Promise<void> {
+  await request(`/experiences/${experienceId}/likes`, { method: 'DELETE' }, userId);
 }
 
 export async function uploadExperiencePhoto(
@@ -492,6 +559,12 @@ function listQuery(filters: {
   }
   const query = params.toString();
   return query ? `?${query}` : '';
+}
+
+/** 管理后台概览：只读快照，页面只在首次加载与手动刷新时调用。 */
+export async function loadAdminDashboard(token: string): Promise<AdminDashboard> {
+  const response = await request('/admin/dashboard', bearerInit(token));
+  return (await response.json()) as AdminDashboard;
 }
 
 /** 管理端用户列表：`q` 支持 ID / 昵称 / 邮箱，`status` 为账号状态。 */
@@ -666,4 +739,86 @@ export async function fetchWeatherForecast(
   }
   const response = await request(`/weather/forecast?${params.toString()}`);
   return (await response.json()) as WeatherForecast;
+}
+
+/** 开始一次安全学习考试；分数 ≥ 60 或本月次数已用尽时抛 {@link ApiError}。 */
+export async function startLearningSession(userId: number): Promise<LearningSession> {
+  const response = await request('/credit/learning/sessions', { method: 'POST' }, userId);
+  return (await response.json()) as LearningSession;
+}
+
+/** 标记学习内容已完成；未完成时提交作答会被拒（409）。 */
+export async function completeLearningLessons(
+  userId: number,
+  sessionId: number,
+): Promise<LearningSession> {
+  const response = await request(
+    `/credit/learning/sessions/${sessionId}/lessons/complete`,
+    { method: 'POST' },
+    userId,
+  );
+  return (await response.json()) as LearningSession;
+}
+
+/** 提交作答并取判分结果；正确答案只在服务端，前端只能拿到逐题对错。 */
+export async function submitLearningAnswers(
+  userId: number,
+  sessionId: number,
+  answers: number[],
+): Promise<LearningResult> {
+  const response = await request(
+    `/credit/learning/sessions/${sessionId}/submission`,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ answers }),
+    },
+    userId,
+  );
+  return (await response.json()) as LearningResult;
+}
+
+/* ---------- AI 智能规划（契约 0.17.0；天气复用 add-trip-weather） ---------- */
+
+/** AI 生成推荐行程；响应内 weather 为后端实际注入提示词的权威天气。 */
+export async function generateAiItinerary(
+  userId: number,
+  body: AiGenerateRequest,
+): Promise<AiGenerateResponse> {
+  const response = await request(
+    '/ai/itineraries/generate',
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    },
+    userId,
+  );
+  return (await response.json()) as AiGenerateResponse;
+}
+
+/** 保存完整快照；resolved ≥ 2 且坐标为数值，否则后端 400。 */
+export async function saveAiItinerary(
+  userId: number,
+  snapshot: AiItinerarySnapshot,
+): Promise<AiItinerarySaved> {
+  const response = await request(
+    '/ai/itineraries',
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(snapshot),
+    },
+    userId,
+  );
+  return (await response.json()) as AiItinerarySaved;
+}
+
+/** 读取快照（原样返回）；不存在或非本人一律 400 INVALID_INPUT。 */
+export async function loadAiItinerary(
+  userId: number,
+  itineraryId: number,
+): Promise<AiItinerarySnapshot> {
+  const response = await request(`/ai/itineraries/${itineraryId}`, undefined, userId);
+  return (await response.json()) as AiItinerarySnapshot;
 }

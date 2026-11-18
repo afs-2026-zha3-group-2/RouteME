@@ -31,3 +31,8 @@ build/
 
 ### VS Code ###
 .vscode/
+
+### 本地真实 Key（不提交） ###
+application-local.yml
+amap-local.yml
+ai-local.yml

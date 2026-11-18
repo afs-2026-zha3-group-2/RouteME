@@ -9,7 +9,7 @@
 | id | 任务 | Requirement | 落点 | 依赖 | 验收（ATDD） | 验证 |
 |---|---|---|---|---|---|---|
 | T1 | 契约：`openapi.yaml` 0.17.0 → 0.18.0，新增 `GET /notifications`、`GET /notifications/stream`、`POST /notifications/{id}/read`、`POST /notifications/read` 与 `NotificationType` / `Notification` / `NotificationCounts` / `NotificationList` / `NotificationReadRequest` / `NotificationEvent`；`OpenApiTest` 两处版本断言同步，并加契约断言 | R1–R6（契约） | `RouteME/openapi.yaml`、`OpenApiTest` | — | D1 / B7；4 路径、枚举、`maxItems=50`、`NOTIFICATION_NOT_FOUND` | C1 |
-| T2 | 迁移与持久化：`V24__add_notifications.sql`（双引擎）、`NotificationEntity`（`Instant` ↔ 字符串）、`NotificationMapper`（`@Mapper`，无自定义 SQL）、`NotificationMigrationTest` | R1 / R3 | `db/migration`、`entity`、`mapper`、`src/test` | T1 | D2 / B8；表与索引存在，插入 / 查询 / 标读可用 | C2 |
+| T2 | 迁移与持久化：`V30__add_notifications.sql`（双引擎）、`NotificationEntity`（`Instant` ↔ 字符串）、`NotificationMapper`（`@Mapper`，无自定义 SQL）、`NotificationMigrationTest` | R1 / R3 | `db/migration`、`entity`、`mapper`、`src/test` | T1 | D2 / B8；表与索引存在，插入 / 查询 / 标读可用 | C2 |
 | T3 | 后端纯函数：`NotificationTypeEnum`（4 个 wire 值）、`NotificationTextUtils`（4 类文案 + 未知回退）、`NotificationEntity.from` / `toNotification` 往返 | R1 / R2 | `enums`、`utils`、`entity` | T2 | D3 / U1–U4；文案与 wire 值稳定 | C2 |
 | T4 | 通知服务：`Notification`（record）、`NotificationService` / `impl`（写入、最新 50 条、三项计数、单条 / 全部 / 会话标读、幂等、按用户隔离）、`NotificationNotFoundException`、四个 response / 一个 request | R1 / R2 / R3 / R5 | `service`、`service/impl`、`pojo`、`response`、`request`、`exception` | T3 | D4 / D7 / S1、S7–S11、B1–B5 | C2 |
 | T5 | 生产方钩子：`ApplicationServiceImpl.apply`（发布者，带 `applicationId`）、`decide`（申请者，按 `next` 取 accepted / rejected）、`ChatServiceImpl.send`（接收方，带 `messageId`）；只放在既有成功路径末尾 | R1 / R2 | `service/impl` | T4 | D4–D6 / S1–S6；被拒绝的请求 0 行 | C2 |
@@ -68,7 +68,7 @@
 - **无遗漏：** 26/26 场景均有 Design、Task 与至少一个自动化验收层。
 - **无静默扩张：** 任务中没有通知历史页、筛选、偏好、清理任务、WebSocket、消息队列、邮件 / OS 推送，也没有申请 / 聊天规则改动。
 - **阈值与文案单点：** 文案只在 T3 的 `NotificationTextUtils`；未读规则只在 T4 的 `WHERE read_at IS NULL`；前端 T8 不重新推导服务端计数。
-- **契约先行：** T1 在两端实现之前完成；T2 使用的 `V24` 与 T1 的 0.18.0 在开工前再各 `grep` 一次排他性。
+- **契约先行：** T1 在两端实现之前完成；T2 使用的 `V30` 与 T1 的 0.18.0 在开工前再各 `grep` 一次排他性。
 - **入口交互：** T10 的铃铛按 click 展开（签署确认，不改 hover）。
 
 ## 4. 风险与回退
@@ -86,7 +86,7 @@
 ## 5. 执行清单（openspec 任务追踪）
 
 - [x] **T1 契约：`openapi.yaml` 0.18.0 + 4 路径与 6 个 schema**
-- [x] **T2 迁移与持久化：`V24` + entity / mapper + 迁移测试**
+- [x] **T2 迁移与持久化：`V30` + entity / mapper + 迁移测试**
 - [x] **T3 后端纯函数：类型枚举、通知文案、实体往返**
 - [x] **T4 通知服务：写入、列表、三项计数、三种标读**
 - [x] **T5 生产方钩子：申请、裁决、发消息**

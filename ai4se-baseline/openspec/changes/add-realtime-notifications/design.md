@@ -64,7 +64,7 @@ flowchart LR
 
 ## 3. 数据模型与迁移（D4 / D13 / D12）
 
-`backend/src/main/resources/db/migration/V24__add_notifications.sql`：
+`backend/src/main/resources/db/migration/V30__add_notifications.sql`：
 
 ```sql
 -- REQ-023 real-time notifications: one durable row per delivered event.
@@ -100,7 +100,7 @@ CREATE INDEX ix_notifications_recipient_read ON notifications (recipient_id, rea
 - **未读 = `read_at IS NULL`**，不建独立计数表（D4）。类型拆分由 `type` 派生。
 - **保留策略：** 行不删除；列表只返回最新 50 条（D13）。索引 `(recipient_id, read_at)` 覆盖计数与列表过滤。
 - **时间格式：** 与既有实体一致，存 ISO-8601 字符串，字典序即时间序；列表按 `created_at DESC, id DESC`。
-- **迁移号排他确认（D12）：** `openapi.yaml:4` 为 `0.17.0`；`db/migration/` 最大为 `V23__add_travel_mode.sql`；在 `openspec/changes/**`、`docs/**` 中检索 `V24__` / `0.18.0`，除本 change 自己的草稿外无其他 change 占用（含 `add-ai-itinerary`）。故本 change 取 **`V24` / 0.18.0**。
+- **迁移号排他确认（D12）：** `openapi.yaml:4` 为 `0.17.0`；`db/migration/` 最大为 `V23__add_travel_mode.sql`；在 `openspec/changes/**`、`docs/**` 中检索 `V30__` / `0.18.0`，除本 change 自己的草稿外无其他 change 占用（含 `add-ai-itinerary`）。故本 change 取 **`V30` / 0.18.0**。
 - **双引擎：** 只用 `INTEGER / VARCHAR / CREATE INDEX`，不用 SQLite 专属语法；`NotificationMigrationTest` 在 SQLite 上跑同一脚本，Spring 测试在 H2 上跑同一脚本。
 
 ## 4. 接口契约（`openapi.yaml` 0.17.0 → 0.18.0）
@@ -407,7 +407,7 @@ unmount / 登出 → source.close()，清空状态
 | L-01 / S-01 | 「短提示」没有 Delta 场景 | §6.3 定义触发条件、形态与可断言口径；`tasks.md` 落实现与一条 E2E；不在 Delta 中新增场景（提示是展示细节，不改变可观察的通知语义） |
 | L-02 / S-02 | 失败隔离只写在申请类 | §5.1 把 `try/catch` 下沉到 `NotificationServiceImpl.notify*`，对申请、裁决、消息三条路径同时生效；`tasks.md` 为消息路径补反向断言 |
 | L-03 / S-03 | 契约增量缺少规格锚点 | §7 的端点 → Requirement → Scenario 对照；契约与测试任务逐条引用 |
-| D12 | `0.18.0` / `V24` 排他性 | §3 记录检索结果；`tasks.md` T1 定稿前再复核一次 |
+| D12 | `0.18.0` / `V30` 排他性 | §3 记录检索结果；`tasks.md` T1 定稿前再复核一次 |
 | G1 测量点 | 「3 秒内」如何量 | §5.7 固定 T0 / T1 与 Playwright 断言方式 |
 | D6 顺序 | 通知与业务事务的顺序 | §5.1 同事务写入 + `afterCommit` 推送；回滚不推 |
 
@@ -421,7 +421,7 @@ unmount / 登出 → source.close()，清空状态
 | 后端流服务（S） | `NotificationStreamServiceTest`：注册后可查到连接数；向 A 发布不影响 B；心跳不抛；`complete` / 失败发送后连接被移除；用户可多连接 |
 | 后端接口（B） | `NotificationControllerTest`（MockMvc）：列表字段与 50 条上限、计数三元组、单条标读 200 / 404 / 幂等、`scope=all` / `conversation` / 非法 scope 400、缺身份 401；流端点只断言 `asyncStarted` 与响应头，内容由流服务与 E2E 覆盖 |
 | 后端契约（B） | `OpenApiTest`：0.18.0、4 条路径、schema 必需字段、`NOTIFICATION_NOT_FOUND`、`maxItems=50` |
-| 后端迁移（B） | `NotificationMigrationTest`：SQLite 执行 `V24` 后表与索引存在；插入 / 查询 / 标读可用；H2 由 Spring 测试上下文覆盖 |
+| 后端迁移（B） | `NotificationMigrationTest`：SQLite 执行 `V30` 后表与索引存在；插入 / 查询 / 标读可用；H2 由 Spring 测试上下文覆盖 |
 | 前端纯函数（F） | `notificationModel.test.ts`：快照合并去重 / 截断、事件同 id 去重、活动会话不加计数、三处标读归约、分会话分组、直达地址、提示条件、徽标 0 隐藏；`utils/chatTime.test.ts`（由 `chat/chatTime.test.ts` 迁移）：4 条既有断言原样通过，证明迁移不改口径 |
 | E2E（M） | `notifications.spec.ts`：申请到达（铃铛 +1、面板出现、≤3 s）；接受 / 拒绝；消息到地图页（rail / tab +1、提示条）；打开会话归零；读一条 / 全部已读；两个会话只清一个；刷新后计数不变；当前会话推送直接出现且不提示；390 px 数字一致 |
 | 人工走查（V） | 1440 / 768 / 390 × 浅 / 深色；后端重启后客户端重连对账；停掉后端时计数保留且无阻塞弹窗 |

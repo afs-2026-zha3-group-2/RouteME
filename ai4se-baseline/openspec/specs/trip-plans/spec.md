@@ -77,7 +77,7 @@ RouteME 的行程能力：演示身份进入与切换、按条件浏览未结束
 
 ### Requirement: 列表分页参数与响应
 
-`GET /api/trips` 与 `GET /api/matches` SHALL 接受 `page`（从 1 起，默认 1）与 `size`（默认 20，最大 50），并 MUST 返回分页对象 `{ items, page, size, total, total_pages }`。
+`GET /api/trips` SHALL 接受 `page`（从 1 起，默认 1）与 `size`（默认 20，最大 50），并 MUST 返回分页对象 `{ items, page, size, total, total_pages }`。
 
 #### Scenario: 默认分页
 - **Given** 未结束行程多于 20 条

@@ -14,7 +14,7 @@ import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.jdbc.datasource.DriverManagerDataSource;
 
 /**
- * Verifies V24 adds the notifications table and the recipient/read index on SQLite, and that the
+ * Verifies V30 adds the notifications table and the recipient/read index on SQLite, and that the
  * table supports the insert / list / mark-read statements the notification service relies on.
  */
 class NotificationMigrationSqliteTest {
@@ -89,7 +89,7 @@ class NotificationMigrationSqliteTest {
                         columns.containsAll(List.of(
                                 "id", "recipient_id", "type", "actor_id", "trip_id",
                                 "application_id", "message_id", "created_at", "read_at")),
-                        "V24 creates notification columns"),
+                        "V30 creates notification columns"),
                 () -> assertTrue(
                         notNullColumns.containsAll(List.of(
                                 "id", "recipient_id", "type", "actor_id", "trip_id", "created_at")),
@@ -100,7 +100,7 @@ class NotificationMigrationSqliteTest {
                 () -> assertEquals(List.of(901L, 900L), orderedIds, "list orders newest first"),
                 () -> assertEquals("2026-11-17T09:10:00Z", readAt, "repeated mark-read keeps the first timestamp"),
                 () -> assertEquals(1, remaining, "mark-read only clears the targeted row"),
-                () -> assertEquals(1, v24Applied, "V24 recorded in flyway history"));
+                () -> assertEquals(1, v24Applied, "V30 recorded in flyway history"));
     }
 
     private String toSqlitePath(Path path) {

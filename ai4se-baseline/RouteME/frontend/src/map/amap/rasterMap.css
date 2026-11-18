@@ -4,9 +4,14 @@
   position: relative;
   overflow: hidden;
   background: color-mix(in srgb, var(--lagoon-soft) 55%, var(--surface));
-  cursor: grab;
+  /* 选点地图用十字准星：鼠标尖端就是将要选中的坐标；只读地图在 styles.css 里改回 grab。 */
+  cursor: crosshair;
   touch-action: none;
   user-select: none;
+}
+
+.amap-container[data-cursor="grab"] .amap-canvas-host {
+  cursor: grab;
 }
 
 .amap-canvas-host.is-dragging {

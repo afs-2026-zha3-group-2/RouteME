@@ -1,7 +1,6 @@
 package routeme.service;
 
 import java.util.List;
-import java.util.Optional;
 
 import com.baomidou.mybatisplus.spring.service.IService;
 
@@ -42,14 +41,6 @@ public interface TripPlanService extends IService<TripPlanEntity> {
     PageResult<TripPlan> searchPage(TripQuery query, PageParam param);
 
     /**
-     * 未结束行程的全量筛选结果；匹配分只能在应用层排序，故搜索先取全量。
-     *
-     * @param query 关键词、目的地、日期区间、兴趣标签与排序条件
-     * @return 命中全部行程，已按 query 的排序键有序
-     */
-    List<TripPlan> findOpen(TripQuery query);
-
-    /**
      * 全部行程（含已结束）：我的旅行需要跨发布者聚合，故提供全量列表。
      *
      * @return 按创建时间倒序的行程
@@ -87,14 +78,6 @@ public interface TripPlanService extends IService<TripPlanEntity> {
     void materializeExpired();
 
     /**
-     * 取发布者最近发布且未结束的行程，用于匹配对照。
-     *
-     * @param publisherId 发布者 id
-     * @return 最近一条未结束行程；没有则返回空
-     */
-    Optional<TripPlan> latestOpenByPublisher(long publisherId);
-
-    /**
      * 取行程发布者资料。
      *
      * @param trip 行程领域对象
@@ -114,6 +97,16 @@ public interface TripPlanService extends IService<TripPlanEntity> {
      * @return 取消后的行程（状态 cancelled）
      */
     TripPlan cancel(long tripId, long publisherId, TripCancelRequest request);
+
+    /**
+     * 系统因信用限制取消行程：允许招募中 / 已满员 / 旅行中；已完成 / 已取消 no-op。
+     */
+    TripPlan cancelByCreditRestriction(long tripId, java.time.Instant now);
+
+    /**
+     * 系统因信用限制取消某发布者全部未结束行程（含旅行中）。
+     */
+    void cancelUnfinishedByPublisher(long publisherId, java.time.Instant now);
 
     /** 发布者把自己的行程标记为已结束（写 completed_at）。
      *

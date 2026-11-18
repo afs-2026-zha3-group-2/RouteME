@@ -46,7 +46,7 @@
 | 切片 | Red 测试（先写） | 预期失败原因 | Green 最小实现 |
 |---|---|---|---|
 | D1 | `OpenApiTest.in_openApiFile_out_notificationContractDeclared` | 路径 / schema / 版本不存在 | 改 `openapi.yaml` 到 0.18.0，补 4 路径与 schema；同步两处版本断言 |
-| D2 | `NotificationMigrationTest` | `notifications` 表不存在 | `V24` + `NotificationEntity` / `NotificationMapper` |
+| D2 | `NotificationMigrationTest` | `notifications` 表不存在 | `V30` + `NotificationEntity` / `NotificationMapper` |
 | D3 | `NotificationTextUtilsTest` | 类不存在 | `NotificationTextUtils` + `NotificationTypeEnum` |
 | D4 | `NotificationServiceTest.in_apply_out_publisherUnreadOne` | 申请后发布者计数为 0 | `NotificationService` 写入 + 计数；`ApplicationServiceImpl.apply` 钩子 |
 | D5 | `NotificationServiceTest.in_acceptAndReject_out_applicantNotified` | 裁决后申请者计数为 0 | `decide` 钩子（接受 / 拒绝） |
@@ -99,7 +99,7 @@
 | B5 | `scope` 非法 / 缺定位 → 400 `INVALID_INPUT` |
 | B6 | `GET /notifications/stream?user_id=` → `asyncStarted`，响应头 `text/event-stream`、`Cache-Control: no-cache`、`X-Accel-Buffering: no`；缺 `user_id` → 401 |
 | B7 | `OpenApiTest`：0.18.0、4 路径、schema 必需字段、`NotificationList.items.maxItems=50`、`NOTIFICATION_NOT_FOUND` |
-| B8 | `NotificationMigrationTest`：SQLite 执行 `V24` → 表 / 索引存在；插入、按收件人查询、标读更新可用 |
+| B8 | `NotificationMigrationTest`：SQLite 执行 `V30` → 表 / 索引存在；插入、按收件人查询、标读更新可用 |
 
 ## 5. 前端纯函数（F）
 

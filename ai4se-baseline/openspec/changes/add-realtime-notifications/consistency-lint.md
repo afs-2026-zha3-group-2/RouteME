@@ -24,9 +24,9 @@
 | 术语一致（行程 / 申请 / 会话 / 未读） | Pass | 与 `trip-companions` 及既有界面用词一致；无同义轮换 |
 | 数值口径唯一 | Pass | 3 秒 / 50 条 / 减一 / ≤900 px 各只定义一次 |
 | 契约影响已声明 | Pass | 提案声明 4 条新路径 + 次版本递增到 0.18.0；L-03 要求 P3 建锚点 |
-| 数据影响已声明 | Pass | 1 张新表 + 迁移 `V24`；索引 `(recipient_id, read_at)`；H2 / SQLite 双引擎要求已写 |
+| 数据影响已声明 | Pass | 1 张新表 + 迁移 `V30`；索引 `(recipient_id, read_at)`；H2 / SQLite 双引擎要求已写 |
 | 与 Living Spec 无冲突 | Pass | `trip-companions` / `trip-plans` / `design-system` 均未改写；`notifications` 尚不存在 |
-| 与在途 change 的冲突已登记 | Pass | 契约 0.18.0 / 迁移 `V24` 为「当前最大值 + 1」，未与任何在途 change 的号段重叠；P3 排他复核（提案 D12 / R-7） |
+| 与在途 change 的冲突已登记 | Pass | 契约 0.18.0 / 迁移 `V30` 为「当前最大值 + 1」，未与任何在途 change 的号段重叠；P3 排他复核（提案 D12 / R-7） |
 | 安全与密钥 | Pass | 无新增密钥；流身份用 `user_id` 查询参数，与既有 `X-User-Id` 同级，已在提案残余风险登记 |
 | 文案位置 | Pass | 通知文案与时间格式落 `frontend/src/notifications/` 与 `i18n`，P3 定 |
 

@@ -27,9 +27,9 @@ class ExperienceServicePersistenceTest {
     @Test
     void in_seededData_out_experiencesByTripAndAuthor() {
         // When
-        List<ExperienceResponse> trip1 = experienceService.listByTrip(1L);
+        List<ExperienceResponse> trip1 = experienceService.listByTrip(1L, 2L);
         List<ExperienceResponse> mine = experienceService.mine(2L);
-        List<ExperienceResponse> all = experienceService.listAll(null, java.util.Set.of());
+        List<ExperienceResponse> all = experienceService.listAll(null, java.util.Set.of(), 2L);
 
         // Then
         assertAll(
@@ -49,7 +49,7 @@ class ExperienceServicePersistenceTest {
 
         // When
         experienceService.save(TripExperienceEntity.from(experience));
-        List<ExperienceResponse> stored = experienceService.listByTrip(3L);
+        List<ExperienceResponse> stored = experienceService.listByTrip(3L, 1L);
 
         // Then
         assertAll(

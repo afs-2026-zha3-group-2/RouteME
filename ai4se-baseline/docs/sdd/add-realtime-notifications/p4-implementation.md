@@ -19,7 +19,7 @@
 | 任务 | 落点 | 结果 |
 |---|---|---|
 | T1 契约 | `openapi.yaml` 0.17.0 → **0.18.0**：`GET /notifications`、`GET /notifications/stream`、`POST /notifications/{notificationId}/read`、`POST /notifications/read`；6 个 schema（`NotificationType` / `Notification` / `NotificationCounts` / `NotificationList` / `NotificationReadRequest` / `NotificationEvent`）；错误码 `NOTIFICATION_NOT_FOUND` | Pass |
-| T2 持久化 | `V24__add_notifications.sql`（`notifications` 表 + 按收件人倒序、按收件人未读两条索引，仅 `INTEGER` / `VARCHAR` / `CREATE INDEX`，SQLite + H2 双引擎）；`NotificationEntity` + `NotificationMapper`；`NotificationMigration*Test` | Pass |
+| T2 持久化 | `V30__add_notifications.sql`（`notifications` 表 + 按收件人倒序、按收件人未读两条索引，仅 `INTEGER` / `VARCHAR` / `CREATE INDEX`，SQLite + H2 双引擎）；`NotificationEntity` + `NotificationMapper`；`NotificationMigration*Test` | Pass |
 | T3 纯函数 | `NotificationTypeEnum`（4 个 wire 值）、`NotificationTextUtils`（三类文案，含自消息守卫）、`Notification` / `NotificationEntity` 往返 | Pass |
 | T4 通知服务 | `NotificationServiceImpl`：`list` 最新 50 条 + 三项计数（`total` / `application` / `message`，未读 = `read_at IS NULL`）；`markRead`（越权一律 404）/ `markAllRead` / `markConversationRead`（`trip_id` + 对方 `user_id`）；写入加入调用方事务，`afterCommit` 才推送 | Pass |
 | T5 生产方钩子 | `ApplicationServiceImpl`：申请 → 发布者 `application_received`；裁决 → 申请者 `application_accepted` / `application_rejected`；`ChatServiceImpl`：发消息 → 接收方 `message`（携带 `ChatMessage` 供前端直接追加） | Pass |

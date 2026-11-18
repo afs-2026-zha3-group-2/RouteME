@@ -19,4 +19,9 @@ public record UserCredit(long userId, int score, CreditLevel level) {
     public String levelCode() {
         return level.wireValue();
     }
+
+    /** 当前是否处于信用限制：低于 60 即受限。 */
+    public boolean restricted() {
+        return score < 60;
+    }
 }

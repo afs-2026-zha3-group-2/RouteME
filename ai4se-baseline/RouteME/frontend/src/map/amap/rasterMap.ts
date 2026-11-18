@@ -211,6 +211,7 @@ class RasterTileMap implements AmapMap {
     host.addEventListener('pointerup', this.onPointerUp);
     host.addEventListener('pointercancel', this.onPointerUp);
     host.addEventListener('wheel', this.onWheel, { passive: false });
+    host.addEventListener('dblclick', this.onDoubleClick);
 
     this.measure();
     if (typeof ResizeObserver !== 'undefined') {
@@ -312,6 +313,7 @@ class RasterTileMap implements AmapMap {
     this.host.removeEventListener('pointerup', this.onPointerUp);
     this.host.removeEventListener('pointercancel', this.onPointerUp);
     this.host.removeEventListener('wheel', this.onWheel);
+    this.host.removeEventListener('dblclick', this.onDoubleClick);
     for (const tile of this.tiles.values()) {
       this.detachTile(tile);
     }
@@ -416,6 +418,16 @@ class RasterTileMap implements AmapMap {
     this.zoomAround(this.zoom + step, event.clientX - rect.left, event.clientY - rect.top);
   };
 
+  /** 双击放大：地图交互的常见预期（与 + 按钮同一缩放级别步长）。 */
+  private readonly onDoubleClick = (event: MouseEvent): void => {
+    const rect = this.host.getBoundingClientRect();
+    this.zoomAround(
+      this.zoom + 1,
+      event.clientX - rect.left,
+      event.clientY - rect.top,
+    );
+  };
+
   private readonly onPointerDown = (event: PointerEvent): void => {
     if (event.button !== 0 || event.target !== this.host) {
       // 覆盖层标记（RouteLayer）自己处理点击，不抢事件。
@@ -479,5 +491,8 @@ class RasterTileMap implements AmapMap {
 }
 
 export function createRasterMap(host: HTMLElement, options: RasterMapOptions): AmapMap {
-  return new RasterTileMap(host, options);
+  const map = new RasterTileMap(host, options);
+  // 调试 / E2E 钩子：把实例挂在宿主上，便于按经纬度投影模拟点击（不影响渲染）。
+  (host as HTMLElement & { __rasterMap?: AmapMap }).__rasterMap = map;
+  return map;
 }

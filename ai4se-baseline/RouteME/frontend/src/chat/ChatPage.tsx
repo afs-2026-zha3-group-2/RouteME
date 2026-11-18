@@ -1,11 +1,13 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Alert, Button, Skeleton, Typography } from 'antd';
-import { loadChatPartners, loadMessages, loadTrip, leaveTrip, sendMessage } from '../api';
+import { loadChatPartners, loadMessages, loadTrip, sendMessage } from '../api';
+import { useMyCredit } from '../credit/CreditContext';
 import { tripMessages } from '../i18n/tripMessages';
 import { conversationKey } from '../notifications/notificationModel';
 import { useNotifications } from '../notifications/NotificationContext';
 import { useProfile } from '../profiles/ProfileContext';
 import { ReportModal } from '../safety/ReportModal';
+import { TripLeaveModal } from '../trips/TripLeaveModal';
 import type { ChatMessage, ChatPartner, DemoUser, TripDetail } from '../types';
 import { ChatList } from './ChatList';
 import { ChatMain } from './ChatMain';
@@ -25,12 +27,13 @@ type Props = {
  */
 export function ChatPage({ currentUser, tripId, otherUserId }: Props) {
   const { openProfile } = useProfile();
-  const {
+const {
     unreadConversations,
     setActiveConversation,
     markConversationRead,
     lastMessageEvent,
   } = useNotifications();
+  const { restricted, refresh: refreshCredit } = useMyCredit();
   const [partners, setPartners] = useState<ChatPartner[] | null>(null);
   const [partnersError, setPartnersError] = useState<string | null>(null);
   const [trip, setTrip] = useState<TripDetail | null>(null);
@@ -39,6 +42,7 @@ export function ChatPage({ currentUser, tripId, otherUserId }: Props) {
   const [content, setContent] = useState('');
   const [sending, setSending] = useState(false);
   const [reportOpen, setReportOpen] = useState(false);
+  const [leaveOpen, setLeaveOpen] = useState(false);
   const [reloadToken, setReloadToken] = useState(0);
 
   const partner = useMemo(() => {
@@ -173,21 +177,6 @@ export function ChatPage({ currentUser, tripId, otherUserId }: Props) {
     }
   };
 
-  const leave = async () => {
-    if (partner === null || !window.confirm(tripMessages.leaveConfirm)) {
-      return;
-    }
-    try {
-      await leaveTrip(currentUser.id, partner.trip.id);
-      setReloadToken((token) => token + 1);
-      loadTrip(currentUser.id, partner.trip.id)
-        .then((loaded) => setTrip(loaded))
-        .catch(() => undefined);
-    } catch (caught: unknown) {
-      setMessagesError(caught instanceof Error ? caught.message : 'UNKNOWN_ERROR');
-    }
-  };
-
   if (partners === null && partnersError === null) {
     return (
       <main className="form-page">
@@ -297,14 +286,33 @@ export function ChatPage({ currentUser, tripId, otherUserId }: Props) {
             content={content}
             sending={sending}
             canLeave={canLeave}
+            restricted={restricted}
             onContentChange={setContent}
             onSend={send}
             onProfile={() => openProfile(partner.other.id)}
             onReport={() => setReportOpen(true)}
-            onLeave={leave}
+            onLeave={() => setLeaveOpen(true)}
           />
         )}
       </div>
+
+      <TripLeaveModal
+        open={leaveOpen}
+        userId={currentUser.id}
+        tripId={partner?.trip.id ?? 0}
+        title={partner?.trip.title}
+        onClose={() => setLeaveOpen(false)}
+        onLeft={() => {
+          setLeaveOpen(false);
+          refreshCredit();
+          setReloadToken((token) => token + 1);
+          if (partner !== null) {
+            loadTrip(currentUser.id, partner.trip.id)
+              .then((loaded) => setTrip(loaded))
+              .catch(() => undefined);
+          }
+        }}
+      />
 
       <ReportModal
         userId={currentUser.id}

@@ -26,6 +26,7 @@ class OpenApiTest {
     private static final List<String> HTTP_METHODS = List.of("get", "post", "put", "patch", "delete");
 
     private static final List<String> ADMIN_CONSOLE_PATHS = List.of(
+            "/admin/dashboard",
             "/admin/users",
             "/admin/users/{userId}",
             "/admin/users/{userId}/status",
@@ -64,6 +65,44 @@ class OpenApiTest {
     }
 
     @Test
+    void in_openApiFile_out_experienceLikeContractDeclared() throws IOException {
+        // Given
+        Map<String, Object> document = loadYaml(SPEC_PATH);
+        Map<String, Object> info = asMap(document.get("info"));
+
+        // When
+        Map<String, Object> likeExperience = operation(document, "/experiences/{experienceId}/likes", "post");
+        Map<String, Object> unlikeExperience = operation(document, "/experiences/{experienceId}/likes", "delete");
+        Map<String, Object> experience = schema(document, "Experience");
+        Map<String, Object> like = schema(document, "ExperienceLike");
+        Map<String, Object> errorSchema = schema(document, "Error");
+
+        // Then
+        assertAll(
+                () -> assertEquals("0.25.0", info.get("version"), "info.version"),
+                () -> assertTrue(responses(likeExperience).containsKey("201"), "first like returns 201"),
+                () -> assertTrue(responses(likeExperience).containsKey("200"), "duplicate like returns 200"),
+                () -> assertTrue(responses(likeExperience).containsKey("403"), "self like returns 403"),
+                () -> assertTrue(responses(likeExperience).containsKey("404"), "missing experience returns 404"),
+                () -> assertTrue(responses(unlikeExperience).containsKey("204"), "unlike returns 204"),
+                () -> assertTrue(responses(unlikeExperience).containsKey("404"), "unlike missing returns 404"),
+                () -> assertTrue(
+                        required(experience).containsAll(List.of("like_count", "is_liked")),
+                        "experience like fields are required"),
+                () -> assertEquals("integer", properties(experience).get("like_count").get("type"), "like_count type"),
+                () -> assertEquals(0, properties(experience).get("like_count").get("minimum"), "like_count minimum"),
+                () -> assertEquals(Boolean.TRUE, properties(experience).get("like_count").get("readOnly"), "like_count readOnly"),
+                () -> assertEquals("boolean", properties(experience).get("is_liked").get("type"), "is_liked type"),
+                () -> assertEquals(Boolean.TRUE, properties(experience).get("is_liked").get("readOnly"), "is_liked readOnly"),
+                () -> assertTrue(
+                        required(like).containsAll(List.of("experience_id", "like_count", "is_liked")),
+                        "like required fields"),
+                () -> assertTrue(
+                        enums(properties(errorSchema).get("code")).contains("EXPERIENCE_NOT_FOUND"),
+                        "error codes"));
+    }
+
+    @Test
     void in_openApiFile_out_userCreditContractDeclared() throws IOException {
         // Given
         Map<String, Object> document = loadYaml(SPEC_PATH);
@@ -79,9 +118,15 @@ class OpenApiTest {
                 () -> assertTrue(
                         required(userProfile).containsAll(List.of("credit_score", "credit_level")),
                         "credit fields are required"),
+                () -> assertTrue(
+                        properties(userProfile).containsKey("credit_restricted"),
+                        "profile credit_restricted declared"),
+                () -> assertTrue(
+                        properties(userProfile).containsKey("credit_restriction_reason"),
+                        "profile credit_restriction_reason declared"),
                 () -> assertTrue(paths(document).containsKey("/users/credits"), "batch credit path declared"),
                 () -> assertTrue(
-                        required(creditEntry).containsAll(List.of("user_id", "credit_score", "credit_level")),
+                        required(creditEntry).containsAll(List.of("user_id", "credit_score", "credit_level", "credit_restricted")),
                         "batch credit entry fields"),
                 () -> assertEquals("integer", creditScore.get("type"), "credit_score type"),
                 () -> assertEquals(0, creditScore.get("minimum"), "credit_score minimum"),
@@ -111,7 +156,7 @@ class OpenApiTest {
 
         // Then
         assertAll(
-                () -> assertEquals("0.18.0", info.get("version"), "info.version"),
+                () -> assertEquals("0.25.0", info.get("version"), "info.version"),
                 () -> assertTrue(paths(document).containsKey("/users"), "/users declared"),
                 () -> assertTrue(paths(document).containsKey("/trips/{tripId}"), "detail path declared"),
                 () -> assertTrue(
@@ -200,6 +245,68 @@ class OpenApiTest {
                 () -> assertTrue(
                         enums(properties(errorSchema).get("code")).contains("WEATHER_UPSTREAM_ERROR"),
                         "weather upstream error code"));
+    }
+
+    @Test
+    void in_openApiFile_out_creditExitContractDeclared() throws IOException {
+        // Given
+        Map<String, Object> document = loadYaml(SPEC_PATH);
+        Map<String, Object> preview = operation(document, "/trips/{tripId}/leave-preview", "get");
+        Map<String, Object> leave = operation(document, "/trips/{tripId}/leave", "post");
+        Map<String, Object> evidenceUpload = operation(document, "/trips/{tripId}/leave-evidence", "post");
+        Map<String, Object> leaveRecord = operation(document, "/trips/{tripId}/leave-record", "get");
+        Map<String, Object> leaveEvidenceOperation = operation(document, "/leave-evidence/{attachmentId}", "get");
+        Map<String, Object> recordSchema = schema(document, "LeaveRecord");
+        Map<String, Object> recordAttachment = schema(document, "LeaveRecordAttachment");
+        Map<String, Object> leaveRequest = schema(document, "LeaveRequest");
+        Map<String, Object> leaveEvidence = schema(document, "LeaveEvidence");
+        Map<String, Object> previewSchema = schema(document, "LeavePreview");
+        Map<String, Object> leaveResult = schema(document, "LeaveResult");
+        Map<String, Map<String, Object>> tripDetailProps = allOfProperties(document, "TripDetail");
+
+        // Then
+        assertAll(
+                () -> assertTrue(responses(preview).containsKey("200"), "preview 200"),
+                () -> assertTrue(responses(preview).containsKey("400"), "preview 400"),
+                () -> assertTrue(responses(preview).containsKey("403"), "preview 403"),
+                () -> assertTrue(responses(leave).containsKey("200"), "leave 200"),
+                () -> assertTrue(responses(leave).containsKey("409"), "leave 409"),
+                () -> assertTrue(responses(evidenceUpload).containsKey("201"), "evidence upload 201"),
+                () -> assertTrue(responses(leaveRecord).containsKey("200"), "leave record 200"),
+                () -> assertTrue(responses(leaveRecord).containsKey("404"), "leave record 404"),
+                () -> assertTrue(responses(leaveEvidenceOperation).containsKey("200"), "leave evidence 200"),
+                () -> assertTrue(responses(leaveEvidenceOperation).containsKey("403"), "leave evidence 403"),
+                () -> assertTrue(
+                        required(recordSchema).containsAll(List.of(
+                                "reason", "exit_at", "review_status", "theoretical_delta",
+                                "applied_delta", "monthly_ordinal", "attachments")),
+                        "leave record required fields"),
+                () -> assertTrue(
+                        required(recordAttachment).containsAll(List.of("id", "content_type", "size_bytes", "url")),
+                        "leave record attachment required fields"),
+                () -> assertTrue(
+                        properties(leaveRequest).containsKey("note")
+                                && Integer.valueOf(200).equals(properties(leaveRequest).get("note").get("maxLength")),
+                        "leave note max 200"),
+                () -> assertTrue(
+                        Integer.valueOf(3).equals(properties(leaveRequest).get("attachment_ids").get("maxItems")),
+                        "leave attachments max 3"),
+                () -> assertTrue(
+                        required(leaveEvidence).containsAll(List.of("id", "content_type", "size_bytes")),
+                        "leave evidence required fields"),
+                () -> assertTrue(
+                        required(previewSchema).containsAll(List.of(
+                                "reason", "departure_at", "penalty_tier", "applied_delta",
+                                "monthly_ordinal", "resulting_score", "message_code")),
+                        "preview required fields"),
+                () -> assertTrue(
+                        required(leaveResult).containsAll(List.of(
+                                "credit_score", "credit_level", "credit_restricted",
+                                "applied_delta", "review_status", "message_code")),
+                        "leave result required fields"),
+                () -> assertTrue(
+                        enums(tripDetailProps.get("cancel_reason")).contains("credit_restricted"),
+                        "TripDetail cancel_reason system enum"));
     }
 
     @Test
@@ -329,11 +436,9 @@ class OpenApiTest {
         Map<String, Object> document = loadYaml(SPEC_PATH);
 
         // When
-        Map<String, Object> getMatches = operation(document, "/matches", "get");
         Map<String, Object> postApplications = operation(document, "/trips/{tripId}/applications", "post");
         Map<String, Object> postMessages = operation(document, "/trips/{tripId}/messages", "post");
         Map<String, Object> application = schema(document, "TripApplication");
-        Map<String, Object> match = schema(document, "Match");
         Map<String, Object> myTrips = schema(document, "MyTrips");
         Map<String, Object> pendingApplicationCount = schema(document, "PendingApplicationCount");
         Map<String, Object> reportRequest = schema(document, "ReportRequest");
@@ -342,25 +447,8 @@ class OpenApiTest {
         // Then
         assertAll(
                 () -> assertTrue(paths(document).containsKey("/me/trips"), "/me/trips declared"),
-                () -> assertTrue(paths(document).containsKey("/matches/{tripId}"), "match detail declared"),
                 () -> assertTrue(responses(postApplications).containsKey("201"), "apply returns 201"),
                 () -> assertTrue(responses(postMessages).containsKey("409"), "chat read-only conflict"),
-                () -> assertTrue(
-                        parameterNames(document, getMatches)
-                                .containsAll(List.of(
-                                        "X-User-Id", "destination_code", "date_from", "date_to", "tags",
-                                        "sort", "page", "size")),
-                        "match query parameters"),
-                () -> assertTrue(
-                        parameterNames(document, getMatches).containsAll(List.of("page", "size")),
-                        "match paging parameters"),
-                () -> assertTrue(
-                        required(schema(document, "MatchPage"))
-                                .containsAll(List.of("items", "page", "size", "total", "total_pages")),
-                        "match page envelope"),
-                () -> assertTrue(
-                        required(match).containsAll(List.of("score", "percentage", "reasons", "basis")),
-                        "match required fields"),
                 () -> assertTrue(
                         enums(properties(application).get("status"))
                                 .containsAll(List.of("pending", "accepted", "rejected", "cancelled", "left")),
@@ -544,6 +632,93 @@ class OpenApiTest {
     }
 
     @Test
+    void in_openApiFile_out_aiItineraryContractDeclared() throws IOException {
+        // Given
+        Map<String, Object> document = loadYaml(SPEC_PATH);
+
+        // When
+        Map<String, Object> generate = operation(document, "/ai/itineraries/generate", "post");
+        Map<String, Object> saveSnapshot = operation(document, "/ai/itineraries", "post");
+        Map<String, Object> readSnapshot = operation(document, "/ai/itineraries/{id}", "get");
+        Map<String, Object> generateRequest = schema(document, "AiGenerateRequest");
+        Map<String, Object> plan = schema(document, "AiPlan");
+        Map<String, Object> planStop = schema(document, "AiPlanStop");
+        Map<String, Object> weather = schema(document, "WeatherForecast");
+        Map<String, Object> snapshot = schema(document, "AiItinerarySnapshot");
+        Map<String, Object> budget = schema(document, "AiBudget");
+        Map<String, Object> createRequest = schema(document, "TripCreateRequest");
+        Map<String, Object> tripPlan = schema(document, "TripPlan");
+        Map<String, Map<String, Object>> tripDetailProperties = allOfProperties(document, "TripDetail");
+        Map<String, Object> errorSchema = schema(document, "Error");
+
+        // Then
+        assertAll(
+                () -> assertTrue(responses(generate).containsKey("200"), "generate returns 200"),
+                () -> assertTrue(responses(generate).containsKey("400"), "generate returns 400"),
+                () -> assertTrue(responses(generate).containsKey("502"), "generate returns 502"),
+                () -> assertTrue(responses(generate).containsKey("503"), "generate returns 503"),
+                () -> assertTrue(responses(saveSnapshot).containsKey("201"), "snapshot save returns 201"),
+                () -> assertTrue(responses(saveSnapshot).containsKey("400"), "snapshot save returns 400"),
+                () -> assertTrue(responses(readSnapshot).containsKey("200"), "snapshot read returns 200"),
+                () -> assertTrue(responses(readSnapshot).containsKey("400"), "snapshot read returns 400"),
+                () -> assertTrue(
+                        required(generateRequest).containsAll(List.of("origin", "destination", "date")),
+                        "generate required fields"),
+                () -> assertTrue(
+                        enums(properties(generateRequest).get("duration"))
+                                .containsAll(List.of("half_day", "one_day", "two_day")),
+                        "duration enum"),
+                () -> assertTrue(
+                        enums(properties(generateRequest).get("travel_mode"))
+                                .containsAll(List.of("transit", "walking", "driving")),
+                        "travel mode enum"),
+                () -> assertTrue(
+                        enums(properties(generateRequest).get("pace"))
+                                .containsAll(List.of("relaxed", "moderate", "compact")),
+                        "pace enum"),
+                () -> assertTrue(
+                        required(plan).containsAll(List.of("title", "days", "tips", "packing", "budget")),
+                        "plan required fields"),
+                () -> assertTrue(
+                        required(planStop)
+                                .containsAll(List.of("name", "reason", "arrival", "stay_minutes", "indoor")),
+                        "plan stop required fields"),
+                () -> assertTrue(
+                        properties(planStop).keySet().stream()
+                                .noneMatch(List.of("lng", "lat", "distance", "duration")::contains),
+                        "plan stops must not carry map data"),
+                () -> assertTrue(
+                        required(weather).containsAll(List.of("date", "available", "reminders", "source")),
+                        "weather required fields (add-trip-weather contract)"),
+                () -> assertTrue(
+                        required(snapshot)
+                                .containsAll(List.of("origin", "destination", "date", "stops", "travel_mode")),
+                        "snapshot required fields"),
+                () -> assertTrue(
+                        required(budget).containsAll(List.of(
+                                "transport_cents", "tickets_cents", "food_cents", "other_cents", "total_cents")),
+                        "budget required fields"),
+                () -> assertTrue(properties(createRequest).containsKey("ai_itinerary_id"), "create ai link"),
+                () -> assertFalse(required(createRequest).contains("ai_itinerary_id"), "ai link stays optional"),
+                () -> assertEquals(
+                        Boolean.TRUE,
+                        properties(createRequest).get("ai_itinerary_id").get("nullable"),
+                        "create ai link nullable"),
+                () -> assertTrue(properties(tripPlan).containsKey("ai_itinerary_id"), "trip plan ai link"),
+                () -> assertEquals(
+                        Boolean.TRUE,
+                        properties(tripPlan).get("ai_itinerary_id").get("nullable"),
+                        "trip plan ai link nullable"),
+                () -> assertTrue(tripDetailProperties.containsKey("ai_itinerary_id"), "trip detail ai link"),
+                () -> assertTrue(
+                        enums(properties(errorSchema).get("code")).containsAll(List.of(
+                                "AI_NOT_CONFIGURED", "AI_UPSTREAM_ERROR", "AI_INVALID_OUTPUT",
+                                "WEATHER_UPSTREAM_ERROR")),
+                        "ai / weather error codes")
+        );
+    }
+
+    @Test
     void in_openApiFile_out_adminConsoleContractDeclared() throws IOException {
         // Given
         Map<String, Object> document = loadYaml(SPEC_PATH);
@@ -566,14 +741,14 @@ class OpenApiTest {
 
         // Then
         assertAll(
-                () -> assertEquals("0.18.0", info.get("version"), "info.version"),
+                () -> assertEquals("0.25.0", info.get("version"), "info.version"),
                 () -> assertTrue(paths(document).keySet().containsAll(ADMIN_CONSOLE_PATHS), "admin console paths"),
-                () -> assertEquals(16L, adminOperations, "admin console operations"),
+                () -> assertEquals(17L, adminOperations, "admin console operations"),
                 () -> assertTrue(
-                        paths(document).values().stream()
-                                .map(item -> asMap(item))
+                        ADMIN_CONSOLE_PATHS.stream()
+                                .map(path -> asMap(paths(document).get(path)))
                                 .noneMatch(item -> item.containsKey("delete")),
-                        "no DELETE operations"),
+                        "no DELETE operations in admin console paths"),
                 () -> assertTrue(
                         parameterNames(document, operation(document, "/admin/users", "get"))
                                 .contains("Authorization"),
@@ -654,6 +829,200 @@ class OpenApiTest {
     }
 
     @Test
+    void in_openApiFile_out_adminExperienceDeleteDeclared() throws IOException {
+        // Given
+        Map<String, Object> document = loadYaml(SPEC_PATH);
+
+        // When
+        Map<String, Object> deleteExperience =
+                operation(document, "/admin/experiences/{experienceId}", "delete");
+
+        // Then
+        assertAll(
+                () -> assertEquals("deleteAdminExperience", deleteExperience.get("operationId"),
+                        "operationId"),
+                () -> assertTrue(
+                        parameterNames(document, deleteExperience).containsAll(
+                                List.of("Authorization", "experienceId")),
+                        "admin bearer + path id"),
+                () -> assertTrue(
+                        responses(deleteExperience).keySet().containsAll(
+                                List.of("204", "401", "403", "404", "500")),
+                        "delete status codes")
+        );
+    }
+
+    @Test
+    void in_openApiFile_out_creditRecoveryContractDeclared() throws IOException {
+        // Given
+        Map<String, Object> document = loadYaml(SPEC_PATH);
+
+        // When
+        Map<String, Object> startSession = operation(document, "/credit/learning/sessions", "post");
+        Map<String, Object> completeLessons =
+                operation(document, "/credit/learning/sessions/{sessionId}/lessons/complete", "post");
+        Map<String, Object> submitAnswers =
+                operation(document, "/credit/learning/sessions/{sessionId}/submission", "post");
+        Map<String, Object> postTrips = operation(document, "/trips", "post");
+        Map<String, Object> question = schema(document, "LearningQuestion");
+        Map<String, Object> session = schema(document, "LearningSession");
+        Map<String, Object> result = schema(document, "LearningResult");
+        Map<String, Object> answerDetail = schema(document, "LearningAnswerDetail");
+        Map<String, Object> errorSchema = schema(document, "Error");
+
+        // Then
+        assertAll(
+                () -> assertEquals("0.25.0", asMap(document.get("info")).get("version"), "info.version"),
+                () -> assertTrue(responses(startSession).containsKey("201"), "session start returns 201"),
+                () -> assertTrue(
+                        responses(startSession).keySet().containsAll(List.of("401", "404", "409", "429")),
+                        "session start error statuses"),
+                () -> assertTrue(responses(completeLessons).containsKey("200"), "lessons complete returns 200"),
+                () -> assertTrue(
+                        responses(completeLessons).keySet().containsAll(List.of("401", "404")),
+                        "lessons complete error statuses"),
+                () -> assertTrue(responses(submitAnswers).containsKey("200"), "submission returns 200"),
+                () -> assertTrue(
+                        responses(submitAnswers).keySet().containsAll(List.of("400", "401", "404", "409")),
+                        "submission error statuses"),
+                () -> assertTrue(
+                        parameterNames(document, startSession).contains("X-User-Id"),
+                        "session start identity header"),
+                () -> assertTrue(
+                        parameterNames(document, completeLessons).containsAll(List.of("X-User-Id", "sessionId")),
+                        "lessons complete parameters"),
+                () -> assertTrue(
+                        parameterNames(document, submitAnswers).containsAll(List.of("X-User-Id", "sessionId")),
+                        "submission parameters"),
+                () -> assertTrue(responses(postTrips).containsKey("403"), "trip create returns 403"),
+                () -> assertTrue(
+                        required(question).containsAll(List.of("id", "category", "question", "options")),
+                        "learning question fields"),
+                () -> assertEquals(4, asMap(properties(question).get("options")).get("minItems"), "options size"),
+                () -> assertFalse(
+                        properties(question).keySet().stream()
+                                .anyMatch(name -> name.contains("answer") || name.contains("correct")),
+                        "question leaks no answer"),
+                () -> assertTrue(
+                        required(session).containsAll(List.of(
+                                "session_id", "questions", "exam_used", "exam_limit", "month", "learning_completed")),
+                        "learning session fields"),
+                () -> assertTrue(
+                        required(result).containsAll(List.of(
+                                "session_id", "passed", "score", "pass_line", "details",
+                                "recovery_applied", "credit_score", "credit_level")),
+                        "learning result fields"),
+                () -> assertTrue(
+                        required(answerDetail).containsAll(List.of("question_id", "correct")),
+                        "answer detail fields"),
+                () -> assertFalse(
+                        properties(answerDetail).keySet().stream()
+                                .anyMatch(name -> name.contains("answer") || name.contains("correct_answer")),
+                        "answer detail leaks no correct answer"),
+                () -> assertTrue(
+                        enums(properties(errorSchema).get("code")).containsAll(List.of(
+                                "CREDIT_RESTRICTED",
+                                "LEARNING_NOT_ELIGIBLE",
+                                "LEARNING_EXAM_QUOTA_EXCEEDED",
+                                "LEARNING_RECOVERY_QUOTA_EXCEEDED",
+                                "LEARNING_NOT_COMPLETED",
+                                "LEARNING_SESSION_NOT_FOUND")),
+                        "credit recovery error codes")
+        );
+    }
+
+    @Test
+    void in_openApiFile_out_adminDashboardContractDeclared() throws IOException {
+        // Given
+        Map<String, Object> document = loadYaml(SPEC_PATH);
+
+        // When
+        Map<String, Object> dashboard = operation(document, "/admin/dashboard", "get");
+        Map<String, Object> dashboardSchema = schema(document, "AdminDashboard");
+        Map<String, Map<String, Object>> dashboardProperties = properties(dashboardSchema);
+        Map<String, Object> ok = asMap(responses(dashboard).get("200"));
+        Map<String, Object> cacheControl = asMap(asMap(ok.get("headers")).get("Cache-Control"));
+        Map<String, Object> users = schema(document, "AdminDashboardUsers");
+        Map<String, Object> trips = schema(document, "AdminDashboardTrips");
+        Map<String, Object> applications = schema(document, "AdminDashboardApplications");
+        Map<String, Object> experiences = schema(document, "AdminDashboardExperiences");
+        Map<String, Object> reports = schema(document, "AdminDashboardReports");
+        Map<String, Object> serviceSessions = schema(document, "AdminDashboardServiceSessions");
+
+        // Then
+        assertAll(
+                () -> assertTrue(
+                        parameterNames(document, dashboard).contains("Authorization"),
+                        "dashboard requires bearer"),
+                () -> assertTrue(responses(dashboard).keySet().containsAll(List.of("200", "401", "403", "500")),
+                        "dashboard responses"),
+                () -> assertEquals(Boolean.FALSE, dashboardSchema.get("additionalProperties"),
+                        "dashboard schema is closed"),
+                () -> assertTrue(
+                        required(dashboardSchema).containsAll(List.of(
+                                "users", "trips", "applications", "experiences", "reports",
+                                "service_sessions", "generated_at")),
+                        "dashboard required groups"),
+                () -> assertTrue(
+                        dashboardProperties.get("generated_at").get("format").equals("date-time")
+                                && Boolean.TRUE.equals(dashboardProperties.get("generated_at").get("readOnly")),
+                        "generated_at is read-only date-time"),
+                () -> assertTrue(
+                        cacheControl.get("description").toString().contains("no-store"),
+                        "dashboard is not cached"),
+                () -> assertEquals(
+                        required(users),
+                        List.of("total", "by_role", "by_status", "new_last_7_days", "new_last_30_days"),
+                        "users required fields"),
+                () -> assertEquals(
+                        required(asMap(properties(users).get("by_role"))),
+                        List.of("USER", "ADMIN"),
+                        "users role buckets"),
+                () -> assertEquals(
+                        required(asMap(properties(users).get("by_status"))),
+                        List.of("ACTIVE", "SUSPENDED", "BANNED"),
+                        "users status buckets"),
+                () -> assertEquals(
+                        required(trips),
+                        List.of("total", "by_status", "new_last_7_days", "new_last_30_days"),
+                        "trips required fields"),
+                () -> assertEquals(
+                        required(asMap(properties(trips).get("by_status"))),
+                        List.of("recruiting", "full", "ongoing", "completed", "cancelled"),
+                        "trip status buckets"),
+                () -> assertEquals(
+                        required(applications),
+                        List.of("total", "by_status"),
+                        "applications required fields"),
+                () -> assertEquals(
+                        required(asMap(properties(applications).get("by_status"))),
+                        List.of("pending", "accepted", "rejected", "cancelled", "left"),
+                        "application status buckets"),
+                () -> assertEquals(
+                        required(experiences),
+                        List.of("total", "new_last_7_days", "new_last_30_days"),
+                        "experiences required fields"),
+                () -> assertEquals(
+                        required(reports),
+                        List.of("total", "by_status"),
+                        "reports required fields"),
+                () -> assertEquals(
+                        required(asMap(properties(reports).get("by_status"))),
+                        List.of("PENDING", "PROCESSING", "RESOLVED", "REJECTED"),
+                        "report status buckets"),
+                () -> assertEquals(
+                        required(serviceSessions),
+                        List.of("total", "by_status"),
+                        "service sessions required fields"),
+                () -> assertEquals(
+                        required(asMap(properties(serviceSessions).get("by_status"))),
+                        List.of("WAITING", "HANDLING", "CLOSED"),
+                        "service session status buckets"),
+                () -> assertEquals(0, properties(users).get("total").get("minimum"), "counts are non-negative")
+        );
+    }
+
+    @Test
     void in_openApiFile_out_notificationContractDeclared() throws IOException {
         // Given
         Map<String, Object> document = loadYaml(SPEC_PATH);
@@ -673,7 +1042,7 @@ class OpenApiTest {
 
         // Then
         assertAll(
-                () -> assertEquals("0.18.0", info.get("version"), "info.version"),
+                () -> assertEquals("0.25.0", info.get("version"), "info.version"),
                 () -> assertTrue(
                         paths(document).containsKey("/notifications")
                                 && paths(document).containsKey("/notifications/stream")

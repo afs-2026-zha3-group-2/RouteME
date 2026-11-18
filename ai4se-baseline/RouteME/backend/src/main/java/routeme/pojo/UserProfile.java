@@ -28,6 +28,8 @@ public record UserProfile(
         boolean profileComplete,
         int creditScore,
         CreditLevel creditLevel,
+        boolean creditRestricted,
+        String creditRestrictionReason,
         String status,
         String banReasonCode,
         String banExpiresAt) {

@@ -1,0 +1,80 @@
+/* ---------- 景点图钉层（ScenicLayer） ----------
+ * 底图是高德栅格瓦片，只有注记文字、点不了；这一层把附近/全城的「风景名胜」
+ * 画成可点击的小胶囊，点一下即加入途经点。
+ */
+
+.amap-legend-scenic {
+  width: 9px;
+  height: 9px;
+  border: 2px solid #e0a106;
+  border-radius: 50%;
+  background: color-mix(in srgb, #ffd45e 70%, white);
+}
+
+.amap-scenic-pin {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  max-width: 168px;
+  padding: 2px 7px 2px 5px;
+  border: 1px solid color-mix(in srgb, #d99b06 55%, var(--line));
+  border-radius: 99px;
+  background: color-mix(in srgb, var(--surface) 94%, transparent);
+  box-shadow: var(--sh-1);
+  color: var(--ink-2);
+  font-size: 10.5px;
+  line-height: 1.4;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  cursor: pointer;
+  pointer-events: auto;
+  transform: translate(-50%, -50%);
+  transition: border-color 0.14s var(--ease), transform 0.14s var(--ease);
+}
+
+.amap-scenic-pin:hover {
+  border-color: #d99b06;
+  transform: translate(-50%, -50%) scale(1.04);
+}
+
+.amap-scenic-pin.is-added {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.amap-scenic-dot {
+  flex: none;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #e0a106;
+  box-shadow: 0 0 0 3px color-mix(in srgb, #ffd45e 45%, transparent);
+}
+
+.amap-scenic-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* 景点图钉开关 */
+.amap-scenic-toggle {
+  position: absolute;
+  left: 12px;
+  bottom: 12px;
+  z-index: 30;
+  padding: 5px 12px;
+  border: 1px solid var(--line);
+  border-radius: 99px;
+  background: color-mix(in srgb, var(--surface) 94%, transparent);
+  box-shadow: var(--sh-1);
+  color: var(--ink-2);
+  font-size: 11px;
+  cursor: pointer;
+}
+
+.amap-scenic-toggle.is-on {
+  border-color: color-mix(in srgb, #d99b06 55%, var(--line));
+  color: #96670a;
+}

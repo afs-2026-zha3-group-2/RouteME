@@ -23,6 +23,7 @@ import routeme.exception.InvalidInputException;
 
 /**
  * 旅行计划（领域对象）。状态不存储，由 completedAt 与人数推导。
+ * {@code aiItineraryId} 可空：来自 AI 推荐快照的行程携带链接，普通发布为 null。
  * {@code travelMode} 可空：仅 0.15.0 起发布时可选（driving / bicycling / transit），旧行程为 null。
  */
 public record TripPlan(
@@ -48,7 +49,8 @@ public record TripPlan(
         Instant updatedAt,
         Instant cancelledAt,
         String cancelReason,
-        String cancelNote) {
+        String cancelNote,
+        Long aiItineraryId) {
 
     public Instant plannedStart() {
         return startDate.atStartOfDay(TripTimeZoneConstant.ZONE).toInstant();
@@ -59,7 +61,7 @@ public record TripPlan(
     }
 
     /**
-     * 四态推导：已结束 > 旅行中 > 已满员 > 招募中。
+     * 五态推导：已取消 > 已结束 > 旅行中 > 已满员 > 招募中。
      * 到达结束日期次日 00:00（Asia/Shanghai）即视为已结束，无需人工操作。
      */
     public TripStatusEnum status(Instant now) {
@@ -93,7 +95,7 @@ public record TripPlan(
     public TripPlan withId(long newId) {
         return new TripPlan(newId, publisherId, title, destinationCode, destination, startDate, endDate, stops, meetingAreas,
                 meetingTime, travelMode, note, budgetMinCents, budgetMaxCents, tags, capacity, joinedCount, completedAt, createdAt, updatedAt,
-                cancelledAt, cancelReason, cancelNote);
+                cancelledAt, cancelReason, cancelNote, aiItineraryId);
     }
 
     /**
@@ -102,7 +104,7 @@ public record TripPlan(
     public TripPlan withMeetingInfo(List<String> newMeetingAreas, String newMeetingTime, Instant now) {
         return new TripPlan(id, publisherId, title, destinationCode, destination, startDate, endDate, stops,
                 newMeetingAreas, newMeetingTime, travelMode, note, budgetMinCents, budgetMaxCents, tags, capacity, joinedCount,
-                completedAt, createdAt, now, cancelledAt, cancelReason, cancelNote);
+                completedAt, createdAt, now, cancelledAt, cancelReason, cancelNote, aiItineraryId);
     }
 
     public static TripPlan create(TripPlanDraft draft, Instant now) {
@@ -161,7 +163,7 @@ public record TripPlan(
         }
         return new TripPlan(0, draft.publisherId(), title, destinationCode, destination, draft.startDate(), draft.endDate(),
                 stops, meetingAreas, meetingTime, travelMode, note, budgetMin, budgetMax, tags, capacity, 1, null, now, now,
-                null, null, null);
+                null, null, null, draft.aiItineraryId());
     }
 
     /** 出行方式：null / 空白视为未填写；其他取值必须是 driving / bicycling / transit。 */

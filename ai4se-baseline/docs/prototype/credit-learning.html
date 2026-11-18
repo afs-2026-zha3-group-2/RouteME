@@ -1,0 +1,408 @@
+<!doctype html>
+<html lang="zh-CN" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>安全学习 · 信用恢复 · RouteMe 路觅</title>
+<meta name="description" content="RouteMe 安全学习页原型：信用分低于 60 的用户完成学习并答题通过后，信用分补回 60 并自动解除发布行程的限制。">
+<link rel="stylesheet" href="styles.css?v=20261117a">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%230f4c5c'/%3E%3Cpath d='M8 22c4-10 12-10 16 0' stroke='%23ff6b35' stroke-width='3' fill='none' stroke-linecap='round'/%3E%3Ccircle cx='16' cy='11' r='3' fill='%23ffb703'/%3E%3C/svg%3E">
+<style>
+/* ============================================================
+   安全学习页（#/credit/learning）专属排版
+   色彩、圆角、阴影全部复用 styles.css 令牌；本文件只加布局。
+   ============================================================ */
+.cl-shell { width: min(1080px, 100%); margin: 0 auto; padding: calc(var(--topbar-h) + 26px) 24px 80px; }
+
+/* ---------- 顶部演示工具条（仅原型，生产不出现） ---------- */
+.cl-demo { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding: 10px 12px; margin-bottom: 18px;
+  border: 1px dashed var(--line-2); border-radius: var(--r); background: var(--surface-2); }
+.cl-demo-label { font-size: 11px; font-weight: 800; letter-spacing: .13em; text-transform: uppercase; color: var(--ink-3); margin-right: 4px; }
+.cl-demo-btn { padding: 6px 12px; border-radius: 999px; font-size: 12.5px; font-weight: 650; color: var(--ink-2);
+  border: 1px solid var(--line-2); background: var(--surface); transition: background .18s var(--ease), color .18s, border-color .18s, transform .18s var(--ease); }
+.cl-demo-btn:hover { transform: translateY(-1px); color: var(--t-lagoon); border-color: var(--lagoon); }
+.cl-demo-btn[aria-pressed="true"] { background: var(--lagoon-soft); color: var(--t-lagoon); border-color: var(--lagoon); }
+
+/* ---------- 页头 ---------- */
+.cl-head { display: flex; align-items: flex-end; gap: 16px; flex-wrap: wrap; margin-bottom: 20px; }
+.cl-head h1 { font-size: clamp(1.5rem, 3vw, 2.05rem); font-weight: 800; letter-spacing: -.032em; line-height: 1.14; }
+.cl-head p { font-size: 13.5px; color: var(--ink-3); margin-top: 6px; max-width: 62ch; }
+.cl-quota { margin-left: auto; display: flex; gap: 8px; flex-wrap: wrap; }
+.cl-quota span { display: inline-flex; align-items: center; gap: 6px; padding: 7px 12px; border-radius: 999px;
+  font-size: 12.5px; font-weight: 650; color: var(--ink-2); background: var(--surface); border: 1px solid var(--line); box-shadow: var(--sh-1); }
+.cl-quota b { font-family: var(--font-num); font-weight: 800; color: var(--ink); }
+.cl-quota .is-spent b { color: var(--t-warn); }
+
+/* ---------- 两栏 ---------- */
+.cl-grid { display: grid; grid-template-columns: minmax(0, 1fr) 312px; gap: 18px; align-items: start; }
+@media (max-width: 940px) { .cl-grid { grid-template-columns: minmax(0, 1fr); } }
+
+.cl-card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-lg); box-shadow: var(--sh-1); }
+.cl-main { padding: 22px; display: grid; gap: 18px; animation: clRise .42s var(--ease-out) both; }
+@keyframes clRise { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+
+/* ---------- 状态标题 ---------- */
+.cl-kicker { display: inline-flex; align-items: center; gap: 8px; font-size: 10.5px; font-weight: 800;
+  letter-spacing: .16em; text-transform: uppercase; color: var(--t-lagoon); }
+.cl-kicker::before { content: ""; width: 22px; height: 2px; border-radius: 2px; background: var(--grad-sunset); }
+.cl-title { font-size: 1.28rem; font-weight: 800; letter-spacing: -.02em; line-height: 1.28; margin-top: 8px; }
+.cl-lede { font-size: 13.5px; line-height: 1.72; color: var(--ink-2); margin-top: 8px; max-width: 62ch; }
+
+/* ---------- 学习要点 ---------- */
+.cl-points { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+@media (max-width: 620px) { .cl-points { grid-template-columns: minmax(0, 1fr); } }
+.cl-point { padding: 13px 14px; border-radius: var(--r); background: var(--surface-2); border: 1px solid var(--line); }
+.cl-point h3 { font-size: 12.5px; font-weight: 750; color: var(--ink); display: flex; align-items: center; gap: 7px; }
+.cl-point h3 i { width: 6px; height: 6px; border-radius: 50%; background: var(--surf); flex: none; }
+.cl-point p { font-size: 12.5px; line-height: 1.66; color: var(--ink-3); margin-top: 5px; }
+.cl-point.on { border-color: var(--lagoon); box-shadow: var(--ring); }
+
+/* ---------- 题卡 ---------- */
+.cl-steps { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.cl-bar { flex: 1 1 220px; display: flex; gap: 3px; min-width: 160px; }
+.cl-bar i { flex: 1; height: 7px; border-radius: 99px; background: var(--surface-3); transition: background .2s var(--ease); }
+.cl-bar i.is-done { background: var(--lagoon); }
+.cl-bar i.is-now { background: var(--coral); }
+.cl-step-num { font-size: 12.5px; font-weight: 700; color: var(--ink-2); white-space: nowrap; }
+.cl-step-num b { font-family: var(--font-num); font-size: 15px; color: var(--ink); }
+
+.cl-q { font-size: 15.5px; font-weight: 700; line-height: 1.55; letter-spacing: -.01em; }
+.cl-q-cat { display: inline-block; margin-bottom: 8px; padding: 3px 9px; border-radius: 6px;
+  font-size: 11px; font-weight: 750; letter-spacing: .06em; color: var(--t-surf); background: rgba(18, 168, 155, .12); }
+
+.cl-opts { display: grid; gap: 9px; }
+.cl-opt { display: flex; align-items: flex-start; gap: 11px; padding: 13px 14px; border-radius: var(--r);
+  border: 1.5px solid var(--line); background: var(--surface); cursor: pointer; text-align: left; width: 100%;
+  transition: border-color .18s var(--ease), background .18s, transform .18s var(--ease), box-shadow .18s; }
+.cl-opt:hover { border-color: var(--line-2); background: var(--surface-2); transform: translateY(-1px); }
+.cl-opt:focus-visible { outline: none; box-shadow: var(--ring); border-color: var(--lagoon); }
+.cl-opt-dot { width: 18px; height: 18px; border-radius: 50%; border: 2px solid var(--line-2); flex: none; margin-top: 1px;
+  display: grid; place-items: center; transition: border-color .18s, background .18s; }
+.cl-opt-dot::after { content: ""; width: 7px; height: 7px; border-radius: 50%; background: var(--surface); transform: scale(0); transition: transform .16s var(--ease-out); }
+.cl-opt-text { font-size: 13.5px; line-height: 1.6; color: var(--ink); }
+.cl-opt.is-checked { border-color: var(--lagoon); background: var(--lagoon-soft); }
+.cl-opt.is-checked .cl-opt-dot { border-color: var(--lagoon); background: var(--lagoon); }
+.cl-opt.is-checked .cl-opt-dot::after { transform: scale(1); }
+.cl-opt.is-right { border-color: var(--jade); background: rgba(16, 146, 95, .1); }
+.cl-opt.is-right .cl-opt-dot { border-color: var(--jade); background: var(--jade); }
+.cl-opt.is-wrong { border-color: var(--danger); background: rgba(216, 64, 47, .09); }
+.cl-opt.is-wrong .cl-opt-dot { border-color: var(--danger); background: var(--danger); }
+.cl-opt[disabled] { cursor: default; transform: none; }
+
+.cl-actions { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; padding-top: 4px;
+  border-top: 1px solid var(--line); margin-top: 2px; }
+.cl-actions .cl-hint { font-size: 12px; color: var(--ink-3); margin-right: auto; }
+
+/* ---------- 结果 ---------- */
+.cl-result { display: flex; align-items: center; gap: 14px; padding: 16px; border-radius: var(--r); border: 1px solid var(--line); background: var(--surface-2); }
+.cl-result-badge { width: 52px; height: 52px; border-radius: 16px; display: grid; place-items: center; flex: none;
+  font-family: var(--font-num); font-size: 17px; font-weight: 800; color: var(--on-deep); }
+.cl-result.is-pass .cl-result-badge { background: var(--grad-shore); }
+.cl-result.is-fail .cl-result-badge { background: linear-gradient(140deg, var(--coral), var(--coral-deep)); }
+.cl-result h2 { font-size: 1rem; font-weight: 800; letter-spacing: -.01em; }
+.cl-result p { font-size: 12.8px; line-height: 1.66; color: var(--ink-2); margin-top: 3px; }
+
+/* ---------- 恢复卡（成功态） ---------- */
+.cl-done { display: grid; gap: 12px; padding: 18px; border-radius: var(--r-lg); border: 1px solid var(--line);
+  background: linear-gradient(150deg, var(--surface-2), var(--surface)); }
+.cl-done-score { display: flex; align-items: baseline; gap: 8px; }
+.cl-done-score b { font-family: var(--font-num); font-size: 2.35rem; font-weight: 800; letter-spacing: -.04em; color: var(--t-jade); line-height: 1; }
+.cl-done-score span { font-size: 13px; color: var(--ink-3); font-weight: 600; }
+.cl-done-tag { display: inline-flex; align-items: center; gap: 6px; padding: 4px 10px; border-radius: 999px;
+  font-size: 12px; font-weight: 700; color: var(--t-jade); background: rgba(16, 146, 95, .12); }
+.cl-done p { font-size: 13px; line-height: 1.7; color: var(--ink-2); }
+
+/* ---------- 侧栏 ---------- */
+.cl-side { display: grid; gap: 14px; }
+.cl-credit { padding: 18px; display: grid; gap: 10px; }
+.cl-credit-top { display: flex; align-items: flex-start; gap: 10px; }
+.cl-credit-top h2 { font-size: 12px; font-weight: 800; letter-spacing: .11em; text-transform: uppercase; color: var(--ink-3); }
+.cl-credit-num { margin-left: auto; font-family: var(--font-num); font-size: 1.55rem; font-weight: 800; letter-spacing: -.03em; line-height: 1; }
+.cl-credit-num small { font-size: 12px; font-weight: 600; color: var(--ink-3); letter-spacing: 0; }
+.cl-credit-level { font-size: 13px; font-weight: 700; }
+.cl-credit-track { position: relative; height: 8px; border-radius: 99px; background: var(--surface-3); overflow: hidden; }
+.cl-credit-track i { position: absolute; inset: 0 auto 0 0; border-radius: 99px; background: linear-gradient(90deg, var(--coral), var(--amber)); transition: width .5s var(--ease-out); }
+.cl-credit-track u { position: absolute; top: -3px; bottom: -3px; left: 60%; width: 2px; background: var(--ink-3); opacity: .7; }
+.cl-credit-scale { display: flex; justify-content: space-between; font-size: 11px; color: var(--ink-3); font-family: var(--font-num); }
+.cl-credit.is-fair .cl-credit-num { color: var(--t-warn); }
+.cl-credit.is-fair .cl-credit-level { color: var(--t-warn); }
+.cl-credit.is-fair .cl-credit-track i { background: linear-gradient(90deg, var(--amber), var(--surf)); }
+.cl-credit.is-good .cl-credit-num, .cl-credit.is-good .cl-credit-level { color: var(--t-jade); }
+.cl-credit.is-good .cl-credit-track i { background: linear-gradient(90deg, var(--surf), var(--jade)); }
+
+.cl-rules { padding: 18px; display: grid; gap: 11px; }
+.cl-rules h2 { font-size: 12px; font-weight: 800; letter-spacing: .11em; text-transform: uppercase; color: var(--ink-3); }
+.cl-rule { display: grid; grid-template-columns: 22px minmax(0, 1fr); gap: 9px; align-items: start; }
+.cl-rule b { font-family: var(--font-num); font-size: 12px; font-weight: 800; color: var(--t-lagoon); }
+.cl-rule p { font-size: 12.5px; line-height: 1.64; color: var(--ink-2); }
+.cl-note { padding: 11px 12px; border-radius: var(--r-sm); background: var(--surface-2); border: 1px solid var(--line);
+  font-size: 11.8px; line-height: 1.62; color: var(--ink-3); }
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <a class="brand" href="prototype.html" aria-label="RouteMe 路觅原型">
+    <span class="brand-text"><b>RouteMe</b><em>安全学习</em></span>
+  </a>
+  <div class="head-actions">
+    <button type="button" class="btn sm ghost" id="themeToggle">切换深色</button>
+    <a class="btn sm ghost" href="prototype.html">返回原型</a>
+  </div>
+</header>
+
+<main class="cl-shell">
+
+  <div class="cl-demo" role="group" aria-label="原型演示场景">
+    <span class="cl-demo-label">演示场景</span>
+    <button type="button" class="cl-demo-btn" data-scene="low" aria-pressed="true">45 分 · 受限可参加</button>
+    <button type="button" class="cl-demo-btn" data-scene="eligible" aria-pressed="false">62 分 · 无需恢复</button>
+    <button type="button" class="cl-demo-btn" data-scene="done" aria-pressed="false">已恢复 · 60 分</button>
+  </div>
+
+  <div class="cl-head">
+    <div>
+      <h1>安全学习</h1>
+      <p>完成学习并答题通过，信用分补回 60，立即可再次发布行程。每月最多考 2 次，最多恢复 1 次。</p>
+    </div>
+    <div class="cl-quota">
+      <span>本月考试 <b id="quotaExam">1</b> / 2</span>
+      <span id="quotaRecoveryWrap">已恢复 <b id="quotaRecovery">0</b> / 1</span>
+    </div>
+  </div>
+
+  <div class="cl-grid">
+    <section class="cl-card cl-main" id="main" aria-live="polite"></section>
+
+    <aside class="cl-side">
+      <section class="cl-card cl-credit" id="creditCard">
+        <div class="cl-credit-top">
+          <h2>当前信用</h2>
+          <p class="cl-credit-num"><span id="creditScore">45</span><small> / 100</small></p>
+        </div>
+        <p class="cl-credit-level" id="creditLevel">信用较低</p>
+        <div class="cl-credit-track"><i id="creditFill" style="width:45%"></i><u aria-hidden="true"></u></div>
+        <div class="cl-credit-scale"><span>0</span><span>60 可发布</span><span>100</span></div>
+      </section>
+
+      <section class="cl-card cl-rules">
+        <h2>恢复规则</h2>
+        <div class="cl-rule"><b>01</b><p>每次从 20 题题库抽 10 题，覆盖旅行安全、陌生人同行、平台行为规范、隐私保护。</p></div>
+        <div class="cl-rule"><b>02</b><p>答对 <b>8 题及以上</b>通过；分数补到 60（不超过 60），不是固定加分。</p></div>
+        <div class="cl-rule"><b>03</b><p>每自然月最多 2 次考试、最多 1 次成功恢复；未通过不占用恢复次数。</p></div>
+        <div class="cl-rule"><b>04</b><p>自然月按<strong>北京时间</strong>计算；恢复记录标记为「安全学习信用恢复」。</p></div>
+        <p class="cl-note">恢复后只能解除「发布行程」的限制；已被管理员人工封禁的账号不因本学习解除。</p>
+      </section>
+    </aside>
+  </div>
+</main>
+
+<script>
+(() => {
+  const QUESTIONS = [
+    { cat: '旅行安全', q: '出发前，最应该先把行程信息同步给谁？', opts: ['社交平台的公开动态', '至少一位紧急联系人', '同行者的朋友', '不需要同步'], answer: 1 },
+    { cat: '旅行安全', q: '夜间到达陌生城市，优先做法是？', opts: ['搭乘路边招手的私家车', '选择正规交通并把车牌与路线共享给联系人', '先在车站睡到天亮', '跟随陌生人去其住处'], answer: 1 },
+    { cat: '陌生人同行', q: '与线上约定的同行者首次见面，地点应选在？', opts: ['对方住处', '人少的郊外', '车站、咖啡厅等公共场所', '任意地点均可'], answer: 2 },
+    { cat: '陌生人同行', q: '同行者提出先私下转账再出发，你应该？', opts: ['先转账锁定名额', '拒绝并通过平台举报', '让对方打折', '转账但不留记录'], answer: 1 },
+    { cat: '陌生人同行', q: '同行者临时要求更换住处到偏僻地点，你应该？', opts: ['照做以免影响关系', '坚持原定集合点并告知平台', '独自离开不做说明', '把证件交给对方保管'], answer: 1 },
+    { cat: '平台行为规范', q: '发布行程时，信息应如何填写？', opts: ['日期人数路线如实填写', '先虚报人数抢占名额', '日期随意填后再说', '只写标题不写路线'], answer: 0 },
+    { cat: '平台行为规范', q: '临时无法出行时，正确做法是？', opts: ['直接失联', '提前取消行程并说明原因', '让同行者自行猜测', '把行程改成已结束'], answer: 1 },
+    { cat: '平台行为规范', q: '对同行者的行为不满，应当？', opts: ['在聊天中辱骂', '走平台举报流程', '公开对方隐私', '私下报复'], answer: 1 },
+    { cat: '隐私保护', q: '与同行者沟通时，不应发送的是？', opts: ['集合地点', '大交通班次', '身份证或银行卡照片', '行程偏好'], answer: 2 },
+    { cat: '隐私保护', q: '实时位置共享应当？', opts: ['对所有人公开', '仅向已接受的同行者共享', '发在公开群里', '长期公开以便联系'], answer: 1 },
+  ];
+
+  const PASS_LINE = 8;
+  const state = { scene: 'low', phase: 'intro', index: 0, picks: Array(QUESTIONS.length).fill(-1), score: null };
+
+  const $ = (id) => document.getElementById(id);
+  const setClass = (el, cls, on) => el.classList.toggle(cls, on);
+
+  function creditOf(scene) {
+    if (scene === 'eligible') return { score: 62, level: '信用一般', tone: 'fair', exam: 0, recovery: 0 };
+    if (scene === 'done') return { score: 60, level: '信用一般', tone: 'fair', exam: 1, recovery: 1 };
+    return { score: 45, level: '信用较低', tone: 'low', exam: 1, recovery: 0 };
+  }
+
+  function renderSide() {
+    const c = creditOf(state.scene);
+    $('creditScore').textContent = c.score;
+    $('creditLevel').textContent = c.level;
+    $('creditFill').style.width = c.score + '%';
+    const card = $('creditCard');
+    card.classList.remove('is-fair', 'is-good');
+    if (c.score >= 60) card.classList.add('is-good'); else card.classList.add('is-fair');
+    $('quotaExam').textContent = c.exam;
+    $('quotaRecovery').textContent = c.recovery;
+    $('quotaRecoveryWrap').classList.toggle('is-spent', c.recovery >= 1);
+  }
+
+  function renderIntro() {
+    return `
+      <div>
+        <span class="cl-kicker">第一步 · 学习</span>
+        <h2 class="cl-title">先花 3 分钟看完这四类风险，再开始答题</h2>
+        <p class="cl-lede">未完成本页学习不能提交作答。题目随机从 20 题题库抽取 10 题，答对 8 题及以上通过。</p>
+      </div>
+      <div class="cl-points">
+        <div class="cl-point"><h3><i></i>旅行安全</h3><p>行程同步给紧急联系人；夜间到达选正规交通并共享路线。</p></div>
+        <div class="cl-point"><h3><i></i>陌生人同行</h3><p>首次见面在公共场所；不私下转账、不临时改到偏僻住处。</p></div>
+        <div class="cl-point"><h3><i></i>平台行为规范</h3><p>如实填写行程；临时不能出行要取消并说明；纠纷走举报。</p></div>
+        <div class="cl-point"><h3><i></i>隐私保护</h3><p>不发送证件与银行卡照片；位置只共享给已接受的同行者。</p></div>
+      </div>
+      <div class="cl-actions">
+        <span class="cl-hint">学习完成标记将在后端记录，刷新后不需要重新学习。</span>
+        <button type="button" class="btn primary" id="startQuiz">我已学完，开始答题</button>
+      </div>`;
+  }
+
+  function renderQuiz() {
+    const q = QUESTIONS[state.index];
+    const picked = state.picks[state.index];
+    const bars = QUESTIONS.map((_, i) =>
+      `<i class="${i < state.index ? 'is-done' : i === state.index ? 'is-now' : ''}"></i>`).join('');
+    const opts = q.opts.map((text, i) =>
+      `<button type="button" class="cl-opt${picked === i ? ' is-checked' : ''}" data-opt="${i}">
+         <span class="cl-opt-dot" aria-hidden="true"></span>
+         <span class="cl-opt-text">${text}</span>
+       </button>`).join('');
+    const answered = state.picks.filter((p) => p >= 0).length;
+    return `
+      <div class="cl-steps">
+        <div class="cl-bar" role="progressbar" aria-valuemin="1" aria-valuemax="${QUESTIONS.length}" aria-valuenow="${state.index + 1}">${bars}</div>
+        <span class="cl-step-num"><b>${state.index + 1}</b> / ${QUESTIONS.length}</span>
+      </div>
+      <div>
+        <span class="cl-q-cat">${q.cat}</span>
+        <p class="cl-q">${q.q}</p>
+      </div>
+      <div class="cl-opts" role="group" aria-label="选项">${opts}</div>
+      <div class="cl-actions">
+        <span class="cl-hint">已答 ${answered} / ${QUESTIONS.length} 题</span>
+        <button type="button" class="btn sm ghost" id="prevQ" ${state.index === 0 ? 'disabled' : ''}>上一题</button>
+        ${state.index < QUESTIONS.length - 1
+          ? '<button type="button" class="btn sm primary" id="nextQ">下一题</button>'
+          : '<button type="button" class="btn sm primary" id="submitQ">提交作答</button>'}
+      </div>`;
+  }
+
+  function renderResult() {
+    const pass = state.score >= PASS_LINE;
+    const detail = QUESTIONS.map((q, i) => {
+      const right = state.picks[i] === q.answer;
+      return `<div class="cl-rule"><b>${String(i + 1).padStart(2, '0')}</b><p>${right ? '正确' : '错误'} · ${q.q}</p></div>`;
+    }).join('');
+    return `
+      <div class="cl-result ${pass ? 'is-pass' : 'is-fail'}">
+        <span class="cl-result-badge">${state.score}/10</span>
+        <div>
+          <h2>${pass ? '通过 · 信用分已补到 60' : '未通过 · 可再次考试'}</h2>
+          <p>${pass
+            ? '本次变化量 = 60 − 45 = +15，已写入「安全学习信用恢复」记录；发布行程限制立即解除。'
+            : `答对 ${state.score} 题，需 8 题及以上通过。本月还剩 ${2 - creditOf('low').exam} 次考试机会；未通过不占用恢复次数，分数不变。`}</p>
+        </div>
+      </div>
+      <div>
+        <span class="cl-kicker">逐题判定</span>
+        <div class="cl-rules" style="padding:12px 0 0;border:0">${detail}</div>
+      </div>
+      <div class="cl-actions">
+        <span class="cl-hint">判分只在服务端进行，下发的题目不含正确答案。</span>
+        ${pass ? '<a class="btn primary" href="prototype.html">去发布行程</a>' : '<button type="button" class="btn primary" id="retryQ">再考一次</button>'}
+      </div>`;
+  }
+
+  function renderDone() {
+    return `
+      <div>
+        <span class="cl-kicker">已完成 · 本月 1 / 1</span>
+        <h2 class="cl-title">你已通过安全学习，信用分恢复至 60</h2>
+        <p class="cl-lede">发布行程的限制已自动解除，无需任何后台审批。恢复记录是对账依据，明细不对普通用户展示。</p>
+      </div>
+      <div class="cl-done">
+        <div class="cl-done-score"><b>60</b><span>/ 100</span><span class="cl-done-tag">信用一般</span></div>
+        <p>本次记录：变更前 45 · 实际变化量 +15 · 变更后 60 · 原因「安全学习信用恢复」。</p>
+      </div>
+      <div class="cl-actions">
+        <span class="cl-hint">本月已用掉 1 次考试与 1 次恢复额度，次月 1 日（北京时间）重置。</span>
+        <a class="btn primary" href="prototype.html">去发布行程</a>
+      </div>`;
+  }
+
+  function renderEligible() {
+    return `
+      <div>
+        <span class="cl-kicker">当前无需恢复</span>
+        <h2 class="cl-title">你的信用分是 62，已高于发布阈值 60</h2>
+        <p class="cl-lede">安全学习只对信用分低于 60 的账号开放。分数达到 60 及以上时无法开始考试，也不会消耗月度次数。</p>
+      </div>
+      <div class="cl-result is-pass">
+        <span class="cl-result-badge">62</span>
+        <div>
+          <h2>可以正常发布行程</h2>
+          <p>若后续因违规扣分再次低于 60，学习入口会重新开放；每自然月仍最多 2 次考试、1 次恢复。</p>
+        </div>
+      </div>
+      <div class="cl-actions">
+        <span class="cl-hint">本页为直接访问时的无资格态；正常入口只在发布行程被拦截时出现。</span>
+        <a class="btn primary" href="prototype.html">返回</a>
+      </div>`;
+  }
+
+  function render() {
+    const main = $('main');
+    if (state.scene === 'done') main.innerHTML = renderDone();
+    else if (state.scene === 'eligible') main.innerHTML = renderEligible();
+    else if (state.phase === 'quiz') main.innerHTML = renderQuiz();
+    else if (state.phase === 'result') main.innerHTML = renderResult();
+    else main.innerHTML = renderIntro();
+    renderSide();
+    bind();
+  }
+
+  function bind() {
+    const start = $('startQuiz');
+    if (start) start.addEventListener('click', () => { state.phase = 'quiz'; render(); });
+    $('main').querySelectorAll('[data-opt]').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        state.picks[state.index] = Number(btn.dataset.opt);
+        render();
+      });
+    });
+    const prev = $('prevQ');
+    if (prev) prev.addEventListener('click', () => { state.index = Math.max(0, state.index - 1); render(); });
+    const next = $('nextQ');
+    if (next) next.addEventListener('click', () => { state.index = Math.min(QUESTIONS.length - 1, state.index + 1); render(); });
+    const submit = $('submitQ');
+    if (submit) submit.addEventListener('click', () => {
+      state.score = QUESTIONS.reduce((sum, q, i) => sum + (state.picks[i] === q.answer ? 1 : 0), 0);
+      state.phase = 'result';
+      render();
+    });
+    const retry = $('retryQ');
+    if (retry) retry.addEventListener('click', () => {
+      state.phase = 'intro'; state.index = 0; state.picks.fill(-1); state.score = null; render();
+    });
+  }
+
+  document.querySelectorAll('[data-scene]').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      state.scene = btn.dataset.scene;
+      state.phase = 'intro'; state.index = 0; state.picks.fill(-1); state.score = null;
+      document.querySelectorAll('[data-scene]').forEach((b) => b.setAttribute('aria-pressed', String(b === btn)));
+      render();
+    });
+  });
+
+  const toggle = $('themeToggle');
+  toggle.addEventListener('click', () => {
+    const dark = document.documentElement.dataset.theme === 'dark';
+    document.documentElement.dataset.theme = dark ? 'light' : 'dark';
+    toggle.textContent = dark ? '切换深色' : '切换浅色';
+  });
+
+  render();
+})();
+</script>
+</body>
+</html>

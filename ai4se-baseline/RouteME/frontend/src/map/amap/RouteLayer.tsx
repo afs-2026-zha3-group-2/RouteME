@@ -21,6 +21,8 @@ type Props = {
   route: RoutePlan | null;
   focusId: string | null;
   onFocus?: (id: string) => void;
+  /** 显式编号（列表顺序号）；缺省回退 index+1。未定位 POI 不渲染但保留序号。 */
+  numbers?: number[];
 };
 
 function toSvgPath(points: LngLat[], map: AmapMap): string {
@@ -32,7 +34,7 @@ function toSvgPath(points: LngLat[], map: AmapMap): string {
     .join(' ');
 }
 
-export function RouteLayer({ map, waypoints, route, focusId, onFocus }: Props) {
+export function RouteLayer({ map, waypoints, route, focusId, onFocus, numbers }: Props) {
   const [, setVersion] = useState(0);
 
   // 地图视野变化（拖动 / 缩放 / 容器尺寸）后重算覆盖层坐标。
@@ -120,6 +122,8 @@ export function RouteLayer({ map, waypoints, route, focusId, onFocus }: Props) {
         const active = focusId === waypoint.id;
         const point = map.project([waypoint.lng, waypoint.lat]);
         const tag = isStart ? '起' : isEnd ? '终' : '';
+        // 显式编号（AI 行程列表顺序号）优先；缺省回退 index+1。
+        const number = numbers?.[index] ?? index + 1;
         const className = [
           'amap-stop-pin',
           isStart ? 'is-start' : '',
@@ -135,11 +139,11 @@ export function RouteLayer({ map, waypoints, route, focusId, onFocus }: Props) {
             className="amap-overlay-marker"
             style={{ left: `${point.x}px`, top: `${point.y}px` }}
             title={waypoint.name}
-            aria-label={`${index + 1}. ${waypoint.name}`}
+            aria-label={`${number}. ${waypoint.name}`}
             onClick={() => onFocus?.(waypoint.id)}
           >
             <span className={className}>
-              <span className="amap-stop-number">{index + 1}</span>
+              <span className="amap-stop-number">{number}</span>
               {tag === '' ? null : <span className="amap-stop-tag">{tag}</span>}
             </span>
           </button>

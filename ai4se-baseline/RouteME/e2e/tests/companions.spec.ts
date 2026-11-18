@@ -28,35 +28,6 @@ async function loadMyApplicationsViaApi(page: Page, userId: number) {
   return (await response.json()) as { trip_id: number; message: string | null; status: string }[];
 }
 
-test('shows match reasons and keeps match as the default sort', async ({ page }) => {
-  await loginAs(page, 1);
-  await page.goto('/');
-
-  await expect(page.getByRole('heading', { level: 1 })).toContainText('今天想走哪条路');
-  await expect(page.locator('.view-seg')).toContainText('招募中的行程');
-
-  const firstCard = page.locator('.trip-card').first();
-  await expect(firstCard.locator('.match-ring .ant-progress-indicator')).toHaveText(/^\d+$/);
-  await expect(firstCard.locator('.match-reason')).not.toBeEmpty();
-
-  const scores = await page
-    .locator('.trip-card .match-ring .ant-progress-indicator')
-    .evaluateAll((nodes) => nodes.map((node) => Number(node.textContent ?? '0')));
-  expect(scores.length).toBeGreaterThan(1);
-  expect(scores).toEqual([...scores].sort((left, right) => right - left));
-
-  const reasonsForUser1 = await page.locator('.trip-card .match-reason').allTextContents();
-  await switchUser(page, 2);
-  await expect(page.locator('.trip-card').first()).toBeVisible();
-  const reasonsForUser2 = await page.locator('.trip-card .match-reason').allTextContents();
-  expect(reasonsForUser2).not.toEqual(reasonsForUser1);
-
-  await firstCard.click();
-  await expect(page.locator('.match-summary .match-reason')).toBeVisible();
-  await expect(page.locator('.match-summary .ant-progress')).toBeVisible();
-  await expect(page.locator('.match-rule')).toContainText('目的地相同 50 分');
-});
-
 test('lists conversations, keeps history readable and still chats after leaving', async ({ page }) => {
   const title = `E2E 聊天流程 ${Date.now()}`;
   const today = todayIso();
@@ -133,10 +104,14 @@ test('lists conversations, keeps history readable and still chats after leaving'
     .getByRole('button', { name: /^关\s*闭$/ })
     .click();
 
-  // 退出同行：聊天保留且仍可继续
+  // 退出同行：聊天保留且仍可继续（原因必选，弹窗先给预计信用影响）
   await page.goto(`/#/trips/${created.id}`);
   await page.getByRole('button', { name: '退出同行' }).click();
-  await page.getByRole('dialog').getByRole('button', { name: '退出同行' }).click();
+  const leaveDialog = page.getByRole('dialog');
+  await leaveDialog.locator('[data-leave-reason]').selectOption('force_majeure');
+  await expect(leaveDialog.locator('[data-leave-preview]')).toContainText('暂不扣分，待核实');
+  await leaveDialog.locator('[data-leave-note]').fill('台风停航，无法出发');
+  await leaveDialog.getByRole('button', { name: '退出同行' }).click();
   await expect(page.getByText('已加入 1/3人')).toBeVisible();
   await expect(page.getByRole('button', { name: '提交同行申请' })).toBeVisible();
 

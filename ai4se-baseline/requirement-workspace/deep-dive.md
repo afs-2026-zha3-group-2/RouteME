@@ -1130,6 +1130,95 @@ MVP 无推送、无通知；以下为详情页同行者展示面的 UI 契约。
 - 原型 `store.js:240-248` 已定义「取消行程只取消 PENDING、ACCEPTED 保留」；与 REQ-021 的 D3 / D5 一致。
 - `{TBD}`：无。非阻塞项（原因码 wire 命名、事件复用、列类型）在 REQ-021 §8 OQ-10 / OQ-11 记为 Dev 后续。
 
+## REQ-023 增补 — 旅行体验获赞增加信用分（issue #30 / 信用系统迭代 2）
+
+> 编号说明：REQ-023（P1 原登记 REQ-022；合并 `origin/main@b50e416` 时该号已被 `add-trip-weather` 占用，按先合并者优先顺延）；change `add-experience-like-credit`；能力 `trip-experiences`（点赞，ADDED）+ `user-credit`（获赞结算，ADDED）。
+
+### ① 数据契约（Data contract）
+
+| # | 概念 | grain（粒度） | 字段清单 | 状态迁移 | 来源 |
+|---|---|---|---|---|---|
+| A | **体验点赞** `experience_likes` | 每（体验, 用户）至多 1 条 | `id`（PK）、`experience_id`（引用 `trip_experiences.id`）、`user_id`（引用 `app_users.id`）、`created_at`；唯一约束 `(experience_id, user_id)` | 无记录 →（点赞）新增 1 条；已存在 →（重复点赞）不变；有记录 →（取消点赞）删除该条；赞数与点赞态由行数派生 | 点赞 / 取消点赞接口 |
+| B | **体验赞数 / 点赞态**（派生值，不落库） | 每（体验）1 个整数 + 每（体验, 当前用户）1 个布尔 | 无独立字段；`like_count = count(experience_likes where experience_id = e)`；`liked_by_me = exists(experience_likes where experience_id = e and user_id = viewer)` | 随点赞行增删即时变化 | 读取时派生（列表 / 详情 / 我的） |
+| C | **获赞档位结算记录**（账本行，不新增状态表） | 每（行程, 作者, 档位）至多 1 条 `credit_ledger` 行 | `reason_code = EXPERIENCE_LIKE`；`related_type = TRIP`、`related_id = tripId`；`idempotency_key = EXPERIENCE_LIKE:{tripId}:{authorId}:{tier}`（唯一）；`applied_delta` 为实发（0–1）；前后快照沿用 REQ-019 | 首次跨档 → 写 1 条（含被裁断为 0 的情况），档位锁定；重复 / 并发投递 → 唯一约束兜底，不再写、不改分；取消点赞 → 不删除不更新 | 结算服务（内部） |
+| D | **月度获赞加分累计**（派生值，不落库） | 每（用户, Asia/Shanghai 自然月）1 个整数 | 无独立表；= `sum(applied_delta)` over `credit_ledger where user_id = 作者 and reason_code = EXPERIENCE_LIKE and occurred_at ∈ [月初, 次月初)`（按 Asia/Shanghai 边界换算 UTC） | 月初边界后从 0 重新累计（查询口径）；不结转、不补发 | 读取时派生 |
+
+- **唯一真相：** 分数只在 `user_credit_account`；点赞事实只在 `experience_likes`；档位是否已结算只看账本幂等键是否存在，不引入「档位表」。
+- **幂等设计：** 档位以「行程 + 作者 + 档位」为键；幂等键存在即视为已结算（即使 `applied_delta = 0`），从而满足「锁定 + 不回滚 + 不重复」。
+- **零变化留痕（沿用 REQ-019 D11）：** 跨档应发 +1 但被月度额度或 0–100 上限完全裁断时，仍写一条 `applied_delta = 0` 的记录（等式成立），并占用幂等键。
+- **月度消耗（用户裁决 D4）：** 月度累计只加总 `applied_delta`（实发）；被总分封顶吃掉的部分不占月度额度。
+- **时区（用户裁决 D3）：** 账本 `occurred_at` 为 UTC instant；自然月边界按 Asia/Shanghai（UTC+8）换算，月初零点即 UTC 前一日 16:00。
+
+### ② 边界归属（Boundary attribution）
+
+| 规则 | 分支 | in / out | 理由 |
+|---|---|---|---|
+| 点赞资格 | 已登录用户点赞他人体验 | in | `L-1`；`(experience_id, user_id)` 唯一 |
+| 点赞资格 | 作者给自己的体验点赞 | in（禁止，403 `FORBIDDEN`） | `L-5`；服务端拒绝 |
+| 点赞资格 | 未登录 / 无有效 `X-User-Id` | in（401 `DEMO_USER_REQUIRED`） | `L-6`；沿用既有身份校验 |
+| 点赞资格 | 体验不存在 | in（404；错误码 P2 定稿） | `L-7`；不产生数据与积分 |
+| 点赞幂等 | 重复点赞同一体验 | in（幂等成功，不重复计数） | `L-2` |
+| 取消点赞 | 已赞后取消 | in（删行；不回滚积分） | `L-3` |
+| 取消点赞 | 未赞时取消 | in（幂等成功） | P2 定幂等返回码 |
+| 档位 | 5 / 10 / 15 / 20 / 25 首次跨过 | in（各 +1，累计 +5） | `T-1` / `T-2` |
+| 档位 | 25 档位之后继续增长 | in（封顶 +5，不再加分） | `T-3` |
+| 档位 | 同行程同作者多篇体验 | in（取最高赞单篇；单测多行数据覆盖） | `T-4`；当前模型每作者每行程一条 |
+| 档位 | 赞数回落、取消后再达 | in（不回收、不重复） | `L-4` / `T-5` |
+| 档位 | 同一档位重复投递 / 并发 | in（幂等键唯一兜底） | `T-6` / `E-1` |
+| 月度 | 本月累计未满 20 | in（按实发加总） | `T-7` / `T-10` |
+| 月度 | 累计已达 20 后跨档 | in（实发 0，仍留痕并锁定档位） | `T-7`；截断不结转 |
+| 月度 | 跨过 Asia/Shanghai 月初 | in（额度重置为 0） | `T-8` |
+| 总分 | 加分撞 100 上限 | in（`book` 裁断，实发可能为 0） | `T-9` |
+| 其他计分 | 点赞者本人 | out（不得分） | `L-8` |
+| 其他计分 | 完成旅行 | out（不得分） | issue 明确 |
+| 数据生命周期 | 体验 / 行程删除 | out（当前无删除端点） | 不存在回滚链路 |
+| 展示 | 信用加分明细 / 历史 / 入口 | out（禁止展示） | `D-3`；用户裁决 D2 |
+| 通知 | 点赞通知 / 推送 / 红点 | out | 本 change 不做 |
+| 管理端 | 点赞审计 / 反作弊 / 手工调账 | out | 本 change 不做 |
+
+### ③ 跨 REQ 一致性（Cross-REQ consistency）
+
+| 能力 | 各 REQ 的 grain + 字段 | aligned? | anchor REQ |
+|---|---|---|---|
+| `trip-experiences`（REQ-004 / R2 在途 change） | 既有 Requirement 定义发布资格、内容口径、详情页 / 首页展示、分页与参考发布；REQ-023 只以 ADDED 追加「点赞」块（点赞行、赞数与点赞态、两个展示面），不改写任何既有 Requirement | ✓ aligned | REQ-004 / `add-trip-experiences`（已归档） |
+| `trip-experiences`（REQ-018 图片） | 图片能力为 `photos` 字段与上传端点；REQ-023 只在 `ExperienceResponse` 追加 `like_count` / `liked_by_me`，不触碰图片字段 | ✓ aligned | REQ-018 / `add-experience-photos`（未归档） |
+| `user-credit`（REQ-019，未归档） | REQ-019 定义账户、等级、账本、记账服务与零变化留痕；REQ-023 以 ADDED 追加「体验获赞阶梯加分」：复用 `book` 的裁断 / 快照 / 幂等语义，分数与等级口径不变 | ✓ aligned | REQ-019 / `add-credit-account`（未归档） |
+| `user-profiles` / `user-profile`（REQ-009 / REQ-008） | 信用分只读字段已由 REQ-019 扩展至五个展示面；REQ-023 不新增展示面、不改接口形状 | ✓ aligned | REQ-009 / REQ-008 |
+| `trip-cancellation`（REQ-021） | 取消行程为终态且不可从 `COMPLETED` 进入；体验仅存在于 `COMPLETED` 行程，点赞不触碰行程状态机 | ✓ aligned | REQ-021 / `add-trip-cancel` |
+| `design-system` | 点赞按钮复用既有 `btn` / `badge` / 图标与色板令牌，不新增语义 | ✓ aligned | `openspec/specs/design-system/spec.md` |
+
+无未收敛的 ✗；A0 门 ⑪ 通过。
+
+### ④ 通知 / 展示契约（Notification / display contract）
+
+MVP 无推送、无通知；以下为点赞与信用状态的展示面契约。
+
+| trigger / surface（展示面） | recipient role | content + display fields | channel | cardinality | source |
+|---|---|---|---|---|---|
+| 灵感首页 — 体验卡（`.exp-card` / `.exp-foot`） | 已登录浏览者 | 点赞按钮（已赞 / 未赞两态）+ 赞数（`like_count`）；点击切换；失败回滚并提示 | 应用内卡片 | 每卡 1 处 | `D-1`；原型先行 |
+| 行程详情 — 游后体验区（`.exp-item`） | 已登录浏览者 / 同行者 / 发布者 | 同上，与首页同口径 | 应用内列表 | 每条体验 1 处 | `D-2` |
+| 信用状态（既有五面） | 本人 / 他人 | 分数 + 等级（既有口径）；因获赞加分而变化的分数只在此体现 | 应用内页面 | 既有 | REQ-019 |
+| 信用加分明细 / 历史 | 所有人 | **不展示**：无列表、无原因、无时间、无入口 | —（不存在） | 0 处 | 用户裁决 D2；`D-3` |
+| 点赞通知 / 红点 | — | **不展示 / 不发送** | — | 0 处 | 本 change 不做 |
+
+无展示面缺 display-fields；A0 门 ⑫ 通过。
+
+### 探针记录（REQ-023 体验获赞信用）
+
+- **点赞基线为零：** openapi / backend / frontend / Living Spec / 原型交互均无点赞；本 change 需从数据、接口到 UI 全链路新建。
+- **记账服务可直接复用：** `CreditServiceImpl.book` 已在同事务内完成裁断、`applied_delta`、前后快照与幂等键唯一兜底；本 change 只需在调用前做「档位判定 + 月度剩余裁断」，不得绕过 `book` 直接改账户表。
+- **幂等键即档位锁：** 由于零变化也写账本行（D11），「档位已结算」可以直接由幂等键存在性判定；无需新增档位状态表，也天然满足「回落再达不重复」。
+- **月度边界：** `occurred_at` 由 `Clock.instant()` 写入（UTC ISO 串）；月度统计必须按 Asia/Shanghai 换算边界（初月 UTC `16:00` 前一 UTC 日），不能直接用 UTC 自然月。
+- **每作者每行程一条体验：** `V8__create_trip_experiences.sql` 有 `(trip_id, author_id)` 唯一约束；「同行程多篇体验」规则以结算服务的 max 查询实现，单测用多行数据覆盖（必要时 mock mapper 返回多行）。
+- **响应一致性：** 列表 / 详情 / 我的三处都经 `ExperienceServiceImpl` 的同一映射路径；赞数需批量查询（先收集 experienceId，再一次 `group by`），点赞态按当前用户批量查询，禁止逐条查库（沿用 REQ-018 照片批量化经验）。
+- **自赞与未登录：** 控制器已有 `X-User-Id` 校验与 `DemoUserService.require`；自赞需在服务层比对 `experience.authorId`，不能只靠前端隐藏。
+- **错误码闭集：** `openapi.yaml` `Error.code` 为闭集枚举；「体验不存在」需新增码或在 P2 定为复用码，不得自造。
+- **无删除端点：** `ExperienceController` / `TripController` 无 DELETE；无需处理级联删除与积分回滚。
+- **E2E 选择器风险：** 既有 `experiences.spec.ts` / `inspiration-home` 相关用例依赖 `.exp-foot` / `.exp-item` 结构；新增点赞按钮可能影响严格定位（如 `getByRole('button')` 计数），P4 需同步检查。
+- **原型先行：** 原型 `ui.js` `expCard()` 与详情 `.exp-item` 用字符串模板；点赞态需在 `store.js` 增演示数据（或使用本地状态），并在 `prototype.html` / `styles.css` 增样式类，避免与实现类名漂移。
+- **归档顺序：** `user-credit` 与 `trip-experiences` 的 Living Spec 均未包含在途 change 的 delta；本 change 归档必须排在其后（P5）。
+- **`{TBD}`：** 无。非阻塞项（端点形态、错误码、契约 / 迁移号、月度聚合方式、并发保障）在 REQ-023 §8 记为 Dev 后续。
+- A0 门 ⑨–⑫：全部通过。
 ## REQ-022 增补 — 目的地天气与出行提醒
 
 ### ① 数据契约
@@ -1218,3 +1307,99 @@ MVP 无推送、无通知；以下为详情页同行者展示面的 UI 契约。
 | 提示条 | 申请类事件总是提示；消息只在对应会话未打开时提示（D14） |
 | 空态 / 失败 | 无通知时面板给空态；推送断开时保留最后一次计数，不显示错误弹窗 |
 | 探针 | `data-testid="notif-bell"`、`notif-badge`、`notif-panel`、`notif-item`、`notif-mark-all`、`chat-badge-rail`、`chat-badge-tab`、`chat-item-unread` |
+## REQ-025 增补 — 退出同行扣分与低信用自动限制
+
+### ① 数据契约（Data contract）
+
+| 概念 | grain | 字段 | 状态迁移 | 来源 |
+|---|---|---|---|---|
+| 退出事件（`credit_exit_event`） | 一次退出动作 = 用户 × 行程 × 事件 | `id` / `user_id` / `trip_id` / `exit_reason`（`personal` / `force_majeure` / `safety`）/ `exit_at` / `departure_basis_at` / `penalty_tier`（`ge7d` / `d3to7d` / `h24to72` / `h12to24` / `lt12h` / `during`）/ `theoretical_delta` / `applied_delta` / `monthly_ordinal` / `review_status`（`not_required` / `pending` / `verified_true` / `verified_false`）/ `reviewed_at` / `ledger_id` / `idempotency_key` | 新建 → `not_required`（个人/≥7 天）或 `pending`（不可抗力/安全）；`pending` → `verified_true` / `verified_false`（未来核实）；不删除、不改写已结算行 | 退出确认 + `CreditService.book` |
+| 限制记录（`credit_restriction`） | 一段限制期 = 用户 × 触发；同一用户最多 1 条 `active` | `id` / `user_id` / `type`（本 change 仅 `AUTO_CREDIT`）/ `trigger_reason`（`CREDIT_SCORE_BELOW_60`）/ `trigger_score` / `triggered_at` / `status`（`active` / `lifted`）/ `lifted_at` / `lift_reason`（`SCORE_RECOVERED_TO_60`）/ `trigger_ledger_id` | 新建 `active` → 分数 ≥60 时 `lifted`；再次跌破 → 新建一条 `active`；历史保留 | 分数变化后的信用执行服务 |
+| 申请状态原因（`trip_applications.status_reason`） | 每条申请 | 可空字符串：`USER_CANCEL` / `USER_EXIT` / `PUBLISHER_REJECT` / `TRIP_CANCELLED` / `TRIP_COMPLETED` / `CREDIT_RESTRICTION` | 既有状态迁移时写入；历史行可空；不改变既有状态枚举 | `ApplicationServiceImpl` |
+| 系统取消（复用 `trip_plans` 取消字段） | 每条行程 | `cancelled_at` / `cancel_reason`（新增 `credit_restricted`）/ `cancel_note`（固定说明）/ `updated_at` | 未结束（招募中/已满员/旅行中）→ 已取消；已完成/已取消不变 | 系统限制触发 + `TripCancelledEvent` |
+| 信用账本（复用 `credit_ledger`） | 每次分数变化 | 既有字段；新增原因码：`EXIT_BEFORE_TRIP` / `EXIT_DURING_TRIP` / `EXIT_BEFORE_TRIP_NO_PENALTY` / `EXIT_FORCE_MAJEURE_PENDING` / `EXIT_SAFETY_PENDING`；`related_type = TRIP`，`related_id = trip_id`；幂等键 `exit:{userId}:{tripId}` | append-only；零值合法；重复幂等键不再变化 | `CreditService.book` |
+
+- **退出事件唯一键：** `(user_id, trip_id, idempotency_key)`；同一退出动作重复提交只产生一条事件与一条账本。
+- **限制与账本分离：** 限制记录不写账本；它引用触发本次限制的账本行 `trigger_ledger_id`，便于回算「哪一次扣分导致限制」。
+- **系统清退不写退出账本：** 自动撤回/解除/取消只写 `status_reason` / 行程取消字段 / 限制记录，不写退出扣分账本，不增加月度次数。
+- **0 分裁断：** 账本 `applied_delta = 0` 仍合法；退出事件的 `theoretical_delta` 保留理论值，月度计数按事件计入。
+- **历史兼容：** `status_reason` 可空；旧申请读取不受影响；`credit_restricted` 原因只由系统写入。
+
+### ② 边界归属（Boundary attribution）
+
+| 规则 | 分支 | 归属 | 说明 |
+|---|---|---|---|
+| 退出原因 | `personal` / `force_majeure` / `safety` | in | 必选；安全原因退出后引导既有举报入口 |
+| 退出原因 | 缺失 / 未知值 | out | 400 `INVALID_INPUT`；不退出、不记账 |
+| 退出权限 | 发布者 / 非 ACCEPTED / 已完成 / 已取消 | out | 沿用既有 403 / 409；不记账 |
+| 出发基准 | `meeting_time` 有值 | in | 以该日期时间为准 |
+| 出发基准 | `meeting_time` 为空 | in | `start_date` 00:00（Asia/Shanghai） |
+| 时间阶梯 | 恰好 7d / 3d / 72h / 24h / 12h | in | 左闭右开：0 / -3 / -3 / -5 / -8 |
+| 时间阶梯 | 少 1 秒 / 旅行中 | in | 进入下一档 / -15 |
+| 月度计数 | 已生效出发前扣分 | in | 计入；第 2 次起翻倍 |
+| 月度计数 | 旅行中 / ≥7 天免责 / 待核实 | out | 不计入 |
+| 月度计数 | 0 分下限裁断为实际 0 | in | 按事件计入 |
+| 待核实 | 核实为真 | in | 不扣分、不计数、标记 `verified_true` |
+| 待核实 | 核实不属实 | in | 按实际退出时间补扣；按核实当时次数取下一序号；不追溯其他已结算退出 |
+| 幂等 | 重复 / 并发退出 | in | 一次关系解除、一条账本、一次分数变化 |
+| 限制触发 | 分数 =60 | out | 不触发 |
+| 限制触发 | 分数 <60 | in | 自动建立 `active` 记录；无需管理员 |
+| 限制记录 | 已 active 时再次 <60 | in | 不新增 active；保持原记录 |
+| 只读 | 发布新行程 / 申请 / 发布或编辑体验 / 编辑行程 / 发消息 / 改资料头像 | in | 403 `CREDIT_RESTRICTED` |
+| 只读 | 查看 / 聊天历史 / 举报 / 安全入口 / 登录退出 | out | 保留 |
+| 自动清理 | 待处理申请 | in | 全部撤回；`status_reason = CREDIT_RESTRICTION` |
+| 自动清理 | 未结束已接受同行关系 | in | 全部解除；人数 -1；满员回退招募中；不扣分 |
+| 自动清理 | 未结束已发布行程（招募中/已满员/旅行中） | in | 全部系统取消；原因 `credit_restricted`；不扣分 |
+| 自动清理 | 已完成 / 已取消 | out | 保持历史原样 |
+| 自动解除 | 分数 ≥60 | in | 限制置 `lifted`；守卫解除；不恢复关系/申请 |
+| 自动解除 | 分数仍 <60 | out | 保持 active |
+| 人工核实 / 人工封禁 | 任意 | out | 本 change 无入口；未来 change 独立类型 |
+| 事务 | 扣分 + 限制 + 清理 | in | 同事务；任一步失败整体回滚；重试幂等 |
+| 并发 | 限制触发同时有写请求 | in | 以服务端当前限制状态拒绝；不放行 |
+
+### ③ 跨 REQ 一致性（Cross-REQ consistency）
+
+| 能力 | per-REQ grain + fields | aligned? | anchor REQ |
+|---|---|---|---|
+| `user-credit` | 账户 1 条/用户；账本 append-only；原因码 + 前后快照 + 幂等键 | ✓ 复用，不新增字段 | REQ-019 |
+| `trip-companions` | 申请状态 `pending/accepted/rejected/cancelled/left`；退出 = `left`；新增可空 `status_reason` | ✓ 不改变状态枚举；只补原因 | REQ-003 / REQ-013 / REQ-015 |
+| `trip-cancellation` | 取消字段 + 8 项原因 + PENDING 自动取消 | ✓ 复用；系统原因新增在 `credit-enforcement` | REQ-021 |
+| `trip-plans` | 状态由日期 / 人数 / `cancelledAt` / `completedAt` 推导 | ✓ 系统取消写 `cancelledAt`，状态优先级不变 | REQ-002 / REQ-011 / REQ-021 |
+| `trip-experiences` | 体验发布仅 `COMPLETED`；作者可编辑 | ✓ 限制守卫在入口拦截，不改变资格规则 | REQ-004 / REQ-018 |
+| `user-profile` / `user-profiles` | 个人主页/资料弹窗/详情发布者/行程卡/申请者行五展示面 | ✓ 追加限制徽标；原因仅本人主页 | REQ-008 / REQ-009 / REQ-019 |
+| `user-auth` | 登录/退出/会话 | ✓ 不受限制影响 | REQ-006 |
+
+- **未收敛 ✗：** 无。
+
+### ④ 通知 / 展示契约（Notification / display contract）
+
+| surface | recipient | content + display fields | channel | cardinality |
+|---|---|---|---|---|
+| 个人主页（本人） | 受限用户本人 | 分数 `/ 100` + 等级 + 「限制中」+ 原因「信用分低于 60」+「分数回到 60 分及以上自动解除」 | 应用内文本 | 每页 1 处 |
+| 个人主页（他人） | 任意已登录用户 | 分数 + 等级 + 「限制中」徽标；不显示原因 | 应用内文本 | 每页 1 处 |
+| 资料弹窗 | 查看者 | 分数 + 等级 + 「限制中」徽标；不显示原因 | 应用内文本 | 每次 1 处 |
+| 详情发布者行 | 查看者 | 同上 | 应用内文本 | 每页 1 处 |
+| 行程卡发布者行 | 查看者 | 同上；列表一次批量取数 | 应用内文本 | 每卡 1 处 |
+| 申请者行 | 发布者 | 同上；列表一次批量取数 | 应用内文本 | 每行 1 处 |
+| 被拦截操作 | 受限用户 | 「信用分低于 60，当前账号仅可查看；分数回到 60 分及以上自动解除」 | 应用内弹窗/行内提示 | 每次操作 1 处 |
+| 自动取消原因 | 发布者 + 已接受同行者 | 「信用分低于 60，账号受限」；其他用户只看到「已取消」 | 详情页文本 | 每行程 1 处 |
+| 聊天页（受限） | 受限用户 | 历史可读；输入区提示限制原因与自动解除说明 | 应用内提示 | 每会话 1 处 |
+| 加扣分明细 | 任何人 | MUST NOT 展示 | — | 0 |
+| 通知 / 推送 / 邮件 | 任何人 | 本 change 不发送 | — | 0 |
+
+- **展示字段完整性：** 五个信用展示面均有分数、等级、限制徽标三个字段；原因只出现在本人个人主页与被拦截提示。
+- **无 notification：** 本 change 不新增站内信、推送、邮件；自动取消/解除只通过页面状态可见。
+
+### 探针记录（REQ-025 退出扣分与低信用限制）
+
+- `CreditService.book` 已具备 0–100 裁断、实际生效量、零值留痕、幂等键；退出扣分可直接调用，无需改账本表结构。
+- `credit_ledger` 的 `reason_code` 当前是自由字符串；新增退出原因码不需要迁移，但需要契约/单测锁定取值。
+- `trip_applications` 目前只有 `status`，无法区分「用户主动退出」与「系统因限制解除」；新增可空 `status_reason` 是最小改动，避免新增状态枚举。
+- `TripPlanServiceImpl.cancel` 仅允许 `RECRUITING` / `FULL`，且只允许发布者；系统自动取消 `ONGOING` 需要新增系统方法，不能复用发布者入口。
+- `TripCancelReasonEnum` 当前 8 项；新增 `credit_restricted` 需要同步后端枚举、`openapi.yaml`、前端原因映射与 E2E。
+- `ApplicationServiceImpl.onTripCancelled` 已批量取消 PENDING；系统取消可复用该事件，但需要确保 `status_reason = CREDIT_RESTRICTION`（而不是普通取消）。
+- `ChatServiceImpl` 只对 `COMPLETED` / `CANCELLED` 抛 `CHAT_READ_ONLY`；限制状态需要独立错误 `CREDIT_RESTRICTED`，不能混用行程终态。
+- 五个展示面的 `UserCreditEntry` 目前只有 `user_id` / `credit_score` / `credit_level`；新增 `credit_restricted` 布尔字段即可支持徽标，原因只在个人主页响应按本人裁剪。
+- `ProfilePage` 的 hero 信用行与 `creditDisplay.ts` 只派生分数 + 等级；限制徽标与原因说明需要新增纯函数与 i18n 文案。
+- 所有种子账号 80 分，没有低信用演示数据；P3 需要决定 E2E 是新增种子、测试夹具还是直接调用记账服务。
+- `{TBD}`：无。非阻塞项（低信用测试数据、限制记录表名、系统取消方法命名）在 P1 §8 标 deferred / P3 设计定。

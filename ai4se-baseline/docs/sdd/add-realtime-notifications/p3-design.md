@@ -35,7 +35,7 @@
 | D9 | 标读三范围：单条 / 全部 / 单个会话（`trip_id` + 对方 `user_id`），全部按 `recipient_id` 限定 | `design.md` §5.4 |
 | D10 / D10b | 保留既有 3 秒轮询兜底；`formatChatTime` 迁到叶子 `utils/chatTime.ts` 以断开依赖环 | `design.md` §6.2、§8 R-10 |
 | D11 | 流端点用 `user_id` 查询参数（与既有 `X-User-Id` 同级信任，见 R-3） | `design.md` §4.4 |
-| D12 | 契约 0.18.0 + 迁移 `V24`，开工前复检排他 | `design.md` §3、`tasks.md` §3 |
+| D12 | 契约 0.18.0 + 迁移 `V30`，开工前复检排他 | `design.md` §3、`tasks.md` §3 |
 | D13 | 只保留并可查最新 50 条，不做清理任务（另开需求） | `design.md` §5.3、§8 R-5 |
 | D14 | 提示条：申请类事件总是提示；消息仅在当前会话未打开时提示 | `design.md` §6.3 |
 | P3-1 | 通知写入加入调用方事务，推送用 `afterCommit` 发布，避免推送先于提交 | `design.md` §5.2、§5.5 |
@@ -52,7 +52,7 @@
 | 新增路径 | `GET /notifications`、`GET /notifications/stream`、`POST /notifications/{id}/read`、`POST /notifications/read` |
 | 新增 schema | `NotificationType`、`Notification`、`NotificationCounts`、`NotificationList`、`NotificationReadRequest`、`NotificationEvent` |
 | 错误码 | `NOTIFICATION_NOT_FOUND`（越权一律 404，不暴露存在性）；`scope=conversation` 缺定位字段 400；`scope=all` 忽略定位字段 |
-| 迁移 | `V24__add_notifications.sql`；只用 `INTEGER` / `VARCHAR` / `CREATE INDEX`，双引擎（SQLite + H2） |
+| 迁移 | `V30__add_notifications.sql`；只用 `INTEGER` / `VARCHAR` / `CREATE INDEX`，双引擎（SQLite + H2） |
 | 索引 | 按收件人 + 时间倒序；按收件人 + 未读过滤 |
 | 实时线格式 | `text/event-stream`，`Cache-Control: no-cache`，`X-Accel-Buffering: no`，20 s 心跳，单 emitter 失败隔离 |
 
@@ -66,7 +66,7 @@
 ## 6. 校验
 
 - `openspec validate add-realtime-notifications --strict` → `Change 'add-realtime-notifications' is valid`。
-- 契约 / 迁移排他复检：全仓 `V24__` 与 `0.18.0` 仅出现在本 change 工件与 REQ-023 记录中，无其它 change 占用。
+- 契约 / 迁移排他复检：全仓 `V30__` 与 `0.18.0` 仅出现在本 change 工件与 REQ-023 记录中，无其它 change 占用。
 - 本阶段无生产代码、无 `openapi.yaml`、无迁移变更，回归沿用 P0 基线（后端 434 / 前端 344 全绿），不重跑。
 
 ## 7. 签署
@@ -87,5 +87,5 @@
 ## 8. 下一步
 
 1. P4 按 T1 → T14 顺序执行；每个切片先 Red 并记录失败原因，再 Green。
-2. T1 先复检 0.18.0 / `V24` 排他，再改契约。
+2. T1 先复检 0.18.0 / `V30` 排他，再改契约。
 3. T13 的 `registry.md` 更新放在 T14 通过之后；P4 结束写 `docs/sdd/add-realtime-notifications/p4-implementation.md`。

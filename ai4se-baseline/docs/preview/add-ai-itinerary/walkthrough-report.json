@@ -1,0 +1,91 @@
+{
+  "day": "2026-11-21",
+  "steps": [
+    {
+      "conditions": "广州南站 → 广州市 2026-11-21 预算500 美食/摄影"
+    },
+    {
+      "generateSeconds": 6
+    },
+    {
+      "routeStats": "预计距离 17 公里 预计交通时间 1 小时 54 分钟 预计总时长 9 小时 54 分钟 距离与时间来自高德地图"
+    },
+    {
+      "stops": [
+        {
+          "name": "广州塔",
+          "indoor": "false",
+          "unresolved": false
+        },
+        {
+          "name": "花城广场",
+          "indoor": "false",
+          "unresolved": false
+        },
+        {
+          "name": "广东省博物馆",
+          "indoor": "true",
+          "unresolved": false
+        },
+        {
+          "name": "北京路步行街",
+          "indoor": "false",
+          "unresolved": false
+        },
+        {
+          "name": "沙面岛",
+          "indoor": "false",
+          "unresolved": false
+        }
+      ]
+    },
+    {
+      "poiResolveRate": "5/5"
+    },
+    {
+      "weather": "天气 OPEN-METEO 真实预报 10.8–22.2°C 阴 降雨概率 2% 风速 8.4 km/h 紫外线 5.25"
+    },
+    {
+      "budget": "预算 AI 估算 交通 30 元 门票 70 元 餐饮 150 元 其他 30 元 合计 280 元 我的预算 500 元 无真实价格来源，全部为 AI 估算"
+    },
+    {
+      "mapClickPick": "候选面板出现（真实 around 搜索）"
+    },
+    {
+      "screenshot": "ai-planner-1440-light.png"
+    },
+    {
+      "screenshot": "ai-planner-1440-dark.png"
+    },
+    {
+      "screenshot": "ai-planner-768-dark.png"
+    },
+    {
+      "screenshot": "ai-planner-768-light.png"
+    },
+    {
+      "screenshot": "ai-planner-390-light.png"
+    },
+    {
+      "screenshot": "ai-planner-390-dark.png"
+    },
+    {
+      "screenshot": "ai-prefill-1440-light.png"
+    },
+    {
+      "detailUrl": "http://localhost:5173/#/trips/43"
+    },
+    {
+      "aiSummary": "AI 行程摘要 天气 阴 10.8–22.2°C，降雨概率 2% 合计 280 元 AI 估算 当天阴天、降雨概率仅2%，无需带伞，但天色偏灰，拍摄可适当提高曝光 最低温10.8°C、最高22.2°C，早晚温差大，建议带一件薄外套 UV指数5.25偏高，中午在花城广场等户外区域注意防晒 广东省博物馆需提前在官方渠道预约，周一闭馆请留意当日开放信息 全程优先地铁+步行，广州南站乘地铁进城便捷 所有费用为估算，餐饮可按预算灵活选择"
+    },
+    {
+      "screenshot": "ai-detail-1440-light.png"
+    },
+    {
+      "screenshot": "ai-detail-1440-dark.png"
+    },
+    {
+      "consoleErrors": []
+    }
+  ]
+}

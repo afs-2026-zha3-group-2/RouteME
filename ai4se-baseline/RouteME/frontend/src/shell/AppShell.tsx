@@ -1,22 +1,23 @@
 import { useEffect, useRef, useState, type KeyboardEvent as ReactKeyboardEvent, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import { loadUserProfile } from '../api';
+import { useMyCredit } from '../credit/CreditContext';
 import { adminMessages } from '../i18n/adminMessages';
+import { notificationMessages } from '../i18n/notificationMessages';
 import { GateScene } from '../identity/GateScene';
 import { tripMessages } from '../i18n/tripMessages';
-import { AccountStatusBanner } from '../profile/AccountStatusBanner';
-import { publisherSummary } from '../profile/profileDisplay';
-import type { Route } from '../route';
-import type { ColorMode } from '../theme';
-import type { DemoUser, UserProfile } from '../types';
 import { NotificationBadge } from '../notifications/NotificationBadge';
 import { NotificationBell } from '../notifications/NotificationBell';
 import { useNotifications } from '../notifications/NotificationContext';
-import { notificationMessages } from '../i18n/notificationMessages';
+import { AccountStatusBanner } from '../profile/AccountStatusBanner';
+import { creditRestrictedActionMessage } from '../profile/creditDisplay';
+import { publisherSummary } from '../profile/profileDisplay';
+import type { Route } from '../route';
+import type { DemoUser, UserProfile } from '../types';
 import { Avatar } from './Avatar';
 import { BrandMark } from './BrandMark';
 
-type NavKey = 'discover' | 'map' | 'create' | 'mine' | 'chat' | 'admin';
+type NavKey = 'discover' | 'map' | 'create' | 'aiPlanner' | 'mine' | 'chat' | 'support' | 'admin';
 
 type NavItem = { key: NavKey; label: string; href: string };
 
@@ -24,13 +25,24 @@ const NAV_ITEMS: NavItem[] = [
   { key: 'discover', label: tripMessages.homeTitle, href: '#/' },
   { key: 'map', label: '旅行地图', href: '#/map' },
   { key: 'create', label: tripMessages.publish, href: '#/trips/new' },
+  { key: 'aiPlanner', label: 'AI 规划', href: '#/ai-planner' },
   { key: 'mine', label: tripMessages.mineTitle, href: '#/mine' },
   { key: 'chat', label: tripMessages.chatNav, href: '#/chat' },
 ];
 
+// 客服是用户侧独立入口；帮助与反馈只在管理组里对内部管理员可见。
+const SUPPORT_ITEM: NavItem = { key: 'support', label: adminMessages.supportNav, href: '#/support' };
+
+// 侧栏比底部导航多一个客服入口：窄屏改用悬浮入口与账号菜单进入，避免底栏挤成 7 项。
+const RAIL_ITEMS: NavItem[] = [
+  ...NAV_ITEMS,
+  SUPPORT_ITEM,
+];
+
 const NAV_GROUPS: Array<{ title: string; items: NavItem[] }> = [
-  { title: '浏览', items: NAV_ITEMS.filter((item) => item.key === 'discover' || item.key === 'map') },
-  { title: '我的', items: NAV_ITEMS.filter((item) => item.key !== 'discover' && item.key !== 'map') },
+  { title: '浏览', items: RAIL_ITEMS.filter((item) => item.key === 'discover' || item.key === 'map') },
+  { title: '规划', items: RAIL_ITEMS.filter((item) => item.key === 'create' || item.key === 'aiPlanner') },
+  { title: '我的', items: RAIL_ITEMS.filter((item) => item.key === 'mine' || item.key === 'chat' || item.key === 'support') },
 ];
 
 function activeKey(route: Route): NavKey | null {
@@ -43,11 +55,17 @@ function activeKey(route: Route): NavKey | null {
   if (route.name === 'create' || route.name === 'share') {
     return 'create';
   }
+  if (route.name === 'aiPlanner') {
+    return 'aiPlanner';
+  }
   if (route.name === 'mine') {
     return 'mine';
   }
   if (route.name === 'chat') {
     return 'chat';
+  }
+  if (route.name === 'support') {
+    return 'support';
   }
   if (route.name.startsWith('admin')) {
     return 'admin';
@@ -94,6 +112,22 @@ function NavIcon({ name }: { name: NavKey }) {
       </svg>
     );
   }
+  if (name === 'aiPlanner') {
+    return (
+      <svg
+        viewBox="0 0 20 20"
+        aria-hidden="true"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.7"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      >
+        <path d="M10 3.2 11.6 8l4.8 1.6-4.8 1.6L10 16l-1.6-4.8L3.6 9.6 8.4 8Z" />
+        <path d="M15.6 3v3M14.1 4.5h3" />
+      </svg>
+    );
+  }
   if (name === 'chat') {
     return (
       <svg
@@ -105,6 +139,24 @@ function NavIcon({ name }: { name: NavKey }) {
         strokeLinejoin="round"
       >
         <path d="M17 11.4a2 2 0 0 1-2 2H7l-3.4 2.6V5a2 2 0 0 1 2-2h9.4a2 2 0 0 1 2 2z" />
+      </svg>
+    );
+  }
+  if (name === 'support') {
+    return (
+      <svg
+        viewBox="0 0 20 20"
+        aria-hidden="true"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.7"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      >
+        <path d="M3.8 11.4a6.2 6.2 0 0 1 12.4 0" />
+        <rect x="2.8" y="10.6" width="3.1" height="5" rx="1.5" />
+        <rect x="14.1" y="10.6" width="3.1" height="5" rx="1.5" />
+        <path d="M15.6 15.6v.5a2 2 0 0 1-2 2h-2.4" />
       </svg>
     );
   }
@@ -145,21 +197,19 @@ type Props = {
   currentUser: DemoUser;
   onLogout: () => void;
   route: Route;
-  mode: ColorMode;
-  onToggleMode: () => void;
   children: ReactNode;
 };
 
-export function AppShell({
-  currentUser,
-  onLogout,
-  route,
-  mode,
-  onToggleMode,
-  children,
-}: Props) {
+export function AppShell({ currentUser, onLogout, route, children }: Props) {
   const active = activeKey(route);
   const { counts } = useNotifications();
+  const isAdmin = currentUser.role === 'ADMIN';
+  /** 管理员只保留浏览 / 规划 / 发布与后台入口；我的旅行、同行消息、联系客服不向管理员展示。 */
+  const hiddenForAdmin: NavKey[] = ['mine', 'chat', 'support'];
+  const { restricted } = useMyCredit();
+  const navBlockedTitle = (item: NavItem) =>
+    restricted && item.key === 'create' ? creditRestrictedActionMessage() : undefined;
+
 
   const [accountOpen, setAccountOpen] = useState(false);
   const [accountMenuAnchor, setAccountMenuAnchor] = useState<{
@@ -325,70 +375,60 @@ export function AppShell({
         <span className="topbar-spacer" />
 
         <NotificationBell />
-
-        <button
-          type="button"
-          className="icon-btn theme-toggle"
-          onClick={onToggleMode}
-          aria-label={mode === 'dark' ? '切换到浅色模式' : '切换到深色模式'}
-          aria-pressed={mode === 'dark'}
-          title={mode === 'dark' ? '切换到浅色模式' : '切换到深色模式'}
-        >
-          {mode === 'dark' ? (
-            <svg viewBox="0 0 20 20" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.7">
-              <circle cx="10" cy="10" r="4" />
-              <path
-                d="M10 1.6v2.2M10 16.2v2.2M1.6 10h2.2M16.2 10h2.2M4.1 4.1l1.6 1.6M14.3 14.3l1.6 1.6M15.9 4.1l-1.6 1.6M5.7 14.3l-1.6 1.6"
-                strokeLinecap="round"
-              />
-            </svg>
-          ) : (
-            <svg
-              viewBox="0 0 20 20"
-              aria-hidden="true"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="1.7"
-              strokeLinejoin="round"
-            >
-              <path d="M16 12.4A6.8 6.8 0 0 1 7.6 4a6.9 6.9 0 1 0 8.4 8.4Z" />
-            </svg>
-          )}
-        </button>
       </header>
 
       <aside className="rail" aria-label="主导航">
         <nav className="rail-nav">
-          {NAV_GROUPS.map((group) => (
-            <div className="rail-group" key={group.title}>
-              <span className="rail-group-title">{group.title}</span>
-              {group.items.map((item) => (
-                <a
-                  key={item.key}
-                  className={active === item.key ? 'rail-link active' : 'rail-link'}
-                  href={item.href}
-                  aria-current={active === item.key ? 'page' : undefined}
-                  aria-label={
-                    item.key === 'chat' && counts.message > 0
-                      ? notificationMessages.chatUnreadLabel(counts.message)
-                      : undefined
-                  }
-                >
-                  <NavIcon name={item.key} />
-                  <span>{item.label}</span>
-                  {item.key === 'chat' ? (
-                    <NotificationBadge count={counts.message} testId="rail-chat-badge" />
-                  ) : null}
-                </a>
-              ))}
-            </div>
-          ))}
+          {NAV_GROUPS.map((group) => {
+            const items = group.items.filter(
+              (item) => !isAdmin || !hiddenForAdmin.includes(item.key),
+            );
+            if (items.length === 0) {
+              return null;
+            }
+            return (
+              <div className="rail-group" key={group.title}>
+                <span className="rail-group-title">{group.title}</span>
+                {items.map((item) => (
+                  <a
+                    key={item.key}
+                    className={[
+                      active === item.key ? 'rail-link active' : 'rail-link',
+                      navBlockedTitle(item) !== undefined ? 'is-disabled' : '',
+                    ]
+                      .filter((name) => name !== '')
+                      .join(' ')}
+                    href={item.href}
+                    aria-current={active === item.key ? 'page' : undefined}
+                    aria-label={
+                      item.key === 'chat' && counts.message > 0
+                        ? notificationMessages.chatUnreadLabel(counts.message)
+                        : undefined
+                    }
+                    aria-disabled={navBlockedTitle(item) !== undefined || undefined}
+                    title={navBlockedTitle(item)}
+                    onClick={(event) => {
+                      if (navBlockedTitle(item) !== undefined) {
+                        event.preventDefault();
+                      }
+                    }}
+                  >
+                    <NavIcon name={item.key} />
+                    <span>{item.label}</span>
+                    {item.key === 'chat' ? (
+                      <NotificationBadge count={counts.message} testId="rail-chat-badge" />
+                    ) : null}
+                  </a>
+                ))}
+              </div>
+            );
+          })}
           {currentUser.role === 'ADMIN' && (
             <div className="rail-group">
               <span className="rail-group-title">管理</span>
               <a
                 className={active === 'admin' ? 'rail-link active' : 'rail-link'}
-                href="#/admin/users"
+                href="#/admin"
                 aria-current={active === 'admin' ? 'page' : undefined}
               >
                 <NavIcon name="admin" />
@@ -434,6 +474,21 @@ export function AppShell({
                 style={{ left: accountMenuAnchor.left, bottom: accountMenuAnchor.bottom }}
                 onKeyDown={moveAccountMenuFocus}
               >
+                {!isAdmin && (
+                  <a
+                    className="rail-menu-item"
+                    role="menuitem"
+                    href="#/support"
+                    onClick={() => setAccountOpen(false)}
+                  >
+                    <svg viewBox="0 0 20 20" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M3.8 11.4a6.2 6.2 0 0 1 12.4 0" />
+                      <rect x="2.8" y="10.6" width="3.1" height="5" rx="1.5" />
+                      <rect x="14.1" y="10.6" width="3.1" height="5" rx="1.5" />
+                    </svg>
+                    <span>{adminMessages.supportNav}</span>
+                  </a>
+                )}
                 <a
                   className="rail-menu-item"
                   role="menuitem"
@@ -479,10 +534,19 @@ export function AppShell({
       </div>
 
       <nav className="tabbar" aria-label="底部导航">
-        {NAV_ITEMS.map((item) => (
+        {NAV_ITEMS.filter(
+          (item) =>
+            item.key !== 'aiPlanner' &&
+            !(isAdmin && (item.key === 'mine' || item.key === 'chat')),
+        ).map((item) => (
           <a
             key={item.key}
-            className={active === item.key ? 'tab-link active' : 'tab-link'}
+            className={[
+              active === item.key ? 'tab-link active' : 'tab-link',
+              navBlockedTitle(item) !== undefined ? 'is-disabled' : '',
+            ]
+              .filter((name) => name !== '')
+              .join(' ')}
             href={item.href}
             aria-current={active === item.key ? 'page' : undefined}
             aria-label={
@@ -490,6 +554,13 @@ export function AppShell({
                 ? notificationMessages.chatUnreadLabel(counts.message)
                 : undefined
             }
+            aria-disabled={navBlockedTitle(item) !== undefined || undefined}
+            title={navBlockedTitle(item)}
+            onClick={(event) => {
+              if (navBlockedTitle(item) !== undefined) {
+                event.preventDefault();
+              }
+            }}
           >
             <NavIcon name={item.key} />
             <span>{item.label}</span>
@@ -501,7 +572,7 @@ export function AppShell({
         {currentUser.role === 'ADMIN' && (
           <a
             className={active === 'admin' ? 'tab-link active' : 'tab-link'}
-            href="#/admin/users"
+            href="#/admin"
             aria-current={active === 'admin' ? 'page' : undefined}
           >
             <NavIcon name="admin" />
@@ -522,6 +593,27 @@ export function AppShell({
           <span>账号</span>
         </button>
       </nav>
+
+      {/* 窄屏没有侧栏：客服单独做一个悬浮入口，不挤底部导航。管理员不展示客服入口。 */}
+      {!isAdmin && route.name !== 'support' && (
+        <a className="support-fab" href="#/support" aria-label={adminMessages.supportNav}>
+          <svg
+            viewBox="0 0 20 20"
+            aria-hidden="true"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.7"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <path d="M3.8 11.4a6.2 6.2 0 0 1 12.4 0" />
+            <rect x="2.8" y="10.6" width="3.1" height="5" rx="1.5" />
+            <rect x="14.1" y="10.6" width="3.1" height="5" rx="1.5" />
+            <path d="M15.6 15.6v.5a2 2 0 0 1-2 2h-2.4" />
+          </svg>
+          <span>{adminMessages.supportNav}</span>
+        </a>
+      )}
     </div>
   );
 }

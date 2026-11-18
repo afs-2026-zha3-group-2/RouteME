@@ -63,7 +63,7 @@
 | Delta 规模 | 6 个 `### Requirement`、26 个 `#### Scenario`（逐行计数） |
 | 契约基线 | `openapi.yaml:4` → `version: 0.17.0` |
 | 迁移基线 | `db/migration/` 最大为 `V23__add_travel_mode.sql` |
-| 编号排他 | 全仓 `V24__` / `0.18.0` 仅出现在本 change 工件与 REQ-023 的 P1 / P2 记录中，无其它 change 占用（含 `add-ai-itinerary`） |
+| 编号排他 | 全仓 `V30__` / `0.18.0` 仅出现在本 change 工件与 REQ-023 的 P1 / P2 记录中，无其它 change 占用（含 `add-ai-itinerary`） |
 | 契约断言同步点 | `OpenApiTest.java:114`、`:569` 两处 `assertEquals("0.17.0", ...)` |
 | 生产方钩子落点 | `ApplicationServiceImpl.apply`（67 行 `@Transactional`）、`decide`（213 行，内部 `updateStatus` 297 行）；`ChatServiceImpl.send`（119 行 `@Transactional`、120 行方法）、`requireAccess`（177 行，已拒绝自消息） |
 | 依赖事实 | `formatChatTime` 现有 4 处 import（`ChatList`、`ChatMain`、`chatMeeting`、`admin/service/ServiceConversation`）+ 1 个测试文件；`utils/` 已是叶子包（`utils/dates.ts` 仅依赖 dayjs） |

@@ -63,4 +63,4 @@
 ## 7. 下一步（非门禁建议）
 
 - 取得上表三个签署位后，补齐 P2 的 `dov-ac-review.md`（AC 覆盖 / DoV 分层）与 `consistency-lint.md`，再出 `g1-decision.md`（G1 由 IO=WAYNE、SA 签署，不由本报告代替）。
-- 之后进入 P3：`design.md`（含 S-01 ~ S-03 收口、`NotificationBroker` 落点、3 秒测量点、契约 0.18.0 / 迁移 `V24` 排他确认）、`atdd-design.md`、`tasks.md`。
+- 之后进入 P3：`design.md`（含 S-01 ~ S-03 收口、`NotificationBroker` 落点、3 秒测量点、契约 0.18.0 / 迁移 `V30` 排他确认）、`atdd-design.md`、`tasks.md`。

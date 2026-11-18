@@ -3,6 +3,7 @@ package routeme.controller;
 import java.util.List;
 
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -10,13 +11,26 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RequestPart;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
 
+import routeme.enums.CreditExitReasonEnum;
 import routeme.request.ApplicationCreateRequest;
+import routeme.request.LeaveRequest;
+import routeme.response.LeaveEvidenceResponse;
+import routeme.response.LeavePreviewResponse;
+import routeme.response.LeaveRecordResponse;
+import routeme.response.LeaveResultResponse;
 import routeme.response.TripApplicationResponse;
+import routeme.pojo.CreditExitPreview;
+import routeme.pojo.CreditExitResult;
 import routeme.pojo.DemoUser;
+import routeme.pojo.LeaveEvidenceFile;
 import routeme.pojo.TripApplication;
 import routeme.service.ApplicationService;
+import routeme.service.CreditEnforcementService;
 import routeme.service.DemoUserService;
 
 @RestController
@@ -25,10 +39,15 @@ public class ApplicationController {
 
     private final DemoUserService demoUserService;
     private final ApplicationService applicationService;
+    private final CreditEnforcementService creditEnforcementService;
 
-    public ApplicationController(DemoUserService demoUserService, ApplicationService applicationService) {
+    public ApplicationController(
+            DemoUserService demoUserService,
+            ApplicationService applicationService,
+            CreditEnforcementService creditEnforcementService) {
         this.demoUserService = demoUserService;
         this.applicationService = applicationService;
+        this.creditEnforcementService = creditEnforcementService;
     }
 
     @PostMapping("/trips/{tripId}/applications")
@@ -88,12 +107,59 @@ public class ApplicationController {
                 return applicationService.describe(rejected);
             }
 
+            @GetMapping("/trips/{tripId}/leave-preview")
+            public LeavePreviewResponse previewLeave(
+                    @RequestHeader(value = "X-User-Id", required = false) Long userId,
+                    @PathVariable long tripId,
+                    @RequestParam(value = "reason", required = false) String reason) {
+                DemoUser companion = demoUserService.require(userId);
+                CreditExitPreview preview = creditEnforcementService.previewExit(
+                        tripId, companion.id(), CreditExitReasonEnum.parse(reason));
+                return LeavePreviewResponse.from(preview);
+            }
+
             @PostMapping("/trips/{tripId}/leave")
-            public ResponseEntity<Void> leave(
+            public ResponseEntity<LeaveResultResponse> leave(
+                    @RequestHeader(value = "X-User-Id", required = false) Long userId,
+                    @PathVariable long tripId,
+                    @RequestBody(required = false) LeaveRequest request) {
+                DemoUser companion = demoUserService.require(userId);
+                CreditExitResult result = creditEnforcementService.leave(
+                        tripId,
+                        companion.id(),
+                        CreditExitReasonEnum.parse(request == null ? null : request.reason()),
+                        request == null ? null : request.note(),
+                        request == null ? null : request.attachmentIds());
+                return ResponseEntity.ok(LeaveResultResponse.from(result));
+            }
+
+            @PostMapping("/trips/{tripId}/leave-evidence")
+            public ResponseEntity<LeaveEvidenceResponse> uploadLeaveEvidence(
+                    @RequestHeader(value = "X-User-Id", required = false) Long userId,
+                    @PathVariable long tripId,
+                    @RequestPart(value = "file", required = false) MultipartFile file) {
+                DemoUser companion = demoUserService.require(userId);
+                LeaveEvidenceResponse response = creditEnforcementService.uploadEvidence(
+                        tripId, companion.id(), file);
+                return ResponseEntity.status(HttpStatus.CREATED).body(response);
+            }
+
+            @GetMapping("/trips/{tripId}/leave-record")
+            public List<LeaveRecordResponse> leaveRecords(
                     @RequestHeader(value = "X-User-Id", required = false) Long userId,
                     @PathVariable long tripId) {
                 DemoUser companion = demoUserService.require(userId);
-                applicationService.leave(tripId, companion.id());
-                return ResponseEntity.noContent().build();
+                return creditEnforcementService.leaveRecords(tripId, companion.id());
+            }
+
+            @GetMapping("/leave-evidence/{attachmentId}")
+            public ResponseEntity<byte[]> leaveEvidence(
+                    @RequestHeader(value = "X-User-Id", required = false) Long userId,
+                    @PathVariable long attachmentId) {
+                DemoUser viewer = demoUserService.require(userId);
+                LeaveEvidenceFile file = creditEnforcementService.loadEvidence(attachmentId, viewer.id());
+                return ResponseEntity.ok()
+                        .contentType(MediaType.parseMediaType(file.contentType()))
+                        .body(file.content());
             }
         }

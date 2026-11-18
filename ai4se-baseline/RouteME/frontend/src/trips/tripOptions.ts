@@ -32,6 +32,9 @@ export const MAX_STOPS = 8;
 /** 集合地点只保留一个（历史行程可能仍有多个，只读展示不报错）。 */
 export const MAX_MEETING_AREAS = 1;
 
+/** 难度强度：不新增后端字段，直接选中一个标签向同行者亮相（参考稿同行设置）。 */
+export const DIFFICULTY_TAGS = ['轻松', '适中', '挑战'] as const;
+
 /** 发布表单的出行方式选项：自驾 / 骑行 / 公共交通。 */
 export const TRIP_TRAVEL_MODES: readonly TripTravelMode[] = ['driving', 'bicycling', 'transit'];
 

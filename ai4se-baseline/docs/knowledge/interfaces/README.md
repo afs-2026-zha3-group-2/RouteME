@@ -18,6 +18,7 @@ API、事件与集成契约。字段一律 snake_case；时间字段为 RFC3339 
 | POST | `/trips/{id}/complete` | 发布者标记已结束 |
 | GET | `/matches` | 候选行程 + `match{score, percentage, reasons[], basis}`；筛选同 `/trips`（`destination_code`/日期/标签）；`sort=match`（默认）\|`date`\|`new`；`page`、`size` |
 | GET | `/matches/{tripId}` | 单条行程相对我的匹配信息 |
+| GET | `/trips/{tripId}/recommendations` | 同行者推荐：以该行程目的地 / 出发日期与我的兴趣为参照，返回 `reference` + `items[{user, trip, score, reasons[], breakdown[], shared_interests[]}]`；排除本人、已取消 / 已结束与 0 分候选；同发布者只保留最高分行程 |
 | POST | `/trips/{tripId}/applications` | 提交同行申请（`message` 选填 ≤120，201） |
 | GET | `/trips/{tripId}/applications` | 发布者查看该行程申请 |
 | GET | `/me/applications` | 我的申请（含状态与行程摘要） |
@@ -34,6 +35,8 @@ API、事件与集成契约。字段一律 snake_case；时间字段为 RFC3339 
 | GET | `/me/experiences` | 我的体验（我的旅行「已完成」入口用） |
 | GET | `/trips/{tripId}/experiences` | 某行程的体验，按首次发布时间升序 |
 | POST | `/trips/{tripId}/experiences` | 发布或修改我的体验；首次 201、更新 200 ；`{content, intensity, advice}` |
+| POST | `/experiences/{experienceId}/likes` | 点赞他人体验；首次 201、已赞 200，返回 `{experience_id, like_count, is_liked}`；自赞 403、体验不存在 404 |
+| DELETE | `/experiences/{experienceId}/likes` | 取消点赞；未赞也幂等 204；体验不存在 404 |
 | GET | `/weather/forecast` | 目的地单日天气（Open-Meteo，公开只读）；`destination_code` 与可选 `lng`/`lat` 至少一组 + `date` ；越界 200 + `available=false`（`OUT_OF_RANGE`），上游失败 502 `WEATHER_UPSTREAM_ERROR` |
 - 所有 `/trips*`、`/matches*`、`/me/*`、`/applications/*`、`/reports` 请求要求 `X-User-Id`（`app_users.id`）；缺失或未知返回 401 `DEMO_USER_REQUIRED`。
 - 列表只返回未结束行程；`sort` 非法返回 400。
@@ -41,7 +44,9 @@ API、事件与集成契约。字段一律 snake_case；时间字段为 RFC3339 
 - 同行关系 = 发布者 + 该行程 `ACCEPTED` 的申请者；`joined_count` 仍由 `trip-plans` 单一写入，接受/退出经服务方法联动。
 - 聊天仅对已匹配双方开放；行程 `completed` 后可读不可写；只有 `PENDING` 申请不能进入。
 - 体验仅对「已结束且参加过（发布者或已接受同行者）」开放；每人每行程一条，再次提交即更新；`content` 10–400 字、`intensity` ∈ relaxed/moderate/tiring、`advice` 必填 ≤120 字。
-- 错误码：`INVALID_INPUT`(400)、`DEMO_USER_REQUIRED`(401)、`FORBIDDEN`/`CHAT_NOT_ALLOWED`/`EXPERIENCE_NOT_ALLOWED`(403)、`TRIP_NOT_FOUND`/`APPLICATION_NOT_FOUND`(404)、`TRIP_NOT_OPEN`/`APPLICATION_NOT_PENDING`/`DUPLICATE_APPLICATION`/`CHAT_READ_ONLY`(409)、`WEATHER_UPSTREAM_ERROR`(502)、`INTERNAL_ERROR`(500)。
+- 体验读取响应（`/experiences`、`/me/experiences`、`/trips/{id}/experiences`）均含只读 `like_count` 与 `is_liked`（当前 `X-User-Id` 视角，自己的体验恒为 false）；列表侧一次批量取数，不逐条查询。
+- 获赞加分只写服务端账本（原因码 `EXPERIENCE_LIKE`，关联 `TRIP`）；不新增任何信用明细 / 历史 / 通知接口。契约版本随 `openapi.yaml` 0.18.0 提供。
+- 错误码：`INVALID_INPUT`(400)、`DEMO_USER_REQUIRED`(401)、`FORBIDDEN`/`CHAT_NOT_ALLOWED`/`EXPERIENCE_NOT_ALLOWED`(403)、`TRIP_NOT_FOUND`/`APPLICATION_NOT_FOUND`/`EXPERIENCE_NOT_FOUND`(404)、`TRIP_NOT_OPEN`/`APPLICATION_NOT_PENDING`/`DUPLICATE_APPLICATION`/`CHAT_READ_ONLY`(409)、`WEATHER_UPSTREAM_ERROR`(502)、`INTERNAL_ERROR`(500)。
 - 状态由 `completed_at` 与人数推导，不是独立写入的字段；映射与字段约束以 `openapi.yaml` 为准。
 
 ## RouteME 信用分展示（2026-11-17，`user-credit` / REQ-019）
@@ -57,7 +62,7 @@ API、事件与集成契约。字段一律 snake_case；时间字段为 RFC3339 
 
 ## RouteME 实时通知与未读计数（2026-11-17，`notifications` / REQ-023）
 
-契约源：`RouteME/openapi.yaml`（v0.18.0）。校验：`cd RouteME/backend; .\mvnw.cmd -Dtest=OpenApiTest test`。
+契约源：`RouteME/openapi.yaml`（v0.25.0）。校验：`cd RouteME/backend; .\mvnw.cmd -Dtest=OpenApiTest test`。
 
 | 方法 | 路径 | 说明 |
 |---|---|---|
@@ -74,6 +79,18 @@ API、事件与集成契约。字段一律 snake_case；时间字段为 RFC3339 
 - SSE 响应头固定 `Cache-Control: no-cache` 与 `X-Accel-Buffering: no`；重连正确性由客户端 REST 对账保证，不依赖 Last-Event-ID。
 - 通知写入与业务同事务，推送在 `afterCommit` 后发出；通知写入失败只记日志、不回滚申请 / 裁决 / 发消息。自消息不产生通知。
 - 前端徽标口径：顶栏铃铛 = `total`，侧栏 / 移动 tab 的聊天入口 = `message`，会话列表 = 按 `trip_id + actor.id` 分会话的未读消息数；数字为唯一信息载体，颜色只作强调。
+
+## RouteME 管理后台概览（2026-11-17，`add-admin-dashboard` / REQ-026）
+
+| 方法 | 路径 | 说明 |
+|---|---|---|
+| GET | `/admin/dashboard` | 仅管理员可读的即时统计快照；六组计数 + `generated_at`，响应头 `Cache-Control: no-store` |
+
+- 认证：`Authorization: Bearer <token>`；非 `ADMIN` 返回 403 `ADMIN_REQUIRED`，无会话返回 401；受限管理员沿用既有 403 错误码。
+- 响应固定六组：`users`、`trips`、`applications`、`experiences`、`reports`、`service_sessions`；每组含 `total` 与约定状态键，空值零填充，`total` 与分桶同源。
+- 状态口径：账号取 `AccountStatusService.effectiveStatus`（已到期封禁计入 `ACTIVE`）；行程取 `TripPlan.status(now)` 五态；键名保持既有 wire 大小写。
+- 新增窗口：`new_last_7_days` / `new_last_30_days`（仅 users / trips / experiences），按 `Asia/Shanghai` 自然日、以 `created_at` 计算，解析失败的记录不计入新增但保留在 `total`。
+- 每次请求即时聚合，不缓存、不物化、不写库；不含昵称、邮箱、头像等明细。前端只在进入页面与手动刷新时请求，不自动轮询。
 
 ## REST 面
 

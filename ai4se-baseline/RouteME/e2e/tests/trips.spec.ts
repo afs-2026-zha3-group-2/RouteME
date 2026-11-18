@@ -12,7 +12,10 @@ async function pickPlace(page: Page, field: string, name: string) {
   // 高德地图区域也带 aria-label（如「选择途经点的地图」），按 textbox 角色收窄到输入框。
   const input = page.getByRole('textbox', { name: new RegExp(field) });
   await input.fill(name);
-  await input.press('Enter');
+  // 搜索有 320ms 防抖：等候选出现再点选，避免把「结果还没到」误判成「地点不存在」。
+  const option = page.locator('.amap-search-item').filter({ hasText: name }).first();
+  await expect(option).toBeVisible();
+  await option.click();
   await expect(page.locator('.place-chip-name', { hasText: name }).first()).toBeVisible();
 }
 
@@ -142,10 +145,10 @@ test('publishes a trip and finds it in the home list', async ({ page }) => {
   await loginAs(page, 1);
   await page.goto('/#/trips/new');
 
+  // 参考稿 v3 的发布页是三张步骤卡：基本信息 / 路线规划 / 集合与预算（兴趣标签并入基本信息）。
   await expect(page.getByRole('heading', { name: '基本信息' })).toBeVisible();
-  await expect(page.getByRole('heading', { name: '简单路线' })).toBeVisible();
-  await expect(page.getByRole('heading', { name: '同行与预算' })).toBeVisible();
-  await expect(page.getByRole('heading', { name: '兴趣标签' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: '路线规划' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: '集合与预算' })).toBeVisible();
   await expect(page.getByLabel('出发日期')).toHaveValue(todayIso());
   await expect(page.getByLabel('结束日期')).toHaveValue(todayIso());
   // R2：未选目的地时内嵌中国地图（三级级联第一层）。
@@ -591,8 +594,8 @@ test('detail page keeps the map and warns when a stop is off the gazetteer', asy
   await expect(section).toBeVisible();
   await expect(section.locator('.amap-overlay-marker')).toHaveCount(1);
   await expect(section.locator('.amap-trip-alert')).toContainText('有 1 个途经点未能定位');
-  await expect(page.locator('.detail-stops')).toContainText('香洲港集合');
-  await expect(page.locator('.detail-stops')).toContainText('不存在的地点XYZ');
+  await expect(section.locator('.route-strip')).toContainText('香洲港集合');
+  await expect(section.locator('.route-strip')).toContainText('不存在的地点XYZ');
 });
 
 test('meeting edit replaces the single area and the API guards limit and ownership', async ({ page }) => {
