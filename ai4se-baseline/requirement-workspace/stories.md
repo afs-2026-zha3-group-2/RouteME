@@ -634,3 +634,30 @@
 - **边界：** 举报提交端原因枚举、其他扣分 / 加分事件、月度扣分上限、通知均不在本故事。
 
 - 未接入外部 ALM；本表为仓库内权威故事清单，ALM Sync 状态记为 Pending.
+
+# Story list — REQ-033（用户成长等级 LV1–LV5 / 迭代 3）
+
+- **故事：** S34 用户成长等级 LV1–LV5（GitHub issue #44；优先级 P1；迭代 3；3 点；落点页面：用户主页 / 行程详情 / 同行者信息）
+- **需求编号说明：** 合并说明（2026-11-18）：`main` 已占用 REQ-001 ~ REQ-030、S01 ~ S31（**REQ-029 / S30** = `refine-publish-route-map`，**REQ-030 / S31** = `add-report-credit-deduction`）；本需求按「后到者顺延」四次顺延，最终登记为 **REQ-033 / S34**（REQ-031 / S32 由 add-route-completion 占用，REQ-032 / S33 由 add-realtime-notifications 占用）。
+- **Change：** `add-growth-level`（`user-growth` ADDED）
+- **垂直切片：** 只负责「经验事件 → 防刷 / 每日上限 → 经验流水 → 等级派生 → 6 处展示」；不含明细页 / 排行榜 / 通知 / 权益 / 管理端 / 回填 / #45。
+- **规则口径：** LV1–LV5，每 100 EXP 一级，LV5 后继续累计；发布已完成行程体验 +10（配置化）；单篇每 10 个有效赞 +5（档位锁定）；正向每日 +20（Asia/Shanghai，跨档按剩余额度截断）；举报成立 −50（每份一次，最低 0，等级随经验回退）；他人只见等级。
+- **更新时间：** 2026-11-18
+
+| Story | Title | 角色 | Priority | Iteration | Points | Page | Parent REQ | Change | Status |
+|---|---|---|---|---|---|---|---|---|---|
+| S34 | 用户成长等级 LV1–LV5 | RouteMe 用户 / 其他用户 | P1 | 迭代 3 | 3 | 个人主页 / 行程详情 / 同行者信息 | REQ-033 | `add-growth-level` | P2 drafted（2026-11-18） |
+
+## Traceability（REQ-033）
+
+| Story | Requirement scenarios | Change spec | Story file |
+|---|---|---|---|
+| S34 | REQ-033 §4 L-1 ~ S-4（41 场景） | `openspec/changes/add-growth-level/specs/user-growth/spec.md`（P2 定稿） | `requirement-workspace/stories/REQ-033-growth-level.story.md` |
+
+## Notes（REQ-033）
+
+- **不拆故事：** 账户、流水、等级、三类事件与展示共用同一经验口径；拆开会产生两套经验。
+- **单 capability：** `user-growth`；`trip-experiences` / `admin-console` / `user-profile` / `user-profiles` 只读消费，不改其 Requirement。
+- **与信用分分离：** 不读写 `user_credit_account` / `credit_ledger`；展示并列但文案区分。
+- **保留边界：** 经验明细页、排行榜、通知、等级权益、管理端、中文头衔、存量回填、#45 路线完成度均排除。
+- **依赖：** 体验发布 / 点赞 / 举报成立的既有事件；配置 `routeme.growth.publish-exp`；契约 / 迁移 P3 排他（预计 0.30.0 + V34）。

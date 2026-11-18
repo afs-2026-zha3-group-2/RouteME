@@ -25,6 +25,7 @@ import routeme.model.PenaltyRules;
 import routeme.param.PageParam;
 import routeme.pojo.ChatMessage;
 import routeme.pojo.CreditBooking;
+import routeme.pojo.GrowthBooking;
 import routeme.pojo.PageResult;
 import routeme.pojo.Report;
 import routeme.pojo.TripPlan;
@@ -43,6 +44,7 @@ import routeme.service.AdminReportService;
 import routeme.service.ChatService;
 import routeme.service.CreditService;
 import routeme.service.DemoUserService;
+import routeme.service.GrowthService;
 import routeme.service.NotificationService;
 import routeme.service.ReportService;
 import routeme.service.ReportTargetService;
@@ -62,6 +64,7 @@ public class AdminReportServiceImpl extends AbstractServiceImpl<ReportMapper, Re
     private final DemoUserService demoUserService;
     private final ChatService chatService;
     private final TripPlanService tripPlanService;
+    private final GrowthService growthService;
     private final NotificationService notificationService;
     private final Clock clock;
 
@@ -73,6 +76,7 @@ public class AdminReportServiceImpl extends AbstractServiceImpl<ReportMapper, Re
             DemoUserService demoUserService,
             ChatService chatService,
             TripPlanService tripPlanService,
+            GrowthService growthService,
             NotificationService notificationService,
             Clock clock) {
         this.reportService = reportService;
@@ -82,6 +86,7 @@ public class AdminReportServiceImpl extends AbstractServiceImpl<ReportMapper, Re
         this.demoUserService = demoUserService;
         this.chatService = chatService;
         this.tripPlanService = tripPlanService;
+        this.growthService = growthService;
         this.notificationService = notificationService;
         this.clock = clock;
     }
@@ -184,6 +189,7 @@ public class AdminReportServiceImpl extends AbstractServiceImpl<ReportMapper, Re
                     "REPORT",
                     String.valueOf(reportId),
                     "REPORT_VIOLATION:" + reportId));
+            growthService.book(GrowthBooking.report(reportedUserId, reportId));
         }
         notificationService.notifyReportResolved(
                 existing.reporterId(), reportId, ReportStatusEnum.REJECTED.code().equals(outcome));

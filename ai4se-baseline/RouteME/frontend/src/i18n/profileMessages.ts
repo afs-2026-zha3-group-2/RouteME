@@ -13,4 +13,10 @@ export const profileMessages = {
   loadFailed: '资料加载失败',
   userNotFound: '用户不存在',
   close: '关闭',
+  // 本人成长进度（他人不返回经验，不调用这些文案）
+  growthProgressTitle: '成长经验',
+  growthExpCounter: (exp: number, cap: number) => `${exp} / ${cap} EXP`,
+  growthToNext: (nextLevel: number, remaining: number) => `距 LV${nextLevel} 还需 ${remaining} EXP`,
+  growthDailyHint: '正向经验每日最多 +20（Asia/Shanghai）',
+  growthMaxHint: '已满级，经验继续累计',
 } as const;

@@ -1929,7 +1929,7 @@ REQ-010：聊天页按原型重构、聊天准入与退出语义调整、集合�
 | 前端类型 | 无字段 | `UserProfile` 增加两字段（可选 / 可空），`loadUserProfile` 不变 |
 | 个人主页 | 信用行下方无内容 | 新增完成度行：四态文案 + 百分比；`insufficient` 只显示「暂无足够完成记录」 |
 | i18n | 无文案 | 新增「路线完成度」「信誉良好」「请留意行程完成情况」「暂无足够完成记录」 |
-| 契约 | 0.26.0 | 次版本（预计 0.27.0）+ `UserProfile` schema 两字段 + 示例；`OpenApiTest` 同步 |
+| 契约 | 0.26.0 | 次版本（预计 0.30.0）+ `UserProfile` schema 两字段 + 示例；`OpenApiTest` 同步 |
 | 数据表 / 迁移 | 无 | **无 delta**（D7） |
 | 列表 / 弹窗 / 详情 | 无 | **无 delta**（D3） |
 | 信用分 / 统计 / 成长等级 | 既有 | **无 delta**；新增回归断言验独立性 |
@@ -1952,7 +1952,7 @@ REQ-010：聊天页按原型重构、聊天准入与退出语义调整、集合�
 |---|---|
 | OpenSpec Delta | `route-completion` **ADDED**（字段预留与数据不足 / 阈值派生 / 个人主页展示 / 独立性 / 兼容）；无 MODIFIED、无 REMOVED |
 | 长期规格 | 归档后新增 Living Spec `openspec/specs/route-completion/spec.md` |
-| 契约 | `openapi.yaml` 次版本（预计 0.27.0）+ `UserProfile` schema；后端契约测试同步 |
+| 契约 | `openapi.yaml` 次版本（预计 0.30.0）+ `UserProfile` schema；后端契约测试同步 |
 | 后端测试 | 派生单测（边界 80/79/70/69/0/null/非法）；资料 API 断言字段存在与类型；独立性回归（信用字段、`stats` 不变） |
 | 前端测试 | 状态 → 文案纯函数单测；个人主页渲染（四态 + 数据不足）；无 DOM 渲染层 |
 | E2E | `route-completion.spec.ts`：数据不足态、四态模拟（接口拦截或夹具）、本人 / 他人同口径、信用行保持不变 |
@@ -1973,7 +1973,7 @@ REQ-010：聊天页按原型重构、聊天准入与退出语义调整、集合�
 | Risk | 「预留」被实现成假数据 | D1 写死；Delta 明确禁止；API 断言 null + insufficient |
 | Risk | 前端自行计算阈值 | Delta 规定只做字典映射；单测与代码审阅检查无 80 / 70 常量 |
 | Risk | 与信用分 / 统计误接 | 独立性场景 + 回归断言；不新增账本记录 |
-| Risk | 契约版本撞号 | 基线 0.26.0；P3 按合并顺序确认（预计 0.27.0） |
+| Risk | 契约版本撞号 | 基线 0.26.0；P3 按合并顺序确认（预计 0.30.0） |
 | Risk | 展示行与 hero 版式冲突 | 复用 `.profile-credit` 行模式；P3 预览 + 四宽度 × 深浅色走查 |
 | Risk | 资料弹窗等既有面被误改 | Delta 明确 out of scope；E2E 断言弹窗不变 |
 | Risk | 未来聚合口径漂移 | D2 / D6 固化；聚合算法后续卡片 |
@@ -2079,3 +2079,101 @@ REQ-010：聊天页按原型重构、聊天准入与退出语义调整、集合�
 - **不并入：** 账号处置动作（保留在用户管理页）、举报提交端原因枚举、信用明细页、其他扣分 / 加分事件（#30–#32）、月度扣分上限。
 - **依赖：** `user-credit`（账本 / 账户）、`admin-console`（举报处置）、`credit-enforcement`（低分联动）。
 - **质量自检（split-heuristics）：** 子目标一句话 ✓；端到端可观察（80 → 65；80 → 50 自动限制）✓；可独立运行 ✓；capability 名真实 ✓；无依赖环 ✓；场景 26 条在阈值内。
+
+## 30. REQ-033 变更影响 — 用户成长等级 LV1–LV5（issue #44）
+
+- **日期：** 2026-11-18 ｜ **触发：** GitHub issue #44 + `/sdd:pre-spec-req` 用户裁决 D1–D15
+- **粒度：** 应用架构（成长数据所有权 / 事件挂接点 / 展示面 / 配置 / 契约与迁移），非代码设计
+- **基线：** `origin/main@f2bad40`（P1 起草于 `71f3ad4`，先后合并 `8992853` / `f2bad40`；契约 0.26.0 / 迁移头 `V31__report_credit_deduction.sql`）
+
+### 30.1 Requirement set
+
+- `requirement-workspace/requirements/REQ-033-growth-level.md`（Ready 条目，41 场景 L / P / K / D / R / V / C / S，blocking OQ 0，DoR BLOCKER 0）
+- `requirement-workspace/intents/REQ-033-growth-level.md`（意图捕获 + 现状证据 + D1–D15）
+- 新增能力：`user-growth`（ADDED）；只读依赖 `trip-experiences` / `admin-console` / `user-profile` / `user-profiles`；`user-credit` 完全分离
+- 用户裁决：D1 与信用分分离 / D2 LV1–LV5 每 100 一级 / D3 LV5 后继续累计 / D4 初始 0 且不回填 / D5 发布经验默认 10 可配置 / D6 点赞单篇分档锁定 / D7 举报成立 −50 每份一次最低 0 / D8 每日 +20 上限按剩余额度截断 / D9 append-only 流水 / D10 后端计算且他人只见等级 / D11 6 处展示面 / D12 明细页排行榜通知权益管理端排除 / D13 独立于 #29 / D14 契约迁移 P3 排他 / D15 等级随经验回退
+
+### 30.2 As-is asset inventory（evidence paths）
+
+| 资产 | 路径 | 现状 |
+|---|---|---|
+| 成长能力 | backend / frontend grep `user_growth` / `growth_level` / `exp_total` / `成长等级` | **0 命中**：无账户、无账本、无等级、无展示 |
+| 体验发布 | `backend/.../service/ExperienceEligibility.java`、`service/impl/ExperienceServiceImpl.java` | 仅已完成行程 + 发布者 / 接受同行者；`(trip, author)` 唯一；`created` 标识新建 |
+| 点赞 | `db/migration/V24__add_experience_likes.sql`、`controller/ExperienceController.java`、`service/impl/ExperienceLikeServiceImpl.java` | `(experience, user)` 唯一；自赞拒绝；取消删行 |
+| 信用账本（范式） | `V20__add_credit_account.sql`、`entity/CreditLedgerEntity.java`、`service/impl/CreditServiceImpl.java` | append-only + 前后快照 + 幂等键；成长不复用其表 |
+| 举报处置 | `service/impl/AdminReportServiceImpl.java`、`service/ReportTargetService.java` | `PROCESSING → RESOLVED / REJECTED`；`reportedUserId` 可定位被举报者；#29 已并入 main，RESOLVED 分支已含扣信用分副作用 |
+| 资料读取 | `controller/UserProfileController.java`（`/profile`、`/credits`） | 主页响应与批量信用读取已存在 |
+| 展示面 | `ProfilePage.tsx`、`ProfileModal.tsx`、`TripDetailPage.tsx`、`TripCard.tsx`、`ApplicationsPage.tsx`、`CompanionCard.tsx` | 前 5 处显示信用分；`CompanionCard` 不显示信用分 |
+| 配置 | `src/main/resources/application.yaml` 的 `routeme:` 根；`config/*Properties.java` | 已有 `ai` / `profile` / `experience` / `credit` / `amap` / `weather` 配置范式 |
+| 契约 / 迁移 | `openapi.yaml`；`backend/src/main/resources/db/migration/` | 0.26.0；迁移头 `V31__report_credit_deduction.sql` |
+| 测试基线 | `backend` / `frontend` | P0 跳过；基线以 `origin/main@f2bad40` 实跑为准 |
+
+### 30.3 As-is → proposed delta（逐资产）
+
+| 资产 | As-is | Proposed delta |
+|---|---|---|
+| 数据表 | 无成长表 | **新增** `user_growth_account`（每用户 1 条总经验）+ `growth_exp_ledger`（append-only + 幂等键）；**不改** `user_credit_account` / `credit_ledger` / `app_users` |
+| 历史数据 | 无成长账户 | 迁移为存量用户建 0 EXP 账户；**不回填**发布 / 点赞 / 举报；新用户懒建 |
+| 体验发布 | 仅返回 `created` | 在 `created = true` 分支同事务追加发布经验 +10（配置化）；编辑 / 删除重建不发 |
+| 点赞 | 已有唯一行与取消删行 | 在 `like` 成功分支追加分档结算（10/20/30… → +5）；`unlike` 不回滚；档位幂等 |
+| 举报 | RESOLVED 已含扣信用分（#29） | 在同一 RESOLVED 分支并列追加被举报用户 −50 EXP；不覆盖既有扣信用分 |
+| 每日上限 | 无 | 从流水当日正向实发求和；+20 上限；跨档按剩余额度截断；档位仍锁定 |
+| 等级 | 无 | 由 `exp_total` 派生 LV1–LV5；不落库；扣经验后回退；LV5 后继续累计 |
+| 契约 | 0.26.0 | 次版本 + 个人主页成长字段 / 批量等级读取；P3 排他确认（预计 0.30.0） |
+| 前端展示 | 5 处信用面 + 同行者卡片 | 6 处成长面（`LVn`）；本人主页 / 弹窗追加「当前经验 / 距下一级」；与信用分文案区分 |
+| 配置 | `routeme:` 根 | 新增 `routeme.growth.publish-exp`（默认 10）；无管理端 |
+| 原型 | 无成长截点（#29 原型改动已并入） | P3 先补原型截点（项目规则要求原型先行；在 #29 原型改动之上追加） |
+| 管理端 | 举报处置表单（#29 已加扣信用分展示） | **无 delta**（只挂成长副作用，不改表单与状态机） |
+
+### 30.4 Blast radius（应用架构）
+
+- **后端（1 个新能力 + 3 处事件挂接）：** 新增成长账户 / 流水实体与 mapper、成长经验服务、等级派生与展示查询；体验发布、点赞、举报成立各追加一次同事务结算。
+- **数据（2 表 + 1 迁移）：** 建表 + 存量 0 账户回填；双引擎可执行；不新增计数表。
+- **契约（1 处扩展）：** 个人主页响应追加成长字段；批量读取追加等级（具体形状 P3）；`OpenApiTest` 版本断言同步。
+- **前端（6 个展示面 + 类型 / 文案）：** 新增成长展示组件 / 纯函数；`ProfilePage` / `ProfileModal` / `TripDetailPage` / `TripCard` / `ApplicationsPage` / `CompanionCard` 接入；`api.ts` / `types.ts` / i18n。
+- **管理端（0）：** 不改举报表单、不新增成长视图。
+- **不影响：** 体验发布 / 点赞语义、举报状态机、信用分的账户与账本、行程生命周期、同行申请与聊天。
+- **运行时风险面：** 体验发布 / 点赞 / 举报成立三条写路径各多一次事务内写入；并发下需幂等键与条件更新；每日额度查询需按 `user_id + occurred_at` 建索引。
+
+### 30.5 Artifact impact（specs / tests / docs）
+
+| 工件 | 影响 |
+|---|---|
+| OpenSpec Delta | `user-growth` **ADDED**（账户与流水 / 等级派生 / 发布 / 点赞 / 每日上限 / 举报扣减 / 展示与可见性 / 只读与幂等）；无 MODIFIED、无 REMOVED |
+| 长期规格 | 归档后新增 Living Spec `openspec/specs/user-growth/spec.md`；不改 `user-credit` / `trip-experiences` / `admin-console` |
+| 契约 | `openapi.yaml` 次版本 + 个人主页成长字段 / 批量等级读取；后端契约测试同步 |
+| 后端测试 | 等级派生边界（99/100、399/400、LV5 累计、回退）；发布 / 点赞 / 举报结算；每日上限截断与日界；幂等与并发；流水等式；懒建账户；用户不存在 |
+| 前端测试 | 等级文案与可见性纯函数；6 个展示面集成；他人无经验字段 |
+| E2E | 发布 → 点赞 10 → 升级 / 展示；举报成立 → 扣经验；编辑 / 取消点赞不重复；每日上限（可选） |
+| 知识库 | `docs/knowledge/interfaces/README.md` 登记成长字段 / 端点（如有新增） |
+| 阶段记录 | `docs/sdd/add-growth-level/p1..p4`；`docs/sdd/README.md` 索引 |
+| 评审 | `docs/reviews/20261118-add-growth-level-{proposal,spec,design,tasks}-review.md` |
+
+### 30.6 Dual-track notes（OpenSpec vs agile）
+
+- **OpenSpec 轨：** 单 change `add-growth-level`，单能力 `user-growth`（ADDED）；账户、流水、等级、三类事件与展示写在同一 Delta，避免经验口径分叉。
+- **Agile 轨：** 故事 S34「用户成长等级 LV1–LV5」（迭代 3 / P1 / 3 点）即业务口径；不另拆多条故事。
+- **并列轨道：** #45 路线完成度（REQ-032 / S33）、经验明细页、排行榜、通知、管理端均为独立故事或独立 change；本需求不预留空壳端点；#29 已并入 main，不再并行。
+
+### 30.7 Risks & blockers
+
+| 级别 | 项 | 说明 / 缓解 |
+|---|---|---|
+| Risk | 契约 / 迁移号与并行 change 撞号 | 基线 0.26.0 + V31（#29 已并入 main 占用）；本 change 落定 **0.30.0 + V34**；P3 / P4 按合并顺序排他确认 |
+| Risk | `AdminReportServiceImpl.resolve` 并列副作用 | #29 已并入 main 的「扣信用分」；本 change 在其后并列追加「扣成长经验」，不覆盖对方；P4 回归 #29 既有测试 |
+| Risk | 每日上限时区歧义 | 统一 `Asia/Shanghai`，与既有信用 / 出行业务日一致；`D-5` 断言 UTC 16:00 日界 |
+| Risk | 被截断的点赞档位次日被误解为可补发 | 档位幂等记录先于上限判断；零实发也留流水；`D-3` 显式验收 |
+| Risk | 等级回退引发用户误解 | 用户已裁决「随经验回退」；展示层不承诺不掉级；`R-6` 显式验收 |
+| Risk | 6 个展示面视觉拥挤 / 与信用分混淆 | 原型先行；成长与信用文案、色阶区分；`V-5` 断言 |
+| Risk | 「有效赞」是否包含受限 / 封禁用户 | 沿用既有 `experience_likes` 行口径；不改点赞资格；OQ-7 deferred |
+| Risk | 体验发布事务失败导致经验回滚 | P3 明确事务边界：优先同事务（发布成功才发经验）；失败不阻断需有明确理由 |
+| Risk | 全量 E2E 既有债务 | P4 只跑本 change 与受影响回归，报告标注既有债务 |
+| Blocker | 无 | blocking OQ = 0；DoR BLOCKER = 0；A0 ⑨–⑫ 全过 |
+
+### 30.8 Suggested split boundaries（供 proposal-split / story-split）
+
+- **一个 change：** `add-growth-level` ← REQ-033（迭代 3 / S34）。
+- **不拆「账户 / 事件 / 展示」：** 三者共用同一经验口径与账本；拆开会出现「有经验没等级」或「有等级没流水」的不完整验收。
+- **不并入 #45 / 明细页 / 排行榜 / 通知 / 权益 / 管理端：** 均为独立故事或独立 change，本 change 不预留端点。
+- **阶段：** 单阶段；无归档前置依赖（`user-growth` 全新能力），但需与 #45（REQ-032 / S33）协调契约版本与迁移号；#29 已并入 main，其 `AdminReportServiceImpl.resolve` 冲突点已消除。
+- **质量自检（split-heuristics）：** 子目标一句话可说明 ✓；端到端可观察（首次发布 +10 → 10 赞 +5 → 升级 / 展示 → 举报成立 −50）✓；可独立运行 ✓；capability 名真实（`user-growth`）✓；无依赖环 ✓；41 场景为 Ready 口径，P2 已复核合并评估结论。

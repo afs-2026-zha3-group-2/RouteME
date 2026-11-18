@@ -42,9 +42,11 @@ import { meetingAreaText, meetingTimeText } from '../chat/chatMeeting';
 import { AmapTripMap } from '../map/amap/AmapTripMap';
 import { AmapPlacePicker } from '../map/amap/AmapPlacePicker';
 import { shareEligibility } from '../experiences/shareEligibility';
+import { GrowthBadge } from '../growth/GrowthBadge';
 import { publisherSummary } from '../profile/profileDisplay';
 import { creditLine, creditRestrictedBadge, creditTone } from '../profile/creditDisplay';
 import { useUserCredits } from '../profiles/useUserCredits';
+import { useGrowthLevels } from '../profiles/useGrowthLevels';
 import { ReportModal } from '../safety/ReportModal';
 import { Avatar } from '../shell/Avatar';
 import type { AiItinerarySnapshot, DemoUser, Experience, InsuranceSummary, TripApplication } from '../types';
@@ -104,6 +106,16 @@ export function TripDetailPage({ currentUser, tripId }: Props) {
   const { restricted, refresh: refreshCredit } = useMyCredit();
   const publisherId = state.status === 'ready' ? state.trip.publisher.id : 0;
   const publisherCredits = useUserCredits(publisherId > 0 ? [publisherId] : [], currentUser.id);
+  const growthIds =
+    state.status === 'ready'
+      ? [
+          state.trip.publisher.id,
+          ...tripCompanions(state.trip.participants, state.trip.publisher.id).map(
+            (member) => member.id,
+          ),
+        ]
+      : [];
+  const growth = useGrowthLevels(growthIds, currentUser.id);
   const [feedback, setFeedback] = useState<Feedback | null>(null);
   const [completing, setCompleting] = useState(false);
   const [myApplication, setMyApplication] = useState<TripApplication | null>(null);
@@ -636,6 +648,9 @@ export function TripDetailPage({ currentUser, tripId }: Props) {
                   {trip.publisher.nickname}
                   {publisherSummary(trip.publisher) !== '' && ` · ${publisherSummary(trip.publisher)}`}
                 </span>
+                {growth[trip.publisher.id] !== undefined && (
+                  <GrowthBadge level={growth[trip.publisher.id].level} />
+                )}
                 {trip.publisher.bio !== '' && (
                   <span className="publisher-bio">{trip.publisher.bio}</span>
                 )}
@@ -679,6 +694,7 @@ export function TripDetailPage({ currentUser, tripId }: Props) {
                   <CompanionCard
                     key={member.id}
                     member={member}
+                    growth={growth[member.id]}
                     canChat={
                       member.id !== currentUser.id && (isPublisher || entry.kind === 'accepted')
                     }

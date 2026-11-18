@@ -20,13 +20,19 @@ import org.springframework.web.multipart.MultipartFile;
 import routeme.entity.UserEntity;
 import routeme.exception.InvalidInputException;
 import routeme.exception.SessionInvalidException;
+import routeme.exception.UserNotFoundException;
 import routeme.pojo.DemoUser;
+import routeme.pojo.UserGrowth;
+import routeme.pojo.UserProfile;
 import routeme.request.UserProfileUpdateRequest;
 import routeme.response.UserCreditResponse;
+import routeme.response.UserGrowthEntryResponse;
+import routeme.response.UserGrowthResponse;
 import routeme.response.UserProfileResponse;
 import routeme.service.AuthService;
 import routeme.service.CreditService;
 import routeme.service.DemoUserService;
+import routeme.service.GrowthService;
 import routeme.service.RouteCompletionPolicy;
 import routeme.service.UserProfileService;
 import routeme.service.UserProfileStatsService;
@@ -42,24 +48,28 @@ public class UserProfileController {
     private static final String AVATAR_CACHE_CONTROL = "public, max-age=31536000, immutable";
     /** 批量取数的上限：一页卡片的规模，避免被当成全量接口使用。 */
     private static final int MAX_CREDIT_IDS = 50;
+    private static final int MAX_GROWTH_IDS = 50;
 
     private final UserProfileService userProfileService;
     private final UserProfileStatsService userProfileStatsService;
     private final DemoUserService demoUserService;
     private final AuthService authService;
     private final CreditService creditService;
+    private final GrowthService growthService;
 
     public UserProfileController(
             UserProfileService userProfileService,
             UserProfileStatsService userProfileStatsService,
             DemoUserService demoUserService,
             AuthService authService,
-            CreditService creditService) {
+            CreditService creditService,
+            GrowthService growthService) {
         this.userProfileService = userProfileService;
         this.userProfileStatsService = userProfileStatsService;
         this.demoUserService = demoUserService;
         this.authService = authService;
         this.creditService = creditService;
+        this.growthService = growthService;
     }
 
     @GetMapping("/{userId}/profile")
@@ -68,11 +78,15 @@ public class UserProfileController {
             @PathVariable long userId) {
         DemoUser caller = demoUserService.require(callerId);
         UserEntity target = demoUserService.getById(userId);
+        boolean self = caller.id() == userId;
+        UserProfile profile = userProfileService.read(userId, caller.id());
+        UserGrowth growth = growthService.read(userId);
         return UserProfileResponse.from(
-                userProfileService.read(userId, caller.id()),
-                caller.id() == userId,
+                profile,
+                self,
                 target.getCreatedAt(),
                 userProfileStatsService.stats(userId),
+                UserGrowthResponse.from(growth, self),
                 RouteCompletionPolicy.evaluate(null, 0));
     }
 
@@ -90,6 +104,14 @@ public class UserProfileController {
     }
 
     private static List<Long> parseCreditIds(String raw) {
+        return parseIds(raw, MAX_CREDIT_IDS);
+    }
+
+    private static List<Long> parseGrowthIds(String raw) {
+        return parseIds(raw, MAX_GROWTH_IDS);
+    }
+
+    private static List<Long> parseIds(String raw, int maxIds) {
         if (raw == null || raw.isBlank()) {
             throw new InvalidInputException("ids is required");
         }
@@ -108,10 +130,29 @@ public class UserProfileController {
         if (ids.isEmpty()) {
             throw new InvalidInputException("ids is required");
         }
-        if (ids.size() > MAX_CREDIT_IDS) {
-            throw new InvalidInputException("at most " + MAX_CREDIT_IDS + " ids per request");
+        if (ids.size() > maxIds) {
+            throw new InvalidInputException("at most " + maxIds + " ids per request");
         }
         return ids.stream().distinct().toList();
+    }
+
+    /**
+     * 批量成长等级：只返回 level；任一 id 不存在时 404，不建孤立账户。
+     */
+    @GetMapping("/growth")
+    public List<UserGrowthEntryResponse> growth(
+            @RequestHeader(value = "X-User-Id", required = false) Long callerId,
+            @RequestParam(value = "ids", required = false) String ids) {
+        demoUserService.require(callerId);
+        List<Long> parsed = parseGrowthIds(ids);
+        for (Long id : parsed) {
+            if (demoUserService.getById(id) == null) {
+                throw new UserNotFoundException(id);
+            }
+        }
+        return growthService.readAll(parsed).stream()
+                .map(UserGrowthEntryResponse::from)
+                .toList();
     }
 
     @PutMapping("/me/profile")

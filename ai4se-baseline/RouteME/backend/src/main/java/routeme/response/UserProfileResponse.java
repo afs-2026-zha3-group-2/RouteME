@@ -40,6 +40,7 @@ public record UserProfileResponse(
         String creditRestrictionReason,
         String joinedAt,
         ProfileStatsResponse stats,
+        UserGrowthResponse growth,
         String status,
         String banReasonCode,
         String banExpiresAt,
@@ -62,7 +63,7 @@ public record UserProfileResponse(
             boolean includeBirthday,
             String joinedAt,
             ProfileStatsResponse stats) {
-        return from(profile, includeBirthday, joinedAt, stats, RouteCompletion.INSUFFICIENT);
+        return from(profile, includeBirthday, joinedAt, stats, null, RouteCompletion.INSUFFICIENT);
     }
 
     public static UserProfileResponse from(
@@ -70,6 +71,25 @@ public record UserProfileResponse(
             boolean includeBirthday,
             String joinedAt,
             ProfileStatsResponse stats,
+            UserGrowthResponse growth) {
+        return from(profile, includeBirthday, joinedAt, stats, growth, RouteCompletion.INSUFFICIENT);
+    }
+
+    public static UserProfileResponse from(
+            UserProfile profile,
+            boolean includeBirthday,
+            String joinedAt,
+            ProfileStatsResponse stats,
+            RouteCompletion completion) {
+        return from(profile, includeBirthday, joinedAt, stats, null, completion);
+    }
+
+    public static UserProfileResponse from(
+            UserProfile profile,
+            boolean includeBirthday,
+            String joinedAt,
+            ProfileStatsResponse stats,
+            UserGrowthResponse growth,
             RouteCompletion completion) {
         return new UserProfileResponse(
                 profile.id(),
@@ -98,6 +118,7 @@ public record UserProfileResponse(
                 profile.creditRestrictionReason(),
                 joinedAt,
                 stats,
+                growth,
                 profile.status(),
                 profile.banReasonCode(),
                 profile.banExpiresAt(),

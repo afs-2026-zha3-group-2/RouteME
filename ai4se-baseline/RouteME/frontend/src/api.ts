@@ -55,6 +55,7 @@ LoanCreateRequest,
   TripMeetingRequest,
   TripSummary,
   UserCreditEntry,
+  UserGrowthEntry,
   UserProfile,
   UserProfileUpdateRequest,
   WeatherForecast,
@@ -160,6 +161,19 @@ export async function loadUserCredits(ids: number[], callerId: number): Promise<
   const query = new URLSearchParams({ ids: ids.join(',') });
   const response = await request(`/users/credits?${query.toString()}`, undefined, callerId);
   return (await response.json()) as UserCreditEntry[];
+}
+
+/** 批量读取成长等级；用于行程卡、申请列表与详情同行者，不含经验值。 */
+export async function loadUserGrowthLevels(
+  ids: number[],
+  callerId: number,
+): Promise<UserGrowthEntry[]> {
+  if (ids.length === 0) {
+    return [];
+  }
+  const query = new URLSearchParams({ ids: ids.join(',') });
+  const response = await request(`/users/growth?${query.toString()}`, undefined, callerId);
+  return (await response.json()) as UserGrowthEntry[];
 }
 
 /** 读取个人资料；本人读取时响应包含生日，他人读取时省略。 */

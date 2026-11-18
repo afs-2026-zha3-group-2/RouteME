@@ -538,6 +538,9 @@ routeSectionHint: '在地图上添加并排序途经点，实时查看路线与�
   creditRestrictionReason: '信用分低于 60，原因：CREDIT_SCORE_BELOW_60。',
   creditRestrictionAutoLift: '分数回到 60 分及以上自动解除。',
   creditRestrictedAction: '信用分低于 60，当前账号仅可查看；分数回到 60 分及以上自动解除。',
+  // 成长等级（只用 LVn；与信用分文案分开）
+  growthLevel: '成长等级',
+  growthMaxBadge: '400+ · 已满级',
   // 路线完成度（状态由后端派生，前端只做文案映射）
   routeCompletionLabel: '路线完成度',
   routeCompletionGood: '信誉良好',

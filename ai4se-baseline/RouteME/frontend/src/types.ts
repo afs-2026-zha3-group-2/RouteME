@@ -43,6 +43,23 @@ export type UserCreditEntry = {
   credit_restricted: boolean;
 };
 
+/** 成长等级：由后端按总经验实时派生（LV1–LV5），不落库。 */
+export type GrowthLevel = 1 | 2 | 3 | 4 | 5;
+
+/** 个人主页成长信息；本人额外包含经验与满级标记。 */
+export type UserGrowth = {
+  level: GrowthLevel;
+  exp?: number;
+  exp_to_next?: number | null;
+  max_level?: boolean;
+};
+
+/** 批量成长等级项（`GET /api/users/growth`）；不含经验值。 */
+export type UserGrowthEntry = {
+  user_id: number;
+  level: GrowthLevel;
+};
+
 /**
  * 用户摘要：身份门、行程发布者、体验作者与会话用户共用。
  * 资料未完善时 city / major / job 缺省，学校可为空串。
@@ -115,6 +132,8 @@ export type UserProfile = {
   route_completion_rate?: number | null;
   joined_at?: string | null;
   stats?: ProfileStats;
+  /** 成长等级；本人额外含经验与满级标记，他人仅 level。 */
+  growth?: UserGrowth | null;
   /** 账号状态：SUSPENDED 只回 status；BANNED 同时回理由与解封时间。 */
   status?: AccountStatus | null;
   ban_reason_code?: BanReasonCode | null;
