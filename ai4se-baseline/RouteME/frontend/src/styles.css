@@ -1726,6 +1726,23 @@ svg {
     opacity: 1 !important;
     transform: none !important;
   }
+
+  /*
+   * 同一个缺陷也命中 antd Select：下拉层被钉在 -1000vw / -1000vh，点开看不到选项
+   * （同行设置、每页条数都会失效）。挂到字段容器后同样固定在字段下方。
+   */
+  .app-select-popup {
+    left: 0 !important;
+    right: auto !important;
+    top: calc(100% + 4px) !important;
+    bottom: auto !important;
+  }
+}
+
+/* Select 弹层挂在字段容器内，容器必须是定位上下文 */
+.form-field:has(> .ant-select),
+.pager-size {
+  position: relative;
 }
 
 .label {
