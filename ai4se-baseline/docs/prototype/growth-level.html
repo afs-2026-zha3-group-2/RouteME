@@ -1,0 +1,331 @@
+<!doctype html>
+<html lang="zh-CN" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>RouteME 原型 · 用户成长等级 LV1–LV5（6 处展示面）</title>
+<style>
+  :root {
+    --deep: #14335f; --tide: #1b5a8a; --lagoon: #0e8074; --lagoon-soft: #e0f4ee;
+    --coral: #ff7a45; --amber: #ffb703; --surf: #2f9fe0;
+    --jade: #149a63; --warn: #d98613; --danger: #e0483a; --info: #2f9fe0;
+    --bg: #f5f8fb; --surface: #ffffff; --surface-2: #eef4f9; --surface-3: #e2ecf4;
+    --ink: #16324f; --ink-2: #3e5c7c; --ink-3: #67809b;
+    --line: #dce7f0; --line-2: #c2d4e2; --rail-bg: #edf3f8;
+    --t-lagoon: #0b6b60; --t-warn: #8a5409; --t-danger: #b32c1c; --t-info: #1668a0;
+    --r-sm: 10px; --r: 16px; --r-lg: 22px;
+    --sh-1: 0 1px 2px rgba(20, 51, 95, .06), 0 2px 8px -4px rgba(20, 51, 95, .1);
+    --sh-2: 0 2px 6px rgba(20, 51, 95, .06), 0 14px 30px -18px rgba(20, 51, 95, .3);
+    --ring: 0 0 0 3px rgba(14, 128, 116, .22);
+    --font: "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", system-ui, sans-serif;
+    --font-num: "SF Mono", "Cascadia Mono", ui-monospace, monospace;
+    color-scheme: light;
+  }
+  [data-theme="dark"] {
+    --deep: #10233a; --tide: #17486f; --lagoon: #2fc9a8; --lagoon-soft: #1a5a50;
+    --coral: #ff8a5c; --amber: #ffc23d; --surf: #56b8f0;
+    --jade: #35c98a; --warn: #f0a93c; --danger: #ff6b5c; --info: #56a3ee;
+    --bg: #20395a; --surface: #2a4b6d; --surface-2: #33577a; --surface-3: #3e6489;
+    --ink: #f4f9fd; --ink-2: #cbdbeb; --ink-3: #b3c7da;
+    --line: #5f86aa; --line-2: #7a9fc2; --rail-bg: #2a4b6d;
+    --t-lagoon: #3fd6b4; --t-warn: #f0a93c; --t-danger: #ff7f70; --t-info: #56b8f0;
+    --sh-1: 0 1px 2px rgba(0,0,0,.3);
+    --sh-2: 0 2px 6px rgba(0,0,0,.26), 0 16px 34px -20px rgba(0,0,0,.55);
+    --ring: 0 0 0 3px rgba(47,201,184,.26);
+    color-scheme: dark;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font-family: var(--font); }
+  .page { max-width: 1180px; margin: 0 auto; padding: 24px 20px 64px; }
+  .topbar { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 12px; }
+  .brand { font-weight: 700; letter-spacing: .2px; }
+  .brand span { color: var(--t-lagoon); }
+  .spacer { flex: 1; }
+  .btn {
+    border: 1px solid var(--line-2); background: var(--surface); color: var(--ink-2);
+    border-radius: 999px; padding: 8px 14px; font-size: 13px; font-weight: 600; cursor: pointer;
+  }
+  .btn.ghost:hover { border-color: var(--lagoon); color: var(--t-lagoon); }
+  .btn.sm { padding: 6px 12px; font-size: 12px; }
+  .lede { margin: 0 0 20px; color: var(--ink-2); font-size: 13.5px; line-height: 1.7; }
+  .lede b { color: var(--t-lagoon); }
+  .board { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 18px; }
+  .board > .full { grid-column: 1 / -1; }
+  .card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-lg); padding: 18px; box-shadow: var(--sh-1); }
+  .card > h2 { margin: 0 0 4px; font-size: 13px; letter-spacing: .09em; text-transform: uppercase; color: var(--ink-3); font-weight: 800; }
+  .card > .hint { margin: 0 0 14px; font-size: 12px; color: var(--ink-3); }
+  .surface { background: var(--surface-2); border: 1px solid var(--line); border-radius: var(--r); padding: 16px; }
+  .stack { display: grid; gap: 12px; }
+
+  /* 成长徽标：与信用分并行但色阶与文案区分 */
+  .growth-pill {
+    display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 700;
+    color: var(--t-lagoon); background: var(--lagoon-soft); border: 1px solid var(--lagoon);
+    border-radius: 999px; padding: 3px 10px; font-family: var(--font-num); white-space: nowrap;
+  }
+  .growth-pill em { font-style: normal; font-weight: 700; }
+  .growth-pill small { font-family: var(--font); font-weight: 600; color: var(--t-lagoon); opacity: .8; }
+  .growth-pill.lv5 { background: var(--lagoon); color: var(--surface); border-color: var(--lagoon); }
+  .growth-pill.lv5 small { color: var(--surface); opacity: .9; }
+  .credit-pill {
+    display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600;
+    color: var(--ink-2); background: var(--surface); border: 1px solid var(--line-2);
+    border-radius: 999px; padding: 3px 10px; font-family: var(--font-num); white-space: nowrap;
+  }
+  .credit-pill .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--jade); }
+  .pill-note { font-size: 11px; color: var(--ink-3); margin-left: 6px; }
+
+  /* 1 · 个人主页 */
+  .profile-hero { display: flex; gap: 14px; align-items: flex-start; flex-wrap: wrap; }
+  .avatar {
+    width: 52px; height: 52px; border-radius: 16px; flex: none;
+    background: var(--lagoon); color: var(--surface);
+    display: grid; place-items: center; font-weight: 800; font-size: 20px;
+  }
+  .who { flex: 1 1 220px; min-width: 0; }
+  .name { margin: 0; font-size: 16px; font-weight: 800; display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+  .meta { margin: 6px 0 0; font-size: 12.5px; color: var(--ink-3); }
+  .growth-progress { flex: 1 1 260px; min-width: 0; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-sm); padding: 12px 14px; }
+  .gp-top { display: flex; justify-content: space-between; gap: 10px; font-size: 12px; color: var(--ink-2); }
+  .gp-top b { font-family: var(--font-num); color: var(--ink); }
+  .gp-track { position: relative; height: 8px; border-radius: 99px; background: var(--surface-3); margin: 10px 0 8px; overflow: hidden; }
+  .gp-track i { position: absolute; inset: 0 auto 0 0; border-radius: 99px; background: linear-gradient(90deg, var(--lagoon), var(--jade)); }
+  .gp-hint { margin: 0; font-size: 11.5px; color: var(--ink-3); }
+  .ladder { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 12px; }
+  .ladder span { font-family: var(--font-num); font-size: 11px; color: var(--ink-3); border: 1px dashed var(--line-2); border-radius: 999px; padding: 3px 9px; }
+  .ladder span.on { color: var(--t-lagoon); border-color: var(--lagoon); background: var(--lagoon-soft); font-weight: 700; }
+
+  /* 2 · 资料弹窗 */
+  .modals { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+  .modal-card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 14px; position: relative; }
+  .modal-card::before { content: ""; position: absolute; inset: 4px; border-radius: 12px; border: 1px dashed var(--line); pointer-events: none; opacity: .7; }
+  .modal-card h3 { margin: 0 0 8px; font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: var(--ink-3); }
+  .modal-card .row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+  .modal-card .mini-avatar { width: 36px; height: 36px; border-radius: 12px; background: var(--surface-3); display: grid; place-items: center; font-weight: 800; color: var(--ink-2); }
+
+  /* 3 · 行程详情发布者区 */
+  .detail-head { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+  .detail-head .cover { width: 64px; height: 48px; border-radius: 10px; background: linear-gradient(135deg, var(--lagoon), var(--surf)); flex: none; }
+  .detail-head .title { margin: 0; font-size: 14px; font-weight: 800; }
+  .detail-head .sub { margin: 4px 0 0; font-size: 12px; color: var(--ink-3); display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+
+  /* 4 · 首页行程卡 */
+  .trip-cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; }
+  .trip-card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); overflow: hidden; }
+  .trip-card .tc-cover { height: 72px; background: linear-gradient(135deg, var(--surf), var(--lagoon)); }
+  .trip-card .tc-body { padding: 12px; display: grid; gap: 6px; }
+  .trip-card .tc-title { margin: 0; font-size: 13.5px; font-weight: 800; }
+  .trip-card .tc-meta { margin: 0; font-size: 11.5px; color: var(--ink-3); display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+
+  /* 5 · 申请处理页申请者行 */
+  .apply-rows { display: grid; gap: 8px; }
+  .apply-row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-sm); padding: 10px 12px; }
+  .apply-row .who2 { flex: 1 1 auto; min-width: 0; }
+  .apply-row .who2 b { font-size: 13px; }
+  .apply-row .who2 p { margin: 2px 0 0; font-size: 11.5px; color: var(--ink-3); }
+  .apply-row .actions { display: flex; gap: 6px; }
+
+  /* 6 · 同行者卡片 */
+  .companions { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; }
+  .companion-card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--r); padding: 12px; text-align: center; display: grid; gap: 6px; justify-items: center; }
+  .companion-card .avatar-sm { width: 44px; height: 44px; border-radius: 50%; background: var(--surface-3); display: grid; place-items: center; font-weight: 800; color: var(--ink-2); }
+  .companion-card b { font-size: 13px; }
+  .companion-card .sub { font-size: 11px; color: var(--ink-3); }
+
+  .spec-note { font-size: 12px; color: var(--ink-3); line-height: 1.8; }
+  .spec-note b { color: var(--ink-2); }
+  .legend { display: flex; gap: 14px; flex-wrap: wrap; margin-top: 10px; }
+
+  @media (max-width: 1024px) {
+    .page { padding: 20px 16px 56px; }
+    .board { gap: 14px; }
+  }
+  @media (max-width: 768px) {
+    .board { grid-template-columns: minmax(0, 1fr); }
+    .modals { grid-template-columns: minmax(0, 1fr); }
+    .profile-hero { gap: 10px; }
+  }
+  @media (max-width: 390px) {
+    .page { padding: 16px 12px 48px; }
+    .card { padding: 14px; border-radius: var(--r); }
+    .name { font-size: 15px; }
+    .growth-pill, .credit-pill { font-size: 11px; padding: 2px 8px; }
+    .growth-progress { padding: 10px 12px; }
+  }
+</style>
+</head>
+<body>
+<div class="page">
+  <div class="topbar">
+    <div class="brand">RouteME <span>原型</span> · 用户成长等级 LV1–LV5（6 处展示面）</div>
+    <div class="spacer"></div>
+    <button class="btn sm ghost" id="themeToggle" type="button">切换深色</button>
+  </div>
+
+  <p class="lede">
+    展示口径：只用 <b>LVn</b>；<b>本人</b>额外可见当前经验与距下一级，LV5 显示已满级 / 400+；<b>他人</b>只见等级，不返回经验值。
+    成长等级与信用分并列但文案、色阶区分（成长=青绿，信用=中性徽标），不得称为信用分 / 信用等级 / 官方安全认证。
+  </p>
+
+  <div class="board">
+
+    <section class="card full">
+      <h2>1 · 个人主页（本人）</h2>
+      <p class="hint">Header：昵称旁并列「成长 LV3」与「信用分 82 · 信用良好」；下方经验进度条仅本人可见。</p>
+      <div class="surface profile-hero">
+        <div class="avatar">林</div>
+        <div class="who">
+          <p class="name">
+            林知远
+            <span class="growth-pill"><em>LV3</em><small>成长等级</small></span>
+            <span class="credit-pill"><i class="dot"></i>信用分 82 · 信用良好</span>
+          </p>
+          <p class="meta">杭州 · 加入 8 个月 · 已完成 12 段同行 · 发布 9 篇旅行体验</p>
+          <div class="ladder">
+            <span>LV1 0–99</span><span>LV2 100–199</span><span class="on">LV3 200–299</span><span>LV4 300–399</span><span>LV5 400+</span>
+          </div>
+        </div>
+        <div class="growth-progress">
+          <div class="gp-top"><span>成长经验</span><b>240 / 300 EXP</b></div>
+          <div class="gp-track"><i style="width:80%"></i></div>
+          <p class="gp-hint">距 LV4 还需 60 EXP · 正向经验每日最多 +20（Asia/Shanghai）</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>2 · 资料弹窗</h2>
+      <p class="hint">同一弹窗按调用者分支：本人显示经验进度，他人只显示等级。</p>
+      <div class="modals">
+        <div class="modal-card">
+          <h3>本人视角</h3>
+          <div class="row">
+            <div class="mini-avatar">林</div>
+            <div>
+              <p class="name" style="font-size:14px">林知远 <span class="growth-pill"><em>LV3</em></span></p>
+              <p class="meta">经验 240 / 300 · 距 LV4 还需 60</p>
+            </div>
+          </div>
+        </div>
+        <div class="modal-card">
+          <h3>他人视角</h3>
+          <div class="row">
+            <div class="mini-avatar">林</div>
+            <div>
+              <p class="name" style="font-size:14px">林知远 <span class="growth-pill"><em>LV3</em></span></p>
+              <p class="meta">只显示等级，不出现经验数字</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>3 · 行程详情发布者区</h2>
+      <p class="hint">发布者行：头像 + 昵称 + LVn；不显示经验值。</p>
+      <div class="surface detail-head">
+        <div class="cover"></div>
+        <div style="flex:1 1 auto; min-width:0">
+          <p class="title">周末莫干山徒步 · 2 天 1 晚</p>
+          <p class="sub">发布者 阿岚 <span class="growth-pill"><em>LV4</em></span> · 9 月 21 日出发 · 已满员</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="card full">
+      <h2>4 · 首页行程卡</h2>
+      <p class="hint">卡片 meta 行内 LVn 徽标；与价格 / 出发时间同一行时保持可折行，390px 不溢出。</p>
+      <div class="trip-cards">
+        <div class="trip-card">
+          <div class="tc-cover"></div>
+          <div class="tc-body">
+            <p class="tc-title">景德镇陶艺周末</p>
+            <p class="tc-meta">小满 <span class="growth-pill"><em>LV2</em></span> · 10 月 3 日 · ¥680</p>
+          </div>
+        </div>
+        <div class="trip-card">
+          <div class="tc-cover" style="background:linear-gradient(135deg,var(--amber),var(--coral))"></div>
+          <div class="tc-body">
+            <p class="tc-title">呼伦贝尔秋色 5 日</p>
+            <p class="tc-meta">北岸 <span class="growth-pill"><em>LV1</em></span> · 9 月 28 日 · ¥2380</p>
+          </div>
+        </div>
+        <div class="trip-card">
+          <div class="tc-cover" style="background:linear-gradient(135deg,var(--jade),var(--lagoon))"></div>
+          <div class="tc-body">
+            <p class="tc-title">泉州古城漫游</p>
+            <p class="tc-meta">阿岚 <span class="growth-pill"><em>LV4</em></span> · 10 月 12 日 · ¥520</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>5 · 申请处理页申请者行</h2>
+      <p class="hint">申请者行：昵称后 LVn；列表一次批量读取等级，不逐条请求。</p>
+      <div class="apply-rows">
+        <div class="apply-row">
+          <div class="mini-avatar" style="width:34px;height:34px;border-radius:50%;background:var(--surface-3);display:grid;place-items:center;font-weight:800;color:var(--ink-2)">周</div>
+          <div class="who2"><b>周末 <span class="growth-pill"><em>LV1</em></span></b><p>申请 2 人同行 · 备注「有徒步经验」</p></div>
+          <div class="actions"><button class="btn sm ghost" type="button">拒绝</button><button class="btn sm" type="button" style="border-color:var(--lagoon);color:var(--t-lagoon)">接受</button></div>
+        </div>
+        <div class="apply-row">
+          <div class="mini-avatar" style="width:34px;height:34px;border-radius:50%;background:var(--surface-3);display:grid;place-items:center;font-weight:800;color:var(--ink-2)">何</div>
+          <div class="who2"><b>何遇 <span class="growth-pill"><em>LV3</em></span></b><p>申请 1 人同行 · 备注「可分摊驾驶」</p></div>
+          <div class="actions"><button class="btn sm ghost" type="button">拒绝</button><button class="btn sm" type="button" style="border-color:var(--lagoon);color:var(--t-lagoon)">接受</button></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>6 · 详情同行者卡片</h2>
+      <p class="hint">同行者卡片本身显示 LVn；LV5 用实心徽标 + 已满级，不出现 LV6。</p>
+      <div class="companions">
+        <div class="companion-card">
+          <div class="avatar-sm">何</div>
+          <b>何遇</b>
+          <span class="growth-pill"><em>LV3</em></span>
+          <span class="sub">已加入 · 2 次同行</span>
+        </div>
+        <div class="companion-card">
+          <div class="avatar-sm">北</div>
+          <b>北岸</b>
+          <span class="growth-pill lv5"><em>LV5</em><small>400+ · 已满级</small></span>
+          <span class="sub">已加入 · 14 次同行</span>
+        </div>
+        <div class="companion-card">
+          <div class="avatar-sm">周</div>
+          <b>周末</b>
+          <span class="growth-pill"><em>LV1</em></span>
+          <span class="sub">已加入 · 新同行者</span>
+        </div>
+      </div>
+    </section>
+
+    <section class="card full">
+      <h2>设计口径</h2>
+      <div class="spec-note">
+        <p><b>等级规则：</b>LV1 0–99、LV2 100–199、LV3 200–299、LV4 300–399、LV5 400+（每 100 EXP 一级）；LV5 后继续累计经验、等级封顶；扣经验后等级随总经验回退。</p>
+        <p><b>可见性：</b>本人可见等级 + 当前经验 + 距下一级；他人只可见 <b>LVn</b>，接口不返回经验值；列表批量只返回等级。</p>
+        <p><b>与信用分：</b>并列展示但不混用——成长徽标用青绿（lagoon / jade），信用分徽标保持中性底色 + 绿点；文案分别写「成长等级」与「信用分」。</p>
+        <div class="legend">
+          <span class="growth-pill"><em>LV3</em><small>成长等级</small></span>
+          <span class="credit-pill"><i class="dot"></i>信用分 82 · 信用良好</span>
+        </div>
+      </div>
+    </section>
+
+  </div>
+</div>
+<script>
+  (function () {
+    var toggle = document.getElementById('themeToggle');
+    toggle.addEventListener('click', function () {
+      var dark = document.documentElement.dataset.theme === 'dark';
+      document.documentElement.dataset.theme = dark ? 'light' : 'dark';
+      toggle.textContent = dark ? '切换深色' : '切换浅色';
+    });
+  })();
+</script>
+</body>
+</html>
