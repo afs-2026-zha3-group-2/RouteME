@@ -49,3 +49,9 @@
 
 - 未暂存 WIP（`e2e-shard.mjs` / `e2e-stack.mjs` / `e2e-db.mjs` / knowledge 文档 / sdd-e2e-debt-baseline SKILL / e2e/README.md 等）全程未动、未纳入任何合并提交。
 - 并发会话推送的 origin/main fix 与 growth 第五次顺延均已并入（§1），push 前以 fetch + ahead-behind 复核全分支 0 ahead。
+
+## 7. 分支清理（2026-11-18，用户指示「合并完了就清理掉」）
+
+- 删除前逐个 `git merge-base --is-ancestor origin/<feature> main` 确认 6 个分支均为 main 祖先：add-growth-level / add-report-credit-deduction / add-route-completion / add-travel-finance / refine-publish-route-map / refine-service-close。
+- `git push origin --delete` 六个远端分支全部删除，`fetch --prune` 后远端仅剩 `origin/main`。
+- 本地仅剩 `main`；`git worktree list` 仅主工作区，无 `.worktrees` 残留；上级目录无孤儿 worktree 拷贝。
