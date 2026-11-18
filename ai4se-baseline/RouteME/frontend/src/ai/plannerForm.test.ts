@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
   canGenerate,
+  clampPlanDate,
   defaultPlannerForm,
   emptyPlannerForm,
   toGenerateRequest,
@@ -104,6 +105,31 @@ describe('toGenerateRequest', () => {
     expect(toGenerateRequest({ ...filled, travelMode: 'driving' }).travel_mode).toBe('driving');
     expect(toGenerateRequest({ ...filled, pace: 'relaxed' }).pace).toBe('relaxed');
     expect(toGenerateRequest({ ...filled, pace: 'compact' }).pace).toBe('compact');
+  });
+});
+
+describe('clampPlanDate', () => {
+  const now = new Date(2026, 10, 18, 15, 36);
+
+  it('pulls a past date up to today', () => {
+    expect(clampPlanDate('2026-11-01', now)).toBe('2026-11-18');
+    expect(clampPlanDate('2025-12-31', now)).toBe('2026-11-18');
+  });
+
+  it('keeps today and future dates as they are', () => {
+    expect(clampPlanDate('2026-11-18', now)).toBe('2026-11-18');
+    expect(clampPlanDate('2026-12-01', now)).toBe('2026-12-01');
+  });
+
+  it('falls back to today for malformed input', () => {
+    expect(clampPlanDate('', now)).toBe('2026-11-18');
+    expect(clampPlanDate('11-18', now)).toBe('2026-11-18');
+  });
+
+  it('keeps the generate request from carrying a past date', () => {
+    expect(toGenerateRequest({ ...filled, date: '2020-01-01' }).date).toBe(
+      defaultPlannerForm().date,
+    );
   });
 });
 

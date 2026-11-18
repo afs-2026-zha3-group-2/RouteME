@@ -3,6 +3,8 @@ package routeme.service.impl;
 import java.math.BigDecimal;
 import java.time.Clock;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -63,6 +65,10 @@ public class AiItineraryServiceImpl extends AbstractServiceImpl<AiItineraryMappe
             "transit", "公共交通 + 步行", "walking", "步行", "driving", "自驾");
     private static final Map<String, String> PACE_LABELS = Map.of(
             "relaxed", "宽松", "moderate", "适中", "compact", "紧凑");
+
+    /** 提示词里的「当前时间」格式：模型据此判断当天行程不能排到过去。 */
+    private static final DateTimeFormatter TIME_FORMAT =
+            DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
 
     private static final String SYSTEM_PROMPT = """
             你是旅行行程规划助手。只输出一个 JSON 对象，不要输出任何其他文字或解释。
@@ -159,11 +165,19 @@ public class AiItineraryServiceImpl extends AbstractServiceImpl<AiItineraryMappe
     private String buildUserPrompt(
             AiGenerateRequest request, WeatherForecast weather,
             String duration, String travelMode, String pace) {
+        LocalDateTime now = LocalDateTime.now(clock);
+        LocalDate today = now.toLocalDate();
+        boolean startsToday = today.toString().equals(request.date());
         StringBuilder prompt = new StringBuilder();
         prompt.append("请为用户规划一条游玩路线。\n")
                 .append("出发地：").append(request.origin().name()).append('\n')
                 .append("目的地：").append(request.destination().name()).append('\n')
                 .append("旅行日期：").append(request.date()).append('\n')
+                // 模型不知道「现在几点」：不告诉它，当天行程会排出一堆已经过去的到达时间。
+                .append("当前时间：").append(now.format(TIME_FORMAT)).append('\n')
+                .append(startsToday
+                        ? "注意：行程从今天开始，第一站的到达时间必须晚于当前时间，不得把景点排在已经过去的时段。\n"
+                        : "注意：行程不是今天开始，按正常作息（不早于 09:00）安排即可。\n")
                 .append("游玩时长：").append(DURATION_GUIDE.get(duration)).append('\n')
                 .append("出行方式：").append(MODE_LABELS.get(travelMode)).append('\n')
                 .append("行程节奏：").append(PACE_LABELS.get(pace)).append('\n')

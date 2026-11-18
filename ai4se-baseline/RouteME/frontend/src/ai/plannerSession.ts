@@ -17,6 +17,20 @@ export type PlannerChatMessage = {
   text: string;
   time: string;
   tone: 'default' | 'plan' | 'error';
+  /**
+   * 方案消息自带的历史快照：
+   * 回复气泡原来直接读页面当前 stops/planMeta，导致同一会话里每条「已生成」消息
+   * 都渲染成同一份最新方案（看起来像重复回答）。每条方案消息只认自己的快照，
+   * 只有最新那条才绑定页面上可交互的实时方案。
+   */
+  plan?: PlannerPlanSnapshot | null;
+};
+
+/** 一条方案消息的快照：只留展示需要的字段，体积远小于整份行程。 */
+export type PlannerPlanSnapshot = {
+  title: string;
+  dayCount: number;
+  stops: Array<{ name: string; day: number; arrival: string }>;
 };
 
 /** 时间轴景点：day 决定分天展示，order 决定编号（1..n）。 */
@@ -157,6 +171,33 @@ function parseForm(value: unknown): PlannerFormValues | null {
   };
 }
 
+function parsePlanSnapshot(value: unknown): PlannerPlanSnapshot | null {
+  if (!isRecord(value)) {
+    return null;
+  }
+  const title = asString(value.title);
+  const dayCount = asNumber(value.dayCount);
+  if (title === null || dayCount === null || !Array.isArray(value.stops)) {
+    return null;
+  }
+  const stops: PlannerPlanSnapshot['stops'] = [];
+  for (const entry of value.stops) {
+    if (!isRecord(entry)) {
+      continue;
+    }
+    const name = asString(entry.name);
+    if (name === null) {
+      continue;
+    }
+    stops.push({
+      name,
+      day: asNumber(entry.day) ?? 1,
+      arrival: asString(entry.arrival) ?? '09:00',
+    });
+  }
+  return { title, dayCount, stops };
+}
+
 function parseMessages(value: unknown): PlannerChatMessage[] {
   if (!Array.isArray(value)) {
     return [];
@@ -178,6 +219,8 @@ function parseMessages(value: unknown): PlannerChatMessage[] {
       text,
       time: asString(entry.time) ?? '00:00',
       tone,
+      // 旧版本存的方案消息没有快照：留 null，渲染层退化为一句话摘要。
+      plan: tone === 'plan' ? parsePlanSnapshot(entry.plan) : null,
     });
   }
   return messages;
