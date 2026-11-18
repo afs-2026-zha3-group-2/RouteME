@@ -1,4 +1,4 @@
-/** 三级地图数据契约（refine-trip-map R2 / design D16）。 */
+/** 离线地名词典数据契约（三级 SVG 地图退役后只保留轻量索引口径）。 */
 
 export type Point = { x: number; y: number };
 
@@ -28,45 +28,4 @@ export type CityIndex = {
   kmPerX: number;
   kmPerY: number;
   pois: Poi[];
-};
-
-export type Road = { x1: number; y1: number; x2: number; y2: number; major?: boolean };
-export type WaterBand = { path: string; width: number };
-export type ParkBlock = { x: number; y: number; w: number; h: number };
-export type District = { name: string; x: number; y: number };
-
-/** 城市重数据：按城懒加载（registry 动态 import）。 */
-export type CityLayers = {
-  roads: Road[];
-  water: WaterBand[];
-  parks: ParkBlock[];
-  districts: District[];
-};
-
-export type Traveler = {
-  id: string;
-  name: string;
-  age: number;
-  homeCity: string;
-  /** 引用真实演示用户时提供，用于「查看资料」。 */
-  userId?: number;
-  /** 引用真实行程时提供，用于「发起同行邀请」跳申请入口。 */
-  tripId?: number;
-  tags: string[];
-  dateRange: [string, string];
-  /** 旅行者路线的 POI id 集合（重合度计算来源）。 */
-  route: string[];
-};
-
-export type CityMapData = {
-  layers: CityLayers;
-  travelers: Traveler[];
-};
-
-/** 中国地图省级单元（离线简化低多边形）。 */
-export type ProvinceShape = {
-  code: string;
-  name: string;
-  points: Point[];
-  label: Point;
 };

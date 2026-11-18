@@ -487,10 +487,10 @@ test('route strip click focuses the map and read-only pins carry no add action',
   await page.locator('.route-strip-card').nth(1).click();
   await expect(pins.nth(1).locator('.amap-stop-pin')).toHaveClass(/is-active/);
 
-  // R2：已选 pin 点击只聚焦，不弹加入动作卡（只读语义）。
+  // 已选 pin 点击只聚焦，不弹「加入」动作卡（只读语义）。
   await pins.first().click();
   await expect(pins.first().locator('.amap-stop-pin')).toHaveClass(/is-active/);
-  await expect(page.locator('.detail-map-section .map-callout')).toHaveCount(0);
+  await expect(section.getByRole('button', { name: '加入' })).toHaveCount(0);
 });
 
 test('detail page keeps the map and warns when a stop is off the gazetteer', async ({ page }) => {
