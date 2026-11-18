@@ -70,13 +70,13 @@
 ### D10 迁移与契约版本
 
 - **Context：** 当前 `openapi.yaml` `0.24.0`、Flyway 头 `V29`。
-- **Decision：** 契约升 `0.25.0`；迁移 `V30__report_credit_deduction.sql`，单文件兼容 SQLite / H2（两条 `ALTER TABLE ... ADD COLUMN`）。P4 实施前复核远端是否已占用 `0.25.0` / `V30`，被占则顺延。
+- **Decision：** 契约升 `0.26.0`；迁移 `V31__report_credit_deduction.sql`，单文件兼容 SQLite / H2（两条 `ALTER TABLE ... ADD COLUMN`）。P4 实施前复核远端是否已占用 `0.26.0` / `V31`，被占则顺延。
 - **Rejected：** 不改契约直接复用旧字段——请求语义已变；新建表——见 D3。
 
 ## 3. 数据模型
 
 ```sql
--- V30__report_credit_deduction.sql
+-- V31__report_credit_deduction.sql
 ALTER TABLE reports ADD COLUMN violation_type VARCHAR(32);
 ALTER TABLE reports ADD COLUMN applied_deduction INTEGER;
 ```
@@ -84,7 +84,7 @@ ALTER TABLE reports ADD COLUMN applied_deduction INTEGER;
 - 两列可空；历史行保持 null。
 - 无新表、无索引变更；幂等仍依赖 `ux_credit_ledger_idempotency`。
 
-## 4. 契约变更（`openapi.yaml` 0.25.0）
+## 4. 契约变更（`openapi.yaml` 0.26.0）
 
 ### 4.1 `AdminReportResolveRequest`
 

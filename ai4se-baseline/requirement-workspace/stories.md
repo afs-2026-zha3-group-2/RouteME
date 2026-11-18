@@ -488,25 +488,50 @@
 
 ---
 
-# Story list — REQ-028（S29 举报违规扣减信用分）
+# Story list — REQ-028（旅行保障与小额借款 / 旅行金融迭代 1）
+
+> 合并说明（2026-11-18）：本 change 已 rebase 到 `origin/main@822471c`；编号由 REQ-024 / S25 顺延为 **REQ-028 / S29**，契约 **0.25.0** + 迁移 **`V30`**；故事行与追溯表同步顺延。同日保险收敛为「第三方入口 + 状态回写」，Delta 为 10 Requirement / 40 Scenario。
+
+- **故事：** S29 旅行保障与小额借款（发起人 2026-11-17 原始诉求；优先级 P0；迭代 1；5 点；落点页面：行程详情 / 旅行保障页 / 账号聚合页）
+- **需求编号说明：** `main` 在 rebase 后已占用 REQ-001 ~ REQ-027，本需求按「后到者顺延」登记为 **REQ-028**、故事 **S29**（原 REQ-024 / S25）。
+- **Change：** `add-travel-finance`（`travel-finance` ADDED）
+- **垂直切片：** 只负责「钱包 → 第三方保险入口与状态回写 / 借小额 → 收 5% 服务费 → 还款 / 到期」；理赔、退保、罚息、充值提现、管理后台、通知与信用分影响不在本故事。
+- **规则口径：** 保险由第三方提供方定价与承保，RouteMe 只提供入口并回写状态、不向用户收平台费；借款本金扣 5% 后发放净额；每人 1 个钱包、最多 1 笔进行中借款；仅行程发布者与 `ACCEPTED` 同行者可用。
+
+# Story list — REQ-029（S30 举报违规扣减信用分）
 
 - **来源：** GitHub Issue #29「[P0] 举报违规扣减信用分」（信用系统迭代 1 / Story 2 / 3 点 / 落点页面：举报详情页 / 用户信用记录）
 - **Change：** `add-report-credit-deduction`（`user-credit` ADDED + `admin-console` MODIFIED）
 - **口径：** 一条故事 = 举报成立表单（违规类型 + 违规原因）+ 一份信用扣分结算 + 一次低分联动；账号处罚动作从举报页移除（用户管理页保留）。
-- **编号说明：** REQ-019…REQ-027 已占用，本需求登记为 **REQ-028**；现有最大故事号为 S28（安全学习恢复），本故事顺延为 **S29**。
+- **编号说明：** 合并 `origin/main@2bf9148` 时 REQ-028 / S29 已被 `add-travel-finance` 占用，本需求按「后到者顺延」改为 **REQ-029 / S30**（change id 不变）。
 - **更新时间：** 2026-11-18
 
 | Story | Title | 角色 | Priority | Iteration | Points | Page | Parent REQ | Change | Status |
 |---|---|---|---|---|---|---|---|---|---|
-| S29 | 举报违规扣减信用分 | 平台管理员 | P0 | 信用系统迭代 1 | 3 | 举报详情页 / 用户信用记录 | REQ-028 | `add-report-credit-deduction` | P1 drafted（2026-11-18） |
+| S29 | 旅行保障与小额借款 | 行程发布者 / 已加入同行者 | P0 | 旅行金融 1 | 5 | 行程详情 / 旅行保障页 / 账号聚合页 | REQ-028 | `add-travel-finance` | P4 implemented（2026-11-18） |
+| S30 | 举报违规扣减信用分 | 平台管理员 | P0 | 信用系统迭代 1 | 3 | 举报详情页 / 用户信用记录 | REQ-029 | `add-report-credit-deduction` | P4 implemented（2026-11-18） |
 
 ## Traceability（REQ-028）
 
 | Story | Requirement scenarios | Change spec | Story file |
 |---|---|---|---|
-| S29 | REQ-028 §4 R-1 ~ R-26 | `openspec/changes/add-report-credit-deduction/specs/user-credit/spec.md` + `specs/admin-console/spec.md` | 无独立故事文件：以意图 + proposal + Delta 承接（与 REQ-012 / REQ-019 同口径） |
+| S29 | REQ-028 §4 S29-1 ~ S29-33 | `openspec/changes/add-travel-finance/specs/travel-finance/spec.md`（ADDED，P2 定稿） | `requirement-workspace/stories/add-travel-finance.story.md` |
 
 ## Notes（REQ-028）
+
+- **不拆故事：** 钱包、第三方保险入口与状态、借款、5% 收费与账本必须同批交付；拆开后会出现「能买不能借」「状态对不上账」的不完整验收。
+- **单 capability：** 保险入口与借款共用钱包、资格与页面，合并为 `travel-finance`；不新建第二个金融 change。
+- **金额口径：** 整数分；借款只接受整元，保证 5% 恒为整数分，避免浮点与四舍五入争议；保险不出现金额字段。
+- **保留边界：** 真实保险机构 API / 核保 / 理赔、真实银行对接、征信、退保、罚息、钱包充值提现、管理后台金融视图与通知均排除（D10 / D12）。
+- **依赖：** `trip-plans` / `trip-companions` 只读；`user-auth` 注册事务内初始化钱包；`user-credit` 仅作账本范式参照，不读写信用分。
+
+## Traceability（REQ-029）
+
+| Story | Requirement scenarios | Change spec | Story file |
+|---|---|---|---|
+| S30 | REQ-029 §4 R-1 ~ R-26 | `openspec/changes/add-report-credit-deduction/specs/user-credit/spec.md` + `specs/admin-console/spec.md` | 无独立故事文件：以意图 + proposal + Delta 承接（与 REQ-012 / REQ-019 同口径） |
+
+## Notes（REQ-029）
 
 - **不拆故事：** 违规类型选择、扣分记账与低分联动是同一条垂直切片；拆开无法端到端验收。
 - **账号处置解耦：** 举报页不再暂停 / 封禁；用户管理页保留既有能力（D1）。

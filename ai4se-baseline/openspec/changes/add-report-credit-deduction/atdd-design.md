@@ -52,7 +52,7 @@
 
 ## 3. What is written before production code
 
-1. **契约先行（T1）：** `openapi.yaml` 先改为 `0.25.0`：`AdminReportResolveRequest` 字段替换、`ReportedUser` 增 `credit_score` / `credit_level`、`AdminReportDetail` 增 `violation_type` / `applied_deduction`；Redocly 先跑一次。
+1. **契约先行（T1）：** `openapi.yaml` 先改为 `0.26.0`：`AdminReportResolveRequest` 字段替换、`ReportedUser` 增 `credit_score` / `credit_level`、`AdminReportDetail` 增 `violation_type` / `applied_deduction`；Redocly 先跑一次。
 2. **API 用例先行：** `AdminReportControllerTest` 新增 A1–A18（A8 / A12 用集成测试）；先红。
 3. **前端单测先行：** `reportActionForm.test.ts` 重写校验与 `toResolveRequest`（U1–U3）；先红。
 4. **E2E 先行：** `admin.spec.ts`（或新 `admin-report-credit.spec.ts`）新增 E1–E9；先红后实现。

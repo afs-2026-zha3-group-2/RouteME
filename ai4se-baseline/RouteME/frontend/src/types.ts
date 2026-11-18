@@ -264,6 +264,8 @@ export type LeaveRecord = {
   applied_delta: number;
   monthly_ordinal: number;
   attachments: LeaveRecordAttachment[];
+  /** 这次退出所属的同行申请 id；旧数据可能为空。 */
+  application_id?: number | null;
 };
 
 export type TripCreateRequest = {
@@ -307,7 +309,27 @@ export type TripApplication = {
   status: ApplicationStatus;
   created_at: string;
   decided_at: string | null;
+  /** 状态原因码：USER_CANCEL / PUBLISHER_REJECT / USER_EXIT / TRIP_CANCELLED / TRIP_COMPLETED / CREDIT_RESTRICTION；旧后端缺省。 */
+  status_reason?: string | null;
   trip: TripSummary;
+};
+
+/** 「我申请的」按行程聚合后的状态计数；total 含当前这次申请。 */
+export type AppliedStatusCounts = {
+  total: number;
+  pending: number;
+  accepted: number;
+  rejected: number;
+  cancelled: number;
+  left: number;
+};
+
+/** 同一行程的多次申请聚成一行：latest 决定行状态与动作，history 供记录时间线使用。 */
+export type AppliedTripGroup = {
+  trip_id: number;
+  latest: TripApplication;
+  history: TripApplication[];
+  counts: AppliedStatusCounts;
 };
 
 export type ChatMessage = {
@@ -853,4 +875,129 @@ export type AdminDashboard = {
   reports: AdminDashboardReports;
   service_sessions: AdminDashboardServiceSessions;
   generated_at: string;
+};
+
+/**
+ * 旅行保障的金额字段一律是整数分（CNY），服务端下发、前端只负责格式化；
+ * 客户端提交的金额 / 费率 / 到期时间都不会被后端采信。
+ */
+export type Wallet = {
+  balance_cents: number;
+};
+
+export type WalletDirection = 'credit' | 'debit';
+
+export type WalletEntryType = 'loan_disbursement' | 'loan_repayment';
+
+export type WalletRelatedType = 'travel_loan';
+
+/** 钱包流水：按 `occurred_at` 升序返回，可用前后余额顺序回算。 */
+export type WalletLedgerEntry = {
+  id: number;
+  direction: WalletDirection;
+  amount_cents: number;
+  balance_before_cents: number;
+  balance_after_cents: number;
+  entry_type: WalletEntryType;
+  related_type: WalletRelatedType;
+  related_id: string;
+  occurred_at: string;
+};
+
+/** 第三方保险状态：未购买 / 保障中 / 已结束（结束态由保障结束日派生）。 */
+export type InsuranceStatus = 'not_purchased' | 'active' | 'expired';
+
+export type InsuranceProductCode =
+  | 'accident_medical'
+  | 'emergency_rescue'
+  | 'travel_baggage';
+
+/** 第三方保障类别：只描述范围，不含价格、保额与免责条款正文。 */
+export type InsuranceProduct = {
+  code: InsuranceProductCode;
+  title: string;
+  summary: string;
+};
+
+/** 实际保险服务提供方及其保单 / 理赔 / 紧急求助入口。 */
+export type InsuranceProvider = {
+  name: string;
+  policy_url: string;
+  claim_url: string;
+  emergency_url: string;
+};
+
+/** 第三方投保结果：RouteMe 只保存行程关联、提供方与保障期。 */
+export type InsurancePolicy = {
+  id: number;
+  trip_id: number;
+  provider: string;
+  coverage_start: string;
+  coverage_end: string;
+  status: 'active' | 'expired';
+  confirmed_at: string;
+};
+
+/** 行程维度的保险摘要：状态、提供方、保障类别、购买入口与自己的记录。 */
+export type InsuranceSummary = {
+  status: InsuranceStatus;
+  provider: InsuranceProvider;
+  products: InsuranceProduct[];
+  purchase_url: string | null;
+  policy: InsurancePolicy | null;
+};
+
+/** 第三方投保跳转地址；RouteMe 不在这一步扣款或生成记录。 */
+export type InsuranceRedirect = {
+  redirect_url: string;
+};
+
+export type LoanTermDays = 7 | 14 | 30;
+
+/** `overdue` 由「进行中且已过到期时刻」只读派生，不落库。 */
+export type LoanStatus = 'active' | 'repaid' | 'overdue';
+
+export type TravelLoan = {
+  id: number;
+  trip_id: number;
+  principal_cents: number;
+  service_fee_cents: number;
+  disbursed_cents: number;
+  repay_cents: number;
+  term_days: LoanTermDays;
+  status: LoanStatus;
+  funded_at: string;
+  due_at: string;
+  repaid_at: string | null;
+};
+
+export type FinanceIneligibleReason = 'not_participant' | 'trip_closed';
+
+/** 行程维度保障页：资格由后端判定，前端只渲染。 */
+export type TripFinance = {
+  trip_id: number;
+  trip_title: string;
+  destination: string;
+  trip_status: TripStatus;
+  start_date: string;
+  end_date: string;
+  companion_count: number;
+  is_eligible: boolean;
+  ineligible_reason: FinanceIneligibleReason | null;
+  wallet: Wallet;
+  insurance: InsuranceSummary;
+  loans: TravelLoan[];
+};
+
+/** 账号聚合页：钱包、全部流水、全部保险记录与全部借款。 */
+export type MyFinance = {
+  wallet: Wallet;
+  ledger: WalletLedgerEntry[];
+  policies: InsurancePolicy[];
+  loans: TravelLoan[];
+};
+
+export type LoanCreateRequest = {
+  principal_cents: number;
+  term_days: LoanTermDays;
 };

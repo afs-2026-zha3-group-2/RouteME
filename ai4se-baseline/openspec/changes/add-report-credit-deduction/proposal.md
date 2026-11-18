@@ -1,6 +1,6 @@
 # 变更提案：add-report-credit-deduction
 
-- **需求来源：** GitHub Issue [#29](https://github.com/afs-2026-zha3-group-2/RouteME/issues/29)「[P0] 举报违规扣减信用分」（Story 2 / 信用系统迭代 1 / 3 点 / 落点 举报详情页 / 用户信用记录）｜ **需求条目：** `requirement-workspace/requirements/REQ-028-report-credit-deduction.md`（26 条验收场景）
+- **需求来源：** GitHub Issue [#29](https://github.com/afs-2026-zha3-group-2/RouteME/issues/29)「[P0] 举报违规扣减信用分」（Story 2 / 信用系统迭代 1 / 3 点 / 落点 举报详情页 / 用户信用记录）｜ **需求条目：** `requirement-workspace/requirements/REQ-029-report-credit-deduction.md`（26 条验收场景）
 - **能力：** `user-credit`（ADDED Requirements：举报违规扣分规则 / 记账与幂等 / 低分联动）+ `admin-console`（MODIFIED Requirements：举报详情与处理）；两者既有 Requirement 均由未归档 change 提供（`add-credit-account` / `add-admin-console`），本变更 MUST 晚于它们归档
 - **规模：** S（1 个处置表单改造 + 1 条扣分记账 + 1 次迁移 + 契约升版；无新增端点）
 - **规则：** `@rule:spec-first`、`@rule:sdd-artifacts`、`@rule:api-contract`、`@rule:java-patterns`、`@rule:web-coding-style`、`@rule:tdd-cycle`、`@rule:prototype-ui-alignment`
@@ -28,7 +28,7 @@
 - **低分联动**：只经既有 `CreditChangedEvent` 消费；跌破 60 自动限制 / 清退，恰好 60 不触发；不新增限制逻辑或第二张限制表。
 - **账号处置解耦**：举报页 MUST NOT 改变账号状态；用户管理页的暂停 / 封禁 / 更新 / 恢复能力保持。
 - **契约与前端**：`openapi.yaml` 升次版本；前端举报详情页表单、预览、处理历史与错误映射同步。
-- **登记**：`stories.md` / `registry.md` / `handoff.md` 登记 REQ-028 → `add-report-credit-deduction`。
+- **登记**：`stories.md` / `registry.md` / `handoff.md` 登记 REQ-029 → `add-report-credit-deduction`。
 
 ## Out of Scope
 
@@ -44,7 +44,7 @@
 
 | 位置 | 改动 |
 |---|---|
-| `backend/src/main/resources/db/migration/V30__report_credit_deduction.sql`（新增，号待 P3 排他） | `reports` 追加 `violation_type` / `applied_deduction`（可空，兼容历史）；不建新表 |
+| `backend/src/main/resources/db/migration/V31__report_credit_deduction.sql`（新增，号待 P3 排他） | `reports` 追加 `violation_type` / `applied_deduction`（可空，兼容历史）；不建新表 |
 | 后端 `service/impl/AdminReportServiceImpl` | 成立分支改为「校验违规类型 → 计算扣分 → 条件更新报告 → `CreditService.book`」；移除 `applyPenalty` 与账号状态调用 |
 | 后端 `request/AdminReportResolveRequest` | 字段改为 `outcome` / `violation_type` / `other_deduction` / `note`；移除 `action` / `ban_*` |
 | 后端 `response/AdminReportDetailResponse` | 追加被举报用户当前信用分数与等级、违规类型、本次实际扣分（历史值可空） |
@@ -144,7 +144,7 @@
 - **月度口径：** 扣分不受体验获赞月度 +20 上限影响；本变更不引入扣分月度上限。
 - **低分限制：** 只经由既有 `CreditChangedEvent` 消费，不新增限制判定或第二张限制表（D3）。
 - **记录可见性：** 信用记录只在账本与举报详情留痕；不新增用户端 / 管理端信用明细页（D2）。
-- **契约与迁移排他：** `openapi.yaml` 当前 `0.24.0`、Flyway 头 `V29`；预计使用 `0.25.0` 与 `V30`，P3 按合并顺序排他确认。
+- **契约与迁移排他：** `openapi.yaml` 当前 `0.24.0`、Flyway 头 `V29`；预计使用 `0.26.0` 与 `V31`，P3 按合并顺序排他确认。
 - **历史不回填：** 已处理的举报不补扣、不重算。
 - **原型缺口：** 管理端举报处置界面不在原型 v1 中；P3 先补截点（`@rule:prototype-ui-alignment`）。
 - **归档顺序：** `admin-console` 与 `user-credit` 均未归档；本变更 MUST 排在 `add-admin-console` 与 `add-credit-account` 之后归档。
@@ -216,5 +216,5 @@
 | `resolution_action` 历史数据与新语义共存 | 旧举报仍显示历史动作 | 新值不再写入；旧值只读展示；不回填 |
 | 预览与实际截断不一致 | 管理员误解实际扣分 | 预览以服务端响应为准；E2E 断言 5 → -10 → 0 |
 | 并发 resolve 双重扣分 | 重复扣分 | 状态条件更新 + 账本幂等唯一索引双保险；单测覆盖 |
-| 契约 / 迁移号撞号 | 合并冲突 | P3 排他确认；预计 `0.25.0` + `V30` |
+| 契约 / 迁移号撞号 | 合并冲突 | P3 排他确认；预计 `0.26.0` + `V31` |
 | 管理端原型缺失 | 视觉无法对照 | P3 先补截点；只复用现有 `.admin-*` 令牌 |

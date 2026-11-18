@@ -1,6 +1,6 @@
 # P2 阶段记录 — add-report-credit-deduction
 
-- **Change：** `add-report-credit-deduction`（Issue #29 / REQ-028 / S29 举报违规扣减信用分）｜ **阶段：** P2（Spec align / G1）
+- **Change：** `add-report-credit-deduction`（Issue #29 / REQ-029 / S30 举报违规扣减信用分）｜ **阶段：** P2（Spec align / G1）
 - **日期：** 2026-11-18 ｜ **记录人：** Lewis（SM，当前开发者）
 - **基点：** `origin/main@822471c`（P1 提交后合并），分支 `feature/add-report-credit-deduction`
 
@@ -25,7 +25,7 @@
 | 历史举报无新字段 | Requirement 增加「空值降级展示、不报错」，新增「历史举报降级展示」场景 | `admin-console` Scenario 20 |
 | 驳回输入措辞 | 「填写违规原因」改为「填写驳回说明」，与处理说明定义一致 | `admin-console`「举报不成立」 |
 | Proposal 标题规范 | 核心标题改为 `Why` / `What Changes` / `Out of Scope` / `Impact`，DoR 引用同步 | `proposal.md` |
-| 迁移号顺延 | 合并 `origin/main@822471c` 后头为 `V29`，预计 `V30`；契约仍 `0.24.0` → 预计 `0.25.0` | proposal / REQ-028 / impact §25 / P1 记录 / README |
+| 迁移号顺延 | 合并 `origin/main@822471c` 后头为 `V29`，预计 `V31`；契约仍 `0.24.0` → 预计 `0.26.0` | proposal / REQ-029 / impact §29 / P1 记录 / README |
 
 ## 4. 校验
 
@@ -48,7 +48,7 @@
 | 项 | 说明 | Owner |
 |---|---|---|
 | W-1 / W-2 承接 | `tasks.md` 增加用户管理页处罚回归任务；ATDD 覆盖 401 / 403 / 404 | Dev |
-| 契约与迁移排他 | `0.24.0` → 预计 `0.25.0`；`V29` → 预计 `V30` | Dev |
+| 契约与迁移排他 | `0.24.0` → 预计 `0.26.0`；`V29` → 预计 `V31` | Dev |
 | OQ-1 违规类型枚举 | 复用 `BanReasonEnum` 或新建 `ReportViolationType`；映射只在一处 | Dev |
 | OQ-2 报告字段 | `violation_type` / `applied_deduction`；`resolution_action` 历史只读 | Dev |
 | OQ-3 已处理详情布局 | 违规原因全文与处理结果分行 | IO / Dev |

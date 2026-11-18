@@ -1,6 +1,6 @@
 # G1 decision — add-report-credit-deduction
 
-- **Change id：** `add-report-credit-deduction`（Issue #29 / REQ-028 / S29）
+- **Change id：** `add-report-credit-deduction`（Issue #29 / REQ-029 / S30）
 - **Gate：** G1（Align）
 - **Date：** 2026-11-18
 - **Inputs：**

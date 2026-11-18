@@ -2,15 +2,15 @@
 
 - **Change：** `add-report-credit-deduction`｜ **阶段：** P3｜ **日期：** 2026-11-18
 - **设计输入：** [`design.md`](design.md)（D1–D10）、[`atdd-design.md`](atdd-design.md)（A1–A18 / E1–E9 / R1–R5）
-- **契约 / 迁移：** `openapi.yaml` `0.24.0` → `0.25.0`；Flyway `V29` → `V30__report_credit_deduction.sql`（P4 开工前复核占用）
+- **契约 / 迁移：** `openapi.yaml` `0.24.0` → `0.26.0`；Flyway `V29` → `V31__report_credit_deduction.sql`（P4 开工前复核占用）
 
 ## P4 执行顺序
 
 > 契约先行 → 迁移 → 后端 → 前端 → E2E → 门禁 → 记录。每个任务先写失败用例（ATDD / TDD），再实现。
 > 任务编号 1.x 为 OpenSpec checkbox 格式；P3 评审报告中的 T1–T12 与本表一一对应。
 
-- [x] 1.1 契约先行：`openapi.yaml` 升 `0.25.0`；改 `AdminReportResolveRequest`、扩 `ReportedUser`、扩 `AdminReportDetail`；同步前端 `types.ts` / `api.ts`（A4 / A15 / A16 / A18；产物：`openapi.yaml`、`types.ts`；验证：Redocly 0 error）
-- [x] 1.2 迁移 `V30__report_credit_deduction.sql`（两列可空）；`ReportEntity` / `Report` 映射（A5 / A16 / R4；产物：迁移 + entity / pojo；验证：SQLite + H2、`V29 → V30` 升级）
+- [x] 1.1 契约先行：`openapi.yaml` 升 `0.26.0`；改 `AdminReportResolveRequest`、扩 `ReportedUser`、扩 `AdminReportDetail`；同步前端 `types.ts` / `api.ts`（A4 / A15 / A16 / A18；产物：`openapi.yaml`、`types.ts`；验证：Redocly 0 error）
+- [x] 1.2 迁移 `V31__report_credit_deduction.sql`（两列可空）；`ReportEntity` / `Report` 映射（A5 / A16 / R4；产物：迁移 + entity / pojo；验证：SQLite + H2、`V30 → V31` 升级（`V30` 已被 `add-travel-finance` 占用））
 - [x] 1.3 新增 `ReportViolationEnum`（8 码值 + 固定扣分 + OTHER 校验）；新增 `CreditService.snapshot`（只读、缺失 80）（A1 / A2 / A3 / A10 / A15；验证：映射 / 档位 / 不写库 UT）
 - [x] 1.4 重写 `AdminReportServiceImpl.resolve`：类型校验 → 计算 → 条件更新 → `book`；移除 `applyPenalty` / 账号状态调用；详情 / 列表补信用与违规字段（A1–A7 / A9–A11 / A13–A18 / R2 / R5；验证：`AdminReportControllerTest`）
 - [x] 1.5 并发与低分联动集成测试：A8（2 线程）、A12（80 -30 → 限制 + 清退）、A14（已受限不重复）（验证：1 条账本 / 1 条限制 / 清退断言）

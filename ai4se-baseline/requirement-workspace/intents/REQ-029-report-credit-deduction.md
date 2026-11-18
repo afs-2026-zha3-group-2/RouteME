@@ -1,10 +1,10 @@
-# 意图捕获 — REQ-028 举报违规扣减信用分（issue #29）
+# 意图捕获 — REQ-029 举报违规扣减信用分（issue #29）
 
 - **候选能力：** `user-credit`（ADDED：举报违规扣分结算）+ `admin-console`（MODIFIED：举报处置表单与接口）
 - **来源：** GitHub Issue [#29](https://github.com/afs-2026-zha3-group-2/RouteME/issues/29)「[P0] 举报违规扣减信用分」（`afs-2026-zha3-group-2/RouteME`，2026-11-18 读取）；Story 2 / 信用系统迭代 1 / 3 点；落点页面「举报详情页 / 用户信用记录」
 - **捕获日期：** 2026-11-18 ｜ **记录人：** Lewis（SM，本 change 当前开发者）
 - **分支：** `feature/add-report-credit-deduction`（独立 worktree，从 `origin/main@f0d093a` 切出）
-- **编号说明：** REQ-019…REQ-027 已被既有 change 占用；本需求按登记顺序定为 **REQ-028**。故事按登记顺序顺延为 **S29**（S19 为信用系统 Story 1，S25–S28 已被退出扣分 / 安全学习故事占用）。
+- **编号说明：** REQ-019…REQ-027 已被既有 change 占用；本需求按登记顺序定为 **REQ-029**。故事按登记顺序顺延为 **S30**（S19 为信用系统 Story 1，S25–S28 已被退出扣分 / 安全学习故事占用）。
 - **范围说明：** issue 只定义「举报成立 → 按违规类型扣分」。用户 2026-11-18 裁决定界：举报处置表单**只保留违规类型与违规原因，移除账号处罚动作与封禁理由选择**；扣分由服务端按类型自动计算，管理员不直接选扣分值（「其他原因」按 issue 原文选 -5/-10/-20/-30）；账号暂停 / 封禁仍走用户管理页（既有 S20 能力），不在举报页发起。
 
 ## 原始意图（一句话）
@@ -35,7 +35,7 @@
 | 管理端账号处置可独立执行 | 用户详情页 `StatusActionModal` + `AdminUserController`（暂停 / 封禁 / 更新封禁 / 恢复） | 从举报页移除处罚动作不会丢失账号处置能力 |
 | 举报详情页已有处理历史区 | `AdminReportDetailPage`：处理人 / 处理时间 / 完成时间 / 处罚动作 / 处理结果 | 需把「处罚动作」改为「违规类型 + 本次扣分」，并补当前分数与预览 |
 | 被举报用户推导唯一 | `ReportTargetService.reportedUserId(report)`：用户 = 本人、行程 = 发布者、体验 = 作者 | 扣分对象无需新增字段 |
-| 契约与迁移头 | `openapi.yaml` `0.24.0`、Flyway 头 `V29__credit_exit_application.sql` | 迁移 / 契约号 P3 排他确认（预计 `V30` / `0.25.0`） |
+| 契约与迁移头 | `openapi.yaml` `0.24.0`、Flyway 头 `V29__credit_exit_application.sql` | 迁移 / 契约号 P3 排他确认（预计 `V31` / `0.26.0`） |
 | 原型无举报处置界面 | `docs/prototype` grep `举报` 仅命中用户侧入口与回执 | P3 先补管理端截点（`@rule:prototype-ui-alignment`） |
 
 ## 用户裁决（2026-11-18）

@@ -1,6 +1,6 @@
 # P3 阶段记录 — add-report-credit-deduction
 
-- **Change：** `add-report-credit-deduction`（Issue #29 / REQ-028 / S29）｜ **阶段：** P3（Design & decompose）
+- **Change：** `add-report-credit-deduction`（Issue #29 / REQ-029 / S30）｜ **阶段：** P3（Design & decompose）
 - **日期：** 2026-11-18 ｜ **记录人：** Lewis（SM，当前开发者）
 - **基点：** `origin/main@822471c`（已并入 `5cb67ff`）；分支 `feature/add-report-credit-deduction`
 
@@ -14,7 +14,7 @@
 |---|---|---|
 | 原型截点 | [`docs/prototype/admin-report-resolve.html`](../../prototype/admin-report-resolve.html) | 三态（处理中 / 已成立 / 已驳回）+ OTHER 档位 + 三段预览 + 浅深色；令牌与实现 `styles.css` 同值 |
 | ATDD 设计 | [`atdd-design.md`](../../../openspec/changes/add-report-credit-deduction/atdd-design.md) | API A1–A18 / E2E E1–E9 / 反向 R1–R5；NFR 经用户确认不纳入 |
-| 技术设计 | [`design.md`](../../../openspec/changes/add-report-credit-deduction/design.md) | D1–D10；契约 `0.25.0`、迁移 `V30`；`ReportViolationEnum` + `CreditService.snapshot` |
+| 技术设计 | [`design.md`](../../../openspec/changes/add-report-credit-deduction/design.md) | D1–D10；契约 `0.26.0`、迁移 `V31`；`ReportViolationEnum` + `CreditService.snapshot` |
 | 任务分解 | [`tasks.md`](../../../openspec/changes/add-report-credit-deduction/tasks.md) | T1–T12；Alignment self-check 9/9 Pass |
 | 设计评审 | [`docs/reviews/20261118-add-report-credit-deduction-design-review.md`](../../reviews/20261118-add-report-credit-deduction-design-review.md) | Verdict Pass；0 BLOCKER / 0 WARNING / 3 SUGGESTION；工件 Lewis + Jay，报告 WAYNE + Lewis |
 | 任务评审 | [`docs/reviews/20261118-add-report-credit-deduction-tasks-review.md`](../../reviews/20261118-add-report-credit-deduction-tasks-review.md) | Verdict Pass；0 BLOCKER / 0 WARNING / 3 SUGGESTION；工件 Lewis + Jay，报告 WAYNE + Lewis |
@@ -33,7 +33,7 @@
 | D7 | 成立时 `resolution_action=null`，驳回保留 `REJECT` | 成立写 `KEEP` |
 | D8 | 当前分来自服务端，扣分映射双端同值；按 0 截断 | 详情下发规则表 / 预览端点 |
 | D9 | 表单状态改为 `outcome` / `note` / `violationType` / `otherDeduction` | 保留旧字段 |
-| D10 | 契约 `0.25.0` + 迁移 `V30`；P4 开工前复核占用 | 不改契约 / 新建表 |
+| D10 | 契约 `0.26.0` + 迁移 `V31`；P4 开工前复核占用 | 不改契约 / 新建表 |
 
 ## 4. 校验
 
@@ -59,7 +59,7 @@
 
 | 项 | 说明 | Owner |
 |---|---|---|
-| 契约 / 迁移号 | `0.25.0` + `V30`；开工前复核远端占用，被占则顺延 | Dev |
+| 契约 / 迁移号 | `0.26.0` + `V31`；开工前复核远端占用，被占则顺延 | Dev |
 | T4 / T9 分批 | T4 按 A1–A7 / A9–A18 两批；T9 先 E1–E4 再 E5–E9 | Dev |
 | 前后端映射一致 | `ReportViolationEnum` 与 `reportViolation.ts` 用同一组样例断言 | Dev |
 | 历史数据 | 历史举报 `violation_type` / `applied_deduction` 为 null；E7 / T4 覆盖 | Dev |

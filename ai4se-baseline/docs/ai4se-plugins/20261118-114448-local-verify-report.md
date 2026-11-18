@@ -21,17 +21,19 @@
 
 | Command | Source | Exit | Summary |
 |---------|--------|------|---------|
-| `./mvnw.cmd -B -o verify`（ai4se-baseline/RouteME/backend） | `.github/workflows/ci.yml` | 0 | **596 tests / 88 classes，0 failures / 0 errors**，BUILD SUCCESS（含 V1–V30；合并 `origin/main@23c1088` 后复验） |
+| `./mvnw.cmd -B -o verify`（ai4se-baseline/RouteME/backend） | `.github/workflows/ci.yml` | 0 | **640 tests / 93 classes，0 failures / 0 errors**，BUILD SUCCESS（含 V1–V31；合并 `origin/main@2bf9148` 后复验） |
 | `npm run typecheck`（ai4se-baseline/RouteME/frontend） | `.github/workflows/ci.yml` | 0 | `tsc --noEmit` 通过 |
-| `npm run test`（ai4se-baseline/RouteME/frontend） | `.github/workflows/ci.yml` | 0 | **492 tests / 61 files passed**（合并后复验） |
+| `npm run test`（ai4se-baseline/RouteME/frontend） | `.github/workflows/ci.yml` | 0 | **515 tests / 63 files passed**（合并后复验） |
 | `npm run build`（ai4se-baseline/RouteME/frontend） | `.github/workflows/ci.yml` | 0 | 构建成功；仅既有主 chunk >500 kB 警告 |
-| `npx --no-install @redocly/cli lint openapi.yaml`（ai4se-baseline/RouteME） | T1 验证 | 0 | valid；**0 error / 25 warning**，warnings 均为既有 invalid-example 示例，无 `/admin/reports` 路径 |
+| `npx --yes @redocly/cli lint openapi.yaml`（ai4se-baseline/RouteME） | T1 验证 | 0 | valid；**0 error / 26 warning**，warnings 均为既有 invalid-example 示例，无 `/admin/reports` 路径 |
 | `npx openspec validate add-report-credit-deduction --strict`（ai4se-baseline） | P2/P3 同口径 | 0 | valid；INFO 提示 `admin-console` 需待 `add-admin-console` 归档后才能归档（C4 已知约束） |
 | `npx playwright test tests/admin-report-credit.spec.ts tests/admin.spec.ts`（ai4se-baseline/RouteME/e2e） | atdd-design §4 | 0 | **17 passed**：新增 6 + admin 回归 11；合并后复验仍 17/17 |
 
-**合并复验（`origin/main@23c1088`）：** 无冲突；`openapi.yaml` 仍为 `0.25.0`、迁移头仍为 `V30`；后端 **596/596**、前端 **492/492** + `build`、E2E **17/17**、OpenSpec valid、Redocly valid。
+**合并复验（第一次，`origin/main@23c1088`）：** 无冲突；复验后端 596 / 前端 492 / E2E 17/17。
 
-**E2E 隔离环境：** 全新 SQLite `C:\Git\ITA\RouteME\.worktrees\add-report-credit-deduction\.e2e-data\routeme.db`（V1–V30 重放）；后端 `8082`（终端复用导致 `SERVER_PORT` 覆盖计划值 8081）+ Vite `5174` + `ROUTEME_E2E_BASE_URL=http://localhost:5174`。
+**合并复验（第二次，`origin/main@2bf9148`，含 `add-travel-finance`）：** 冲突仅 4 份需求工作区台账，均保留双方内容；号位按「后到者顺延」改为 **REQ-029 / S30 / V31 / 0.26.0**（`V30__report_credit_deduction.sql` → `V31__report_credit_deduction.sql`；意图 / Ready 文件更名；`OpenApiTest` 版本断言同步）；复验后端 **640/640（93 classes）**、前端 **515/515（63 files）** + `build`、E2E **17/17**、OpenSpec valid、Redocly valid（0 error / 26 既有 warning）。
+
+**E2E 隔离环境：** 全新 SQLite `C:\Git\ITA\RouteME\.worktrees\add-report-credit-deduction\ai4se-baseline\.e2e-data\routeme-v31.db`（V1–V31 重放）；后端 `8082` + Vite `5174` + `ROUTEME_E2E_BASE_URL=http://localhost:5174`。
 
 ## Code-review highlights
 

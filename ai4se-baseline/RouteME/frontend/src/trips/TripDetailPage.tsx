@@ -23,11 +23,15 @@ import {
   loadTrip,
   loadTripApplications,
   loadTripExperiences,
+  loadTripFinance,
   saveTripMeeting,
 } from '../api';
 import { aiMessages } from '../ai/aiMessages';
 import { centsToYuan, sumBudgetCents } from '../ai/budgetMath';
 import { tripMessages } from '../i18n/tripMessages';
+import { financeMessages } from '../i18n/financeMessages';
+import { financeEntryVisible } from '../finance/financeEligibility';
+import { insuranceStatusLabel } from '../finance/financeLabels';
 import { CreditRestrictedNotice } from '../credit/CreditRestrictedNotice';
 import { useMyCredit } from '../credit/CreditContext';
 import { intensityLabel } from '../experiences/experienceForm';
@@ -42,7 +46,7 @@ import { creditLine, creditRestrictedBadge, creditTone } from '../profile/credit
 import { useUserCredits } from '../profiles/useUserCredits';
 import { ReportModal } from '../safety/ReportModal';
 import { Avatar } from '../shell/Avatar';
-import type { AiItinerarySnapshot, DemoUser, Experience, TripApplication } from '../types';
+import type { AiItinerarySnapshot, DemoUser, Experience, InsuranceSummary, TripApplication } from '../types';
 import { WeatherCard } from '../weather/WeatherCard';
 import { applicationEntryState, applicationErrorMessage } from './applicationEntry';
 import { CompanionCard } from './CompanionCard';
@@ -110,6 +114,7 @@ export function TripDetailPage({ currentUser, tripId }: Props) {
   const [confirmAction, setConfirmAction] = useState<'complete' | 'cancelApply' | null>(null);
   const [reportOpen, setReportOpen] = useState(false);
   const [experiences, setExperiences] = useState<Experience[] | null>(null);
+  const [insurance, setInsurance] = useState<InsuranceSummary | null>(null);
 
   const updateExperience = (next: Experience) => {
     setExperiences((previous) =>
@@ -148,6 +153,25 @@ export function TripDetailPage({ currentUser, tripId }: Props) {
       active = false;
     };
   }, [currentUser.id, tripId]);
+
+  // 行程详情「安全保障」区的保险状态：仅发布者 / ACCEPTED 同行者请求，失败时退回未购买。
+  useEffect(() => {
+    if (state.status !== 'ready' || !financeEntryVisible(state.trip, currentUser.id)) {
+      setInsurance(null);
+      return;
+    }
+    let active = true;
+    loadTripFinance(currentUser.id, state.trip.id)
+      .then((loaded) => {
+        if (active) {
+          setInsurance(loaded.insurance);
+        }
+      })
+      .catch(() => undefined);
+    return () => {
+      active = false;
+    };
+  }, [currentUser.id, tripId, state.status]);
 
   useEffect(() => {
     const isPublisher = state.status === 'ready' && state.trip.publisher.id === currentUser.id;
@@ -545,6 +569,51 @@ export function TripDetailPage({ currentUser, tripId }: Props) {
               </div>
             )}
           </section>
+
+          {financeEntryVisible(trip, currentUser.id) && (
+            <section className="detail-section fin-entry">
+              <h3 className="section-title">{financeMessages.tripSectionTitle}</h3>
+              <p className="detail-meta" data-testid="trip-insurance-status">
+                {financeMessages.insuranceStatusLabel}：
+                {insuranceStatusLabel(insurance?.status ?? 'not_purchased')}
+              </p>
+              {insurance?.policy ? (
+                <p className="detail-meta" data-testid="trip-insurance-period">
+                  {financeMessages.insurancePeriodLabel}：
+                  {financeMessages.insurancePeriod(
+                    insurance.policy.coverage_start,
+                    insurance.policy.coverage_end,
+                  )}
+                </p>
+              ) : (
+                <p className="detail-meta">{financeMessages.insuranceEntryHint}</p>
+              )}
+              <div className="detail-actions">
+                <Button
+                  type="primary"
+                  onClick={() => (window.location.hash = `#/trips/${trip.id}/finance`)}
+                >
+                  {insurance?.policy
+                    ? financeMessages.insuranceEntryDetail
+                    : financeMessages.insuranceEntryOpen}
+                </Button>
+                {insurance?.policy && (
+                  <Button
+                    onClick={() =>
+                      window.open(insurance.provider.emergency_url, '_blank', 'noopener,noreferrer')
+                    }
+                  >
+                    {financeMessages.insuranceEntryEmergency}
+                  </Button>
+                )}
+              </div>
+              {insurance && (
+                <p className="detail-meta">
+                  {financeMessages.insuranceProviderDisclaimer(insurance.provider.name)}
+                </p>
+              )}
+            </section>
+          )}
 
           <section className="detail-section">
             <h3 className="section-title">{tripMessages.detailPublisher}</h3>
