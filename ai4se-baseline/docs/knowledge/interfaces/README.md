@@ -37,7 +37,7 @@ API、事件与集成契约。字段一律 snake_case；时间字段为 RFC3339 
 | POST | `/trips/{tripId}/experiences` | 发布或修改我的体验；首次 201、更新 200 ；`{content, intensity, advice}` |
 | POST | `/experiences/{experienceId}/likes` | 点赞他人体验；首次 201、已赞 200，返回 `{experience_id, like_count, is_liked}`；自赞 403、体验不存在 404 |
 | DELETE | `/experiences/{experienceId}/likes` | 取消点赞；未赞也幂等 204；体验不存在 404 |
-| GET | `/weather/forecast` | 目的地单日天气（Open-Meteo，公开只读）；`destination_code` 与可选 `lng`/`lat` 至少一组 + `date` ；越界 200 + `available=false`（`OUT_OF_RANGE`），上游失败 502 `WEATHER_UPSTREAM_ERROR` |
+| GET | `/weather/forecast` | 目的地单日天气（Open-Meteo，公开只读）；`destination_code` 与可选 `lng`/`lat` 至少一组 + `date` ；越界 200 + `available=false`（`OUT_OF_RANGE`），上游失败 502 `WEATHER_UPSTREAM_ERROR`；主用 `api.open-meteo.com` 连接层失败时自动切到同一数据源的集合接口 `ensemble-api.open-meteo.com`（`source` 仍为 `open-meteo`，不提供降雨概率时为 null） |
 - 所有 `/trips*`、`/matches*`、`/me/*`、`/applications/*`、`/reports` 请求要求 `X-User-Id`（`app_users.id`）；缺失或未知返回 401 `DEMO_USER_REQUIRED`。
 - 列表只返回未结束行程；`sort` 非法返回 400。
 - 分页：`/trips`、`/matches`、`/experiences` 返回 `{items, page, size, total, total_pages}`；`page` 从 1 起、`size` 默认 20 且上限 50，越界返回 400 `INVALID_INPUT`。`/me/*` 与 `/trips/{id}/experiences` 仍返回数组。
@@ -109,9 +109,9 @@ API、事件与集成契约。字段一律 snake_case；时间字段为 RFC3339 
 | POST | `/trips/{tripId}/insurance/confirm` | 演示 / 第三方确认后回写状态；幂等，每 (user, trip) 1 条 |
 | POST | `/trips/{tripId}/loans` | 申请借款（本金整元 100–2,000，期限 7 / 14 / 30 天） |
 | GET | `/me/finance` | 账号聚合页：钱包、全部流水、保险记录与借款 |
-| POST | `/loans/{loanId}/repay` | 手动还款（按本金全额扣款，0 利息） |
+| POST | `/loans/{loanId}/repay` | 手动还款（本金 + 利息 + 截至还款时刻的逾期罚息） |
 
-- 金额一律为整数分（`*_cents`）；借款 5% 从本金扣除后发放净额；应还 = 本金；保险不出现金额字段。
+- 金额一律为整数分（`*_cents`）；借款 5% 从本金扣除后发放净额；利息 = 本金 × 0.05%/日 × 期限天数，应还 = 本金 + 利息；逾期另按本金 0.1%/日加收罚息，还款时一并结清；保险不出现金额字段。
 - 保险由第三方提供方承保与定价，提供方名称与投保 / 保单 / 理赔 / 求助地址来自 `routeme.insurance.*` 配置；保障期取行程起止日，`EXPIRED` 在读取时派生；不保存保单号 / 证件 / 银行卡 / 保费 / 保额。
 - 资格：行程发布者或 `ACCEPTED` 同行者，且行程 `recruiting` / `full` / `ongoing`；投保入口 / 回写 / 借款要求账号 `ACTIVE`，还款不因账号状态阻断。
 - 演示钱包每用户 1 个（初始 10,000 元）；同一用户至多 1 笔进行中借款。

@@ -79,7 +79,7 @@ class OpenApiTest {
 
         // Then
         assertAll(
-                () -> assertEquals("0.27.0", info.get("version"), "info.version"),
+                () -> assertEquals("0.29.0", info.get("version"), "info.version"),
                 () -> assertTrue(responses(likeExperience).containsKey("201"), "first like returns 201"),
                 () -> assertTrue(responses(likeExperience).containsKey("200"), "duplicate like returns 200"),
                 () -> assertTrue(responses(likeExperience).containsKey("403"), "self like returns 403"),
@@ -156,7 +156,7 @@ class OpenApiTest {
 
         // Then
         assertAll(
-                () -> assertEquals("0.27.0", info.get("version"), "info.version"),
+                () -> assertEquals("0.29.0", info.get("version"), "info.version"),
                 () -> assertTrue(paths(document).containsKey("/users"), "/users declared"),
                 () -> assertTrue(paths(document).containsKey("/trips/{tripId}"), "detail path declared"),
                 () -> assertTrue(
@@ -389,11 +389,19 @@ class OpenApiTest {
                 () -> assertTrue(
                         properties(profile).keySet().containsAll(List.of(
                                 "avatar_url", "birthday", "age", "zodiac", "gender", "city", "school", "major", "job",
-                                "mbti", "travel_style", "bio", "joined_at", "stats")),
+                                "mbti", "travel_style", "bio", "joined_at", "stats",
+                                "route_completion_state", "route_completion_rate")),
                         "profile derived and optional fields"),
                 () -> assertTrue(
-                        required(profile).stream().noneMatch(List.of("joined_at", "stats")::contains),
-                        "joined_at and stats are optional"),
+                        required(profile).containsAll(List.of("route_completion_state")),
+                        "route completion state is required"),
+                () -> assertTrue(
+                        required(profile).stream().noneMatch(List.of("joined_at", "stats", "route_completion_rate")::contains),
+                        "joined_at, stats and route_completion_rate are optional"),
+                () -> assertTrue(
+                        enums(properties(profile).get("route_completion_state")).containsAll(
+                                List.of("good", "neutral", "watch", "insufficient")),
+                        "route completion state enum"),
                 () -> assertTrue(
                         required(profileStats).containsAll(List.of("published", "completed", "joined", "shared")),
                         "profile stats fields"),
@@ -741,7 +749,7 @@ class OpenApiTest {
 
         // Then
         assertAll(
-                () -> assertEquals("0.27.0", info.get("version"), "info.version"),
+                () -> assertEquals("0.29.0", info.get("version"), "info.version"),
                 () -> assertTrue(paths(document).keySet().containsAll(ADMIN_CONSOLE_PATHS), "admin console paths"),
                 () -> assertEquals(17L, adminOperations, "admin console operations"),
                 () -> assertTrue(
@@ -872,7 +880,7 @@ class OpenApiTest {
 
         // Then
         assertAll(
-                () -> assertEquals("0.27.0", asMap(document.get("info")).get("version"), "info.version"),
+                () -> assertEquals("0.29.0", asMap(document.get("info")).get("version"), "info.version"),
                 () -> assertTrue(responses(startSession).containsKey("201"), "session start returns 201"),
                 () -> assertTrue(
                         responses(startSession).keySet().containsAll(List.of("401", "404", "409", "429")),
@@ -1048,7 +1056,7 @@ class OpenApiTest {
 
         // Then
         assertAll(
-                () -> assertEquals("0.27.0", info.get("version"), "info.version"),
+                () -> assertEquals("0.29.0", info.get("version"), "info.version"),
                 () -> assertTrue(
                         paths(document).keySet().containsAll(List.of(
                                 "/trips/{tripId}/finance",
@@ -1132,6 +1140,10 @@ class OpenApiTest {
                         List.of("active", "repaid", "overdue"),
                         enums(properties(loan).get("status")),
                         "loan status enum"),
+                () -> assertTrue(
+                        required(loan).containsAll(List.of(
+                                "interest_cents", "repay_cents", "penalty_cents", "total_repay_cents")),
+                        "loan exposes interest, penalty and total repayment"),
                 () -> assertEquals(
                         List.of(7, 14, 30),
                         properties(loan).get("term_days").get("enum"),
@@ -1297,7 +1309,7 @@ class OpenApiTest {
 
         // Then
         assertAll(
-                () -> assertEquals("0.27.0", info.get("version"), "info.version"),
+                () -> assertEquals("0.29.0", info.get("version"), "info.version"),
                 () -> assertTrue(
                         paths(document).containsKey("/notifications")
                                 && paths(document).containsKey("/notifications/stream")

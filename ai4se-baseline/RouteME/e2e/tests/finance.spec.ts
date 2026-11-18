@@ -6,8 +6,8 @@ const API = '/api';
 /** 新账号的钱包固定从 1,000,000 分（¥10,000.00）开始。 */
 const INITIAL_BALANCE = '¥10,000.00';
 const AFTER_LOAN = '¥10,950.00';
-/** 还清后余额 = 初始余额 − 5% 服务费（50 元）。 */
-const AFTER_REPAY = '¥9,950.00';
+/** 还清后余额 = 初始余额 − 5% 服务费（50 元）− 14 天利息（7 元）。 */
+const AFTER_REPAY = '¥9,943.00';
 
 async function expectBalance(page: Page, value: string) {
   await expect(page.getByTestId('wallet-balance')).toHaveText(value);
@@ -81,9 +81,10 @@ test('publisher opens third-party insurance, syncs the state, borrows and repays
   await termGroup.locator('.ant-segmented-item', { hasText: '14 天' }).click();
   await expect(termGroup.locator('.ant-segmented-item-selected')).toHaveText('14 天');
 
-  // 借 1,000 元 / 14 天：到账 950.00，应还 1,000.00。
+  // 借 1,000 元 / 14 天：到账 950.00，应还 1,000.00 + 利息 7.00 = 1,007.00。
   await expect(page.getByTestId('loan-preview')).toContainText('¥950.00');
-  await expect(page.getByTestId('loan-preview')).toContainText('¥1,000.00');
+  await expect(page.getByTestId('loan-preview')).toContainText('¥1,007.00');
+  await expect(page.getByTestId('loan-preview')).toContainText('利息 ¥7.00');
   await page.getByRole('button', { name: '申请借款' }).click();
   await expectBalance(page, AFTER_LOAN);
   await expect(page.getByText('你已有一笔进行中的借款，还清后才能再次申请。')).toBeVisible();
@@ -104,7 +105,7 @@ test('publisher opens third-party insurance, syncs the state, borrows and repays
   await expect(page.getByText('第三方保险机构', { exact: false }).first()).toBeVisible();
   await expect(page.getByRole('heading', { name: '钱包流水' })).toBeVisible();
 
-  // 手动还款：扣本金 1,000.00，借款转为已还清。
+  // 手动还款：扣本金 1,000.00 + 利息 7.00，借款转为已还清。
   await page.getByRole('button', { name: '立即还款' }).click();
   await page.locator('.ant-modal-confirm-btns button.ant-btn-primary').click();
   await expect(page.getByText('已还清').first()).toBeVisible();

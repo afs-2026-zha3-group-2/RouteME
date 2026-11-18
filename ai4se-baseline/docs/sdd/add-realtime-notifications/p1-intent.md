@@ -1,6 +1,6 @@
 # P1 意图记录 — add-realtime-notifications
 
-- **Change：** `add-realtime-notifications`（REQ-031 / 实时通知中心与未读计数）｜ **阶段：** P1（Intent & proposal）
+- **Change：** `add-realtime-notifications`（REQ-032 / 实时通知中心与未读计数）｜ **阶段：** P1（Intent & proposal）
 - **日期：** 2026-11-17（首版）；2026-11-18（八类扩围） ｜ **记录人：** Karena（当前开发者，已向发起人确认）
 - **分支 / 基点：** `feature/add-realtime-notifications`（直接基于 `main@1189b65`；P3 前合流 `main@357f5e2`）
 
@@ -19,10 +19,10 @@
 | 工件 | 路径 | 摘要 |
 |---|---|---|
 | 基线 | [`p0-baseline.md`](p0-baseline.md) | 起点后端 434 / 前端 344 全绿；无通知表 / 推送通道 / 徽标 / 通知中心；聊天仅对当前会话 3 秒轮询；G-01 ~ G-08 |
-| 意图捕获 | [`intents/REQ-031-realtime-notifications.md`](../../../requirement-workspace/intents/REQ-031-realtime-notifications.md) | 原始观察、八类扩围、约束、OQ-1 ~ OQ-8 与结论；Discovery Decision `Go` |
-| Ready 需求 | [`requirements/REQ-031-realtime-notifications.md`](../../../requirement-workspace/requirements/REQ-031-realtime-notifications.md) | 六字段 + 36 场景（S32-1 ~ S32-36）+ OQ 8 条（全 resolved）+ DoR（BLOCKER 0） |
-| 故事 | [`stories.md`](../../../requirement-workspace/stories.md) REQ-031 段；[`stories/add-realtime-notifications.story.md`](../../../requirement-workspace/stories/add-realtime-notifications.story.md) | S32-1 ~ S32-8 与追溯矩阵 |
-| Deep-dive | [`deep-dive.md`「REQ-031 增补」](../../../requirement-workspace/deep-dive.md) | ① 数据契约 / ② 边界归属 / ③ 跨 REQ 一致 / ④ 展示契约 + 探针 |
+| 意图捕获 | [`intents/REQ-032-realtime-notifications.md`](../../../requirement-workspace/intents/REQ-032-realtime-notifications.md) | 原始观察、八类扩围、约束、OQ-1 ~ OQ-8 与结论；Discovery Decision `Go` |
+| Ready 需求 | [`requirements/REQ-032-realtime-notifications.md`](../../../requirement-workspace/requirements/REQ-032-realtime-notifications.md) | 六字段 + 36 场景（S33-1 ~ S33-36）+ OQ 8 条（全 resolved）+ DoR（BLOCKER 0） |
+| 故事 | [`stories.md`](../../../requirement-workspace/stories.md) REQ-032 段；[`stories/add-realtime-notifications.story.md`](../../../requirement-workspace/stories/add-realtime-notifications.story.md) | S33-1 ~ S33-8 与追溯矩阵 |
+| Deep-dive | [`deep-dive.md`「REQ-032 增补」](../../../requirement-workspace/deep-dive.md) | ① 数据契约 / ② 边界归属 / ③ 跨 REQ 一致 / ④ 展示契约 + 探针 |
 | 影响面 | [`impact-brief.md` §28](../../../requirement-workspace/impact-brief.md) | as-is → delta、blast radius、风险、拆分边界 |
 | 提案 | [`proposal.md`](../../../openspec/changes/add-realtime-notifications/proposal.md) | 问题 / 范围 / 影响面 / D1–D18 / 12 条验收信号 / 残余风险 |
 | 提案评审 | [`20261117-add-realtime-notifications-proposal-review.md`](../../reviews/20261117-add-realtime-notifications-proposal-review.md) | 首版评审结论 |
@@ -42,7 +42,7 @@
 - **D9 已读范围：** 单条、全部、或单个会话（`trip_id` + 对方 id）。
 - **D10 保留轮询：** 3 秒轮询留作兜底；新增推送追加与打开即读。
 - **D11 流身份：** `user_id` 查询参数（`EventSource` 不能带 `X-User-Id`）；与既有用户端点同等信任级别。
-- **D12 编号：** 契约 0.27.0、迁移 `V32__add_notifications.sql`（合流后最大 0.24.0 / `V29`），P3 排他确认。
+- **D12 编号：** 契约 0.29.0、迁移 `V33__add_notifications.sql`（合流后最大 0.24.0 / `V29`），P3 排他确认。
 - **D13 保留：** 列表取最新 50 条，不做清理任务；ONGOING 与安全提醒在读取时惰性物化。
 - **D14 提示噪声：** 聊天类只在对应会话未打开时提示；其它类型恒提示。
 - **D15 跳转：** 后端下发 `target.kind`，前端只组装路由；未知目标回通知中心。
@@ -58,7 +58,7 @@
 
 - 基线：后端 `mvnw.cmd test` → 434 tests / 60 reports / 0 失败；前端 `npm test` → 344 tests 全绿（P0 记录）。
 - 本阶段无代码变更，因此不重跑后端 / 前端测试；契约与迁移在 P3 才落笔。
-- 需求条目 DoR：blocking OQ 0、DoR BLOCKER 0；36 条场景与 S32-1 ~ S32-8 逐条可追溯。
+- 需求条目 DoR：blocking OQ 0、DoR BLOCKER 0；36 条场景与 S33-1 ~ S33-8 逐条可追溯。
 - Delta 在 P2 起草（ADDED 8 Requirement / 36 Scenario），P2 结束时执行 `openspec validate --strict`。
 
 ## 5. 签署

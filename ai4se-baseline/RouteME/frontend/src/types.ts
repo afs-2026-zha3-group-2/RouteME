@@ -31,6 +31,9 @@ export type BanReasonCode =
 /** 信用等级：由后端按分数实时派生，前端只负责文案与配色映射。 */
 export type CreditLevel = 'excellent' | 'good' | 'fair' | 'low' | 'risk';
 
+/** 路线完成度状态：由后端派生，前端只做文案与配色映射。 */
+export type RouteCompletionState = 'good' | 'neutral' | 'watch' | 'insufficient';
+
 /** 批量信用状态项（`GET /api/users/credits`）；不含任何明细。 */
 export type UserCreditEntry = {
   user_id: number;
@@ -98,6 +101,10 @@ export type UserProfile = {
   credit_restricted: boolean;
   /** 限制原因；仅本人个人主页返回，他人响应省略。 */
   credit_restriction_reason?: 'CREDIT_SCORE_BELOW_60' | null;
+  /** 路线完成度状态；数据不足恒为 insufficient。 */
+  route_completion_state?: RouteCompletionState | null;
+  /** 路线完成度百分比；数据不足时后端省略该键。 */
+  route_completion_rate?: number | null;
   joined_at?: string | null;
   stats?: ProfileStats;
   /** 账号状态：SUSPENDED 只回 status；BANNED 同时回理由与解封时间。 */
@@ -1098,7 +1105,10 @@ export type TravelLoan = {
   principal_cents: number;
   service_fee_cents: number;
   disbursed_cents: number;
+  interest_cents: number;
   repay_cents: number;
+  penalty_cents: number;
+  total_repay_cents: number;
   term_days: LoanTermDays;
   status: LoanStatus;
   funded_at: string;

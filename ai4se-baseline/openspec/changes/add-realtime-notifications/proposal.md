@@ -1,6 +1,6 @@
 # 变更提案：add-realtime-notifications
 
-- **需求来源：** REQ-031 — 发起人 2026-11-17 的观察「`#/chat` 里申请到达 / 申请被接受 / 收到新消息都没有实时提示，也没有显示收到几条通知的红点」；2026-11-18 追加要求扩展为覆盖八类业务事件的完整通知中心｜ **需求条目：** `requirement-workspace/requirements/REQ-031-realtime-notifications.md`
+- **需求来源：** REQ-032 — 发起人 2026-11-17 的观察「`#/chat` 里申请到达 / 申请被接受 / 收到新消息都没有实时提示，也没有显示收到几条通知的红点」；2026-11-18 追加要求扩展为覆盖八类业务事件的完整通知中心｜ **需求条目：** `requirement-workspace/requirements/REQ-032-realtime-notifications.md`
 - **能力：** `notifications`（ADDED）。事件产生方仍留在 `trip-companions` / 聊天 / 信用 / 举报 / 账号 / 客服 / 资料各域内，其 Requirement 正文不改（见 D1）。
 - **规模：** L（1 张表 + 1 个写入服务 + 1 个生命周期服务 + 1 个流注册表 + 1 个控制器 + 10 处生产方钩子 + 1 个前端提供者 + 铃铛 / 面板 + 1 个通知中心页 + 6 处徽标）
 - **规则：** `@rule:api-contract`、`@rule:package-structure`、`@rule:no-circular-dependency`、`@rule:java-patterns`、`@rule:web-coding-style`、`@rule:security-baseline`、`@rule:tdd-cycle`、`@rule:sdd-artifacts`
@@ -30,8 +30,8 @@ RouteMe 把用户需要「知道」或「行动」的时刻分散在八个业务
   8. 实时投递与失败隔离（按用户推送、3 秒内到达、重连对账、通道降级、失败不回滚业务）。
 - **后端：** 新增 `NotificationService`（写入 / 列表 / 计数 / 标读 / 去重 / 目标解析）、`NotificationLifecycleService`（ONGOING 与安全提醒的惰性物化）、`NotificationStreamService`（按用户 `SseEmitter` 注册表 + 心跳）、`NotificationController`；八个业务域在既有成功路径末尾各追加通知调用，失败只记日志。
 - **前端：** 新增 `notifications/`（纯模型 + 提供者 + `EventSource` 生命周期 + 铃铛 + 面板 + 通知中心页）；`AppShell` 接入铃铛、账号菜单入口与侧栏四处按功能分摊的徽标；`ChatPage` / `ChatList` 打开即读、推送追加、分会话未读；新增信用记录页与举报详情页承接跳转。
-- **契约：** `openapi.yaml` 0.24.0 → **0.27.0**，新增 4 条路径、`GET /reports/mine` 与 8 个通知 schema。
-- **数据：** 新增 `notifications` 表（迁移 `V32__add_notifications.sql`），索引 `(recipient_id, read_at)` 与唯一索引 `(recipient_id, dedupe_key)`。
+- **契约：** `openapi.yaml` 0.24.0 → **0.29.0**，新增 4 条路径、`GET /reports/mine` 与 8 个通知 schema。
+- **数据：** 新增 `notifications` 表（迁移 `V33__add_notifications.sql`），索引 `(recipient_id, read_at)` 与唯一索引 `(recipient_id, dedupe_key)`。
 
 ## 范围
 
@@ -44,9 +44,9 @@ RouteMe 把用户需要「知道」或「行动」的时刻分散在八个业务
 - 通知中心 `#/notifications`：八类筛选（带数字）+ 全部已读 + 类型标签 + 重要标记 + 未读 / 已读文字 + 不可用提示。
 - 壳层指示器：铃铛显示未读总数并可展开面板；账号菜单入口显示总数；侧栏不再单列通知中心入口，改由「我的旅行 / 同行消息 / 联系客服 / 账号」四个功能入口分摊八类未读，四项之和恒等于总数；移动 tab 的聊天入口与会话列表显示 `CHAT` 未读数（D8、D19）。
 - 按目标跳转：由后端下发 `target.kind`，前端组装路由；目标失效时保留正文并提示，不跳转（D15）。
-- 契约：4 条新路径 + `/reports/mine` 与对应 schema；`openapi.yaml` 次版本递增到 0.27.0。
+- 契约：4 条新路径 + `/reports/mine` 与对应 schema；`openapi.yaml` 次版本递增到 0.29.0。
 - 数据：1 次迁移新增 1 张表。
-- 记录：`stories.md` S32、`registry.md`、`handoff.md`、`deep-dive.md`、`impact-brief.md` §28。
+- 记录：`stories.md` S33、`registry.md`、`handoff.md`、`deep-dive.md`、`impact-brief.md` §28。
 
 **Out of scope**
 
@@ -63,7 +63,7 @@ RouteMe 把用户需要「知道」或「行动」的时刻分散在八个业务
 
 | 位置 | 变更 |
 |---|---|
-| `backend/src/main/resources/db/migration/V32__add_notifications.sql`（新增） | 建 `notifications` 表与两个索引 |
+| `backend/src/main/resources/db/migration/V33__add_notifications.sql`（新增） | 建 `notifications` 表与两个索引 |
 | 后端 `enums/`、`entity/`、`mapper/`、`pojo/`（新增） | `NotificationTypeEnum`、`NotificationEventEnum`、`NotificationPriorityEnum`、`NotificationStatusEnum`、`NotificationTargetKindEnum`、`NotificationEntity`、`NotificationMapper`、`Notification` |
 | 后端 `service/NotificationService.java` + `service/impl/NotificationServiceImpl.java`（新增） | 写入、去重、列表、计数、目标解析、可用性判定、标读范围 |
 | 后端 `service/impl/NotificationLifecycleService.java`（新增） | ONGOING 与安全提醒的惰性物化 |
@@ -78,7 +78,7 @@ RouteMe 把用户需要「知道」或「行动」的时刻分散在八个业务
 | `service/impl/CustomerServiceImpl.java` | 客服接入 / 回复 / 结束 |
 | `service/impl/UserProfileServiceImpl.java` | 资料首次完整时的身份认证通知 |
 | `controller/TripController.java` | 读取详情时惰性物化 ONGOING 与安全提醒 |
-| `RouteME/openapi.yaml` | 0.27.0；新增路径与 schema |
+| `RouteME/openapi.yaml` | 0.29.0；新增路径与 schema |
 | `frontend/src/types.ts`、`api.ts` | 通知类型、计数、目标、事件；列表 / 已读 / 流地址辅助函数 |
 | `frontend/src/notifications/`（新增） | `notificationModel.ts`、`NotificationContext.tsx`、`NotificationBadge.tsx`、`NotificationBell.tsx`、`NotificationPanel.tsx`、`NotificationCenterPage.tsx` |
 | `frontend/src/shell/AppShell.tsx`、`route.ts` | 铃铛、账号菜单入口、侧栏四处分摊徽标；`#/notifications` 路由 |
@@ -86,7 +86,7 @@ RouteMe 把用户需要「知道」或「行动」的时刻分散在八个业务
 | `frontend/src/credit/CreditRecordsPage.tsx`、`frontend/src/reports/ReportDetailPage.tsx`（新增） | 承接信用与举报跳转 |
 | `frontend/src/i18n/notificationMessages.ts`、`frontend/src/styles.css` | 文案与徽标 / 面板 / 通知中心样式 |
 | 测试 | 后端 10 个通知相关测试文件（48 条）；前端 `notificationModel.test.ts`；E2E `notifications.spec.ts`（13 条）与 `notifications-walkthrough.spec.ts`（4 条） |
-| `openspec/changes/add-realtime-notifications/specs/notifications/spec.md` | ADDED：8 Requirement / 36 Scenario（`S32-1` ~ `S32-36`） |
+| `openspec/changes/add-realtime-notifications/specs/notifications/spec.md` | ADDED：8 Requirement / 36 Scenario（`S33-1` ~ `S33-36`） |
 | Living Spec | 归档时生成 `openspec/specs/notifications/spec.md` |
 
 ## 决策
@@ -104,7 +104,7 @@ RouteMe 把用户需要「知道」或「行动」的时刻分散在八个业务
 | 已读范围（D9） | 单条、全部、单会话（`trip_id` + 对方 id） | 打开会话是消息最自然的已读动作；其它类型没有会话，必须保留「全部已读」 |
 | 聊天兜底（D10） | 保留 3 秒轮询；新增推送追加与打开即读 | 消除「不实时」的抱怨，又不删掉可用的安全网、不重写聊天加载 |
 | 流的身份（D11） | `user_id` 查询参数 | `EventSource` 不能带 `X-User-Id`；与既有用户端点同等信任级别。真实鉴权不在范围内，记为风险 |
-| 契约与迁移编号（D12） | `openapi.yaml` 0.27.0；迁移 `V32__add_notifications.sql` | 合并 `main` 后当前最大值为 0.24.0 与 `V29`；P3 排他确认 |
+| 契约与迁移编号（D12） | `openapi.yaml` 0.29.0；迁移 `V33__add_notifications.sql` | 合并 `main` 后当前最大值为 0.24.0 与 `V29`；P3 排他确认 |
 | 保留（D13） | 列表返回最新 50 条，行不删除 | 满足故事不需要清理任务，也不引入只与迁移相关的复杂度 |
 | 提示噪声（D14） | 聊天类只在对应会话未打开时提示；其它类型恒提示 | 避免对已经出现在当前会话里的消息重复提示 |
 | 跳转（D15） | 后端下发 `target.kind`，前端只组装路由 | 目标规则集中在一处；新增类型不必改前端的判断分支 |
@@ -126,7 +126,7 @@ RouteMe 把用户需要「知道」或「行动」的时刻分散在八个业务
 9. 重复申请 / 非 pending / 行程已关闭的请求不产生通知；自消息也不产生；同一业务事件重复触发不产生第二行。
 10. 打开一条目标已失效的通知：正文仍在、提示「相关内容当前不可查看」、页面不跳转、该条变为已读。
 11. 账号被暂停：本人收到说明受限内容与恢复时间的通知，且不含管理员备注。
-12. 契约 0.27.0 校验通过；后端 691、前端 532、通知 E2E 13、走查 E2E 4 全绿。
+12. 契约 0.29.0 校验通过；后端 712、前端 545、通知 E2E 13、走查 E2E 4 全绿。
 
 ## 残余风险
 
@@ -138,7 +138,7 @@ RouteMe 把用户需要「知道」或「行动」的时刻分散在八个业务
 | 业务回滚却留下通知 | 通知只在状态变更成功后、同一事务内写入；D6 只覆盖通知自身失败 |
 | 为「接收方已无权访问的行程」写通知 | 消息只能在既有准入规则下发出；条目仍指向会话，打开时由既有权限提示承接 |
 | 查询参数身份可伪造 | 与今天的 `X-User-Id` 同等级暴露；明确不在范围内，留给真实鉴权 change |
-| 契约 / 迁移号与并行 change 冲突（合并 `main` 后为 0.24.0 / `V29`） | P3 排他确认并取 0.27.0 / `V30`，在 `design.md` 复述 |
+| 契约 / 迁移号与并行 change 冲突（合并 `main` 后为 0.24.0 / `V29`） | P3 排他确认并取 0.29.0 / `V30`，在 `design.md` 复述 |
 | 多处计数漂移 | 全部从同一前端 store、同一响应 / 事件载荷派生；侧栏四项按类型分区、和恒等于 `total`；reducer 有纯函数单测 |
 | 拒绝通知不在发起人原话内 | 记为 D5 并给出理由；Delta 将其写成显式场景 |
 | 面板打开时新事件的可见性 | 面板从同一 store 重渲染；P3 定义焦点行为，推送不得抢焦点 |
@@ -150,4 +150,4 @@ RouteMe 把用户需要「知道」或「行动」的时刻分散在八个业务
 
 本提案是 P1 工件，回答「为什么改、改哪个能力、什么在内什么在外、验收怎么观察」。Delta Spec、`design.md`、`atdd-design.md`、`tasks.md`、迁移、契约、代码与验证属 P2–P4；Living Spec 合并属 P5。
 
-> **变更历史：** 2026-11-17 首版为四类事件 / 六 Requirement 的通知提示（REQ-023）；2026-11-18 发起人要求扩展为覆盖八类业务事件的完整通知中心，本提案随之改写为 REQ-029 / 8 Requirement / 36 Scenario，并按发起人指示在**同一 PR #40** 内交付，不另开 change。同日合流 `origin/main` 时 `add-travel-finance`（PR #42）已占用 REQ-028 / S29 / 契约 0.25.0 / `V30`，本 change 按「后到者顺延」改为 **REQ-029 / S30 / 0.26.0 / `V31__add_notifications.sql`**；随后 `refine-publish-route-map`（REQ-029 / S30）与 `add-report-credit-deduction`（REQ-030 / S31 / 0.26.0 / `V31`）先入 `main`，本 change 再次顺延为 **REQ-031 / S32 / 0.27.0 / `V32__add_notifications.sql`**，工件与阶段记录同步改号。2026-11-18 发起人要求「左栏不要通知中心入口，且左栏各功能数字之和等于铃铛」：侧栏入口移除，改为按功能分摊的四项徽标（D19 / S32-26 / M4）。
+> **变更历史：** 2026-11-17 首版为四类事件 / 六 Requirement 的通知提示（REQ-023）；2026-11-18 发起人要求扩展为覆盖八类业务事件的完整通知中心，本提案随之改写为 REQ-029 / 8 Requirement / 36 Scenario，并按发起人指示在**同一 PR #40** 内交付，不另开 change。同日合流 `origin/main` 时 `add-travel-finance`（PR #42）已占用 REQ-028 / S29 / 契约 0.25.0 / `V30`，本 change 按「后到者顺延」改为 **REQ-029 / S30 / 0.26.0 / `V31__add_notifications.sql`**；随后 `refine-publish-route-map`（REQ-029 / S30）与 `add-report-credit-deduction`（REQ-030 / S31 / 0.26.0 / `V31`）先入 `main`，本 change 顺延为 REQ-031 / S32 / 0.27.0 / `V32`；再合流时 `add-route-completion`（REQ-031 / S32）与 `add-loan-interest-penalty`（`V32__add_loan_interest_penalty.sql` / 契约 0.28.0）又先入 `main`，本 change 最终定为 **REQ-032 / S33 / 0.29.0 / `V33__add_notifications.sql`**，工件与阶段记录同步改号。2026-11-18 发起人要求「左栏不要通知中心入口，且左栏各功能数字之和等于铃铛」：侧栏入口移除，改为按功能分摊的四项徽标（D19 / S33-26 / M4）。

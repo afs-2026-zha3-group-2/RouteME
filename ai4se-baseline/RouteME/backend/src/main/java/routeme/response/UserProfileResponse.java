@@ -4,6 +4,7 @@ import java.util.List;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 
+import routeme.pojo.RouteCompletion;
 import routeme.pojo.UserProfile;
 
 /**
@@ -38,10 +39,19 @@ public record UserProfileResponse(
         ProfileStatsResponse stats,
         String status,
         String banReasonCode,
-        String banExpiresAt) {
+        String banExpiresAt,
+        Integer routeCompletionRate,
+        String routeCompletionState) {
 
     public static UserProfileResponse from(UserProfile profile, boolean includeBirthday) {
-        return from(profile, includeBirthday, null, null);
+        return from(profile, includeBirthday, RouteCompletion.INSUFFICIENT);
+    }
+
+    public static UserProfileResponse from(
+            UserProfile profile,
+            boolean includeBirthday,
+            RouteCompletion completion) {
+        return from(profile, includeBirthday, null, null, completion);
     }
 
     public static UserProfileResponse from(
@@ -49,6 +59,15 @@ public record UserProfileResponse(
             boolean includeBirthday,
             String joinedAt,
             ProfileStatsResponse stats) {
+        return from(profile, includeBirthday, joinedAt, stats, RouteCompletion.INSUFFICIENT);
+    }
+
+    public static UserProfileResponse from(
+            UserProfile profile,
+            boolean includeBirthday,
+            String joinedAt,
+            ProfileStatsResponse stats,
+            RouteCompletion completion) {
         return new UserProfileResponse(
                 profile.id(),
                 profile.nickname(),
@@ -75,6 +94,8 @@ public record UserProfileResponse(
                 stats,
                 profile.status(),
                 profile.banReasonCode(),
-                profile.banExpiresAt());
+                profile.banExpiresAt(),
+                completion.rate(),
+                completion.state().wireValue());
     }
 }

@@ -428,39 +428,39 @@
 
 ---
 
-# Story list — REQ-031（实时通知中心与未读计数）
+# Story list — REQ-032（实时通知中心与未读计数）
 
-- **来源：** 发起人 2026-11-17 在 `#/chat` 的观察——「申请到达 / 我的申请被接受 / 收到新消息都没有实时提示，也没有显示收到几条通知的红点」；2026-11-18 追加要求：扩展为覆盖八类业务事件的完整通知中心；优先级 P0；迭代 3；8 点（S32-1 ~ S32-8 各 1 点）；落点页面：全局壳层、通知中心、聊天页、行程详情、信用记录、举报详情、账号菜单、客服
+- **来源：** 发起人 2026-11-17 在 `#/chat` 的观察——「申请到达 / 我的申请被接受 / 收到新消息都没有实时提示，也没有显示收到几条通知的红点」；2026-11-18 追加要求：扩展为覆盖八类业务事件的完整通知中心；优先级 P0；迭代 3；8 点（S33-1 ~ S33-8 各 1 点）；落点页面：全局壳层、通知中心、聊天页、行程详情、信用记录、举报详情、账号菜单、客服
 - **Change：** `add-realtime-notifications`（`notifications` ADDED：8 Requirement / 36 Scenario）
-- **口径：** 一条故事 = 一条垂直切片（记录 → 八类事件接入 → 计数 → 通知中心与跳转 → 实时投递），拆为 S32-1 ~ S32-8 八个可独立验收的步骤
-- **需求编号说明：** 2026-11-17 起草时登记为 REQ-023；`main` 上 REQ-023 已被 `add-experience-like-credit` 占用，2026-11-18 扩围时按「后到者顺延」改为 **REQ-031 / S32**
+- **口径：** 一条故事 = 一条垂直切片（记录 → 八类事件接入 → 计数 → 通知中心与跳转 → 实时投递），拆为 S33-1 ~ S33-8 八个可独立验收的步骤
+- **需求编号说明：** 2026-11-17 起草时登记为 REQ-023；`main` 上 REQ-023 已被 `add-experience-like-credit` 占用，2026-11-18 扩围时按「后到者顺延」改为 **REQ-032 / S33**
 - **更新时间：** 2026-11-18
 
 | Story | Title | 角色 | Priority | Iteration | Points | Page | Parent REQ | Change | Status |
 |---|---|---|---|---|---|---|---|---|---|
-| S32-1 | 记录八类通知并保证去重与保留 | 平台用户 | P0 | 迭代 3 | 1 | 全局壳层 | REQ-031 | `add-realtime-notifications` | P4 verified（2026-11-18） |
-| S32-2 | 行程生命周期通知 | 发布者 / 同行者 | P0 | 迭代 3 | 1 | 行程详情 | REQ-031 | `add-realtime-notifications` | P4 verified（2026-11-18） |
-| S32-3 | 申请到达与裁决通知 | 发布者 / 申请者 | P0 | 迭代 3 | 1 | 申请处理 / 行程详情 | REQ-031 | `add-realtime-notifications` | P4 verified（2026-11-18） |
-| S32-4 | 聊天与信用通知 | 会话双方 / 信用变动用户 | P0 | 迭代 3 | 1 | 聊天页 / 信用记录 | REQ-031 | `add-realtime-notifications` | P4 verified（2026-11-18） |
-| S32-5 | 举报、账号、客服与系统通知 | 举报人 / 受限账号 / 客服用户 | P0 | 迭代 3 | 1 | 举报详情 / 账号 / 客服 | REQ-031 | `add-realtime-notifications` | P4 verified（2026-11-18） |
-| S32-6 | 通知中心、筛选与跳转 | 平台用户 | P0 | 迭代 3 | 1 | 通知中心 | REQ-031 | `add-realtime-notifications` | P4 verified（2026-11-18） |
-| S32-7 | 未读计数与标读规则 | 平台用户 | P0 | 迭代 3 | 1 | 全局壳层 / 通知中心 | REQ-031 | `add-realtime-notifications` | P4 verified（2026-11-18） |
-| S32-8 | 实时投递与失败隔离 | 平台用户 | P0 | 迭代 3 | 1 | 全局壳层 | REQ-031 | `add-realtime-notifications` | P4 verified（2026-11-18） |
+| S33-1 | 记录八类通知并保证去重与保留 | 平台用户 | P0 | 迭代 3 | 1 | 全局壳层 | REQ-032 | `add-realtime-notifications` | P4 verified（2026-11-18） |
+| S33-2 | 行程生命周期通知 | 发布者 / 同行者 | P0 | 迭代 3 | 1 | 行程详情 | REQ-032 | `add-realtime-notifications` | P4 verified（2026-11-18） |
+| S33-3 | 申请到达与裁决通知 | 发布者 / 申请者 | P0 | 迭代 3 | 1 | 申请处理 / 行程详情 | REQ-032 | `add-realtime-notifications` | P4 verified（2026-11-18） |
+| S33-4 | 聊天与信用通知 | 会话双方 / 信用变动用户 | P0 | 迭代 3 | 1 | 聊天页 / 信用记录 | REQ-032 | `add-realtime-notifications` | P4 verified（2026-11-18） |
+| S33-5 | 举报、账号、客服与系统通知 | 举报人 / 受限账号 / 客服用户 | P0 | 迭代 3 | 1 | 举报详情 / 账号 / 客服 | REQ-032 | `add-realtime-notifications` | P4 verified（2026-11-18） |
+| S33-6 | 通知中心、筛选与跳转 | 平台用户 | P0 | 迭代 3 | 1 | 通知中心 | REQ-032 | `add-realtime-notifications` | P4 verified（2026-11-18） |
+| S33-7 | 未读计数与标读规则 | 平台用户 | P0 | 迭代 3 | 1 | 全局壳层 / 通知中心 | REQ-032 | `add-realtime-notifications` | P4 verified（2026-11-18） |
+| S33-8 | 实时投递与失败隔离 | 平台用户 | P0 | 迭代 3 | 1 | 全局壳层 | REQ-032 | `add-realtime-notifications` | P4 verified（2026-11-18） |
 
-## Traceability（REQ-031）
+## Traceability（REQ-032）
 
 | Story | Requirement scenarios | Change spec | Story file |
 |---|---|---|---|
-| S32-1 | REQ-031 §4 S32-1 ~ S32-4 | `openspec/changes/add-realtime-notifications/specs/notifications/spec.md`（ADDED：通知记录与生命周期） | `stories/add-realtime-notifications.story.md` |
-| S32-2 | REQ-031 §4 S32-5 ~ S32-8、S32-12、S32-19 | 同上（行程生命周期事件） | 同上 |
-| S32-3 | REQ-031 §4 S32-9 ~ S32-12、S32-22 | 同上（申请与裁决事件） | 同上 |
-| S32-4 | REQ-031 §4 S32-13 ~ S32-15、S32-31 | 同上（聊天、信用、举报与账号事件、未读计数与标读规则） | 同上 |
-| S32-5 | REQ-031 §4 S32-16 ~ S32-20 | 同上（聊天、信用、举报与账号事件、客服与系统事件） | 同上 |
-| S32-6 | REQ-031 §4 S32-21 ~ S32-24、S32-28 | 同上（通知中心与跳转） | 同上 |
-| S32-7 | REQ-031 §4 S32-25 ~ S32-32 | 同上（计数与标读） | 同上 |
-| S32-8 | REQ-031 §4 S32-33 ~ S32-36 | 同上（实时与失败隔离） | 同上 |
+| S33-1 | REQ-032 §4 S33-1 ~ S33-4 | `openspec/changes/add-realtime-notifications/specs/notifications/spec.md`（ADDED：通知记录与生命周期） | `stories/add-realtime-notifications.story.md` |
+| S33-2 | REQ-032 §4 S33-5 ~ S33-8、S33-12、S33-19 | 同上（行程生命周期事件） | 同上 |
+| S33-3 | REQ-032 §4 S33-9 ~ S33-12、S33-22 | 同上（申请与裁决事件） | 同上 |
+| S33-4 | REQ-032 §4 S33-13 ~ S33-15、S33-31 | 同上（聊天、信用、举报与账号事件、未读计数与标读规则） | 同上 |
+| S33-5 | REQ-032 §4 S33-16 ~ S33-20 | 同上（聊天、信用、举报与账号事件、客服与系统事件） | 同上 |
+| S33-6 | REQ-032 §4 S33-21 ~ S33-24、S33-28 | 同上（通知中心与跳转） | 同上 |
+| S33-7 | REQ-032 §4 S33-25 ~ S33-32 | 同上（计数与标读） | 同上 |
+| S33-8 | REQ-032 §4 S33-33 ~ S33-36 | 同上（实时与失败隔离） | 同上 |
 
-## Notes（REQ-031）
+## Notes（REQ-032）
 
 - **不拆 change：** 八类事件共享同一张表、同一份计数口径、同一个通知中心与推送通道；拆分只会得到「有通知没入口」或「有入口没内容」的半成品。
 - **只读依赖既有能力：** 行程、申请、聊天、信用、举报、账号、客服与资料服务的业务规则保持不变，本 change 只在既有成功路径上追加通知；因此不 MODIFY `trip-companions`（其 Delta 未归档）。
@@ -595,10 +595,34 @@
 - **保留边界：** 真实保险机构 API / 核保 / 理赔、真实银行对接、征信、退保、罚息、钱包充值提现、管理后台金融视图与通知均排除（D10 / D12）。
 - **依赖：** `trip-plans` / `trip-companions` 只读；`user-auth` 注册事务内初始化钱包；`user-credit` 仅作账本范式参照，不读写信用分。
 
-## Traceability（REQ-030）
+---
+
+# Story list — REQ-031（路线完成度 / issue #45）
+
+- **故事：** S32 路线完成度（GitHub issue #45；优先级 P1；迭代 3；3 点；落点页面：个人主页。原 issue 另含推荐列表 / 行程详情，按用户裁决 D3 本期不做）
+- **需求编号说明：** `origin/main@8992853` 已用 REQ-029 / S30（`refine-publish-route-map`）与 REQ-030（`add-report-credit-deduction`）；本需求起草时登记为 REQ-029 / S30，同日两次顺延，按用户裁决最终为 **REQ-031 / S32**。
+- **Change：** `add-route-completion`（`route-completion` ADDED）
+- **垂直切片：** 只负责「后端完成度字段与状态派生 → 个人主页展示入口」；人工打卡、真实聚合、列表 / 详情 / 弹窗展示不在本故事。
+- **规则口径：** 本期无数据源，所有用户「暂无足够完成记录」；阈值 ≥80 信誉良好 / 70–79 中性 / <70 请留意；与信用分、资料统计、LV1–LV5 成长等级独立；状态码由后端返回，前端只映射。
+- **更新时间：** 2026-11-18
+
+| Story | Title | 角色 | Priority | Iteration | Points | Page | Parent REQ | Change | Status |
+|---|---|---|---|---|---|---|---|---|---|
+| S32 | 路线完成度 | 寻找旅行搭子的浏览者 | P1 | 迭代 3 | 3 | 个人主页 | REQ-031 | `add-route-completion` | P1 drafted（2026-11-18） |
+
+## Traceability（REQ-031）
 
 | Story | Requirement scenarios | Change spec | Story file |
 |---|---|---|---|
+| S32 | REQ-031 §4 S32-1 ~ S32-19 | `openspec/changes/add-route-completion/specs/route-completion/spec.md`（ADDED，P1 草稿） | 无独立故事文件：19 场景由 Ready 条目 + proposal + Delta 承接（与 REQ-012 / REQ-019 / REQ-027 同口径） |
+
+## Notes（REQ-031）
+
+- **不拆故事：** 字段、派生与个人主页展示是同一条端到端链路；拆开会产生「有字段无展示」或「有展示无来源」。
+- **单 capability：** `route-completion`（ADDED）；不改 `user-profile` / `user-profiles` / `user-credit` 的 Requirement。
+- **本期不做：** 人工打卡与聚合算法、推荐列表、资料弹窗、行程卡、行程详情、管理端、通知（D1 / D3 / D7）。
+- **独立性：** 不读写信用分与账本、不改 `stats`、不依赖成长等级（S32-17 / S32-18）。
+- **归档约束：** 全新能力，无前置归档依赖；Living Spec 归档后新增 `openspec/specs/route-completion/`。
 | S31 | REQ-030 §4 R-1 ~ R-26 | `openspec/changes/add-report-credit-deduction/specs/user-credit/spec.md` + `specs/admin-console/spec.md` | 无独立故事文件：以意图 + proposal + Delta 承接（与 REQ-012 / REQ-019 同口径） |
 
 ## Notes（REQ-030）

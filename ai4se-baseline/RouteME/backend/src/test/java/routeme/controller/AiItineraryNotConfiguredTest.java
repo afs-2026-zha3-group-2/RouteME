@@ -32,6 +32,7 @@ class AiItineraryNotConfiguredTest {
         registry.add("routeme.ai.base-url", UpstreamStubs::aiBaseUrl);
         registry.add("routeme.ai.api-key", () -> "");
         registry.add("routeme.weather.base-url", UpstreamStubs::weatherBaseUrl);
+        registry.add("routeme.weather.fallback-base-url", UpstreamStubs::weatherBaseUrl);
     }
 
     @Autowired

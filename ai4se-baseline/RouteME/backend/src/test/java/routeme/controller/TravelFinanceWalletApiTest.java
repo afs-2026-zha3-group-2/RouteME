@@ -118,7 +118,7 @@ class TravelFinanceWalletApiTest {
         assertAll(
                 () -> assertEquals(scoreBefore, creditScore(2), "credit score is unchanged"),
                 () -> assertEquals(creditRowsBefore, creditRows(2), "no credit ledger rows"),
-                () -> assertEquals(995_000, balanceOf(2), "wallet reflects only the loan postings"),
+                () -> assertEquals(994_300, balanceOf(2), "wallet reflects only the loan postings"),
                 () -> assertEquals(2, ledgerRows(2), "disbursement + repayment"));
     }
 

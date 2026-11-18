@@ -150,7 +150,7 @@ export function FinancePage({ currentUser }: Props) {
               </div>
               <div>
                 <dt>{m.summaryActiveLoan}</dt>
-                <dd>{activeLoan === null ? m.summaryNone : money(activeLoan.repay_cents)}</dd>
+                <dd>{activeLoan === null ? m.summaryNone : money(activeLoan.total_repay_cents)}</dd>
               </div>
               <div>
                 <dt>{m.summaryOpenTrips}</dt>

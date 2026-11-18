@@ -1,14 +1,16 @@
 # Verification commands
 
-Three-layer stop checks used by this repo (static → runtime → system). Every
-command runs from `ai4se-baseline/` (the directory that holds `RouteME/`).
+Document the three-layer stop checks used by this repo (static → runtime →
+system). The commands mirror `.github/workflows/ci.yml` and each change's
+`tasks.md` (P4 T8); paths are relative to `ai4se-baseline/` (the verify root).
+Replace only when CI changes.
 
 ## Static
 
 Type and build checks — fast, no services required.
 
 ```bash
-cd RouteME/frontend && npm run typecheck
+cd RouteME/frontend && npm run typecheck && npm run build
 ```
 
 ## Runtime
@@ -18,7 +20,7 @@ be started through `cmd` (`cmd //c mvnw.cmd …` when invoked from Git Bash):
 `./mvnw` looks for its distribution with POSIX paths and cannot fetch it.
 
 ```bash
-cd RouteME/backend && cmd //c mvnw.cmd -q test
+cd RouteME/backend && ./mvnw -B -ntp verify
 cd RouteME/frontend && npm test
 ```
 
@@ -31,7 +33,15 @@ notification specs are the stop check for this repository (see
 comparison of the remaining suite).
 
 ```bash
-cd RouteME/e2e && npx playwright test tests/notifications.spec.ts tests/notifications-walkthrough.spec.ts
+cd RouteME/e2e && npx playwright test tests/route-completion.spec.ts tests/notifications.spec.ts tests/notifications-walkthrough.spec.ts
+```
+
+## Spec / contract
+
+```bash
+openspec validate add-route-completion --strict
+openspec validate add-realtime-notifications --strict
+cd RouteME && npx --yes @redocly/cli lint openapi.yaml
 ```
 
 ## Machine-readable whitelist

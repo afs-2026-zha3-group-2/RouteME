@@ -1,6 +1,6 @@
 # 设计：add-realtime-notifications
 
-- **Change：** `add-realtime-notifications`（`notifications` ADDED，REQ-031 / 实时通知中心与未读计数）
+- **Change：** `add-realtime-notifications`（`notifications` ADDED，REQ-032 / 实时通知中心与未读计数）
 - **基线：** `origin/main@357f5e2`（壳层主题切换移除后）｜ **日期：** 2026-11-17（首版）/ 2026-11-18（八类扩围）｜ **Owner：** Karena（AO）
 - **输入：** Delta Spec（8 Requirement / 36 Scenario）、`proposal.md`（D1–D18）、`g1-decision.md`（L-01 / L-02 / L-03 / D12 / 测量点）
 
@@ -73,7 +73,7 @@ flowchart LR
 
 ## 3. 数据模型与迁移（D4 / D13 / D12）
 
-`backend/src/main/resources/db/migration/V32__add_notifications.sql`：
+`backend/src/main/resources/db/migration/V33__add_notifications.sql`：
 
 ```sql
 CREATE TABLE notifications (
@@ -118,10 +118,10 @@ CREATE INDEX ix_notifications_recipient_read ON notifications (recipient_id, rea
 - **保留策略：** 行不删除；列表只返回最新 50 条（D13）。索引 `(recipient_id, read_at)` 覆盖计数与列表过滤。
 - **去重键形态：** `application_received:{applicationId}`、`application_accepted:{applicationId}`、`application_rejected:{applicationId}`、`application_closed:{applicationId}`、`trip_full:{tripId}`、`trip_ongoing:{tripId}`、`trip_cancelled:{tripId}`、`trip_completed:{tripId}`、`message:{messageId}`、`credit:{ledgerId}`、`report_submitted:{reportId}`、`report_processing:{reportId}`、`report_resolved:{reportId}`、`account:{status}:{occurredAt}`、`service_joined:{sessionId}`、`service_reply:{messageId}`、`service_closed:{sessionId}`、`system_safety:{tripId}`、`system_identity:{userId}`。
 - **时间格式：** 与既有实体一致，存 ISO-8601 字符串，字典序即时间序；列表按 `created_at DESC, id DESC`。
-- **迁移号排他确认（D12）：** 合并 `main` 后 `openapi.yaml:4` 为 `0.24.0`，`db/migration/` 最大为 `V29__credit_exit_application.sql`；在 `openspec/changes/**`、`docs/**` 中检索 `V30__` / `0.27.0`，除本 change 自己的草稿外无其他 change 占用。故本 change 取 **`V32__add_notifications.sql` / 0.27.0**。
+- **迁移号排他确认（D12）：** 合并 `main` 后 `openapi.yaml:4` 为 `0.24.0`，`db/migration/` 最大为 `V29__credit_exit_application.sql`；在 `openspec/changes/**`、`docs/**` 中检索 `V30__` / `0.29.0`，除本 change 自己的草稿外无其他 change 占用。故本 change 取 **`V33__add_notifications.sql` / 0.29.0**。
 - **双引擎：** 只用 `INTEGER / VARCHAR / CREATE INDEX`，不用 SQLite 专属语法；`NotificationMigrationSqliteTest` 在 SQLite 上跑同一脚本，Spring 测试在 H2 上跑同一脚本。
 
-## 4. 接口契约（`openapi.yaml` 0.24.0 → 0.27.0）
+## 4. 接口契约（`openapi.yaml` 0.24.0 → 0.29.0）
 
 ### 4.1 路径
 
@@ -315,21 +315,21 @@ data: {"notification":{...},"message":null}
 
 | 端点 / 触发 | Requirement | 场景 |
 |---|---|---|
-| `GET /notifications` | 未读计数与标读规则；通知中心与跳转 | S32-2、S32-25、S32-26、S32-32 |
-| `POST /notifications/{id}/read` | 未读计数与标读规则 | S32-27、S32-29、S32-30、S32-32 |
-| `POST /notifications/read` `all` | 未读计数与标读规则 | S32-28 |
-| `POST /notifications/read` `conversation` | 未读计数与标读规则 | S32-31 |
-| `GET /notifications/stream` | 实时投递与失败隔离 | S32-33 ～ S32-36 |
-| 申请 / 裁决钩子 | 申请与裁决事件 | S32-9 ～ S32-12 |
-| 行程钩子 + `TripController.detail` | 行程生命周期事件；客服与系统事件 | S32-5 ～ S32-8、S32-19 |
-| `ChatServiceImpl.send` | 聊天、信用、举报与账号事件 | S32-13 |
-| `CreditChangedEvent` | 聊天、信用、举报与账号事件 | S32-14、S32-15 |
-| 举报三阶段 | 聊天、信用、举报与账号事件 | S32-16 |
-| `AccountStatusService` | 聊天、信用、举报与账号事件 | S32-17 |
-| 客服三阶段 | 客服与系统事件 | S32-18 |
-| `UserProfileServiceImpl` | 客服与系统事件 | S32-20 |
-| `target` + `related_available` | 通知中心与跳转 | S32-21 ～ S32-24 |
-| `write()` 去重 / 自事件抑制 / 只增不删 | 通知记录、类型与生命周期 | S32-1、S32-3、S32-4 |
+| `GET /notifications` | 未读计数与标读规则；通知中心与跳转 | S33-2、S33-25、S33-26、S33-32 |
+| `POST /notifications/{id}/read` | 未读计数与标读规则 | S33-27、S33-29、S33-30、S33-32 |
+| `POST /notifications/read` `all` | 未读计数与标读规则 | S33-28 |
+| `POST /notifications/read` `conversation` | 未读计数与标读规则 | S33-31 |
+| `GET /notifications/stream` | 实时投递与失败隔离 | S33-33 ～ S33-36 |
+| 申请 / 裁决钩子 | 申请与裁决事件 | S33-9 ～ S33-12 |
+| 行程钩子 + `TripController.detail` | 行程生命周期事件；客服与系统事件 | S33-5 ～ S33-8、S33-19 |
+| `ChatServiceImpl.send` | 聊天、信用、举报与账号事件 | S33-13 |
+| `CreditChangedEvent` | 聊天、信用、举报与账号事件 | S33-14、S33-15 |
+| 举报三阶段 | 聊天、信用、举报与账号事件 | S33-16 |
+| `AccountStatusService` | 聊天、信用、举报与账号事件 | S33-17 |
+| 客服三阶段 | 客服与系统事件 | S33-18 |
+| `UserProfileServiceImpl` | 客服与系统事件 | S33-20 |
+| `target` + `related_available` | 通知中心与跳转 | S33-21 ～ S33-24 |
+| `write()` 去重 / 自事件抑制 / 只增不删 | 通知记录、类型与生命周期 | S33-1、S33-3、S33-4 |
 
 ## 8. G1 遗留项与规格评审意见的收口
 
@@ -338,7 +338,7 @@ data: {"notification":{...},"message":null}
 | L-01 / S-01 提示条（D14） | §6.2 `shouldToast` + `tasks.md` T11 + E2E M8 |
 | L-02 / S-02 失败隔离跨生产方 | §5.2 步骤 5 + `NotificationFailureIsolationTest`（申请、裁决、发消息、客服） |
 | L-03 / S-03 契约回指 Requirement | §7 端点 → Requirement → 场景 |
-| D12 契约 / 迁移排他 | §3 排他确认：0.27.0 / `V32__add_notifications.sql` |
+| D12 契约 / 迁移排他 | §3 排他确认：0.29.0 / `V33__add_notifications.sql` |
 | 测量点 | §5.7 |
 
 ## 9. 测试策略
@@ -352,7 +352,7 @@ data: {"notification":{...},"message":null}
 | 流 | `NotificationStreamServiceTest`（3） | 只推收件人、多连接、单连接失败清理、心跳 |
 | API | `NotificationControllerTest`（9）、`ReportControllerTest` | 4 条路径、SSE 头、404 / 400 / 401、`/reports/mine` |
 | 迁移 | `NotificationMigrationSqliteTest`（1） | SQLite 建表 / 唯一索引 / 插入 / 标读 |
-| 契约 | `OpenApiTest` | 0.27.0、路径、schema 必需字段 |
+| 契约 | `OpenApiTest` | 0.29.0、路径、schema 必需字段 |
 | E2E | `notifications.spec.ts`（13）、`notifications-walkthrough.spec.ts`（4） | M1–M10 + N1–N3；V1–V4 |
 
 ## 10. 风险、例外与边界

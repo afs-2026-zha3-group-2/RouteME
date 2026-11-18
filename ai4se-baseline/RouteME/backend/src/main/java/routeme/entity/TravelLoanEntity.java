@@ -23,7 +23,11 @@ public class TravelLoanEntity {
 
     private Integer disbursedCents;
 
+    private Integer interestCents;
+
     private Integer repayCents;
+
+    private Integer penaltyCents;
 
     private Integer termDays;
 
@@ -85,12 +89,28 @@ public class TravelLoanEntity {
         this.disbursedCents = disbursedCents;
     }
 
+    public Integer getInterestCents() {
+        return interestCents;
+    }
+
+    public void setInterestCents(Integer interestCents) {
+        this.interestCents = interestCents;
+    }
+
     public Integer getRepayCents() {
         return repayCents;
     }
 
     public void setRepayCents(Integer repayCents) {
         this.repayCents = repayCents;
+    }
+
+    public Integer getPenaltyCents() {
+        return penaltyCents;
+    }
+
+    public void setPenaltyCents(Integer penaltyCents) {
+        this.penaltyCents = penaltyCents;
     }
 
     public Integer getTermDays() {

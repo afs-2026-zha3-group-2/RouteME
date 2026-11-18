@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>路线完成度行 — 个人主页 hero 预览（add-route-completion）</title>
+<style>
+  /* 令牌与 docs/prototype/v1/styles.css 同值；实现侧映射到 frontend/src/styles.css 的 :root / [data-theme="dark"] */
+  :root {
+    --deep: #06232b; --tide: #0f4c5c; --lagoon: #12707f; --lagoon-soft: #e3f0f1;
+    --coral: #ff6b35; --amber: #f5a524; --jade: #10925f; --warn: #d98613; --danger: #d8402f;
+    --bg: #f2ece1; --surface: #fffdf9; --surface-2: #f8f2e7; --line: #e4dbcb;
+    --ink: #0b2a33; --ink-2: #3f5d67; --ink-3: #576b72;
+    --t-jade: #0b7a4e; --t-lagoon: #0f5f6b; --t-warn: #a8660d; --t-muted: #576b72;
+    --r-sm: 8px; --r-md: 14px;
+  }
+  [data-theme="dark"] {
+    --bg: #08202a; --surface: #0c2a35; --surface-2: #0f3441; --line: #1d4753;
+    --ink: #f3fbfc; --ink-2: #c6dde1; --ink-3: #9fb8be;
+    --t-jade: #5fd3a1; --t-lagoon: #6fd3e0; --t-warn: #f0b64e; --t-muted: #9fb8be;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; padding: 32px; background: var(--bg); color: var(--ink);
+    font-family: "Noto Sans SC", "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
+  }
+  .toolbar { display: flex; gap: 12px; align-items: center; margin-bottom: 20px; }
+  .toolbar button {
+    border: 1px solid var(--line); background: var(--surface); color: var(--ink-2);
+    border-radius: var(--r-sm); padding: 6px 12px; font-size: 12px; cursor: pointer;
+  }
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 16px; max-width: 1440px; }
+  .profile-card {
+    background: var(--surface); border: 1px solid var(--line); border-radius: var(--r-md);
+    padding: 20px 22px; box-shadow: 0 1px 0 rgba(0,0,0,.03);
+  }
+  .state-tag { font-size: 11px; color: var(--ink-3); letter-spacing: .04em; text-transform: uppercase; margin-bottom: 10px; }
+  .profile-name { margin: 0 0 6px; font-size: 20px; font-weight: 700; }
+  .profile-hero-meta { margin: 0 0 4px; font-size: 12.5px; color: var(--ink-3); display: flex; gap: 10px; }
+  /* 复用 .profile-credit 行模式（行高 / 圆角 / 字号 / dot） */
+  .profile-credit, .profile-completion {
+    display: inline-flex; align-items: center; gap: 6px; width: fit-content;
+    margin-top: 4px; padding: 3px 10px; border-radius: var(--r-sm);
+    border: 1px solid var(--line); background: var(--surface-2);
+    font-size: 11.5px; font-weight: 650; color: var(--ink-2);
+  }
+  .profile-credit::before, .profile-completion::before {
+    content: ""; width: 6px; height: 6px; border-radius: 50%; background: currentColor;
+  }
+  .profile-credit.is-good { color: var(--t-lagoon); border-color: color-mix(in srgb, var(--lagoon) 28%, transparent); background: color-mix(in srgb, var(--lagoon) 7%, transparent); }
+  .profile-completion.is-good { color: var(--t-jade); border-color: color-mix(in srgb, var(--jade) 30%, transparent); background: color-mix(in srgb, var(--jade) 8%, transparent); }
+  .profile-completion.is-fair { color: var(--t-lagoon); border-color: color-mix(in srgb, var(--lagoon) 24%, transparent); background: color-mix(in srgb, var(--lagoon) 6%, transparent); }
+  .profile-completion.is-watch { color: var(--t-warn); border-color: color-mix(in srgb, var(--amber) 30%, transparent); background: color-mix(in srgb, var(--amber) 8%, transparent); }
+  .profile-completion.is-muted { color: var(--t-muted); border-color: var(--line); background: var(--surface-2); }
+  .note { margin-top: 10px; font-size: 11.5px; color: var(--ink-3); line-height: 1.6; }
+  @media (max-width: 390px) {
+    body { padding: 16px; }
+    .grid { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+  <div class="toolbar">
+    <button id="themeBtn" type="button">切换深色 / 浅色</button>
+    <span class="note" style="margin:0">个人主页 hero 局部 · 四态 · 完成度行紧随信用行</span>
+  </div>
+  <div class="grid">
+    <section class="profile-card">
+      <p class="state-tag">state = good · rate = 85</p>
+      <h2 class="profile-name">林小满</h2>
+      <p class="profile-hero-meta"><span>28 岁 · 狮子座</span><span>杭州</span><span>女</span></p>
+      <p class="profile-credit is-good">85 / 100 · 信用良好</p>
+      <p class="profile-completion is-good">路线完成度 85% · 信誉良好</p>
+      <p class="note">百分比 + 信誉标签；正向色阶。</p>
+    </section>
+
+    <section class="profile-card">
+      <p class="state-tag">state = neutral · rate = 75</p>
+      <h2 class="profile-name">周野</h2>
+      <p class="profile-hero-meta"><span>31 岁 · 双子座</span><span>成都</span><span>男</span></p>
+      <p class="profile-credit is-good">92 / 100 · 信用优秀</p>
+      <p class="profile-completion is-fair">路线完成度 75%</p>
+      <p class="note">只显示百分比，不附加信誉标签。</p>
+    </section>
+
+    <section class="profile-card">
+      <p class="state-tag">state = watch · rate = 55</p>
+      <h2 class="profile-name">陈屿</h2>
+      <p class="profile-hero-meta"><span>26 岁 · 水瓶座</span><span>厦门</span><span>男</span></p>
+      <p class="profile-credit is-fair">78 / 100 · 信用一般</p>
+      <p class="profile-completion is-watch">路线完成度 55% · 请留意行程完成情况</p>
+      <p class="note">警示色而非危险红；不使用「骗子」「危险用户」「不可信」等定性措辞。</p>
+    </section>
+
+    <section class="profile-card">
+      <p class="state-tag">state = insufficient · rate 省略</p>
+      <h2 class="profile-name">苏禾</h2>
+      <p class="profile-hero-meta"><span>24 岁 · 处女座</span><span>南京</span><span>女</span></p>
+      <p class="profile-credit is-good">80 / 100 · 信用良好</p>
+      <p class="profile-completion is-muted">暂无足够完成记录</p>
+      <p class="note">不显示 0% 或任何默认百分比；响应中 route_completion_rate 键被省略。</p>
+    </section>
+  </div>
+  <script>
+    document.getElementById('themeBtn').addEventListener('click', function () {
+      var root = document.documentElement;
+      root.setAttribute('data-theme', root.getAttribute('data-theme') === 'dark' ? 'light' : 'dark');
+    });
+  </script>
+</body>
+</html>

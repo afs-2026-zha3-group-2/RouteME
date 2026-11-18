@@ -13,6 +13,37 @@ export function netOf(principalCents: number): number {
   return principalCents - feeOf(principalCents);
 }
 
+/** 借款日利率 0.05%，按本金与期限天数计息。 */
+export const DAILY_INTEREST_BPS = 5;
+
+/** 逾期日罚息 0.1%，按本金与已开始逾期天数累计。 */
+export const DAILY_PENALTY_BPS = 10;
+
+const BPS_DENOMINATOR = 10_000;
+const MS_PER_DAY = 86_400_000;
+
+/** 利息 = 本金 × 0.05% × 期限天数，四舍五入到分。 */
+export function interestOf(principalCents: number, termDays: number): number {
+  return Math.round((principalCents * DAILY_INTEREST_BPS * termDays) / BPS_DENOMINATOR);
+}
+
+/** 罚息 = 本金 × 0.1% × 逾期天数，四舍五入到分。 */
+export function penaltyOf(principalCents: number, overdueDays: number): number {
+  if (overdueDays <= 0) {
+    return 0;
+  }
+  return Math.round((principalCents * DAILY_PENALTY_BPS * overdueDays) / BPS_DENOMINATOR);
+}
+
+/** 已开始的逾期天数：到期时刻之后的任意一秒都算第 1 天。 */
+export function overdueDaysOf(dueAt: string, now: Date = new Date()): number {
+  const elapsed = now.getTime() - Date.parse(dueAt);
+  if (elapsed <= 0) {
+    return 0;
+  }
+  return Math.ceil(elapsed / MS_PER_DAY);
+}
+
 /** 金额展示：整数分转「¥1,234.50」，不引入本地化差异。 */
 export function money(cents: number): string {
   const rounded = Math.round(cents);
