@@ -29,8 +29,8 @@
 
 | # | 条件 | Owner | 截止 |
 |---|---|---|---|
-| C1 | 快进合并 `main` 并推送（本次执行） | Jay | 2026-11-18 |
-| C2 | 观察合并后 `ci.yml` 结果（Backend / Frontend） | Jay | 2026-11-18 |
+| C1 | 已完成：`a821381d` 已推送 `main`（2026-11-18） | Jay | 2026-11-18 |
+| C2 | 待 CI 结果（push 触发 `ci.yml`，Backend / Frontend） | Jay | 2026-11-18 |
 | C3 | P5 归档：`openspec archive add-growth-level` + `sdd-living-merge` + `sdd-change-summary` | Jay | 2026-11-25 |
 
 ## 4. 签署

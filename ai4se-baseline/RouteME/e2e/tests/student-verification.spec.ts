@@ -80,3 +80,29 @@ test('gates applying until CHSI verification, then unlocks core actions', async 
   await expect(page.getByText(/申请已提交，等待/)).toBeVisible();
   await expect(page.locator('.ant-modal', { hasText: '需要先完成学信网认证' })).toHaveCount(0);
 });
+
+test('shows the new school immediately after re-verification without a reload', async ({ page }) => {
+  const account = await registerUnverified(page);
+  await useAccount(page, account);
+  const first = await page.request.post(`${API}/users/me/student-verification`, {
+    headers: { Authorization: `Bearer ${account.token}`, 'Content-Type': 'application/json' },
+    data: { name: '张三', school: '中山大学', code: 'AB12CD34EF56' },
+  });
+  expect(first.ok()).toBeTruthy();
+
+  // 重新加载会话，让前端拿到已认证状态；后续不再刷新页面。
+  await page.reload();
+  await page.goto('/#/verify/student');
+  await expect(page.getByRole('heading', { name: '已通过学信网学籍认证' })).toBeVisible();
+  await expect(page.locator('.chsi-facts')).toContainText('中山大学');
+
+  await page.getByRole('button', { name: '重新认证' }).click();
+  await page.locator('#chsi-name').fill('张三');
+  await page.locator('#chsi-school').fill('华南理工大学');
+  await page.locator('#chsi-code').fill('ZX12CV34BN56');
+  await page.getByRole('button', { name: '提交认证' }).click();
+
+  await expect(page.getByText('认证通过，核心功能已解锁')).toBeVisible();
+  await expect(page.locator('.chsi-facts')).toContainText('华南理工大学');
+  await expect(page.locator('.chsi-facts')).not.toContainText('中山大学');
+});
