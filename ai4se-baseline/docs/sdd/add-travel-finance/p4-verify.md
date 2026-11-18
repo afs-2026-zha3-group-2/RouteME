@@ -73,9 +73,9 @@
 |---|---|---|---|
 | 当前开发者（报告 2 / 2） | 验证报告 + 质量报告 | Karena | 已批准（2026-11-18 复审通过） |
 | IO（报告 1 / 2） | 验证报告 + 质量报告 | WAYNE | 已批准（2026-11-18 复审通过） |
-| VL | `g2-decision.md` | Neal | 待签（G2） |
+| VL | `g2-decision.md` | Neal | G2 Pass with documented debt（2026-11-18） |
 
-**阶段结论：Pass with documented debt（建议）**；4 个 P4 签署位已于 2026-11-18 复审通过；PR #42 已提交且 CI 2/2 通过；G2 待 VL 签署，P5 归档待 PR 合并。
+**阶段结论：Pass with documented debt**；4 个 P4 签署位已于 2026-11-18 复审通过；PR #42 已提交且 CI 2/2 通过；G2 由 Neal 于 2026-11-18 批准，已合并到 `main`；P5 归档按用户指示不执行。
 
 ## 6. Rebase 与返工复测（2026-11-18）
 
@@ -94,5 +94,5 @@ rebase 冲突处理中修复的回归：
 
 1. ~~完成 P1–P4 复审与签名（WAYNE、Karena、Lewis Liu）~~：2026-11-18 已回收 WAYNE 与 Karena 的全部签署位；`design.md` / `tasks.md` 工件 2（Lewis Liu）2 个签署位仍待签。
 2. ~~提交（verify 提交）并开 PR~~：2026-11-18 提交 `24ae282` 并开 [PR #42](https://github.com/afs-2026-zha3-group-2/RouteME/pull/42)；CI 2/2 通过（Backend `./mvnw -B -ntp verify`、Frontend `build && test`），无冲突、可自动合并。提交前 rebase 到 `origin/main@5cb67ff`：唯一冲突 `frontend/src/styles.css` 以「保留 main 的 AI 样式块 + 追加本 change 的 459 行」解决，rebase 后本地复验前端 62 文件 / 493 tests、后端 618。
-3. VL 签 G2（`g2-decision.md` 已起草，待 Neal 签署）。
-4. P5 归档（`openspec archive add-travel-finance` + Living Spec 合并）需等 PR #42 合并，当前未合入 `main`，暂不执行。
+3. ~~VL 签 G2~~：`g2-decision.md` 由 Neal 于 2026-11-18 签为 **Pass with documented debt**。
+4. ~~P5 归档~~：按用户 2026-11-18 指示不执行；`openspec/changes/add-travel-finance/` 保留在 `main` 作为变更记录，Living Spec 不合并。

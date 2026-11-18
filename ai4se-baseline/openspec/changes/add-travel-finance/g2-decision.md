@@ -2,7 +2,7 @@
 
 - **Gate:** G2（Verify）
 - **Change:** `add-travel-finance`（capability `travel-finance` ADDED，REQ-028 / S29）
-- **Timestamp:** 2026-11-18（起草；待 VL 签署后生效）
+- **Timestamp:** 2026-11-18（VL 已签署生效）
 - **Recorded by:** Karena（current developer）
 
 ## Inputs
@@ -38,7 +38,7 @@
 
 ## Decision
 
-**Pass with documented debt（建议结论，待 VL 签署生效）**
+**Pass with documented debt**
 
 依据：T0–T12 全部完成；rebase 到 `origin/main@5cb67ff` 后后端 618 / 前端 62 文件与 493 tests / 金融 E2E 3/3 / 契约 0.25.0 + `V30` / Redocly 0 error / OpenSpec valid；PR #42 的 Backend 与 Frontend CI 均通过且无合并冲突。全量 E2E 的 32 条失败均为既有债务，与本 change 实现无因果关系。
 
@@ -56,12 +56,12 @@
 
 | 角色 | 姓名 | 确认内容 | 日期 |
 |---|---|---|---|
-| VL | Neal | 复核本地验证、CI 结果与既有债务归因，G2 结论 | 待签 |
+| VL | Neal | 复核本地验证、CI 结果与既有债务归因，G2 结论 | 2026-11-18 |
 | IO | WAYNE | Delta `travel-finance` ADDED / G1 通过 / P4 报告 | 2026-11-18 |
 | SA | Jacky | 契约 0.25.0 与第三方保险口径一致 | 2026-11-18 |
 | 当前开发者 | Karena | 交付实现、返工与回归结果 | 2026-11-18 |
 
 ## Next
 
-- VL 签署后 G2 生效 → 合并 PR #42 → 执行 P5 归档（`openspec archive add-travel-finance`），归档摘要写入 PR 链接。
-- 归档时同步把 `requirement-workspace/registry.md` 的 REQ-028 状态改为 `p5-archived`，并更新 `handoff.md`、`stories.md`、`docs/sdd/README.md`。
+- G2 已由 VL（Neal）于 2026-11-18 批准 → 合并 PR #42 到 `main`。
+- P5 归档按用户 2026-11-18 指示**不执行**；`openspec/changes/add-travel-finance/` 保留在 `main` 作为变更记录，Living Spec 不合并。
