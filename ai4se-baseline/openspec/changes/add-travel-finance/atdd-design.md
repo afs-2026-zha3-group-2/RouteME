@@ -11,7 +11,7 @@
 |---|---|---|
 | **API（后端）** | 钱包初始化与回填、账本可回算、第三方保险入口 / 状态回写 / 保障期 / 到期派生、借款金额 / 期限 / 净额 / 到期、还款与逾期、资格与账号状态、整数分、幂等、数据隔离 | 固定 `Clock` + MockMvc；断言 JSON、数据库状态与流水条数 |
 | **E2E（浏览器）** | 注册后钱包、侧边栏与账号菜单入口、行程详情状态、第三方投保跳转与新窗口、演示回写后的状态持久化、借款净额与还款、无资格页 | 每个用例用新注册账号（自动获得 1,000,000 分钱包），避免依赖种子余额 |
-| **UT（Defer，apply 阶段补）** | 5% 费用纯函数、借款净额 / 应还、逾期派生、保险状态派生、资格派生、金额格式化、钱包 CAS 重试分支（mock mapper） | 纯逻辑；不在本文件展开用例 |
+| **UT（Defer，apply 阶段补）** | 5% 费用纯函数、利息 / 罚息纯函数、借款净额 / 应还、逾期天数派生、保险状态派生、资格派生、金额格式化、钱包 CAS 重试分支（mock mapper） | 纯逻辑；不在本文件展开用例 |
 | **NFR** | 本轮 deferred：并发压测、交易量监控、审计导出 | 由 `proposal.md` Out of scope 与 G1 范围确认；P4 验证报告注明 |
 
 ## 2. 场景 → 用例映射
@@ -39,16 +39,16 @@
 | E19 | R5 非同行者不能打开入口或回写 | API + E2E | 403 `FORBIDDEN`；页面无可提交投保按钮 |
 | E20 | R5 已结束或已取消行程不能投保 | API + E2E | `completed` / `cancelled`：409 `TRIP_NOT_OPEN`；无记录、无扣款 |
 | E21 | R6 借款金额与期限边界 | API | 99 / 2,001 元 → 400；`principal_cents` 非 100 倍数 → 400；期限 1 / 10 / 31 → 400 |
-| E22 | R6 净额发放与费用拆分 | API + E2E | 1,000 元 / 14 天：50 / 950 / 1,000；钱包 +95,000；1 条入账 |
+| E22 | R6 净额发放与费用拆分 | API + E2E | 1,000 元 / 14 天：服务费 50、净额 950、利息 7、应还 1,007；钱包 +95,000；1 条入账 |
 | E23 | R6 到期时间为服务端计算 | API | `due_at = funded_at + 14 天`；客户端传 `due_at` 被忽略 |
 | E24 | R6 借款资格限制 | API | 非同行者 403；`completed` / `cancelled` 409；均无流水 |
-| E25 | R7 借款列表字段完整 | API + E2E | 本金 / 服务费 / 净额 / 应还 / 期限 / 发放 / 到期 / 状态；逾期显示 `overdue` |
+| E25 | R7 借款列表字段完整 | API + E2E | 本金 / 服务费 / 净额 / 利息 / 应还 / 罚息 / 合计应还 / 期限 / 发放 / 到期 / 状态；逾期显示 `overdue` 与累计罚息 |
 | E26 | R7 只能看到自己的借款 | API | A 的列表不含 B；还他人借款 403 |
 | E27 | R8 已有进行中借款时拒绝新申请 | API | 409 `ACTIVE_LOAN_EXISTS`；无第二笔、无流水；还清后可再借 |
-| E28 | R8 手动还款结清 | API + E2E | 扣 1,000 元、`status=repaid`、`repaid_at` 非空；不再收费 |
+| E28 | R8 手动还款结清 | API + E2E | 扣 1,007 元（本金 + 利息）、`status=repaid`、`repaid_at` 非空；不再收服务费 |
 | E29 | R8 余额不足阻断还款 | API | 409 `INSUFFICIENT_BALANCE`；余额与 `ACTIVE` 不变 |
 | E30 | R8 已还清不能重复还款 | API | 409 `LOAN_NOT_ACTIVE`；无扣款、无新流水 |
-| E31 | R8 逾期派生且无罚息 | API + E2E | 固定时钟跨过 `due_at`：`status=overdue`；`repay_cents` 仍等于本金；不自动扣款 |
+| E31 | R8 逾期派生并累计罚息 | API + E2E | 固定时钟跨过 `due_at` N 天：`status=overdue`；罚息 = 本金 × 0.1% × N；`total_repay_cents` = 本金 + 利息 + 罚息；不自动扣款；还款按合计应还结清并落库罚息 |
 | E32 | R9 行程详情入口按资格显示 | E2E | 同行者 / 发布者可见「旅行安全保障」与状态；路人、`completed` / `cancelled` 不显示 |
 | E33 | R9 账号菜单与侧边栏入口 | E2E | 账号菜单与「我的旅行」下方均有「旅行保障」，均指向 `#/finance`；聚合页展示余额、保险记录 / 借款与可交易行程入口 |
 | E34 | R9 移动端底部导航不变 | E2E | 390 宽度下导航项与改动前一致；无新增金融项 |
@@ -69,7 +69,7 @@
 | 2 | `.../TravelFinanceInsuranceApiTest.java` | 投保跳转 / 状态回写 / 保险摘要端点不存在 |
 | 3 | `.../TravelFinanceLoanApiTest.java` | 借款 / 还款端点不存在 |
 | 4 | `.../TravelFinanceEligibilityApiTest.java` | 资格与账号状态守卫未接入 |
-| 5 | `.../migration/TravelFinanceMigrationSqliteTest.java` | `V30` 未执行 |
+| 5 | `.../migration/TravelFinanceMigrationSqliteTest.java` | `V30` / `V32` 未执行 |
 | 6 | `OpenApiTest` 新增 `in_openApiFile_out_travelFinanceContractDeclared` | 路径 / schema / 3 个错误码缺失，旧站内商品路径仍在 |
 | 7 | `AuthControllerTest` 增加「注册即建钱包」 | 注册未初始化钱包 |
 | 8 | `e2e/tests/finance.spec.ts` | 路由、入口与页面不存在 |
@@ -106,8 +106,8 @@
 ## 5. 门禁与执行顺序
 
 1. **Red：** 第 3 节 1–5 类失败用例 + `OpenApiTest` 新断言。
-2. **契约：** `openapi.yaml` 升 0.25.0，补 6 条路径、11 个 schema 与 3 个错误码，删除站内商品路径；同步 `OpenApiTest` 两处版本断言。
-3. **Green：** 迁移 `V30` → 钱包 / 账本 → 第三方保险配置 / 入口 / 回写 → 借款 / 还款 → 资格 / 账号状态 → 控制器 / 响应 → 前端。
+2. **契约：** `openapi.yaml` 升 0.28.0，补 6 条路径、11 个 schema 与 3 个错误码，删除站内商品路径；`TravelLoan` 增加利息 / 罚息 / 合计应还字段；同步 `OpenApiTest` 版本断言。
+3. **Green：** 迁移 `V30` / `V32` → 钱包 / 账本 → 第三方保险配置 / 入口 / 回写 → 借款 / 利息 / 还款 / 罚息 → 资格 / 账号状态 → 控制器 / 响应 → 前端。
 4. **E2E：** `finance.spec.ts` 覆盖投保跳转与回写、借款、还款、入口、无资格。
 5. **门禁：** `mvnw.cmd test`、`npm run build && npm test`、`npx playwright test tests/finance.spec.ts`、`openspec validate add-travel-finance --strict`、`npx @redocly/cli lint openapi.yaml`。
 
@@ -118,7 +118,7 @@
 | 不做承保 / 定价 / 保费计算 | 保险响应与表结构无保费 / 保额字段；`InsuranceProduct` 只有 code / title / summary |
 | 不做理赔 / 给付 / 审核 | 契约无 claim 处理路径；RouteMe 只输出提供方的理赔指引链接 |
 | 不做退保 / 退款 / 批改 | 无 DELETE 或改保险记录端点；保险状态只有 `active` / `expired` 派生 |
-| 不做利息 / 罚息 / 分期 / 展期 | 借款响应无 interest 字段；`repay_cents == principal_cents`；逾期余额不变 |
+| 不做分期 / 展期 / 复利 / 罚息封顶 | 借款响应只有线性 `interest_cents` / `penalty_cents`；无分期或复利字段；逾期不自动扣款，仅还款时结清 |
 | 不做充值 / 提现 / 转账 | 金融路径集合恰为 6 条；无改余额端点 |
 | 不做管理后台金融视图 | `ADMIN_CONSOLE_PATHS` 不变；无 `/admin/finance` |
 | 不做通知 / 推送 / 邮件 | 金融写入不依赖 `mq` / push；无通知副作用断言 |

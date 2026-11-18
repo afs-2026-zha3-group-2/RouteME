@@ -101,7 +101,7 @@ API、事件与集成契约。字段一律 snake_case；时间字段为 RFC3339 
 
 ## RouteME 旅行保障（2026-11-18，`travel-finance` / REQ-028）
 
-契约源：`RouteME/openapi.yaml`（v0.25.0）。校验：`cd RouteME/backend; .\mvnw.cmd -Dtest=OpenApiTest test`。
+契约源：`RouteME/openapi.yaml`（v0.28.0）。校验：`cd RouteME/backend; .\mvnw.cmd -Dtest=OpenApiTest test`。
 
 | 方法 | 路径 | 说明 |
 |---|---|---|

@@ -1490,23 +1490,23 @@ MVP 无推送、无通知；以下为点赞与信用状态的展示面契约。
 - `{TBD}`：无。非阻塞项（枚举归属、字段命名、列表列、契约 / 迁移号）在 §8 标 open / deferred，P3 定。
 ## REQ-028 增补 — 旅行保障与小额借款（旅行金融迭代 1）
 
-> 合并说明（2026-11-18）：本 change 已 rebase 到 `origin/main@822471c`；编号由 REQ-024 / S25 顺延为 **REQ-028 / S29**，契约 **0.25.0** + 迁移 **`V30`**；本节保留 P1 时点的分析口径，文末「探针记录」记录最终确认。
+> 合并说明（2026-11-18）：本 change 已 rebase 到 `origin/main@ea5493a`；编号由 REQ-024 / S25 顺延为 **REQ-028 / S29**；P1 时点拟定 0.25.0 + `V30`，实现阶段增补借款利息 / 逾期罚息后落定 **0.28.0 + `V32`**；本节保留 P1 时点的分析口径，文末「探针记录」记录最终确认。
 
 ### ① 数据契约（Data contract）
 
 | # | 概念 | grain（粒度） | 字段清单 | 状态迁移 | 来源 |
 |---|---|---|---|---|---|
-| A | **演示钱包** `user_wallet` | 每用户 1 条（`user_id` 唯一） | `user_id`（PK，引用 `app_users.id`）、`balance_cents`（INT NOT NULL，≥0）、`created_at`、`updated_at` | 无记录 →（注册成功）1,000,000 分；无记录 →（迁移回填）1,000,000 分；n →（保险扣款）n − total；n →（借款发放）n + net；n →（还款）n − principal；余额只由钱包服务在事务内写 | 注册事务；迁移回填；钱包服务 |
-| B | **钱包流水** `wallet_ledger` | 每次余额变化 1 条；append-only，不更新不删除 | `id`、`user_id`、`direction`（`CREDIT` / `DEBIT`）、`amount_cents`、`balance_before_cents`、`balance_after_cents`、`kind`（`INITIAL` / `INSURANCE_PREMIUM` / `INSURANCE_FEE` / `LOAN_DISBURSEMENT` / `LOAN_REPAYMENT`）、`related_type` + `related_id`、`idempotency_key`（可空 + 唯一）、`occurred_at` | 只追加；不变量 `balance_before ± amount = balance_after`，且 `balance_after ≥ 0` | 钱包服务 |
-| C | **保单** `insurance_policy` | 每用户 × 每行程 × 每风险类型 1 条 | `id`、`user_id`、`trip_id`、`plan_code`（`ACCIDENT` / `DEATH` / `STOMACH_MEDICAL`）、`coverage_cents`、`premium_cents`、`service_fee_cents`、`total_charge_cents`、`starts_on`、`ends_on`、`status`（`ACTIVE`）、`purchased_at` | 创建即 `ACTIVE`（本切片无退保 / 到期状态迁移）；唯一约束 `(user_id, trip_id, plan_code)` | 保险购买 |
-| D | **借款** `travel_loan` | 每用户 × 每笔借款 1 条；同一用户至多 1 条 `ACTIVE` | `id`、`user_id`、`trip_id`、`principal_cents`、`service_fee_cents`、`disbursed_cents`、`repay_amount_cents`、`term_days`、`funded_at`、`due_at`、`repaid_at`、`status`（`ACTIVE` / `REPAID`） | 创建 `ACTIVE` →（手动还款成功）`REPAID` + `repaid_at`；逾期为读取时派生（`status = ACTIVE && now > due_at`），不落库 | 借款申请 / 还款 |
-| E | **保险商品**（固定常量，不落表） | 3 条 | `plan_code`、名称、`coverage_cents`、`premium_cents`、费率 5% | 无迁移；服务端常量 | D4 |
-| F | **服务费**（派生值，不落独立表） | 每笔交易 1 个 | `service_fee_cents` = round(基数 × 5%)，基数 = 保费或本金 | 无状态；随交易写入保单 / 借款 | D2 / D8 |
+| A | **演示钱包** `user_wallet` | 每用户 1 条（`user_id` 唯一） | `user_id`（PK，引用 `app_users.id`）、`balance_cents`（INT NOT NULL，≥0）、`created_at`、`updated_at` | 无记录 →（注册成功）1,000,000 分；无记录 →（迁移回填）1,000,000 分；n →（借款发放）n + net；n →（还款）n − total_repay；余额只由钱包服务在事务内写；第三方投保不改变余额 | 注册事务；迁移回填；钱包服务 |
+| B | **钱包流水** `wallet_ledger` | 每次余额变化 1 条；append-only，不更新不删除 | `id`、`user_id`、`direction`（`CREDIT` / `DEBIT`）、`amount_cents`、`balance_before_cents`、`balance_after_cents`、`entry_type`（`LOAN_DISBURSEMENT` / `LOAN_REPAYMENT`）、`related_type` + `related_id`、`occurred_at` | 只追加；不变量 `balance_before ± amount = balance_after`，且 `balance_after ≥ 0` | 钱包服务 |
+| C | **保险记录** `insurance_policy` | 每用户 × 每行程 1 条 | `id`、`user_id`、`trip_id`、`provider`、`coverage_start`、`coverage_end`、`status`（`ACTIVE`）、`confirmed_at` | 创建即 `ACTIVE`；`EXPIRED` 由读取时刻派生，不落库、不删除；唯一约束 `(user_id, trip_id)` | 第三方状态回写 |
+| D | **借款** `travel_loan` | 每用户 × 每笔借款 1 条；同一用户至多 1 条 `ACTIVE` | `id`、`user_id`、`trip_id`、`principal_cents`、`service_fee_cents`、`disbursed_cents`、`interest_cents`、`repay_cents`、`penalty_cents`、`term_days`、`funded_at`、`due_at`、`repaid_at`、`status`（`ACTIVE` / `REPAID`） | 创建 `ACTIVE` →（手动还款成功）`REPAID` + `repaid_at` + 落库实收 `penalty_cents`；逾期为读取时派生（`status = ACTIVE && now > due_at`），不落库 | 借款申请 / 还款 |
+| E | **第三方保险配置**（不落表） | 提供方 1 组 + 保障类别常量 | 提供方名称、保单 / 理赔 / 紧急求助地址；保障类别 code + 名称 + 范围摘要；**无价格、无保额** | 无迁移；服务端配置 / 常量 | D4 |
+| F | **利息与罚息**（派生值，不落独立表） | 每笔借款 | `interest_cents` = round(本金 × 5 × 期限天数 / 10000)；`penalty_cents` = round(本金 × 10 × 已开始逾期天数 / 10000) | 利息随发放写入；罚息进行中实时派生、还款时落库 | D3 |
 
 - **唯一真相：** 余额只在 A 表；B 表是审计与回算依据，二者 MUST 同事务写入。
 - **不改动既有表：** `app_users` 不加余额列；`user_credit_account` / `credit_ledger` 不被读写（信用分与钱包是两套账）。
-- **金额口径：** 全部整数分；借款本金为整元（`principal_cents % 100 = 0`），故 5% 恒为整数分。
-- **保单即订单：** 不新建订单表；`insurance_policy` 与 `travel_loan` 自身保留价格拆分，满足「保费 / 服务费 / 合计」「本金 / 服务费 / 净额 / 应还」的可核对性。
+- **金额口径：** 全部整数分；借款本金为整元（`principal_cents % 100 = 0`），故 5% 恒为整数分；利息与罚息按整数分四舍五入。
+- **借款记录即订单：** 不新建订单表；`travel_loan` 保留「本金 / 服务费 / 净额 / 利息 / 应还 / 罚息」的可核对性，`insurance_policy` 只保存第三方回写结果。
 
 ### ② 边界归属（Boundary attribution）
 
@@ -1517,25 +1517,23 @@ MVP 无推送、无通知；以下为点赞与信用状态的展示面契约。
 | 钱包读取 | 重复登录 / 刷新 / 重复读取 | in | 只读不写；`S29-3` |
 | 钱包写入 | 任何客户端直接改余额的端点 | in（禁止） | 不存在该端点；余额只经服务成功交易变化 |
 | 账本 | 任意余额变化 | in | `S29-4`；同事务、前后快照、可回算 |
-| 保险购买 | 3 款固定商品、`ACTIVE` 账号、合格行程成员 | in | `S29-5` ~ `S29-7` |
-| 保险购买 | 同一行程同一风险重复购买 | in（拒绝） | 唯一约束兜底；`S29-9` |
-| 保险购买 | 余额 < 合计扣款 | in（拒绝，无副作用） | `S29-10` |
-| 保险购买 | 非同行者 / 非发布者 | out（拒绝） | D5；`S29-12` |
-| 保险购买 | `completed` / `cancelled` 行程 | out（拒绝） | D5；`S29-13` |
-| 保险购买 | 行程 `recruiting` / `full` / `ongoing` | in | D5 |
-| 保障期 | 行程未开始 | in | `max(购买日, start_date) ~ end_date`；`S29-8` |
-| 保障期 | 行程进行中 | in | 自购买日起算至 `end_date`；`S29-8` |
-| 借款 | 100–2,000 元整、7/14/30 天、合格行程成员 | in | `S29-14` ~ `S29-18` |
+| 投保入口 / 状态回写 | 合格行程成员、`ACTIVE` 账号、第三方确认 | in | `S29-5` ~ `S29-9`；不扣款、不写流水 |
+| 投保入口 / 状态回写 | 同一行程重复回写 | in（幂等） | 唯一约束兜底；返回既有记录；`S29-9` |
+| 投保入口 / 状态回写 | 非同行者 / 非发布者 | out（拒绝） | D5；`S29-12` |
+| 投保入口 / 状态回写 | `completed` / `cancelled` 行程 | out（拒绝） | D5；`S29-13` |
+| 投保入口 / 状态回写 | 行程 `recruiting` / `full` / `ongoing` | in | D5 |
+| 保障期 | 任意可交易行程 | in | 取 `start_date ~ end_date`；`EXPIRED` 读取派生；`S29-8` |
+| 借款 | 100–2,000 元整、7/14/30 天、合格行程成员 | in | `S29-14` ~ `S29-18`；利息 0.05%/日 |
 | 借款 | 已有 1 笔 `ACTIVE` | in（拒绝） | 部分唯一索引 + 服务校验；`S29-19` |
 | 借款 | 金额非整元 / 越界 / 期限非法 | in（拒绝） | `S29-14` / `S29-15` |
 | 借款 | 非同行者 / 非发布者 | out（拒绝） | D5；`S29-23` |
 | 借款 | `completed` / `cancelled` 行程 | out（拒绝） | D5；`S29-24` |
-| 还款 | `ACTIVE` 借款 + 余额足够 | in | `S29-20` |
+| 还款 | `ACTIVE` 借款 + 余额 ≥ 合计应还 | in | `S29-20`；扣本金 + 利息 + 罚息 |
 | 还款 | 余额不足 | in（拒绝，状态不变） | `S29-21` |
 | 还款 | 账号 `SUSPENDED` / `BANNED` | in | 债务必须可结清；`S29-30` |
-| 逾期 | `ACTIVE` 且 `now > due_at` | in（派生只读） | 无罚息、无自动扣款；`S29-22` |
-| 幂等 | 双击 / 网络重试同一交易 | in | 保单唯一、借款部分唯一、还款状态迁移；`S29-32` |
-| 隔离 | 读取他人钱包 / 保单 / 借款 | out（拒绝或仅本人） | `S29-33` |
+| 逾期 | `ACTIVE` 且 `now > due_at` | in（派生只读 + 实时罚息） | 罚息 = 本金 × 0.1%/日 × 已开始逾期天数；无自动扣款；`S29-22` |
+| 幂等 | 双击 / 网络重试同一交易 | in | 保险唯一（用户 × 行程）、借款唯一（用户 × `ACTIVE`）、还款状态迁移；`S29-32` |
+| 隔离 | 读取他人钱包 / 保险记录 / 借款 | out（拒绝或仅本人） | `S29-33` |
 | 管理端 | 订单审核 / 手工调账 / 风控后台 | out | D10 |
 | 真实机构 | 保险 / 银行 / 支付 / KYC / 征信 | out | D9 |
 
@@ -1560,16 +1558,16 @@ MVP 无推送、无通知；以下为金融信息的 UI 展示面契约。
 |---|---|---|---|---|---|
 | 行程详情 — 「旅行保障」入口 | 发布者 / `ACCEPTED` 同行者 | 入口标题 + 钱包余额摘要（可选）+ 可交易状态 | 应用内页面 | 每行程 1 处 | D6；`S29-26` |
 | 行程维度旅行保障页 — 钱包卡 | 当前用户 | 余额 `¥x,xxx.xx`、币种 CNY、demo 标注 | 应用内页面 | 每页 1 处 | `S29-1` / `S29-3` |
-| 行程维度旅行保障页 — 商品卡 | 当前用户 | 商品名、保额、保费、5% 服务费、合计扣款、保障期口径、购买按钮 / 已购买态 | 应用内列表 | 3 张 | `S29-5` ~ `S29-9` |
-| 行程维度旅行保障页 — 借款表单 | 当前用户 | 本金输入（100–2,000 整元）、期限三选一、服务费、净额、应还、到期日预览、申请按钮 | 应用内表单 | 每页 1 组 | `S29-14` ~ `S29-18` |
-| 行程维度旅行保障页 — 当前借款卡 | 当前用户 | 本金、服务费、净额、应还、期限、发放日、到期日、状态（进行中 / 已还清 / 已逾期）、还款按钮 | 应用内卡片 | 每页 0–1 张（`ACTIVE`） | `S29-19` ~ `S29-22` |
-| 账号聚合页 — 钱包 / 保单 / 借款 | 当前用户 | 钱包余额；全部保单（行程名、商品、保额、费用拆分、保障期、状态）；全部借款（金额、期限、到期、状态） | 应用内页面 | 每用户 1 页 | D6；`S29-27` |
+| 行程维度旅行保障页 — 保险面板 | 当前用户 | 提供方名称、保障类别、保险状态、保障起止日、保单 / 理赔 / 紧急求助入口、「前往第三方购买」/ 已投保态 | 应用内面板 | 每页 1 组 | `S29-5` ~ `S29-9` |
+| 行程维度旅行保障页 — 借款表单 | 当前用户 | 本金输入（100–2,000 整元）、期限三选一、服务费、净额、利息、应还、到期日预览、申请按钮 | 应用内表单 | 每页 1 组 | `S29-14` ~ `S29-18` |
+| 行程维度旅行保障页 — 当前借款卡 | 当前用户 | 本金、服务费、净额、利息、应还、逾期罚息、合计应还、期限、发放日、到期日、状态（进行中 / 已还清 / 已逾期）、还款按钮 | 应用内卡片 | 每页 0–1 张（`ACTIVE`） | `S29-19` ~ `S29-22` |
+| 账号聚合页 — 钱包 / 保险 / 借款 | 当前用户 | 钱包余额；全部保险状态（行程名、提供方、保障期、状态）；全部借款（本金、利息、罚息、合计应还、期限、到期、状态） | 应用内页面 | 每用户 1 页 | D6；`S29-27` |
 | 账号菜单 — 「旅行保障」入口 | 已登录用户 | 菜单项文字 + 跳转 `#/finance` | 应用内菜单 | 1 项 | `S29-27` |
 | 未登录 / 无资格 | 访客 / 非同行者 | 登录提示或无资格说明；**不展示**可提交表单 | 应用内页面 | 1 处 | `S29-28` |
 | 通知 / 推送 / 邮件 | — | **不存在** | —（不存在） | 0 | D10 |
 
-- 所有金额展示统一 `¥` + 两位小数；服务端只返回整数分，前端只做格式化，不做费率计算。
-- 保单与借款列表 MUST 只返回当前用户；聚合页一次取数，不为每条记录单独请求。
+- 所有金额展示统一 `¥` + 两位小数；服务端只返回整数分（含利息 / 罚息 / 合计应还），前端只做格式化与按同一费率预览，不重新定义业务规则。
+- 保险记录与借款列表 MUST 只返回当前用户；聚合页一次取数，不为每条记录单独请求。
 
 无展示面缺 display-fields；A0 门 ⑫ 通过。
 
@@ -1578,14 +1576,14 @@ MVP 无推送、无通知；以下为金融信息的 UI 展示面契约。
 - **注册事务边界：** `AuthServiceImpl.register` 已是 `@Transactional`，并已内嵌 `CreditService.ensureAccount`；钱包初始化必须挂同一事务，失败分支不留钱包。
 - **状态派生：** 行程状态由 `TripPlan.status(now)` 派生（已取消 > 已结束 > 旅行中 > 已满员 > 招募中），服务端必须用同一实现判断可交易性，不能前端自行推断日期。
 - **同行判定：** 发布者不在 `trip_applications`；资格 = `publisher_id == userId` 或存在 `trip_id + applicant_id + ACCEPTED`。
-- **写守卫：** 购买 / 借款走 `AccountStatusService.assertCanWrite(userId, BUSINESS)`；还款不能走同一守卫，否则封禁用户无法结清，需单独口径。
-- **并发：** 借款「每人 1 笔 ACTIVE」必须由数据库部分唯一索引兜底（服务层先查后写存在竞态）；SQLite / H2 均支持 `CREATE UNIQUE INDEX ... WHERE`，沿用 `V20` 写法。
+- **写守卫：** 投保入口 / 状态回写 / 借款走 `AccountStatusService.assertCanWrite(userId, BUSINESS)`；还款不能走同一守卫，否则封禁用户无法结清，需单独口径。
+- **并发：** 借款「每人 1 笔 ACTIVE」必须由数据库唯一索引兜底（服务层先查后写存在竞态）；用 `active_user_id` 唯一索引表达，`REPAID` 时置 NULL。
 - **余额并发：** 扣款必须用「条件更新 + 受影响行数」或事务内重读，避免双花；账本前 / 后余额在同一事务内计算。
-- **金额精度：** 后端用 `long` / 整数分运算，禁止 `double`；借款本金校验 `principal_cents % 100 == 0`。
-- **契约与迁移排他：** P1 时点基线 0.17.0 + `V23`；rebase 后 main 已到 0.24.0 + `V29`，本 change 按「后到者顺延」落定 **0.25.0 + `V30`**。
+- **金额精度：** 后端用 `long` / 整数分运算，禁止 `double`；借款本金校验 `principal_cents % 100 == 0`；利息与罚息按整数分四舍五入。
+- **契约与迁移排他：** P1 时点基线 0.17.0 + `V23`；rebase 后 main 到 0.24.0 + `V29`，先落 0.25.0 + `V30`；增补利息 / 罚息时 main 已到 0.27.0 + `V31`，按「后到者顺延」最终落定 **0.28.0 + `V32`**。
 - **原型缺口：** P1 时点 `docs/prototype` 无钱包 / 保险 / 借款页面；rebase 后 main 已归档 v1 且禁止结构性改动，原型截点撤回，界面证据以生产 UI 与 E2E 为准。
-- **E2E 影响：** 详情页新增入口区块，既有 `trips.spec.ts` 断言可能受版式影响；新增 `travel-finance.spec.ts` 覆盖购买、借款、还款与余额不足。
-- `{TBD}`：无。非阻塞项（契约 / 迁移号、端点与字段形状、原型截点）已在 REQ-028 §8 标 deferred。
+- **E2E 影响：** 详情页新增入口区块，既有 `trips.spec.ts` 断言可能受版式影响；新增 `finance.spec.ts` 覆盖第三方投保、借款、利息展示、还款与余额不足。
+- `{TBD}`：无。非阻塞项（端点与字段形状、原型截点）已在 REQ-028 §8 标 resolved。
 - A0 门 ⑨–⑫：全部通过。
 
 ## REQ-031 增补 — 路线完成度（S32 / issue #45）

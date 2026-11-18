@@ -3,7 +3,7 @@
 - **Change:** `add-travel-finance`（`travel-finance` ADDED，REQ-028 / S29）
 - **Reviewed artifact:** [`specs/travel-finance/spec.md`](specs/travel-finance/spec.md)（10 Requirement / 40 Scenario；ADDED）
 - **Inputs:** [`proposal.md`](proposal.md)、`requirement-workspace/requirements/REQ-028-travel-finance.md`、`requirement-workspace/intents/REQ-028-travel-finance.md`、`requirement-workspace/impact-brief.md` §28、`requirement-workspace/deep-dive.md`「REQ-028 增补」、`openspec/specs/trip-plans/spec.md`、`openspec/specs/trip-companions/spec.md`、`openspec/specs/user-auth/spec.md`
-- **Timestamp:** 2026-11-17（保险改为第三方入口 + 状态回写后于 2026-11-18 复审）
+- **Timestamp:** 2026-11-17（保险改为第三方入口 + 状态回写后于 2026-11-18 复审；借款增补利息与逾期罚息后于 2026-11-18 再复审）
 - **Reviewer:** Karena（当前开发者）
 - **Tooling:** `openspec validate add-travel-finance --strict` → `Change 'add-travel-finance' is valid`
 
@@ -16,7 +16,7 @@
 - 保险记录只保存行程关联、提供方、保障起止日、状态与确认时刻，不保存保单号 / 证件 / 银行卡 / 保费 / 保额；
 - Scenario 总数由 38 调整为 40（R3 4 / R4 5 / R5 4 的重排见映射表）。
 
-`requirement-workspace/requirements/REQ-028-travel-finance.md` §4 仍按旧口径描述站内商品与保险 5% 费用，与本次 Delta 存在**已知源文档差异**：需求条目以发起人 2026-11-18 的口头收敛为准，Delta / Proposal / Design 已同步为第三方模式；需求条目本身的修订留给下一个文档整理窗口（见「残余风险」）。
+`requirement-workspace/requirements/REQ-028-travel-finance.md` §4 已同步为第三方模式与借款利息 / 罚息口径；本次复审确认需求条目、Proposal、Delta 与 Design 一致，无已知源文档差异。
 
 ## AC review
 
@@ -31,7 +31,7 @@
 
 | Item | Result | Evidence | Notes |
 |---|---|---|---|
-| DoV-1 Scope matches proposal | Pass | `proposal.md` In scope 12 项 ↔ 10 Requirement；Out of scope 9 项无对应需求 | 理赔、退保、罚息、充值提现、管理后台、通知、真实机构 API 均无 Scenario |
+| DoV-1 Scope matches proposal | Pass | `proposal.md` In scope 12 项 ↔ 10 Requirement；Out of scope 9 项无对应需求 | 理赔、退保、分期 / 复利、充值提现、管理后台、通知、真实机构 API 均无 Scenario |
 | DoV-2 Ambiguities listed or resolved | Pass | REQ-028 §8 blocking OQ = 0；D1–D12 已固化；保险到期与借款逾期均「读取时派生」 | 页面版式、端点形状与字段名留 P3 |
 | DoV-3 Role concerns noted for residual risk | Pass | 下方「残余风险」 | IO：不承保 / 不参与理赔边界；SA：钱包与信用分分表、保险不产生流水；Dev：并发、配置驱动、契约号 |
 | DoV-4 No business implementation claimed done | Pass | 本阶段只产出 Delta Spec；代码仅作 as-is 证据 | `proposal.md` 交付边界明确 P3 / P4 才实现 |
@@ -58,13 +58,13 @@
 | S29-13 已结束 / 取消不能购买 | R5 / 已结束或已取消行程不能投保 | 完整（409 `TRIP_NOT_OPEN`） |
 | S29-14 借款金额边界 | R6 / 借款金额与期限边界 | 完整（99 / 2,001 / 100.50） |
 | S29-15 期限边界 | R6 / 借款金额与期限边界 | 完整（仅 7 / 14 / 30） |
-| S29-16 净额发放与 5% | R6 / 净额发放与费用拆分 | 完整（本金 / 服务费 / 净额 / 应还 / 流水） |
-| S29-17 应还 = 本金、0 利息 | R6 / 净额发放与费用拆分；R8 / 手动还款结清 | 完整 |
+| S29-16 净额发放与 5% | R6 / 净额发放与费用拆分 | 完整（本金 / 服务费 / 净额 / 利息 / 应还 / 流水） |
+| S29-17 利息与应还额 | R6 / 净额发放与费用拆分；R8 / 手动还款结清 | 完整（0.05%/日、1,000 元 14 天利息 7 元、应还 1,007 元） |
 | S29-18 到期时刻 | R6 / 到期时间为服务端计算 | 完整（忽略客户端值） |
 | S29-19 每人 1 笔进行中 | R8 / 已有进行中借款时拒绝新申请 | 完整（还清后可再借） |
-| S29-20 手动还款结清 | R8 / 手动还款结清 | 完整（扣本金、REPAID、不再收费） |
+| S29-20 手动还款结清 | R8 / 手动还款结清 | 完整（扣本金 + 利息、REPAID、不再收服务费） |
 | S29-21 余额不足阻断还款 | R8 / 余额不足阻断还款 | 完整（状态不变） |
-| S29-22 逾期派生无罚息 | R8 / 逾期派生且无罚息 | 完整 |
+| S29-22 逾期派生与罚息 | R8 / 逾期派生并累计罚息 | 完整（0.1%/日、合计应还、还款时结清并落库） |
 | S29-23 非同行者不能借款 | R6 / 借款资格限制 | 完整（403） |
 | S29-24 已结束 / 取消不能借款 | R6 / 借款资格限制 | 完整（409） |
 | S29-25 借款列表 | R7 / 借款列表字段完整 | 完整 |
@@ -90,10 +90,10 @@
 
 ## 残余风险
 
-- **源文档差异：** `REQ-028-travel-finance.md` §4 仍写站内三款商品与保险 5% 费用，与收敛后的 Delta 不一致；本次以发起人口头收敛为准，需求条目待后续文档窗口修订。
+- **源文档差异：** 已消除；`REQ-028-travel-finance.md` §4 与需求条目已同步为第三方模式及借款利息 / 罚息。
 - 3 个新增业务码（`INSUFFICIENT_BALANCE` / `ACTIVE_LOAN_EXISTS` / `LOAN_NOT_ACTIVE`）在 P3 已入契约；`POLICY_EXISTS` 已退休。
 - 余额扣减的并发控制已定 CAS 条件更新 + 0 行重读，并配 `WalletServiceImplTest`；并行压测仍 deferred。
-- 契约版本与迁移号已按合并顺序落定 0.25.0 + `V30`（main 为 0.24.0 + V28 / V29）。
+- 契约版本与迁移号已按合并顺序落定 0.25.0 + `V30`（main 为 0.24.0 + V28 / V29）；借款增补利息 / 罚息后顺延为 0.28.0 + `V32`（main 为 0.27.0 + `V31`）。
 - 第三方真实投保无法在本期完成：演示环境用 `routeme.insurance.*` 配置 + 演示确认端点；真实回调、验签与对账列入 Out of scope。
 - 借款到期按「发放时刻 + N 天」的 `Instant` 计算，已注入 `Clock` 固化，避免部署时区影响。
 
