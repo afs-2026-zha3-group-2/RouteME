@@ -72,6 +72,11 @@ export const aiMessages = {
   planReady: '好的！我已为你生成专属行程 🎉',
   planReadyFor: (note: string) => `已按「${note}」重新生成你的专属行程 🎉`,
   planReplyLead: '结合美食、拍照、预算和交通，为你推荐以下方案：',
+  /** 历史方案气泡：只展示当时那一版，不跟最新方案混在一起。 */
+  planHistoryLead: (title: string, dayCount: number) =>
+    `当时的方案：${title}（${dayCount} 天）`,
+  planHistoryFoot: '这是历史版本，最新方案在下方的「已生成」消息里，可在那里继续调整。',
+  planHistoryLegacy: '这条历史方案没有留存明细，最新方案见下方。',
   planDays: (days: number) => `${days} 天行程`,
   planPreviewHint: '完整时间轴、路线与预算在右侧预览里，可继续调整后发布为行程。',
   replyOverview: '行程总览',

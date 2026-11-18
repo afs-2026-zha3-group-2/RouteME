@@ -9786,6 +9786,36 @@ a.admin-metric-card:focus-visible {
   color: var(--ink);
 }
 
+/* 历史方案气泡：只列当时的景点与时间，视觉上明显弱于最新的可交互方案。 */
+.ai-plan-history {
+  display: grid;
+  gap: 6px;
+}
+
+.ai-plan-history-list {
+  display: grid;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.ai-plan-history-list li {
+  display: grid;
+  grid-template-columns: 48px minmax(0, 1fr) auto;
+  gap: 8px;
+  align-items: baseline;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--ink-2);
+}
+
+.ai-plan-history-day {
+  font-size: 11px;
+  color: var(--ink-3);
+  white-space: nowrap;
+}
+
 .ai-reply-reason {
   color: var(--ink-2);
 }

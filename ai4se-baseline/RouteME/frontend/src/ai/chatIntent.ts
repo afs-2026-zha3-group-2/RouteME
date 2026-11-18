@@ -169,12 +169,10 @@ export function parseDateInText(text: string, now: Date = new Date()): string | 
     const month = Number(monthDay[1]);
     const day = Number(monthDay[2]);
     if (month >= 1 && month <= 12 && day >= 1 && day <= 31) {
-      // 今年的该日期已过时顺延到明年，避免生成一个过去的行程。
+      // 今年该日期已过时按今天算：行程不能排到过去，但顺延到明年也不像用户的本意。
+      const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
       const candidate = new Date(now.getFullYear(), month - 1, day);
-      const date = candidate < new Date(now.getFullYear(), now.getMonth(), now.getDate())
-        ? new Date(now.getFullYear() + 1, month - 1, day)
-        : candidate;
-      return toIsoDate(date);
+      return toIsoDate(candidate < today ? today : candidate);
     }
     return null;
   }
