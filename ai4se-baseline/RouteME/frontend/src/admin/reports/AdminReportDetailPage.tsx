@@ -1,20 +1,17 @@
 import { useEffect, useState } from 'react';
-import { Alert, Button, DatePicker, Input, Radio, Skeleton, Typography, message } from 'antd';
-import dayjs from 'dayjs';
+import { Alert, Button, Input, Radio, Skeleton, Typography, message } from 'antd';
 import { loadAdminReport, loadAdminUser, resolveAdminReport, startAdminReport } from '../../api';
 import { adminMessages, banReasonLabel } from '../../i18n/adminMessages';
 import { tripMessages } from '../../i18n/tripMessages';
+import { creditLabel } from '../../profile/creditDisplay';
 import { SoftSelect } from '../../shell/SoftSelect';
 import { StatusBadge } from '../../trips/StatusBadge';
-import { appDatePickerUpProps } from '../../utils/datePickerProps';
 import type {
-  AccountStatus,
   AdminReportDetail,
   AdminUserDetail,
-  BanReasonCode,
+  ReportViolationType,
 } from '../../types';
 import { AdminLayout } from '../AdminLayout';
-import { BAN_REASON_OPTIONS } from '../banReasons';
 import { AccountStatusBadge, ReportStatusBadge } from '../adminBadges';
 import {
   adminErrorText,
@@ -29,41 +26,24 @@ import {
   emptyReportResolutionForm,
   toResolveRequest,
   validateReportResolution,
-  type ReportAction,
   type ReportResolutionFormErrors,
   type ReportResolutionFormState,
 } from './reportActionForm';
+import {
+  OTHER_DEDUCTION_OPTIONS,
+  REPORT_VIOLATION_OPTIONS,
+  deductionOf,
+  previewScore,
+  safeScore,
+  violationLabel,
+} from './reportViolation';
 
 type Props = {
   token: string;
   reportId: number;
 };
 
-type ActionOption = { value: ReportAction; label: string };
-
-/** 处罚动作随被举报用户当前状态收窄（design §5.5）。 */
-function actionOptions(status: AccountStatus): ActionOption[] {
-  if (status === 'BANNED') {
-    return [{ value: 'UPDATE_BAN', label: adminMessages.resolutionUpdateBan }];
-  }
-  if (status === 'SUSPENDED') {
-    return [
-      { value: 'KEEP', label: adminMessages.actionKeepSuspended },
-      { value: 'BAN', label: adminMessages.resolutionBan },
-    ];
-  }
-  return [
-    { value: 'KEEP', label: adminMessages.actionKeep },
-    { value: 'SUSPEND', label: adminMessages.resolutionSuspend },
-    { value: 'BAN', label: adminMessages.resolutionBan },
-  ];
-}
-
-function needsBanFields(action: ReportAction | ''): boolean {
-  return action === 'BAN' || action === 'UPDATE_BAN';
-}
-
-/** 举报详情：上下文 + 开始处理 + 成立 / 不成立处置。 */
+/** 举报详情：上下文 + 开始处理 + 成立（违规类型扣分）/ 不成立处置。 */
 export function AdminReportDetailPage({ token, reportId }: Props) {
   const [detail, setDetail] = useState<AdminReportDetail | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -218,9 +198,21 @@ export function AdminReportDetailPage({ token, reportId }: Props) {
                 {detail.reported_user === null || detail.reported_user === undefined ? (
                   adminMessages.reportedUserUnknown
                 ) : (
-                  <a className="admin-link" href={`#/admin/users/${detail.reported_user.id}`}>
-                    {detail.reported_user.nickname}
-                  </a>
+                  <>
+                    <a className="admin-link" href={`#/admin/users/${detail.reported_user.id}`}>
+                      {detail.reported_user.nickname}
+                    </a>
+                    {detail.reported_user.credit_score !== null &&
+                      detail.reported_user.credit_score !== undefined && (
+                        <span className="admin-form-hint">
+                          {' · '}
+                          {adminMessages.reportReportedCredit}{' '}
+                          {safeScore(detail.reported_user.credit_score)}
+                          {' · '}
+                          {creditLabel(detail.reported_user.credit_level)}
+                        </span>
+                      )}
+                  </>
                 )}
               </dd>
             </div>
@@ -297,9 +289,29 @@ export function AdminReportDetailPage({ token, reportId }: Props) {
             <dd>{formatDateTime(detail.resolved_at) || '—'}</dd>
           </div>
           <div>
-            <dt>{adminMessages.reportAction}</dt>
-            <dd>{resolutionActionLabel(detail.resolution_action) || '—'}</dd>
+            <dt>{adminMessages.reportHistoryViolation}</dt>
+            <dd>
+              {detail.violation_type === null || detail.violation_type === undefined
+                ? '—'
+                : violationLabel(detail.violation_type)}
+            </dd>
           </div>
+          <div>
+            <dt>{adminMessages.reportHistoryDeduction}</dt>
+            <dd>
+              {detail.applied_deduction === null || detail.applied_deduction === undefined
+                ? '—'
+                : detail.applied_deduction === 0
+                  ? '0'
+                  : `-${detail.applied_deduction}`}
+            </dd>
+          </div>
+          {detail.resolution_action !== null && detail.resolution_action !== undefined && (
+            <div>
+              <dt>{adminMessages.reportHistoryActionLegacy}</dt>
+              <dd>{resolutionActionLabel(detail.resolution_action)}</dd>
+            </div>
+          )}
           <div>
             <dt>{adminMessages.reportResolutionNote}</dt>
             <dd>{detail.resolution_note ?? '—'}</dd>
@@ -672,15 +684,17 @@ function ResolveForm({
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
-  const status = detail.reported_user?.status ?? 'ACTIVE';
-  const options = actionOptions(status);
+  const before = safeScore(detail.reported_user?.credit_score);
+  const deduction = deductionOf(form.violationType, form.otherDeduction);
+  const showPreview = form.outcome === 'RESOLVED' && deduction !== null;
+  const after = showPreview ? previewScore(before, deduction) : null;
 
   const update = (patch: Partial<ReportResolutionFormState>) => {
     setForm((previous) => ({ ...previous, ...patch }));
   };
 
   const submit = async () => {
-    const found = validateReportResolution(form, Date.now());
+    const found = validateReportResolution(form);
     setErrors(found);
     if (Object.keys(found).length > 0) {
       return;
@@ -717,13 +731,7 @@ function ResolveForm({
           value={form.outcome}
           onChange={(event) => {
             const outcome = event.target.value as 'RESOLVED' | 'REJECTED';
-            update({
-              outcome,
-              action: outcome === 'REJECTED' ? '' : form.action,
-              banReasonCode: '',
-              banReasonNote: '',
-              banExpiresAt: '',
-            });
+            update({ outcome, violationType: '', otherDeduction: '' });
           }}
         >
           <Radio value="RESOLVED">{adminMessages.outcomeResolved}</Radio>
@@ -735,84 +743,83 @@ function ResolveForm({
 
         {form.outcome === 'RESOLVED' && (
           <>
-            <label className="form-label">{adminMessages.reportAction}</label>
+            <label className="form-label">{adminMessages.reportViolationType}</label>
             <SoftSelect
-              value={form.action}
-              options={[{ value: '', label: adminMessages.reportActionPlaceholder }, ...options]}
-              onChange={(value) => {
-                const action = value === '' ? '' : (value as ReportAction);
+              value={form.violationType}
+              options={[
+                { value: '', label: adminMessages.reportViolationPlaceholder },
+                ...REPORT_VIOLATION_OPTIONS.map((option) => ({
+                  value: option.value,
+                  label:
+                    option.value === 'OTHER'
+                      ? option.label
+                      : `${option.label}（-${option.deduction}）`,
+                })),
+              ]}
+              onChange={(value) =>
                 update({
-                  action,
-                  banReasonCode: '',
-                  banReasonNote: '',
-                  banExpiresAt: '',
-                });
-              }}
-              ariaLabel={adminMessages.reportAction}
+                  violationType: value === '' ? '' : (value as ReportViolationType),
+                  otherDeduction: '',
+                })
+              }
+              ariaLabel={adminMessages.reportViolationType}
             />
-            {errors.action !== undefined && (
-              <Typography.Text type="danger">{errors.action}</Typography.Text>
+            {errors.violationType !== undefined && (
+              <Typography.Text type="danger">{errors.violationType}</Typography.Text>
             )}
 
-            {needsBanFields(form.action) && (
+            {form.violationType === 'OTHER' && (
               <>
-                <label className="form-label">{adminMessages.fieldBanReason}</label>
+                <label className="form-label">{adminMessages.reportOtherDeduction}</label>
                 <SoftSelect
-                  value={form.banReasonCode}
-                  options={BAN_REASON_OPTIONS}
+                  value={form.otherDeduction === '' ? '' : String(form.otherDeduction)}
+                  options={[
+                    { value: '', label: adminMessages.reportOtherDeductionPlaceholder },
+                    ...OTHER_DEDUCTION_OPTIONS.map((option) => ({
+                      value: String(option.value),
+                      label: option.label,
+                    })),
+                  ]}
                   onChange={(value) =>
-                    update({ banReasonCode: value === '' ? '' : (value as BanReasonCode) })
+                    update({ otherDeduction: value === '' ? '' : Number(value) })
                   }
-                  ariaLabel={adminMessages.fieldBanReason}
+                  ariaLabel={adminMessages.reportOtherDeduction}
                 />
-                {errors.banReasonCode !== undefined && (
-                  <Typography.Text type="danger">{errors.banReasonCode}</Typography.Text>
+                {errors.otherDeduction !== undefined && (
+                  <Typography.Text type="danger">{errors.otherDeduction}</Typography.Text>
                 )}
+              </>
+            )}
 
-                <label className="form-label" htmlFor="report-ban-note">
-                  {adminMessages.fieldBanNote}
-                </label>
-                <Input.TextArea
-                  id="report-ban-note"
-                  value={form.banReasonNote}
-                  rows={2}
-                  maxLength={200}
-                  placeholder={adminMessages.fieldBanNoteHint}
-                  onChange={(event) => update({ banReasonNote: event.target.value })}
-                />
-                {errors.banReasonNote !== undefined && (
-                  <Typography.Text type="danger">{errors.banReasonNote}</Typography.Text>
-                )}
-
-                <div className="form-field">
-                  <label className="form-label" htmlFor="report-ban-expires">
-                    {adminMessages.fieldBanExpiresAt}
-                  </label>
-                  <DatePicker
-                    {...appDatePickerUpProps}
-                    id="report-ban-expires"
-                    showTime
-                    format="YYYY-MM-DD HH:mm"
-                    style={{ width: '100%' }}
-                    value={form.banExpiresAt === '' ? null : dayjs(form.banExpiresAt)}
-                    onChange={(value) =>
-                      update({ banExpiresAt: value === null ? '' : value.toISOString() })
-                    }
-                  />
-                  <Typography.Text type="secondary" className="admin-form-hint">
-                    {adminMessages.fieldBanExpiresAtHint}
-                  </Typography.Text>
-                  {errors.banExpiresAt !== undefined && (
-                    <Typography.Text type="danger">{errors.banExpiresAt}</Typography.Text>
+            {showPreview && deduction !== null && after !== null && (
+              <div className="admin-deduction-preview" data-testid="report-deduction-preview">
+                <span className="form-label">{adminMessages.reportPreview}</span>
+                <div className="admin-deduction-grid">
+                  <div className="admin-deduction-cell">
+                    <span className="admin-deduction-key">{adminMessages.reportPreviewCurrent}</span>
+                    <strong className="admin-deduction-value">{before}</strong>
+                  </div>
+                  <div className="admin-deduction-cell">
+                    <span className="admin-deduction-key">{adminMessages.reportPreviewDeduction}</span>
+                    <strong className="admin-deduction-value minus">-{deduction}</strong>
+                  </div>
+                  <div className="admin-deduction-cell">
+                    <span className="admin-deduction-key">{adminMessages.reportPreviewAfter}</span>
+                    <strong className="admin-deduction-value after">{after}</strong>
+                  </div>
+                  {after === 0 && before < deduction && (
+                    <p className="admin-deduction-cut">{adminMessages.reportPreviewCut}</p>
                   )}
                 </div>
-              </>
+              </div>
             )}
           </>
         )}
 
         <label className="form-label" htmlFor="report-resolution-note">
-          {adminMessages.reportResolutionNote}
+          {form.outcome === 'REJECTED'
+            ? adminMessages.reportRejectionNote
+            : adminMessages.reportViolationReason}
         </label>
         <Input.TextArea
           id="report-resolution-note"

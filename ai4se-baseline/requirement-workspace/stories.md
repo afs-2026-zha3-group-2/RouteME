@@ -507,20 +507,28 @@
 - **Change：** `add-travel-finance`（`travel-finance` ADDED）
 - **垂直切片：** 只负责「钱包 → 第三方保险入口与状态回写 / 借小额 → 收 5% 服务费 → 还款 / 到期」；理赔、退保、罚息、充值提现、管理后台、通知与信用分影响不在本故事。
 - **规则口径：** 保险由第三方提供方定价与承保，RouteMe 只提供入口并回写状态、不向用户收平台费；借款本金扣 5% 后发放净额；每人 1 个钱包、最多 1 笔进行中借款；仅行程发布者与 `ACCEPTED` 同行者可用。
+
+# Story list — REQ-030（S31 举报违规扣减信用分）
+
+- **来源：** GitHub Issue #29「[P0] 举报违规扣减信用分」（信用系统迭代 1 / Story 2 / 3 点 / 落点页面：举报详情页 / 用户信用记录）
+- **Change：** `add-report-credit-deduction`（`user-credit` ADDED + `admin-console` MODIFIED）
+- **口径：** 一条故事 = 举报成立表单（违规类型 + 违规原因）+ 一份信用扣分结算 + 一次低分联动；账号处罚动作从举报页移除（用户管理页保留）。
+- **编号说明：** 合并 `origin/main` 时 REQ-028 / S29 已被 `add-travel-finance` 占用、REQ-029 / S30 又由 `refine-publish-route-map` 占用，本需求按「后到者顺延」改为 **REQ-030 / S31**（change id 不变）。
 - **更新时间：** 2026-11-18
 
 | Story | Title | 角色 | Priority | Iteration | Points | Page | Parent REQ | Change | Status |
 |---|---|---|---|---|---|---|---|---|---|
 | S30 | 发布行程在地图上规划路线 | 发布者 | P0 | 迭代 3 | 3 | 发布行程 · 路线规划段 | REQ-029 | `refine-publish-route-map` | P4 implemented（2026-11-18） |
 | S29 | 旅行保障与小额借款 | 行程发布者 / 已加入同行者 | P0 | 旅行金融 1 | 5 | 行程详情 / 旅行保障页 / 账号聚合页 | REQ-028 | `add-travel-finance` | P4 implemented（2026-11-18） |
+| S31 | 举报违规扣减信用分 | 平台管理员 | P0 | 信用系统迭代 1 | 3 | 举报详情页 / 用户信用记录 | REQ-030 | `add-report-credit-deduction` | P4 implemented（2026-11-18） |
 
-## Traceability（REQ-029）
+## Traceability（REQ-030）
 
 | Story | Requirement scenarios | Change spec | Story file |
 |---|---|---|---|
 | S30 | REQ-029 §4 S30-1 ~ S30-11（+ 基线 7 场景保留） | `openspec/changes/refine-publish-route-map/specs/trip-plans/spec.md`（MODIFIED：1 Requirement / 18 Scenario） | `requirement-workspace/stories/refine-publish-route-map.story.md` |
 
-## Notes（REQ-029）
+## Notes（REQ-030）
 
 - **不拆故事：** 「加点 → 排序 → 看到路线 → 提交」是同一条垂直切片；只换面板不做提交校验，会把占位名带进详情页。
 - **复用探索页面板：** `已选途经点`、`出行方式`、`重新生成旅行路线`、`已按直线显示路线`、`行程顺序` 五块直接复用；差异只来自注入的 `modes` / `modeLabels` 与降级文案。
@@ -543,12 +551,27 @@
 - **金额口径：** 整数分；借款只接受整元，保证 5% 恒为整数分，避免浮点与四舍五入争议；保险不出现金额字段。
 - **保留边界：** 真实保险机构 API / 核保 / 理赔、真实银行对接、征信、退保、罚息、钱包充值提现、管理后台金融视图与通知均排除（D10 / D12）。
 - **依赖：** `trip-plans` / `trip-companions` 只读；`user-auth` 注册事务内初始化钱包；`user-credit` 仅作账本范式参照，不读写信用分。
-- 未接入外部 ALM；本表为仓库内权威故事清单，ALM Sync 状态记为 Pending。
 
-# Story list — REQ-030（用户成长等级 LV1–LV5 / 迭代 3）
+## Traceability（REQ-030）
 
-- **故事：** S31 用户成长等级 LV1–LV5（GitHub issue #44；优先级 P1；迭代 3；3 点；落点页面：用户主页 / 行程详情 / 同行者信息）
-- **需求编号说明：** 合并说明（2026-11-18）：`main` 已占用 REQ-001 ~ REQ-029、S01 ~ S30（**REQ-029 / S30** 由 `refine-publish-route-map` 占用）；本需求按「后到者顺延」登记为 **REQ-030 / S31**；并行 #45 route-completion 顺延为 REQ-031 / S32。
+| Story | Requirement scenarios | Change spec | Story file |
+|---|---|---|---|
+| S31 | REQ-030 §4 R-1 ~ R-26 | `openspec/changes/add-report-credit-deduction/specs/user-credit/spec.md` + `specs/admin-console/spec.md` | 无独立故事文件：以意图 + proposal + Delta 承接（与 REQ-012 / REQ-019 同口径） |
+
+## Notes（REQ-030）
+
+- **不拆故事：** 违规类型选择、扣分记账与低分联动是同一条垂直切片；拆开无法端到端验收。
+- **账号处置解耦：** 举报页不再暂停 / 封禁；用户管理页保留既有能力（D1）。
+- **记录可见性：** 只写账本并在举报详情留痕，不做用户端 / 管理端信用明细页（D2）。
+- **低分限制：** 复用既有 `CreditChangedEvent`，不新增限制逻辑（D3）。
+- **边界：** 举报提交端原因枚举、其他扣分 / 加分事件、月度扣分上限、通知均不在本故事。
+
+- 未接入外部 ALM；本表为仓库内权威故事清单，ALM Sync 状态记为 Pending.
+
+# Story list — REQ-031（用户成长等级 LV1–LV5 / 迭代 3）
+
+- **故事：** S32 用户成长等级 LV1–LV5（GitHub issue #44；优先级 P1；迭代 3；3 点；落点页面：用户主页 / 行程详情 / 同行者信息）
+- **需求编号说明：** 合并说明（2026-11-18）：`main` 已占用 REQ-001 ~ REQ-030、S01 ~ S31（**REQ-029 / S30** = `refine-publish-route-map`，**REQ-030 / S31** = `add-report-credit-deduction`）；本需求按「后到者顺延」两次顺延，最终登记为 **REQ-031 / S32**；并行 #45 route-completion 顺延为 REQ-032 / S33。
 - **Change：** `add-growth-level`（`user-growth` ADDED）
 - **垂直切片：** 只负责「经验事件 → 防刷 / 每日上限 → 经验流水 → 等级派生 → 6 处展示」；不含明细页 / 排行榜 / 通知 / 权益 / 管理端 / 回填 / #45。
 - **规则口径：** LV1–LV5，每 100 EXP 一级，LV5 后继续累计；发布已完成行程体验 +10（配置化）；单篇每 10 个有效赞 +5（档位锁定）；正向每日 +20（Asia/Shanghai，跨档按剩余额度截断）；举报成立 −50（每份一次，最低 0，等级随经验回退）；他人只见等级。
@@ -556,18 +579,18 @@
 
 | Story | Title | 角色 | Priority | Iteration | Points | Page | Parent REQ | Change | Status |
 |---|---|---|---|---|---|---|---|---|---|
-| S31 | 用户成长等级 LV1–LV5 | RouteMe 用户 / 其他用户 | P1 | 迭代 3 | 3 | 个人主页 / 行程详情 / 同行者信息 | REQ-030 | `add-growth-level` | P1 drafted（2026-11-18） |
+| S32 | 用户成长等级 LV1–LV5 | RouteMe 用户 / 其他用户 | P1 | 迭代 3 | 3 | 个人主页 / 行程详情 / 同行者信息 | REQ-031 | `add-growth-level` | P2 drafted（2026-11-18） |
 
-## Traceability（REQ-030）
+## Traceability（REQ-031）
 
 | Story | Requirement scenarios | Change spec | Story file |
 |---|---|---|---|
-| S31 | REQ-030 §4 L-1 ~ S-4（41 场景） | `openspec/changes/add-growth-level/specs/user-growth/spec.md`（P2 定稿） | `requirement-workspace/stories/REQ-030-growth-level.story.md` |
+| S32 | REQ-031 §4 L-1 ~ S-4（41 场景） | `openspec/changes/add-growth-level/specs/user-growth/spec.md`（P2 定稿） | `requirement-workspace/stories/REQ-031-growth-level.story.md` |
 
-## Notes（REQ-030）
+## Notes（REQ-031）
 
 - **不拆故事：** 账户、流水、等级、三类事件与展示共用同一经验口径；拆开会产生两套经验。
 - **单 capability：** `user-growth`；`trip-experiences` / `admin-console` / `user-profile` / `user-profiles` 只读消费，不改其 Requirement。
 - **与信用分分离：** 不读写 `user_credit_account` / `credit_ledger`；展示并列但文案区分。
 - **保留边界：** 经验明细页、排行榜、通知、等级权益、管理端、中文头衔、存量回填、#45 路线完成度均排除。
-- **依赖：** 体验发布 / 点赞 / 举报成立的既有事件；配置 `routeme.growth.publish-exp`；契约 / 迁移 P3 排他。
+- **依赖：** 体验发布 / 点赞 / 举报成立的既有事件；配置 `routeme.growth.publish-exp`；契约 / 迁移 P3 排他（预计 0.27.0 + V32）。

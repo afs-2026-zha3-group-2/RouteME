@@ -94,6 +94,7 @@ public class AccountStatusService {
         return record(entity, AccountStatusEnum.SUSPENDED, adminId, reason, null, null, null);
     }
 
+    /** Administrative ban; banning an already banned account updates its reason / note / expiry. */
     @Transactional
     public UserEntity ban(
             long userId,
@@ -103,10 +104,6 @@ public class AccountStatusService {
             String banReasonNote,
             Instant expiresAt) {
         UserEntity entity = refreshIfExpired(requireEntity(userId));
-        AccountStatusEnum current = AccountStatusEnum.of(entity.getStatus());
-        if (current == AccountStatusEnum.BANNED) {
-            throw new InvalidStatusTransitionException("cannot ban " + userId + " from " + current.code());
-        }
         return record(entity, AccountStatusEnum.BANNED, adminId, reason, banReason, banReasonNote, expiresAt);
     }
 
@@ -114,7 +111,7 @@ public class AccountStatusService {
     public UserEntity restore(long userId, long adminId, String reason) {
         UserEntity entity = refreshIfExpired(requireEntity(userId));
         AccountStatusEnum current = AccountStatusEnum.of(entity.getStatus());
-        if (current != AccountStatusEnum.SUSPENDED) {
+        if (current != AccountStatusEnum.SUSPENDED && current != AccountStatusEnum.BANNED) {
             throw new InvalidStatusTransitionException("cannot restore " + userId + " from " + current.code());
         }
         String recordedReason = reason == null || reason.isBlank() ? RESTORE_REASON_FALLBACK : reason.trim();

@@ -1,11 +1,11 @@
-# 意图捕获 — REQ-030 用户成长等级 LV1–LV5（issue #44）
+# 意图捕获 — REQ-031 用户成长等级 LV1–LV5（issue #44）
 
 - **候选能力：** `user-growth`（ADDED）
 - **来源：** GitHub Issue [#44](https://github.com/afs-2026-zha3-group-2/RouteME/issues/44)「用户成长等级 LV1–LV5」（`afs-2026-zha3-group-2/RouteME`，2026-11-18 读取）；优先级 P1 / 迭代 3 / 3 点；落点页面「用户主页 / 行程详情 / 同行者信息」；assignee `Neal802`
 - **捕获日期：** 2026-11-18 ｜ **记录人：** Jay（AO）
-- **分支：** `feature/add-growth-level`（从 `origin/main@71f3ad4` 切出，2026-11-18 合并至 `origin/main@8992853`；独立 worktree `.worktrees/add-growth-level`）
-- **基线事实：** `openapi.yaml` `0.25.0`；Flyway 头 `V30__add_travel_finance.sql`；合并后基线 `origin/main@8992853`（契约与迁移头未变）
-- **编号说明：** `origin/main` 已占用 REQ-001 ~ REQ-029，其中 **REQ-029 / S30** = `refine-publish-route-map`（发布行程路线编辑器）。本需求按「后到者顺延」登记为 **REQ-030 / S31**，change-id `add-growth-level`；并行 #45 `add-route-completion` 顺延为 REQ-031 / S32。原登记 REQ-029 / S30（基于 `71f3ad4`）已于 2026-11-18 合并 `origin/main@8992853` 时顺延。
+- **分支：** `feature/add-growth-level`（从 `origin/main@71f3ad4` 切出，2026-11-18 先后合并至 `origin/main@8992853` / `origin/main@f2bad40`；独立 worktree `.worktrees/add-growth-level`）
+- **基线事实：** `openapi.yaml` `0.26.0`；Flyway 头 `V31__report_credit_deduction.sql`（#29 已并入 main）；合并后基线 `origin/main@f2bad40`
+- **编号说明：** `origin/main` 已占用 REQ-001 ~ REQ-030：**REQ-029 / S30** = `refine-publish-route-map`，**REQ-030 / S31** = `add-report-credit-deduction`（#29，已并入 main）。本需求按「后到者顺延」两次顺延，最终登记为 **REQ-031 / S32**，change-id `add-growth-level`；并行 #45 `add-route-completion` 顺延为 REQ-032 / S33。原登记（REQ-029 / S30 → REQ-030 / S31）已分别于合并 `8992853` / `f2bad40` 时顺延。
 
 ## 原始意图（一句话）
 
@@ -38,7 +38,7 @@
 | 展示数据入口已存在 | `GET /api/users/{userId}/profile`、`GET /api/users/credits?ids=`；前端 5 个信用展示面 | 成长等级可扩展同源响应，避免 N+1 |
 | 同行者卡片已存在且不显示信用 | `frontend/src/trips/CompanionCard.tsx`（`.companion-card` + `.publisher-name`） | issue 的「同行者信息」需在卡片昵称附近新增等级 |
 | 配置绑定已有范式 | `routeme.config.*Properties`（AI / 保险 / 天气）+ `application.yaml` 的 `routeme:` 根 | 发布经验值用 `routeme.growth.publish-exp` 绑定，默认 10 |
-| 契约与迁移头已前进 | `openapi.yaml` 0.25.0；迁移头 `V30__add_travel_finance.sql` | P3 排他；本 change 预计 0.26.0 + V31（与 #29 合并顺序协调） |
+| 契约与迁移头已前进 | `openapi.yaml` 0.26.0；迁移头 `V31__report_credit_deduction.sql`（#29 已并入 main） | P3 排他；本 change 落定 0.27.0 + V32 |
 
 ## 用户裁决（2026-11-18）
 
@@ -56,8 +56,8 @@
 | D10 | 计算与可见性 | 等级与经验由后端统一计算，前端不得加减；**本人**可见等级 + 当前经验 + 距下一级；**他人**只见等级 | 批量读取只返回等级 |
 | D11 | 展示面 | **6 处**：个人主页、资料弹窗、详情发布者区、首页行程卡、申请处理页申请者行、详情同行者卡片；头衔只用 `LVn` | 不新造中文头衔；与信用分并列但文案/样式区分 |
 | D12 | 明确不做 | 经验明细页 / 排行榜 / 通知 / 等级权益 / 管理端调整 / 中文头衔 / 经验购买或兑换 / 等级影响信用分 | 保持切片最小 |
-| D13 | #29 排期 | 本 change **独立基于 `origin/main`**；不等待 `add-report-credit-deduction`；两边都改 `AdminReportServiceImpl.resolve`，合并时解决冲突 | 契约 / 迁移号按「后到者顺延」 |
-| D14 | 契约 / 迁移号 | P3 排他确认；基线 0.25.0 + V30；预计本 change 0.26.0 + V31（与 #29 合并顺序协调） | 不在 P1 写死 |
+| D13 | #29 排期 | 本 change **独立基于 `origin/main`**；#29（`add-report-credit-deduction`）已并入 main（`f2bad40`），其「扣信用分」副作用已在 `AdminReportServiceImpl.resolve`；本 change 只需并列追加「扣成长经验」，不覆盖对方 | 契约 / 迁移号按「后到者顺延」 |
+| D14 | 契约 / 迁移号 | P3 排他确认；基线 0.26.0 + V31；本 change 落定 0.27.0 + V32 | 不在 P1 写死 |
 
 ## 意图边界
 

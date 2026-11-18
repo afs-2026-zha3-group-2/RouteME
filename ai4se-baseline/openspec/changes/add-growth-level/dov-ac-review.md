@@ -2,9 +2,9 @@
 
 - **Change：** `add-growth-level`（`user-growth` ADDED）｜ **阶段：** P2（delta-craft review）｜ **日期：** 2026-11-18
 - **Delta：** [`specs/user-growth/spec.md`](specs/user-growth/spec.md)（纯 ADDED：9 Requirement / 41 Scenario）
-- **输入：** [`proposal.md`](proposal.md)、`requirement-workspace/requirements/REQ-030-growth-level.md`（41 场景 A–H）、`intents/REQ-030-growth-level.md`（D1–D15）、`requirement-workspace/deep-dive.md`「REQ-030 增补」、`requirement-workspace/impact-brief.md` §30
+- **输入：** [`proposal.md`](proposal.md)、`requirement-workspace/requirements/REQ-031-growth-level.md`（41 场景 A–H）、`intents/REQ-031-growth-level.md`（D1–D15）、`requirement-workspace/deep-dive.md`「REQ-031 增补」、`requirement-workspace/impact-brief.md` §30
 - **评审人：** Jay（AO）｜ **IO / SA 复核位：** WAYNE / Jacky（G1）
-- **基线：** `origin/main@8992853`；契约 0.25.0；迁移头 `V30__add_travel_finance.sql`
+- **基线：** `origin/main@f2bad40`（合并 `8992853` 后再次合并）；契约 0.26.0；迁移头 `V31__report_credit_deduction.sql`（#29 已并入 main）
 
 ## 1. AC 检查（4 项）
 
@@ -25,9 +25,9 @@
 | DoV-4 未声称业务实现完成 | Pass | 本阶段无代码改动；Delta 为草稿收敛，状态 P2 | |
 | DoV-5 Requirement 可追溯 proposal / REQ | Pass | 见「3. 场景映射」：41/41 条 REQ 场景有 Delta 归属；9/9 条 Delta Requirement 可回指 proposal | 无孤儿 Requirement / Scenario |
 
-## 3. 场景映射（REQ-030 §4 → Delta Requirement）
+## 3. 场景映射（REQ-031 §4 → Delta Requirement）
 
-| REQ 组（REQ-030 §4） | 条数 | Delta Requirement | 说明 |
+| REQ 组（REQ-031 §4） | 条数 | Delta Requirement | 说明 |
 |---|---|---|---|
 | A 等级与初始值（L-1 ~ L-6） | 6 | R1 成长账户与初始经验（L-1 / L-5）+ R2 等级派生、边界与回退（L-2 / L-3 / L-4 / L-6） | L-2 + L-3 在 Delta 合并为「100 与 400 边界」一条（99/100/399/400 四值断言） |
 | B 发布经验（P-1 ~ P-5） | 5 | R3 发布体验经验 | 1:1；「编辑或重复提交」与「删除后重建」保留为两条（后者额外验证幂等键跨删除仍有效） |
@@ -57,3 +57,5 @@
 ## 5. 结论
 
 **AC 4/4 Pass，DoV 5/5 Pass，G1-ready（无阻塞项）。** 两处设计口径（重复处理响应形态、字段级可见性）已列明并归属 P3，不构成 Delta 级歧义；`openspec validate add-growth-level --strict` = valid。
+
+> **编号更新（2026-11-18）：** 合并 `origin/main@f2bad40` 后，REQ-030 / S31 已由 `add-report-credit-deduction`（#29）占用，本 change 顺延为 **REQ-031 / S32**；本报告的编号与基线行已同步更新，评审结论不变。

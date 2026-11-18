@@ -1,7 +1,7 @@
 # G1 decision — add-growth-level
 
 - **Gate：** G1（Align）
-- **Change：** `add-growth-level`（`user-growth` ADDED；REQ-030 / S31）
+- **Change：** `add-growth-level`（`user-growth` ADDED；REQ-031 / S32，编号两次顺延）
 - **Input artifacts：**
   - Delta：[`specs/user-growth/spec.md`](specs/user-growth/spec.md)（9 Requirement / 41 Scenario；`openspec validate add-growth-level --strict` = valid）
   - AC / DoV：[`dov-ac-review.md`](dov-ac-review.md)（AC 4/4 Pass；DoV 5/5 Pass；41 场景映射齐全；G1-ready）
@@ -17,3 +17,5 @@
   - **C2：** P3 `design.md` 明确他人响应的字段级可见性（本人返回经验与距下一级；他人省略经验；批量只返回等级），并在 P3 设计评审中复核。—— owner：Jay；复核：WAYNE；期限：P3 设计评审前。
 - **Approvers：** IO = WAYNE；SA = Jacky
 - **Timestamp：** 2026-11-18（Asia/Shanghai）
+
+> **编号更新（2026-11-18）：** 合并 `origin/main@f2bad40` 后，REQ-030 / S31 已由 `add-report-credit-deduction`（#29）占用，本 change 顺延为 **REQ-031 / S32**；Decision、Conditions 与 Approvers 均按内容不变沿用。

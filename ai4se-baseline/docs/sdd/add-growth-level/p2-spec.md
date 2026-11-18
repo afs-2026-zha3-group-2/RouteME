@@ -1,8 +1,8 @@
 # P2 规格记录 — add-growth-level
 
-- **Change：** `add-growth-level`（REQ-030 / S31 用户成长等级 LV1–LV5）｜ **阶段：** P2（Delta 收敛 + AC/DoV + 一致性检查 + G1）
+- **Change：** `add-growth-level`（REQ-031 / S32 用户成长等级 LV1–LV5；编号两次顺延）｜ **阶段：** P2（Delta 收敛 + AC/DoV + 一致性检查 + G1）
 - **日期：** 2026-11-18 ｜ **记录人：** Jay（AO）
-- **基线：** `origin/main@8992853`（契约 0.25.0 / 迁移头 `V30__add_travel_finance.sql`）
+- **基线：** `origin/main@8992853`（P2 阶段），其后合并至 `origin/main@f2bad40`（契约 0.26.0 / 迁移头 `V31__report_credit_deduction.sql`，#29 已并入）
 
 ## 1. 阶段目标
 
@@ -13,7 +13,7 @@
 | 工件 | 路径 | 摘要 |
 |---|---|---|
 | Delta（收敛后） | [`specs/user-growth/spec.md`](../../../openspec/changes/add-growth-level/specs/user-growth/spec.md) | 纯 ADDED：9 Requirement / 41 Scenario；`openspec validate add-growth-level --strict` = valid |
-| AC / DoV 评审 | [`dov-ac-review.md`](../../../openspec/changes/add-growth-level/dov-ac-review.md) | AC 4/4 Pass；DoV 5/5 Pass；REQ-030 §4 八组 41 场景映射表；同义场景合并评估（结论：维持 41）；IO / SA 残余关注 |
+| AC / DoV 评审 | [`dov-ac-review.md`](../../../openspec/changes/add-growth-level/dov-ac-review.md) | AC 4/4 Pass；DoV 5/5 Pass；REQ-031 §4 八组 41 场景映射表；同义场景合并评估（结论：维持 41）；IO / SA 残余关注 |
 | 一致性 lint | [`consistency-lint.md`](../../../openspec/changes/add-growth-level/consistency-lint.md) | Pass；0 BLOCKER / 0 WARNING / 4 SUGGESTION / 3 N/A |
 | G1 决策记录 | [`g1-decision.md`](../../../openspec/changes/add-growth-level/g1-decision.md) | **Conditional**（IO=WAYNE / SA=Jacky，2026-11-18）；C1 / C2 留 P3 design |
 
@@ -51,4 +51,5 @@
 
 ## 8. 提交记录
 
-- P2 产物（Delta 校验、`dov-ac-review.md`、`consistency-lint.md`、`g1-decision.md`、本记录、`registry.md` / `docs/sdd/README.md` 状态）随阶段提交 `docs(p2): add-growth-level converge delta with AC/DoV, lint and G1` 落盘，并 push 到 `origin/feature/add-growth-level`。
+- P2 产物（Delta 校验、`dov-ac-review.md`、`consistency-lint.md`、`g1-decision.md`、本记录、`registry.md` / `docs/sdd/README.md` 状态）随阶段提交 `docs(p2): add-growth-level converge delta with AC/DoV, lint and G1` 落盘（`bf74658`），并 push 到 `origin/feature/add-growth-level`。
+- 2026-11-18 合并 `origin/main@f2bad40`（含 #29）后，编号由 REQ-030 / S31 顺延为 **REQ-031 / S32**；契约 / 迁移基线更新为 0.26.0 + V31，本 change 落定 0.27.0 + V32；G1 Decision / Conditions / Approvers 按内容不变沿用。

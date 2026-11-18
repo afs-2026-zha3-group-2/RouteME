@@ -1,7 +1,7 @@
 openapi: 3.0.3
 info:
   title: RouteME API
-  version: 0.25.0
+  version: 0.26.0
   description: |
     RouteME 后端对外契约。本文件是前后端唯一事实源，字段名、类型、状态码与错误码只在这里定稿。
         当前包含：脚手架问候语、演示账户与账号认证（注册/登录/会话/退出）、旅行计划（浏览/筛选/发布/详情/结束），同行匹配、申请、退出、聊天、我的旅行与举报，游后体验分享与参考发布所需数据，管理后台（用户管理 / 举报处置 / 人工客服）与用户侧帮助入口，AI 智能行程推荐（生成/快照保存与读取，天气复用目的地天气接口），以及目的地天气提醒与信用分账户、安全学习恢复信用分的考试会话与判分，旅行保障（演示钱包 / 保险 / 借款 / 还款）。
@@ -4477,6 +4477,17 @@ components:
           readOnly: true
         status:
           $ref: '#/components/schemas/AccountStatus'
+        credit_score:
+          type: integer
+          nullable: true
+          minimum: 0
+          maximum: 100
+          description: 被举报用户当前信用分；无账户时按初始 80 返回
+        credit_level:
+          type: string
+          nullable: true
+          enum: [excellent, good, fair, low, risk]
+          description: 由分数派生的信用等级
     AdminUserSummary:
       type: object
       required: [id, nickname, avatar_initial, role, status, created_at]
@@ -5096,6 +5107,17 @@ components:
               nullable: true
             resolution_action:
               $ref: '#/components/schemas/ReportResolutionAction'
+            violation_type:
+              type: string
+              nullable: true
+              enum: [HARASSMENT, FAKE_TRIP, FRAUD_RISK, ILLEGAL_CONTENT, IMPERSONATION, NO_SHOW_DISRUPTION, PRIVACY_LEAK, OTHER]
+              description: 举报成立时的违规类型；历史举报为空
+            applied_deduction:
+              type: integer
+              nullable: true
+              minimum: 0
+              maximum: 100
+              description: 本次实际扣减的信用分（正数）；0 表示按 0 截断；历史举报为空
     AdminReportResolveRequest:
       type: object
       required: [outcome, note]
@@ -5107,21 +5129,16 @@ components:
           type: string
           minLength: 1
           maxLength: 500
-        action:
+        violation_type:
           type: string
-          enum: [SUSPEND, BAN, KEEP, UPDATE_BAN]
+          enum: [HARASSMENT, FAKE_TRIP, FRAUD_RISK, ILLEGAL_CONTENT, IMPERSONATION, NO_SHOW_DISRUPTION, PRIVACY_LEAK, OTHER]
           nullable: true
           description: outcome=RESOLVED 时必填
-        ban_reason_code:
-          $ref: '#/components/schemas/BanReason'
-        ban_reason_note:
-          type: string
-          maxLength: 200
+        other_deduction:
+          type: integer
+          enum: [5, 10, 20, 30]
           nullable: true
-        ban_expires_at:
-          type: string
-          format: date-time
-          nullable: true
+          description: violation_type=OTHER 时必填；其余类型忽略
     AdminReportPage:
       type: object
       required: [items, page, size, total, total_pages]

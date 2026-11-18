@@ -1,10 +1,8 @@
 package routeme.service.impl;
 
 import java.time.Clock;
-import java.time.Instant;
 import java.util.List;
 import java.util.Locale;
-import java.util.Set;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -15,9 +13,9 @@ import routeme.entity.ReportEntity;
 import routeme.entity.TripPlanEntity;
 import routeme.entity.UserEntity;
 import routeme.enums.AccountStatusEnum;
-import routeme.enums.BanReasonEnum;
 import routeme.enums.ReportResolutionActionEnum;
 import routeme.enums.ReportStatusEnum;
+import routeme.enums.ReportViolationEnum;
 import routeme.exception.InvalidInputException;
 import routeme.exception.ReportNotFoundException;
 import routeme.exception.ReportNotPendingException;
@@ -26,9 +24,11 @@ import routeme.mapper.ReportMapper;
 import routeme.model.PenaltyRules;
 import routeme.param.PageParam;
 import routeme.pojo.ChatMessage;
+import routeme.pojo.CreditBooking;
 import routeme.pojo.PageResult;
 import routeme.pojo.Report;
 import routeme.pojo.TripPlan;
+import routeme.pojo.UserCredit;
 import routeme.request.AdminReportResolveRequest;
 import routeme.response.AdminReportContextResponse;
 import routeme.response.AdminReportDetailResponse;
@@ -41,6 +41,7 @@ import routeme.response.ReportedUserResponse;
 import routeme.service.AccountStatusService;
 import routeme.service.AdminReportService;
 import routeme.service.ChatService;
+import routeme.service.CreditService;
 import routeme.service.DemoUserService;
 import routeme.service.ReportService;
 import routeme.service.ReportTargetService;
@@ -52,11 +53,11 @@ public class AdminReportServiceImpl extends AbstractServiceImpl<ReportMapper, Re
         implements AdminReportService {
 
     private static final int MAX_RESOLUTION_NOTE_LENGTH = 500;
-    private static final Set<String> RESOLVE_ACTIONS = Set.of("SUSPEND", "BAN", "KEEP", "UPDATE_BAN");
 
     private final ReportService reportService;
     private final ReportTargetService targetService;
     private final AccountStatusService accountStatusService;
+    private final CreditService creditService;
     private final DemoUserService demoUserService;
     private final ChatService chatService;
     private final TripPlanService tripPlanService;
@@ -66,6 +67,7 @@ public class AdminReportServiceImpl extends AbstractServiceImpl<ReportMapper, Re
             ReportService reportService,
             ReportTargetService targetService,
             AccountStatusService accountStatusService,
+            CreditService creditService,
             DemoUserService demoUserService,
             ChatService chatService,
             TripPlanService tripPlanService,
@@ -73,6 +75,7 @@ public class AdminReportServiceImpl extends AbstractServiceImpl<ReportMapper, Re
         this.reportService = reportService;
         this.targetService = targetService;
         this.accountStatusService = accountStatusService;
+        this.creditService = creditService;
         this.demoUserService = demoUserService;
         this.chatService = chatService;
         this.tripPlanService = tripPlanService;
@@ -134,36 +137,47 @@ public class AdminReportServiceImpl extends AbstractServiceImpl<ReportMapper, Re
             throw new ReportNotProcessingException(reportId, existing.status());
         }
 
-        String action = ReportResolutionActionEnum.REJECT.code();
-        BanReasonEnum banReason = null;
-        String banNote = null;
-        Instant expiresAt = null;
+        ReportViolationEnum violation = null;
+        Long reportedUserId = null;
+        int applied = 0;
         if (ReportStatusEnum.RESOLVED.code().equals(outcome)) {
-            action = requireAction(request.action());
-            // 只有 BAN / UPDATE_BAN 才写封禁元数据（design §5.3）；SUSPEND 只需处理备注。
-            if (ReportResolutionActionEnum.BAN.code().equals(action)
-                    || ReportResolutionActionEnum.UPDATE_BAN.code().equals(action)) {
-                banReason = PenaltyRules.requireBanReason(request.banReasonCode());
-                banNote = PenaltyRules.optionalText(
-                        request.banReasonNote(), "ban_reason_note", PenaltyRules.MAX_BAN_NOTE_LENGTH);
-                PenaltyRules.requireNoteForOther(banReason, banNote);
-                expiresAt = PenaltyRules.requireFutureExpiry(request.banExpiresAt(), clock);
+            violation = ReportViolationEnum.parse(request.violationType());
+            int deduction = violation.deduction(request.otherDeduction());
+            reportedUserId = targetService.reportedUserId(existing);
+            if (reportedUserId == null) {
+                throw new InvalidInputException("reported user is no longer available");
             }
+            // 只读快照：0 分截断时报告记 0；账本 applied_delta 仍为权威。
+            UserCredit before = creditService.snapshot(reportedUserId);
+            applied = Math.min(deduction, before.score());
         }
 
+        String now = clock.instant().toString();
         boolean updated = update(Wrappers.<ReportEntity>lambdaUpdate()
                 .eq(ReportEntity::getId, reportId)
                 .eq(ReportEntity::getStatus, ReportStatusEnum.PROCESSING.code())
                 .set(ReportEntity::getStatus, outcome)
-                .set(ReportEntity::getResolvedAt, clock.instant().toString())
+                .set(ReportEntity::getResolvedAt, now)
                 .set(ReportEntity::getResolutionNote, note)
-                .set(ReportEntity::getResolutionAction, action));
+                .set(ReportEntity::getResolutionAction,
+                        ReportStatusEnum.RESOLVED.code().equals(outcome)
+                                ? null
+                                : ReportResolutionActionEnum.REJECT.code())
+                .set(ReportEntity::getViolationType, violation == null ? null : violation.name())
+                .set(ReportEntity::getAppliedDeduction,
+                        ReportStatusEnum.RESOLVED.code().equals(outcome) ? applied : null));
         if (!updated) {
             throw new ReportNotProcessingException(reportId, require(reportId).status());
         }
 
         if (ReportStatusEnum.RESOLVED.code().equals(outcome)) {
-            applyPenalty(existing, adminId, action, note, banReason, banNote, expiresAt);
+            creditService.book(new CreditBooking(
+                    reportedUserId,
+                    "REPORT_VIOLATION",
+                    -violation.deduction(request.otherDeduction()),
+                    "REPORT",
+                    String.valueOf(reportId),
+                    "REPORT_VIOLATION:" + reportId));
         }
         return detailOf(require(reportId));
     }
@@ -178,30 +192,6 @@ public class AdminReportServiceImpl extends AbstractServiceImpl<ReportMapper, Re
                 .toList();
     }
 
-    private void applyPenalty(
-            Report report,
-            long adminId,
-            String action,
-            String note,
-            BanReasonEnum banReason,
-            String banNote,
-            Instant expiresAt) {
-        if ("KEEP".equals(action)) {
-            return;
-        }
-        Long reportedUserId = targetService.reportedUserId(report);
-        if (reportedUserId == null) {
-            throw new InvalidInputException("reported user is no longer available");
-        }
-        switch (action) {
-            case "SUSPEND" -> accountStatusService.suspend(reportedUserId, adminId, note, true);
-            case "BAN" -> accountStatusService.ban(reportedUserId, adminId, note, banReason, banNote, expiresAt);
-            case "UPDATE_BAN" -> accountStatusService.updateBan(
-                    reportedUserId, adminId, note, banReason, banNote, expiresAt);
-            default -> throw new InvalidInputException("unsupported resolution action: " + action);
-        }
-    }
-
     private Report require(long reportId) {
         ReportEntity entity = getById(reportId);
         if (entity == null) {
@@ -212,6 +202,7 @@ public class AdminReportServiceImpl extends AbstractServiceImpl<ReportMapper, Re
 
     private AdminReportSummaryResponse summary(Report report) {
         Long reportedUserId = targetService.reportedUserId(report);
+        UserCredit credit = reportedUserId == null ? null : creditService.snapshot(reportedUserId);
         return new AdminReportSummaryResponse(
                 report.id(),
                 code(report.id()),
@@ -219,7 +210,7 @@ public class AdminReportServiceImpl extends AbstractServiceImpl<ReportMapper, Re
                 report.targetId(),
                 targetService.targetLabel(report),
                 reporter(report),
-                reportedUser(reportedUserId),
+                reportedUser(reportedUserId, credit),
                 report.reason(),
                 report.createdAt().toString(),
                 report.status());
@@ -250,7 +241,9 @@ public class AdminReportServiceImpl extends AbstractServiceImpl<ReportMapper, Re
                 report.processingAt() == null ? null : report.processingAt().toString(),
                 report.resolvedAt() == null ? null : report.resolvedAt().toString(),
                 report.resolutionNote(),
-                report.resolutionAction());
+                report.resolutionAction(),
+                report.violationType(),
+                report.appliedDeduction());
     }
 
     /**
@@ -309,7 +302,7 @@ public class AdminReportServiceImpl extends AbstractServiceImpl<ReportMapper, Re
         return new AdminUserRef(report.reporterId(), reporter == null ? null : reporter.getNickname());
     }
 
-    private ReportedUserResponse reportedUser(Long reportedUserId) {
+    private ReportedUserResponse reportedUser(Long reportedUserId, UserCredit credit) {
         if (reportedUserId == null) {
             return null;
         }
@@ -318,7 +311,12 @@ public class AdminReportServiceImpl extends AbstractServiceImpl<ReportMapper, Re
             return null;
         }
         AccountStatusEnum status = accountStatusService.effectiveStatus(entity);
-        return new ReportedUserResponse(entity.getId(), entity.getNickname(), status.code());
+        return new ReportedUserResponse(
+                entity.getId(),
+                entity.getNickname(),
+                status.code(),
+                credit == null ? null : credit.score(),
+                credit == null ? null : credit.levelCode());
     }
 
     private AdminUserRef processedBy(Report report) {
@@ -333,14 +331,6 @@ public class AdminReportServiceImpl extends AbstractServiceImpl<ReportMapper, Re
         String value = raw == null ? "" : raw.trim().toUpperCase(Locale.ROOT);
         if (!ReportStatusEnum.RESOLVED.code().equals(value) && !ReportStatusEnum.REJECTED.code().equals(value)) {
             throw new InvalidInputException("outcome must be RESOLVED or REJECTED");
-        }
-        return value;
-    }
-
-    private static String requireAction(String raw) {
-        String value = raw == null ? "" : raw.trim().toUpperCase(Locale.ROOT);
-        if (!RESOLVE_ACTIONS.contains(value)) {
-            throw new InvalidInputException("action must be one of " + RESOLVE_ACTIONS);
         }
         return value;
     }

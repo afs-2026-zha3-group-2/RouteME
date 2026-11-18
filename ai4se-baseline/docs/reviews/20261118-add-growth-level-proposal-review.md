@@ -4,11 +4,11 @@
 - **Scope:** focus=proposal（`@rule:artifact-review-gate` 的 P1 工件评审）；root=`ai4se-baseline`；timestamp=2026-11-18
 - **Artifact under review:** [proposal.md](../../openspec/changes/add-growth-level/proposal.md)
 - **Supporting inputs:**
-  - [requirements/REQ-030-growth-level.md](../../requirement-workspace/requirements/REQ-030-growth-level.md)（41 场景 L / P / K / D / R / V / C / S，blocking OQ 0，DoR BLOCKER 0）
-  - [intents/REQ-030-growth-level.md](../../requirement-workspace/intents/REQ-030-growth-level.md)（现状证据 + D1–D15）
-  - [deep-dive.md](../../requirement-workspace/deep-dive.md)「REQ-030 增补」（①–④ 四表 + 探针记录）
+  - [requirements/REQ-031-growth-level.md](../../requirement-workspace/requirements/REQ-031-growth-level.md)（41 场景 L / P / K / D / R / V / C / S，blocking OQ 0，DoR BLOCKER 0）
+  - [intents/REQ-031-growth-level.md](../../requirement-workspace/intents/REQ-031-growth-level.md)（现状证据 + D1–D15）
+  - [deep-dive.md](../../requirement-workspace/deep-dive.md)「REQ-031 增补」（①–④ 四表 + 探针记录）
   - [impact-brief.md](../../requirement-workspace/impact-brief.md) §30
-  - [stories.md](../../requirement-workspace/stories.md)（S31）与 [stories/REQ-030-growth-level.story.md](../../requirement-workspace/stories/REQ-030-growth-level.story.md)
+  - [stories.md](../../requirement-workspace/stories.md)（S32）与 [stories/REQ-031-growth-level.story.md](../../requirement-workspace/stories/REQ-031-growth-level.story.md)
 - **Evidence:**
   - `openspec validate add-growth-level --strict` → `Change 'add-growth-level' is valid`
   - Delta 统计：`user-growth` **ADDED**，9 Requirement / 41 Scenario
@@ -24,7 +24,7 @@
 | 1 | 问题 / 价值是否说清「为什么不是信用分」 | Pass：明确信用分表达风险、成长表达参与；四块缺口与价值假设可对外复述 |
 | 2 | 范围是否可判定 | Pass：In / Out 均具体；明细页、排行榜、通知、权益、管理端、回填、#45 显式排除 |
 | 3 | 决策是否覆盖 issue 的每条 AC | Pass：D1–D15 覆盖等级、发布、点赞、上限、举报、展示、存量、编号与 #29 |
-| 4 | 是否引用需求与影响面 | Pass：引用 REQ-030 / S31 与 impact §30；验收信号 13 条 |
+| 4 | 是否引用需求与影响面 | Pass：引用 REQ-031 / S32 与 impact §30；验收信号 13 条 |
 | 5 | 事件挂接点是否真实存在 | Pass：发布 / 点赞 / 举报三处均有代码证据；无新建点赞或举报能力 |
 | 6 | 与信用分是否完全分离 | Pass：独立能力与表；不读写 `user_credit_account` / `credit_ledger` |
 | 7 | 防刷与上限是否可验证 | Pass：档位锁定、取消不回滚、每日截断、零实发留痕、并发幂等 |
@@ -55,6 +55,6 @@
 
 ## 编号顺延说明
 
-- **变更：** REQ-029 / S30 → **REQ-030 / S31**（2026-11-18 合并 `origin/main@8992853`；该号已由 `refine-publish-route-map` 占用）。
+- **变更：** REQ-029 / S30 → REQ-030 / S31（合并 `8992853`）→ **REQ-031 / S32**（合并 `f2bad40`；REQ-030 / S31 已由 `add-report-credit-deduction`（#29）占用）。
 - **处理：** 本报告内的需求编号、路径与 `impact-brief` §30 引用已同步改号；评审结论与发现项不变。
 - **签署：** WAYNE + Jay（2026-11-18）按内容不变沿用。

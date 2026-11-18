@@ -425,6 +425,17 @@ export type ReportStatus = 'PENDING' | 'PROCESSING' | 'RESOLVED' | 'REJECTED';
 
 export type ReportResolutionAction = 'SUSPEND' | 'BAN' | 'KEEP' | 'UPDATE_BAN' | 'REJECT';
 
+/** 举报违规类型（扣分由服务端按类型派生）。 */
+export type ReportViolationType =
+  | 'HARASSMENT'
+  | 'FAKE_TRIP'
+  | 'FRAUD_RISK'
+  | 'ILLEGAL_CONTENT'
+  | 'IMPERSONATION'
+  | 'NO_SHOW_DISRUPTION'
+  | 'PRIVACY_LEAK'
+  | 'OTHER';
+
 export type ServiceSessionStatus = 'WAITING' | 'HANDLING' | 'CLOSED';
 
 export type AdminStatusAction = 'SUSPEND' | 'BAN' | 'RESTORE';
@@ -503,6 +514,8 @@ export type ReportedUser = {
   id: number;
   nickname: string;
   status: AccountStatus;
+  credit_score?: number | null;
+  credit_level?: CreditLevel | null;
 };
 
 /** 举报队列行（`GET /admin/reports`）。 */
@@ -565,15 +578,15 @@ export type AdminReportDetail = AdminReportSummary & {
   resolved_at?: string | null;
   resolution_note?: string | null;
   resolution_action?: ReportResolutionAction | null;
+  violation_type?: ReportViolationType | null;
+  applied_deduction?: number | null;
 };
 
 export type AdminReportResolveRequest = {
   outcome: 'RESOLVED' | 'REJECTED';
   note: string;
-  action?: Exclude<ReportResolutionAction, 'REJECT'> | null;
-  ban_reason_code?: BanReasonCode | null;
-  ban_reason_note?: string | null;
-  ban_expires_at?: string | null;
+  violation_type?: ReportViolationType | null;
+  other_deduction?: number | null;
 };
 
 export type ServiceUser = {

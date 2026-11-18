@@ -8103,6 +8103,58 @@ svg {
   font-size: 11.5px;
 }
 
+.admin-deduction-preview {
+  display: grid;
+  gap: 6px;
+  margin-top: 4px;
+}
+
+.admin-deduction-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  padding: 12px;
+  border: 1px dashed var(--line-2);
+  border-radius: var(--r-sm);
+  background: var(--surface-2);
+}
+
+.admin-deduction-cell {
+  min-width: 0;
+  text-align: center;
+}
+
+.admin-deduction-key {
+  display: block;
+  font-size: 12px;
+  color: var(--ink-3);
+}
+
+.admin-deduction-value {
+  display: block;
+  margin-top: 2px;
+  font-family: var(--font-num);
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--ink);
+}
+
+.admin-deduction-value.minus {
+  color: var(--t-danger);
+}
+
+.admin-deduction-value.after {
+  color: var(--t-lagoon);
+}
+
+.admin-deduction-cut {
+  grid-column: 1 / -1;
+  margin: 0;
+  font-size: 12px;
+  color: var(--t-warn);
+  text-align: center;
+}
+
 .admin-modal-intro {
   margin: 0 0 12px;
   font-size: 13px;
@@ -8989,6 +9041,10 @@ svg {
 @media (max-width: 900px) {
   .admin-detail-grid,
   .help-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .admin-deduction-grid {
     grid-template-columns: minmax(0, 1fr);
   }
 }

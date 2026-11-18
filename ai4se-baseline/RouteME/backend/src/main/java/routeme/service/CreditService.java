@@ -22,6 +22,18 @@ public interface CreditService {
     List<UserCredit> readAll(List<Long> userIds);
 
     /**
+     * 只读快照：不创建账户；缺失时返回初始 80。供举报详情 / 列表等只读页面使用。
+     */
+    UserCredit snapshot(long userId);
+
+    /**
+     * 只读快照批量版；不写库。
+     */
+    default List<UserCredit> snapshotAll(List<Long> userIds) {
+        return userIds.stream().map(this::snapshot).toList();
+    }
+
+    /**
      * 确保账户存在并返回当前状态；已存在时不改变分数。
      */
     UserCredit ensureAccount(long userId);
