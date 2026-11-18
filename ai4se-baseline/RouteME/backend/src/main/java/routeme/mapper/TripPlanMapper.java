@@ -28,14 +28,6 @@ public interface TripPlanMapper extends BaseMapper<TripPlanEntity> {
             @Param("sort") String sort,
             @Param("today") String today);
 
-    List<TripPlanEntity> selectOpenList(
-            @Param("destinationCode") String destinationCode,
-            @Param("dateFrom") String dateFrom,
-            @Param("dateTo") String dateTo,
-            @Param("tags") List<String> tags,
-            @Param("sort") String sort,
-            @Param("today") String today);
-
     /** 到期但尚未物化的行程 id（结束日期早于今天）。 */
     List<Long> selectExpiredIds(@Param("today") String today);
 

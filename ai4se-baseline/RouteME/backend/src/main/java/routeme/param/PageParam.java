@@ -26,7 +26,7 @@ public record PageParam(int page, int size) {
     }
 
     /**
-     * 对已有序的完整列表切出一页；用于无法在 SQL 排序的场景（例如按匹配分排序）。
+     * 对已有序的完整列表切出一页。
      */
     public <T> List<T> slice(List<T> all) {
         int from = (page - 1) * size;

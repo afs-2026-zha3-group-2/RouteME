@@ -79,7 +79,7 @@ class OpenApiTest {
 
         // Then
         assertAll(
-                () -> assertEquals("0.23.0", info.get("version"), "info.version"),
+                () -> assertEquals("0.24.0", info.get("version"), "info.version"),
                 () -> assertTrue(responses(likeExperience).containsKey("201"), "first like returns 201"),
                 () -> assertTrue(responses(likeExperience).containsKey("200"), "duplicate like returns 200"),
                 () -> assertTrue(responses(likeExperience).containsKey("403"), "self like returns 403"),
@@ -156,7 +156,7 @@ class OpenApiTest {
 
         // Then
         assertAll(
-                () -> assertEquals("0.23.0", info.get("version"), "info.version"),
+                () -> assertEquals("0.24.0", info.get("version"), "info.version"),
                 () -> assertTrue(paths(document).containsKey("/users"), "/users declared"),
                 () -> assertTrue(paths(document).containsKey("/trips/{tripId}"), "detail path declared"),
                 () -> assertTrue(
@@ -406,11 +406,9 @@ class OpenApiTest {
         Map<String, Object> document = loadYaml(SPEC_PATH);
 
         // When
-        Map<String, Object> getMatches = operation(document, "/matches", "get");
         Map<String, Object> postApplications = operation(document, "/trips/{tripId}/applications", "post");
         Map<String, Object> postMessages = operation(document, "/trips/{tripId}/messages", "post");
         Map<String, Object> application = schema(document, "TripApplication");
-        Map<String, Object> match = schema(document, "Match");
         Map<String, Object> myTrips = schema(document, "MyTrips");
         Map<String, Object> pendingApplicationCount = schema(document, "PendingApplicationCount");
         Map<String, Object> reportRequest = schema(document, "ReportRequest");
@@ -419,25 +417,8 @@ class OpenApiTest {
         // Then
         assertAll(
                 () -> assertTrue(paths(document).containsKey("/me/trips"), "/me/trips declared"),
-                () -> assertTrue(paths(document).containsKey("/matches/{tripId}"), "match detail declared"),
                 () -> assertTrue(responses(postApplications).containsKey("201"), "apply returns 201"),
                 () -> assertTrue(responses(postMessages).containsKey("409"), "chat read-only conflict"),
-                () -> assertTrue(
-                        parameterNames(document, getMatches)
-                                .containsAll(List.of(
-                                        "X-User-Id", "destination_code", "date_from", "date_to", "tags",
-                                        "sort", "page", "size")),
-                        "match query parameters"),
-                () -> assertTrue(
-                        parameterNames(document, getMatches).containsAll(List.of("page", "size")),
-                        "match paging parameters"),
-                () -> assertTrue(
-                        required(schema(document, "MatchPage"))
-                                .containsAll(List.of("items", "page", "size", "total", "total_pages")),
-                        "match page envelope"),
-                () -> assertTrue(
-                        required(match).containsAll(List.of("score", "percentage", "reasons", "basis")),
-                        "match required fields"),
                 () -> assertTrue(
                         enums(properties(application).get("status"))
                                 .containsAll(List.of("pending", "accepted", "rejected", "cancelled", "left")),
@@ -730,7 +711,7 @@ class OpenApiTest {
 
         // Then
         assertAll(
-                () -> assertEquals("0.23.0", info.get("version"), "info.version"),
+                () -> assertEquals("0.24.0", info.get("version"), "info.version"),
                 () -> assertTrue(paths(document).keySet().containsAll(ADMIN_CONSOLE_PATHS), "admin console paths"),
                 () -> assertEquals(17L, adminOperations, "admin console operations"),
                 () -> assertTrue(
@@ -861,7 +842,7 @@ class OpenApiTest {
 
         // Then
         assertAll(
-                () -> assertEquals("0.23.0", asMap(document.get("info")).get("version"), "info.version"),
+                () -> assertEquals("0.24.0", asMap(document.get("info")).get("version"), "info.version"),
                 () -> assertTrue(responses(startSession).containsKey("201"), "session start returns 201"),
                 () -> assertTrue(
                         responses(startSession).keySet().containsAll(List.of("401", "404", "409", "429")),
@@ -918,45 +899,6 @@ class OpenApiTest {
                                 "LEARNING_SESSION_NOT_FOUND")),
                         "credit recovery error codes")
         );
-    }
-
-    @Test
-    void in_openApiFile_out_travelerRecommendationContractDeclared() throws IOException {
-        // Given
-        Map<String, Object> document = loadYaml(SPEC_PATH);
-        Map<String, Object> info = asMap(document.get("info"));
-
-        // When
-        Map<String, Object> operation = operation(document, "/trips/{tripId}/recommendations", "get");
-        Map<String, Object> list = schema(document, "RecommendationList");
-        Map<String, Object> item = schema(document, "TravelerRecommendation");
-        Map<String, Object> breakdown = schema(document, "RecommendationBreakdown");
-        Map<String, Object> reference = schema(document, "RecommendationReference");
-
-        // Then
-        assertAll(
-                () -> assertEquals("0.23.0", info.get("version"), "info.version"),
-                () -> assertTrue(responses(operation).containsKey("200"), "200 response"),
-                () -> assertTrue(responses(operation).containsKey("401"), "401 response"),
-                () -> assertTrue(responses(operation).containsKey("404"), "404 response"),
-                () -> assertTrue(required(list).containsAll(List.of("reference", "items")), "list required fields"),
-                () -> assertTrue(
-                        required(item).containsAll(
-                                List.of("user", "trip", "score", "reasons", "breakdown", "shared_interests")),
-                        "item required fields"),
-                () -> assertEquals("integer", properties(item).get("score").get("type"), "score type"),
-                () -> assertEquals(0, properties(item).get("score").get("minimum"), "score minimum"),
-                () -> assertEquals(100, properties(item).get("score").get("maximum"), "score maximum"),
-                () -> assertTrue(
-                        required(breakdown).containsAll(List.of("dimension", "label", "points")),
-                        "breakdown required fields"),
-                () -> assertEquals(
-                        List.of("destination", "date", "interest"),
-                        enums(properties(breakdown).get("dimension")),
-                        "dimension enum"),
-                () -> assertTrue(
-                        required(reference).containsAll(List.of("trip_id", "destination", "start_date", "interests")),
-                        "reference required fields"));
     }
 
     @Test

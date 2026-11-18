@@ -1,14 +1,14 @@
 import { useCallback, useEffect, useState } from 'react';
-import { loadMatches } from '../api';
-import type { MatchCandidate } from '../types';
+import { loadTrips } from '../api';
+import type { TripSummary } from '../types';
 import { usePaging } from '../shell/usePaging';
 import { toTripFilters, type FilterState } from './tripFilters';
 
-export type MatchesState =
+export type TripsState =
   | { status: 'loading' }
   | {
       status: 'ready';
-      matches: MatchCandidate[];
+      trips: TripSummary[];
       page: number;
       size: number;
       total: number;
@@ -16,18 +16,18 @@ export type MatchesState =
     }
   | { status: 'failed'; code: string };
 
-export function useMatches(userId: number, filters: FilterState) {
-  const [state, setState] = useState<MatchesState>({ status: 'loading' });
+export function useTrips(userId: number, filters: FilterState) {
+  const [state, setState] = useState<TripsState>({ status: 'loading' });
   const filterKey = JSON.stringify(toTripFilters(filters));
   const { page, size, setPage, setSize } = usePaging(filterKey);
 
   const reload = useCallback(() => {
     setState({ status: 'loading' });
-    loadMatches(userId, toTripFilters(filters), { page, size })
+    loadTrips(userId, toTripFilters(filters), { page, size })
       .then((result) =>
         setState({
           status: 'ready',
-          matches: result.items,
+          trips: result.items,
           page: result.page,
           size: result.size,
           total: result.total,
