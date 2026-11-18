@@ -1,0 +1,534 @@
+<!doctype html>
+<html lang="zh-CN" data-theme="light">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>RouteMe 路觅 · 原型包</title>
+<meta name="description" content="RouteMe 路觅原型包总入口：可交互 MVP 原型、17 条用户故事、发现报告中英文版。零依赖，双击即可打开。">
+<link rel="stylesheet" href="styles.css?v=20261116a">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='8' fill='%230f4c5c'/%3E%3Cpath d='M8 22c4-10 12-10 16 0' stroke='%23ff6b35' stroke-width='3' fill='none' stroke-linecap='round'/%3E%3Ccircle cx='16' cy='11' r='3' fill='%23ffb703'/%3E%3C/svg%3E">
+<style>
+/* ============ 门户专属排版（色彩与组件全部复用 styles.css） ============ */
+.portal { position: relative; z-index: 1; width: min(1240px, 100%); margin: 0 auto; padding: calc(var(--topbar-h) + 38px) 30px 90px; }
+.portal section { scroll-margin-top: calc(var(--topbar-h) + 20px); }
+
+.reveal { opacity: 0; transform: translateY(20px); }
+.reveal.in { opacity: 1; transform: none; transition: opacity .62s var(--ease-out), transform .62s var(--ease-out); }
+
+/* ---------- 首屏 ---------- */
+.p-hero { display: grid; grid-template-columns: 1fr; gap: 30px; justify-items: center; text-align: center; }
+.p-eyebrow { display: inline-flex; align-items: center; gap: 9px; font-size: 10.5px; font-weight: 800; letter-spacing: .2em; text-transform: uppercase; color: var(--t-lagoon); margin-bottom: 16px; }
+.p-eyebrow::before { content: ""; width: 26px; height: 2px; border-radius: 2px; background: var(--grad-sunset); }
+.p-title { font-size: clamp(2rem, 4.1vw, 3.15rem); line-height: 1.1; letter-spacing: -.03em; font-weight: 800; margin: 0 auto 18px; max-width: 18ch; }
+.p-title em { font-style: normal; background: var(--grad-sunset); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.p-lede { font-size: 15.5px; line-height: 1.78; color: var(--ink-2); max-width: 54ch; margin: 0 0 26px; }
+.p-lede b { color: var(--ink); font-weight: 700; }
+.p-cta { display: flex; flex-wrap: wrap; gap: 11px; align-items: center; }
+.btn.lg { padding: 12px 22px; font-size: 14.5px; border-radius: 13px; }
+.btn.lg svg { width: 18px; height: 18px; }
+
+/* ---------- 闭环环图 ---------- */
+.loop-wrap { position: relative; max-width: 420px; width: 100%; margin-inline: auto; }
+.loop-svg { width: 100%; height: auto; display: block; overflow: visible; }
+.loop-ring { fill: none; stroke: var(--line-2); stroke-width: 1.6; }
+.loop-flow { fill: none; stroke: url(#loopGrad); stroke-width: 3.4; stroke-linecap: round; stroke-dasharray: 30 711; animation: loopRun 7.5s linear infinite; }
+@keyframes loopRun { to { stroke-dashoffset: -741; } }
+.loop-node { cursor: pointer; }
+.loop-node circle.hit { fill: transparent; }
+.loop-node circle.dot { fill: var(--surface); stroke: var(--line-2); stroke-width: 2; transition: fill .2s var(--ease), stroke .2s var(--ease), r .2s var(--ease); }
+.loop-node text.num { font-size: 13px; font-weight: 800; fill: var(--ink-3); font-family: var(--font-num); transition: fill .2s; }
+.loop-node text.cap { font-size: 12.5px; font-weight: 700; fill: var(--ink-2); transition: fill .2s; }
+.loop-node:hover circle.dot, .loop-node:focus-visible circle.dot { stroke: var(--lagoon); }
+.loop-node:hover text.cap, .loop-node:focus-visible text.cap { fill: var(--t-lagoon); }
+.loop-node:focus { outline: none; }
+.loop-node:focus-visible circle.hit { stroke: var(--lagoon); stroke-width: 2; stroke-dasharray: 3 3; }
+.loop-node.on circle.dot { fill: var(--tide); stroke: var(--tide); r: 21; }
+.loop-node.on text.num { fill: var(--on-deep); }
+.loop-node.on text.cap { fill: var(--t-lagoon); }
+.loop-core-n { font-size: 40px; font-weight: 800; fill: var(--ink); font-family: var(--font-num); letter-spacing: -.04em; }
+.loop-core-t { font-size: 14.5px; font-weight: 750; fill: var(--t-lagoon); }
+.loop-core-s { font-size: 11px; fill: var(--ink-3); letter-spacing: .14em; text-transform: uppercase; font-weight: 700; }
+
+.loop-note { margin-top: 14px; padding: 15px 17px; border-radius: var(--r); background: var(--surface); border: 1px solid var(--line); box-shadow: var(--sh-1); display: grid; gap: 8px; }
+.loop-note p { margin: 0; font-size: 13px; line-height: 1.68; color: var(--ink-2); min-height: 3.4em; }
+.loop-note .btn { justify-self: start; }
+
+/* ---------- 数据条 ---------- */
+.p-stats { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 1px; margin: 44px 0 0; background: var(--line); border: 1px solid var(--line); border-radius: var(--r-lg); overflow: hidden; box-shadow: var(--sh-1); }
+.p-stat { background: var(--surface); padding: 18px 16px; display: grid; gap: 3px; }
+.p-stat b { font-size: 27px; font-weight: 800; letter-spacing: -.03em; font-family: var(--font-num); color: var(--ink); line-height: 1.1; }
+.p-stat span { font-size: 11.5px; color: var(--ink-3); font-weight: 600; }
+.p-stat i { font-style: normal; font-size: 10px; color: var(--t-lagoon); font-weight: 700; letter-spacing: .1em; text-transform: uppercase; }
+
+/* ---------- 区块标题 ---------- */
+.sec-head { display: flex; align-items: flex-end; gap: 16px; margin: 66px 0 22px; }
+.sec-head h2 { margin: 0; font-size: clamp(1.3rem, 2.3vw, 1.72rem); letter-spacing: -.025em; font-weight: 780; }
+.sec-head p { margin: 5px 0 0; font-size: 13px; color: var(--ink-3); }
+.sec-head .rule { flex: 1; height: 1px; background: linear-gradient(90deg, var(--line-2), transparent); margin-bottom: 9px; }
+.sec-no { font-family: var(--font-num); font-size: 12px; font-weight: 800; color: var(--t-lagoon); letter-spacing: .12em; padding-bottom: 6px; }
+
+/* ---------- 入口卡 ---------- */
+.p-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+.entry { position: relative; display: flex; flex-direction: column; gap: 12px; padding: 24px; border-radius: var(--r-lg); background: var(--surface); border: 1px solid var(--line); box-shadow: var(--sh-1); overflow: hidden; transition: transform .2s var(--ease), box-shadow .2s var(--ease), border-color .2s var(--ease); }
+.entry::after { content: ""; position: absolute; inset: 0; pointer-events: none; opacity: 0; transition: opacity .24s var(--ease); background: radial-gradient(120% 100% at 100% 0%, color-mix(in srgb, var(--surf) 12%, transparent), transparent 62%); }
+.entry:hover { transform: translateY(-4px); box-shadow: var(--sh-2); border-color: var(--line-2); }
+.entry:hover::after { opacity: 1; }
+.entry:focus-visible { outline: none; border-color: var(--lagoon); box-shadow: var(--ring), var(--sh-2); }
+.entry.hero-card { grid-column: span 2; background: var(--grad-tide); border-color: transparent; color: var(--on-deep); padding: 30px; }
+.entry.hero-card::after { background: radial-gradient(110% 120% at 92% 8%, color-mix(in srgb, var(--dusk) 40%, transparent), transparent 60%); opacity: .7; }
+.entry.hero-card:hover::after { opacity: 1; }
+.entry-top { display: flex; align-items: center; gap: 12px; position: relative; z-index: 1; }
+.entry-ic { width: 42px; height: 42px; flex: none; border-radius: 13px; display: grid; place-items: center; background: var(--lagoon-soft); color: var(--t-lagoon); }
+.entry-ic svg { width: 21px; height: 21px; }
+.entry.hero-card .entry-ic { background: rgba(6, 22, 28, .3); color: var(--on-deep-accent); }
+.entry-ic.amber { background: color-mix(in srgb, var(--warn) 16%, transparent); color: var(--t-warn); }
+.entry-ic.dusk { background: color-mix(in srgb, var(--dusk) 15%, transparent); color: var(--t-dusk); }
+.entry-ic.info { background: color-mix(in srgb, var(--info) 14%, transparent); color: var(--t-info); }
+.entry h3 { margin: 0; font-size: 18px; font-weight: 760; letter-spacing: -.015em; }
+.entry.hero-card h3 { font-size: 24px; }
+.entry .entry-file { font-family: var(--font-num); font-size: 11px; color: var(--ink-3); margin-top: 3px; }
+.entry.hero-card .entry-file { color: var(--on-deep); opacity: .92; }
+.entry p { margin: 0; font-size: 13.5px; line-height: 1.72; color: var(--ink-2); position: relative; z-index: 1; }
+.entry.hero-card p { color: var(--on-deep); opacity: .92; font-size: 14.5px; max-width: 68ch; }
+.entry-tags { display: flex; flex-wrap: wrap; gap: 6px; position: relative; z-index: 1; }
+/* 渐变面上的半透明白会把底色提亮，反而把白字对比度拉到 4:1 以下；
+   改成深色半透明，与图标块、CTA 胶囊同一套语言。 */
+.entry.hero-card .badge { background: rgba(4, 20, 26, .3); border-color: rgba(255, 255, 255, .22); color: var(--on-deep); }
+.entry-go { margin-top: auto; padding-top: 6px; display: inline-flex; align-items: center; gap: 7px; font-size: 13px; font-weight: 730; color: var(--t-lagoon); position: relative; z-index: 1; }
+/* 渐变末端的紫蓝相当亮，琥珀色小字直接压在上面只到 4:1；
+   给它垫一个深色胶囊，既是强调的 CTA，也把对比度拉到 6:1 以上。 */
+.entry.hero-card .entry-go { color: var(--on-deep-accent); font-size: 14px; align-self: flex-start; padding: 9px 16px; border-radius: 99px; background: rgba(4, 20, 26, .34); transition: background .2s var(--ease); }
+.entry.hero-card:hover .entry-go { background: rgba(4, 20, 26, .46); }
+.entry-go svg { width: 15px; height: 15px; transition: transform .2s var(--ease); }
+.entry:hover .entry-go svg { transform: translateX(4px); }
+
+/* ---------- 演示路径 ---------- */
+.p-demo { display: grid; grid-template-columns: minmax(0, 1.35fr) minmax(0, .65fr); gap: 16px; align-items: start; }
+.steps { display: grid; gap: 0; counter-reset: st; }
+.step { display: grid; grid-template-columns: 34px minmax(0, 1fr); gap: 14px; padding: 14px 0; border-bottom: 1px dashed var(--line); }
+.step:last-child { border-bottom: 0; padding-bottom: 0; }
+.step-n { width: 30px; height: 30px; border-radius: 50%; display: grid; place-items: center; font-family: var(--font-num); font-size: 12.5px; font-weight: 800; background: var(--lagoon-soft); color: var(--t-lagoon); }
+.step:nth-child(4) .step-n, .step:nth-child(5) .step-n { background: color-mix(in srgb, var(--warn) 17%, transparent); color: var(--t-warn); }
+.step:nth-child(6) .step-n { background: color-mix(in srgb, var(--jade) 15%, transparent); color: var(--t-jade); }
+.step b { display: block; font-size: 14px; font-weight: 730; margin-bottom: 3px; }
+.step span { font-size: 12.8px; line-height: 1.66; color: var(--ink-2); }
+.step code, .num-row code { font-family: var(--font-num); font-size: 11.5px; background: var(--surface-3); padding: 1px 6px; border-radius: 6px; color: var(--ink-2); }
+
+.acct { display: grid; gap: 10px; }
+.acct-row { display: grid; grid-template-columns: 52px minmax(0, 1fr); gap: 12px; align-items: center; padding: 12px; border-radius: var(--r); background: var(--surface-2); border: 1px solid var(--line); }
+.acct-row b { font-size: 13.5px; font-weight: 740; display: block; }
+/* 必须限定到 .acct-meta 里：写成 .acct-row span 会连头像一起选中，
+   把 .avatar 的白字与字号都盖掉。 */
+.acct-meta { display: block; min-width: 0; }
+.acct-meta > span { font-size: 11.5px; color: var(--ink-3); }
+.acct-row .role { font-size: 11px; color: var(--t-lagoon); font-weight: 700; margin-top: 3px; display: block; }
+
+/* ---------- 事实 ---------- */
+.p-facts { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; }
+.fact-list { margin: 0; padding: 0; list-style: none; display: grid; gap: 9px; }
+.fact-list li { display: grid; grid-template-columns: 16px minmax(0, 1fr); gap: 9px; font-size: 12.8px; line-height: 1.6; color: var(--ink-2); }
+.fact-list svg { width: 15px; height: 15px; margin-top: 2px; color: var(--t-jade); flex: none; }
+.fact-list b { color: var(--ink); font-weight: 700; }
+.num-row { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; padding: 9px 0; border-bottom: 1px dashed var(--line); font-size: 12.8px; color: var(--ink-2); }
+.num-row:last-child { border-bottom: 0; }
+.num-row b { font-family: var(--font-num); font-size: 15px; font-weight: 800; color: var(--t-jade); }
+
+.p-foot { margin-top: 62px; padding-top: 22px; border-top: 1px solid var(--line); display: flex; flex-wrap: wrap; gap: 14px; align-items: center; justify-content: space-between; font-size: 12px; color: var(--ink-3); }
+.p-foot code { font-family: var(--font-num); background: var(--surface-3); padding: 3px 8px; border-radius: 7px; color: var(--ink-2); }
+
+@media (max-width: 1080px) {
+  .p-hero { grid-template-columns: 1fr; gap: 30px; }
+  .loop-wrap { max-width: 480px; margin: 0 auto; width: 100%; }
+  .p-stats { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .p-demo, .p-facts { grid-template-columns: 1fr; }
+}
+@media (max-width: 720px) {
+  .portal { padding: calc(var(--topbar-h) + 24px) 16px 70px; }
+  .p-grid { grid-template-columns: 1fr; }
+  .entry.hero-card { grid-column: span 1; padding: 24px; }
+  .p-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .sec-head { margin-top: 48px; }
+  .p-title { font-size: clamp(1.75rem, 8vw, 2.3rem); }
+}
+</style>
+</head>
+<body>
+
+<div class="ambient" aria-hidden="true">
+  <div class="ambient-mesh"></div>
+  <div class="ambient-drift d1"></div>
+  <div class="ambient-drift d2"></div>
+  <div class="ambient-drift d3"></div>
+  <div class="ambient-grain"></div>
+</div>
+
+<header class="topbar">
+  <a class="brand" href="index.html" aria-label="RouteMe 路觅 原型包首页">
+        <svg class="brand-bare" viewBox="0 0 32 32" aria-hidden="true"><path d="M5 24c5-13 17-13 22 0" fill="none" stroke="var(--coral)" stroke-width="3" stroke-linecap="round"/><circle cx="16" cy="10" r="3.4" fill="var(--amber)"/></svg>
+    <span class="brand-text"><b>RouteMe</b><i>路觅 · 原型包</i></span>
+  </a>
+  <div class="topbar-spacer"></div>
+</header>
+
+<main class="portal">
+
+  <!-- ============ 首屏：闭环就是产品主张 ============ -->
+  <section class="p-hero reveal" aria-labelledby="hero-title">
+    <div>
+      <h1 class="p-title" id="hero-title">先有一条想走的路，<br>再遇到<em>同路的人</em>。</h1>
+    </div>
+
+    <div class="loop-wrap">
+      <svg class="loop-svg" viewBox="0 0 420 360" role="group" aria-label="价值闭环六步，可点击切换">
+        <defs>
+          <linearGradient id="loopGrad" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0" stop-color="#12a89b"/><stop offset=".5" stop-color="#ff6b35"/><stop offset="1" stop-color="#7b5cff"/>
+          </linearGradient>
+        </defs>
+        <circle class="loop-ring" cx="210" cy="175" r="118"/>
+        <circle class="loop-flow" cx="210" cy="175" r="118" transform="rotate(-90 210 175)"/>
+        <text class="loop-core-s" x="210" y="152" text-anchor="middle">CLOSED LOOP</text>
+        <text class="loop-core-n" id="core-n" x="210" y="192" text-anchor="middle">01</text>
+        <text class="loop-core-t" id="core-t" x="210" y="214" text-anchor="middle">旅行灵感</text>
+        <g id="loop-nodes"></g>
+      </svg>
+    </div>
+  </section>
+
+  <!-- ============ 四个入口 ============ -->
+  <section id="entries" aria-labelledby="entries-title">
+    <div class="sec-head reveal">
+      <span class="sec-no">01</span>
+      <div>
+        <h2 id="entries-title">包里有什么</h2>
+        <p>四份 HTML，全部零依赖、可离线双击打开，没有任何外部资源请求。</p>
+      </div>
+      <span class="rule" aria-hidden="true"></span>
+    </div>
+
+    <div class="p-grid">
+      <a class="entry hero-card reveal" href="prototype.html">
+        <div class="entry-top">
+          <span class="entry-ic" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="2.5" y="4" width="19" height="14" rx="2.5"/><path d="M8 21h8M12 18v3M6.5 9.5l2.5 2.5-2.5 2.5M12 14.5h5"/></svg>
+          </span>
+          <div>
+            <h3>可交互 MVP 原型</h3>
+            <p class="entry-file">prototype.html · 主交付物</p>
+          </div>
+        </div>
+        <p>不是静态稿。开箱即有 6 条行程、2 条游后体验、7 条申请与 4 组会话；发布、编辑、删除、搜索、筛选、排序、拖拽改序、批量处理、保存视图、撤销全部真实生效，数据落在 localStorage，刷新不丢。八个核心页面 + 身份门 + 四种浮层，明暗双主题，1440 到 390 全视口可用。</p>
+        <div class="entry-tags">
+          <span class="badge no-dot">端到端闭环</span>
+          <span class="badge no-dot">乐观更新</span>
+          <span class="badge no-dot">详情抽屉</span>
+          <span class="badge no-dot">拖拽排序</span>
+          <span class="badge no-dot">批量选择</span>
+          <span class="badge no-dot">保存视图</span>
+          <span class="badge no-dot">破坏性操作可撤销</span>
+          <span class="badge no-dot">键盘可达</span>
+        </div>
+        <span class="entry-go">进入原型 <svg viewBox="0 0 20 20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 10h11M11 5.5 15.5 10 11 14.5"/></svg></span>
+      </a>
+
+      <a class="entry reveal" href="stories.html">
+        <div class="entry-top">
+          <span class="entry-ic amber" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5.5A1.5 1.5 0 0 1 5.5 4H10l2 2.5h6.5A1.5 1.5 0 0 1 20 8v10.5A1.5 1.5 0 0 1 18.5 20h-13A1.5 1.5 0 0 1 4 18.5Z"/><path d="M8 12h8M8 15.5h5"/></svg>
+          </span>
+          <div>
+            <h3>17 条用户故事拆解</h3>
+            <p class="entry-file">stories.html</p>
+          </div>
+        </div>
+        <p>S01–S17 故事卡，每条带「作为…我希望…以便…」句式、可勾选的验收标准、故事点与迭代归属，并标出关键路径与三次迭代的切分理由。原型里的每个界面都能对回某一条故事。</p>
+        <div class="entry-tags">
+          <span class="badge amber">验收标准</span>
+          <span class="badge amber">迭代归属</span>
+          <span class="badge amber">关键路径</span>
+        </div>
+        <span class="entry-go">读故事卡 <svg viewBox="0 0 20 20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 10h11M11 5.5 15.5 10 11 14.5"/></svg></span>
+      </a>
+
+      <a class="entry reveal" href="discovery-cn.html">
+        <div class="entry-top">
+          <span class="entry-ic dusk" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="M16.2 16.2 21 21M11 8v6M8 11h6"/></svg>
+          </span>
+          <div>
+            <h3>发现报告 · 中文</h3>
+            <p class="entry-file">discovery-cn.html</p>
+          </div>
+        </div>
+        <p>电梯演讲、As-is / To-be 对比、用户画像、用户旅程地图与故事地图。解释了「为什么是路线驱动而不是标签交友」，以及闭环每一环的痛点与机会点。支持 A4 横向打印。</p>
+        <div class="entry-tags">
+          <span class="badge">用户画像</span>
+          <span class="badge">旅程地图</span>
+          <span class="badge">故事地图</span>
+        </div>
+        <span class="entry-go">读发现报告 <svg viewBox="0 0 20 20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 10h11M11 5.5 15.5 10 11 14.5"/></svg></span>
+      </a>
+
+      <a class="entry reveal" href="discovery-en.html">
+        <div class="entry-top">
+          <span class="entry-ic info" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"/><path d="M3.5 12h17M12 3.5c2.4 2.4 3.6 5.4 3.6 8.5S14.4 18.1 12 20.5c-2.4-2.4-3.6-5.4-3.6-8.5S9.6 5.9 12 3.5Z"/></svg>
+          </span>
+          <div>
+            <h3>Discovery Report · EN</h3>
+            <p class="entry-file">discovery-en.html</p>
+          </div>
+        </div>
+        <p>Same discovery artefact in English — elevator pitch, persona, journey map and story map, laid out for A4 landscape printing. Handy when the review runs in English.</p>
+        <div class="entry-tags">
+          <span class="badge">Persona</span>
+          <span class="badge">Journey map</span>
+          <span class="badge">Story map</span>
+        </div>
+        <span class="entry-go">Open report <svg viewBox="0 0 20 20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 10h11M11 5.5 15.5 10 11 14.5"/></svg></span>
+      </a>
+    </div>
+  </section>
+
+  <!-- ============ 怎么演示 ============ -->
+  <section id="demo" aria-labelledby="demo-title">
+    <div class="sec-head reveal">
+      <span class="sec-no">02</span>
+      <div>
+        <h2 id="demo-title">三分钟走完一遍</h2>
+        <p>打开原型后按这条线点，闭环每一环都会被真实触发。原型顶栏的「演示脚本」抽屉里有同样的十步，每步可直接跳转。</p>
+      </div>
+      <span class="rule" aria-hidden="true"></span>
+    </div>
+
+    <div class="p-demo">
+      <div class="panel reveal">
+        <p class="panel-title">演示路径</p>
+        <div class="steps">
+          <div class="step"><span class="step-n">1</span><div><b>选身份，看灵感首页</b><span>点「林见夏」进入。首页 4 条未结束行程，每张卡带匹配度环和「为什么推荐给你」的可解释理由。试试搜 <code>海岸</code>、切目的地、换三档排序、点兴趣标签，再把条件保存成常用视图。</span></div></div>
+          <div class="step"><span class="step-n">2</span><div><b>进详情，提交同行申请</b><span>点深圳大鹏那条，看 5 个路线节点与匹配分拆解（目的地 50 / 日期 30 / 兴趣上限 20）。写一句申请理由提交，状态立刻变「待处理」，可随时撤回。</span></div></div>
+          <div class="step"><span class="step-n">3</span><div><b>切到发起人，批量处理</b><span>顶栏切「陈屿」。侧栏亮起琥珀色待处理徽章，打开申请抽屉，全选后批量接受或拒绝；人数与「招募中 ↔ 已满」自动同步。</span></div></div>
+          <div class="step"><span class="step-n">4</span><div><b>拒一条，再撤销</b><span>拒绝后底部弹出提示条，点「撤销」数据完整复原。顶栏、侧栏、提示条三处都能撤销，只回退一步。</span></div></div>
+          <div class="step"><span class="step-n">5</span><div><b>聊天，然后结束行程</b><span>已匹配的行程可进聊天，Enter 发送、Shift + Enter 换行。回到详情点「标记为已结束」，徽章与分组同步变化。</span></div></div>
+          <div class="step"><span class="step-n">6</span><div><b>写体验，闭环接上</b><span>参加者发布游后体验（三档强度 + 给后来者的建议）。回到灵感首页，新体验已出现在回流带里，点「参考发布」会预填一条新行程 —— 下一个人的灵感由此产生。</span></div></div>
+        </div>
+      </div>
+
+      <div class="panel reveal">
+        <p class="panel-title">三个演示身份</p>
+        <div class="acct" id="acct"></div>
+        <hr class="divider">
+        <p class="hint">数据存在浏览器 localStorage。玩乱了点原型顶栏的「重置演示数据」，即可回到干净种子状态：6 条行程、2 条体验、7 条申请、4 组会话。</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 事实 ============ -->
+  <section id="facts" aria-labelledby="facts-title">
+    <div class="sec-head reveal">
+      <span class="sec-no">03</span>
+      <div>
+        <h2 id="facts-title">怎么跑、验过什么</h2>
+        <p>没有构建步骤，没有网络请求，没有图片文件。插画全部是内联 SVG。</p>
+      </div>
+      <span class="rule" aria-hidden="true"></span>
+    </div>
+
+    <div class="p-facts">
+      <div class="panel reveal">
+        <p class="panel-title">运行方式</p>
+        <ul class="fact-list">
+          <li><svg viewBox="0 0 20 20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 10.5 8 14.5 16 6"/></svg><span><b>直接双击 index.html</b>，整个文件夹拷到任何电脑都能跑，不需要 Node、不需要服务器。</span></li>
+          <li><svg viewBox="0 0 20 20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 10.5 8 14.5 16 6"/></svg><span>想用 http 源，任意静态服务器指向本文件夹即可，例如 <code>npx serve</code>。</span></li>
+          <li><svg viewBox="0 0 20 20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 10.5 8 14.5 16 6"/></svg><span>纯 vanilla JS 多文件，无构建、无框架、无 ES module，因此 <code>file://</code> 下功能完整。</span></li>
+          <li><svg viewBox="0 0 20 20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 10.5 8 14.5 16 6"/></svg><span>右上角切换明暗主题，选择会记在本地，本包四个页面共用同一套主题偏好。</span></li>
+        </ul>
+      </div>
+
+      <div class="panel reveal">
+        <p class="panel-title">自动化验收</p>
+        <div class="num-row"><span>主流程 S01–S17</span><b>32 / 32</b></div>
+        <div class="num-row"><span>视觉、无障碍与悬停态</span><b>68 / 68</b></div>
+        <div class="num-row"><span>聊天多视口与输入</span><b>21 / 21</b></div>
+        <div class="num-row"><span>本包结构与门户</span><b>74 / 74</b></div>
+        <div class="num-row"><span><code>file://</code> 直开全链路</span><b>26 / 26</b></div>
+        <div class="num-row"><span>运行时错误</span><b>0</b></div>
+        <hr class="divider">
+        <p class="hint">用本机 Edge 无头 + CDP 原生输入管线驱动，对比度在 Node 侧按 WCAG 相对亮度自算，渐变逐色标取最差值，全程文本化测量。</p>
+      </div>
+
+      <div class="panel reveal">
+        <p class="panel-title">已覆盖的质量项</p>
+        <ul class="fact-list">
+          <li><svg viewBox="0 0 20 20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 10.5 8 14.5 16 6"/></svg><span>原型明暗两主题 × 39 个界面状态，再加真实鼠标触发的悬停态；本包三份文档另做全文扫描，<b>2168 处文字节点</b>逐个核算，正文 ≥ 4.5:1、大字号 ≥ 3:1，渐变面取最差色标。</span></li>
+          <li><svg viewBox="0 0 20 20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 10.5 8 14.5 16 6"/></svg><span>1440 / 1024 / 768 / 390 四档视口零横向溢出；窄屏收起侧栏、底部导航贴底。</span></li>
+          <li><svg viewBox="0 0 20 20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 10.5 8 14.5 16 6"/></svg><span>Esc 关浮层并归还焦点，行程卡可 Tab 聚焦并回车打开，尊重 <code>prefers-reduced-motion</code>。</span></li>
+          <li><svg viewBox="0 0 20 20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 10.5 8 14.5 16 6"/></svg><span>连发消息、反复撤销、跨标签同步与刷新持久化均无重复绑定或状态错乱。</span></li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <footer class="p-foot">
+    <span>RouteMe 路觅 · 大肥鱼粉丝俱乐部 · 原型包</span>
+    <span>入口 <code>index.html</code> · 原型 <code>prototype.html</code> · 故事 <code>stories.html</code></span>
+  </footer>
+</main>
+
+<script>
+(function () {
+  'use strict';
+  var THEME_KEY = 'routeme.theme';
+  var root = document.documentElement;
+
+  /* ---------- 主题：与原型共用同一个本地偏好 ---------- */
+  function readTheme() {
+    try {
+      var t = localStorage.getItem(THEME_KEY);
+      if (t === 'light' || t === 'dark') return t;
+    } catch (e) { }
+    return window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+  }
+  function applyTheme(t) {
+    root.setAttribute('data-theme', t);
+    try { localStorage.setItem(THEME_KEY, t); } catch (e) { }
+    var btn = document.getElementById('theme-btn');
+    if (btn) btn.setAttribute('aria-label', t === 'dark' ? '切换浅色模式' : '切换深色模式');
+  }
+  applyTheme(readTheme());
+  var themeBtn = document.getElementById('theme-btn');
+  if (themeBtn) themeBtn.addEventListener('click', function () {
+    applyTheme(root.getAttribute('data-theme') === 'dark' ? 'light' : 'dark');
+  });
+
+  /* ---------- 闭环六步：环图可点、可键盘操作，并深链进原型 ---------- */
+  var LOOP = [
+    { t: '旅行灵感', d: '在灵感首页读到别人真实走过的路线与游后体验，先长出「我也想去」的念头。', h: '#/discover' },
+    { t: '发布行程', d: '把念头写成一条有日期、人数、预算和路线节点的真实计划，而不是一个模糊的「想去」。', h: '#/create' },
+    { t: '发现同行者', d: '按目的地、日期与兴趣筛出同路人，匹配度拆成可解释的分数，不是一个黑箱推荐。', h: '#/discover' },
+    { t: '建立连接', d: '申请人写一句理由，发起人接受或拒绝；双方同意后才解锁聊天，避免陌生人直接骚扰。', h: '#/mine/applied' },
+    { t: '一起旅行', d: '在聊天里确认集合区域与时间，行程结束后标记完成，状态与徽章同步流转。', h: '#/chat' },
+    { t: '分享体验', d: '参加者留下真实强度与建议，回流到灵感首页，成为下一个人「参考发布」的起点。', h: '#/mine/completed' }
+  ];
+  var CX = 210, CY = 175, R = 118, LR = 150;
+  var nodesG = document.getElementById('loop-nodes');
+  var coreN = document.getElementById('core-n'), coreT = document.getElementById('core-t');
+  var desc = document.getElementById('loop-desc'), jump = document.getElementById('loop-jump');
+  var SVGNS = 'http://www.w3.org/2000/svg';
+
+  function mk(tag, attrs, text) {
+    var e = document.createElementNS(SVGNS, tag);
+    for (var k in attrs) if (Object.prototype.hasOwnProperty.call(attrs, k)) e.setAttribute(k, attrs[k]);
+    if (text != null) e.textContent = text;
+    return e;
+  }
+
+  LOOP.forEach(function (s, i) {
+    var a = (-90 + i * 60) * Math.PI / 180;
+    var x = CX + R * Math.cos(a), y = CY + R * Math.sin(a);
+    var lx = CX + LR * Math.cos(a), ly = CY + LR * Math.sin(a);
+    var anchor = Math.abs(Math.cos(a)) < 0.2 ? 'middle' : (Math.cos(a) > 0 ? 'start' : 'end');
+    var dy = Math.abs(Math.cos(a)) < 0.2 ? (Math.sin(a) > 0 ? 12 : -6) : 4;
+
+    var g = mk('g', {
+      'class': 'loop-node', 'data-i': i, role: 'button', tabindex: '0',
+      'aria-label': '第 ' + (i + 1) + ' 步：' + s.t
+    });
+    g.appendChild(mk('circle', { 'class': 'hit', cx: x, cy: y, r: 26 }));
+    g.appendChild(mk('circle', { 'class': 'dot', cx: x, cy: y, r: 18 }));
+    g.appendChild(mk('text', { 'class': 'num', x: x, y: y + 4.5, 'text-anchor': 'middle' }, String(i + 1)));
+    g.appendChild(mk('text', { 'class': 'cap', x: lx, y: ly + dy, 'text-anchor': anchor }, s.t));
+    nodesG.appendChild(g);
+  });
+
+  var active = -1;
+  function pick(i) {
+    if (i === active) return;
+    active = i;
+    var s = LOOP[i];
+    Array.prototype.forEach.call(nodesG.children, function (g, j) {
+      g.classList.toggle('on', j === i);
+      g.setAttribute('aria-pressed', j === i ? 'true' : 'false');
+    });
+    coreN.textContent = '0' + (i + 1);
+    coreT.textContent = s.t;
+    if (desc) desc.textContent = s.d;
+    if (jump) {
+      jump.setAttribute('href', 'prototype.html' + s.h);
+      jump.textContent = '跳到「' + s.t + '」→';
+    }
+  }
+  nodesG.addEventListener('click', function (e) {
+    var g = e.target.closest('.loop-node');
+    if (g) pick(parseInt(g.getAttribute('data-i'), 10));
+  });
+  nodesG.addEventListener('keydown', function (e) {
+    var g = e.target.closest('.loop-node');
+    if (!g) return;
+    var i = parseInt(g.getAttribute('data-i'), 10);
+    if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); pick(i); return; }
+    var d = e.key === 'ArrowRight' || e.key === 'ArrowDown' ? 1 : (e.key === 'ArrowLeft' || e.key === 'ArrowUp' ? -1 : 0);
+    if (d) {
+      e.preventDefault();
+      var n = (i + d + LOOP.length) % LOOP.length;
+      nodesG.children[n].focus();
+      pick(n);
+    }
+  });
+  nodesG.addEventListener('focusin', function (e) {
+    var g = e.target.closest('.loop-node');
+    if (g) pick(parseInt(g.getAttribute('data-i'), 10));
+  });
+  pick(0);
+
+  /* ---------- 三个演示身份：头像色与原型同源（按亮度归一，白字恒达标） ---------- */
+  function hslInk(h, s, l) {
+    h = ((h % 360) + 360) % 360;
+    var c = (1 - Math.abs(2 * l - 1)) * s, x = c * (1 - Math.abs((h / 60) % 2 - 1)), m = l - c / 2, r, g, b;
+    if (h < 60) { r = c; g = x; b = 0; } else if (h < 120) { r = x; g = c; b = 0; }
+    else if (h < 180) { r = 0; g = c; b = x; } else if (h < 240) { r = 0; g = x; b = c; }
+    else if (h < 300) { r = x; g = 0; b = c; } else { r = c; g = 0; b = x; }
+    var v = [r, g, b].map(function (n) { return Math.round((n + m) * 255); });
+    var lin = v.map(function (n) { var t = n / 255; return t <= 0.03928 ? t / 12.92 : Math.pow((t + 0.055) / 1.055, 2.4); });
+    return [0.2126 * lin[0] + 0.7152 * lin[1] + 0.0722 * lin[2],
+      '#' + v.map(function (n) { return ('0' + n.toString(16)).slice(-2); }).join('')];
+  }
+  function hueInk(hue, sat, lum) {
+    var lo = 0, hi = 1;
+    for (var i = 0; i < 20; i++) { var mid = (lo + hi) / 2; if (hslInk(hue, sat, mid)[0] < lum) lo = mid; else hi = mid; }
+    return hslInk(hue, sat, lo)[1];
+  }
+  var PEOPLE = [
+    { n: '林见夏', s: '大三 · 视觉传达', r: '申请人视角 · 摄影 / 海边 / 美食', hue: 18, ini: '夏' },
+    { n: '陈屿', s: '研一 · 地理科学', r: '发起人视角 · 徒步 / 自然 / 露营', hue: 168, ini: '屿' },
+    { n: '苏念', s: '大二 · 新闻学', r: '同行者视角 · 已匹配会话', hue: 272, ini: '念' }
+  ];
+  document.getElementById('acct').innerHTML = PEOPLE.map(function (p) {
+    return '<div class="acct-row"><span class="avatar lg" style="--hue:' + p.hue +
+      ';--a1:' + hueInk(p.hue, 0.7, 0.163) + ';--a2:' + hueInk(p.hue + 42, 0.66, 0.092) +
+      '" aria-hidden="true">' + p.ini + '</span><span class="acct-meta"><b>' + p.n + '</b><span>' + p.s +
+      '</span><span class="role">' + p.r + '</span></span></div>';
+  }).join('');
+
+  /* ---------- 分段入场：进入视口才动，尊重 reduced-motion ---------- */
+  var items = document.querySelectorAll('.reveal');
+  var calm = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if (calm || !('IntersectionObserver' in window)) {
+    Array.prototype.forEach.call(items, function (el) { el.classList.add('in'); });
+  } else {
+    var io = new IntersectionObserver(function (entries) {
+      entries.forEach(function (en) {
+        if (!en.isIntersecting) return;
+        var sibs = en.target.parentElement ? en.target.parentElement.querySelectorAll('.reveal') : [];
+        var idx = Array.prototype.indexOf.call(sibs, en.target);
+        en.target.style.transitionDelay = Math.min(Math.max(idx, 0) * 70, 280) + 'ms';
+        en.target.classList.add('in');
+        io.unobserve(en.target);
+      });
+    }, { rootMargin: '0px 0px -8% 0px', threshold: 0.06 });
+    Array.prototype.forEach.call(items, function (el) { io.observe(el); });
+  }
+})();
+</script>
+</body>
+</html>

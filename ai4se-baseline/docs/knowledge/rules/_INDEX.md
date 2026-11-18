@@ -28,5 +28,6 @@
 | testing | 22 | java-testing | [rules/testing/rules.md#java-testing](testing/rules.md#java-testing) |
 | testing | 23 | web-testing | [rules/testing/rules.md#web-testing](testing/rules.md#web-testing) |
 | process | 24 | artifact-review-gate | [rules/process/rules.md#artifact-review-gate](process/rules.md#artifact-review-gate) |
+| process | 25 | id-allocation | [rules/process/rules.md#id-allocation](process/rules.md#id-allocation) |
 
-共 24 条规则、6 个分类文件、0 个单规则文件。已合并：`layer-boundaries` → `package-structure`，`java-hooks` → `git-commit-conventions`。
+共 25 条规则、6 个分类文件、0 个单规则文件。已合并：`layer-boundaries` → `package-structure`，`java-hooks` → `git-commit-conventions`。
