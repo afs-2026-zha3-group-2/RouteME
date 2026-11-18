@@ -1,4 +1,4 @@
-# REQ-029 — 举报违规扣减信用分（Ready 需求）
+# REQ-030 — 举报违规扣减信用分（Ready 需求）
 
 - **能力：** `user-credit`（ADDED Requirements：举报违规扣分结算）+ `admin-console`（MODIFIED Requirements：举报处置表单与接口）
 - **对应 OpenSpec change：** `add-report-credit-deduction`
@@ -14,7 +14,7 @@
 
 | 字段 | 内容 |
 |---|---|
-| id | REQ-029 |
+| id | REQ-030 |
 | statement | 系统 SHALL 在管理员确认举报成立（`RESOLVED`）时，按所选违规类型自动计算并扣减被举报用户信用分：7 类固定扣分，`OTHER` 由管理员在 -5 / -10 / -20 / -30 中选择；扣分 MUST 经统一记账服务写入账本并关联举报编号，同一举报 MUST 最多产生一次扣分；`REJECTED` MUST NOT 扣分；处理后分数 MUST 截断为 0–100（最低 0）；举报处置 MUST NOT 再改变账号状态。 |
 | actors | 平台管理员（处理举报、选择违规类型、填写违规原因）；被举报用户（扣分对象）；平台（计算扣分、记账、触发低分限制）。 |
 | rationale | 信用账户、账本、低分限制与举报队列均已落地，但举报核实没有任何写分路径；举报成立只改变账号状态，违规与信用完全脱钩。 |

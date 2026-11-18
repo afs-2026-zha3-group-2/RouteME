@@ -2,7 +2,7 @@
 
 - **Change：** `add-report-credit-deduction`｜ **阶段：** P2（Delta craft review）｜ **日期：** 2026-11-18
 - **Delta：** `specs/user-credit/spec.md`（ADDED：3 Requirement / 16 Scenario）、`specs/admin-console/spec.md`（MODIFIED：1 Requirement / 20 Scenario）
-- **输入：** `proposal.md`（D1–D5 / R-1 ~ R-26）、`requirements/REQ-029-report-credit-deduction.md`、基线 `add-admin-console` 的「举报详情与处理」
+- **输入：** `proposal.md`（D1–D5 / R-1 ~ R-26）、`requirements/REQ-030-report-credit-deduction.md`、基线 `add-admin-console` 的「举报详情与处理」
 - **校验：** `openspec validate add-report-credit-deduction --strict` → `Change 'add-report-credit-deduction' is valid`
 
 ## Acceptance criteria
@@ -22,7 +22,7 @@
 | DoV-2 歧义已列出或解决 | Pass | 本回合收敛 2 处：驳回场景统一为「驳回说明」；历史举报无新字段时明确「空值降级、不报错」 | 非阻塞 OQ-1 ~ OQ-5 保留至 P3 |
 | DoV-3 IO / SA 残余关切已记录 | Pass | F-2 待 G1 追认 D1 对 `add-admin-console` 2 条基线场景的替换；归档顺序约束 | 见 P1 评审与 `consistency-lint.md` |
 | DoV-4 未声明业务实现已完成 | Pass | P2 未写业务代码 | — |
-| DoV-5 Delta Requirement 可追溯到 proposal | Pass | 3 + 1 Requirement 均可追溯到 R-1 ~ R-26 与 REQ-029 场景组 | R-23 / R-24 / R-25 由既有能力与基线权限 Requirement 承接，proposal 已注明「沿用」 |
+| DoV-5 Delta Requirement 可追溯到 proposal | Pass | 3 + 1 Requirement 均可追溯到 R-1 ~ R-26 与 REQ-030 场景组 | R-23 / R-24 / R-25 由既有能力与基线权限 Requirement 承接，proposal 已注明「沿用」 |
 
 ## 场景映射抽验
 

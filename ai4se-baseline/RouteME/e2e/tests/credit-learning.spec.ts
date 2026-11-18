@@ -3,7 +3,8 @@ import { dirname, resolve } from 'node:path';
 import { DatabaseSync } from 'node:sqlite';
 import { fileURLToPath } from 'node:url';
 import { expect, test, type Page } from '@playwright/test';
-import { pickDestination, pickPlace } from './support';
+import { pickDestination } from './support';
+import { installAmapStub } from './support/amapStub';
 
 /**
  * REQ-027 / add-credit-recovery 的端到端口径（A1 / A6 / A24 / A25 / D6）。
@@ -93,8 +94,20 @@ async function useAccount(page: Page, account: { userId: number; token: string }
 async function fillPublishForm(page: Page, title: string): Promise<void> {
   await page.getByLabel('标题').fill(title);
   await pickDestination(page, '广东省', '珠海市');
-  await pickPlace(page, '途经点', '香洲港');
-  await pickPlace(page, '途经点', '情侣路');
+  await addRouteStop(page, '香洲港');
+  await addRouteStop(page, '情侣路');
+}
+
+/** 发布页已改为地图路线编辑器：通过编辑器搜索框加途经点（AMap 替身提供 POI）。 */
+async function addRouteStop(page: Page, name: string): Promise<void> {
+  const editor = page.locator('.publish-route-editor');
+  await editor.locator('#trip-stops').fill(name);
+  const option = editor.locator('.amap-search-item').filter({ hasText: name }).first();
+  await expect(option).toBeVisible();
+  await option.click();
+  await expect(
+    editor.locator('.amap-waypoint-text b').filter({ hasText: name }).first(),
+  ).toBeVisible();
 }
 
 /** 前 `correctCount` 题按题库答案作答，其余故意选相邻选项，用来锁 8 对通过边界。 */
@@ -116,6 +129,7 @@ async function answerQuiz(page: Page, correctCount: number): Promise<void> {
 test.describe.configure({ mode: 'serial' });
 
 test('45 分全局学习门禁 → 学习通过 → 发布成功', async ({ page }) => {
+  await installAmapStub(page);
   const account = await registerViaApi(page);
   seedScore(account.userId, 45);
   await useAccount(page, account);

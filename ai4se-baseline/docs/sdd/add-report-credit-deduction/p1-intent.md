@@ -3,7 +3,7 @@
 - **Change：** `add-report-credit-deduction`（Issue #29 / Story 2「举报违规扣减信用分」/ 信用系统迭代 1）｜ **阶段：** P1（Intent & proposal）
 - **日期：** 2026-11-18 ｜ **记录人：** Lewis（SM，当前开发者）
 - **分支 / 基点：** `feature/add-report-credit-deduction` ← `origin/main@f0d093a`（独立 worktree `.worktrees/add-report-credit-deduction`；主工作区有未提交改动，未复用）；P1 提交后已合并 `origin/main@822471c`
-- **需求 / 故事：** REQ-029 / S30（REQ-019…REQ-027 已占用；S28 为安全学习恢复）
+- **需求 / 故事：** REQ-030 / S31（REQ-019…REQ-027 已占用；S28 为安全学习恢复）
 
 ## 1. 阶段目标
 
@@ -13,9 +13,9 @@
 
 | 工件 | 路径 | 摘要 |
 |---|---|---|
-| 意图捕获 | [`intents/REQ-029-report-credit-deduction.md`](../../../requirement-workspace/intents/REQ-029-report-credit-deduction.md) | 原始意图 / 价值假设 / 现状核对 12 条 / D1–D5 / 边界 / 能力关系 / Discovery Go |
-| Ready 需求 | [`requirements/REQ-029-report-credit-deduction.md`](../../../requirement-workspace/requirements/REQ-029-report-credit-deduction.md) | 六字段 + 26 场景（A–G 七组）+ 约束 + 证据 + 能力表 + 9 条 OQ + DoR 自检 |
-| 深度分析 | [`deep-dive.md`](../../../requirement-workspace/deep-dive.md)「REQ-029 增补」 | ① 数据契约 / ② 边界归属 / ③ 跨 REQ 一致性 / ④ 通知与展示契约 + 探针记录 |
+| 意图捕获 | [`intents/REQ-030-report-credit-deduction.md`](../../../requirement-workspace/intents/REQ-030-report-credit-deduction.md) | 原始意图 / 价值假设 / 现状核对 12 条 / D1–D5 / 边界 / 能力关系 / Discovery Go |
+| Ready 需求 | [`requirements/REQ-030-report-credit-deduction.md`](../../../requirement-workspace/requirements/REQ-030-report-credit-deduction.md) | 六字段 + 26 场景（A–G 七组）+ 约束 + 证据 + 能力表 + 9 条 OQ + DoR 自检 |
+| 深度分析 | [`deep-dive.md`](../../../requirement-workspace/deep-dive.md)「REQ-030 增补」 | ① 数据契约 / ② 边界归属 / ③ 跨 REQ 一致性 / ④ 通知与展示契约 + 探针记录 |
 | 影响分析 | [`impact-brief.md`](../../../requirement-workspace/impact-brief.md) §29 | As-is 资产清单 / As-is → Delta / 爆炸半径 / 工件影响 / 双轨 / 风险 / 切分边界 |
 | 提案 | [`proposal.md`](../../../openspec/changes/add-report-credit-deduction/proposal.md) | 问题 / 范围 / 影响面 / D1–D5 / 设计取舍 / 26 条场景 / 约束 / 证据 / 能力表 / 9 条 OQ / DoR / 残余风险 |
 | Delta（`user-credit`） | [`specs/user-credit/spec.md`](../../../openspec/changes/add-report-credit-deduction/specs/user-credit/spec.md) | ADDED 3 Requirement / 16 Scenario：违规类型与扣分规则、记账 / 截断 / 幂等、低分联动 |
@@ -23,7 +23,7 @@
 | 提案评审 | [`docs/reviews/20261118-add-report-credit-deduction-proposal-review.md`](../../reviews/20261118-add-report-credit-deduction-proposal-review.md) | Verdict Pass；BLOCKER 0 / WARNING 2（1 已收口、1 留待 G1）/ SUGGESTION 3；WAYNE + Lewis 签署 |
 | 规格评审 | [`docs/reviews/20261118-add-report-credit-deduction-spec-review.md`](../../reviews/20261118-add-report-credit-deduction-spec-review.md) | Verdict Pass；BLOCKER 0 / WARNING 2（1 已收口、1 留待 G1）/ SUGGESTION 3；WAYNE + Lewis 签署 |
 | P1 质量报告 | [`docs/ai4se-plugins/20261118-095648-quality-checklist-report.md`](../../ai4se-plugins/20261118-095648-quality-checklist-report.md) | P1 必选项 4/4 Pass；可选 2 项 Skipped；Overall Pass |
-| 登记 | `registry.md` / `stories.md` / `handoff.md` | REQ-029 / S30 行与映射；`docs/sdd/README.md` 索引行 |
+| 登记 | `registry.md` / `stories.md` / `handoff.md` | REQ-030 / S31 行与映射；`docs/sdd/README.md` 索引行 |
 
 ## 3. 已裁定决策（2026-11-18）
 
@@ -67,7 +67,7 @@
 
 ## 7. 提交记录
 
-P1 阶段产物一次性提交（`docs(p1): add-report-credit-deduction add REQ-029 proposal and delta`），按阶段提交约定只包含本阶段产物；提交后先 `git pull` 再 `git push`。
+P1 阶段产物一次性提交（`docs(p1): add-report-credit-deduction add REQ-030 proposal and delta`），按阶段提交约定只包含本阶段产物；提交后先 `git pull` 再 `git push`。
 
 - **拉取：** `origin/main` 在 P1 起草期间前进 3 个提交（`e491d37` / `370076d` / `822471c`，含 `add-credit-exit-restriction` 的 `V28` / `V29`），已 `git pull --no-rebase` 合并（合并提交 `2d6b95d`）；迁移号已按合并后基线改为 `V29` → 预计 `V31`。
 - **推送：** `git push -u origin feature/add-report-credit-deduction`（worktree 创建时 upstream 指向 `origin/main`，推送时改绑 feature 分支）。

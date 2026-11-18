@@ -1823,9 +1823,9 @@ REQ-010：聊天页按原型重构、聊天准入与退出语义调整、集合�
 - **阶段：** 单阶段；无归档前置依赖（`travel-finance` 全新能力），但需与在途 `add-realtime-notifications` 协调契约版本与迁移号。
 - **质量自检（split-heuristics）：** 子目标一句话可说明 ✓；端到端可观察（充值初始余额 → 买保险 / 借款 → 扣 5% → 还款）✓；可独立运行 ✓；capability 名真实（`travel-finance`）✓；无依赖环 ✓；33 场景接近单 change 上限，P2 可再合并同义场景。
 
-## 29. REQ-029 变更影响 — 举报违规扣减信用分（issue #29）
+## 29. REQ-030 变更影响 — 举报违规扣减信用分（issue #29）
 
-> 编号说明（2026-11-18）：合并 `origin/main@2bf9148` 时 REQ-028 / S29 / V30 已被 `add-travel-finance` 占用，本节按「后到者顺延」改为 **REQ-029 / S30 / §29 / V31**。
+> 编号说明（2026-11-18）：合并 `origin/main@2bf9148` 时 REQ-028 / S29 / V30 与 REQ-029 / S30 已被 `add-travel-finance` 占用，本节按「后到者顺延」改为 **REQ-030 / S31 / §29 / V31**。
 
 - **日期：** 2026-11-18 ｜ **触发：** `/sdd:p1`（GitHub issue #29）
 - **基线：** `origin/main@f0d093a`；分支 `feature/add-report-credit-deduction`
@@ -1833,9 +1833,9 @@ REQ-010：聊天页按原型重构、聊天准入与退出语义调整、集合�
 
 ### 29.1 Requirement set
 
-- `requirement-workspace/requirements/REQ-029-report-credit-deduction.md`（六字段 + 26 场景 + OQ + DoR）
-- `requirement-workspace/intents/REQ-029-report-credit-deduction.md`
-- 故事：`requirement-workspace/stories.md` 登记 S30（不新建独立故事文件：以意图 + proposal + Delta 承接，与 REQ-012 / REQ-019 同口径）
+- `requirement-workspace/requirements/REQ-030-report-credit-deduction.md`（六字段 + 26 场景 + OQ + DoR）
+- `requirement-workspace/intents/REQ-030-report-credit-deduction.md`
+- 故事：`requirement-workspace/stories.md` 登记 S31（不新建独立故事文件：以意图 + proposal + Delta 承接，与 REQ-012 / REQ-019 同口径）
 - 能力：`user-credit`（ADDED：举报违规扣分结算）+ `admin-console`（MODIFIED：举报处置表单与接口）。
 - **Delta 预判：** `openspec/changes/add-report-credit-deduction/specs/user-credit/spec.md`（ADDED）+ `.../specs/admin-console/spec.md`（MODIFIED）；因 `admin-console` 尚未归档，归档 MUST 排在 `add-admin-console` 之后（P2 校验已用 probe 确认：`MODIFIED` 对不存在活规格在 `validate` 阶段通过、归档阶段拒绝）。
 
@@ -1882,7 +1882,7 @@ REQ-010：聊天页按原型重构、聊天准入与退出语义调整、集合�
 ### 29.5 Artifact impact
 
 - **OpenSpec：** 新增 `openspec/changes/add-report-credit-deduction/`（proposal + 双 Delta + design + tasks）。
-- **需求工作区：** 意图 / Ready / deep-dive 增补 / impact §29 / stories S30 / registry / handoff。
+- **需求工作区：** 意图 / Ready / deep-dive 增补 / impact §29 / stories S31 / registry / handoff。
 - **代码：** 后端 `AdminReportServiceImpl` / 请求 / 响应 / 枚举 / 原因码常量；前端 `AdminReportDetailPage` / `reportActionForm.ts` / `adminMessages.ts` / `types.ts` / `api.ts`。
 - **迁移：** `V31` 双引擎（SQLite + H2）。
 - **测试：** 扣分规则单测、幂等 / 并发、预览口径、低分联动回归、E2E。
@@ -1891,7 +1891,7 @@ REQ-010：聊天页按原型重构、聊天准入与退出语义调整、集合�
 ### 29.6 Dual-track notes（OpenSpec vs agile）
 
 - **OpenSpec 轨：** 单 change `add-report-credit-deduction`；双能力（`user-credit` ADDED + `admin-console` MODIFIED）。
-- **Agile 轨：** 单故事 S30（信用系统迭代 1 / Story 2 / P0 / 3 点）；不拆多故事（一个垂直切片：举报成立 → 扣分 → 低分限制）。
+- **Agile 轨：** 单故事 S31（信用系统迭代 1 / Story 2 / P0 / 3 点）；不拆多故事（一个垂直切片：举报成立 → 扣分 → 低分限制）。
 - **场景数量：** 26 条，在单 change 阈值内；P2 如需收敛，可在同一 change 内重组 Requirement 组。
 
 ### 29.7 Risks & blockers
@@ -1909,7 +1909,7 @@ REQ-010：聊天页按原型重构、聊天准入与退出语义调整、集合�
 
 ### 29.8 Suggested split boundaries（供 proposal-split / story-split）
 
-- **一个 change：** `add-report-credit-deduction` ← REQ-029（S30）。
+- **一个 change：** `add-report-credit-deduction` ← REQ-030（S31）。
 - **不拆故事：** 举报成立 → 扣分 → 低分限制必须同批交付才能端到端验收。
 - **不并入：** 账号处置动作（保留在用户管理页）、举报提交端原因枚举、信用明细页、其他扣分 / 加分事件（#30–#32）、月度扣分上限。
 - **依赖：** `user-credit`（账本 / 账户）、`admin-console`（举报处置）、`credit-enforcement`（低分联动）。

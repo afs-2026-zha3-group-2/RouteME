@@ -1,6 +1,6 @@
 # P3 阶段记录 — add-report-credit-deduction
 
-- **Change：** `add-report-credit-deduction`（Issue #29 / REQ-029 / S30）｜ **阶段：** P3（Design & decompose）
+- **Change：** `add-report-credit-deduction`（Issue #29 / REQ-030 / S31）｜ **阶段：** P3（Design & decompose）
 - **日期：** 2026-11-18 ｜ **记录人：** Lewis（SM，当前开发者）
 - **基点：** `origin/main@822471c`（已并入 `5cb67ff`）；分支 `feature/add-report-credit-deduction`
 

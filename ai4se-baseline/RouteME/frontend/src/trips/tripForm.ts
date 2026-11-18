@@ -1,5 +1,6 @@
 import { findCity } from '../area/areaOptions';
 import { tripMessages } from '../i18n/tripMessages';
+import { isCoordinatePlaceholderName } from '../map/amap/placePick';
 import type { TripCreateRequest, TripTravelMode } from '../types';
 import { validateMeetingForm } from './meetingForm';
 import {
@@ -88,6 +89,9 @@ export function validateTripForm(values: TripFormValues): TripFieldErrors {
   }
   if (values.stops.filter((stop) => stop.trim() !== '').length < MIN_STOPS) {
     errors.stops = tripMessages.errorStopsRequired;
+  } else if (values.stops.some((stop) => isCoordinatePlaceholderName(stop))) {
+    // 地图点选兜底：坐标占位名在加入时就该改名，这里拦住预填 / 草稿等旁路。
+    errors.stops = tripMessages.errorStopsPlaceholder;
   }
   const capacity = Number(values.capacity);
   if (!Number.isInteger(capacity) || capacity < MIN_CAPACITY || capacity > MAX_CAPACITY) {

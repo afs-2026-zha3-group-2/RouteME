@@ -1,6 +1,6 @@
 # P4 阶段记录 — add-report-credit-deduction
 
-- **Change：** `add-report-credit-deduction`（Issue #29 / REQ-029 / S30）｜ **阶段：** P4（Implement & verify）
+- **Change：** `add-report-credit-deduction`（Issue #29 / REQ-030 / S31）｜ **阶段：** P4（Implement & verify）
 - **日期：** 2026-11-18 ｜ **记录人：** Lewis（SM，当前开发者）
 - **分支：** `feature/add-report-credit-deduction`；基线已并入 `origin/main@822471c`
 - **契约 / 迁移：** `openapi.yaml` `0.26.0`；`V31__report_credit_deduction.sql`
@@ -17,7 +17,7 @@
 | 迁移 | `V31__report_credit_deduction.sql`（两列可空） | 全新隔离库与 H2 均 V1–V31 重放成功 |
 | 后端 | `ReportViolationEnum`（8 类 + `OTHER` 四档）、`CreditService.snapshot`（只读、缺失 80、不建账户）、`AdminReportServiceImpl.resolve` 重写（类型校验 → `min(deduction, before)` → 条件更新 → `book` → 明细）、移除处罚动作 / 封禁字段写入 | `AdminReportControllerTest` 26、`ReportViolationEnumTest` 6、`CreditServiceSnapshotTest` 2、`ReportCreditConcurrencyTest` 1 |
 | 后端（D-4 扩展） | `AccountStatusService`：BANNED 允许更新封禁 / 恢复；用户管理页新增「更新封禁」 | `AdminUserControllerTest` / `AccountStatusServiceTest` 全绿；E2E `[I1] bans…` 覆盖 |
-| 前端 | `types.ts`、`reportViolation.ts`（双端同值映射）、`reportActionForm.ts`（新状态与校验）、`AdminReportDetailPage`（违规类型 / OTHER 档位 / 三段预览 / 详情信用 / 历史违规字段 / 旧动作只读）、`adminMessages.ts`、`styles.css`（`.admin-deduction-*` 仅主题令牌） | `typecheck` + 515 tests / 63 files + `build`（合并 `origin/main@2bf9148` 后复验） |
+| 前端 | `types.ts`、`reportViolation.ts`（双端同值映射）、`reportActionForm.ts`（新状态与校验）、`AdminReportDetailPage`（违规类型 / OTHER 档位 / 三段预览 / 详情信用 / 历史违规字段 / 旧动作只读）、`adminMessages.ts`、`styles.css`（`.admin-deduction-*` 仅主题令牌） | `typecheck` + 527 tests / 65 files + `build`（合并 `origin/main@8992853` 后复验） |
 | E2E | 新增 `admin-report-credit.spec.ts`（E1–E7 / E9 / R1 / R3）；改写 `admin.spec.ts` 举报用例；用户管理页暂停 / 封禁 / 更新封禁 / 恢复回归 | 两份 spec **17/17**（6 + 11） |
 | 文档 | `tasks.md` 勾选 1.1–1.12 + 执行偏差 D-1–D-6；本记录；`docs/ai4se-plugins/20261118-114448-local-verify-report.md` | — |
 
@@ -46,9 +46,9 @@
 
 | 项 | 命令 | 结果 |
 |---|---|---|
-| 后端 | `./mvnw.cmd -B -o verify` | **640 tests / 93 classes，0 failures / 0 errors**，BUILD SUCCESS（合并 `origin/main@2bf9148` 后复验） |
+| 后端 | `./mvnw.cmd -B -o verify` | **640 tests / 93 classes，0 failures / 0 errors**，BUILD SUCCESS（合并 `origin/main@8992853` 后复验） |
 | 前端类型 | `npm run typecheck` | Pass |
-| 前端单测 | `npm run test` | **515 tests / 63 files** Pass（合并后复验） |
+| 前端单测 | `npm run test` | **527 tests / 65 files** Pass（合并后复验） |
 | 前端构建 | `npm run build` | Pass（仅既有主 chunk >500 kB 警告） |
 | E2E | `npx playwright test tests/admin-report-credit.spec.ts tests/admin.spec.ts` | **17/17**（合并后复验；隔离库 + 后端 8082 / Vite 5174） |
 | 契约 | `npx --yes @redocly/cli lint openapi.yaml` | valid（0 error / 26 既有 warning） |
@@ -70,5 +70,6 @@ P4 产物一次性提交：`feat(p4): add-report-credit-deduction report violati
 
 - 第一次合并 `origin/main@23c1088`（5 个提交，含 AI 单页对话与 `CreditRestrictionGate`）；无代码冲突；复验后端 596 / 前端 492 / E2E 17/17。
 - 第二次合并 `origin/main@2bf9148`（8 个提交，含 `add-travel-finance`）；冲突仅 4 份需求工作区台账（`deep-dive.md` / `impact-brief.md` / `registry.md` / `stories.md`），均保留双方内容。
-- 号位顺延（后到者）：`add-travel-finance` 先占 **REQ-028 / S29 / V30 / 0.25.0**，本 change 改为 **REQ-029 / S30 / V31 / 0.26.0**（change id 不变）：`V30__report_credit_deduction.sql` → `V31__report_credit_deduction.sql`；意图 / Ready 文件由 `REQ-028-*` 更名为 `REQ-029-*`；活跃文档与 `OpenApiTest` 版本断言同步。
-- 合并后复验：后端 **640/640（93 classes）**、前端 **515/515（63 files）** + `typecheck` + `build`、E2E **17/17**（本 change 6 + admin 11，隔离库全新 Flyway V1–V31）、`openspec validate --strict` valid、Redocly valid（0 error / 26 既有 warning）。
+- 第三次合并 `origin/main@8992853`（15 个提交，含 `refine-publish-route-map`）；冲突仅 `docs/sdd/README.md` 与 `stories.md`，均保留双方行；`refine-publish-route-map` 占用 **REQ-029 / S30**，本 change 再顺延为 **REQ-030 / S31**（V31 / 0.26.0 未被占用，保持不变）。
+- 号位顺延（后到者）：`add-travel-finance` 先占 **REQ-028 / S29 / V30 / 0.25.0**，随后 `refine-publish-route-map` 占用 **REQ-029 / S30**；本 change 最终为 **REQ-030 / S31 / V31 / 0.26.0**（change id 不变）：`V30__report_credit_deduction.sql` → `V31__report_credit_deduction.sql`；意图 / Ready 文件更名为 `REQ-030-*`；活跃文档与 `OpenApiTest` 版本断言同步。
+- 合并后复验：后端 **640/640（93 classes）**、前端 **527/527（65 files）** + `typecheck` + `build`、E2E **17/17**（本 change 6 + admin 11，隔离库全新 Flyway V1–V31）、`openspec validate --strict` valid、Redocly valid（0 error / 26 既有 warning）。

@@ -25,6 +25,18 @@ export function pointFallbackName(lng: number, lat: number): string {
 }
 
 /**
+ * 坐标占位名判定：以 `pointFallbackName` 的前缀 + 一对坐标开头即命中。
+ *
+ * <p>不要求结尾：同名重复时 `pickedPlaceName` 会在占位名后追加「（坐标）」，
+ * 这类名字仍然是地图选点，不能被当成可读地名发布。
+ */
+const COORDINATE_PLACEHOLDER = /^地图选点\s+-?\d+(?:\.\d+)?\s*,\s*-?\d+(?:\.\d+)?/;
+
+export function isCoordinatePlaceholderName(name: string): boolean {
+  return COORDINATE_PLACEHOLDER.test(name.trim());
+}
+
+/**
  * 点击点 → 途经点名称。
  *
  * <p>同名地点（同一条街的不同位置、两次「地图选点」）追加坐标，
