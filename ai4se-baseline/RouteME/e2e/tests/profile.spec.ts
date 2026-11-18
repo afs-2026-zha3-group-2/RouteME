@@ -504,8 +504,20 @@ test('keeps a session-less viewer read-only', async ({ page }) => {
   await expect(mineCard.getByRole('link', { name: '编辑资料' })).toHaveCount(0);
   await expect(mineCard.getByRole('link', { name: '查看主页' })).toHaveCount(0);
 
-  await page.goto('/#/profile/setup');
-  await expect(page.getByText('登录后可以完善自己的资料。')).toBeVisible();
+  // The rail menu offers the read-only view, not an edit entry.
+  await page.getByRole('button', { name: /^账号：/ }).click();
+  const viewProfile = page.getByRole('menuitem', { name: '查看我的资料' });
+  await expect(viewProfile).toBeVisible();
+  await viewProfile.click();
+
+  const content = page.locator('#main-content');
+  await expect(content.getByRole('heading', { name: '我的资料' })).toBeVisible();
+  await expect(
+    content.getByText('当前为只读浏览：可以查看资料，登录后可以完善和修改自己的资料。'),
+  ).toBeVisible();
+  // Seeded values are shown in the current profile schema instead of a dead-end alert.
+  await expect(content.getByText('同济大学 · 工业设计')).toBeVisible();
+  await expect(content.getByText('INFP')).toBeVisible();
   await expect(page.getByRole('button', { name: '保存资料' })).toHaveCount(0);
 
   await page.goto('/#/users/2');

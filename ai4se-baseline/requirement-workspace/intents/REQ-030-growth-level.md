@@ -1,11 +1,11 @@
-# 意图捕获 — REQ-029 用户成长等级 LV1–LV5（issue #44）
+# 意图捕获 — REQ-030 用户成长等级 LV1–LV5（issue #44）
 
 - **候选能力：** `user-growth`（ADDED）
 - **来源：** GitHub Issue [#44](https://github.com/afs-2026-zha3-group-2/RouteME/issues/44)「用户成长等级 LV1–LV5」（`afs-2026-zha3-group-2/RouteME`，2026-11-18 读取）；优先级 P1 / 迭代 3 / 3 点；落点页面「用户主页 / 行程详情 / 同行者信息」；assignee `Neal802`
 - **捕获日期：** 2026-11-18 ｜ **记录人：** Jay（AO）
-- **分支：** `feature/add-growth-level`（从 `origin/main@71f3ad4` 切出；独立 worktree `.worktrees/add-growth-level`）
-- **基线事实：** `openapi.yaml` `0.25.0`；Flyway 头 `V30__add_travel_finance.sql`；`origin/main@71f3ad4`（`add-travel-finance` 已合并）
-- **编号说明：** `origin/main` 已占用 REQ-001 ~ REQ-028（REQ-028 = `add-travel-finance`），故事号到 S29（同为 `add-travel-finance`）。在途 `add-report-credit-deduction`（issue #29）尚未合并，其分支内仍记为 REQ-028 / S29，合并时需按「后到者顺延」重排。本需求按当前 main 顺延登记为 **REQ-029 / S30**，change-id `add-growth-level`，合并时再按实际顺序校准。
+- **分支：** `feature/add-growth-level`（从 `origin/main@71f3ad4` 切出，2026-11-18 合并至 `origin/main@8992853`；独立 worktree `.worktrees/add-growth-level`）
+- **基线事实：** `openapi.yaml` `0.25.0`；Flyway 头 `V30__add_travel_finance.sql`；合并后基线 `origin/main@8992853`（契约与迁移头未变）
+- **编号说明：** `origin/main` 已占用 REQ-001 ~ REQ-029，其中 **REQ-029 / S30** = `refine-publish-route-map`（发布行程路线编辑器）。本需求按「后到者顺延」登记为 **REQ-030 / S31**，change-id `add-growth-level`；并行 #45 `add-route-completion` 顺延为 REQ-031 / S32。原登记 REQ-029 / S30（基于 `71f3ad4`）已于 2026-11-18 合并 `origin/main@8992853` 时顺延。
 
 ## 原始意图（一句话）
 

@@ -1458,9 +1458,9 @@ MVP 无推送、无通知；以下为金融信息的 UI 展示面契约。
 - `{TBD}`：无。非阻塞项（契约 / 迁移号、端点与字段形状、原型截点）已在 REQ-028 §8 标 deferred。
 - A0 门 ⑨–⑫：全部通过。
 
-## REQ-029 增补 — 用户成长等级 LV1–LV5（issue #44）
+## REQ-030 增补 — 用户成长等级 LV1–LV5（issue #44）
 
-> 基线 `origin/main@71f3ad4`（契约 0.25.0 / 迁移头 V30）；本 change 独立于在途 `add-report-credit-deduction`（issue #29），两边都改 `AdminReportServiceImpl.resolve`，合并时并列保留「扣信用分 + 扣成长经验」两个副作用。
+> 基线 `origin/main@8992853`（P1 起草于 `71f3ad4`；契约 0.25.0 / 迁移头 V30 不变）；本 change 独立于在途 `add-report-credit-deduction`（issue #29），两边都改 `AdminReportServiceImpl.resolve`，合并时并列保留「扣信用分 + 扣成长经验」两个副作用。
 
 ### ① 数据契约（Data contract）
 
@@ -1548,7 +1548,7 @@ MVP 无推送、无通知；以下为金融信息的 UI 展示面契约。
 
 无展示面缺 display-fields；A0 门 ⑫ 通过。
 
-### 探针记录（REQ-029 成长等级）
+### 探针记录（REQ-030 成长等级）
 
 - **发布事件挂接点：** `ExperienceServiceImpl.upsert` 的 `created = true` 分支；同一事务内调用成长结算，失败回滚体验创建（或按 P3 决定「体验成功、经验失败不阻断」——需在 P3 明确）。
 - **点赞事件挂接点：** `ExperienceLikeServiceImpl.like` 的 `created = true` 分支（取消点赞不调用成长）；`unlike` 不回滚。
@@ -1559,5 +1559,5 @@ MVP 无推送、无通知；以下为金融信息的 UI 展示面契约。
 - **契约 / 迁移排他：** 基线 0.25.0 + V30；本 change 预计 0.26.0 + V31；#29 分支计划 0.25.0 + V30（已被 `add-travel-finance` 占用，合并时顺延），两者按合并顺序排他。
 - **原型缺口：** `docs/prototype` 无成长等级截点；P3 先补原型再实现（项目规则要求原型先行）。
 - **E2E 影响：** 新增成长 E2E（发布 → 点赞 → 升级 → 展示；举报成立扣经验）；既有 `credit.spec.ts` / `trips.spec.ts` / `detail-companions.spec.ts` 可能因新增徽标产生断言漂移，P3 评估。
-- `{TBD}`：无。非阻塞项（契约 / 迁移号、端点与字段形状、原型截点、配置命名）已在 REQ-029 §8 标 deferred。
+- `{TBD}`：无。非阻塞项（契约 / 迁移号、端点与字段形状、原型截点、配置命名）已在 REQ-030 §8 标 deferred。
 - A0 门 ⑨–⑫：全部通过。

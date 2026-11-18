@@ -1,22 +1,22 @@
 # P1 意图记录 — add-growth-level
 
-- **Change：** `add-growth-level`（REQ-029 / S30 用户成长等级 LV1–LV5）｜ **阶段：** P1（Intent & proposal）
+- **Change：** `add-growth-level`（REQ-030 / S31 用户成长等级 LV1–LV5；编号由 REQ-029 / S30 顺延）｜ **阶段：** P1（Intent & proposal）
 - **日期：** 2026-11-18 ｜ **记录人：** Jay（AO）
-- **基点：** `origin/main@71f3ad4`（独立 worktree `.worktrees/add-growth-level`，分支 `feature/add-growth-level`）
+- **基点：** `origin/main@71f3ad4`（独立 worktree `.worktrees/add-growth-level`，分支 `feature/add-growth-level`）；2026-11-18 合并 `origin/main@8992853`（契约 0.25.0 / 迁移头 V30 未变）
 
 ## 1. 阶段目标
 
-把 GitHub issue #44 收敛为可判定的 REQ-029、影响面与 OpenSpec 提案：明确「经验事件 → 防刷 / 每日上限 → 经验流水 → 等级派生 → 6 处展示」这一垂直切片，并划清三处边界——信用分（完全分离）、#29（举报扣信用分，独立并行）、#45（路线完成度，独立故事）。
+把 GitHub issue #44 收敛为可判定的 REQ-030、影响面与 OpenSpec 提案：明确「经验事件 → 防刷 / 每日上限 → 经验流水 → 等级派生 → 6 处展示」这一垂直切片，并划清三处边界——信用分（完全分离）、#29（举报扣信用分，独立并行）、#45（路线完成度，独立故事）。
 
 ## 2. 产出
 
 | 工件 | 路径 | 摘要 |
 |---|---|---|
-| 意图捕获 | [`intents/REQ-029-growth-level.md`](../../../requirement-workspace/intents/REQ-029-growth-level.md) | issue 原文、现状核对、用户裁决 D1–D15、覆盖 / 不覆盖、Discovery `Go` |
-| Ready 需求 | [`requirements/REQ-029-growth-level.md`](../../../requirement-workspace/requirements/REQ-029-growth-level.md) | 六字段 + 41 场景（L / P / K / D / R / V / C / S）+ OQ（blocking 13 全 resolved；非阻塞 2 resolved / 8 deferred）+ DoR 12 项（BLOCKER 0） |
-| 故事 | [`stories.md`](../../../requirement-workspace/stories.md) REQ-029 段 + [`stories/REQ-029-growth-level.story.md`](../../../requirement-workspace/stories/REQ-029-growth-level.story.md) | S30；AC 摘要、验收场景、追溯、拆分说明 |
-| Deep-dive | [`deep-dive.md`「REQ-029 增补」](../../../requirement-workspace/deep-dive.md) | ① 账户 / 流水 / 派生等级 / 配置 / 点赞来源 / 幂等键；② 边界归属 30+ 分支；③ 跨 REQ 一致性；④ 6 处展示契约 + 探针记录 |
-| 影响面 | [`impact-brief.md` §29](../../../requirement-workspace/impact-brief.md) | as-is → delta、blast radius、工件影响、双轨说明、风险、拆分边界 |
+| 意图捕获 | [`intents/REQ-030-growth-level.md`](../../../requirement-workspace/intents/REQ-030-growth-level.md) | issue 原文、现状核对、用户裁决 D1–D15、覆盖 / 不覆盖、Discovery `Go` |
+| Ready 需求 | [`requirements/REQ-030-growth-level.md`](../../../requirement-workspace/requirements/REQ-030-growth-level.md) | 六字段 + 41 场景（L / P / K / D / R / V / C / S）+ OQ（blocking 13 全 resolved；非阻塞 2 resolved / 8 deferred）+ DoR 12 项（BLOCKER 0） |
+| 故事 | [`stories.md`](../../../requirement-workspace/stories.md) REQ-030 段 + [`stories/REQ-030-growth-level.story.md`](../../../requirement-workspace/stories/REQ-030-growth-level.story.md) | S31；AC 摘要、验收场景、追溯、拆分说明 |
+| Deep-dive | [`deep-dive.md`「REQ-030 增补」](../../../requirement-workspace/deep-dive.md) | ① 账户 / 流水 / 派生等级 / 配置 / 点赞来源 / 幂等键；② 边界归属 30+ 分支；③ 跨 REQ 一致性；④ 6 处展示契约 + 探针记录 |
+| 影响面 | [`impact-brief.md` §30](../../../requirement-workspace/impact-brief.md) | as-is → delta、blast radius、工件影响、双轨说明、风险、拆分边界 |
 | 提案 | [`proposal.md`](../../../openspec/changes/add-growth-level/proposal.md) | Why / What Changes / Out of Scope / Impact / 决策 D1–D15 / 13 条验收信号 / 残余风险 / 规模与工作量 |
 | Delta 草稿 | [`specs/user-growth/spec.md`](../../../openspec/changes/add-growth-level/specs/user-growth/spec.md) | ADDED：9 Requirement / 41 Scenario（账户与初始、等级派生与回退、发布、获赞、每日上限、举报扣减、流水与只读、展示与可见性、并发幂等） |
 | 提案评审 | [`20261118-add-growth-level-proposal-review.md`](../../reviews/20261118-add-growth-level-proposal-review.md) | Pass（建议）；0 BLOCKER / 1 WARNING / 3 SUGGESTION |
@@ -41,9 +41,9 @@
 ## 4. 校验
 
 - `openspec validate add-growth-level --strict` → `Change 'add-growth-level' is valid`（Delta 纯 ADDED，9 Requirement / 41 Scenario）。
-- 空白基线：backend / frontend grep `user_growth` / `growth_level` / `exp_total` / `成长等级` → 0 命中。
+- 空白基线：backend / frontend grep `user_growth` / `growth_level` / `exp_total` / `成长等级` → 0 命中（合并 `origin/main@8992853` 后复核仍为 0）。
 - 事件挂接点：`ExperienceServiceImpl.upsert`（`created`）、`ExperienceLikeServiceImpl.like`（`created` + 自赞拒绝）、`AdminReportServiceImpl.resolve`（`RESOLVED`）、`ReportTargetService.reportedUserId`。
-- 契约与迁移排他：`openapi.yaml` 0.25.0；Flyway 头 `V30__add_travel_finance.sql`；在途 #29 亦需顺延，P3 / P4 按合并顺序确认。
+- 契约与迁移排他：`openapi.yaml` 0.25.0；Flyway 头 `V30__add_travel_finance.sql`（合并 8992853 后未变）；在途 #29 亦需顺延，P3 / P4 按合并顺序确认。
 - 已知工具偏差：`openspec show --json` 对中文 `## 问题` 标题报 `Why section`，属项目既有约定差异；`validate --strict` 不受影响。
 - 质量检查：`docs/ai4se-plugins/20261118-125043-quality-checklist-report.md` Overall Pass（P1-1 ~ P1-4 Pass；P1-5 / P1-6 Skipped）。
 
@@ -72,4 +72,12 @@
 
 ## 7. 提交记录
 
-本阶段产物已落盘，待签署齐备后按 `docs/sdd/README.md` 的约定提交：`docs(p1): add-growth-level add REQ-029 proposal and delta`；提交后 `git pull --no-rebase --no-edit` 同步 `origin/main`，再 push 到 `origin/feature/add-growth-level`。
+- `62095f2`：`docs(p1): add-growth-level add REQ-029 proposal and delta`（P1 产物首提，当时编号 REQ-029 / S30）。
+- 2026-11-18 合并 `origin/main@8992853`：解决 `docs/sdd/README.md` / `requirement-workspace/stories.md` 两处冲突；因 origin/main 已由 `refine-publish-route-map` 占用 REQ-029 / S30，本 change 按「后到者顺延」改为 **REQ-030 / S31**（并行 #45 `add-route-completion` 顺延为 REQ-031 / S32）；本文件、两份评审、登记台账与登记路径同步改号；签署按内容不变沿用。
+
+## 8. 编号顺延说明
+
+- **变更：** REQ-029 / S30 → **REQ-030 / S31**（2026-11-18）。
+- **原因：** origin/main@8992853 已由 `refine-publish-route-map` 登记 REQ-029 / S30（`registry.md` / `stories.md` 同日占用）。
+- **影响：** 意图 / Ready / 故事文件改名；`deep-dive.md`「REQ-030 增补」、`impact-brief.md` §30、`registry.md` / `handoff.md` / `stories.md` / `docs/sdd/README.md` 登记行同步改号。
+- **签署：** WAYNE + Jay（2026-11-18）按内容不变沿用，不重新索取签署。

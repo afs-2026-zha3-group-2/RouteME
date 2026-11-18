@@ -14,13 +14,12 @@ import type { DemoUser, UserProfile } from '../types';
 import { Avatar } from './Avatar';
 import { BrandMark } from './BrandMark';
 
-type NavKey = 'discover' | 'map' | 'create' | 'aiPlanner' | 'mine' | 'finance' | 'chat' | 'support' | 'admin';
+type NavKey = 'discover' | 'create' | 'aiPlanner' | 'mine' | 'finance' | 'chat' | 'support' | 'admin';
 
 type NavItem = { key: NavKey; label: string; href: string };
 
 const NAV_ITEMS: NavItem[] = [
   { key: 'discover', label: tripMessages.homeTitle, href: '#/' },
-  { key: 'map', label: '旅行地图', href: '#/map' },
   { key: 'create', label: tripMessages.publish, href: '#/trips/new' },
   { key: 'aiPlanner', label: 'AI 规划', href: '#/ai-planner' },
   { key: 'mine', label: tripMessages.mineTitle, href: '#/mine' },
@@ -38,7 +37,7 @@ const RAIL_ITEMS: NavItem[] = [
 ];
 
 const NAV_GROUPS: Array<{ title: string; items: NavItem[] }> = [
-  { title: '浏览', items: RAIL_ITEMS.filter((item) => item.key === 'discover' || item.key === 'map') },
+  { title: '浏览', items: RAIL_ITEMS.filter((item) => item.key === 'discover') },
   { title: '规划', items: RAIL_ITEMS.filter((item) => item.key === 'create' || item.key === 'aiPlanner') },
   { title: '我的', items: RAIL_ITEMS.filter((item) => item.key === 'mine' || item.key === 'finance' || item.key === 'chat' || item.key === 'support') },
 ];
@@ -46,9 +45,6 @@ const NAV_GROUPS: Array<{ title: string; items: NavItem[] }> = [
 function activeKey(route: Route): NavKey | null {
   if (route.name === 'home') {
     return 'discover';
-  }
-  if (route.name === 'map') {
-    return 'map';
   }
   if (route.name === 'create' || route.name === 'share') {
     return 'create';
@@ -80,22 +76,6 @@ function NavIcon({ name }: { name: NavKey }) {
       <svg viewBox="0 0 20 20" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.7">
         <circle cx="10" cy="10" r="7" />
         <path d="m12.8 7.2-1.5 4.1-4.1 1.5 1.5-4.1z" strokeLinejoin="round" />
-      </svg>
-    );
-  }
-  if (name === 'map') {
-    return (
-      <svg
-        viewBox="0 0 20 20"
-        aria-hidden="true"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="1.7"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-      >
-        <path d="M3 5.5 7.5 4l5 1.5L17 4v10.5L12.5 16l-5-1.5L3 16Z" />
-        <path d="M7.5 4v10.5M12.5 5.5V16" />
       </svg>
     );
   }
@@ -212,12 +192,19 @@ function NavIcon({ name }: { name: NavKey }) {
 
 type Props = {
   currentUser: DemoUser;
+  isAuthenticated: boolean;
   onLogout: () => void;
   route: Route;
   children: ReactNode;
 };
 
-export function AppShell({ currentUser, onLogout, route, children }: Props) {
+export function AppShell({
+  currentUser,
+  isAuthenticated,
+  onLogout,
+  route,
+  children,
+}: Props) {
   const active = activeKey(route);
   const isAdmin = currentUser.role === 'ADMIN';
   /** 管理员只保留浏览 / 规划 / 发布与后台入口；我的旅行、同行消息、联系客服不向管理员展示。 */
@@ -491,7 +478,11 @@ export function AppShell({ currentUser, onLogout, route, children }: Props) {
                     <path d="M13.4 3.6a1.6 1.6 0 0 1 2.3 0l.7.7a1.6 1.6 0 0 1 0 2.3l-8 8-3.4.7.7-3.4z" />
                     <path d="M11.6 5.4 14 7.8" />
                   </svg>
-                  <span>编辑我的资料</span>
+                  <span>
+                    {isAuthenticated
+                      ? tripMessages.accountMenuEditProfile
+                      : tripMessages.accountMenuViewProfile}
+                  </span>
                 </a>
                 <a
                   className="rail-menu-item"

@@ -1,6 +1,6 @@
 # 变更提案：add-growth-level
 
-- **需求来源：** GitHub Issue [#44](https://github.com/afs-2026-zha3-group-2/RouteME/issues/44)「用户成长等级 LV1–LV5」（P1 / 迭代 3 / 3 点）｜ **需求条目：** `requirement-workspace/requirements/REQ-029-growth-level.md`（41 场景，blocking OQ 0，DoR BLOCKER 0）｜ **故事：** S30
+- **需求来源：** GitHub Issue [#44](https://github.com/afs-2026-zha3-group-2/RouteME/issues/44)「用户成长等级 LV1–LV5」（P1 / 迭代 3 / 3 点）｜ **需求条目：** `requirement-workspace/requirements/REQ-030-growth-level.md`（41 场景，blocking OQ 0，DoR BLOCKER 0）｜ **故事：** S31（编号由 REQ-029 / S30 顺延）
 - **能力：** `user-growth`（ADDED）；只读消费 `trip-experiences`（体验首次创建 / 点赞）与 `admin-console`（举报成立）；`user-credit` 完全分离
 - **规模：** M（2 张表 + 1 次迁移 + 3 处事件挂接 + 2 处读取扩字段 + 6 处展示面；无管理端）
 - **规则：** `@rule:api-contract`、`@rule:java-patterns`、`@rule:web-coding-style`、`@rule:security-baseline`、`@rule:tdd-cycle`、`@rule:sdd-artifacts`；原型先行：`docs/prototype/prototype.html` + `styles.css`
@@ -29,7 +29,7 @@ RouteME 已有信用分这一独立体系（`user_credit_account` + `credit_ledg
 - **举报扣经验**：所有 RESOLVED（成立）举报对被举报用户 −50 EXP，每份举报只扣一次，不受每日上限限制；经验最低 0（不足 50 时按实际扣，如 30 → 0）；等级随经验回退；上线前已成立举报不回填。
 - **展示与可见性**：6 处展示面（个人主页、资料弹窗、详情发布者区、首页行程卡、申请处理页申请者行、详情同行者卡片）显示 `LVn`；本人额外可见当前经验与距下一级所需经验，LV5 显示已满级；他人只可见等级，不返回、不展示具体经验值；成长等级与信用分并列但文案可区分，不得称为信用等级或官方安全认证。
 - **读取接口**：在既有个人主页响应与批量信用读取响应上追加只读成长字段（具体形状 P3 定）；不新增客户端修改经验 / 等级的写端点。
-- **故事与登记**：`stories.md` / `stories/REQ-029-growth-level.story.md` / `registry.md` / `handoff.md` 登记 REQ-029 / S30 → `add-growth-level`。
+- **故事与登记**：`stories.md` / `stories/REQ-030-growth-level.story.md` / `registry.md` / `handoff.md` 登记 REQ-030 / S31 → `add-growth-level`。
 - **契约与迁移**：`openapi.yaml` 升次版本；迁移预计 `V31`；P3 与在途 `add-report-credit-deduction`（#29）按合并顺序排他确认。
 
 ## Out of Scope

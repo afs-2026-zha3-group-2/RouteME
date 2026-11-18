@@ -1823,20 +1823,20 @@ REQ-010：聊天页按原型重构、聊天准入与退出语义调整、集合�
 - **阶段：** 单阶段；无归档前置依赖（`travel-finance` 全新能力），但需与在途 `add-realtime-notifications` 协调契约版本与迁移号。
 - **质量自检（split-heuristics）：** 子目标一句话可说明 ✓；端到端可观察（充值初始余额 → 买保险 / 借款 → 扣 5% → 还款）✓；可独立运行 ✓；capability 名真实（`travel-finance`）✓；无依赖环 ✓；33 场景接近单 change 上限，P2 可再合并同义场景。
 
-## 29. REQ-029 变更影响 — 用户成长等级 LV1–LV5（issue #44）
+## 30. REQ-030 变更影响 — 用户成长等级 LV1–LV5（issue #44）
 
 - **日期：** 2026-11-18 ｜ **触发：** GitHub issue #44 + `/sdd:pre-spec-req` 用户裁决 D1–D15
 - **粒度：** 应用架构（成长数据所有权 / 事件挂接点 / 展示面 / 配置 / 契约与迁移），非代码设计
-- **基线：** `origin/main@71f3ad4`（分支 `feature/add-growth-level`；契约 0.25.0 / 迁移头 V30）
+- **基线：** `origin/main@8992853`（P1 起草于 `71f3ad4`，2026-11-18 合并至 `8992853`；契约 0.25.0 / 迁移头 V30 不变）
 
-### 29.1 Requirement set
+### 30.1 Requirement set
 
-- `requirement-workspace/requirements/REQ-029-growth-level.md`（Ready 条目，41 场景 L / P / K / D / R / V / C / S，blocking OQ 0，DoR BLOCKER 0）
-- `requirement-workspace/intents/REQ-029-growth-level.md`（意图捕获 + 现状证据 + D1–D15）
+- `requirement-workspace/requirements/REQ-030-growth-level.md`（Ready 条目，41 场景 L / P / K / D / R / V / C / S，blocking OQ 0，DoR BLOCKER 0）
+- `requirement-workspace/intents/REQ-030-growth-level.md`（意图捕获 + 现状证据 + D1–D15）
 - 新增能力：`user-growth`（ADDED）；只读依赖 `trip-experiences` / `admin-console` / `user-profile` / `user-profiles`；`user-credit` 完全分离
 - 用户裁决：D1 与信用分分离 / D2 LV1–LV5 每 100 一级 / D3 LV5 后继续累计 / D4 初始 0 且不回填 / D5 发布经验默认 10 可配置 / D6 点赞单篇分档锁定 / D7 举报成立 −50 每份一次最低 0 / D8 每日 +20 上限按剩余额度截断 / D9 append-only 流水 / D10 后端计算且他人只见等级 / D11 6 处展示面 / D12 明细页排行榜通知权益管理端排除 / D13 独立于 #29 / D14 契约迁移 P3 排他 / D15 等级随经验回退
 
-### 29.2 As-is asset inventory（evidence paths）
+### 30.2 As-is asset inventory（evidence paths）
 
 | 资产 | 路径 | 现状 |
 |---|---|---|
@@ -1849,9 +1849,9 @@ REQ-010：聊天页按原型重构、聊天准入与退出语义调整、集合�
 | 展示面 | `ProfilePage.tsx`、`ProfileModal.tsx`、`TripDetailPage.tsx`、`TripCard.tsx`、`ApplicationsPage.tsx`、`CompanionCard.tsx` | 前 5 处显示信用分；`CompanionCard` 不显示信用分 |
 | 配置 | `src/main/resources/application.yaml` 的 `routeme:` 根；`config/*Properties.java` | 已有 `ai` / `profile` / `experience` / `credit` / `amap` / `weather` 配置范式 |
 | 契约 / 迁移 | `openapi.yaml`；`backend/src/main/resources/db/migration/` | 0.25.0；迁移头 `V30__add_travel_finance.sql` |
-| 测试基线 | `backend` / `frontend` | P0 跳过；基线以 `origin/main@71f3ad4` 实跑为准 |
+| 测试基线 | `backend` / `frontend` | P0 跳过；基线以 `origin/main@8992853` 实跑为准 |
 
-### 29.3 As-is → proposed delta（逐资产）
+### 30.3 As-is → proposed delta（逐资产）
 
 | 资产 | As-is | Proposed delta |
 |---|---|---|
@@ -1868,7 +1868,7 @@ REQ-010：聊天页按原型重构、聊天准入与退出语义调整、集合�
 | 原型 | 无成长截点 | P3 先补原型截点（项目规则要求原型先行） |
 | 管理端 | 举报处置表单 | **无 delta**（只挂副作用，不改表单与状态机） |
 
-### 29.4 Blast radius（应用架构）
+### 30.4 Blast radius（应用架构）
 
 - **后端（1 个新能力 + 3 处事件挂接）：** 新增成长账户 / 流水实体与 mapper、成长经验服务、等级派生与展示查询；体验发布、点赞、举报成立各追加一次同事务结算。
 - **数据（2 表 + 1 迁移）：** 建表 + 存量 0 账户回填；双引擎可执行；不新增计数表。
@@ -1878,7 +1878,7 @@ REQ-010：聊天页按原型重构、聊天准入与退出语义调整、集合�
 - **不影响：** 体验发布 / 点赞语义、举报状态机、信用分的账户与账本、行程生命周期、同行申请与聊天。
 - **运行时风险面：** 体验发布 / 点赞 / 举报成立三条写路径各多一次事务内写入；并发下需幂等键与条件更新；每日额度查询需按 `user_id + occurred_at` 建索引。
 
-### 29.5 Artifact impact（specs / tests / docs）
+### 30.5 Artifact impact（specs / tests / docs）
 
 | 工件 | 影响 |
 |---|---|
@@ -1892,13 +1892,13 @@ REQ-010：聊天页按原型重构、聊天准入与退出语义调整、集合�
 | 阶段记录 | `docs/sdd/add-growth-level/p1..p4`；`docs/sdd/README.md` 索引 |
 | 评审 | `docs/reviews/20261118-add-growth-level-{proposal,spec,design,tasks}-review.md` |
 
-### 29.6 Dual-track notes（OpenSpec vs agile）
+### 30.6 Dual-track notes（OpenSpec vs agile）
 
 - **OpenSpec 轨：** 单 change `add-growth-level`，单能力 `user-growth`（ADDED）；账户、流水、等级、三类事件与展示写在同一 Delta，避免经验口径分叉。
-- **Agile 轨：** 故事 S30「用户成长等级 LV1–LV5」（迭代 3 / P1 / 3 点）即业务口径；不另拆多条故事。
+- **Agile 轨：** 故事 S31「用户成长等级 LV1–LV5」（迭代 3 / P1 / 3 点）即业务口径；不另拆多条故事。
 - **并列轨道：** #45 路线完成度 / 信誉标签、#29 举报扣信用分、经验明细页、排行榜、通知、管理端均为独立故事或独立 change；本需求不预留空壳端点。
 
-### 29.7 Risks & blockers
+### 30.7 Risks & blockers
 
 | 级别 | 项 | 说明 / 缓解 |
 |---|---|---|
@@ -1913,9 +1913,9 @@ REQ-010：聊天页按原型重构、聊天准入与退出语义调整、集合�
 | Risk | 全量 E2E 既有债务 | P4 只跑本 change 与受影响回归，报告标注既有债务 |
 | Blocker | 无 | blocking OQ = 0；DoR BLOCKER = 0；A0 ⑨–⑫ 全过 |
 
-### 29.8 Suggested split boundaries（供 proposal-split / story-split）
+### 30.8 Suggested split boundaries（供 proposal-split / story-split）
 
-- **一个 change：** `add-growth-level` ← REQ-029（迭代 3 / S30）。
+- **一个 change：** `add-growth-level` ← REQ-030（迭代 3 / S31）。
 - **不拆「账户 / 事件 / 展示」：** 三者共用同一经验口径与账本；拆开会出现「有经验没等级」或「有等级没流水」的不完整验收。
 - **不并入 #45 / #29 / 明细页 / 排行榜 / 通知 / 权益 / 管理端：** 均为独立故事或独立 change，本 change 不预留端点。
 - **阶段：** 单阶段；无归档前置依赖（`user-growth` 全新能力），但需与在途 `add-report-credit-deduction` 协调契约版本、迁移号与 `AdminReportServiceImpl` 冲突。

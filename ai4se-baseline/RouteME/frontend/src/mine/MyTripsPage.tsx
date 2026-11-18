@@ -11,13 +11,21 @@ import { cityPhoto } from '../trips/cityPhotos';
 import { coverTone } from '../trips/coverTone';
 import { StatusBadge } from '../trips/StatusBadge';
 import { TripCancelModal } from '../trips/TripCancelModal';
-import { LeaveRecordModal } from '../trips/LeaveRecordModal';
+import { TripRecordModal } from '../trips/LeaveRecordModal';
 import { TripLeaveModal } from '../trips/TripLeaveModal';
-import type { DemoUser, Experience, MyTrips, TripApplication, TripSummary } from '../types';
+import type {
+  AppliedTripGroup,
+  DemoUser,
+  Experience,
+  MyTrips,
+  TripApplication,
+  TripSummary,
+} from '../types';
 import {
   actionsFor,
   dayLabel,
   formatDateRange,
+  groupApplied,
   groupCounts,
   pendingCountFor,
   pendingTargetTripId,
@@ -37,6 +45,25 @@ function pendingHint(count: number): string {
     : tripMessages.minePendingNone;
 }
 
+/** 行内摘要：共申请 N 次，非零结果依次追加，避免单次申请时堆砌噪音。 */
+function summaryText(group: AppliedTripGroup): string {
+  const { counts } = group;
+  const parts = [tripMessages.mineAppliedSummaryTotal.replace('{n}', String(counts.total))];
+  if (counts.pending > 0) {
+    parts.push(tripMessages.mineAppliedSummaryPending.replace('{n}', String(counts.pending)));
+  }
+  if (counts.rejected > 0) {
+    parts.push(tripMessages.mineAppliedSummaryRejected.replace('{n}', String(counts.rejected)));
+  }
+  if (counts.cancelled > 0) {
+    parts.push(tripMessages.mineAppliedSummaryCancelled.replace('{n}', String(counts.cancelled)));
+  }
+  if (counts.left > 0) {
+    parts.push(tripMessages.mineAppliedSummaryLeft.replace('{n}', String(counts.left)));
+  }
+  return parts.join(' · ');
+}
+
 export function MyTripsPage({ currentUser }: Props) {
   const { refresh: refreshCredit } = useMyCredit();
   const [data, setData] = useState<MyTrips | null>(null);
@@ -46,7 +73,10 @@ export function MyTripsPage({ currentUser }: Props) {
   const [busyKey, setBusyKey] = useState<string | null>(null);
   const [confirmAction, setConfirmAction] = useState<ConfirmAction | null>(null);
   const [leaveTarget, setLeaveTarget] = useState<TripSummary | null>(null);
-  const [recordTarget, setRecordTarget] = useState<TripSummary | null>(null);
+  const [recordTarget, setRecordTarget] = useState<{
+    trip: TripSummary;
+    history: TripApplication[];
+  } | null>(null);
   const [cancelTarget, setCancelTarget] = useState<TripSummary | null>(null);
   const inFlight = useRef<Promise<void> | null>(null);
 
@@ -222,7 +252,12 @@ export function MyTripsPage({ currentUser }: Props) {
       );
     });
 
-  const renderRow = (trip: TripSummary, note: string | null, application?: TripApplication) => {
+  const renderRow = (
+    trip: TripSummary,
+    note: string | null,
+    application?: TripApplication,
+    group?: AppliedTripGroup,
+  ) => {
     const destination = cityLabel(trip.destination_code) || trip.destination;
     const photo = cityPhoto(destination, trip.destination);
 
@@ -255,14 +290,20 @@ export function MyTripsPage({ currentUser }: Props) {
           {application !== undefined && (
             <p className="mr-note">
               <span className="badge muted">{applicationLabel(application.status)}</span>
+              {group !== undefined && group.counts.total > 1 && (
+                <span className="mr-summary">{summaryText(group)}</span>
+              )}
             </p>
           )}
         </div>
         <div className="mr-actions">
           {renderActions(trip, application)}
-          {tab === 'applied' && application?.status === 'left' && (
-            <Button size="small" onClick={() => setRecordTarget(trip)}>
-              {tripMessages.mineViewLeaveRecord}
+          {tab === 'applied' && application !== undefined && (
+            <Button
+              size="small"
+              onClick={() => setRecordTarget({ trip, history: group?.history ?? [application] })}
+            >
+              {tripMessages.mineViewRecord}
             </Button>
           )}
         </div>
@@ -342,16 +383,18 @@ export function MyTripsPage({ currentUser }: Props) {
       );
     }
     if (tab === 'applied') {
-      if (data.applied.length === 0) {
+      const groups = groupApplied(data.applied);
+      if (groups.length === 0) {
         return renderEmpty('applied');
       }
       return (
         <div className="mine-list">
-          {data.applied.map((application) =>
+          {groups.map((group) =>
             renderRow(
-              application.trip,
-              application.message ?? tripMessages.applicationsNoMessage,
-              application,
+              group.latest.trip,
+              group.latest.message ?? tripMessages.applicationsNoMessage,
+              group.latest,
+              group,
             ),
           )}
         </div>
@@ -502,11 +545,12 @@ export function MyTripsPage({ currentUser }: Props) {
         }}
       />
 
-      <LeaveRecordModal
+      <TripRecordModal
         open={recordTarget !== null}
         userId={currentUser.id}
-        tripId={recordTarget?.id ?? 0}
-        title={recordTarget?.title}
+        tripId={recordTarget?.trip.id ?? 0}
+        title={recordTarget?.trip.title}
+        history={recordTarget?.history ?? []}
         onClose={() => setRecordTarget(null)}
       />
     </main>

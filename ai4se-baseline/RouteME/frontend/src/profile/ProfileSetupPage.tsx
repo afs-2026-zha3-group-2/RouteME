@@ -24,6 +24,7 @@ import { tripMessages } from '../i18n/tripMessages';
 import { Avatar } from '../shell/Avatar';
 import type { DemoUser, UserProfile } from '../types';
 import { appDatePickerProps } from '../utils/datePickerProps';
+import { ageZodiacLabel, schoolMajor } from './profileDisplay';
 import { InterestPicker } from './InterestPicker';
 import {
   emptyProfileForm,
@@ -50,6 +51,7 @@ import {
   MBTI_TYPES,
   MIN_BIRTHDAY,
   TRAVEL_STYLES,
+  interestLabel,
 } from './profileOptions';
 
 // The picker lives in a Chinese-only UI; keep the panel month names Chinese as well.
@@ -68,6 +70,7 @@ type Props = {
 export function ProfileSetupPage({ currentUser, token, onSaved }: Props) {
   const { restricted } = useMyCredit();
   const [loading, setLoading] = useState(true);
+  const [profile, setProfile] = useState<UserProfile | null>(null);
   const [profileComplete, setProfileComplete] = useState(currentUser.profile_complete);
   const [values, setValues] = useState<ProfileFormValues>({
     ...emptyProfileForm,
@@ -92,6 +95,7 @@ export function ProfileSetupPage({ currentUser, token, onSaved }: Props) {
         setValues(profileToForm(profile));
         setAvatarUrl(profile.avatar_url ?? null);
         setProfileComplete(profile.profile_complete);
+        setProfile(profile);
       })
       .catch(() => undefined)
       .finally(() => {
@@ -164,30 +168,115 @@ export function ProfileSetupPage({ currentUser, token, onSaved }: Props) {
     }
   };
 
-  if (token === null) {
-    return (
-      <main className="profile-page profile-setup">
-        <Alert
-          type="info"
-          showIcon
-          title={tripMessages.profileIncompleteShort}
-          description={tripMessages.profileLoginRequired}
-          action={
-            <Button onClick={() => (window.location.hash = '#/')}>
-              {tripMessages.backHome}
-            </Button>
-          }
-        />
-      </main>
-    );
-  }
-
   if (loading) {
     return (
       <main className="profile-page profile-setup">
         <div className="profile-card">
           <Skeleton active paragraph={{ rows: 8 }} />
         </div>
+      </main>
+    );
+  }
+
+  // A session-less viewer (expired or cleared token) can browse but not save; show the profile read-only.
+  if (token === null) {
+    return (
+      <main className="profile-page profile-setup">
+        <div className="page-head">
+          <Typography.Title level={2} className="page-title">
+            {tripMessages.profileReadonlyTitle}
+          </Typography.Title>
+          <Typography.Paragraph type="secondary" className="profile-page-hint">
+            {tripMessages.profileReadonlyNote}
+          </Typography.Paragraph>
+        </div>
+
+        {profile === null ? (
+          <p className="profile-empty profile-card">{tripMessages.profileLoadFailed}</p>
+        ) : (
+          <>
+            <header className="profile-hero profile-card">
+              <Avatar user={profile} size="xl" />
+              <div className="profile-hero-main">
+                <Typography.Title level={2} className="profile-name">
+                  {profile.nickname}
+                  {profile.profile_complete ? (
+                    <span className="badge jade">{tripMessages.profileCompleteBadge}</span>
+                  ) : (
+                    <span className="badge muted">{tripMessages.profileIncompleteBadge}</span>
+                  )}
+                </Typography.Title>
+                <p className="profile-hero-meta">
+                  {ageZodiacLabel(profile) !== '' && <span>{ageZodiacLabel(profile)}</span>}
+                  {(profile.city ?? '') !== '' && <span>{profile.city}</span>}
+                  {(profile.gender ?? '') !== '' && <span>{profile.gender}</span>}
+                </p>
+              </div>
+            </header>
+
+            <div className="profile-body">
+              <section className="profile-card">
+                <h3 className="profile-section-title">{tripMessages.profileReadonlyInfoSection}</h3>
+                <dl className="profile-facts">
+                  <div className="profile-fact">
+                    <dt>{tripMessages.profileFactsNickname}</dt>
+                    <dd>{profile.nickname}</dd>
+                  </div>
+                  <div className="profile-fact">
+                    <dt>{tripMessages.profileFactsBirthday}</dt>
+                    <dd>{profile.birthday ?? '—'}</dd>
+                  </div>
+                  <div className="profile-fact">
+                    <dt>{tripMessages.profileFactsGender}</dt>
+                    <dd>{profile.gender ?? '—'}</dd>
+                  </div>
+                  <div className="profile-fact">
+                    <dt>{tripMessages.profileFactsCity}</dt>
+                    <dd>{profile.city ?? '—'}</dd>
+                  </div>
+                  <div className="profile-fact">
+                    <dt>{tripMessages.profileFactsSchool}</dt>
+                    <dd>{schoolMajor(profile) || '—'}</dd>
+                  </div>
+                  <div className="profile-fact">
+                    <dt>{tripMessages.profileFactsJob}</dt>
+                    <dd>{profile.job ?? '—'}</dd>
+                  </div>
+                  <div className="profile-fact">
+                    <dt>{tripMessages.profileFactsMbti}</dt>
+                    <dd>{profile.mbti ?? '—'}</dd>
+                  </div>
+                  <div className="profile-fact">
+                    <dt>{tripMessages.profileFactsTravelStyle}</dt>
+                    <dd>{profile.travel_style ?? '—'}</dd>
+                  </div>
+                </dl>
+              </section>
+
+              {profile.interests.length > 0 && (
+                <section className="profile-card">
+                  <h3 className="profile-section-title">
+                    {tripMessages.profileInterestsSection}
+                  </h3>
+                  <div className="profile-tag-row">
+                    {profile.interests.map((interest) => (
+                      <span key={interest} className="chip">
+                        {interestLabel(interest)}
+                      </span>
+                    ))}
+                  </div>
+                </section>
+              )}
+
+              {(profile.bio ?? '') !== '' && (
+                <section className="profile-card">
+                  <h3 className="profile-section-title">{tripMessages.profileBioSection}</h3>
+                  <p className="profile-bio">{profile.bio}</p>
+                </section>
+              )}
+            </div>
+          </>
+        )}
       </main>
     );
   }
