@@ -90,4 +90,19 @@
 		</plugins>
 	</build>
 
+	<!--
+		开发态与构建/测试态共用 target/classes 会互相踩踏：maven-compiler-plugin 做全量重编译时会
+		先清空输出目录，正在运行的 `spring-boot:run` 就短暂读不到 class，抛 NoClassDefFoundError；
+		而 JVM 会把这次「找不到类」缓存下来，之后所有请求（含异常处理里的 ErrorResponse）持续失败，
+		直到重启进程。dev-run 把开发态输出隔离到 target-run/，`mvnw test`/`compile` 只动 target/。
+	-->
+	<profiles>
+		<profile>
+			<id>dev-run</id>
+			<build>
+				<directory>${project.basedir}/target-run</directory>
+			</build>
+		</profile>
+	</profiles>
+
 </project>
