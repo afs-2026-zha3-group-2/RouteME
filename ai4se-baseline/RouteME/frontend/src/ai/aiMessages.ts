@@ -7,51 +7,64 @@ import type { AiDuration, AiPace, AiTravelMode } from '../types';
 import { centsToYuan } from './budgetMath';
 
 export const aiMessages = {
-  /** AC13：无真实价格来源的费用恒标「AI 估算」。 */
-  aiEstimate: 'AI 估算',
+  /** 参考稿 v3：预算只写「约 ¥X（不含大交通）」，不再出现「AI 估算」标识。 */
   overBudget: (overCents: number) => `预计超过预算 ${centsToYuan(overCents)} 元`,
 
   pageTitle: 'AI 智能规划',
   pageSubtitle: '输入旅行条件，AI 结合高德地图与真实天气生成可执行的游玩路线',
-  generate: '✨ AI 推荐路线',
+  generate: 'AI 推荐路线',
   regenerate: '重新生成',
   save: '保存行程',
-  reduceBudget: 'AI 帮我降低预算',
+  reduceBudget: '帮我降低预算',
   retry: '重试',
   loading: 'AI 正在结合天气与地图生成推荐行程…',
   generatingHint: '通常需要 10–30 秒，请稍候',
 
-  /* ---------- 对话式布局（参考稿 v2） ---------- */
+  /* ---------- 对话式布局（参考稿 v3） ---------- */
   chatTitle: '用 AI，规划你的专属旅程',
   chatSubtitle: '告诉我你的想法，生成路线、美食、景点和实用建议。',
+  tabPlan: '智能规划',
+  tabInspire: '灵感生成',
+  tabOptimize: '行程优化',
+  inspirationLabel: '试试这些灵感：',
+  conditionsEntry: '规划条件',
   conditionsTitle: '规划条件',
-  conditionsHint: '必填：出发地 / 目的地 / 日期；其余越详细，路线越贴合你',
-  welcomeTitle: '你好！我是 RouteMe AI 旅行助手',
+  conditionsHint: '目的地与日期越明确，路线越贴合你；也可以直接在对话里说。',
+  welcomeTitle: '你好！我是 RouteMe AI 旅行助手 ✨',
   welcomeIntro: '我可以帮你快速规划专属的旅行路线，包括景点、美食、交通、预算和实用建议。',
   welcomePrompt: '你可以这样告诉我你的需求：',
   welcomeDetail: '或者直接输入你的想法，越详细越好哦～',
   composerLabel: '告诉我你的旅行想法',
   composerPlaceholder: '继续问我，或者告诉我你的新需求…',
   send: '发送',
-  planReady: '好的！我已为你生成专属行程，结合美食、拍照、预算和交通，推荐如下方案：',
-  planReadyFor: (note: string) => `已按「${note}」重新生成行程：`,
+  planReady: '好的！我已为你生成专属行程 🎉',
+  planReadyFor: (note: string) => `已按「${note}」重新生成你的专属行程 🎉`,
+  planReplyLead: '结合美食、拍照、预算和交通，为你推荐以下方案：',
   planDays: (days: number) => `${days} 天行程`,
-  planPreviewHint: '完整时间轴、路线距离与预算都在右侧预览里，可继续调整后发布为行程。',
+  planPreviewHint: '完整时间轴、路线与预算在右侧预览里，可继续调整后发布为行程。',
+  replyOverview: '行程总览',
+  replyFood: '美食推荐',
+  replyStay: '住宿建议',
+  replyBudget: '预算明细',
+  highlightTitle: '行程亮点',
+  suitableFor: '适合人群',
+  suitableAudience: '朋友 / 情侣 / 学生',
+  aboutBudget: '约',
+  budgetExcludeTransport: '不含大交通',
+  noFoodStops: '这条路线没有单独的餐饮站点，可以在美食街附近自行安排。',
   previewTitle: '完整行程预览',
-  previewHint: '可直接保存或发布行程',
-  previewEmptyHint: '填写条件或直接告诉 AI 你的想法',
+  previewSubtitle: '可直接保存或发布行程',
   export: '导出行程',
   publish: '发布为行程',
   exported: (title: string) => `已导出「${title}」为 Markdown 文件。`,
   exportEmpty: '还没有可导出的行程，先生成一条路线吧。',
-  mapTitle: '路线地图',
-  mapSubtitle: '距离与时间来自高德地图',
+  mapTitle: '路线',
+  mapModalTitle: '路线与选点',
+  mapPickStop: '点选地图',
+  openMap: '查看地图',
   mapAriaLabel: 'AI 推荐路线地图',
-  budgetEmpty: '生成行程后展示 AI 估算预算',
-  tipsEmpty: '生成行程后展示 AI 出行建议',
   errorHint: '可以补充条件后重试，或换一个目的地。',
   intentDestination: (name: string) => `已把目的地识别为「${name}」，正在按你的要求规划。`,
-  intentOriginDefault: (name: string) => `没有填写出发地，先用「${name}」市中心作为出发地，可在「规划条件」里修改。`,
   intentDestinationMissing: (name: string) =>
     `没有在高德地图找到「${name}」，请在「规划条件」里手动选择目的地。`,
   intentBudget: (yuan: string) => `预算 ${yuan} 元`,
@@ -60,14 +73,13 @@ export const aiMessages = {
     const list = parts.filter((part): part is string => part !== null && part !== '');
     return list.join(' · ');
   },
-  chatNeedForm: '我还需要出发地、目的地和日期才能规划路线，先在上面的「规划条件」里补齐吧。',
-  /** 只点名真正缺的字段，避免把已识别到的目的地也算作缺失。 */
   chatMissing: (fields: string) =>
-    `还缺${fields}，在上面的「规划条件」里补齐后我就开始规划。`,
+    `还缺${fields}，点右上角「规划条件」补齐后我就开始规划。`,
 
   aiNotConfigured: 'AI 服务尚未配置：请联系管理员配置 AI 服务后重试。',
   aiFailed: 'AI 生成失败，请重试。',
   weatherFailed: '天气获取失败，请稍后重试。',
+  weatherUpstreamFailed: '天气服务暂时不可用，AI 需要真实天气来规划，请稍后重试。',
   routeFailed: '路线计算失败，请稍后重试。',
   locateFailed: '定位失败，请搜索或地图选点',
   locateLoading: '正在定位…',
@@ -79,6 +91,7 @@ export const aiMessages = {
   budgetLabel: '预算（元）',
   modeLabel: '出行方式',
   interestsLabel: '兴趣偏好',
+  interestsHint: '点击标签选中 / 取消，可多选',
   paceLabel: '行程节奏',
   useCurrentLocation: '使用当前定位',
   currentLocation: '当前位置',
@@ -103,7 +116,7 @@ export const aiMessages = {
   replaceCancel: '取消更换',
   manualReplaceReason: '手动更换的景点',
   timelineTitle: 'AI 行程',
-  emptyResult: '点击「✨ AI 推荐路线」后，这里会展示天气、AI Tips、预算估算与完整行程',
+  emptyResult: '告诉我你的想法，或填写规划条件后点击「AI 推荐路线」，这里会展示完整行程、天气与预算',
   stayMinutes: (minutes: number) => `停留 ${minutes} 分钟`,
   dayLabel: (day: number) => `第 ${day} 天`,
   indoorTag: '室内',
@@ -116,7 +129,7 @@ export const aiMessages = {
   precipitationProbability: '降雨概率',
   windSpeed: '风速',
   uvIndex: '紫外线',
-  tipsTitle: 'AI Tips',
+  tipsTitle: '💡 小贴士',
   packingTitle: '建议携带',
 
   budgetTitle: '预算',
@@ -126,7 +139,7 @@ export const aiMessages = {
   budgetOther: '其他',
   budgetTotal: '合计',
   budgetUser: '我的预算',
-  budgetNote: '无真实价格来源，全部为 AI 估算',
+  budgetNote: '预算为参考估算，不含往返大交通',
 
   statsDistance: '预计距离',
   statsDuration: '预计交通时间',
@@ -146,6 +159,8 @@ export const aiMessages = {
   durationLabels: { half_day: '半日游', one_day: '1 日游', two_day: '2 日游' } as Record<AiDuration, string>,
   paceOptions: { relaxed: '宽松', moderate: '适中', compact: '紧凑' } as Record<AiPace, string>,
   modeOptions: { transit: '公共交通', walking: '步行', driving: '驾车' } as Record<AiTravelMode, string>,
+  /** 快照预填文案里的预算口径：只说明是参考估算，不再使用「AI 估算」标识。 */
+  budgetReference: '参考估算',
 };
 
 /** generate 接口错误码 → 可读文案（ApiError.code）。 */
@@ -153,6 +168,8 @@ export function aiErrorMessage(code: string): string {
   switch (code) {
     case 'AI_NOT_CONFIGURED':
       return aiMessages.aiNotConfigured;
+    case 'WEATHER_UPSTREAM_ERROR':
+      return aiMessages.weatherUpstreamFailed;
     case 'AI_UPSTREAM_ERROR':
     case 'AI_INVALID_OUTPUT':
       return aiMessages.aiFailed;

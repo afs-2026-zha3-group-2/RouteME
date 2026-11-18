@@ -162,7 +162,8 @@ describe('toTripPrefill', () => {
     expect(prefill.tags).toEqual(['美食', '摄影']);
     expect(prefill.budgetMin).toBe('460');
     expect(prefill.budgetMax).toBe('460');
-    expect(prefill.note).toContain('AI 估算');
+    // 参考稿不再使用「AI 估算」标识：预填文案只写「参考估算」。
+    expect(prefill.note).toContain('参考估算');
     expect(prefill.capacity).toBe('4');
   });
 
