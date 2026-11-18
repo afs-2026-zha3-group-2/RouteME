@@ -145,10 +145,10 @@ test('publishes a trip and finds it in the home list', async ({ page }) => {
   await loginAs(page, 1);
   await page.goto('/#/trips/new');
 
+  // 参考稿 v3 的发布页是三张步骤卡：基本信息 / 路线规划 / 集合与预算（兴趣标签并入基本信息）。
   await expect(page.getByRole('heading', { name: '基本信息' })).toBeVisible();
-  await expect(page.getByRole('heading', { name: '简单路线' })).toBeVisible();
-  await expect(page.getByRole('heading', { name: '同行与预算' })).toBeVisible();
-  await expect(page.getByRole('heading', { name: '兴趣标签' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: '路线规划' })).toBeVisible();
+  await expect(page.getByRole('heading', { name: '集合与预算' })).toBeVisible();
   await expect(page.getByLabel('出发日期')).toHaveValue(todayIso());
   await expect(page.getByLabel('结束日期')).toHaveValue(todayIso());
   // R2：未选目的地时内嵌中国地图（三级级联第一层）。

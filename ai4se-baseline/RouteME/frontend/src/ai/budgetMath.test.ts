@@ -51,8 +51,8 @@ describe('centsToYuan', () => {
 });
 
 describe('budget copy', () => {
-  it('always labels estimates as AI 估算', () => {
-    expect(aiMessages.aiEstimate).toBe('AI 估算');
+  it('labels the budget as a reference estimate without an AI badge', () => {
+    expect(aiMessages.budgetReference).toBe('参考估算');
   });
 
   it('renders the overshoot message in yuan', () => {

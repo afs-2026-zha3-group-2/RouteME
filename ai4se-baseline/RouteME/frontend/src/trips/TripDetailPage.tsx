@@ -461,7 +461,7 @@ export function TripDetailPage({ currentUser, tripId }: Props) {
                     <dt>{aiMessages.budgetTotal}</dt>
                     <dd>
                       {centsToYuan(sumBudgetCents(aiSummary.ai_budget))} 元{' '}
-                      <Tag className="ai-estimate-tag">{aiMessages.aiEstimate}</Tag>
+                      <Tag className="ai-estimate-tag">{aiMessages.budgetReference}</Tag>
                     </dd>
                   </div>
                 )}
