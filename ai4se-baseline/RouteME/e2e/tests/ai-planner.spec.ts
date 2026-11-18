@@ -312,7 +312,8 @@ async function mapStopNumbers(page: Page): Promise<(string | null)[]> {
     .locator('.amap-stop-number')
     .evaluateAll((els) => els.map((el) => el.textContent));
   await page.keyboard.press('Escape');
-  return numbers;
+  // Marker 的 DOM 顺序跟随创建顺序，调序后不一定等于编号顺序：按编号排序后再比较。
+  return [...numbers].sort((left, right) => Number(left) - Number(right));
 }
 
 async function pickAiPlace(page: Page, fieldTestid: string, name: string) {
@@ -352,6 +353,23 @@ async function stopNames(page: Page): Promise<(string | null)[]> {
 
 async function routeCallCount(page: Page): Promise<number> {
   return page.evaluate(() => (window as any).__amapRouteCalls.length);
+}
+
+/** 景点行拖拽排序：HTML5 DnD，按名称把 from 拖到 to 的位置。 */
+async function dragStop(page: Page, from: string, to: string) {
+  await page.evaluate(([fromName, toName]) => {
+    const rows = [...document.querySelectorAll('[data-testid="ai-stop"]')];
+    const src = rows.find((row) => row.getAttribute('data-name') === fromName);
+    const dst = rows.find((row) => row.getAttribute('data-name') === toName);
+    if (!src || !dst) {
+      throw new Error(`stop not found: ${fromName} / ${toName}`);
+    }
+    const dt = new DataTransfer();
+    src.dispatchEvent(new DragEvent('dragstart', { bubbles: true, cancelable: true, dataTransfer: dt }));
+    dst.dispatchEvent(new DragEvent('dragover', { bubbles: true, cancelable: true, dataTransfer: dt }));
+    dst.dispatchEvent(new DragEvent('drop', { bubbles: true, cancelable: true, dataTransfer: dt }));
+    src.dispatchEvent(new DragEvent('dragend', { bubbles: true, cancelable: true, dataTransfer: dt }));
+  }, [from, to]);
 }
 
 /** 发布页手选目的地（沿用 trips.spec.ts 的 AreaCascader 模式）。 */
@@ -398,9 +416,10 @@ test('A1 gates generation on required fields and carries optional conditions', a
   await expect(page.getByTestId('ai-origin-name')).toContainText('广州南站');
   await expect(generateButton).toBeDisabled();
 
+  // 日期默认今天，所以选完目的地就满足三个必填项。
   await pickAiPlace(page, 'ai-destination-field', '广州市');
   await expect(page.getByTestId('ai-destination-name')).toContainText('广州市');
-  await expect(generateButton).toBeDisabled();
+  await expect(generateButton).toBeEnabled();
 
   await setAiDate(page, DAY);
   await expect(generateButton).toBeEnabled();
@@ -581,6 +600,8 @@ test('A5 weather drives indoor preference and packing advice', async ({ page }) 
 test('A6 recomputes the route after remove, replace and reorder', async ({ page }) => {
   await fillRequired(page);
   await generate(page);
+  // 路线是异步算的：先等统计出数，再核对高德调用次数。
+  await expect(page.getByTestId('ai-stats')).toContainText('6.3 公里');
   expect(await routeCallCount(page)).toBe(3);
 
   // 删除第 2 个 → 3 点重编号 → 重算。
@@ -600,11 +621,12 @@ test('A6 recomputes the route after remove, replace and reorder', async ({ page 
   await expect(page.getByTestId('ai-stats')).toContainText('4.2 公里');
   expect(await routeCallCount(page)).toBe(7);
 
-  // 上移末位 → 广州塔 / 北京路步行街 / 永庆坊，编号同步。
-  await page.getByRole('button', { name: '上移 北京路步行街' }).click();
+  // 拖拽末位到第 2 位 → 广州塔 / 北京路步行街 / 永庆坊，编号同步。
+  await dragStop(page, '北京路步行街', '永庆坊');
   expect(await stopNames(page)).toEqual(['广州塔', '北京路步行街', '永庆坊']);
   expect(await mapStopNumbers(page)).toEqual(['1', '2', '3']);
-  expect(await routeCallCount(page)).toBe(9);
+  // 重算按段串行请求（高德 3 QPS 限流），用轮询等最后一段到齐。
+  await expect.poll(() => routeCallCount(page), { timeout: 10_000 }).toBe(9);
 });
 
 /* ---------- A7 不足两个（E24） ---------- */

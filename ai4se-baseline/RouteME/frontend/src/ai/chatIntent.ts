@@ -217,24 +217,10 @@ export type QuickAction = {
   id: string;
   label: string;
 };
-
 /** 输入框下方的高频动作（参考稿 v3 的快捷胶囊）。 */
 export const PLANNER_QUICK_ACTIONS: readonly QuickAction[] = [
   { id: 'more-stops', label: '+ 增加小众景点' },
   { id: 'family', label: '+ 换成亲子路线' },
   { id: 'compact', label: '+ 更紧凑的行程' },
   { id: 'export', label: '+ 导出行程' },
-];
-
-export type OptimizeAction = {
-  id: 'compact' | 'more-stops' | 'family';
-  label: string;
-  hint: string;
-};
-
-/** 「行程优化」页签的独立入口：每个动作对应一次明确的重新规划。 */
-export const PLANNER_OPTIMIZE_ACTIONS: readonly OptimizeAction[] = [
-  { id: 'compact', label: '更紧凑的行程', hint: '减少在途空档，把同区域景点排在一起' },
-  { id: 'more-stops', label: '增加小众景点', hint: '加入冷门地点，节奏放宽一些' },
-  { id: 'family', label: '换成亲子路线', hint: '亲子友好 + 自然景点，强度更低' },
 ];

@@ -35,7 +35,6 @@ import {
   applyIntent,
   parsePlanIntent,
   PLANNER_INSPIRATIONS,
-  PLANNER_OPTIMIZE_ACTIONS,
   PLANNER_QUICK_ACTIONS,
 } from '../ai/chatIntent';
 import { itineraryToMarkdown } from '../ai/exportItinerary';
@@ -105,8 +104,6 @@ type Props = {
 type PlaceSlot = 'origin' | 'destination';
 
 type ReplyTab = 'overview' | 'day' | 'food' | 'stay' | 'budget';
-
-type PlannerTab = 'plan' | 'inspire' | 'optimize';
 
 const DEFAULT_CENTER = { lng: 113.264, lat: 23.129 };
 
@@ -233,7 +230,6 @@ export function AiPlannerPage({ currentUser }: Props) {
   const [composer, setComposer] = useState('');
   const [sending, setSending] = useState(false);
   const [messages, setMessages] = useState<ChatMessage[]>(initialSession.messages);
-  const [plannerTab, setPlannerTab] = useState<PlannerTab>('plan');
   const [replyTab, setReplyTab] = useState<ReplyTab>('overview');
   const [replyDay, setReplyDay] = useState(1);
   const [conditionsOpen, setConditionsOpen] = useState(false);
@@ -505,12 +501,14 @@ export function AiPlannerPage({ currentUser }: Props) {
       const plan = response.plan;
       const flat: AiPlanStop[] = [];
       const dayOf: number[] = [];
-      for (const day of plan.days) {
+      // 天序号按返回顺序归一为 1..n：AI 偶尔只回 day:2（两日行程缺第一天），
+      // 直接照抄会出现「只有 Day 2」或空白的诡异时间轴。
+      plan.days.forEach((day, dayIndex) => {
         for (const stop of day.stops) {
           flat.push(stop);
-          dayOf.push(day.day);
+          dayOf.push(dayIndex + 1);
         }
-      }
+      });
       // POI 坐标逐个经高德解析；失败标「未定位」，不伪造坐标（AC6）。
       const resolved = await resolveStops(flat, activeForm.destination?.name);
       const nextStops: DayStop[] = resolved.map((stop, index) => ({
@@ -552,15 +550,6 @@ export function AiPlannerPage({ currentUser }: Props) {
 
   /* ---------- 多会话：切换 / 新建 ---------- */
 
-  /** 只更新当前激活会话 id（不重载状态，切换本身由 hydrate 完成）。 */
-  const persistActiveId = (id: string) => {
-    setSessionStore((previous) => {
-      const next = { ...previous, activeId: id };
-      writeSessionStore(currentUser.id, next);
-      return next;
-    });
-  };
-
   const beginSession = useCallback(
     (session: PlannerSession) => {
       setSessionStore((previous) => {
@@ -576,24 +565,11 @@ export function AiPlannerPage({ currentUser }: Props) {
     [currentUser.id, hydrate],
   );
 
-  const switchSession = (id: string) => {
-    if (busy || id === activeSessionId) {
-      return;
-    }
-    const target = sessionStore.sessions.find((session) => session.id === id);
-    if (target === undefined) {
-      return;
-    }
-    hydrate(target);
-    persistActiveId(id);
-  };
-
   const newChat = () => {
     if (busy) {
       return;
     }
     beginSession(createPlannerSession(defaultPlannerForm()));
-    setPlannerTab('plan');
     setComposer('');
     window.setTimeout(() => document.getElementById('ai-composer-input')?.focus(), 0);
   };
@@ -723,7 +699,6 @@ export function AiPlannerPage({ currentUser }: Props) {
           tone: 'default',
           text: aiMessages.quickApplied(id, added),
         });
-        setPlannerTab('plan');
       }
     } finally {
       setSending(false);
@@ -960,39 +935,15 @@ export function AiPlannerPage({ currentUser }: Props) {
         {/* ==================== 左：对话规划 ==================== */}
         <Card className="panel ai-chat-card" data-testid="ai-thread-card">
           <div className="ai-chat-toolbar">
-            <Segmented
-              className="ai-mode-tabs"
-              value={plannerTab}
-              onChange={(value) => setPlannerTab(value as PlannerTab)}
-              options={[
-                { label: aiMessages.tabPlan, value: 'plan' },
-                { label: aiMessages.tabInspire, value: 'inspire' },
-                { label: aiMessages.tabOptimize, value: 'optimize' },
-              ]}
-            />
-            <div className="ai-chat-toolbar-actions">
-              <Select
-                className="ai-session-select"
-                size="small"
-                data-testid="ai-session-select"
-                aria-label={aiMessages.sessionLabel}
-                value={activeSessionId}
-                disabled={busy || sessionStore.sessions.length === 0}
-                options={sessionStore.sessions.map((session) => ({
-                  value: session.id,
-                  label: session.title,
-                }))}
-                onChange={(value) => switchSession(String(value))}
-              />
-              <Button
-                size="small"
-                data-testid="ai-new-chat"
-                disabled={busy}
-                onClick={newChat}
-              >
-                {aiMessages.newChat}
-              </Button>
-            </div>
+            <span className="ai-chat-toolbar-title">{aiMessages.tabPlan}</span>
+            <Button
+              size="small"
+              data-testid="ai-new-chat"
+              disabled={busy}
+              onClick={newChat}
+            >
+              {aiMessages.newChat}
+            </Button>
           </div>
 
           {/* 规划条件不再藏在角落：常驻摘要 + 高对比入口，缺项时直接标红。 */}
@@ -1024,62 +975,20 @@ export function AiPlannerPage({ currentUser }: Props) {
             </Button>
           </div>
 
-          {plannerTab === 'plan' && (
-            <div className="ai-inspiration-row" data-testid="ai-suggestions">
-              <span className="ai-inspiration-label">{aiMessages.inspirationLabel}</span>
-              {PLANNER_INSPIRATIONS.map((suggestion) => (
-                <button
-                  key={suggestion.id}
-                  type="button"
-                  className="ai-inspiration-chip"
-                  disabled={busy}
-                  onClick={() => void sendChat(suggestion.text)}
-                >
-                  {suggestion.label}
-                </button>
-              ))}
-            </div>
-          )}
-
-          {plannerTab === 'inspire' && (
-            <div className="ai-tab-panel" data-testid="ai-inspire-panel">
-              <p className="ai-tab-panel-title">{aiMessages.inspireTitle}</p>
-              <div className="ai-inspire-grid">
-                {PLANNER_INSPIRATIONS.map((suggestion) => (
-                  <button
-                    key={suggestion.id}
-                    type="button"
-                    className="ai-inspire-card"
-                    disabled={busy}
-                    onClick={() => void sendChat(suggestion.text)}
-                  >
-                    <strong>{suggestion.label}</strong>
-                    <span>{suggestion.text}</span>
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {plannerTab === 'optimize' && (
-            <div className="ai-tab-panel" data-testid="ai-optimize-panel">
-              <p className="ai-tab-panel-title">{aiMessages.optimizeTitle}</p>
-              <div className="ai-optimize-grid">
-                {PLANNER_OPTIMIZE_ACTIONS.map((action) => (
-                  <button
-                    key={action.id}
-                    type="button"
-                    className="ai-optimize-card"
-                    disabled={busy}
-                    onClick={() => void runQuickAction(action.id)}
-                  >
-                    <strong>{action.label}</strong>
-                    <span>{action.hint}</span>
-                  </button>
-                ))}
-              </div>
-            </div>
-          )}
+          <div className="ai-inspiration-row" data-testid="ai-suggestions">
+            <span className="ai-inspiration-label">{aiMessages.inspirationLabel}</span>
+            {PLANNER_INSPIRATIONS.map((suggestion) => (
+              <button
+                key={suggestion.id}
+                type="button"
+                className="ai-inspiration-chip"
+                disabled={busy}
+                onClick={() => void sendChat(suggestion.text)}
+              >
+                {suggestion.label}
+              </button>
+            ))}
+          </div>
 
           <div className="ai-thread" data-testid="ai-thread" aria-live="polite">
             <article className="ai-msg is-assistant">
@@ -1549,24 +1458,6 @@ export function AiPlannerPage({ currentUser }: Props) {
                                   onClick={() => openReplace(index)}
                                 >
                                   更换
-                                </Button>
-                                <Button
-                                  size="small"
-                                  type="text"
-                                  aria-label={aiMessages.moveUp(stop.name)}
-                                  disabled={index === 0}
-                                  onClick={() => applyStops(moveStopTo(stops, index, index - 1))}
-                                >
-                                  上移
-                                </Button>
-                                <Button
-                                  size="small"
-                                  type="text"
-                                  aria-label={aiMessages.moveDown(stop.name)}
-                                  disabled={index === stops.length - 1}
-                                  onClick={() => applyStops(moveStopTo(stops, index, index + 1))}
-                                >
-                                  下移
                                 </Button>
                               </div>
                             </li>
