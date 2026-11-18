@@ -318,16 +318,26 @@ export function writeSessionStore(
   }
 }
 
+/** 一颗浏览器里最多保留的历史会话数：再多也没人在抽屉里翻。 */
+export const MAX_PLANNER_SESSIONS = 20;
+
 /** 用一份会话替换 store 里的同 id 项；不存在则插到最前面。 */
 export function upsertSession(
   store: PlannerSessionStore,
   session: PlannerSession,
 ): PlannerSessionStore {
   const exists = store.sessions.some((entry) => entry.id === session.id);
-  const sessions = exists
+  const merged = exists
     ? store.sessions.map((entry) => (entry.id === session.id ? session : entry))
     : [session, ...store.sessions];
-  return { activeId: store.activeId, sessions };
+  // 抽屉按最近使用排序；超过上限丢掉最旧的（当前激活的一定保留）。
+  const sessions = [...merged]
+    .sort((left, right) => right.updatedAt - left.updatedAt)
+    .slice(0, MAX_PLANNER_SESSIONS);
+  const activeId = sessions.some((entry) => entry.id === session.id)
+    ? session.id
+    : sessions[0].id;
+  return { activeId: store.activeId === session.id ? activeId : store.activeId, sessions };
 }
 
 /** 读取用户历史；没有历史时新建一份空白会话，保证 activeId 永远有效。 */

@@ -1,5 +1,5 @@
 import { expect, test } from '@playwright/test';
-import { acceptApplicationViaApi, applyViaApi, createTripViaApi } from './support';
+import { acceptApplicationViaApi, applyViaApi, createTripViaApi, API } from './support';
 import {
   acceptedTrip,
   leaveViaApi,
@@ -35,13 +35,18 @@ test('cancels the publisher trips with the system reason and keeps the reason pr
   expect(credit.credit_score).toBe(50);
   expect(credit.credit_restricted).toBe(true);
 
-  // 发布者：看得到系统取消原因
+  // 发布者已受限：详情页被学习门禁替换，系统取消结果从 API 核验
   await useAccount(page, publisher);
   await page.goto(`/#/trips/${trip.id}`);
-  await expect(page.getByText('这条行程已取消')).toBeVisible();
-  await expect(page.getByText('取消原因：信用分低于 60，账号受限')).toBeVisible();
-  await expect(page.getByRole('button', { name: '取消行程' })).toHaveCount(0);
-  await expect(page.getByRole('button', { name: '结束行程' })).toHaveCount(0);
+  await expect(page.locator('.credit-gate')).toBeVisible();
+  await expect(page.getByText('这条行程已取消')).toHaveCount(0);
+  const detail = await page.request.get(`${API}/trips/${trip.id}`, {
+    headers: { 'X-User-Id': String(publisher.userId) },
+  });
+  expect(detail.ok()).toBeTruthy();
+  const body = (await detail.json()) as { status: string; cancel_reason: string | null };
+  expect(body.status).toBe('cancelled');
+  expect(body.cancel_reason).toBe('credit_restricted');
 
   // 其他用户：只看到已取消，不显示原因
   await useAccount(page, host);

@@ -571,17 +571,20 @@ export const tripMessages = {
   creditLearningSubmitting: '正在判分',
   creditLearningKickerResult: '第三步 · 判分',
   creditLearningResultPass: '通过 · 信用分已补到 60',
+  creditLearningResultPartialTitle: '通过 · 信用分恢复至 {score}',
   creditLearningResultFail: '未通过 · 可再次考试',
   creditLearningResultPassText:
-    '本次变化量 = 60 − {before} = +{delta}，已写入「安全学习信用恢复」记录；发布行程限制立即解除。',
+    '本次恢复 +{delta}，当前 {after} / 100，已写入「安全学习信用恢复」记录；发布行程限制立即解除。',
+  creditLearningResultPartialText:
+    '答对 {score} 题，本次恢复 +{delta}；本月恢复次数已用完，下月可继续学习恢复到 60。',
   creditLearningResultFailText:
     '答对 {score} 题，需 {passLine} 题及以上通过；本月还剩 {left} 次考试机会，未通过不占用恢复次数，分数不变。',
-  creditLearningResultRepeatText: '本次通过的恢复已由另一次提交记入，信用分现在为 {score}。',
   creditLearningDetailsTitle: '逐题判定',
   creditLearningAnswerRight: '正确',
   creditLearningAnswerWrong: '错误',
   creditLearningAnswerUnsure: '已判定',
   creditLearningGoPublish: '去发布行程',
+  creditLearningBackHome: '返回首页',
   creditLearningRetry: '再考一次',
   creditLearningKickerDone: '已完成 · 本月恢复 1 / 1',
   creditLearningDoneTitle: '你已通过安全学习，信用分恢复至 60',

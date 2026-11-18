@@ -1447,13 +1447,8 @@ svg {
   padding: 14px;
 }
 
-.publish-preview-frame {
-  transition: max-width 0.2s var(--ease);
-}
-
-.publish-preview-frame.is-mobile {
-  max-width: 320px;
-  margin: 0 auto;
+.publish-side-head .panel-title {
+  margin: 0;
 }
 
 .publish-companions-card .ant-card-body {
@@ -1486,11 +1481,6 @@ svg {
   justify-self: center;
 }
 
-@media (max-width: 1180px) {
-  .ai-condition-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-}
 @media (max-width: 900px) {
   .publish-grid {
     grid-template-columns: 1fr;
@@ -9133,35 +9123,6 @@ svg {
   height: clamp(420px, 56vh, 560px);
 }
 
-/* ---------- 规划条件（抽屉内单列） ---------- */
-.ai-conditions-drawer .ai-condition-grid {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 12px;
-  margin-top: 10px;
-}
-
-.ai-condition-actions {
-  display: flex;
-  gap: 10px;
-  flex-wrap: wrap;
-  margin-top: 16px;
-}
-
-.ai-origin-tools {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  flex-wrap: wrap;
-  margin-top: 4px;
-}
-
-.ai-origin-tools .ant-btn {
-  padding: 0 4px;
-  height: 22px;
-  font-size: 11.5px;
-}
-
 /* ---------- 对话线程 ---------- */
 .ai-thread {
   display: flex;
@@ -11098,30 +11059,6 @@ a.admin-metric-card:focus-visible {
   margin: 0 0 2px;
 }
 
-.publish-preview-device {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-
-.publish-preview-device .ant-select {
-  min-width: 96px;
-}
-
-.publish-preview-device .ant-segmented {
-  padding: 2px;
-  border-radius: 999px;
-  background: var(--surface-2);
-  font-size: 11.5px;
-}
-
-.publish-preview-device .ant-segmented-item-selected {
-  background: var(--surface);
-  box-shadow: var(--sh-1);
-  color: var(--t-lagoon);
-  font-weight: 700;
-}
-
 .publish-preview-card .ant-card-body {
   padding: 14px;
 }
@@ -11130,11 +11067,6 @@ a.admin-metric-card:focus-visible {
   display: grid;
   gap: 8px;
   max-width: 100%;
-}
-
-.publish-preview-card-body.is-mobile {
-  max-width: 330px;
-  margin: 0 auto;
 }
 
 .ppc-cover {
@@ -11281,6 +11213,17 @@ a.admin-metric-card:focus-visible {
   color: var(--t-jade);
   font-size: 10.5px;
   font-weight: 700;
+}
+
+/* 预览里同步显示同行设置，改动即时可见 */
+.ppc-facts {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  padding-top: 6px;
+  font-size: 11px;
+  color: var(--ink-3);
 }
 
 /* 同行设置：三个下拉一行 */
@@ -11437,6 +11380,148 @@ a.admin-metric-card:focus-visible {
   font-size: 12.5px;
   line-height: 1.6;
   color: var(--ink-2);
+}
+
+/* 低信用全局门禁：侧栏保留，内容区只留大图标 + 说明 + 学习入口。 */
+.credit-gate {
+  display: grid;
+  place-items: center;
+  padding: clamp(28px, 6vh, 64px) 16px;
+}
+
+.credit-gate-card {
+  width: min(560px, 100%);
+  display: grid;
+  justify-items: center;
+  gap: 10px;
+  padding: 40px 36px 32px;
+  text-align: center;
+  border: 1px solid color-mix(in srgb, var(--danger) 26%, var(--line));
+  border-radius: 24px;
+  background:
+    radial-gradient(
+      120% 90% at 50% 0%,
+      color-mix(in srgb, var(--danger) 12%, transparent),
+      transparent 62%
+    ),
+    var(--surface);
+  box-shadow: var(--sh-2);
+}
+
+.credit-gate-icon {
+  width: 96px;
+  height: 96px;
+  display: grid;
+  place-items: center;
+  border-radius: 30px;
+  color: var(--t-danger);
+  background: color-mix(in srgb, var(--danger) 14%, var(--surface));
+  box-shadow:
+    inset 0 0 0 1px color-mix(in srgb, var(--danger) 26%, transparent),
+    0 18px 34px -24px color-mix(in srgb, var(--danger) 70%, transparent);
+}
+
+.credit-gate-icon svg {
+  width: 54px;
+  height: 54px;
+}
+
+.credit-gate-kicker {
+  margin: 6px 0 0;
+  font-size: 11.5px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  color: var(--t-danger);
+}
+
+.credit-gate-title {
+  margin: 0;
+  font-size: clamp(1.5rem, 3vw, 2rem);
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: var(--ink);
+}
+
+.credit-gate-text {
+  margin: 0;
+  max-width: 44ch;
+  font-size: 13px;
+  line-height: 1.75;
+  color: var(--ink-3);
+}
+
+.credit-gate-score {
+  margin: 2px 0 0;
+  padding: 5px 12px;
+  border-radius: 999px;
+  font-size: 12.5px;
+  color: var(--ink-2);
+  background: var(--surface-2);
+  box-shadow: inset 0 0 0 1px var(--line-2);
+}
+
+.credit-gate-score b {
+  font-size: 14px;
+  color: var(--t-danger);
+}
+
+.credit-gate-action {
+  margin-top: 8px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 12px 26px;
+  border-radius: 999px;
+  font-size: 14px;
+  font-weight: 750;
+  color: #fff;
+  background: var(--danger);
+  box-shadow: 0 14px 26px -14px color-mix(in srgb, var(--danger) 80%, transparent);
+  transition: transform 0.16s, filter 0.16s;
+}
+
+.credit-gate-action svg {
+  width: 16px;
+  height: 16px;
+}
+
+.credit-gate-action:hover {
+  color: #fff;
+  transform: translateY(-1px);
+  filter: brightness(1.06);
+}
+
+.credit-gate-action:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--danger) 30%, transparent);
+}
+
+.credit-gate-hint {
+  margin: 2px 0 0;
+  font-size: 11.5px;
+  color: var(--ink-3);
+}
+
+@media (max-width: 640px) {
+  .credit-gate-card {
+    padding: 30px 20px 26px;
+  }
+
+  .credit-gate-icon {
+    width: 80px;
+    height: 80px;
+    border-radius: 26px;
+  }
+
+  .credit-gate-icon svg {
+    width: 46px;
+    height: 46px;
+  }
+
+  .credit-gate-action {
+    width: 100%;
+    justify-content: center;
+  }
 }
 
 .composer-closed .blocked-notice {
@@ -11898,51 +11983,61 @@ a.admin-metric-card:focus-visible {
    - 更换地点改为大搜索框 + 地图选点的弹窗
    ============================================================ */
 
-/* 规划条件：常驻可见的高对比摘要 */
-.ai-condition-summary {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  flex-wrap: wrap;
-  padding: 7px 10px;
-  border: 1px solid color-mix(in srgb, var(--lagoon) 20%, var(--line));
-  border-radius: 12px;
-  background: color-mix(in srgb, var(--lagoon) 5%, var(--surface));
+/* 历史对话抽屉：每段旅行一条，切回去整份上下文都在 */
+.ai-history-actions {
+  margin-bottom: 12px;
 }
 
-.ai-condition-chip {
-  display: inline-flex;
-  align-items: center;
-  max-width: 170px;
-  padding: 2px 9px;
-  border-radius: 999px;
-  background: var(--surface);
+.ai-history-list {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.ai-history-item {
+  display: grid;
+  gap: 3px;
+  width: 100%;
+  padding: 10px 12px;
   border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface);
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 0.16s var(--ease), box-shadow 0.16s var(--ease);
+}
+
+.ai-history-item:hover {
+  border-color: color-mix(in srgb, var(--lagoon) 40%, transparent);
+}
+
+.ai-history-item.is-active {
+  border-color: color-mix(in srgb, var(--lagoon) 55%, transparent);
+  background: color-mix(in srgb, var(--lagoon) 8%, var(--surface));
+  box-shadow: var(--sh-1);
+}
+
+.ai-history-title {
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--ink);
+}
+
+.ai-history-preview {
   font-size: 11.5px;
+  line-height: 1.5;
   color: var(--ink-2);
-  white-space: nowrap;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
   overflow: hidden;
-  text-overflow: ellipsis;
 }
 
-.ai-condition-chip.is-missing {
-  border-color: color-mix(in srgb, var(--warn) 40%, transparent);
-  color: var(--t-warn);
-  background: color-mix(in srgb, var(--warn) 8%, var(--surface));
-}
-
-.ai-condition-missing {
-  font-size: 11.5px;
-  font-weight: 700;
-  color: var(--t-warn);
-}
-
-.ai-conditions-btn.ant-btn {
-  margin-left: auto;
-  min-height: 28px;
-  padding: 0 16px;
-  border-radius: 999px;
-  font-weight: 700;
+.ai-history-meta {
+  font-size: 10.5px;
+  color: var(--ink-3);
 }
 
 /* 对话区：气泡更宽、输入区更舒展 */
@@ -12059,10 +12154,16 @@ a.admin-metric-card:focus-visible {
 }
 
 /* 条件抽屉里的地点搜索也放大一档：小输入框很难点中候选项 */
-.ai-conditions-drawer .amap-search-box .ant-input,
-.ai-conditions-drawer .amap-search-box .ant-input-affix-wrapper {
-  min-height: 40px;
-  border-radius: 10px;
+.ai-history-drawer .ant-drawer-body {
+  padding-top: 12px;
+}
+
+.ai-chat-toolbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
 }
 
 @media (max-width: 1180px) {
@@ -12086,13 +12187,5 @@ a.admin-metric-card:focus-visible {
     height: calc(100vh - 230px);
     max-height: calc(100vh - 230px);
     min-height: 440px;
-  }
-
-  .ai-condition-summary {
-    align-items: flex-start;
-  }
-
-  .ai-conditions-btn.ant-btn {
-    margin-left: 0;
   }
 }

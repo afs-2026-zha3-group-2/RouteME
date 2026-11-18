@@ -2746,7 +2746,7 @@ paths:
       operationId: submitCreditLearningAnswers
       summary: 提交作答并返回判分与恢复结果
       description: |
-        需先完成学习内容；答对 8 题及以上为通过，通过且本自然月未恢复过时把信用分补到 60（`delta = 60 - before`）。
+        需先完成学习内容；答对 8 题及以上为通过，通过且本自然月未恢复过时按梯度加分：8 题 +10、9 题 +15、10 题 +20，且不超过与 60 的缺口（`delta = min(60 - before, bonus)`）。
         未通过不改分、不占当月恢复次数；已提交的会话重复提交直接返回既有结果。
       parameters:
         - $ref: '#/components/parameters/DemoUserId'

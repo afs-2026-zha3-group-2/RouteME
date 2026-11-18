@@ -2,7 +2,6 @@ package routeme.controller;
 
 import static org.junit.jupiter.api.Assertions.assertAll;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -15,12 +14,13 @@ import routeme.entity.CreditLedgerEntity;
 
 /**
  * 恢复记账与月度恢复配额（REQ-027 R4 / R5 / R7）：
- * 实际变化量 = 60 − 恢复前分数，同月只恢复一次，未通过不占恢复次数。
+ * 加分梯度为 8 题 +10 / 9 题 +15 / 10 题 +20，且不超过与 60 的缺口；
+ * 同月只恢复一次，未通过不占恢复次数。
  */
 class CreditLearningRecoveryApiTest extends CreditLearningTestSupport {
 
     @Test
-    void in_fortyFive_out_recoveredByFifteenWithLedgerRow() throws Exception {
+    void in_fortyFiveWithEightCorrect_out_partialPlusTen() throws Exception {
         // Given
         long userId = register("RecoveryFortyFive");
         setScore(userId, 45);
@@ -32,20 +32,53 @@ class CreditLearningRecoveryApiTest extends CreditLearningTestSupport {
         submitAnswers(userId, sessionId, answersFor(sessionId, 8))
                 // Then
                 .andExpect(status().isOk())
+                .andExpect(jsonPath("$.passed").value(true))
                 .andExpect(jsonPath("$.recovery_applied").value(true))
-                .andExpect(jsonPath("$.credit_score").value(60));
+                .andExpect(jsonPath("$.credit_score").value(55));
 
         List<CreditLedgerEntity> rows = recoveryRows(userId);
         assertAll(
                 () -> assertEquals(1, rows.size(), "one recovery row"),
                 () -> assertEquals(45, rows.getFirst().getScoreBefore(), "score before"),
-                () -> assertEquals(15, rows.getFirst().getAppliedDelta(), "actual delta"),
-                () -> assertEquals(60, rows.getFirst().getScoreAfter(), "score after"),
+                () -> assertEquals(10, rows.getFirst().getAppliedDelta(), "eight correct = +10"),
+                () -> assertEquals(55, rows.getFirst().getScoreAfter(), "still below the target"),
                 () -> assertEquals(CreditLearningConstant.RELATED_TYPE_LEARNING_SESSION,
                         rows.getFirst().getRelatedType(), "related type points at the session"),
                 () -> assertEquals(String.valueOf(sessionId), rows.getFirst().getRelatedId(), "related id"),
                 () -> assertEquals("learning-recovery:" + userId + ":" + monthKey,
                         rows.getFirst().getIdempotencyKey(), "monthly idempotency key"));
+    }
+
+    @Test
+    void in_fortyFiveWithNineCorrect_out_plusFifteenToTarget() throws Exception {
+        long userId = register("RecoveryNine");
+        setScore(userId, 45);
+        long sessionId = startSessionId(userId);
+        completeLessons(userId, sessionId);
+
+        submitAnswers(userId, sessionId, answersFor(sessionId, 9))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.passed").value(true))
+                .andExpect(jsonPath("$.credit_score").value(60));
+
+        assertEquals(15, recoveryRows(userId).getFirst().getAppliedDelta(), "nine correct = +15");
+    }
+
+    @Test
+    void in_fortyFiveWithPerfectAnswers_out_plusFifteenCappedAtTarget() throws Exception {
+        long userId = register("RecoveryPerfect");
+        setScore(userId, 45);
+        long sessionId = startSessionId(userId);
+        completeLessons(userId, sessionId);
+
+        submitAnswers(userId, sessionId, answersFor(sessionId, 10))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.credit_score").value(60));
+
+        assertAll(
+                () -> assertEquals(15, recoveryRows(userId).getFirst().getAppliedDelta(),
+                        "perfect bonus 20 is capped by the 15 gap"),
+                () -> assertEquals(60, creditService.read(userId).score(), "never above the target"));
     }
 
     @Test
@@ -84,15 +117,15 @@ class CreditLearningRecoveryApiTest extends CreditLearningTestSupport {
                 // Then
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.passed").value(true))
-                .andExpect(jsonPath("$.credit_score").value(60));
+                .andExpect(jsonPath("$.credit_score").value(55));
 
         assertAll(
                 () -> assertEquals(1, recoveryRows(userId).size(), "no second recovery row"),
-                () -> assertEquals(60, creditService.read(userId).score(), "score unchanged by replay"));
+                () -> assertEquals(55, creditService.read(userId).score(), "score unchanged by replay"));
     }
 
     @Test
-    void in_alreadyRecoveredThisMonth_out_recoveryQuotaExceeded() throws Exception {
+    void in_alreadyPartiallyRecoveredThisMonth_out_startBlocked() throws Exception {
         // Given
         long userId = register("RecoveryQuota");
         setScore(userId, 45);
@@ -101,12 +134,9 @@ class CreditLearningRecoveryApiTest extends CreditLearningTestSupport {
         submitAnswers(userId, first, answersFor(first, 8)).andExpect(status().isOk());
 
         setScore(userId, 45);
-        long second = startSessionId(userId);
-        completeLessons(userId, second);
 
-        // When
-        submitAnswers(userId, second, answersFor(second, 8))
-                // Then
+        // When / Then：本月恢复额度已用完且仍未到 60，直接拒绝再次开考，避免浪费考试次数。
+        startSession(userId)
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.code").value("LEARNING_RECOVERY_QUOTA_EXCEEDED"));
 
@@ -129,7 +159,7 @@ class CreditLearningRecoveryApiTest extends CreditLearningTestSupport {
         // When
         long retake = startSessionId(userId);
         completeLessons(userId, retake);
-        submitAnswers(userId, retake, answersFor(retake, 8))
+        submitAnswers(userId, retake, answersFor(retake, 10))
                 // Then
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.recovery_applied").value(true));
@@ -140,7 +170,7 @@ class CreditLearningRecoveryApiTest extends CreditLearningTestSupport {
     }
 
     @Test
-    void in_zeroScore_out_recoveredBySixty() throws Exception {
+    void in_zeroScoreWithEightCorrect_out_partialPlusTen() throws Exception {
         // Given
         long userId = register("RecoveryZero");
         setScore(userId, 0);
@@ -151,10 +181,11 @@ class CreditLearningRecoveryApiTest extends CreditLearningTestSupport {
         submitAnswers(userId, sessionId, answersFor(sessionId, 8))
                 // Then
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.credit_score").value(60));
+                .andExpect(jsonPath("$.credit_score").value(10));
 
         assertAll(
-                () -> assertEquals(60, recoveryRows(userId).getFirst().getAppliedDelta(), "delta is +60"),
-                () -> assertTrue(creditService.read(userId).score() == 60, "recovered to the target"));
+                () -> assertEquals(10, recoveryRows(userId).getFirst().getAppliedDelta(),
+                        "eight correct can no longer wipe the whole gap"),
+                () -> assertEquals(10, creditService.read(userId).score(), "partial recovery"));
     }
 }

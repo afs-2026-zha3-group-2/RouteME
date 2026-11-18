@@ -2,11 +2,11 @@ import { useEffect, useRef, useState, type KeyboardEvent as ReactKeyboardEvent, 
 import { createPortal } from 'react-dom';
 import { loadUserProfile } from '../api';
 import { useMyCredit } from '../credit/CreditContext';
+import { CreditRestrictionGate } from '../credit/CreditRestrictionGate';
 import { adminMessages } from '../i18n/adminMessages';
 import { GateScene } from '../identity/GateScene';
 import { tripMessages } from '../i18n/tripMessages';
 import { AccountStatusBanner } from '../profile/AccountStatusBanner';
-import { creditRestrictedActionMessage } from '../profile/creditDisplay';
 import { publisherSummary } from '../profile/profileDisplay';
 import type { Route } from '../route';
 import type { DemoUser, UserProfile } from '../types';
@@ -202,8 +202,6 @@ export function AppShell({ currentUser, onLogout, route, children }: Props) {
   /** 管理员只保留浏览 / 规划 / 发布与后台入口；我的旅行、同行消息、联系客服不向管理员展示。 */
   const hiddenForAdmin: NavKey[] = ['mine', 'chat', 'support'];
   const { restricted } = useMyCredit();
-  const navBlockedTitle = (item: NavItem) =>
-    restricted && item.key === 'create' ? creditRestrictedActionMessage() : undefined;
 
 
   const [accountOpen, setAccountOpen] = useState(false);
@@ -385,21 +383,9 @@ export function AppShell({ currentUser, onLogout, route, children }: Props) {
                 {items.map((item) => (
                   <a
                     key={item.key}
-                    className={[
-                      active === item.key ? 'rail-link active' : 'rail-link',
-                      navBlockedTitle(item) !== undefined ? 'is-disabled' : '',
-                    ]
-                      .filter((name) => name !== '')
-                      .join(' ')}
+                    className={active === item.key ? 'rail-link active' : 'rail-link'}
                     href={item.href}
                     aria-current={active === item.key ? 'page' : undefined}
-                    aria-disabled={navBlockedTitle(item) !== undefined || undefined}
-                    title={navBlockedTitle(item)}
-                    onClick={(event) => {
-                      if (navBlockedTitle(item) !== undefined) {
-                        event.preventDefault();
-                      }
-                    }}
                   >
                     <NavIcon name={item.key} />
                     <span>{item.label}</span>
@@ -515,7 +501,7 @@ export function AppShell({ currentUser, onLogout, route, children }: Props) {
           banExpiresAt={selfProfile?.ban_expires_at}
           className="view-status-notice"
         />
-        {children}
+        {restricted && route.name !== 'creditLearning' ? <CreditRestrictionGate /> : children}
       </div>
 
       <nav className="tabbar" aria-label="底部导航">
@@ -526,21 +512,9 @@ export function AppShell({ currentUser, onLogout, route, children }: Props) {
         ).map((item) => (
           <a
             key={item.key}
-            className={[
-              active === item.key ? 'tab-link active' : 'tab-link',
-              navBlockedTitle(item) !== undefined ? 'is-disabled' : '',
-            ]
-              .filter((name) => name !== '')
-              .join(' ')}
+            className={active === item.key ? 'tab-link active' : 'tab-link'}
             href={item.href}
             aria-current={active === item.key ? 'page' : undefined}
-            aria-disabled={navBlockedTitle(item) !== undefined || undefined}
-            title={navBlockedTitle(item)}
-            onClick={(event) => {
-              if (navBlockedTitle(item) !== undefined) {
-                event.preventDefault();
-              }
-            }}
           >
             <NavIcon name={item.key} />
             <span>{item.label}</span>

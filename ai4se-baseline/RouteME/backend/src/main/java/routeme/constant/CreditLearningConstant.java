@@ -13,8 +13,13 @@ public final class CreditLearningConstant {
     public static final int RECOVERY_TARGET_SCORE = 60;
     /** 发布行程的最低分：小于它才拦，等于它放行（与恢复目标同值，只在这里定义）。 */
     public static final int PUBLISH_MIN_SCORE = RECOVERY_TARGET_SCORE;
-    /** 通过线：答对 8 题及以上算通过。 */
+    /** 通过线：答对 8 题及以上通过，允许部分恢复。 */
     public static final int PASS_LINE = 8;
+
+    /** 恢复加分梯度：8 题 +10、9 题 +15、10 题 +20，均不超过与 60 的缺口。 */
+    public static final int RECOVERY_BONUS_PASS = 10;
+    public static final int RECOVERY_BONUS_GOOD = 15;
+    public static final int RECOVERY_BONUS_PERFECT = 20;
     /** 每次考试的题数。 */
     public static final int QUESTION_COUNT = 10;
     /** 题库总题数与每类题数。 */
