@@ -25,6 +25,7 @@ dist/
 .vscode/*
 !.vscode/tasks.json
 !.vscode/settings.json
+!.vscode/launch.json
 .metals/
 .bloop/
 _ao_ppt_build

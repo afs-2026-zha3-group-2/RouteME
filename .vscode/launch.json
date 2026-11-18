@@ -1,0 +1,18 @@
+{
+  // 公司网络会做 HTTPS 解密（TLS 中间人），根证书装在 Windows 证书存储里，
+  // 而 JDK 默认只信任自带 cacerts，于是访问 DeepSeek / Open-Meteo / 高德等
+  // 外部接口会抛 PKIX path building failed / unable to find valid certification path。
+  // -Djavax.net.ssl.trustStoreType=Windows-ROOT 让 JVM 直接读 Windows 根证书
+  // （JDK 9+ 支持；本项目 JDK 21）。仅 Windows 有效，Linux/macOS 请用下面的说明。
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "type": "java",
+      "name": "RouteME backend (公司网络 · Windows 证书信任)",
+      "request": "launch",
+      "mainClass": "routeme.Application",
+      "cwd": "${workspaceFolder}/ai4se-baseline/RouteME/backend",
+      "vmArgs": "-Djavax.net.ssl.trustStoreType=Windows-ROOT"
+    }
+  ]
+}
