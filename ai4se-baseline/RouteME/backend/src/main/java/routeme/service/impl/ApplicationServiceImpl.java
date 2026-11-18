@@ -92,6 +92,7 @@ public class ApplicationServiceImpl
                 normalizeMessage(request == null ? null : request.message()),
                 ApplicationStatusEnum.PENDING,
                 now,
+                null,
                 null);
         save(TripApplicationEntity.from(created));
         return created;
@@ -110,7 +111,7 @@ public class ApplicationServiceImpl
         }
         Instant now = clock.instant();
         updateStatus(applicationId, ApplicationStatusEnum.CANCELLED, "USER_CANCEL", now);
-        return application.withStatus(ApplicationStatusEnum.CANCELLED, now);
+        return application.withStatus(ApplicationStatusEnum.CANCELLED, now, "USER_CANCEL");
     }
 
     @Override
@@ -271,7 +272,8 @@ public class ApplicationServiceImpl
         }
         updateStatus(applicationId, next,
                 next == ApplicationStatusEnum.REJECTED ? "PUBLISHER_REJECT" : null, now);
-        return application.withStatus(next, now);
+        return application.withStatus(
+                next, now, next == ApplicationStatusEnum.REJECTED ? "PUBLISHER_REJECT" : null);
     }
 
     @Override
