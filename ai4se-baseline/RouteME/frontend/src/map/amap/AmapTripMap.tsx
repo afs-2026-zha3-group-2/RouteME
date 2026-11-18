@@ -29,11 +29,20 @@ type Props = {
   mode?: TravelMode;
   focusStop: string | null;
   onFocusStop?: (name: string) => void;
+  /** 解析出的路线（含分段距离/时间）向上冒泡，供详情页连接点时间轴展示。 */
+  onRouteChange?: (route: RoutePlan | null) => void;
 };
 
 const DEFAULT_CENTER: LngLat = [113.2644, 23.1291];
 
-export function AmapTripMap({ city, stops, mode = 'walking', focusStop, onFocusStop }: Props) {
+export function AmapTripMap({
+  city,
+  stops,
+  mode = 'walking',
+  focusStop,
+  onFocusStop,
+  onRouteChange,
+}: Props) {
   const [map, setMap] = useState<AmapMap | null>(null);
   const [center, setCenter] = useState<LngLat>(DEFAULT_CENTER);
   const [zoom, setZoom] = useState(12);
@@ -113,6 +122,11 @@ export function AmapTripMap({ city, stops, mode = 'walking', focusStop, onFocusS
       active = false;
     };
   }, [city, stopsKey, mode]);
+
+  // 路线变化即上报：降级为直线估算时同样上报，父级不会读到过期分段数据。
+  useEffect(() => {
+    onRouteChange?.(route);
+  }, [route, onRouteChange]);
 
   const focusId =
     focusStop === null

@@ -130,7 +130,8 @@ export function App() {
     setUsers((previous) => mergeUser(previous, session.user));
     setCurrentUserId(session.user.id);
     // 只在登录/注册这一跳引导；其余路由不做全局守卫（RV-2 / RV-7）。
-    if (!session.user.profile_complete) {
+    // 管理员账号不参与资料完善流程，直接留在登录前所在页面。
+    if (session.user.role !== 'ADMIN' && !session.user.profile_complete) {
       window.location.hash = '#/profile/setup';
     }
   };

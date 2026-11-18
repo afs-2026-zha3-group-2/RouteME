@@ -85,6 +85,8 @@ export function ProfilePage({ currentUser, userId, canEdit }: Props) {
   }
 
   const isSelf = profile.id === currentUser.id;
+  /** 管理员本人不参与资料完善与学籍认证，不展示对应徽标与提示。 */
+  const profileIsAdmin = isSelf && currentUser.role === 'ADMIN';
   const ageZodiac = ageZodiacLabel(profile);
   const schoolAndMajor = schoolMajor(profile);
   const summary = publisherSummary(profile);
@@ -104,15 +106,17 @@ export function ProfilePage({ currentUser, userId, canEdit }: Props) {
           <div className="profile-name-row">
             <Typography.Title level={2} className="profile-name">
               {profile.nickname}
-              {profile.profile_complete ? (
-                <span className="badge jade">{tripMessages.profileCompleteBadge}</span>
-              ) : (
-                <span className="badge muted">{tripMessages.profileIncompleteBadge}</span>
-              )}
+              {!profileIsAdmin &&
+                (profile.profile_complete ? (
+                  <span className="badge jade">{tripMessages.profileCompleteBadge}</span>
+                ) : (
+                  <span className="badge muted">{tripMessages.profileIncompleteBadge}</span>
+                ))}
               {profile.student_verified ? (
                 <span className="badge jade">{tripMessages.studentVerifyVerifiedBadge}</span>
               ) : (
-                isSelf && (
+                isSelf &&
+                !profileIsAdmin && (
                   <a className="badge muted" href="#/verify/student">
                     {tripMessages.studentVerifyPendingBadge}
                   </a>
@@ -154,7 +158,7 @@ export function ProfilePage({ currentUser, userId, canEdit }: Props) {
             </div>
           )}
         </div>
-        {isSelf && canEdit && (
+        {isSelf && canEdit && !profileIsAdmin && (
           <Button onClick={() => (window.location.hash = '#/profile/setup')}>
             {tripMessages.profileEditEntry}
           </Button>
@@ -171,7 +175,7 @@ export function ProfilePage({ currentUser, userId, canEdit }: Props) {
         />
       )}
 
-      {!profile.profile_complete && (
+      {!profileIsAdmin && !profile.profile_complete && (
         <Alert
           type="info"
           showIcon
@@ -181,7 +185,7 @@ export function ProfilePage({ currentUser, userId, canEdit }: Props) {
         />
       )}
 
-      {isSelf && !profile.student_verified && (
+      {isSelf && !profileIsAdmin && !profile.student_verified && (
         <Alert
           type="warning"
           showIcon
@@ -197,7 +201,9 @@ export function ProfilePage({ currentUser, userId, canEdit }: Props) {
       )}
 
       {!hasPublicContent(profile) ? (
-        <p className="profile-empty profile-card">{tripMessages.profileEmpty}</p>
+        <p className="profile-empty profile-card">
+          {profileIsAdmin ? tripMessages.profileAdminEmpty : tripMessages.profileEmpty}
+        </p>
       ) : (
         <div className="profile-body">
           {profile.profile_complete && hasFacts && (
@@ -240,7 +246,7 @@ export function ProfilePage({ currentUser, userId, canEdit }: Props) {
             </section>
           )}
 
-          {!profile.profile_complete && (
+          {!profileIsAdmin && !profile.profile_complete && (
             <section className="profile-card">
               <h3 className="profile-section-title">{tripMessages.profileFilledSection}</h3>
               <dl className="profile-facts">

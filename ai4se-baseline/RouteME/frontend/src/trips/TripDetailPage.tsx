@@ -40,6 +40,7 @@ import { ExperienceLikeButton } from '../experiences/ExperienceLikeButton';
 import { ShareIcon } from '../experiences/shareIcons';
 import { meetingAreaText, meetingTimeText } from '../chat/chatMeeting';
 import { AmapTripMap } from '../map/amap/AmapTripMap';
+import { formatDistance, formatDuration, type RoutePlan } from '../map/amap/AmapService';
 import { AmapPlacePicker } from '../map/amap/AmapPlacePicker';
 import { shareEligibility } from '../experiences/shareEligibility';
 import { GrowthBadge } from '../growth/GrowthBadge';
@@ -100,6 +101,28 @@ function pickLatestApplication(
   );
 }
 
+/** 连接点首站：有集合时间就写「HH:mm 集合出发」，缺省只写集合出发。 */
+function firstStopMeta(meetingTime: string | null): string {
+  const clock = meetingTime?.slice(11, 16) ?? '';
+  return /^\d{2}:\d{2}$/.test(clock) ? `${clock} 集合出发` : '集合出发';
+}
+
+/** 相邻两站的分段信息：距离与时间只来自高德，没有分段就留空，不编造。 */
+function legMeta(leg: RoutePlan['legs'][number] | undefined, modeLabel: string): string {
+  if (leg === undefined) {
+    return '';
+  }
+  return `约 ${formatDistance(leg.distanceMeters)} · ${modeLabel} ${formatDuration(leg.durationSeconds)}`;
+}
+
+/** 出行方式展示名：详情页地图把公共交通与未填写按步行示意。 */
+function routeModeLabel(mode: string): string {
+  if (mode === 'driving') {
+    return '驾车';
+  }
+  return mode === 'bicycling' ? '骑行' : '步行';
+}
+
 export function TripDetailPage({ currentUser, tripId }: Props) {
   const { state, reload } = useTrip(currentUser.id, tripId);
   const { openProfile } = useProfile();
@@ -128,6 +151,8 @@ export function TripDetailPage({ currentUser, tripId }: Props) {
   const [reportOpen, setReportOpen] = useState(false);
   const [experiences, setExperiences] = useState<Experience[] | null>(null);
   const [insurance, setInsurance] = useState<InsuranceSummary | null>(null);
+  // 地图解析出的高德路线：连接点时间轴的分段距离/时间只从这里取。
+  const [tripRoute, setTripRoute] = useState<RoutePlan | null>(null);
   const studentGate = useStudentGate(currentUser);
 
   const updateExperience = (next: Experience) => {
@@ -345,6 +370,7 @@ export function TripDetailPage({ currentUser, tripId }: Props) {
   // 高德路线封装在本基线只支持步行 / 驾车 / 骑行：公共交通与未填写按步行折线示意。
   const mapTravelMode =
     trip.travel_mode === 'driving' || trip.travel_mode === 'bicycling' ? trip.travel_mode : 'walking';
+  const mapModeLabel = routeModeLabel(mapTravelMode);
   const focusPlace = (name: string) => {
     setFocusStop(name);
     mapSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
@@ -518,7 +544,12 @@ export function TripDetailPage({ currentUser, tripId }: Props) {
           )}
 
           <section className="detail-section">
-            <h3 className="section-title">{tripMessages.detailStops}</h3>
+            <h3 className="section-title">
+              {tripMessages.detailStops}
+              {hasStops && (
+                <span className="section-count">{`共 ${trip.stops.length} 站`}</span>
+              )}
+            </h3>
             {hasStops && (
               <div className="detail-map-section" ref={mapSectionRef}>
                 <AmapTripMap
@@ -527,20 +558,42 @@ export function TripDetailPage({ currentUser, tripId }: Props) {
                   mode={mapTravelMode}
                   focusStop={focusStop}
                   onFocusStop={setFocusStop}
+                  onRouteChange={setTripRoute}
                 />
-                <ol className="route-strip">
-                  {trip.stops.map((stop, index) => (
-                    <li key={`${stop}-${index}`} className="route-strip-item">
-                      <button
-                        type="button"
-                        className="route-strip-card"
-                        onClick={() => focusPlace(stop)}
+                <ol className="route-strip" aria-label={tripMessages.detailStops}>
+                  {trip.stops.map((stop, index) => {
+                    const isFirst = index === 0;
+                    const isLast = index === trip.stops.length - 1;
+                    // 首站写集合时间，其余写上一段的高德距离/时间；取不到就不渲染副行。
+                    const meta = isFirst
+                      ? firstStopMeta(trip.meeting_time)
+                      : legMeta(tripRoute?.legs[index - 1], mapModeLabel);
+                    return (
+                      <li
+                        key={`${stop}-${index}`}
+                        className={
+                          focusStop === stop ? 'route-strip-item is-active' : 'route-strip-item'
+                        }
                       >
-                        <span className={`route-strip-index tone-${index % 4}`}>{index + 1}</span>
-                        <span className="route-strip-name">{stop}</span>
-                      </button>
-                    </li>
-                  ))}
+                        <button
+                          type="button"
+                          className="route-strip-card"
+                          onClick={() => focusPlace(stop)}
+                        >
+                          <span className={`route-strip-index tone-${index % 4}`}>
+                            {index + 1}
+                          </span>
+                          <span className="route-strip-body">
+                            <span className="route-strip-name">{stop}</span>
+                            {meta !== '' && <span className="route-strip-meta">{meta}</span>}
+                          </span>
+                          <span className="route-strip-role">
+                            {isFirst ? '起' : isLast ? '终' : '途经'}
+                          </span>
+                        </button>
+                      </li>
+                    );
+                  })}
                 </ol>
               </div>
             )}

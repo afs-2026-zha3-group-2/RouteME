@@ -229,4 +229,125 @@ test.describe('[C] customer service', () => {
     expect(history.ok()).toBeTruthy();
     expect(((await history.json()) as { status: string }).status).toBe('CLOSED');
   });
+
+  test('[C4] keeps the user chat and the admin board in sync end to end', async ({ browser }) => {
+    // 双端同时在线：两个独立 context，避免共享 localStorage 里的身份。
+    test.setTimeout(120_000);
+    // config 已把 ROUTEME_E2E_BASE_URL 折算进 use.baseURL，这里直接复用。
+    const baseURL = test.info().project.use.baseURL ?? 'http://localhost:5173';
+    const userContext = await browser.newContext({ baseURL });
+    const adminContext = await browser.newContext({ baseURL });
+    const userPage = await userContext.newPage();
+    const adminPage = await adminContext.newPage();
+
+    try {
+      const user = await createUserViaApi(userPage, `联动客服_${Date.now()}`);
+
+      // 管理端先停在客服看板，等用户端随后发起会话。
+      await loginAsAdmin(adminPage);
+      await adminPage.goto('/#/admin/service');
+      await expect(adminPage.getByRole('heading', { name: '客户服务' })).toBeVisible();
+
+      // 1) 用户端 UI 发起会话并发第一条消息。
+      await loginAsAccount(userPage, user);
+      await userPage.goto('/#/support');
+      await expect(userPage.getByRole('heading', { name: '联系客服' })).toBeVisible();
+      await userPage.getByRole('button', { name: '开始对话' }).click();
+      await expect(userPage.locator('.help-chat-head')).toContainText('等待客服接入');
+
+      const userMessage = `想确认一下行程发布后多久能被审核 ${Date.now()}`;
+      await userPage.getByPlaceholder('描述你遇到的问题（500 字以内）').fill(userMessage);
+      await userPage.getByRole('button', { name: /发\s*送/ }).click();
+      await expect(
+        userPage.locator('.help-chat .bubble').filter({ hasText: userMessage }),
+      ).toBeVisible();
+
+      // 2) 看板联动：轮询把等待中的会话带进队列，无需手动刷新。
+      await expect(adminPage.getByText('有会话正在等待接入')).toBeVisible({ timeout: 10_000 });
+      const queueItem = adminPage.locator('.admin-queue-item').filter({ hasText: user.nickname });
+      await expect(queueItem).toBeVisible({ timeout: 10_000 });
+      await expect(queueItem).toContainText('等待接入');
+      await expect(queueItem.locator('.admin-queue-count')).toContainText('1');
+
+      // 3) 打开会话先看到用户消息与上下文，再从管理端 UI 接入并回复。
+      await queueItem.click();
+      await expect(
+        adminPage.locator('.service-chat .bubble').filter({ hasText: userMessage }),
+      ).toBeVisible();
+      await expect(adminPage.getByText('用户资料').first()).toBeVisible();
+      await adminPage.getByRole('button', { name: '接入会话' }).click();
+      await expect(adminPage.getByText('处理中').first()).toBeVisible();
+
+      const adminReply = '已收到，发布后 10 分钟内完成审核。';
+      await adminPage.getByPlaceholder('输入回复（500 字以内）').fill(adminReply);
+      await adminPage.getByRole('button', { name: /发\s*送/ }).click();
+      await expect(
+        adminPage.locator('.service-chat .bubble').filter({ hasText: adminReply }),
+      ).toBeVisible();
+
+      // 4) 用户端轮询：状态变为已接入，并出现客服回复。
+      await expect(userPage.locator('.help-chat-head')).toContainText('客服已接入', {
+        timeout: 8_000,
+      });
+      await expect(
+        userPage.locator('.help-chat .bubble').filter({ hasText: adminReply }),
+      ).toBeVisible({ timeout: 8_000 });
+
+      // 5) 反向联动：用户追问后，管理端不刷新也能看到。
+      const followUp = '好的，审核通过后会通知吗？';
+      await userPage.getByPlaceholder('描述你遇到的问题（500 字以内）').fill(followUp);
+      await userPage.getByRole('button', { name: /发\s*送/ }).click();
+      await expect(
+        adminPage.locator('.service-chat .bubble').filter({ hasText: followUp }),
+      ).toBeVisible({ timeout: 8_000 });
+
+      // 6) 管理端结束会话：已结束筛选仍可回查。
+      // 不断言全局等待横幅归零：其他用例可能留着等待接入的会话。
+      await adminPage.getByRole('button', { name: '结束会话' }).click();
+      await adminPage.getByRole('button', { name: /确\s*认/ }).click();
+      await expect(adminPage.getByText('会话已结束，只能查看历史消息。')).toBeVisible();
+      await adminPage.getByRole('button', { name: '会话状态' }).click();
+      await adminPage.getByRole('option', { name: '已结束' }).click();
+      const closedItem = adminPage
+        .locator('.admin-queue-item')
+        .filter({ hasText: user.nickname });
+      await expect(closedItem).toBeVisible();
+      await expect(closedItem).toContainText('已结束');
+
+      // 7) 用户端收到结束：输入区只读，历史消息保留，可重新发起。
+      await expect(userPage.locator('.help-chat-head')).toContainText('已结束', {
+        timeout: 8_000,
+      });
+      await expect(userPage.getByText('会话已结束，只能查看历史消息。')).toBeVisible({
+        timeout: 8_000,
+      });
+      await expect(
+        userPage.locator('.help-chat .bubble').filter({ hasText: userMessage }),
+      ).toBeVisible();
+      await expect(
+        userPage.locator('.help-chat .bubble').filter({ hasText: adminReply }),
+      ).toBeVisible();
+
+      // 8) 重新发起后新会话再次进入看板等待队列；接入并关闭以清理现场。
+      await userPage.getByRole('button', { name: '重新发起会话' }).click();
+      await expect(userPage.locator('.help-chat-head')).toContainText('等待客服接入');
+
+      await adminPage.getByRole('button', { name: '会话状态' }).click();
+      await adminPage.getByRole('option', { name: '等待接入' }).click();
+      const reopenedItem = adminPage
+        .locator('.admin-queue-item')
+        .filter({ hasText: user.nickname });
+      await expect(reopenedItem).toBeVisible({ timeout: 10_000 });
+      await expect(reopenedItem).toContainText('等待接入');
+      await reopenedItem.first().click();
+      await adminPage.getByRole('button', { name: '接入会话' }).click();
+      await expect(adminPage.getByText('处理中').first()).toBeVisible();
+      await adminPage.getByRole('button', { name: '结束会话' }).click();
+      await adminPage.getByRole('button', { name: /确\s*认/ }).click();
+      await expect(adminPage.getByText('会话已结束，只能查看历史消息。')).toBeVisible();
+    } finally {
+      await userContext.close();
+      await adminContext.close();
+    }
+  });
 });

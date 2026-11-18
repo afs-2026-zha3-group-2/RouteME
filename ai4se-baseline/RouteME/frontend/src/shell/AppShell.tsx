@@ -482,7 +482,12 @@ export function AppShell({
             />
             <span className="rail-user-text">
               <b>{currentUser.nickname}</b>
-              <i>{publisherSummary(currentUser) || tripMessages.profileIncompleteShort}</i>
+              {/* 管理员不需要完善资料，副标题固定展示角色而不是「资料未完善」。 */}
+              <i>
+                {isAdmin
+                  ? tripMessages.profileAdminSummary
+                  : publisherSummary(currentUser) || tripMessages.profileIncompleteShort}
+              </i>
             </span>
             <svg className="rail-user-caret" viewBox="0 0 12 12" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round">
               <path d="m4.5 3 3 3-3 3" />
@@ -554,22 +559,24 @@ export function AppShell({
                     )}
                   </a>
                 )}
-                <a
-                  className="rail-menu-item"
-                  role="menuitem"
-                  href="#/profile/setup"
-                  onClick={() => setAccountOpen(false)}
-                >
-                  <svg viewBox="0 0 20 20" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
-                    <path d="M13.4 3.6a1.6 1.6 0 0 1 2.3 0l.7.7a1.6 1.6 0 0 1 0 2.3l-8 8-3.4.7.7-3.4z" />
-                    <path d="M11.6 5.4 14 7.8" />
-                  </svg>
-                  <span>
-                    {isAuthenticated
-                      ? tripMessages.accountMenuEditProfile
-                      : tripMessages.accountMenuViewProfile}
-                  </span>
-                </a>
+                {!isAdmin && (
+                  <a
+                    className="rail-menu-item"
+                    role="menuitem"
+                    href="#/profile/setup"
+                    onClick={() => setAccountOpen(false)}
+                  >
+                    <svg viewBox="0 0 20 20" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M13.4 3.6a1.6 1.6 0 0 1 2.3 0l.7.7a1.6 1.6 0 0 1 0 2.3l-8 8-3.4.7.7-3.4z" />
+                      <path d="M11.6 5.4 14 7.8" />
+                    </svg>
+                    <span>
+                      {isAuthenticated
+                        ? tripMessages.accountMenuEditProfile
+                        : tripMessages.accountMenuViewProfile}
+                    </span>
+                  </a>
+                )}
                 <a
                   className="rail-menu-item"
                   role="menuitem"

@@ -3842,6 +3842,19 @@ button.notification-row:hover {
   background: var(--grad-shore);
 }
 
+/* 分区标题右侧的计数（例如「共 5 站」），不参与左侧竖条布局。 */
+.detail-section > .section-title .section-count {
+  margin-left: auto;
+  padding: 1px 8px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--surface-2);
+  color: var(--ink-2);
+  font-size: 11.5px;
+  font-weight: 650;
+  letter-spacing: 0.02em;
+}
+
 .detail-facts {
   display: grid;
   gap: 8px;
@@ -5557,63 +5570,68 @@ button.notification-row:hover {
   margin-bottom: 12px;
 }
 
+/* 竖向连接点：编号圆点 + 竖线，右侧站点名与分段信息，行尾「起 / 途经 / 终」胶囊。 */
 .route-strip {
   display: flex;
-  align-items: flex-start;
-  gap: 0;
+  flex-direction: column;
   margin: 0;
-  padding: 6px 2px 2px;
+  padding: 2px 0 0;
   list-style: none;
-  overflow-x: auto;
-  overflow-y: hidden;
-  scrollbar-width: thin;
-  -webkit-overflow-scrolling: touch;
 }
 
-/* 横向连接点：编号圆点 + 站点名，圆点之间用细线相连。 */
 .route-strip-item {
   position: relative;
-  display: flex;
-  flex: 1 1 0;
-  min-width: 96px;
+  padding-bottom: 12px;
 }
 
-.route-strip-item::after {
+/* 连接线：从当前圆点下方连到下一站圆点上方，最后一站不画线。 */
+.route-strip-item::before {
   content: '';
   position: absolute;
-  top: 13px;
-  left: calc(50% + 17px);
-  right: calc(-50% + 17px);
-  border-top: 2px solid var(--line-2);
+  top: 32px;
+  bottom: 0;
+  left: 18px;
+  border-left: 2px solid var(--line-2);
 }
 
-.route-strip-item:last-child::after {
+.route-strip-item:last-child {
+  padding-bottom: 0;
+}
+
+.route-strip-item:last-child::before {
   display: none;
 }
 
 .route-strip-card {
   display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 7px;
+  align-items: flex-start;
+  gap: 12px;
   width: 100%;
-  padding: 0 2px;
+  padding: 4px;
   border: 0;
+  border-radius: 12px;
   background: none;
   color: inherit;
   font: inherit;
-  text-align: center;
+  text-align: left;
   cursor: pointer;
+  transition: background 0.16s var(--ease);
+}
+
+.route-strip-card:hover {
+  background: var(--surface-2);
 }
 
 .route-strip-index {
+  position: relative;
+  z-index: 1;
   display: grid;
   place-items: center;
-  width: 26px;
-  height: 26px;
+  width: 28px;
+  height: 28px;
   border-radius: 50%;
   color: #fff;
-  font-size: 11.5px;
+  font-size: 12px;
   font-weight: 800;
   flex: none;
   /* 用底色描边，让连接线在圆点边缘整齐断开。 */
@@ -5626,10 +5644,38 @@ button.notification-row:hover {
 .route-strip-index.tone-2 { background: #1b5a8a; }
 .route-strip-index.tone-3 { background: #0e8074; }
 
+.route-strip-body {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  flex: 1;
+  min-width: 0;
+  padding-top: 3px;
+}
+
 .route-strip-name {
-  font-size: 12.5px;
-  font-weight: 700;
+  font-size: 14px;
+  font-weight: 750;
   line-height: 1.35;
+  overflow-wrap: anywhere;
+}
+
+.route-strip-meta {
+  font-size: 12.5px;
+  line-height: 1.4;
+  color: var(--ink-2);
+}
+
+.route-strip-role {
+  flex: none;
+  margin-top: 3px;
+  padding: 1px 8px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--surface-2);
+  color: var(--ink-2);
+  font-size: 11px;
+  font-weight: 650;
 }
 
 .route-strip-card:hover .route-strip-index {
@@ -5637,6 +5683,19 @@ button.notification-row:hover {
 }
 
 .route-strip-card:hover .route-strip-name {
+  color: var(--t-lagoon);
+}
+
+/* 地图上被选中的途经点，同步高亮对应的连接点行。 */
+.route-strip-item.is-active .route-strip-card {
+  background: var(--surface-2);
+}
+
+.route-strip-item.is-active .route-strip-index {
+  transform: scale(1.08);
+}
+
+.route-strip-item.is-active .route-strip-name {
   color: var(--t-lagoon);
 }
 
@@ -5649,10 +5708,6 @@ button.notification-row:hover {
 @media (max-width: 700px) {
   .map-legend {
     display: none;
-  }
-
-  .route-strip-item {
-    min-width: 84px;
   }
 }
 
@@ -12489,7 +12544,7 @@ a.admin-metric-card:focus-visible {
   line-height: 1.7;
 }
 
-.chsi-demo-hint {
+.chsi-privacy-hint {
   margin: 18px 0 0;
   padding: 12px 14px;
   border: 1px dashed var(--line);

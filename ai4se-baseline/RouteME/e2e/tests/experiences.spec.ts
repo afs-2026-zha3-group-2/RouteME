@@ -250,6 +250,8 @@ test('marks completed trips as shared in my trips', async ({ page }) => {
 
   await loginAs(page, 1);
   await page.goto('/#/mine');
+  // 先等列表行出现再切分组：分段控件在数据回来前点击可能丢事件，页面仍停在「我发布的」。
+  await expect(page.locator('.mine-row', { hasText: title })).toBeVisible();
   await page.locator('.ant-segmented-item', { hasText: '已完成旅行' }).click();
   const row = page.locator('.mine-row', { hasText: title });
   await expect(row.getByRole('button', { name: '发表游后体验' })).toBeVisible();
@@ -261,6 +263,7 @@ test('marks completed trips as shared in my trips', async ({ page }) => {
   await page.getByRole('button', { name: '发布体验' }).click();
 
   await page.getByRole('link', { name: '我的旅行' }).first().click();
+  await expect(page.locator('.mine-row', { hasText: title })).toBeVisible();
   await page.locator('.ant-segmented-item', { hasText: '已完成旅行' }).click();
   await expect(row.getByRole('button', { name: '修改我的体验' })).toBeVisible();
 });

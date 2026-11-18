@@ -490,8 +490,8 @@ routeSectionHint: '在地图上添加并排序途经点，实时查看路线与�
   studentVerifyGuideStep1: '登录学信网（chsi.com.cn），进入「学籍学历」在线验证报告。',
   studentVerifyGuideStep2: '申请《教育部学籍在线验证报告》，记下 12 位在线验证码。',
   studentVerifyGuideStep3: '回到这里填写真实姓名、院校与验证码，提交后立即生效。',
-  studentVerifyDemoHint:
-    '演示核验：不会请求真实学信网，任意 12 位字母或数字验证码即可通过；验证码不落库。',
+  studentVerifyPrivacyHint:
+    '姓名与院校需与学信网学籍信息一致；在线验证码仅用于本次格式核对，提交后不会留存。',
   studentVerifyFieldName: '真实姓名',
   studentVerifyFieldNameHint: '与学信网学籍信息一致',
   studentVerifyFieldSchool: '所在院校',
@@ -614,6 +614,8 @@ routeSectionHint: '在地图上添加并排序途经点，实时查看路线与�
   profileCompleteBadge: '资料已完善',
   profileIncompleteBadge: '资料未完善',
   profileIncompleteShort: '资料未完善',
+  /** 管理员账号不参与资料完善流程，侧栏副标题固定展示角色。 */
+  profileAdminSummary: '平台管理员',
   profileLoginRequired: '登录后可以完善自己的资料。',
   profileIncompleteNoticeTitle: '该用户尚未完善资料',
   profileIncompleteNoticeBody: '先看看 TA 已经填写的部分，未填字段不会显示空行。',
@@ -628,6 +630,7 @@ routeSectionHint: '在地图上添加并排序途经点，实时查看路线与�
   profileInterestsSection: '旅行兴趣',
   profileBioSection: '个人简介',
   profileEmpty: '该用户还没有填写更多资料',
+  profileAdminEmpty: '平台管理员账号，无需填写个人资料。',
   profileEditEntry: '编辑资料',
   profileViewEntry: '查看主页',
   profileCompleteEntry: '完善资料',

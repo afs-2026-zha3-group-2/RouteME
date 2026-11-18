@@ -117,7 +117,7 @@ export function StudentVerificationPage({ currentUser, token, onVerified }: Prop
         <div className="chsi-hero-main">
           <span className="chsi-eyebrow">
             <StudentShield small />
-            {tripMessages.studentVerifyTitle} · 演示核验
+            {tripMessages.studentVerifyTitle}
           </span>
           <h1>先确认你是在校大学生，再一起出发</h1>
           <p>{tripMessages.studentVerifySubtitle}</p>
@@ -200,7 +200,7 @@ export function StudentVerificationPage({ currentUser, token, onVerified }: Prop
                 <p>{tripMessages.studentVerifyGuideStep3}</p>
               </li>
             </ol>
-            <p className="chsi-demo-hint">{tripMessages.studentVerifyDemoHint}</p>
+            <p className="chsi-privacy-hint">{tripMessages.studentVerifyPrivacyHint}</p>
           </section>
 
           <section className="chsi-card chsi-form">
