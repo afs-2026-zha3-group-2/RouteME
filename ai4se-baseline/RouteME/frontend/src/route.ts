@@ -9,6 +9,9 @@ export type Route =
   | { name: 'share'; tripId: number }
   | { name: 'profileSetup' }
   | { name: 'userProfile'; userId: number }
+  | { name: 'notifications' }
+  | { name: 'creditRecords' }
+  | { name: 'reportDetail'; reportId: number }
   | { name: 'creditLearning' }
   | { name: 'map'; provinceCode?: string; cityCode?: string }
   | { name: 'support' }
@@ -56,6 +59,17 @@ export function parseRoute(hash: string): Route {
   }
   if (path === '/support') {
     return { name: 'support' };
+  }
+  // 通知中心与通知跳转的独立页面（REQ-028）。
+  if (path === '/notifications') {
+    return { name: 'notifications' };
+  }
+  if (path === '/credit/records') {
+    return { name: 'creditRecords' };
+  }
+  const reportDetail = /^\/reports\/(\d+)$/.exec(path);
+  if (reportDetail) {
+    return { name: 'reportDetail', reportId: Number(reportDetail[1]) };
   }
   if (path === '/admin') {
     return { name: 'adminDashboard' };
@@ -143,6 +157,15 @@ export function routeToHash(route: Route): string {
   }
   if (route.name === 'support') {
     return '#/support';
+  }
+  if (route.name === 'notifications') {
+    return '#/notifications';
+  }
+  if (route.name === 'creditRecords') {
+    return '#/credit/records';
+  }
+  if (route.name === 'reportDetail') {
+    return `#/reports/${route.reportId}`;
   }
   if (route.name === 'adminDashboard') {
     return '#/admin';

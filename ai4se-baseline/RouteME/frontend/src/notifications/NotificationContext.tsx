@@ -16,6 +16,8 @@ import {
 } from './notificationModel';
 
 type NotificationContextValue = {
+  /** 当前登录用户 id；跳转「账号」类通知时需要拼个人主页地址。 */
+  currentUserId: number;
   items: AppNotification[];
   counts: NotificationCounts;
   /** 每个会话的未读消息数，键为 `"${tripId}:${otherId}"`。 */
@@ -110,7 +112,12 @@ export function NotificationProvider({ currentUser, children }: Props) {
           return;
         }
         setState((previous) => applyEvent(previous, event, activeRef.current));
-        if (event.message !== null && event.notification.type === 'message') {
+        if (
+          event.message !== null
+          && event.notification.type === 'CHAT'
+          && event.notification.trip_id !== null
+          && event.notification.actor !== null
+        ) {
           setLastMessageEvent({
             tripId: event.notification.trip_id,
             otherId: event.notification.actor.id,
@@ -119,7 +126,7 @@ export function NotificationProvider({ currentUser, children }: Props) {
         }
         if (shouldToast(event.notification, activeRef.current)) {
           message.info({
-            content: event.notification.text,
+            content: event.notification.content,
             key: `notification-${event.notification.id}`,
             duration: 4,
           });
@@ -186,6 +193,7 @@ export function NotificationProvider({ currentUser, children }: Props) {
 
   const value = useMemo<NotificationContextValue>(
     () => ({
+      currentUserId: currentUser.id,
       items: state.items,
       counts: state.counts,
       unreadConversations,
@@ -199,6 +207,7 @@ export function NotificationProvider({ currentUser, children }: Props) {
       lastMessageEvent,
     }),
     [
+      currentUser.id,
       state.items,
       state.counts,
       unreadConversations,

@@ -1,6 +1,7 @@
 package routeme.controller;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -177,6 +178,43 @@ class ReportControllerTest {
         mockMvc.perform(post("/api/reports")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"target_type\":\"trip\",\"target_id\":3,\"reason\":\"other\"}"))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.code").value("DEMO_USER_REQUIRED"));
+    }
+
+    @Test
+    void in_myReports_out_safeFieldsOnly() throws Exception {
+        mockMvc.perform(post("/api/reports")
+                        .header("X-User-Id", "2")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"target_type\":\"user\",\"target_id\":3,\"reason\":\"harassment\"}"))
+                .andExpect(status().isCreated());
+        Long reportId = jdbcClient.sql(
+                        "SELECT id FROM reports WHERE reporter_id = 2 ORDER BY id DESC LIMIT 1")
+                .query(Long.class)
+                .single();
+        jdbcClient.sql("""
+                        UPDATE reports
+                           SET status = 'RESOLVED',
+                               resolution_note = '内部备注XYZ',
+                               processed_by = 1
+                         WHERE id = ?
+                        """).param(reportId).update();
+
+        mockMvc.perform(get("/api/reports/mine").header("X-User-Id", "2"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].id").value(reportId))
+                .andExpect(jsonPath("$[0].code").value("R-" + reportId))
+                .andExpect(jsonPath("$[0].target_type").value("user"))
+                .andExpect(jsonPath("$[0].reason").value("harassment"))
+                .andExpect(jsonPath("$[0].status").value("RESOLVED"))
+                .andExpect(jsonPath("$[0].resolution_note").doesNotExist())
+                .andExpect(jsonPath("$[0].processed_by").doesNotExist());
+    }
+
+    @Test
+    void in_myReportsWithoutIdentity_out_demoUserRequired() throws Exception {
+        mockMvc.perform(get("/api/reports/mine"))
                 .andExpect(status().isUnauthorized())
                 .andExpect(jsonPath("$.code").value("DEMO_USER_REQUIRED"));
     }

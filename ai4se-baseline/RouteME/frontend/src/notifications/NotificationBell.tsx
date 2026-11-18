@@ -1,11 +1,12 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
+import { message } from 'antd';
 import { notificationMessages } from '../i18n/notificationMessages';
 import type { AppNotification } from '../types';
 import { NotificationBadge } from './NotificationBadge';
 import { NotificationPanel } from './NotificationPanel';
 import { useNotifications } from './NotificationContext';
-import { notificationHref } from './notificationModel';
+import { notificationAvailable, notificationHref } from './notificationModel';
 
 /** 面板总宽（含内边距）；窄屏改为左右各留 8px 的整行宽度。 */
 const PANEL_WIDTH = 384;
@@ -31,7 +32,8 @@ type Anchor = {
  * 表现为「点了没反应」，和左下角账号菜单一样用纯定位即可。
  */
 export function NotificationBell() {
-  const { items, counts, loadFailed, markOneRead, markAllRead, reload } = useNotifications();
+  const { currentUserId, items, counts, loadFailed, markOneRead, markAllRead, reload } =
+    useNotifications();
   const [open, setOpen] = useState(false);
   const [anchor, setAnchor] = useState<Anchor | null>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
@@ -124,8 +126,17 @@ export function NotificationBell() {
 
   const selectItem = (item: AppNotification) => {
     markOneRead(item.id);
-    window.location.hash = notificationHref(item);
+    if (!notificationAvailable(item)) {
+      message.warning(notificationMessages.unavailable);
+      return;
+    }
+    window.location.hash = notificationHref(item, currentUserId);
     setOpen(false);
+  };
+
+  const viewAll = () => {
+    setOpen(false);
+    window.location.hash = '#/notifications';
   };
 
   const panel = (
@@ -147,6 +158,7 @@ export function NotificationBell() {
         onRetry={reload}
         onMarkAll={markAllRead}
         onSelect={selectItem}
+        onViewAll={viewAll}
       />
     </div>
   );

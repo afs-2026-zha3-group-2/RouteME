@@ -17,7 +17,16 @@ import type { DemoUser, UserProfile } from '../types';
 import { Avatar } from './Avatar';
 import { BrandMark } from './BrandMark';
 
-type NavKey = 'discover' | 'map' | 'create' | 'aiPlanner' | 'mine' | 'chat' | 'support' | 'admin';
+type NavKey =
+  | 'discover'
+  | 'map'
+  | 'create'
+  | 'aiPlanner'
+  | 'mine'
+  | 'chat'
+  | 'notifications'
+  | 'support'
+  | 'admin';
 
 type NavItem = { key: NavKey; label: string; href: string };
 
@@ -34,15 +43,22 @@ const NAV_ITEMS: NavItem[] = [
 const SUPPORT_ITEM: NavItem = { key: 'support', label: adminMessages.supportNav, href: '#/support' };
 
 // 侧栏比底部导航多一个客服入口：窄屏改用悬浮入口与账号菜单进入，避免底栏挤成 7 项。
+const NOTIFICATIONS_ITEM: NavItem = {
+  key: 'notifications',
+  label: notificationMessages.centerEntry,
+  href: '#/notifications',
+};
+
 const RAIL_ITEMS: NavItem[] = [
   ...NAV_ITEMS,
+  NOTIFICATIONS_ITEM,
   SUPPORT_ITEM,
 ];
 
 const NAV_GROUPS: Array<{ title: string; items: NavItem[] }> = [
   { title: '浏览', items: RAIL_ITEMS.filter((item) => item.key === 'discover' || item.key === 'map') },
   { title: '规划', items: RAIL_ITEMS.filter((item) => item.key === 'create' || item.key === 'aiPlanner') },
-  { title: '我的', items: RAIL_ITEMS.filter((item) => item.key === 'mine' || item.key === 'chat' || item.key === 'support') },
+  { title: '我的', items: RAIL_ITEMS.filter((item) => item.key === 'mine' || item.key === 'chat' || item.key === 'notifications' || item.key === 'support') },
 ];
 
 function activeKey(route: Route): NavKey | null {
@@ -66,6 +82,13 @@ function activeKey(route: Route): NavKey | null {
   }
   if (route.name === 'support') {
     return 'support';
+  }
+  if (
+    route.name === 'notifications'
+    || route.name === 'creditRecords'
+    || route.name === 'reportDetail'
+  ) {
+    return 'notifications';
   }
   if (route.name.startsWith('admin')) {
     return 'admin';
@@ -139,6 +162,22 @@ function NavIcon({ name }: { name: NavKey }) {
         strokeLinejoin="round"
       >
         <path d="M17 11.4a2 2 0 0 1-2 2H7l-3.4 2.6V5a2 2 0 0 1 2-2h9.4a2 2 0 0 1 2 2z" />
+      </svg>
+    );
+  }
+  if (name === 'notifications') {
+    return (
+      <svg
+        viewBox="0 0 20 20"
+        aria-hidden="true"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.7"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      >
+        <path d="M10 2.8a4.3 4.3 0 0 0-4.3 4.3v2.3L4 12.4h12l-1.7-3V9.4A4.3 4.3 0 0 0 10 2.8Z" />
+        <path d="M8.2 15a1.9 1.9 0 0 0 3.6 0" />
       </svg>
     );
   }
@@ -401,9 +440,11 @@ export function AppShell({ currentUser, onLogout, route, children }: Props) {
                     href={item.href}
                     aria-current={active === item.key ? 'page' : undefined}
                     aria-label={
-                      item.key === 'chat' && counts.message > 0
-                        ? notificationMessages.chatUnreadLabel(counts.message)
-                        : undefined
+                      item.key === 'chat' && counts.by_type.CHAT > 0
+                        ? notificationMessages.chatUnreadLabel(counts.by_type.CHAT)
+                        : item.key === 'notifications' && counts.total > 0
+                          ? notificationMessages.centerEntryUnread(counts.total)
+                          : undefined
                     }
                     aria-disabled={navBlockedTitle(item) !== undefined || undefined}
                     title={navBlockedTitle(item)}
@@ -416,7 +457,9 @@ export function AppShell({ currentUser, onLogout, route, children }: Props) {
                     <NavIcon name={item.key} />
                     <span>{item.label}</span>
                     {item.key === 'chat' ? (
-                      <NotificationBadge count={counts.message} testId="rail-chat-badge" />
+                      <NotificationBadge count={counts.by_type.CHAT} testId="rail-chat-badge" />
+                    ) : item.key === 'notifications' ? (
+                      <NotificationBadge count={counts.total} testId="rail-notification-badge" />
                     ) : null}
                   </a>
                 ))}
@@ -474,6 +517,24 @@ export function AppShell({ currentUser, onLogout, route, children }: Props) {
                 style={{ left: accountMenuAnchor.left, bottom: accountMenuAnchor.bottom }}
                 onKeyDown={moveAccountMenuFocus}
               >
+                <a
+                  className="rail-menu-item"
+                  role="menuitem"
+                  href="#/notifications"
+                  aria-label={
+                    counts.total > 0
+                      ? notificationMessages.centerEntryUnread(counts.total)
+                      : notificationMessages.centerEntry
+                  }
+                  onClick={() => setAccountOpen(false)}
+                >
+                  <svg viewBox="0 0 20 20" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M10 2.8a4.3 4.3 0 0 0-4.3 4.3v2.3L4 12.4h12l-1.7-3V9.4A4.3 4.3 0 0 0 10 2.8Z" />
+                    <path d="M8.2 15a1.9 1.9 0 0 0 3.6 0" />
+                  </svg>
+                  <span>{notificationMessages.centerEntry}</span>
+                  <NotificationBadge count={counts.total} testId="account-notification-badge" />
+                </a>
                 {!isAdmin && (
                   <a
                     className="rail-menu-item"
@@ -550,8 +611,8 @@ export function AppShell({ currentUser, onLogout, route, children }: Props) {
             href={item.href}
             aria-current={active === item.key ? 'page' : undefined}
             aria-label={
-              item.key === 'chat' && counts.message > 0
-                ? notificationMessages.chatUnreadLabel(counts.message)
+              item.key === 'chat' && counts.by_type.CHAT > 0
+                ? notificationMessages.chatUnreadLabel(counts.by_type.CHAT)
                 : undefined
             }
             aria-disabled={navBlockedTitle(item) !== undefined || undefined}
@@ -565,7 +626,7 @@ export function AppShell({ currentUser, onLogout, route, children }: Props) {
             <NavIcon name={item.key} />
             <span>{item.label}</span>
             {item.key === 'chat' ? (
-              <NotificationBadge count={counts.message} testId="tab-chat-badge" />
+              <NotificationBadge count={counts.by_type.CHAT} testId="tab-chat-badge" />
             ) : null}
           </a>
         ))}

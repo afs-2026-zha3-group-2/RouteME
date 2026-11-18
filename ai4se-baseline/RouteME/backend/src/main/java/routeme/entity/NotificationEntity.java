@@ -6,6 +6,7 @@ import com.baomidou.mybatisplus.annotation.TableName;
 
 import java.time.Instant;
 
+import routeme.enums.NotificationPriorityEnum;
 import routeme.enums.NotificationTypeEnum;
 import routeme.pojo.Notification;
 
@@ -24,6 +25,14 @@ public class NotificationEntity {
 
     private String type;
 
+    private String event;
+
+    private String title;
+
+    private String content;
+
+    private String priority;
+
     private Long actorId;
 
     private Long tripId;
@@ -31,6 +40,12 @@ public class NotificationEntity {
     private Long applicationId;
 
     private Long messageId;
+
+    private Long reportId;
+
+    private Long sessionId;
+
+    private String dedupeKey;
 
     private String createdAt;
 
@@ -41,10 +56,17 @@ public class NotificationEntity {
         entity.setId(notification.id());
         entity.setRecipientId(notification.recipientId());
         entity.setType(notification.type().wireValue());
+        entity.setEvent(notification.event());
+        entity.setTitle(notification.title());
+        entity.setContent(notification.content());
+        entity.setPriority(notification.priority().wireValue());
         entity.setActorId(notification.actorId());
         entity.setTripId(notification.tripId());
         entity.setApplicationId(notification.applicationId());
         entity.setMessageId(notification.messageId());
+        entity.setReportId(notification.reportId());
+        entity.setSessionId(notification.sessionId());
+        entity.setDedupeKey(notification.dedupeKey());
         entity.setCreatedAt(notification.createdAt().toString());
         entity.setReadAt(notification.readAt() == null ? null : notification.readAt().toString());
         return entity;
@@ -55,10 +77,17 @@ public class NotificationEntity {
                 id,
                 recipientId,
                 NotificationTypeEnum.fromWire(type),
+                event,
+                title,
+                content,
+                NotificationPriorityEnum.valueOf(priority),
                 actorId,
                 tripId,
                 applicationId,
                 messageId,
+                reportId,
+                sessionId,
+                dedupeKey,
                 Instant.parse(createdAt),
                 readAt == null ? null : Instant.parse(readAt));
     }
@@ -85,6 +114,38 @@ public class NotificationEntity {
 
     public void setType(String type) {
         this.type = type;
+    }
+
+    public String getEvent() {
+        return event;
+    }
+
+    public void setEvent(String event) {
+        this.event = event;
+    }
+
+    public String getTitle() {
+        return title;
+    }
+
+    public void setTitle(String title) {
+        this.title = title;
+    }
+
+    public String getContent() {
+        return content;
+    }
+
+    public void setContent(String content) {
+        this.content = content;
+    }
+
+    public String getPriority() {
+        return priority;
+    }
+
+    public void setPriority(String priority) {
+        this.priority = priority;
     }
 
     public Long getActorId() {
@@ -117,6 +178,30 @@ public class NotificationEntity {
 
     public void setMessageId(Long messageId) {
         this.messageId = messageId;
+    }
+
+    public Long getReportId() {
+        return reportId;
+    }
+
+    public void setReportId(Long reportId) {
+        this.reportId = reportId;
+    }
+
+    public Long getSessionId() {
+        return sessionId;
+    }
+
+    public void setSessionId(Long sessionId) {
+        this.sessionId = sessionId;
+    }
+
+    public String getDedupeKey() {
+        return dedupeKey;
+    }
+
+    public void setDedupeKey(String dedupeKey) {
+        this.dedupeKey = dedupeKey;
     }
 
     public String getCreatedAt() {

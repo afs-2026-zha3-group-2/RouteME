@@ -29,6 +29,7 @@ import type {
   LeaveReason,
   LeaveRecord,
   LeaveResult,
+  MyReport,
   MyTrips,
   NotificationCounts,
   NotificationList,
@@ -393,7 +394,16 @@ export async function sendMessage(
   return (await response.json()) as ChatMessage;
 }
 
-/** 最新 50 条通知与三项未读计数（同一快照）。 */
+/**
+ * 我提交过的举报（`GET /reports/mine`）。
+ * 只含举报人已经知道的业务事实；管理员备注与处理人不会下发。
+ */
+export async function loadMyReports(userId: number, limit = 50): Promise<MyReport[]> {
+  const response = await request(`/reports/mine?limit=${limit}`, undefined, userId);
+  return (await response.json()) as MyReport[];
+}
+
+/** 最新 50 条通知与按类型拆分的未读计数（同一快照）。 */
 export async function loadNotifications(userId: number): Promise<NotificationList> {
   const response = await request('/notifications', undefined, userId);
   return (await response.json()) as NotificationList;

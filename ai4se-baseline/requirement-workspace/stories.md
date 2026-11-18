@@ -428,39 +428,46 @@
 
 ---
 
-# Story list — REQ-023（实时通知与未读计数）
+# Story list — REQ-028（实时通知中心与未读计数）
 
-- **来源：** 发起人 2026-11-17 在 `#/chat` 的观察——「申请到达 / 我的申请被接受 / 收到新消息都没有实时提示，也没有显示收到几条通知的红点」；优先级 P0；迭代 3；5 点（S23-1 ~ S23-5 各 1 点）；落点页面：全局壳层、聊天页、行程详情、我的旅行
-- **Change：** `add-realtime-notifications`（`notifications` ADDED：6 Requirement / 26 Scenario）
-- **口径：** 一条故事 = 一条垂直切片（记录 → 推送 → 计数 → 指示与跳转），拆为 S23-1 ~ S23-5 五个可独立验收的步骤（S23-5 覆盖消息类通知的创建与自消息守卫）
-- **需求编号说明：** `main` 已占用 REQ-001 ~ REQ-022，本需求按「后到者顺延」登记为 **REQ-023**
-- **更新时间：** 2026-11-17
+- **来源：** 发起人 2026-11-17 在 `#/chat` 的观察——「申请到达 / 我的申请被接受 / 收到新消息都没有实时提示，也没有显示收到几条通知的红点」；2026-11-18 追加要求：扩展为覆盖八类业务事件的完整通知中心；优先级 P0；迭代 3；8 点（S29-1 ~ S29-8 各 1 点）；落点页面：全局壳层、通知中心、聊天页、行程详情、信用记录、举报详情、账号菜单、客服
+- **Change：** `add-realtime-notifications`（`notifications` ADDED：8 Requirement / 36 Scenario）
+- **口径：** 一条故事 = 一条垂直切片（记录 → 八类事件接入 → 计数 → 通知中心与跳转 → 实时投递），拆为 S29-1 ~ S29-8 八个可独立验收的步骤
+- **需求编号说明：** 2026-11-17 起草时登记为 REQ-023；`main` 上 REQ-023 已被 `add-experience-like-credit` 占用，2026-11-18 扩围时按「后到者顺延」改为 **REQ-028 / S29**
+- **更新时间：** 2026-11-18
 
 | Story | Title | 角色 | Priority | Iteration | Points | Page | Parent REQ | Change | Status |
 |---|---|---|---|---|---|---|---|---|---|
-| S23-1 | 申请到达时告知发布者 | 行程发布者 | P0 | 迭代 3 | 1 | 全局壳层 / 行程详情 | REQ-023 | `add-realtime-notifications` | P1 drafted（2026-11-17） |
-| S23-2 | 申请被裁决时告知申请者 | 申请者 | P0 | 迭代 3 | 1 | 全局壳层 / 我的旅行 | REQ-023 | `add-realtime-notifications` | P1 drafted（2026-11-17） |
-| S23-3 | 未读计数与已读边界 | 平台用户 | P0 | 迭代 3 | 1 | 全局壳层 / 聊天页 | REQ-023 | `add-realtime-notifications` | P1 drafted（2026-11-17） |
-| S23-4 | 数字徽标与一键跳转 | 平台用户 | P0 | 迭代 3 | 1 | 全局壳层 / 聊天页 | REQ-023 | `add-realtime-notifications` | P1 drafted（2026-11-17） |
-| S23-5 | 新消息到达时告知接收方 | 会话双方 | P0 | 迭代 3 | 1 | 全局壳层 / 聊天页 | REQ-023 | `add-realtime-notifications` | P1 drafted（2026-11-17） |
+| S29-1 | 记录八类通知并保证去重与保留 | 平台用户 | P0 | 迭代 3 | 1 | 全局壳层 | REQ-028 | `add-realtime-notifications` | P4 verified（2026-11-18） |
+| S29-2 | 行程生命周期通知 | 发布者 / 同行者 | P0 | 迭代 3 | 1 | 行程详情 | REQ-028 | `add-realtime-notifications` | P4 verified（2026-11-18） |
+| S29-3 | 申请到达与裁决通知 | 发布者 / 申请者 | P0 | 迭代 3 | 1 | 申请处理 / 行程详情 | REQ-028 | `add-realtime-notifications` | P4 verified（2026-11-18） |
+| S29-4 | 聊天与信用通知 | 会话双方 / 信用变动用户 | P0 | 迭代 3 | 1 | 聊天页 / 信用记录 | REQ-028 | `add-realtime-notifications` | P4 verified（2026-11-18） |
+| S29-5 | 举报、账号、客服与系统通知 | 举报人 / 受限账号 / 客服用户 | P0 | 迭代 3 | 1 | 举报详情 / 账号 / 客服 | REQ-028 | `add-realtime-notifications` | P4 verified（2026-11-18） |
+| S29-6 | 通知中心、筛选与跳转 | 平台用户 | P0 | 迭代 3 | 1 | 通知中心 | REQ-028 | `add-realtime-notifications` | P4 verified（2026-11-18） |
+| S29-7 | 未读计数与标读规则 | 平台用户 | P0 | 迭代 3 | 1 | 全局壳层 / 通知中心 | REQ-028 | `add-realtime-notifications` | P4 verified（2026-11-18） |
+| S29-8 | 实时投递与失败隔离 | 平台用户 | P0 | 迭代 3 | 1 | 全局壳层 | REQ-028 | `add-realtime-notifications` | P4 verified（2026-11-18） |
 
-## Traceability（REQ-023）
+## Traceability（REQ-028）
 
 | Story | Requirement scenarios | Change spec | Story file |
 |---|---|---|---|
-| S23-1 | REQ-023 §4 S23-1、S23-4、S23-10、S23-23 | `openspec/changes/add-realtime-notifications/specs/notifications/spec.md`（ADDED：申请类通知） | `stories/add-realtime-notifications.story.md` |
-| S23-2 | REQ-023 §4 S23-2、S23-3、S23-7、S23-23、S23-26 | 同上（裁决通知与失败隔离） | 同上 |
-| S23-3 | REQ-023 §4 S23-7 ~ S23-9、S23-16 ~ S23-20 | 同上（计数、列表、已读范围） | 同上 |
-| S23-4 | REQ-023 §4 S23-11 ~ S23-15、S23-21 ~ S23-23、S23-25、S23-26 | 同上（实时投递与指示器） | 同上 |
-| S23-5 | REQ-023 §4 S23-5、S23-6、S23-10、S23-23、S23-24 | 同上（消息类通知与自消息守卫） | 同上 |
+| S29-1 | REQ-028 §4 S29-1 ~ S29-4 | `openspec/changes/add-realtime-notifications/specs/notifications/spec.md`（ADDED：通知记录与生命周期） | `stories/add-realtime-notifications.story.md` |
+| S29-2 | REQ-028 §4 S29-5 ~ S29-8、S29-12、S29-19 | 同上（行程生命周期事件） | 同上 |
+| S29-3 | REQ-028 §4 S29-9 ~ S29-12、S29-22 | 同上（申请与裁决事件） | 同上 |
+| S29-4 | REQ-028 §4 S29-13 ~ S29-15、S29-31 | 同上（聊天、信用、举报与账号事件、未读计数与标读规则） | 同上 |
+| S29-5 | REQ-028 §4 S29-16 ~ S29-20 | 同上（聊天、信用、举报与账号事件、客服与系统事件） | 同上 |
+| S29-6 | REQ-028 §4 S29-21 ~ S29-24、S29-28 | 同上（通知中心与跳转） | 同上 |
+| S29-7 | REQ-028 §4 S29-25 ~ S29-32 | 同上（计数与标读） | 同上 |
+| S29-8 | REQ-028 §4 S29-33 ~ S29-36 | 同上（实时与失败隔离） | 同上 |
 
-## Notes（REQ-023）
+## Notes（REQ-028）
 
-- **不拆 change：** 四步共享同一张表、同一份计数口径与同一个推送通道；拆成四个 change 只会得到「有通知没计数」或「有计数没入口」的半成品。
-- **只读依赖既有能力：** `trip-companions`（申请 / 裁决语义）与聊天准入规则保持不变，本 change 只在既有成功路径上追加通知；因此不 MODIFY `trip-companions`（其 Delta 未归档）。
+- **不拆 change：** 八类事件共享同一张表、同一份计数口径、同一个通知中心与推送通道；拆分只会得到「有通知没入口」或「有入口没内容」的半成品。
+- **只读依赖既有能力：** 行程、申请、聊天、信用、举报、账号、客服与资料服务的业务规则保持不变，本 change 只在既有成功路径上追加通知；因此不 MODIFY `trip-companions`（其 Delta 未归档）。
 - **拒信也通知（D5）：** 发起人只点名「被接受」，但沉默地拒绝是更差的失败模式；Delta 把 reject 显式写成场景。
-- **刻意排除：** 通知中心历史页、筛选 / 分组、按类型偏好、邮件 / 短信 / OS 推送、浏览器关闭时的推送、WebSocket 与消息队列。
-- **降级口径：** 推送只是延迟优化，REST 列表才是真相；断线、后端重启、推送失败都不改变计数，也不影响申请 / 裁决 / 发消息本身。
+- **类型跳转：** 由后端下发 `target.kind`，前端不自行猜测；目标失效时只提示不跳转。
+- **刻意排除：** 通知偏好、保留策略、搜索、邮件 / 短信 / OS 推送、浏览器关闭时的推送、WebSocket 与消息队列。
+- **降级口径：** 推送只是延迟优化，REST 列表才是真相；断线、后端重启、推送失败都不改变计数，也不影响业务动作本身。
 
 ---
 

@@ -1,6 +1,7 @@
 import { notificationMessages } from '../i18n/notificationMessages';
 import { formatChatTime } from '../utils/chatTime';
 import type { AppNotification } from '../types';
+import { isUnread } from './notificationModel';
 
 type Props = {
   items: AppNotification[];
@@ -9,6 +10,7 @@ type Props = {
   onRetry: () => void;
   onMarkAll: () => void;
   onSelect: (item: AppNotification) => void;
+  onViewAll: () => void;
 };
 
 /**
@@ -22,6 +24,7 @@ export function NotificationPanel({
   onRetry,
   onMarkAll,
   onSelect,
+  onViewAll,
 }: Props) {
   return (
     <div
@@ -54,28 +57,49 @@ export function NotificationPanel({
         <p className="notification-empty">{notificationMessages.empty}</p>
       ) : (
         <div className="notification-panel-list">
-          {items.map((item) => (
-            <button
-              key={item.id}
-              type="button"
-              className={item.read ? 'notification-item' : 'notification-item is-unread'}
-              data-testid="notification-item"
-              onClick={() => onSelect(item)}
-            >
-              <span className="notification-item-meta">
-                <span className="notification-item-kind" data-kind={item.type}>
-                  {notificationMessages.typeLabel(item.type)}
+          {items.map((item) => {
+            const unread = isUnread(item);
+            return (
+              <button
+                key={item.id}
+                type="button"
+                className={unread ? 'notification-item is-unread' : 'notification-item'}
+                data-testid="notification-item"
+                data-type={item.type}
+                onClick={() => onSelect(item)}
+              >
+                <span className="notification-item-meta">
+                  <span className="notification-item-kind" data-kind={item.type}>
+                    {notificationMessages.typeLabel(item.type)}
+                  </span>
+                  <span>{formatChatTime(item.created_at)}</span>
+                  {item.priority === 'HIGH' ? (
+                    <span className="notification-priority-flag">
+                      {notificationMessages.priorityHigh}
+                    </span>
+                  ) : null}
+                  {unread ? (
+                    <span className="notification-unread-flag">{notificationMessages.unread}</span>
+                  ) : null}
                 </span>
-                <span>{formatChatTime(item.created_at)}</span>
-                {item.read ? null : (
-                  <span className="notification-unread-flag">{notificationMessages.unread}</span>
-                )}
-              </span>
-              <span className="notification-item-text">{item.text}</span>
-            </button>
-          ))}
+                <span className="notification-item-title">{item.title}</span>
+                <span className="notification-item-text">{item.content}</span>
+                {item.related_available === false ? (
+                  <span className="notification-unavailable">
+                    {notificationMessages.unavailable}
+                  </span>
+                ) : null}
+              </button>
+            );
+          })}
         </div>
       )}
+
+      <div className="notification-panel-foot">
+        <a className="notification-view-all" href="#/notifications" onClick={onViewAll}>
+          {notificationMessages.viewAll}
+        </a>
+      </div>
     </div>
   );
 }

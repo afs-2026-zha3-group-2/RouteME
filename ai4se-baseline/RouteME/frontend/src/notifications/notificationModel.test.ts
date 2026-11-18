@@ -6,14 +6,18 @@ import {
   badgeLabel,
   conversationKey,
   emptyCounts,
+  isUnread,
   markAllLocal,
   markConversationLocal,
   markOneLocal,
+  notificationAvailable,
   notificationHref,
   shouldToast,
+  typeCount,
   unreadByConversation,
   type NotificationState,
 } from './notificationModel';
+import { NOTIFICATION_TYPES } from '../types';
 import type {
   AppNotification,
   ChatMessage,
@@ -21,6 +25,8 @@ import type {
   NotificationCounts,
   NotificationEvent,
   NotificationList,
+  NotificationTarget,
+  NotificationType,
 } from '../types';
 
 const demoUser = (id: number, nickname = `用户${id}`): DemoUser => ({
@@ -32,26 +38,51 @@ const demoUser = (id: number, nickname = `用户${id}`): DemoUser => ({
   profile_complete: true,
 });
 
+const target = (overrides: Partial<NotificationTarget> = {}): NotificationTarget => ({
+  kind: 'trip',
+  trip_id: 3,
+  other_user_id: null,
+  application_id: null,
+  report_id: null,
+  session_id: null,
+  ...overrides,
+});
+
 const notification = (
   overrides: Partial<AppNotification> & { id: number },
 ): AppNotification => ({
-  type: 'message',
+  type: 'CHAT',
+  event: 'message',
+  title: '新的同行消息',
+  content: '「用户2」发来一条消息（「周末去珠海骑行」）。',
+  priority: 'NORMAL',
+  status: 'UNREAD',
+  read_at: null,
   actor: demoUser(2),
   trip_id: 3,
   trip_title: '周末去珠海骑行',
   application_id: null,
   message_id: null,
-  text: '「用户2」发来一条消息（「周末去珠海骑行」）',
+  report_id: null,
+  session_id: null,
+  target: target({
+    kind: 'chat',
+    trip_id: 3,
+    other_user_id: 2,
+  }),
+  related_available: true,
   created_at: '2026-11-17T09:00:00Z',
-  read: false,
   ...overrides,
 });
 
-const counts = (total: number, application: number, message: number): NotificationCounts => ({
-  total,
-  application,
-  message,
-});
+const counts = (
+  values: Partial<Record<NotificationType, number>> = {},
+  total?: number,
+): NotificationCounts => {
+  const byType = { ...emptyCounts().by_type, ...values };
+  const sum = NOTIFICATION_TYPES.reduce((sum, type) => sum + byType[type], 0);
+  return { total: total ?? sum, by_type: byType };
+};
 
 const state = (
   items: AppNotification[] = [],
@@ -79,18 +110,29 @@ const event = (
 ): NotificationEvent => ({ notification: item, message });
 
 describe('notificationModel', () => {
+  describe('F0 counts', () => {
+    it('exposes eight counters and zero-fills missing types', () => {
+      expect(Object.keys(emptyCounts().by_type)).toEqual([...NOTIFICATION_TYPES]);
+      expect(typeCount(counts({ CREDIT: 2 }), 'CREDIT')).toBe(2);
+      expect(typeCount(counts(), 'MYSTERY')).toBe(0);
+    });
+  });
+
   describe('F1 applySnapshot', () => {
     it('merges local events and the server list by id without duplicates', () => {
-      const local = state([notification({ id: 100 })], counts(1, 0, 1));
-      const server = list([
-        notification({ id: 100, created_at: '2026-11-17T09:01:00Z' }),
-        notification({ id: 99, created_at: '2026-11-17T08:59:00Z' }),
-      ]);
+      const local = state([notification({ id: 100 })], counts({ CHAT: 1 }));
+      const server = list(
+        [
+          notification({ id: 100, created_at: '2026-11-17T09:01:00Z' }),
+          notification({ id: 99, created_at: '2026-11-17T08:59:00Z' }),
+        ],
+        counts({ CHAT: 1 }),
+      );
 
       const next = applySnapshot(local, server, 1);
 
       expect(next.items.map((item) => item.id)).toEqual([100, 99]);
-      expect(next.counts).toEqual(counts(1, 0, 1));
+      expect(next.counts).toEqual(counts({ CHAT: 1 }));
     });
 
     it('keeps only the newest fifty entries after merging', () => {
@@ -102,7 +144,7 @@ describe('notificationModel', () => {
         }),
       );
 
-      const next = applySnapshot(local, list(serverItems), 1);
+      const next = applySnapshot(local, list(serverItems, counts({ CHAT: 50 })), 1);
 
       expect(next.items).toHaveLength(50);
       expect(next.items[0]?.id).toBe(100);
@@ -110,59 +152,67 @@ describe('notificationModel', () => {
     });
 
     it('never turns a locally read entry back to unread', () => {
-      const local = state([notification({ id: 7, read: true })], counts(0, 0, 0));
-      const server = list([notification({ id: 7, read: false })], counts(1, 0, 1));
+      const local = state(
+        [notification({ id: 7, status: 'READ', read_at: '2026-11-17T09:05:00Z' })],
+        counts(),
+      );
+      const server = list([notification({ id: 7, status: 'UNREAD' })], counts({ CHAT: 1 }));
 
       const next = applySnapshot(local, server, 1);
 
-      expect(next.items.find((item) => item.id === 7)?.read).toBe(true);
+      expect(isUnread(next.items[0]!)).toBe(false);
     });
 
-    it('takes the larger value of each count field', () => {
-      const local = state([], counts(4, 1, 3));
-      const server = list([], counts(3, 1, 2));
+    it('takes the larger value of each type count', () => {
+      const local = state([], counts({ CHAT: 3, APPLICATION: 1 }));
+      const server = list([], counts({ CHAT: 2, APPLICATION: 1 }));
 
-      expect(applySnapshot(local, server, 1).counts).toEqual(counts(4, 1, 3));
+      expect(applySnapshot(local, server, 1).counts).toEqual(counts({ CHAT: 3, APPLICATION: 1 }));
     });
 
     it('ignores counts from a snapshot started before the last applied read', () => {
-      const local = state([], counts(0, 0, 0), 5);
+      const local = state([], counts(), 5);
       const server = list(
         [
           notification({ id: 8, created_at: '2026-11-17T09:05:00Z' }),
-          notification({ id: 9, type: 'application_received', created_at: '2026-11-17T09:00:00Z' }),
+          notification({
+            id: 9,
+            type: 'APPLICATION',
+            event: 'application_received',
+            created_at: '2026-11-17T09:00:00Z',
+          }),
         ],
-        counts(2, 1, 1),
+        counts({ CHAT: 1, APPLICATION: 1 }),
       );
 
       const next = applySnapshot(local, server, 4);
 
       expect(next.items.map((item) => item.id)).toEqual([8, 9]);
-      expect(next.counts).toEqual(counts(0, 0, 0));
+      expect(next.counts).toEqual(counts());
     });
 
     it('adopts counts when the snapshot was started after the last read', () => {
-      const local = state([], counts(0, 0, 0), 5);
-      const server = list([notification({ id: 8 })], counts(1, 0, 1));
+      const local = state([], counts(), 5);
 
-      expect(applySnapshot(local, server, 6).counts).toEqual(counts(1, 0, 1));
+      expect(applySnapshot(local, list([notification({ id: 8 })], counts({ CHAT: 1 })), 6).counts)
+        .toEqual(counts({ CHAT: 1 }));
     });
   });
 
   describe('F1 applyCounts', () => {
     it('overrides counts and records the read sequence', () => {
-      const local = state([notification({ id: 7 })], counts(1, 0, 1));
+      const local = state([notification({ id: 7 })], counts({ CHAT: 1 }));
 
-      const next = applyCounts(local, counts(0, 0, 0), 9);
+      const next = applyCounts(local, counts(), 9);
 
-      expect(next.counts).toEqual(counts(0, 0, 0));
+      expect(next.counts).toEqual(counts());
       expect(next.lastReadSeq).toBe(9);
     });
   });
 
   describe('F2 applyEvent', () => {
     it('puts a new event at the head and increments its type count', () => {
-      const local = state([notification({ id: 7 })], counts(1, 0, 1));
+      const local = state([notification({ id: 7 })], counts({ CHAT: 1 }));
 
       const next = applyEvent(
         local,
@@ -171,53 +221,96 @@ describe('notificationModel', () => {
       );
 
       expect(next.items.map((item) => item.id)).toEqual([8, 7]);
-      expect(next.counts).toEqual(counts(2, 0, 2));
+      expect(next.counts).toEqual(counts({ CHAT: 2 }));
     });
 
     it('counts an application event in the application bucket', () => {
-      const local = state([], counts(0, 0, 0));
+      const local = state([], counts());
 
       const next = applyEvent(
         local,
-        event(notification({ id: 9, type: 'application_received', application_id: 41 })),
+        event(
+          notification({
+            id: 9,
+            type: 'APPLICATION',
+            event: 'application_received',
+            application_id: 41,
+            target: target({ kind: 'applications', application_id: 41 }),
+          }),
+        ),
         null,
       );
 
-      expect(next.counts).toEqual(counts(1, 1, 0));
+      expect(next.counts).toEqual(counts({ APPLICATION: 1 }));
     });
 
     it('does not change state for an event already in the list', () => {
-      const local = state([notification({ id: 7 })], counts(1, 0, 1));
+      const local = state([notification({ id: 7 })], counts({ CHAT: 1 }));
 
-      const next = applyEvent(local, event(notification({ id: 7 })), null);
-
-      expect(next).toBe(local);
+      expect(applyEvent(local, event(notification({ id: 7 })), null)).toBe(local);
     });
 
     it('marks a message from the active conversation as read without counting it', () => {
-      const local = state([], counts(0, 0, 0));
+      const local = state([], counts());
 
       const next = applyEvent(
         local,
-        event(notification({ id: 10, trip_id: 3, actor: demoUser(2) }), chatMessage(55)),
+        event(
+          notification({
+            id: 10,
+            trip_id: 3,
+            actor: demoUser(2),
+            target: target({ kind: 'chat', trip_id: 3, other_user_id: 2 }),
+          }),
+          chatMessage(55),
+        ),
         conversationKey(3, 2),
       );
 
-      expect(next.items[0]?.read).toBe(true);
-      expect(next.counts).toEqual(counts(0, 0, 0));
+      expect(isUnread(next.items[0]!)).toBe(false);
+      expect(next.counts).toEqual(counts());
     });
 
     it('counts a message from another conversation', () => {
-      const local = state([], counts(0, 0, 0));
+      const local = state([], counts());
 
       const next = applyEvent(
         local,
-        event(notification({ id: 11, trip_id: 3, actor: demoUser(4) })),
+        event(
+          notification({
+            id: 11,
+            trip_id: 3,
+            actor: demoUser(4),
+            target: target({ kind: 'chat', trip_id: 3, other_user_id: 4 }),
+          }),
+        ),
         conversationKey(3, 2),
       );
 
-      expect(next.items[0]?.read).toBe(false);
-      expect(next.counts).toEqual(counts(1, 0, 1));
+      expect(isUnread(next.items[0]!)).toBe(true);
+      expect(next.counts).toEqual(counts({ CHAT: 1 }));
+    });
+
+    it('counts a high-priority credit event without needing a conversation', () => {
+      const local = state([], counts());
+
+      const next = applyEvent(
+        local,
+        event(
+          notification({
+            id: 12,
+            type: 'CREDIT',
+            event: 'credit_changed',
+            priority: 'HIGH',
+            actor: null,
+            trip_id: null,
+            target: target({ kind: 'credit', trip_id: null }),
+          }),
+        ),
+        conversationKey(3, 2),
+      );
+
+      expect(next.counts).toEqual(counts({ CREDIT: 1 }));
     });
   });
 
@@ -225,20 +318,25 @@ describe('notificationModel', () => {
     it('decrements the matching buckets when reading one notification', () => {
       const local = state(
         [
-          notification({ id: 7, type: 'application_received' }),
+          notification({
+            id: 7,
+            type: 'APPLICATION',
+            event: 'application_received',
+            actor: demoUser(2),
+          }),
           notification({ id: 8 }),
         ],
-        counts(2, 1, 1),
+        counts({ APPLICATION: 1, CHAT: 1 }),
       );
 
       const next = markOneLocal(local, 8);
 
-      expect(next.items.find((item) => item.id === 8)?.read).toBe(true);
-      expect(next.counts).toEqual(counts(1, 1, 0));
+      expect(isUnread(next.items.find((item) => item.id === 8)!)).toBe(false);
+      expect(next.counts).toEqual(counts({ APPLICATION: 1 }));
     });
 
     it('is idempotent for an already read notification', () => {
-      const local = state([notification({ id: 7, read: true })], counts(0, 0, 0));
+      const local = state([notification({ id: 7, status: 'READ' })], counts());
 
       expect(markOneLocal(local, 7)).toBe(local);
     });
@@ -246,16 +344,20 @@ describe('notificationModel', () => {
     it('zeroes every count and marks all entries read', () => {
       const local = state(
         [
-          notification({ id: 7, type: 'application_accepted' }),
+          notification({
+            id: 7,
+            type: 'APPLICATION',
+            event: 'application_accepted',
+          }),
           notification({ id: 8 }),
         ],
-        counts(2, 1, 1),
+        counts({ APPLICATION: 1, CHAT: 1 }),
       );
 
       const next = markAllLocal(local);
 
-      expect(next.counts).toEqual(counts(0, 0, 0));
-      expect(next.items.every((item) => item.read)).toBe(true);
+      expect(next.counts).toEqual(counts());
+      expect(next.items.every((item) => !isUnread(item))).toBe(true);
     });
 
     it('only clears the matching conversation', () => {
@@ -265,36 +367,46 @@ describe('notificationModel', () => {
           notification({ id: 8, trip_id: 3, actor: demoUser(2) }),
           notification({ id: 9, trip_id: 3, actor: demoUser(4) }),
           notification({ id: 10, trip_id: 5, actor: demoUser(2) }),
-          notification({ id: 11, trip_id: 3, actor: demoUser(2), type: 'application_received' }),
+          notification({
+            id: 11,
+            trip_id: 3,
+            actor: demoUser(2),
+            type: 'APPLICATION',
+            event: 'application_received',
+          }),
         ],
-        counts(5, 1, 4),
+        counts({ CHAT: 4, APPLICATION: 1 }),
       );
 
       const next = markConversationLocal(local, 3, 2);
 
-      expect(next.items.filter((item) => item.read).map((item) => item.id)).toEqual([7, 8]);
-      expect(next.counts).toEqual(counts(3, 1, 2));
+      expect(next.items.filter((item) => !isUnread(item)).map((item) => item.id)).toEqual([7, 8]);
+      expect(next.counts).toEqual(counts({ CHAT: 2, APPLICATION: 1 }));
     });
 
     it('keeps the conversation state when nothing matches', () => {
-      const local = state([notification({ id: 7, trip_id: 3, actor: demoUser(2) })], counts(1, 0, 1));
+      const local = state(
+        [notification({ id: 7, trip_id: 3, actor: demoUser(2) })],
+        counts({ CHAT: 1 }),
+      );
 
       expect(markConversationLocal(local, 9, 2)).toBe(local);
     });
   });
 
   describe('F4 unreadByConversation', () => {
-    it('groups unread messages per conversation and ignores applications', () => {
+    it('groups unread chat messages per conversation and ignores other types', () => {
       const items = [
         notification({ id: 1, trip_id: 3, actor: demoUser(2) }),
         notification({ id: 2, trip_id: 3, actor: demoUser(2) }),
         notification({ id: 3, trip_id: 3, actor: demoUser(4) }),
-        notification({ id: 4, trip_id: 5, actor: demoUser(2), read: true }),
+        notification({ id: 4, trip_id: 5, actor: demoUser(2), status: 'READ' }),
         notification({
           id: 5,
           trip_id: 3,
           actor: demoUser(2),
-          type: 'application_received',
+          type: 'APPLICATION',
+          event: 'application_received',
         }),
       ];
 
@@ -306,23 +418,112 @@ describe('notificationModel', () => {
     });
   });
 
-  describe('F5 notificationHref', () => {
-    it('points application events at the trip page', () => {
+  describe('F5 notificationHref / availability', () => {
+    it('maps every target kind to its page', () => {
       expect(
-        notificationHref(notification({ id: 1, type: 'application_accepted', trip_id: 12 })),
-      ).toBe('#/trips/12');
+        notificationHref(
+          notification({ id: 1, type: 'TRIP', event: 'trip_full', target: target() }),
+        ),
+      ).toBe('#/trips/3');
+      expect(
+        notificationHref(
+          notification({
+            id: 1,
+            type: 'APPLICATION',
+            event: 'application_received',
+            application_id: 41,
+            target: target({ kind: 'applications', application_id: 41 }),
+          }),
+        ),
+      ).toBe('#/trips/3/applications');
+      expect(
+        notificationHref(
+          notification({
+            id: 1,
+            target: target({ kind: 'chat', trip_id: 12, other_user_id: 9 }),
+          }),
+        ),
+      ).toBe('#/chat/12/9');
+      expect(
+        notificationHref(
+          notification({
+            id: 1,
+            type: 'CREDIT',
+            event: 'credit_changed',
+            target: target({ kind: 'credit', trip_id: null }),
+          }),
+        ),
+      ).toBe('#/credit/records');
+      expect(
+        notificationHref(
+          notification({
+            id: 1,
+            type: 'REPORT',
+            event: 'report_resolved',
+            report_id: 42,
+            target: target({ kind: 'report', trip_id: null, report_id: 42 }),
+          }),
+        ),
+      ).toBe('#/reports/42');
+      expect(
+        notificationHref(
+          notification({
+            id: 1,
+            type: 'ACCOUNT',
+            event: 'account_banned',
+            target: target({ kind: 'account', trip_id: null }),
+          }),
+          7,
+        ),
+      ).toBe('#/users/7');
+      expect(
+        notificationHref(
+          notification({
+            id: 1,
+            type: 'SERVICE',
+            event: 'service_reply',
+            target: target({ kind: 'support', trip_id: null, session_id: 5 }),
+          }),
+        ),
+      ).toBe('#/support');
+      expect(
+        notificationHref(
+          notification({
+            id: 1,
+            type: 'SYSTEM',
+            event: 'identity_verified',
+            target: target({ kind: 'identity', trip_id: null }),
+          }),
+        ),
+      ).toBe('#/profile/setup');
     });
 
-    it('points message events at the conversation page', () => {
+    it('falls back to the notification centre for unknown targets', () => {
       expect(
-        notificationHref(notification({ id: 1, trip_id: 12, actor: demoUser(9) })),
-      ).toBe('#/chat/12/9');
+        notificationHref(
+          notification({
+            id: 1,
+            target: target({ kind: 'planet' as NotificationTarget['kind'] }),
+          }),
+        ),
+      ).toBe('#/notifications');
+    });
+
+    it('reports unavailable related objects without throwing', () => {
+      expect(notificationAvailable(notification({ id: 1 }))).toBe(true);
+      expect(
+        notificationAvailable(notification({ id: 1, related_available: false })),
+      ).toBe(false);
     });
   });
 
   describe('F6 shouldToast', () => {
-    it('always toasts application events', () => {
-      const item = notification({ id: 1, type: 'application_rejected' });
+    it('always toasts non-chat events', () => {
+      const item = notification({
+        id: 1,
+        type: 'APPLICATION',
+        event: 'application_rejected',
+      });
 
       expect(shouldToast(item, null)).toBe(true);
       expect(shouldToast(item, conversationKey(3, 2))).toBe(true);
@@ -353,11 +554,16 @@ describe('notificationModel', () => {
 
   describe('F8 defensive handling of unknown types', () => {
     it('does not throw for grouping, routing or toasting', () => {
-      const item = notification({ id: 1, type: 'something_else', trip_id: 3 });
+      const item = notification({
+        id: 1,
+        type: 'something_else',
+        trip_id: 3,
+        target: target(),
+      });
 
       expect(() => unreadByConversation([item])).not.toThrow();
-      expect(notificationHref(item)).toBe('#/trips/3');
       expect(() => shouldToast(item, conversationKey(3, 2))).not.toThrow();
+      expect(shouldToast(item, conversationKey(3, 2))).toBe(true);
     });
   });
 });

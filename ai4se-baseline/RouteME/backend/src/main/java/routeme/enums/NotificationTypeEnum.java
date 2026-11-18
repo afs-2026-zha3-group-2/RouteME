@@ -1,13 +1,17 @@
 package routeme.enums;
 
 /**
- * 通知事件类型。wire 值固定，前端按原值分支；改名等同破坏契约。
+ * 通知类型（业务域）。wire 值固定为契约中的大写枚举；前端按原值分组与跳转。
  */
 public enum NotificationTypeEnum {
-    APPLICATION_RECEIVED("application_received"),
-    APPLICATION_ACCEPTED("application_accepted"),
-    APPLICATION_REJECTED("application_rejected"),
-    MESSAGE("message");
+    TRIP("TRIP"),
+    APPLICATION("APPLICATION"),
+    CHAT("CHAT"),
+    CREDIT("CREDIT"),
+    REPORT("REPORT"),
+    ACCOUNT("ACCOUNT"),
+    SERVICE("SERVICE"),
+    SYSTEM("SYSTEM");
 
     private final String wireValue;
 

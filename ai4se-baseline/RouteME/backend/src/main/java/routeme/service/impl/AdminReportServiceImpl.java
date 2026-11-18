@@ -42,6 +42,7 @@ import routeme.service.AccountStatusService;
 import routeme.service.AdminReportService;
 import routeme.service.ChatService;
 import routeme.service.DemoUserService;
+import routeme.service.NotificationService;
 import routeme.service.ReportService;
 import routeme.service.ReportTargetService;
 import routeme.service.TripPlanService;
@@ -60,6 +61,7 @@ public class AdminReportServiceImpl extends AbstractServiceImpl<ReportMapper, Re
     private final DemoUserService demoUserService;
     private final ChatService chatService;
     private final TripPlanService tripPlanService;
+    private final NotificationService notificationService;
     private final Clock clock;
 
     public AdminReportServiceImpl(
@@ -69,6 +71,7 @@ public class AdminReportServiceImpl extends AbstractServiceImpl<ReportMapper, Re
             DemoUserService demoUserService,
             ChatService chatService,
             TripPlanService tripPlanService,
+            NotificationService notificationService,
             Clock clock) {
         this.reportService = reportService;
         this.targetService = targetService;
@@ -76,6 +79,7 @@ public class AdminReportServiceImpl extends AbstractServiceImpl<ReportMapper, Re
         this.demoUserService = demoUserService;
         this.chatService = chatService;
         this.tripPlanService = tripPlanService;
+        this.notificationService = notificationService;
         this.clock = clock;
     }
 
@@ -118,7 +122,9 @@ public class AdminReportServiceImpl extends AbstractServiceImpl<ReportMapper, Re
             }
             throw new ReportNotPendingException(reportId, current.status());
         }
-        return detailOf(require(reportId));
+        Report started = require(reportId);
+        notificationService.notifyReportProcessing(started.reporterId(), reportId);
+        return detailOf(started);
     }
 
     @Override
@@ -165,6 +171,8 @@ public class AdminReportServiceImpl extends AbstractServiceImpl<ReportMapper, Re
         if (ReportStatusEnum.RESOLVED.code().equals(outcome)) {
             applyPenalty(existing, adminId, action, note, banReason, banNote, expiresAt);
         }
+        notificationService.notifyReportResolved(
+                existing.reporterId(), reportId, ReportStatusEnum.REJECTED.code().equals(outcome));
         return detailOf(require(reportId));
     }
 

@@ -1509,6 +1509,38 @@ paths:
           $ref: '#/components/responses/DemoUserRequired'
         '500':
           $ref: '#/components/responses/Unexpected'
+  /reports/mine:
+    get:
+      operationId: listMyReports
+      summary: 我提交过的举报
+      description: |
+        通知中心跳转的举报详情页使用。只返回举报人已经知道的业务事实：编号、对象类型、
+        原因、状态与时间；不返回管理员备注、处理人 id 或他人的处罚细节。
+      parameters:
+        - $ref: '#/components/parameters/DemoUserId'
+        - name: limit
+          in: query
+          required: false
+          description: 返回条数上限，默认与最大值为 50
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 50
+            default: 50
+      responses:
+        '200':
+          description: 当前用户提交的举报，最新在前
+          content:
+            application/json:
+              schema:
+                type: array
+                maxItems: 50
+                items:
+                  $ref: '#/components/schemas/MyReport'
+        '401':
+          $ref: '#/components/responses/DemoUserRequired'
+        '500':
+          $ref: '#/components/responses/Unexpected'
   /experiences:
     get:
       operationId: loadExperiences
@@ -2887,8 +2919,9 @@ paths:
       operationId: listNotifications
       summary: 最新通知与未读计数
       description: |
-        返回当前用户最新 50 条通知与三项未读计数（total / application / message）。
-        未读定义为 `read_at` 为空；列表按创建时间倒序。REST 列表不含消息正文。
+        返回当前用户最新 50 条通知与按类型拆分的未读计数（`total` + 八类 `by_type`）。
+        未读定义为 `read_at` 为空，状态派生为 `UNREAD` / `READ`；列表按创建时间倒序。
+        每条通知带 `target` 跳转目标与 `related_available`（关联业务是否仍可访问）。REST 列表不含消息正文。
       parameters:
         - $ref: '#/components/parameters/DemoUserId'
       responses:
@@ -2944,7 +2977,7 @@ paths:
     post:
       operationId: readNotification
       summary: 单条通知标读
-      description: 只把本人且未读的该条记录标记为已读；重复标读计数不变。返回最新三项计数。
+      description: 只把本人且未读的该条记录标记为已读；重复标读计数不变。标读不改变业务状态。返回最新计数。
       parameters:
         - $ref: '#/components/parameters/DemoUserId'
         - name: notificationId
@@ -2980,7 +3013,7 @@ paths:
       summary: 全部或单会话标读
       description: |
         `scope=all` 把本人全部未读标读并忽略定位字段；`scope=conversation` 需同时提供
-        `trip_id` 与 `other_user_id`，只清该会话的通知，缺一返回 400。返回最新三项计数。
+        `trip_id` 与 `other_user_id`，只清该会话的聊天类通知，缺一返回 400。返回最新计数。
       parameters:
         - $ref: '#/components/parameters/DemoUserId'
       requestBody:
@@ -4247,6 +4280,41 @@ components:
       properties:
         received:
           type: boolean
+          readOnly: true
+    MyReport:
+      type: object
+      required: [id, code, target_type, reason, status, created_at]
+      description: 举报人视角的举报；不含管理员备注、处理人 id 与他人的处罚细节
+      properties:
+        id:
+          type: integer
+          format: int64
+          readOnly: true
+        code:
+          type: string
+          readOnly: true
+          description: 举报编号，形如 `R-42`
+        target_type:
+          type: string
+          enum: [trip, user, experience]
+        reason:
+          type: string
+          enum: [harassment, fake, safety, other]
+        status:
+          $ref: '#/components/schemas/ReportStatus'
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        processing_at:
+          type: string
+          format: date-time
+          nullable: true
+          readOnly: true
+        resolved_at:
+          type: string
+          format: date-time
+          nullable: true
           readOnly: true
     AccountRole:
       type: string
@@ -5633,11 +5701,83 @@ components:
 
     NotificationType:
       type: string
-      description: 通知事件类型；wire 值固定，前端按原值分支
-      enum: [application_received, application_accepted, application_rejected, message]
+      description: 通知业务域类型；wire 值固定，前端按原值分组与计数
+      enum: [TRIP, APPLICATION, CHAT, CREDIT, REPORT, ACCOUNT, SERVICE, SYSTEM]
+    NotificationEventName:
+      type: string
+      description: 类型下的具体事件；wire 值固定，前端只做展示与断言
+      enum:
+        - trip_full
+        - trip_ongoing
+        - trip_cancelled
+        - trip_completed
+        - application_received
+        - application_accepted
+        - application_rejected
+        - application_closed
+        - message
+        - credit_changed
+        - credit_recovered
+        - report_submitted
+        - report_processing
+        - report_resolved
+        - account_suspended
+        - account_banned
+        - account_restored
+        - service_joined
+        - service_reply
+        - service_closed
+        - safety_reminder
+        - identity_verified
+    NotificationPriority:
+      type: string
+      description: 优先级；信用分低于 60 等需要立即关注的事件为 HIGH
+      enum: [NORMAL, HIGH]
+    NotificationStatus:
+      type: string
+      description: 状态由 `read_at` 派生；READ 不再计入未读
+      enum: [UNREAD, READ]
+    NotificationTargetKind:
+      type: string
+      description: 跳转目标种类；前端按 kind 组装路由
+      enum: [trip, applications, chat, credit, report, account, support, identity]
+    NotificationTarget:
+      type: object
+      required: [kind]
+      description: 跳转定位字段；与 kind 无关的字段为 null
+      properties:
+        kind:
+          $ref: '#/components/schemas/NotificationTargetKind'
+        trip_id:
+          type: integer
+          format: int64
+          nullable: true
+          readOnly: true
+        other_user_id:
+          type: integer
+          format: int64
+          nullable: true
+          readOnly: true
+          description: 仅 `kind=chat`，会话另一方 id
+        application_id:
+          type: integer
+          format: int64
+          nullable: true
+          readOnly: true
+        report_id:
+          type: integer
+          format: int64
+          nullable: true
+          readOnly: true
+        session_id:
+          type: integer
+          format: int64
+          nullable: true
+          readOnly: true
     Notification:
       type: object
-      required: [id, type, actor, trip_id, trip_title, text, created_at, read]
+      required:
+        [id, type, event, title, content, priority, status, created_at, target, related_available]
       properties:
         id:
           type: integer
@@ -5645,14 +5785,44 @@ components:
           readOnly: true
         type:
           $ref: '#/components/schemas/NotificationType'
+        event:
+          $ref: '#/components/schemas/NotificationEventName'
+        title:
+          type: string
+          readOnly: true
+          description: 后端生成的标题，唯一来源是后端通知文案函数
+        content:
+          type: string
+          readOnly: true
+          description: |
+            后端生成的正文，含取消原因 / 分数变化 / 恢复时间等业务事实；
+            不含管理员自由文本备注或他人的隐私信息
+        priority:
+          $ref: '#/components/schemas/NotificationPriority'
+        status:
+          $ref: '#/components/schemas/NotificationStatus'
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        read_at:
+          type: string
+          format: date-time
+          nullable: true
+          readOnly: true
         actor:
-          $ref: '#/components/schemas/DemoUser'
+          allOf:
+            - $ref: '#/components/schemas/DemoUser'
+          nullable: true
+          description: 动作人；系统 / 信用 / 客服 / 认证类通知为 null
         trip_id:
           type: integer
           format: int64
+          nullable: true
           readOnly: true
         trip_title:
           type: string
+          nullable: true
           readOnly: true
         application_id:
           type: integer
@@ -5664,33 +5834,62 @@ components:
           format: int64
           nullable: true
           readOnly: true
-        text:
-          type: string
+        report_id:
+          type: integer
+          format: int64
+          nullable: true
           readOnly: true
-          description: 后端生成的展示文案，唯一来源是后端通知文案函数
-        created_at:
-          type: string
-          format: date-time
+        session_id:
+          type: integer
+          format: int64
+          nullable: true
           readOnly: true
-        read:
+        target:
+          $ref: '#/components/schemas/NotificationTarget'
+        related_available:
           type: boolean
           readOnly: true
+          description: |
+            关联业务当前是否仍可访问。false 时通知内容照常展示，
+            前端提示「相关内容当前不可查看」而不是报错
     NotificationCounts:
       type: object
-      required: [total, application, message]
+      required: [total, by_type]
       properties:
         total:
           type: integer
           minimum: 0
           readOnly: true
-        application:
-          type: integer
-          minimum: 0
-          readOnly: true
-        message:
-          type: integer
-          minimum: 0
-          readOnly: true
+        by_type:
+          type: object
+          description: 按八类拆分的未读计数；八类始终齐备，零值不省略
+          required: [TRIP, APPLICATION, CHAT, CREDIT, REPORT, ACCOUNT, SERVICE, SYSTEM]
+          additionalProperties: false
+          properties:
+            TRIP:
+              type: integer
+              minimum: 0
+            APPLICATION:
+              type: integer
+              minimum: 0
+            CHAT:
+              type: integer
+              minimum: 0
+            CREDIT:
+              type: integer
+              minimum: 0
+            REPORT:
+              type: integer
+              minimum: 0
+            ACCOUNT:
+              type: integer
+              minimum: 0
+            SERVICE:
+              type: integer
+              minimum: 0
+            SYSTEM:
+              type: integer
+              minimum: 0
     NotificationList:
       type: object
       required: [items, counts]
@@ -5729,4 +5928,4 @@ components:
           allOf:
             - $ref: '#/components/schemas/ChatMessage'
           nullable: true
-          description: 仅 `type=message` 的推送出现，内容为刚保存的消息
+          description: 仅 `type=CHAT` 的推送出现，内容为刚保存的消息

@@ -1,12 +1,11 @@
 package routeme.controller;
 
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
-import static org.hamcrest.Matchers.hasSize;
+import static org.hamcrest.Matchers.nullValue;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.request;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -32,6 +31,7 @@ import routeme.pojo.TripPlan;
 import routeme.service.DemoUserService;
 import routeme.service.NotificationService;
 import routeme.service.TripPlanService;
+import routeme.response.NotificationCountsResponse;
 
 /**
  * 通知接口契约：列表 / 标读 / 流端点的状态码与响应头。
@@ -61,6 +61,7 @@ class NotificationControllerTest {
     private DemoUser actor;
     private DemoUser other;
     private TripPlan trip;
+    private NotificationCountsResponse baseline;
 
     @BeforeEach
     void setUp() {
@@ -69,11 +70,16 @@ class NotificationControllerTest {
         actor = users.get(1);
         other = users.get(2);
         trip = tripPlanService.findAllTrips().getFirst();
+        baseline = notificationService.list(reader.id()).counts();
+    }
+
+    private long countOf(String type) {
+        return baseline.byType().get(type);
     }
 
     @Test
     void in_list_out_latestItemsAndCounts() throws Exception {
-        // Given: 2 application + 3 message notifications
+        // Given: 2 application + 3 chat notifications
         notificationService.notifyApplicationReceived(reader.id(), actor.id(), trip.id(), 41L);
         notificationService.notifyApplicationReceived(reader.id(), actor.id(), trip.id(), 42L);
         for (long index = 1; index <= 3; index++) {
@@ -85,13 +91,17 @@ class NotificationControllerTest {
         // When / Then
         mockMvc.perform(get("/api/notifications").header("X-User-Id", reader.id()))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.items", hasSize(5)))
-                .andExpect(jsonPath("$.counts.total").value(5))
-                .andExpect(jsonPath("$.counts.application").value(2))
-                .andExpect(jsonPath("$.counts.message").value(3))
+                .andExpect(jsonPath("$.items.length()").value(greaterThanOrEqualTo(5)))
+                .andExpect(jsonPath("$.counts.total").value(baseline.total() + 5))
+                .andExpect(jsonPath("$.counts.by_type.APPLICATION").value(countOf("APPLICATION") + 2))
+                .andExpect(jsonPath("$.counts.by_type.CHAT").value(countOf("CHAT") + 3))
+                .andExpect(jsonPath("$.counts.by_type.TRIP").value(countOf("TRIP")))
                 .andExpect(jsonPath("$.counts.total", greaterThanOrEqualTo(0)))
-                .andExpect(jsonPath("$.items[0].type").value("message"))
-                .andExpect(jsonPath("$.items[0].read").value(false));
+                .andExpect(jsonPath("$.items[0].type").value("CHAT"))
+                .andExpect(jsonPath("$.items[0].event").value("message"))
+                .andExpect(jsonPath("$.items[0].status").value("UNREAD"))
+                .andExpect(jsonPath("$.items[0].read_at").value(nullValue()))
+                .andExpect(jsonPath("$.items[0].target.kind").value("chat"));
     }
 
     @Test
@@ -111,10 +121,11 @@ class NotificationControllerTest {
         // When / Then
         mockMvc.perform(post("/api/notifications/" + oldestId + "/read").header("X-User-Id", reader.id()))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.total").value(1));
+                .andExpect(jsonPath("$.total").value(baseline.total() + 1))
+                .andExpect(jsonPath("$.by_type.APPLICATION").value(countOf("APPLICATION") + 1));
         mockMvc.perform(post("/api/notifications/" + oldestId + "/read").header("X-User-Id", reader.id()))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.total").value(1));
+                .andExpect(jsonPath("$.total").value(baseline.total() + 1));
     }
 
     @Test
@@ -146,7 +157,8 @@ class NotificationControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"scope\":\"all\"}"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.total").value(0));
+                .andExpect(jsonPath("$.total").value(0))
+                .andExpect(jsonPath("$.by_type.CHAT").value(0));
     }
 
     @Test
@@ -167,9 +179,9 @@ class NotificationControllerTest {
                         .content("{\"scope\":\"conversation\",\"trip_id\":" + trip.id()
                                 + ",\"other_user_id\":" + actor.id() + "}"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.total").value(2))
-                .andExpect(jsonPath("$.application").value(1))
-                .andExpect(jsonPath("$.message").value(1));
+                .andExpect(jsonPath("$.total").value(baseline.total() + 2))
+                .andExpect(jsonPath("$.by_type.APPLICATION").value(countOf("APPLICATION") + 1))
+                .andExpect(jsonPath("$.by_type.CHAT").value(countOf("CHAT") + 1));
     }
 
     @Test

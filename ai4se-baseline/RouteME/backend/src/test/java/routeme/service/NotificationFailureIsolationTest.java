@@ -21,6 +21,8 @@ import org.springframework.transaction.annotation.Transactional;
 import routeme.config.FixedClockTestConfig;
 import routeme.entity.NotificationEntity;
 import routeme.enums.ApplicationStatusEnum;
+import routeme.mapper.CustomerServiceSessionMapper;
+import routeme.mapper.ReportMapper;
 import routeme.pojo.ChatMessage;
 import routeme.pojo.DemoUser;
 import routeme.pojo.TripApplication;
@@ -63,6 +65,12 @@ class NotificationFailureIsolationTest {
     private ObjectProvider<NotificationStreamService> streamServiceProvider;
 
     @Autowired
+    private ReportMapper reportMapper;
+
+    @Autowired
+    private CustomerServiceSessionMapper sessionMapper;
+
+    @Autowired
     private java.time.Clock clock;
 
     private DemoUser publisher;
@@ -102,7 +110,7 @@ class NotificationFailureIsolationTest {
     void in_saveThrows_out_notifySwallowsAndWritesNothing() {
         // Given
         NotificationServiceImpl failingWrites = new NotificationServiceImpl(
-                demoUserService, tripPlanService, streamServiceProvider, clock) {
+                demoUserService, tripPlanService, reportMapper, sessionMapper, streamServiceProvider, clock) {
             @Override
             public boolean save(NotificationEntity entity) {
                 throw new IllegalStateException("database unavailable");
@@ -138,10 +146,13 @@ class NotificationFailureIsolationTest {
         NotificationService failingNotificationService(
                 DemoUserService demoUserService,
                 TripPlanService tripPlanService,
+                ReportMapper reportMapper,
+                CustomerServiceSessionMapper sessionMapper,
                 ObjectProvider<NotificationStreamService> streamServiceProvider,
                 java.time.Clock clock) {
             return new NotificationServiceImpl(
-                    demoUserService, tripPlanService, streamServiceProvider, clock) {
+                    demoUserService, tripPlanService, reportMapper, sessionMapper,
+                    streamServiceProvider, clock) {
                 @Override
                 public boolean save(NotificationEntity entity) {
                     throw new IllegalStateException("notification write failed");

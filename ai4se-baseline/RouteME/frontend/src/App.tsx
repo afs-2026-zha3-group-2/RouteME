@@ -12,6 +12,7 @@ import { AdminUsersPage } from './admin/users/AdminUsersPage';
 import { loadSessionUser, loadUsers, logoutAccount } from './api';
 import { ChatPage } from './chat/ChatPage';
 import { LearningPage } from './credit/LearningPage';
+import { CreditRecordsPage } from './credit/CreditRecordsPage';
 import { CreditProvider } from './credit/CreditContext';
 import { ShareExperiencePage } from './experiences/ShareExperiencePage';
 import { SupportPage } from './help/SupportPage';
@@ -20,6 +21,8 @@ import { tripMessages } from './i18n/tripMessages';
 import { IdentityGate } from './identity/IdentityGate';
 import { MyTripsPage } from './mine/MyTripsPage';
 import { NotificationProvider } from './notifications/NotificationContext';
+import { NotificationCenterPage } from './notifications/NotificationCenterPage';
+import { ReportDetailPage } from './reports/ReportDetailPage';
 import { MapExplorerPage } from './pages/MapExplorerPage';
 import { AiPlannerPage } from './pages/AiPlannerPage';
 import { ProfilePage } from './profile/ProfilePage';
@@ -232,6 +235,11 @@ export function App() {
             )}
             {route.name === 'support' && (
               <SupportPage currentUser={currentUser} token={authToken} />
+            )}
+            {route.name === 'notifications' && <NotificationCenterPage />}
+            {route.name === 'creditRecords' && <CreditRecordsPage />}
+            {route.name === 'reportDetail' && (
+              <ReportDetailPage currentUser={currentUser} reportId={route.reportId} />
             )}
             {route.name === 'adminDashboard' && (
               <AdminGuard currentUser={currentUser} token={authToken}>

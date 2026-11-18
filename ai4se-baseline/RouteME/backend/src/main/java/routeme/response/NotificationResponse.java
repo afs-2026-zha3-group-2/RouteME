@@ -2,39 +2,58 @@ package routeme.response;
 
 import java.time.Instant;
 
-import routeme.pojo.Notification;
 import routeme.pojo.DemoUser;
-import routeme.pojo.TripPlan;
-import routeme.utils.NotificationTextUtils;
+import routeme.pojo.Notification;
 
 /**
- * 通知列表条目。{@code text} 由后端生成，前端直接展示。
+ * 通知列表条目。{@code title} / {@code content} 由后端生成，前端直接展示。
+ *
+ * @param relatedAvailable 关联业务当前是否仍可访问；false 时前端提示「相关内容当前不可查看」
  */
 public record NotificationResponse(
         long id,
         String type,
+        String event,
+        String title,
+        String content,
+        String priority,
+        String status,
+        Instant createdAt,
+        Instant readAt,
         DemoUserResponse actor,
-        long tripId,
+        Long tripId,
         String tripTitle,
         Long applicationId,
         Long messageId,
-        String text,
-        Instant createdAt,
-        boolean read) {
+        Long reportId,
+        Long sessionId,
+        NotificationTargetResponse target,
+        boolean relatedAvailable) {
 
     public static NotificationResponse from(
-            Notification notification, DemoUser actor, TripPlan trip) {
+            Notification notification,
+            DemoUser actor,
+            String tripTitle,
+            NotificationTargetResponse target,
+            boolean relatedAvailable) {
         return new NotificationResponse(
                 notification.id(),
                 notification.type().wireValue(),
-                DemoUserResponse.from(actor),
+                notification.event(),
+                notification.title(),
+                notification.content(),
+                notification.priority().wireValue(),
+                notification.status().wireValue(),
+                notification.createdAt(),
+                notification.readAt(),
+                actor == null ? null : DemoUserResponse.from(actor),
                 notification.tripId(),
-                trip.title(),
+                tripTitle,
                 notification.applicationId(),
                 notification.messageId(),
-                NotificationTextUtils.text(
-                        notification.type().wireValue(), actor.nickname(), trip.title()),
-                notification.createdAt(),
-                notification.read());
+                notification.reportId(),
+                notification.sessionId(),
+                target,
+                relatedAvailable);
     }
 }

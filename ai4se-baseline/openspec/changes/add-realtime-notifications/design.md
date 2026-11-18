@@ -1,87 +1,101 @@
 # 设计：add-realtime-notifications
 
-- **Change：** `add-realtime-notifications`（`notifications` ADDED，REQ-023 / 实时通知与未读计数）
-- **基线：** `origin/feature/add-realtime-notifications@c64b33f` ｜ **日期：** 2026-11-17 ｜ **Owner：** Karena（AO）
-- **输入：** Delta Spec（6 Requirement / 26 Scenario）、`proposal.md`（D1–D14）、`g1-decision.md`（L-01 / L-02 / L-03 / D12 / 测量点）
+- **Change：** `add-realtime-notifications`（`notifications` ADDED，REQ-028 / 实时通知中心与未读计数）
+- **基线：** `origin/main@357f5e2`（壳层主题切换移除后）｜ **日期：** 2026-11-17（首版）/ 2026-11-18（八类扩围）｜ **Owner：** Karena（AO）
+- **输入：** Delta Spec（8 Requirement / 36 Scenario）、`proposal.md`（D1–D18）、`g1-decision.md`（L-01 / L-02 / L-03 / D12 / 测量点）
 
 ## 1. 设计目标与分工铁律
 
-把「有人申请 / 申请被裁决 / 收到消息」变成一条可核对的通知链：**服务端是唯一权威**（行、计数、文案），推送只是低延迟提示，客户端每次建立连接都用 REST 对账。任何一处失败都不能把申请、裁决或发消息变成失败。
+把八类业务域里「需要用户知道或行动」的时刻，变成一条可核对的通知链：**服务端是唯一权威**（行、计数、文案、跳转目标），推送只是低延迟提示，客户端每次建立连接都用 REST 对账。任何一处失败都不能把业务动作本身变成失败。
 
 **分工铁律：**
 
 1. 通知行与未读计数只由后端产生与派生；前端不得自行累加出「真实未读数」，推送只做增量展示，REST 快照负责收敛。
-2. 申请状态机、聊天准入、行程状态、容量与裁决权限一行不改（提案 Out of scope）。
+2. 行程 / 申请 / 聊天 / 信用 / 举报 / 账号 / 客服 / 资料的规则一行不改（提案 Out of scope）；通知只在既有成功路径之后追加。
 3. 推送通道失败不弹阻塞错误、不隐藏最后一次已知计数；业务成功不因通知失败而回滚（D6）。
-4. 通知文案只在后端 `NotificationTextUtils` 生成一次，前端直接展示 `text`；前端只负责面板标题、空态与时间格式。
-5. 不新增页面、不新增前端路由；通知面板是顶栏入口的浮层，直达复用既有 `#/trips/{id}` 与 `#/chat/{tripId}/{userId}`。
+4. 通知标题与正文只在后端 `NotificationTextUtils` 生成一次，前端直接展示 `title` / `content`；前端只负责类型标签、空态、时间格式与不可用提示。
+5. 新增一个页面（`#/notifications`）；其它跳转复用既有路由（`#/trips/{id}`、`#/trips/{id}/applications`、`#/chat/{tripId}/{userId}`、`#/credit/records`、`#/reports/{id}`、`#/users/{id}`、`#/support`、`#/profile/setup`）。
+6. 跳转规则只由后端 `target.kind` 决定，前端不按 `event` 自行猜路由（D15）。
 
 ## 2. 组件与职责
 
 ```mermaid
 flowchart LR
-  subgraph Producer[事件生产方]
-    A[ApplicationServiceImpl.apply]
-    B[ApplicationServiceImpl.decide]
-    C[ChatServiceImpl.send]
+  subgraph Producers[八个业务域]
+    AP[ApplicationServiceImpl<br/>到达 / 裁决 / 关闭 / 取消 / 完成]
+    TR[TripController +<br/>NotificationLifecycleService<br/>ONGOING / 安全提醒]
+    CH[ChatServiceImpl]
+    CE[NotificationEventListener<br/>CreditChangedEvent]
+    RP[ReportServiceImpl /<br/>AdminReportServiceImpl]
+    AC[AccountStatusService]
+    CS[CustomerServiceImpl]
+    UP[UserProfileServiceImpl]
   end
 
-  A --> N[NotificationService]
-  B --> N
-  C --> N
-  N --> DB[(notifications 表)]
-  N -->|afterCommit| BR[NotificationStreamService]
-  BR -->|SSE| FE[NotificationProvider]
+  Producers --> N[NotificationService]
+  N --> DB[(notifications)]
+  N -->|afterCommit| ST[NotificationStreamService]
+  ST -->|SSE| FE[NotificationContext]
   CT[NotificationController] --> N
-  CT --> BR
+  CT --> ST
   FE -->|REST 对账 / 标读| CT
 
-  FE --> SHELL[AppShell 铃铛 / 侧栏 / tab]
-  FE --> LIST[ChatList 分会话徽标]
-  FE --> CHAT[ChatPage 追加与标读]
+  FE --> SHELL[AppShell：铃铛 / 通知中心入口 / 账号菜单 / 聊天徽标]
+  FE --> LIST[ChatList：会话级未读]
+  FE --> CHAT[ChatPage：追加与标读]
+  FE --> CENTER[NotificationCenterPage：八类筛选]
 ```
 
 | 单元 | 落点 | 职责 |
 |---|---|---|
 | `NotificationController` | `backend/.../controller` | 列表、流、单条标读、范围标读；只做身份与参数校验、DTO 转换 |
-| `NotificationService` / `NotificationServiceImpl` | `backend/.../service`、`service/impl` | 拥有 `notifications` 表；写入、列表、计数、标读范围、`afterCommit` 推送 |
-| `NotificationStreamService` / `NotificationStreamServiceImpl` | `backend/.../service`、`service/impl` | 按用户的 `SseEmitter` 注册表、心跳、发布与清理；**不写库**（命名见 §10 R-7） |
+| `NotificationService` / `NotificationServiceImpl` | `backend/.../service`、`service/impl` | 拥有 `notifications` 表；写入、去重、列表、计数、目标解析、可用性判定、标读范围、`afterCommit` 推送 |
+| `NotificationLifecycleService` | `backend/.../service/impl` | 在读取行程详情时惰性物化 `trip_ongoing` 与 `safety_reminder`（无显式写入动作的状态） |
+| `NotificationEventListener` | `backend/.../service/impl` | 监听既有 `CreditChangedEvent`，不改账本与业务分支 |
+| `NotificationStreamService` / `NotificationStreamServiceImpl` | `backend/.../service`、`service/impl` | 按用户的 `SseEmitter` 注册表、20 s 心跳、发布与清理；**不写库** |
 | `NotificationMapper` / `NotificationEntity` | `mapper`、`entity` | 单表 CRUD；无自定义 SQL |
-| `Notification` / `NotificationTypeEnum` | `pojo`、`enums` | 领域 record 与四类事件的 wire 值 |
-| `NotificationTextUtils` | `utils` | `(type, actorNickname, tripTitle) → 中文文案`，纯函数、无业务依赖 |
+| `Notification` / 5 个枚举 | `pojo`、`enums` | 领域 record 与 wire 值（类型、事件、优先级、状态、目标种类） |
+| `NotificationTextUtils` | `utils` | `业务事实 → 中文标题 / 正文`，纯函数、无业务依赖；22 个事件各一段 |
 | `NotificationNotFoundException` | `exception` | 404 `NOTIFICATION_NOT_FOUND` |
-| `NotificationResponse` / `NotificationListResponse` / `NotificationCountsResponse` / `NotificationEventResponse` | `response` | 契约出参；`actor` 复用 `DemoUserResponse` |
-| `NotificationReadRequest` | `request` | `scope` + 会话定位 |
-| `notificationModel.ts` | `frontend/src/notifications/` | 纯函数：快照合并、事件合并、标读归约、分会话分组、直达地址、提示条件、徽标文本 |
-| `NotificationProvider.tsx` | `frontend/src/notifications/` | Context、`EventSource` 生命周期、REST 对账、提示条、活动会话 |
-| `NotificationBell.tsx` / `NotificationPanel.tsx` | `frontend/src/notifications/` | 顶栏数字入口与面板（最新 50 条、全部已读） |
-| `NotificationBadge.tsx` | `frontend/src/notifications/` | 数字徽标（0 不渲染），供铃铛 / 侧栏 / tab / 会话行复用 |
-| `notificationMessages.ts` | `frontend/src/i18n/` | 面板标题、空态、全部已读、加载失败等固定文案 |
-| `App.tsx` / `AppShell.tsx` | 既有 | 挂载提供者；顶栏铃铛；侧栏与移动 tab 的消息徽标 |
+| `NotificationResponse` / `NotificationListResponse` / `NotificationCountsResponse` / `NotificationTargetResponse` / `NotificationEventResponse` | `response` | 契约出参；`actor` 复用 `DemoUserResponse` |
+| `NotificationReadRequest` / `MyReportResponse` | `request`、`response` | 标读范围；举报人自查（承接举报类跳转） |
+| `notificationModel.ts` | `frontend/src/notifications/` | 纯函数：快照合并、事件合并、标读归约、会话分组、直达地址、可用性、提示条件、徽标文本 |
+| `NotificationContext.tsx` | 同上 | Context、`EventSource` 生命周期、REST 对账、提示条、活动会话 |
+| `NotificationBell.tsx` / `NotificationPanel.tsx` | 同上 | 顶栏数字入口与面板（最新 50 条、全部已读、查看全部通知） |
+| `NotificationCenterPage.tsx` | 同上 | `#/notifications`：八类筛选（带数字）、全部已读、类型标签、重要标记、不可用提示 |
+| `NotificationBadge.tsx` | 同上 | 数字徽标（0 不渲染），供铃铛 / 侧栏 / 账号菜单 / tab / 会话行复用 |
+| `notificationMessages.ts` | `frontend/src/i18n/` | 类型标签、空态、全部已读、不可用、加载失败等固定文案 |
+| `App.tsx` / `AppShell.tsx` / `route.ts` | 既有 | 挂载提供者；铃铛；侧栏通知中心入口、账号菜单入口、聊天徽标；`#/notifications` 路由 |
 | `ChatPage.tsx` / `ChatList.tsx` | 既有 | 打开会话标读、活动会话登记、推送追加、分会话徽标 |
-| `chatTime.ts`（迁移） | `frontend/src/chat/` → `frontend/src/utils/` | `formatChatTime` 改为叶子模块，见 §10 R-10；`notifications` 只依赖 `utils`，不依赖 `chat` |
-| `types.ts` / `api.ts` / `styles.css` | 既有 | 类型、请求函数、徽标 / 面板 / 提示样式（明暗两套） |
+| `CreditRecordsPage.tsx` / `ReportDetailPage.tsx` | 新增 | 承接 `credit` 与 `report` 两类跳转 |
+| `chatTime.ts`（迁移） | `frontend/src/chat/` → `frontend/src/utils/` | `formatChatTime` 改为叶子模块，见 R-10；`notifications` 只依赖 `utils`，不依赖 `chat` |
+| `types.ts` / `api.ts` / `styles.css` | 既有 | 类型、请求函数、徽标 / 面板 / 通知中心样式 |
 
 ## 3. 数据模型与迁移（D4 / D13 / D12）
 
 `backend/src/main/resources/db/migration/V30__add_notifications.sql`：
 
 ```sql
--- REQ-023 real-time notifications: one durable row per delivered event.
--- Portable across SQLite (runtime and migration tests) and H2 (Spring tests).
-
 CREATE TABLE notifications (
     id INTEGER NOT NULL PRIMARY KEY,
     recipient_id INTEGER NOT NULL,
-    type VARCHAR(24) NOT NULL,
-    actor_id INTEGER NOT NULL,
-    trip_id INTEGER NOT NULL,
+    type VARCHAR(16) NOT NULL,
+    event VARCHAR(40) NOT NULL,
+    title VARCHAR(80) NOT NULL,
+    content VARCHAR(512) NOT NULL,
+    priority VARCHAR(8) NOT NULL,
+    actor_id INTEGER,
+    trip_id INTEGER,
     application_id INTEGER,
     message_id INTEGER,
+    report_id INTEGER,
+    session_id INTEGER,
+    dedupe_key VARCHAR(120) NOT NULL,
     created_at VARCHAR(40) NOT NULL,
     read_at VARCHAR(40)
 );
 
+CREATE UNIQUE INDEX ux_notifications_recipient_dedupe ON notifications (recipient_id, dedupe_key);
 CREATE INDEX ix_notifications_recipient_read ON notifications (recipient_id, read_at);
 ```
 
@@ -89,364 +103,270 @@ CREATE INDEX ix_notifications_recipient_read ON notifications (recipient_id, rea
 |---|---|---|
 | `id` | 通知 id | 主键；沿用 `nextId()`（MAX + 1），与既有表一致 |
 | `recipient_id` | 收件人 | 必填；只按此列授权与计数 |
-| `type` | `application_received` / `application_accepted` / `application_rejected` / `message` | 必填；枚举 wire 值 |
-| `actor_id` | 动作人（申请者 / 裁决者 / 消息发送方） | 必填；列表展示昵称与头像首字 |
-| `trip_id` | 关联行程 | 必填；直达与分会话定位 |
-| `application_id` | 申请类关联的申请 | 申请类必填，消息类为空 |
-| `message_id` | 消息类关联的消息 | 消息类必填，申请类为空 |
+| `type` | 八个大写类型之一 | 必填；`NotificationTypeEnum.wireValue()` |
+| `event` | 具体业务事件（snake_case） | 必填；`NotificationEventEnum.wireValue()` |
+| `title` / `content` | 后端生成的标题与正文 | 必填；只由 `NotificationTextUtils` 产生 |
+| `priority` | `NORMAL` / `HIGH` | 必填；低信用与恢复通知为 `HIGH` |
+| `actor_id` | 动作人 | 可空；系统 / 信用 / 举报 / 账号 / 客服 / 认证类为 null |
+| `trip_id` | 关联行程 | 可空；行程 / 申请 / 聊天 / 安全提醒使用 |
+| `application_id` / `message_id` / `report_id` / `session_id` | 关联业务对象 | 可空；按事件类型各自填写 |
+| `dedupe_key` | 同一业务事件的去重标识 | 必填；与 `recipient_id` 组成唯一索引 |
 | `created_at` | 创建时刻（`Instant.toString()`） | 必填；列表倒序 |
 | `read_at` | 已读时刻 | 空 = 未读；标读只写一次（`IS NULL` 条件） |
 
-- **未读 = `read_at IS NULL`**，不建独立计数表（D4）。类型拆分由 `type` 派生。
+- **未读 = `read_at IS NULL`**，不建独立计数表（D4）。`status` 由它派生，永远无法与已读时间矛盾。
 - **保留策略：** 行不删除；列表只返回最新 50 条（D13）。索引 `(recipient_id, read_at)` 覆盖计数与列表过滤。
+- **去重键形态：** `application_received:{applicationId}`、`application_accepted:{applicationId}`、`application_rejected:{applicationId}`、`application_closed:{applicationId}`、`trip_full:{tripId}`、`trip_ongoing:{tripId}`、`trip_cancelled:{tripId}`、`trip_completed:{tripId}`、`message:{messageId}`、`credit:{ledgerId}`、`report_submitted:{reportId}`、`report_processing:{reportId}`、`report_resolved:{reportId}`、`account:{status}:{occurredAt}`、`service_joined:{sessionId}`、`service_reply:{messageId}`、`service_closed:{sessionId}`、`system_safety:{tripId}`、`system_identity:{userId}`。
 - **时间格式：** 与既有实体一致，存 ISO-8601 字符串，字典序即时间序；列表按 `created_at DESC, id DESC`。
-- **迁移号排他确认（D12）：** `openapi.yaml:4` 为 `0.17.0`；`db/migration/` 最大为 `V23__add_travel_mode.sql`；在 `openspec/changes/**`、`docs/**` 中检索 `V30__` / `0.18.0`，除本 change 自己的草稿外无其他 change 占用（含 `add-ai-itinerary`）。故本 change 取 **`V30` / 0.18.0**。
-- **双引擎：** 只用 `INTEGER / VARCHAR / CREATE INDEX`，不用 SQLite 专属语法；`NotificationMigrationTest` 在 SQLite 上跑同一脚本，Spring 测试在 H2 上跑同一脚本。
+- **迁移号排他确认（D12）：** 合并 `main` 后 `openapi.yaml:4` 为 `0.24.0`，`db/migration/` 最大为 `V29__credit_exit_application.sql`；在 `openspec/changes/**`、`docs/**` 中检索 `V30__` / `0.25.0`，除本 change 自己的草稿外无其他 change 占用。故本 change 取 **`V30__add_notifications.sql` / 0.25.0**。
+- **双引擎：** 只用 `INTEGER / VARCHAR / CREATE INDEX`，不用 SQLite 专属语法；`NotificationMigrationSqliteTest` 在 SQLite 上跑同一脚本，Spring 测试在 H2 上跑同一脚本。
 
-## 4. 接口契约（`openapi.yaml` 0.17.0 → 0.18.0）
+## 4. 接口契约（`openapi.yaml` 0.24.0 → 0.25.0）
 
 ### 4.1 路径
 
 | 方法 | 路径 | 身份 | 语义 |
 |---|---|---|---|
-| `GET` | `/notifications` | `X-User-Id` | 最新 50 条 + 三项未读计数 |
-| `GET` | `/notifications/stream` | 查询参数 `user_id` | 该用户的 SSE 通道 |
-| `POST` | `/notifications/{notificationId}/read` | `X-User-Id` | 单条标读，返回最新计数 |
-| `POST` | `/notifications/read` | `X-User-Id` | 全部 / 单会话标读，返回最新计数 |
-
-- 所有普通端点缺 `X-User-Id` → 沿用 `DEMO_USER_REQUIRED`（401）；流端点缺 `user_id` 或用户不存在 → 同样 401。
-- 单条标读不属于本人或不存在 → 404 `NOTIFICATION_NOT_FOUND`（不暴露他人通知存在性）。
-- `scope=conversation` 缺 `trip_id` / `other_user_id`，或 `scope` 非法 → 400 `INVALID_INPUT`。
-- 两个标读端点成功时返回 `NotificationCounts`（最新三项计数），客户端用它覆盖本地计数；`scope=all` 忽略定位字段。
+| GET | `/notifications` | `X-User-Id` | 最新 50 条 + `counts{total, by_type}` |
+| GET | `/notifications/stream` | `?user_id=` | 按用户的 SSE 通道（事件名 `notification`） |
+| POST | `/notifications/{notificationId}/read` | `X-User-Id` | 单条标读，返回最新计数 |
+| POST | `/notifications/read` | `X-User-Id` | `scope=all` / `scope=conversation` |
+| GET | `/reports/mine` | `X-User-Id` | 举报人自查列表（承接 `report` 跳转所需的编号与状态） |
 
 ### 4.2 Schema
 
-```yaml
-NotificationType:
-  type: string
-  enum: [application_received, application_accepted, application_rejected, message]
-
-Notification:
-  required: [id, type, actor, trip_id, trip_title, text, created_at, read]
-  properties:
-    id: { type: integer, format: int64, readOnly: true }
-    type: { $ref: '#/components/schemas/NotificationType' }
-    actor: { $ref: '#/components/schemas/DemoUser' }
-    trip_id: { type: integer, format: int64, readOnly: true }
-    trip_title: { type: string, readOnly: true }
-    application_id: { type: integer, format: int64, nullable: true, readOnly: true }
-    message_id: { type: integer, format: int64, nullable: true, readOnly: true }
-    text: { type: string, readOnly: true }
-    created_at: { type: string, format: date-time, readOnly: true }
-    read: { type: boolean, readOnly: true }
-
-NotificationCounts:
-  required: [total, application, message]
-  properties:
-    total: { type: integer, minimum: 0, readOnly: true }
-    application: { type: integer, minimum: 0, readOnly: true }
-    message: { type: integer, minimum: 0, readOnly: true }
-
-NotificationList:
-  required: [items, counts]
-  properties:
-    items: { type: array, maxItems: 50, items: { $ref: '#/components/schemas/Notification' } }
-    counts: { $ref: '#/components/schemas/NotificationCounts' }
-
-NotificationReadRequest:
-  required: [scope]
-  properties:
-    scope: { type: string, enum: [all, conversation] }
-    trip_id: { type: integer, format: int64, nullable: true }
-    other_user_id: { type: integer, format: int64, nullable: true }
-
-NotificationEvent:
-  required: [notification]
-  properties:
-    notification: { $ref: '#/components/schemas/Notification' }
-    message: { $ref: '#/components/schemas/ChatMessage', nullable: true }
-```
-
-- `text` 由后端生成（示例）：
-  - `application_received` → `「小周」申请加入「周末去珠海骑行」`
-  - `application_accepted` → `「阿岚」接受了你的申请（「周末去珠海骑行」）`
-  - `application_rejected` → `「阿岚」拒绝了你的申请（「周末去珠海骑行」）`
-  - `message` → `「小周」发来一条消息（「周末去珠海骑行」）`
-- `message` 只在 `type=message` 的推送载荷中出现，内容为刚保存的 `ChatMessage`；REST 列表不含消息正文。
+| Schema | 关键字段 |
+|---|---|
+| `NotificationType` | `TRIP` / `APPLICATION` / `CHAT` / `CREDIT` / `REPORT` / `ACCOUNT` / `SERVICE` / `SYSTEM` |
+| `NotificationEventName` | 22 个 snake_case 事件值（契约枚举即唯一事实来源） |
+| `NotificationPriority` | `NORMAL` / `HIGH` |
+| `NotificationStatus` | `UNREAD` / `READ`（由 `read_at` 派生） |
+| `NotificationTargetKind` | `trip` / `applications` / `chat` / `credit` / `report` / `account` / `support` / `identity` |
+| `NotificationTarget` | `kind` 必填 + `trip_id` / `other_user_id` / `application_id` / `report_id` / `session_id` 可空 |
+| `Notification` | `id`、`type`、`event`、`title`、`content`、`priority`、`status`、`created_at`、`read_at`、`actor`（可空）、关联 id、`target`、`related_available` |
+| `NotificationCounts` | `total`、`by_type`（八个键恒出现，零值不省略） |
+| `NotificationList` | `items`（最多 50）、`counts` |
+| `NotificationReadRequest` | `scope` = `all` / `conversation`；后者需 `trip_id` + `other_user_id` |
+| `NotificationEvent` | `notification` + 可空 `message`（聊天消息即时追加用） |
 
 ### 4.3 错误码
 
-| 错误码 | HTTP | 触发 |
+| 场景 | 状态码 | code |
 |---|---|---|
-| `NOTIFICATION_NOT_FOUND` | 404 | 单条标读的 id 不存在或不属于当前用户 |
-| `INVALID_INPUT` | 400 | `scope` 非法、`scope=conversation` 缺定位、请求体缺失 |
-| `DEMO_USER_REQUIRED` | 401 | 缺 `X-User-Id` / `user_id`，或用户不存在 |
-
-- `scope=all` 时忽略 `trip_id` / `other_user_id`（不报错）；`scope=conversation` 时两者必填，缺一即 400。
+| 缺少 / 未知用户 | 401 | `DEMO_USER_REQUIRED` |
+| 单条标读的目标不存在或不属于本人 | 404 | `NOTIFICATION_NOT_FOUND` |
+| `scope` 非法或缺会话定位 | 400 | `INVALID_INPUT` |
 
 ### 4.4 SSE 线格式
 
-```text
-HTTP/1.1 200 OK
-Content-Type: text/event-stream;charset=UTF-8
-Cache-Control: no-cache
-X-Accel-Buffering: no
-
+```
 event: notification
-data: {"notification":{"id":7,"type":"message",...},"message":{"id":31,...}}
+data: {"notification":{...},"message":null}
 
 : ping
 ```
 
-- 事件名固定 `notification`；`data` 是单行 JSON（`NotificationEvent`）。
-- 心跳为 SSE 注释行 `: ping`，约每 20 秒一次；不改 `spring.mvc.async.request-timeout`，`SseEmitter` 以 `0L` 表示不超时，由心跳与断开回调清理。
-- **不发送 `id:` 字段**：客户端不使用 `Last-Event-ID`，重连正确性由 §6.2 的 REST 对账保证，避免暗示服务端可重放。
-- 开发经 Vite `/api` 代理直接流式转发；生产若加 nginx，需要 `proxy_buffering off`（`X-Accel-Buffering: no` 已在响应头声明）。
+- 不发送 `id:` 字段：重连正确性由客户端 REST 对账保证（D3），不做断点续传。
+- 响应头固定 `Cache-Control: no-cache` 与 `X-Accel-Buffering: no`。
+- 心跳为 SSE 注释行 `: ping`，约 20 秒一次。
 
 ### 4.5 契约测试同步点
 
-- `OpenApiTest` 中两处 `assertEquals("0.17.0", ...)` 同步改为 `0.18.0`。
-- 新增 `in_openApiFile_out_notificationContractDeclared`：4 条路径、`NotificationType` 枚举、`NotificationCounts` 最小值为 0、`NotificationList.items.maxItems=50`、`NotificationReadRequest.scope` 枚举、`NotificationEvent` 必需字段、`NOTIFICATION_NOT_FOUND` 错误码。
+`OpenApiTest` 断言 `info.version` 与关键 schema；`NotificationControllerTest` 断言 4 条通知路径的行为与响应头。两者同批更新，契约先于实现（C1）。
 
 ## 5. 后端行为
 
-### 5.1 生产方钩子（D6 / D7，L-02）
+### 5.1 生产方钩子（D6 / D7）
 
-| 生产方 | 触发点 | 收件人 | 动作人 | 关联 |
-|---|---|---|---|---|
-| `ApplicationServiceImpl.apply` | `save(application)` 之后、方法返回前 | `trip.publisherId()` | `applicantId` | `tripId` + `applicationId` |
-| `ApplicationServiceImpl.decide` | `updateStatus(...)` 之后（接受与拒绝都走这里） | `application.applicantId()` | `publisherId` | `tripId` + `applicationId`，按 `next` 取 accepted / rejected |
-| `ChatServiceImpl.send` | `save(message)` 之后 | `receiverId` | `senderId` | `tripId` + `messageId` + 消息正文 |
+| 事件 | 触发点 | 收件人 | 关联 |
+|---|---|---|---|
+| `application_received` | `ApplicationServiceImpl.apply` 成功后 | 行程发布者 | 行程 + 申请 |
+| `application_accepted` / `application_rejected` | `decide` 成功后按裁决结果 | 申请者 | 行程 + 申请 |
+| `trip_full` | `decide` 接受后行程人数达到容量 | 除动作人外的已接受参与者 | 行程 |
+| `application_closed` | `onTripCancelled` 关闭待处理申请 | 该申请者 | 行程 + 申请 |
+| `trip_cancelled` | `onTripCancelled` | 已接受同行者 | 行程 + 取消原因 |
+| `trip_completed` | `onTripCompleted` | 已接受同行者 | 行程 |
+| `trip_ongoing` / `safety_reminder` | `NotificationLifecycleService`（读取详情时） | 发布者 + 已接受同行者 | 行程 |
+| `message` | `ChatServiceImpl.send` 落库后 | 接收方 | 行程 + 发送方 + 消息 |
+| `credit_changed` / `credit_recovered` | `NotificationEventListener`（`CreditChangedEvent`） | 分数变动用户 | 无（正文含分数与原因） |
+| `report_submitted` / `report_processing` / `report_resolved` | `ReportServiceImpl.submit`、`AdminReportServiceImpl` 的状态变更 | 举报人 | 举报 id |
+| `account_suspended` / `account_banned` / `account_restored` | `AccountStatusService` 状态写入后 | 账号本人 | 无（正文含受限内容与恢复时间） |
+| `service_joined` / `service_reply` / `service_closed` | `CustomerServiceImpl` 的三个动作 | 会话用户 | 客服会话 id |
+| `identity_verified` | `UserProfileServiceImpl` 检测资料首次完整 | 本人 | 无 |
 
-- **只在既有成功路径末尾调用**：所有状态机校验（重复申请、非 pending、未开放 / 已满、聊天准入、只读）都在调用之前完成；被拒绝的请求不会走到通知。
-- **自消息守卫：** `receiverId == senderId` 时不创建行。当前 `ChatServiceImpl.requireAccess` 已拒绝自消息，此守卫是防御性的，保证规格 S23-5 在未来放宽准入时仍成立。
-- **失败隔离（L-02，跨所有生产方）：** `NotificationServiceImpl.notify*` 整个方法体 `try/catch(RuntimeException)`，记 `log.warn` 后返回；生产方不写 try/catch，也不因通知抛错而回滚。该方法**不加 `@Transactional`**：
-  - 它加入调用方已有事务（MyBatis 映射使用同一连接），行与业务同生共死；
-  - 异常在同一个事务边界内被捕获，不经过事务代理，因此不会把共享事务标记为 rollback-only；
-  - 若数据库错误已使连接不可用，整个请求本来就会失败，属既有故障域，不在 D6 的「通知失败」范围内。
-- **推送时机：** 行写入后，用 `TransactionSynchronizationManager.isSynchronizationActive()` 判断：
-  - 有事务 → `registerSynchronization(afterCommit → streamService.publish(...))`。业务回滚则行消失、`afterCommit` 不执行，**不会出现「业务没成但通知已推」**；
-  - 无事务（例如单测直接调用）→ 立即发布。
-- **发布不阻塞提交：** `publish` 只做内存投递并自行吞掉单个 emitter 的异常；`afterCommit` 运行在请求线程，不引入队列或线程池。
+- 钩子一律放在既有成功路径**末尾**，不改任何判定与异常。
+- 「动作人即收件人」的写入被 `write()` 直接丢弃（D7），因此发布者不会因自己的接受动作收到 `trip_full`；容量 2 时该通知只到同行者。
+- `AccountStatusService` 通过 `ObjectProvider<NotificationService>` 取依赖，避免「账号 → 通知 → 账号」的构造期循环；`NotificationServiceImpl` 通过 mapper 做可用性检查，不反向依赖业务服务。
 
-### 5.2 写入（`NotificationServiceImpl`）
+### 5.2 写入（`NotificationServiceImpl.write`）
 
-1. `recipientId == actorId` → 直接返回（不写行）。
-2. 解析 `DemoUser actor = demoUserService.require(actorId)`、`TripPlan trip = tripPlanService.require(tripId)`，生成 `text`。
-3. `save(NotificationEntity.from(notification))`。
-4. 注册 `afterCommit` 推送（见 §5.1）。
-5. 任何一步异常 → `log.warn("notification skipped: type={}, recipient={}, trip={}", ...)`，吞掉异常。
+1. `actorId == recipientId` → 直接返回（自事件抑制）。
+2. 先查 `(recipient_id, dedupe_key)`，命中即返回（重复事件不刷屏）。
+3. 组装 record：标题 / 正文来自 `NotificationTextUtils`；`created_at = clock.instant()`；`read_at = null`。
+4. 插入；唯一索引冲突抛 `DuplicateKeyException` → 视为已去重，debug 记录。
+5. 其它 `RuntimeException` → `log.warn` 后吞掉（D6）。
+6. 推送前注册 `afterCommit`：有事务时事务提交后才 `publish`，保证客户端看到事件时行已落库；无事务时立即推送。
 
-`Notification` 领域 record：`id / recipientId / type / actorId / tripId / applicationId / messageId / createdAt / readAt`。
+### 5.3 生命周期物化（`NotificationLifecycleService`）
 
-### 5.3 列表与计数
+`ONGOING` 与安全提醒没有显式写入动作（状态由时间推导）。`TripController.detail` 在返回详情前调用该服务：
 
-- 列表：`lambdaQuery().eq(recipient).orderByDesc(createdAt).orderByDesc(id)`，用 `page(new Page<>(1, 50, false), query)` 取前 50，再逐条组装 `NotificationResponse`（`actor` 取 `DemoUserResponse`，`trip_title` 取 `tripPlanService.require(tripId).title()`）。50 条以内的 N+1 与既有 `ChatService.partners` 同口径。
-- 计数：三次 `count`（`recipient_id` + `read_at IS NULL`，再分别加 `type IN (...)` / `type = 'message'`），分别得到 `total` / `application` / `message`；全部走 `(recipient_id, read_at)` 索引，不缓存、不建计数表。
-- 计数与列表在**同一响应**返回（`NotificationList`），避免前端看到两个时刻的快照。
-- `NotificationResponse.read` 由 `read_at != null` 派生；`created_at` 直接透传 ISO-8601 字符串。
+- 若状态为 `ONGOING` 且当前用户是发布者或已接受同行者，则对每位参与者调用 `notifyTripOngoing` 与 `notifySystemSafetyReminder`。
+- 去重键 `trip_ongoing:{tripId}` / `system_safety:{tripId}` 保证重复打开详情只生成一次。
+- 该路径同样吞掉通知异常，详情响应不变。
 
-### 5.4 标读范围（D9）
+### 5.4 列表与计数
 
-| 入口 | 条件 | 结果 |
+- 列表：按 `recipient_id` 过滤，`created_at DESC, id DESC`，`MAX_LIST_SIZE = 50`；每条经 `describe()` 补 `actor`、`trip_title`、`target`、`related_available`。
+- 计数：对八个 `NotificationTypeEnum` 各做一次未读 count，按枚举顺序写入 `LinkedHashMap`，零值不省略；`total` 为各类型之和。
+- `related_available`：`REPORT` 校验举报存在且举报人是本人；`SERVICE` 校验会话存在且属于本人；`CREDIT` / `ACCOUNT` 恒真；其余（行程 / 申请 / 聊天 / 安全提醒）校验行程仍存在。
+- `target`：按类型映射；`APPLICATION` 中只有 `application_received` 用 `applications`，其余用 `trip`；`SYSTEM` 中 `identity_verified` 用 `identity`，其余用 `trip`。
+
+### 5.5 标读范围（D9）
+
+| 操作 | 条件 | 结果 |
 |---|---|---|
-| 单条 | `WHERE id = ? AND recipient_id = ?` | 不存在或非本人 → 404；已读 → 不变；未读 → 写 `read_at`，总数恰好减 1 |
-| 全部 | `WHERE recipient_id = ? AND read_at IS NULL` | 全部写 `read_at`，总数归 0 |
-| 单会话 | `WHERE recipient_id = ? AND read_at IS NULL AND type = 'message' AND trip_id = ? AND actor_id = ?` | 只清该会话的消息；申请类与其它会话不变 |
+| 单条 | 本人且未读 | 写 `read_at`；已读或他人 → 已读不动 / 404 |
+| 全部 | 本人全部未读 | 一次批量置为已读 |
+| 单会话 | `type=CHAT` 且 `trip_id` 与 `actor_id` 同时匹配 | 只清该会话；其它会话与其它类型不变 |
 
-- 全部用 `lambdaUpdate().set(readAt, now).isNull(readAt)`，重复调用不改变计数（幂等）。
-- 单会话的「对方 id」= 通知的 `actor_id`（消息发送方），与前端 `(tripId, otherUserId)` 会话键一一对应。
-- 每次标读后重新计算三项计数并返回，客户端用返回值覆盖本地计数。
+- 所有标读都用 `read_at IS NULL` 作为更新条件，天然幂等。
+- 标读只写通知表，不触碰任何业务表。
 
-### 5.5 流注册表（`NotificationStreamService`）
+### 5.6 流注册表（`NotificationStreamServiceImpl`）
 
-- 状态：`ConcurrentHashMap<Long, Set<SseEmitter>>`，每个用户可同时有多个标签页连接；集合用 `ConcurrentHashMap.newKeySet()`。
-- `connect(userId, emitter)`：注册；在 `onCompletion` / `onTimeout` / `onError` 中移除并 `complete()`；同一 emitter 的发送在实例上 `synchronized`，避免心跳与业务推送交叉写。
-- `publish(userId, event)`：遍历该用户全部 emitter；单个发送失败 → 移除该 emitter，继续下一个；整体不向上抛。
-- 心跳：`ScheduledExecutorService`（daemon，单线程，`@PostConstruct` 启动、`@PreDestroy` 关闭），每 20 秒向所有 emitter 发送 `SseEmitter.event().comment("ping")`；失败即清理。
-- 线程数：不占请求线程（servlet async），无额外依赖。
-
-### 5.6 流端点
-
-```java
-@GetMapping("/notifications/stream")
-public ResponseEntity<SseEmitter> stream(@RequestParam(name = "user_id", required = false) Long userId) {
-    DemoUser reader = demoUserService.require(userId);
-    SseEmitter emitter = new SseEmitter(0L);
-    streamService.connect(reader.id(), emitter);
-    return ResponseEntity.ok()
-            .header(HttpHeaders.CACHE_CONTROL, "no-cache")
-            .header("X-Accel-Buffering", "no")
-            .contentType(MediaType.TEXT_EVENT_STREAM)
-            .body(emitter);
-}
-```
-
-- 身份只用于订阅；通知内容仍按 `recipient_id` 过滤，别人的通道拿不到该事件。
-- 连接建立后不主动补发历史；客户端在 `onopen` 调 `GET /notifications` 对账（D3）。
+- `ConcurrentHashMap<Long, Set<SseEmitter>>`：同一用户可有多条连接（多标签页），全部收到。
+- `connect` 注册 `onCompletion` / `onTimeout` / `onError` 清理。
+- `publish` 对每个 emitter 加锁发送；单条失败只移除该连接，不影响其它用户与其它连接。
+- 心跳由单线程守护调度器每 20 秒发送 `: ping`；`@PreDestroy` 停止并 complete 所有连接。
+- 不存历史、不做断点续传：REST 是真相（D3）。
 
 ### 5.7 「3 秒内」的测量点
 
-- **T0** = 生产方 HTTP 响应完整返回客户端（此时事务已提交，通知行已存在）；
-- **T1** = 收件人前端的顶栏徽标文本变为新计数（React 完成一次渲染）。
-- 口径：`T1 − T0 ≤ 3000 ms`，只度量推送路径；重连后的 REST 对账不计入该窗口。
-- 验证方式：Playwright 双上下文，记录 `Date.now()`，用 `expect(badge).toHaveText(..., { timeout: 3000 })` 断言；失败时保留 trace。
+测量口径固定为：**生产方 HTTP 响应返回（通知行已提交）→ 浏览器端 `notification-badge` 文本变化**。E2E 在请求前记录 `Date.now()`，再用 `toHaveText('1', { timeout: 3000 })` 断言；不给服务端加人为延迟，也不以「SSE 帧到达」这种客户端不可见的事件为准。
 
 ## 6. 前端行为
 
 ### 6.1 状态与纯函数（`notificationModel.ts`）
 
-```ts
-type NotificationState = { items: AppNotification[]; counts: NotificationCounts };
-```
-
-| 函数 | 输入 → 输出 | 规则 |
-|---|---|---|
-| `emptyCounts()` | → `{total:0, application:0, message:0}` | — |
-| `applySnapshot(state, list, seq)` | REST 响应 + 发起序号 → 新状态 | 按 id 合并，保留双方较新的 50 条；`read` **单调**（本地已读不会被旧快照改回未读）；计数取**逐项较大值**，但若本次快照的发起序号早于最近一次已应用的标读响应（`lastReadSeq > seq`），则只合并条目、**不采用其计数**，避免在途快照把刚标读掉的计数复活（§10 R-9） |
-| `applyEvent(state, event, activeKey)` | 推送 + 活动会话 → 新状态 | 同 id 已存在则原样返回（不重复）；插入队首并截断 50；消息类且属于活动会话 → 该条以 `read: true` 插入且不加计数；否则按类型加 1 |
-| `markOneLocal(state, id)` | 已读 id | 已读则不变；未读则置 `read: true` 并对应减 1 |
-| `markConversationLocal(state, tripId, otherId)` | 会话 | 只把 `type=message && trip_id && actor.id=otherId` 且未读的置读；按条数减 `message`/`total` |
-| `markAllLocal(state)` | — | 全部置读，计数归零 |
-| `unreadByConversation(items)` | → `Map<conversationKey, number>` | 键 `"${tripId}:${otherId}"`；只统计未读 `message` |
-| `notificationHref(item)` | → `string` | 申请类 → `#/trips/{trip_id}`；消息类 → `#/chat/{trip_id}/{actor.id}` |
-| `shouldToast(item, activeKey)` | → `boolean` | 申请类恒 `true`；消息类仅在**没有活动会话或键不同**时 `true`（D14） |
-| `badgeLabel(count)` | → `string` | `count > 0 ? String(count) : ''`；不截断成 `99+`，保证显示的是数字 |
-
-- 计数永远从同一份 `items` 派生或用服务端返回值覆盖；四处徽标读同一个 Context（D8）。
-- **序号护栏：** Provider 维护单调递增的 `seq`，每次发起 `GET /notifications` 记下发起时的 `seq`，每个标读响应应用时把 `lastReadSeq` 置为当时的 `seq`；`applySnapshot` 用这两个值判断是否可采用计数。纯函数只接收数值，不读时钟，便于单测。
-- 分会话徽标从 `items` 派生，受 50 条展示上限约束（§10 R-6）。
+| 函数 | 语义 |
+|---|---|
+| `emptyCounts` | 八类全 0 的计数对象；每次新建，避免共享可变状态 |
+| `typeCount` | 某一类型未读数；未知类型按 0 |
+| `isUnread` | `status === 'UNREAD'` |
+| `applySnapshot` | 服务端快照与本地条目按 id 合并；超 50 截断；计数逐项取较大值；本地已读不被旧快照改回未读；早于 `lastReadSeq` 的快照只合并条目、不采用计数 |
+| `applyCounts` | 采用服务端计数并推进 `lastReadSeq` |
+| `applyEvent` | 新 id 入队首；同 id 不重复；活动会话的消息直接标读且不计入 `CHAT` |
+| `markOneLocal` / `markAllLocal` / `markConversationLocal` | 本地标读归约，各自只影响约定范围；重复调用不变 |
+| `unreadByConversation` | 按 `(trip_id, actor_id)` 分组统计 `CHAT` 未读 |
+| `notificationHref` | 按 `target.kind` 组装路由；`account` 需 `viewerId`，缺省回资料页 |
+| `notificationAvailable` | `related_available !== false` |
+| `shouldToast` | 非 `CHAT` 恒真；`CHAT` 在对应会话打开时为假 |
+| `badgeLabel` | 0 → 空串；其余原始数字（不截断为 99+） |
 
 ### 6.2 提供者与 `EventSource` 生命周期（D3）
 
-`App.tsx` 在 `ProfileProvider` 内、`AppShell` 外包一层 `<NotificationProvider currentUser={currentUser}>`。
+- 启动：当前用户存在时先 `GET /notifications`，再 `new EventSource('/api/notifications/stream?user_id=…')`。
+- `onopen` 与每次浏览器的自动重连都会重新拉一次 REST 快照，使漏推与重连收敛。
+- `onmessage`：解析 `NotificationEvent`；聊天消息若属于活动会话则转发给聊天页；否则并入状态并按 `shouldToast` 决定是否提示。
+- 切换用户 / 登出：关闭连接并清空状态。
+- 失败：`onerror` 不弹阻塞错误，保留最后一次已知计数；浏览器自动重连，`onopen` 再对账。
 
-```text
-mount / user 变化
-  → GET /notifications（快照）
-  → new EventSource(`/api/notifications/stream?user_id=${id}`)
-       onopen    → 再 GET /notifications（对账，避免断线期间漏推）
-       notification → applyEvent + 可能提示
-       onerror   → 不弹窗、不清空计数；由 EventSource 自动重连，下一次 onopen 再对账
-unmount / 登出 → source.close()，清空状态
-```
+### 6.3 徽标（D8）
 
-- 对账是**合并**不是替换：REST 永远追加真相，推送不丢；同 id 去重。
-- `connected` 只用于内部（避免重复建立连接），不做额外状态 UI。
-- 活动会话：Context 暴露 `activeConversation` 与 `setActiveConversation`；`ChatPage` 在选中会话时登记，离开时清空。提示条件与「当前会话不累计未读」都以它为唯一输入。
-
-### 6.3 提示条（D14 / L-01）
-
-- 触发：收到 `notification` 事件且 `shouldToast(item, activeConversation)` 为真。
-- 形态：`antd message.info({ content: item.text, key: `notification-${item.id}`, duration: 4 })`；同一 id 只显示一次（`key` 天然去重），不抢焦点、不阻塞。
-- 申请类恒提示；消息类仅在对应会话未打开时提示；当前会话直接追加、不提示。
-- 可断言口径：E2E 断言 `.ant-message-notice-content` 出现且包含 `text`；在当前会话收到消息后，提示条数量**不增加**。
-
-### 6.4 徽标（D8）
-
-| 位置 | 数值来源 | 落点 | 0 时 |
-|---|---|---|---|
-| 顶栏铃铛 | `counts.total` | `.topbar` 的 `NotificationBell` | 不渲染徽标；`aria-label` 仍为「通知」 |
-| 侧栏聊天入口 | `counts.message` | `AppShell` 的 `rail-link` 内数字徽标 | 不渲染 |
-| 移动 tab 聊天入口 | `counts.message` | `AppShell` 的 `tab-link` 内数字徽标（≤900 px 生效） | 不渲染 |
-| 会话行 | `unreadByConversation(items)` | `ChatList` 每行的数字徽标 | 不渲染 |
-
-- 徽标文本就是数字；颜色只是强调，不是唯一信息（`NotificationBadge` 内含 `aria-hidden` 的数字文本，外层入口的 `aria-label` 同步报数）。
-- 不新增断点：≤900 px 沿用既有 `tabbar` 显隐；侧栏与 tab 读同一个 `counts.message`。
-- 样式只新增 `.notification-*` / `.count-badge` 类，使用 `--danger` / `--surface` / `--line` / `--on-deep`，明暗主题各验一次；不改既有布局结构。
-
-### 6.5 面板与直达
-
-- `NotificationBell` 用 antd `Popover`（`trigger="click"`、`placement="bottomRight"`）承载 `NotificationPanel`；面板 `role="dialog"`、`aria-label="通知"`。
-  - **G2 后修订（D-7）：** 实测 `Popover` 的入场动画在 rAF 被节流的标签页里会停在 `ant-zoom-big-appear-prepare`（`opacity: 0`），点击铃铛看不到面板。实现改为 `createPortal` + `position: fixed`，按铃铛的视口矩形定位（与 `.rail-menu` 账号菜单同构），不依赖入场动画；同时给条目补上类型标签（同行申请 / 申请通过 / 申请未通过 / 聊天消息），让四类事件不只靠正文措辞区分。详见 `docs/sdd/add-realtime-notifications/p4-implementation.md` §5 D-7。
-- 面板内容：标题 + 「全部已读」（`counts.total === 0` 时禁用）+ 条目列表（动作人昵称、`text`、`formatChatTime(created_at)`（来自 `frontend/src/utils/chatTime.ts`，见 §10 R-10）、未读文字标记「未读」）。
-- 无通知 → 空态文案；加载失败 → 一行可读提示 + 重试，不弹阻塞对话框。
-- 条目点击：先 `markOneRead(id)`（乐观 + 服务端计数覆盖）→ `window.location.hash = notificationHref(item)` → 关闭面板。
-- 面板打开时新事件只重渲染列表，不移动焦点；Escape 关闭并把焦点还给铃铛，不抢当前页面焦点。
-
-### 6.6 聊天整合（D10 / S23-24）
-
-- `ChatPage` 选中会话后：
-  1. `setActiveConversation({tripId, otherId})`；
-  2. `markConversationRead(tripId, otherId)`，用返回计数覆盖本地；
-  3. 若本地该会话未读数仍 > 0（例如重连快照晚到），再次标读，直到收敛。
-- 推送到达且属于活动会话：从 `event.message` 追加（按 id 去重），调用 `markConversationRead`；该会话计数保持 0，申请类计数不受影响。
-- 3 秒轮询保留：每次成功加载消息后，若本地该会话未读数 > 0，调用一次 `markConversationRead`，覆盖「推送漏掉但轮询看到」的路径。
-- 离开会话：`setActiveConversation(null)`。
-
-### 6.7 可访问性与响应式
-
-- 铃铛是 `button`，`aria-haspopup="dialog"`、`aria-expanded`；徽标数字进入 `aria-label`（如「通知，3 条未读」）。
-- 会话行徽标同时有 `aria-label`（如「3 条未读消息」）。
-- 窄屏 390 px：面板宽 `min(360px, calc(100vw - 24px))`，不出现横向滚动；顶栏铃铛始终可触达。
-- 明暗主题：徽标、面板、未读标记、空态都不写死颜色。
-
-### 6.8 E2E 探针
-
-`data-testid`：`notification-bell`、`notification-badge`、`notification-panel`、`notification-item`、`notification-mark-all`、`chat-unread-badge`、`rail-chat-badge`、`tab-chat-badge`、`notification-toast`。
-
-## 7. 端点 → Requirement → 场景（L-03 / S-03）
-
-| 端点 / 生产方 | Requirement | Scenario |
+| 位置 | 数字 | 探针 |
 |---|---|---|
-| `POST /trips/{tripId}/applications`（既有，新增钩子） | 申请与裁决产生持久化通知 | S23-1、S23-4、S23-10、S23-26 |
-| `POST /applications/{id}/accept` / `reject`（既有，新增钩子） | 申请与裁决产生持久化通知 | S23-2、S23-3、S23-26 |
-| `POST /trips/{tripId}/messages`（既有，新增钩子） | 聊天消息产生通知 | S23-5、S23-6、S23-10、S23-24、S23-26 |
-| `GET /notifications` | 未读计数与通知列表 | S23-7、S23-8、S23-9、S23-10 |
-| `GET /notifications/stream` | 实时投递 | S23-11、S23-12、S23-13、S23-14、S23-15 |
-| `POST /notifications/{id}/read` | 标读范围 | S23-16、S23-19、S23-20 |
-| `POST /notifications/read`（`all` / `conversation`） | 标读范围 | S23-17、S23-18、S23-19、S23-20 |
-| 前端 `NotificationProvider` + `AppShell` + `ChatList` + `ChatPage` | 壳层指示与直达 | S23-21、S23-22、S23-23、S23-24、S23-25 |
+| 顶栏铃铛 | `counts.total` | `notification-badge` |
+| 侧栏「通知中心」入口 | `counts.total` | `rail-notification-badge` |
+| 账号菜单入口 | `counts.total` | `account-notification-badge` |
+| 侧栏聊天入口 | `counts.by_type.CHAT` | `rail-chat-badge` |
+| ≤900 px 移动 tab 聊天入口 | `counts.by_type.CHAT` | `tab-chat-badge` |
+| 会话列表行 | 该会话的 `CHAT` 未读 | `chat-unread-badge` |
 
-- 没有无主端点：4 条新路径与 3 个生产方钩子全部回指 Requirement；契约任务在 `tasks.md` 中同样标注上述 Requirement。
+- 0 时不渲染；数字以文本呈现，可读语义放在外层 `aria-label`。
+
+### 6.4 面板与通知中心
+
+- 面板：最新通知、类型标签、时间、未读标记；「全部已读」与「查看全部通知」；打开时新事件只更新列表，不抢焦点；Escape 关闭并把焦点还给铃铛。
+- 通知中心 `#/notifications`：八类筛选（`notification-filter-<TYPE>`，各带数字）+「全部」；`notification-center-item` 逐条展示类型、时间、重要标记、未读 / 已读文字与正文；`notification-center-mark-all` 一键全部已读；空态区分「全部」与「某类型」。
+- 激活一条：先 `markOneLocal` 并调用单条标读；`notificationAvailable` 为假时提示「相关内容当前不可查看」且不跳转；否则按 `notificationHref` 跳转。
+
+### 6.5 聊天整合（D10）
+
+- `ChatPage` 打开会话时登记活动会话并调用 `scope=conversation` 标读；该会话的新消息经推送直接追加，未读数保持 0。
+- 3 秒轮询保留为兜底；推送与轮询不会产生重复消息（按消息 id 合并）。
+- `ChatList` 用 `unreadByConversation` 渲染每行徽标。
+
+### 6.6 可访问性与响应式
+
+- 铃铛可键盘触达；面板为可关闭的浮层，Escape 关闭并归还焦点。
+- 窄屏 ≤900 px：底部 tab 保留聊天徽标，铃铛仍可点开，通知中心单列且无横向滚动。
+- 徽标数字是唯一计数信息，颜色与圆点只做辅助。
+
+### 6.7 E2E 探针
+
+`notification-bell`、`notification-badge`、`notification-panel`、`notification-item`、`notification-mark-all`、`notification-center`、`notification-center-item`、`notification-center-mark-all`、`notification-filter-ALL`、`notification-filter-<TYPE>`、`notification-center-empty`、`rail-notification-badge`、`account-notification-badge`、`rail-chat-badge`、`tab-chat-badge`、`chat-unread-badge`、`report-detail`、`report-detail-status`。
+
+## 7. 端点 → Requirement → 场景
+
+| 端点 / 触发 | Requirement | 场景 |
+|---|---|---|
+| `GET /notifications` | 未读计数与标读规则；通知中心与跳转 | S29-2、S29-25、S29-26、S29-32 |
+| `POST /notifications/{id}/read` | 未读计数与标读规则 | S29-27、S29-29、S29-30、S29-32 |
+| `POST /notifications/read` `all` | 未读计数与标读规则 | S29-28 |
+| `POST /notifications/read` `conversation` | 未读计数与标读规则 | S29-31 |
+| `GET /notifications/stream` | 实时投递与失败隔离 | S29-33 ～ S29-36 |
+| 申请 / 裁决钩子 | 申请与裁决事件 | S29-9 ～ S29-12 |
+| 行程钩子 + `TripController.detail` | 行程生命周期事件；客服与系统事件 | S29-5 ～ S29-8、S29-19 |
+| `ChatServiceImpl.send` | 聊天、信用、举报与账号事件 | S29-13 |
+| `CreditChangedEvent` | 聊天、信用、举报与账号事件 | S29-14、S29-15 |
+| 举报三阶段 | 聊天、信用、举报与账号事件 | S29-16 |
+| `AccountStatusService` | 聊天、信用、举报与账号事件 | S29-17 |
+| 客服三阶段 | 客服与系统事件 | S29-18 |
+| `UserProfileServiceImpl` | 客服与系统事件 | S29-20 |
+| `target` + `related_available` | 通知中心与跳转 | S29-21 ～ S29-24 |
+| `write()` 去重 / 自事件抑制 / 只增不删 | 通知记录、类型与生命周期 | S29-1、S29-3、S29-4 |
 
 ## 8. G1 遗留项与规格评审意见的收口
 
-| 来源 | 问题 | 本设计的处理 |
-|---|---|---|
-| L-01 / S-01 | 「短提示」没有 Delta 场景 | §6.3 定义触发条件、形态与可断言口径；`tasks.md` 落实现与一条 E2E；不在 Delta 中新增场景（提示是展示细节，不改变可观察的通知语义） |
-| L-02 / S-02 | 失败隔离只写在申请类 | §5.1 把 `try/catch` 下沉到 `NotificationServiceImpl.notify*`，对申请、裁决、消息三条路径同时生效；`tasks.md` 为消息路径补反向断言 |
-| L-03 / S-03 | 契约增量缺少规格锚点 | §7 的端点 → Requirement → Scenario 对照；契约与测试任务逐条引用 |
-| D12 | `0.18.0` / `V30` 排他性 | §3 记录检索结果；`tasks.md` T1 定稿前再复核一次 |
-| G1 测量点 | 「3 秒内」如何量 | §5.7 固定 T0 / T1 与 Playwright 断言方式 |
-| D6 顺序 | 通知与业务事务的顺序 | §5.1 同事务写入 + `afterCommit` 推送；回滚不推 |
+| 遗留 | 落点 |
+|---|---|
+| L-01 / S-01 提示条（D14） | §6.2 `shouldToast` + `tasks.md` T11 + E2E M8 |
+| L-02 / S-02 失败隔离跨生产方 | §5.2 步骤 5 + `NotificationFailureIsolationTest`（申请、裁决、发消息、客服） |
+| L-03 / S-03 契约回指 Requirement | §7 端点 → Requirement → 场景 |
+| D12 契约 / 迁移排他 | §3 排他确认：0.25.0 / `V30__add_notifications.sql` |
+| 测量点 | §5.7 |
 
 ## 9. 测试策略
 
-| 层 | 用例 |
-|---|---|
-| 后端纯函数（U） | `NotificationTextUtilsTest`：四类文案、昵称 / 标题含中文、未知类型回退；`NotificationTypeEnumTest`：wire 值稳定 |
-| 后端服务（S） | `NotificationServiceTest`（`@SpringBootTest` / `@Transactional`，相对计数）：申请 → 发布者 1 条；接受 / 拒绝 → 申请者 1 条；自消息 → 0 条；被拒绝的申请 → 0 条；读一条恰好减一；读全部归零；读会话只清该会话；重复标读不变；按用户隔离 |
-| 后端失败隔离（S） | `NotificationFailureIsolationTest`：`@TestConfiguration` + `@Primary` 的 `NotificationService` 桩（查询委托真实 bean，`notify*` 抛异常），断言 `accept` 仍返回 accepted、`send` 仍返回消息；另用匿名子类覆盖 `save` 抛错，断言 `notify*` 本身不抛 |
-| 后端流服务（S） | `NotificationStreamServiceTest`：注册后可查到连接数；向 A 发布不影响 B；心跳不抛；`complete` / 失败发送后连接被移除；用户可多连接 |
-| 后端接口（B） | `NotificationControllerTest`（MockMvc）：列表字段与 50 条上限、计数三元组、单条标读 200 / 404 / 幂等、`scope=all` / `conversation` / 非法 scope 400、缺身份 401；流端点只断言 `asyncStarted` 与响应头，内容由流服务与 E2E 覆盖 |
-| 后端契约（B） | `OpenApiTest`：0.18.0、4 条路径、schema 必需字段、`NOTIFICATION_NOT_FOUND`、`maxItems=50` |
-| 后端迁移（B） | `NotificationMigrationTest`：SQLite 执行 `V30` 后表与索引存在；插入 / 查询 / 标读可用；H2 由 Spring 测试上下文覆盖 |
-| 前端纯函数（F） | `notificationModel.test.ts`：快照合并去重 / 截断、事件同 id 去重、活动会话不加计数、三处标读归约、分会话分组、直达地址、提示条件、徽标 0 隐藏；`utils/chatTime.test.ts`（由 `chat/chatTime.test.ts` 迁移）：4 条既有断言原样通过，证明迁移不改口径 |
-| E2E（M） | `notifications.spec.ts`：申请到达（铃铛 +1、面板出现、≤3 s）；接受 / 拒绝；消息到地图页（rail / tab +1、提示条）；打开会话归零；读一条 / 全部已读；两个会话只清一个；刷新后计数不变；当前会话推送直接出现且不提示；390 px 数字一致 |
-| 人工走查（V） | 1440 / 768 / 390 × 浅 / 深色；后端重启后客户端重连对账；停掉后端时计数保留且无阻塞弹窗 |
-
-- **Red / Green 顺序**见 `atdd-design.md`；每个切片先出一条失败测试，再写最小实现。
-- 后端测试使用既有 H2 内存库与种子数据；通知断言用「操作前 / 后计数差」而不是绝对 id，避免依赖种子行号。
+| 层 | 落点 | 覆盖 |
+|---|---|---|
+| U（纯函数） | `NotificationTextUtilsTest`（7）、`NotificationTypeEnumTest`（4）、`NotificationEntityTest`（2）、`notificationModel.test.ts` | 22 段文案、枚举 wire 值、实体往返、快照 / 事件 / 标读 / 分组 / 直达 / 徽标 |
+| S（服务） | `NotificationServiceTest`（10） | 八类写入、去重、自事件抑制、计数、三种标读、50 条上限、越权 404 |
+| 钩子 | `NotificationProducerTest`（6）、`NotificationHookTest`（3） | 生产方与事件 / 收件人的对应关系；容量 2 时满员通知只到同行者 |
+| 失败隔离 | `NotificationFailureIsolationTest`（3） | 通知抛错时业务动作仍成功 |
+| 流 | `NotificationStreamServiceTest`（3） | 只推收件人、多连接、单连接失败清理、心跳 |
+| API | `NotificationControllerTest`（9）、`ReportControllerTest` | 4 条路径、SSE 头、404 / 400 / 401、`/reports/mine` |
+| 迁移 | `NotificationMigrationSqliteTest`（1） | SQLite 建表 / 唯一索引 / 插入 / 标读 |
+| 契约 | `OpenApiTest` | 0.25.0、路径、schema 必需字段 |
+| E2E | `notifications.spec.ts`（13）、`notifications-walkthrough.spec.ts`（4） | M1–M10 + N1–N3；V1–V4 |
 
 ## 10. 风险、例外与边界
 
-| # | 事项 | 处理 |
+| id | 风险 | 处理 |
 |---|---|---|
-| R-1 | SSE 被代理缓冲导致 3 秒不达标 | `X-Accel-Buffering: no` + `Cache-Control: no-cache` + 20 s 心跳；P4 经 Vite 代理实测，E2E 断言 3 s |
-| R-2 | 后端重启丢失内存 emitter | 单进程 demo 可接受；`onopen` REST 对账把「丢事件」降级为「延迟」 |
-| R-3 | `user_id` 查询参数可伪造 | 与既有 `X-User-Id` 同级信任；真实鉴权另开 change |
-| R-4 | 四处计数漂移 | 同一 store + 纯函数归约 + 单测；服务端计数在标读响应中覆盖 |
+| R-1 | 代理缓冲导致 3 秒口径不达标 | 控制器写禁缓冲响应头 + 20 s 心跳；E2E 经 Vite 代理实测 |
+| R-2 | 内存 emitter 在重启 / 多实例下失效 | REST 对账把「丢事件」降级为「延迟」；单进程 demo 可接受 |
+| R-3 | 查询参数身份可伪造 | 与既有 `X-User-Id` 同级暴露；真实鉴权 change 收口 |
+| R-4 | 六处计数（铃铛 / 侧栏 / 账号菜单 / tab / 会话行）漂移 | 同一 store 派生 + reducer 纯函数单测 |
 | R-5 | 行无限增长 | D13 明确不清理；长期另开需求 |
-| R-6 | 分会话徽标受 50 条上限约束 | 总徽标以服务端计数为准；分会话徽标按可见的未读消息条目派生。单会话未读 > 50 且最旧条目被挤出时可能少计，属 D13 展示上限的已知边界；全量分会话计数另开需求 |
-| R-7 | 提案中的 `NotificationBroker` 与包命名规则 | 实现落为 `NotificationStreamService`（接口）+ `NotificationStreamServiceImpl`（`@Service`，无表、不继承 `IService`），以符合 `service` / `service/impl` 与 `XxxService` 后缀规则；提案里的 `NotificationBroker` 只作为职责描述，不改变任何已签语义。 |
-| R-8 | 通知写入在同一事务内失败 | `notify*` 内部捕获，不标记 rollback-only；若连接本身失效，整个请求失败，属既有故障域 |
-| R-9 | 50 条快照、推送与标读的竞争 | 快照按 id 合并、`read` 单调、计数取逐项较大值；标读响应是唯一允许计数下降的来源。在途快照若发起早于最近一次标读响应，则只合并条目、不采用其计数（`seq` 护栏，§6.1），避免计数被复活。 |
-| R-10 | `notifications` 复用 `formatChatTime` 会形成包环（`chat` 反向依赖通知上下文）| 违反 `@rule:no-circular-dependency`。把 `formatChatTime` 从 `frontend/src/chat/chatTime.ts` 迁到叶子 `frontend/src/utils/chatTime.ts`（无 import）；`notifications` 只依赖 `utils`。同步改 4 处既有 import（`ChatList`、`ChatMain`、`chatMeeting`、`admin/service/ServiceConversation`）与测试文件位置，逻辑与文案不变。 |
-
-**不做（边界）：**
-
-- 不改申请 / 聊天 / 行程 / 容量 / 权限规则；不新增通知历史页、筛选、分组、偏好、清理任务。
-- 不做邮件、短信、OS 推送、Service Worker、WebSocket、消息队列。
-- 不在前端复制未读计数规则或通知文案；不把消息正文写进通知表。
-- 不替换 3 秒聊天轮询（D10）。
+| R-6 | 50 条展示上限导致会话级徽标少计 | 接受为展示边界；通知入口以服务端计数为准 |
+| R-7 | 命名冲突：既有 `NotificationService` 语义 | 流服务命名为 `NotificationStreamService`，写入服务保留 `NotificationService` |
+| R-8 | 通知噪声 | 去重键 + 自事件抑制 + 只发相关方 + 当前会话不提示 |
+| R-9 | 在途快照把已读计数改回未读 | `lastReadSeq` 护栏 + `status` 单调（已读不回退） |
+| R-10 | `chatTime` 迁移破坏既有引用 | 移到 `utils/` 后原断言不改，作为「迁移无行为变化」的守护 |
+| R-11 | 账号服务与通知服务循环依赖 | `ObjectProvider` 延迟取依赖 + mapper 判定可用性 |
+| R-12 | ONGOING 通知永不生成或重复生成 | 读取详情时惰性物化 + 去重键 |
+| R-13 | SSE 断开时 `AsyncRequestNotUsableException` 日志 | 已知噪声：客户端关闭标签页的正常现象，不影响功能（D-4） |
+| R-14 | 管理员备注 / 他人隐私进入通知 | 文案只使用结构化事实；封禁只展示原因码标签与恢复时间 |
+| — | Blocker | 无 |
