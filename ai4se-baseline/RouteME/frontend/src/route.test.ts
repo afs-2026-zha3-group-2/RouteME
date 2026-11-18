@@ -70,9 +70,10 @@ describe('parseRoute', () => {
       expect(parseRoute('#/admin/experiences')).toEqual({ name: 'notFound' });
     });
 
-    it('maps the help, support and admin console paths', () => {
-      expect(parseRoute('#/help')).toEqual({ name: 'help' });
+    it('maps the support and admin console paths', () => {
       expect(parseRoute('#/support')).toEqual({ name: 'support' });
+      // 帮助与反馈已下线：旧深链落到不存在页。
+      expect(parseRoute('#/help')).toEqual({ name: 'notFound' });
       expect(parseRoute('#/admin/users')).toEqual({ name: 'adminUsers' });
       expect(parseRoute('#/admin/users/12')).toEqual({ name: 'adminUserDetail', userId: 12 });
       expect(parseRoute('#/admin/reports')).toEqual({ name: 'adminReports' });
@@ -102,7 +103,6 @@ describe('parseRoute', () => {
         { name: 'share' as const, tripId: 7 },
         { name: 'profileSetup' as const },
         { name: 'userProfile' as const, userId: 7 },
-        { name: 'help' as const },
         { name: 'support' as const },
         { name: 'adminDashboard' as const },
         { name: 'adminUsers' as const },

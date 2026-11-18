@@ -236,7 +236,7 @@ export const adminMessages = {
   serviceWaitingBadgeLabel: '个待接入',
   serviceWaitingBanner: '有会话正在等待接入',
   serviceWaitingFilter: '只看等待接入',
-  serviceLiveHint: '队列与消息每 3 秒自动刷新，接入前也可以先读用户消息。',
+  serviceUnreadLabel: '条新消息',
 
   // 旅行灵感治理（管理员）
   experienceDelete: '删除',
