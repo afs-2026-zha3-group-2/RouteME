@@ -1,10 +1,10 @@
 openapi: 3.0.3
 info:
   title: RouteME API
-  version: 0.24.0
+  version: 0.25.0
   description: |
     RouteME 后端对外契约。本文件是前后端唯一事实源，字段名、类型、状态码与错误码只在这里定稿。
-        当前包含：脚手架问候语、演示账户与账号认证（注册/登录/会话/退出）、旅行计划（浏览/筛选/发布/详情/结束），同行匹配、申请、退出、聊天、我的旅行与举报，游后体验分享与参考发布所需数据，管理后台（用户管理 / 举报处置 / 人工客服）与用户侧帮助入口，AI 智能行程推荐（生成/快照保存与读取，天气复用目的地天气接口），以及目的地天气提醒与信用分账户、安全学习恢复信用分的考试会话与判分。
+        当前包含：脚手架问候语、演示账户与账号认证（注册/登录/会话/退出）、旅行计划（浏览/筛选/发布/详情/结束），同行匹配、申请、退出、聊天、我的旅行与举报，游后体验分享与参考发布所需数据，管理后台（用户管理 / 举报处置 / 人工客服）与用户侧帮助入口，AI 智能行程推荐（生成/快照保存与读取，天气复用目的地天气接口），以及目的地天气提醒与信用分账户、安全学习恢复信用分的考试会话与判分，旅行保障（演示钱包 / 保险 / 借款 / 还款）。
         行程与体验列表按页返回：`page` 从 1 起，`size` 默认 20、上限 50。
         目的地为用户在地图地点库中搜索或点选的城市/地点名称，不再限定固定枚举。
 servers:
@@ -2882,6 +2882,284 @@ paths:
         '500':
           $ref: '#/components/responses/Unexpected'
 
+  /trips/{tripId}/finance:
+    get:
+      operationId: loadTripFinance
+      summary: 行程维度旅行保障页
+      description: |
+        返回行程基础信息（目的地、出发 / 结束日期、同行人数）、当前用户是否有资格使用保险入口、
+        自己的钱包、第三方保险摘要与该行程下的借款。非同行者或已结束 / 已取消行程返回 200 +
+        `is_eligible=false` 与 `ineligible_reason`，此时 `insurance.purchase_url` 为 null；
+        不返回任何他人数据，是否可提交仍由写端点二次校验。
+      parameters:
+        - $ref: '#/components/parameters/DemoUserId'
+        - name: tripId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: 行程维度的钱包、第三方保险摘要与借款
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TripFinance'
+        '401':
+          $ref: '#/components/responses/DemoUserRequired'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/Unexpected'
+  /trips/{tripId}/insurance/purchase:
+    post:
+      operationId: openInsurancePurchase
+      summary: 前往第三方投保
+      description: |
+        仅行程发布者或 `ACCEPTED` 同行者、且行程状态为 recruiting / full / ongoing 时可打开；
+        账号必须为 `ACTIVE`。RouteMe 不设计保险产品、不计算保费、不承保，
+        只返回服务端配置的第三方投保地址（附带 `trip_id`）。
+        本步骤不扣款、不写保单、不产生钱包流水；实际投保与支付在第三方完成。
+      parameters:
+        - $ref: '#/components/parameters/DemoUserId'
+        - name: tripId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: 第三方投保地址
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InsuranceRedirect'
+              examples:
+                demo:
+                  value:
+                    redirect_url: 'https://example.com/routeme/insurance/purchase?trip_id=3'
+        '401':
+          $ref: '#/components/responses/DemoUserRequired'
+        '403':
+          $ref: '#/components/responses/FinanceForbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: 行程不可交易
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                tripNotOpen:
+                  value:
+                    code: TRIP_NOT_OPEN
+        '500':
+          $ref: '#/components/responses/Unexpected'
+  /trips/{tripId}/insurance/confirm:
+    post:
+      operationId: confirmInsurance
+      summary: 回写第三方投保结果
+      description: |
+        第三方确认投保完成后回写：保障期取行程出发日与结束日，状态写为 `ACTIVE`。
+        同一用户在同一行程幂等，重复调用返回同一条记录；不扣款、不产生钱包流水。
+        不接收也不保存保单号、身份证号、银行卡号等投保敏感信息；
+        保障结束日之后状态只读派生为 `expired`，不会迁移或删除记录。
+      parameters:
+        - $ref: '#/components/parameters/DemoUserId'
+        - name: tripId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: 已回写的保险状态
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/InsurancePolicy'
+              examples:
+                active:
+                  value:
+                    id: 1
+                    trip_id: 3
+                    provider: 第三方保险机构（演示）
+                    coverage_start: '2026-11-16'
+                    coverage_end: '2026-11-16'
+                    status: active
+                    confirmed_at: '2026-11-16T09:00:00Z'
+        '401':
+          $ref: '#/components/responses/DemoUserRequired'
+        '403':
+          $ref: '#/components/responses/FinanceForbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: 行程不可交易
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                tripNotOpen:
+                  value:
+                    code: TRIP_NOT_OPEN
+        '500':
+          $ref: '#/components/responses/Unexpected'
+  /trips/{tripId}/loans:
+    post:
+      operationId: createTravelLoan
+      summary: 申请旅行借款
+      description: |
+        本金为 10,000–200,000 分（100–2,000 元）的整元金额，期限仅 7 / 14 / 30 天；
+        服务费为本金 5% 并从本金扣除，发放净额 = 本金 − 服务费，应还金额 = 本金。
+        到期时刻由服务端按「发放时刻 + 期限」计算，客户端 `due_at` 被忽略。
+        每个用户同一时刻最多一笔 `ACTIVE` 借款。
+      parameters:
+        - $ref: '#/components/parameters/DemoUserId'
+        - name: tripId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoanCreateRequest'
+            examples:
+              thousandFourteenDays:
+                value:
+                  principal_cents: 100000
+                  term_days: 14
+      responses:
+        '201':
+          description: 已发放借款并入账净额
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TravelLoan'
+              examples:
+                thousandFourteenDays:
+                  value:
+                    id: 1
+                    trip_id: 3
+                    principal_cents: 100000
+                    service_fee_cents: 5000
+                    disbursed_cents: 95000
+                    repay_cents: 100000
+                    term_days: 14
+                    status: active
+                    funded_at: '2026-11-16T09:00:00Z'
+                    due_at: '2026-11-30T09:00:00Z'
+                    repaid_at: null
+        '400':
+          $ref: '#/components/responses/InvalidInput'
+        '401':
+          $ref: '#/components/responses/DemoUserRequired'
+        '403':
+          $ref: '#/components/responses/FinanceForbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: 行程不可交易或已有进行中借款
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                tripNotOpen:
+                  value:
+                    code: TRIP_NOT_OPEN
+                activeLoanExists:
+                  value:
+                    code: ACTIVE_LOAN_EXISTS
+        '500':
+          $ref: '#/components/responses/Unexpected'
+  /me/finance:
+    get:
+      operationId: loadMyFinance
+      summary: 账号维度旅行保障聚合
+      description: |
+        当前用户的钱包、全部流水、全部第三方保险状态与全部借款。流水按 `occurred_at` 升序
+        （同刻按 `id` 升序）返回，可按「初始余额 + 入账 − 出账」顺序回算；
+        保险确认不产生流水。列表只含当前用户自己的记录，演示阶段不分页。
+      parameters:
+        - $ref: '#/components/parameters/DemoUserId'
+      responses:
+        '200':
+          description: 钱包、流水、保险状态与借款
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MyFinance'
+        '401':
+          $ref: '#/components/responses/DemoUserRequired'
+        '500':
+          $ref: '#/components/responses/Unexpected'
+  /loans/{loanId}/repay:
+    post:
+      operationId: repayTravelLoan
+      summary: 手动全额还清借款
+      description: |
+        仅借款本人可还款；还款不收服务费与利息，扣减金额恒等于本金。
+        还款不因账号 `SUSPENDED` / `BANNED` 被阻断，以保证债务可以结清。
+        重复还款返回 409 `LOAN_NOT_ACTIVE`，不会二次扣款。
+      parameters:
+        - $ref: '#/components/parameters/DemoUserId'
+        - name: loanId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: 已还清
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TravelLoan'
+              examples:
+                repaid:
+                  value:
+                    id: 1
+                    trip_id: 3
+                    principal_cents: 100000
+                    service_fee_cents: 5000
+                    disbursed_cents: 95000
+                    repay_cents: 100000
+                    term_days: 14
+                    status: repaid
+                    funded_at: '2026-11-16T09:00:00Z'
+                    due_at: '2026-11-30T09:00:00Z'
+                    repaid_at: '2026-11-16T10:00:00Z'
+        '401':
+          $ref: '#/components/responses/DemoUserRequired'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '409':
+          description: 余额不足或借款已非进行中
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                insufficientBalance:
+                  value:
+                    code: INSUFFICIENT_BALANCE
+                loanNotActive:
+                  value:
+                    code: LOAN_NOT_ACTIVE
+        '500':
+          $ref: '#/components/responses/Unexpected'
+
 components:
   parameters:
     DemoUserId:
@@ -2976,6 +3254,22 @@ components:
           schema:
             $ref: '#/components/schemas/Error'
           examples:
+            suspended:
+              value:
+                code: ACCOUNT_SUSPENDED
+            banned:
+              value:
+                code: ACCOUNT_BANNED
+    FinanceForbidden:
+      description: 当前身份不是该行程同行者，或账号状态不允许金融写操作
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          examples:
+            notParticipant:
+              value:
+                code: FORBIDDEN
             suspended:
               value:
                 code: ACCOUNT_SUSPENDED
@@ -5484,6 +5778,324 @@ components:
           description: 判分后的当前等级（与 `UserProfile.credit_level` 同口径）
           enum: [excellent, good, fair, low, risk]
 
+    Wallet:
+      type: object
+      required: [balance_cents]
+      properties:
+        balance_cents:
+          type: integer
+          format: int32
+          minimum: 0
+          readOnly: true
+          description: 当前余额，整数分（CNY）
+    WalletLedgerEntry:
+      type: object
+      required:
+        [id, direction, amount_cents, balance_before_cents, balance_after_cents, entry_type, related_type,
+         related_id, occurred_at]
+      properties:
+        id:
+          type: integer
+          format: int64
+          readOnly: true
+        direction:
+          type: string
+          enum: [credit, debit]
+          readOnly: true
+          description: credit 为入账，debit 为出账
+        amount_cents:
+          type: integer
+          format: int32
+          minimum: 1
+          readOnly: true
+          description: 变动金额，整数分（CNY）
+        balance_before_cents:
+          type: integer
+          format: int32
+          minimum: 0
+          readOnly: true
+        balance_after_cents:
+          type: integer
+          format: int32
+          minimum: 0
+          readOnly: true
+        entry_type:
+          type: string
+          enum: [loan_disbursement, loan_repayment]
+          readOnly: true
+          description: 业务类型；保险由第三方收取，不产生钱包流水
+        related_type:
+          type: string
+          enum: [travel_loan]
+          readOnly: true
+        related_id:
+          type: string
+          readOnly: true
+          description: 关联业务主键，字符串形式
+        occurred_at:
+          type: string
+          format: date-time
+          readOnly: true
+          description: 发生时刻（UTC）
+    InsurancePolicy:
+      type: object
+      required: [id, trip_id, provider, coverage_start, coverage_end, status, confirmed_at]
+      properties:
+        id:
+          type: integer
+          format: int64
+          readOnly: true
+        trip_id:
+          type: integer
+          format: int64
+          readOnly: true
+        provider:
+          type: string
+          readOnly: true
+          description: 实际保险服务提供方名称；承保、理赔与免责以该提供方条款为准
+        coverage_start:
+          type: string
+          format: date
+          readOnly: true
+          description: 保障起始日（含），取行程出发日
+        coverage_end:
+          type: string
+          format: date
+          readOnly: true
+          description: 保障结束日（含），取行程结束日
+        status:
+          type: string
+          enum: [active, expired]
+          readOnly: true
+          description: 保障结束日之后只读派生为 expired，不落库也不删除记录
+        confirmed_at:
+          type: string
+          format: date-time
+          readOnly: true
+          description: 第三方确认投保的回写时刻（UTC）
+    InsuranceProvider:
+      type: object
+      required: [name, policy_url, claim_url, emergency_url]
+      properties:
+        name:
+          type: string
+          readOnly: true
+          description: 实际保险服务提供方名称
+        policy_url:
+          type: string
+          readOnly: true
+          description: 查看保单入口
+        claim_url:
+          type: string
+          readOnly: true
+          description: 理赔指引入口
+        emergency_url:
+          type: string
+          readOnly: true
+          description: 紧急求助入口
+    InsuranceProduct:
+      type: object
+      required: [code, title, summary]
+      properties:
+        code:
+          type: string
+          enum: [accident_medical, emergency_rescue, travel_baggage]
+          readOnly: true
+          description: 第三方保障类别编码
+        title:
+          type: string
+          readOnly: true
+          description: 保障类别名称
+        summary:
+          type: string
+          readOnly: true
+          description: 保障范围摘要；具体保额、免赔与免责以第三方条款为准
+    InsuranceSummary:
+      type: object
+      required: [status, provider, products, purchase_url, policy]
+      properties:
+        status:
+          type: string
+          enum: [not_purchased, active, expired]
+          readOnly: true
+          description: 未购买 / 保障中 / 已结束；已结束由保障结束日派生
+        provider:
+          $ref: '#/components/schemas/InsuranceProvider'
+        products:
+          type: array
+          readOnly: true
+          description: 第三方提供的保障类别，不含价格与保额
+          items:
+            $ref: '#/components/schemas/InsuranceProduct'
+        purchase_url:
+          type: string
+          nullable: true
+          readOnly: true
+          description: 第三方投保入口；当前用户无资格时为 null
+        policy:
+          $ref: '#/components/schemas/InsurancePolicy'
+          nullable: true
+    InsuranceRedirect:
+      type: object
+      required: [redirect_url]
+      properties:
+        redirect_url:
+          type: string
+          readOnly: true
+          description: 第三方投保地址；RouteMe 不在此步骤扣款或生成保单
+    TravelLoan:
+      type: object
+      required:
+        [id, trip_id, principal_cents, service_fee_cents, disbursed_cents, repay_cents, term_days, status,
+         funded_at, due_at, repaid_at]
+      properties:
+        id:
+          type: integer
+          format: int64
+          readOnly: true
+        trip_id:
+          type: integer
+          format: int64
+          readOnly: true
+        principal_cents:
+          type: integer
+          format: int32
+          readOnly: true
+          description: 本金，整数分（CNY）
+        service_fee_cents:
+          type: integer
+          format: int32
+          readOnly: true
+          description: 服务费 = 本金 × 5%，从本金扣除，整数分（CNY）
+        disbursed_cents:
+          type: integer
+          format: int32
+          readOnly: true
+          description: 发放净额 = 本金 − 服务费，整数分（CNY）
+        repay_cents:
+          type: integer
+          format: int32
+          readOnly: true
+          description: 应还金额，恒等于本金，整数分（CNY）
+        term_days:
+          type: integer
+          enum: [7, 14, 30]
+          readOnly: true
+        status:
+          type: string
+          enum: [active, repaid, overdue]
+          readOnly: true
+          description: overdue 由「ACTIVE 且已过 due_at」只读派生，不落库
+        funded_at:
+          type: string
+          format: date-time
+          readOnly: true
+          description: 发放时刻（UTC）
+        due_at:
+          type: string
+          format: date-time
+          readOnly: true
+          description: 到期时刻（UTC）= 发放时刻 + 期限天数
+        repaid_at:
+          type: string
+          format: date-time
+          nullable: true
+          readOnly: true
+          description: 还款时刻（UTC）；未还清时为 null
+    TripFinance:
+      type: object
+      required:
+        [trip_id, trip_title, destination, trip_status, start_date, end_date, companion_count, is_eligible,
+         ineligible_reason, wallet, insurance, loans]
+      properties:
+        trip_id:
+          type: integer
+          format: int64
+          readOnly: true
+        trip_title:
+          type: string
+          readOnly: true
+        destination:
+          type: string
+          readOnly: true
+          description: 行程目的地城市
+        trip_status:
+          type: string
+          enum: [recruiting, full, ongoing, completed, cancelled]
+          readOnly: true
+        start_date:
+          type: string
+          format: date
+          readOnly: true
+        end_date:
+          type: string
+          format: date
+          readOnly: true
+        companion_count:
+          type: integer
+          format: int32
+          minimum: 0
+          readOnly: true
+          description: 已加入的同行人数（不含发布者本人）
+        is_eligible:
+          type: boolean
+          readOnly: true
+          description: 当前用户是否为发布者或 ACCEPTED 同行者，且行程可交易
+        ineligible_reason:
+          type: string
+          enum: [not_participant, trip_closed]
+          nullable: true
+          readOnly: true
+          description: 无资格原因；is_eligible 为 true 时为 null
+        wallet:
+          $ref: '#/components/schemas/Wallet'
+        insurance:
+          $ref: '#/components/schemas/InsuranceSummary'
+        loans:
+          type: array
+          readOnly: true
+          description: 当前用户在该行程下的借款
+          items:
+            $ref: '#/components/schemas/TravelLoan'
+    MyFinance:
+      type: object
+      required: [wallet, ledger, policies, loans]
+      properties:
+        wallet:
+          $ref: '#/components/schemas/Wallet'
+        ledger:
+          type: array
+          readOnly: true
+          description: 按 occurred_at 升序（同刻按 id 升序），可顺序回算余额
+          items:
+            $ref: '#/components/schemas/WalletLedgerEntry'
+        policies:
+          type: array
+          readOnly: true
+          description: 当前用户的全部第三方保险状态，按回写时间倒序
+          items:
+            $ref: '#/components/schemas/InsurancePolicy'
+        loans:
+          type: array
+          readOnly: true
+          description: 当前用户的全部借款，按发放时间倒序
+          items:
+            $ref: '#/components/schemas/TravelLoan'
+    LoanCreateRequest:
+      type: object
+      required: [principal_cents, term_days]
+      properties:
+        principal_cents:
+          type: integer
+          format: int32
+          minimum: 10000
+          maximum: 200000
+          multipleOf: 100
+          description: 本金，整数分（CNY）；必须为 100 的倍数（整元）
+        term_days:
+          type: integer
+          enum: [7, 14, 30]
+          description: 借款期限（天）
     Error:
       type: object
       required: [code]
@@ -5499,7 +6111,8 @@ components:
              ACCOUNT_BANNED, INVALID_STATUS_TRANSITION, CANNOT_TARGET_SELF, REPORT_NOT_FOUND, REPORT_NOT_PENDING,
              REPORT_NOT_PROCESSING, EMAIL_TAKEN, SESSION_ALREADY_HANDLING, SESSION_NOT_HANDLING, SESSION_CLOSED,
              CREDIT_RESTRICTED, LEARNING_NOT_ELIGIBLE, LEARNING_EXAM_QUOTA_EXCEEDED, LEARNING_RECOVERY_QUOTA_EXCEEDED,
-             LEARNING_NOT_COMPLETED, LEARNING_SESSION_NOT_FOUND, LEAVE_RECORD_NOT_FOUND]
+             LEARNING_NOT_COMPLETED, LEARNING_SESSION_NOT_FOUND, LEAVE_RECORD_NOT_FOUND,
+             INSUFFICIENT_BALANCE, ACTIVE_LOAN_EXISTS, LOAN_NOT_ACTIVE]
         fields:
           type: object
           description: |

@@ -485,3 +485,34 @@
 - **口径依赖既有能力：** 账号有效状态复用 `admin-console` 的惰性恢复；行程状态复用 `TripPlan.status` 的四态推导；本故事不重复定义。
 - **边界：** 趋势图、时间范围选择、导出、自动刷新与更多维度统计均不在本故事。
 - 未接入外部 ALM；本表为仓库内权威故事清单，ALM Sync 状态记为 Pending。
+
+---
+
+# Story list — REQ-028（旅行保障与小额借款 / 旅行金融迭代 1）
+
+> 合并说明（2026-11-18）：本 change 已 rebase 到 `origin/main@822471c`；编号由 REQ-024 / S25 顺延为 **REQ-028 / S29**，契约 **0.25.0** + 迁移 **`V30`**；故事行与追溯表同步顺延。同日保险收敛为「第三方入口 + 状态回写」，Delta 为 10 Requirement / 40 Scenario。
+
+- **故事：** S29 旅行保障与小额借款（发起人 2026-11-17 原始诉求；优先级 P0；迭代 1；5 点；落点页面：行程详情 / 旅行保障页 / 账号聚合页）
+- **需求编号说明：** `main` 在 rebase 后已占用 REQ-001 ~ REQ-027，本需求按「后到者顺延」登记为 **REQ-028**、故事 **S29**（原 REQ-024 / S25）。
+- **Change：** `add-travel-finance`（`travel-finance` ADDED）
+- **垂直切片：** 只负责「钱包 → 第三方保险入口与状态回写 / 借小额 → 收 5% 服务费 → 还款 / 到期」；理赔、退保、罚息、充值提现、管理后台、通知与信用分影响不在本故事。
+- **规则口径：** 保险由第三方提供方定价与承保，RouteMe 只提供入口并回写状态、不向用户收平台费；借款本金扣 5% 后发放净额；每人 1 个钱包、最多 1 笔进行中借款；仅行程发布者与 `ACCEPTED` 同行者可用。
+- **更新时间：** 2026-11-18
+
+| Story | Title | 角色 | Priority | Iteration | Points | Page | Parent REQ | Change | Status |
+|---|---|---|---|---|---|---|---|---|---|
+| S29 | 旅行保障与小额借款 | 行程发布者 / 已加入同行者 | P0 | 旅行金融 1 | 5 | 行程详情 / 旅行保障页 / 账号聚合页 | REQ-028 | `add-travel-finance` | P4 implemented（2026-11-18） |
+
+## Traceability（REQ-028）
+
+| Story | Requirement scenarios | Change spec | Story file |
+|---|---|---|---|
+| S29 | REQ-028 §4 S29-1 ~ S29-33 | `openspec/changes/add-travel-finance/specs/travel-finance/spec.md`（ADDED，P2 定稿） | `requirement-workspace/stories/add-travel-finance.story.md` |
+
+## Notes（REQ-028）
+
+- **不拆故事：** 钱包、第三方保险入口与状态、借款、5% 收费与账本必须同批交付；拆开后会出现「能买不能借」「状态对不上账」的不完整验收。
+- **单 capability：** 保险入口与借款共用钱包、资格与页面，合并为 `travel-finance`；不新建第二个金融 change。
+- **金额口径：** 整数分；借款只接受整元，保证 5% 恒为整数分，避免浮点与四舍五入争议；保险不出现金额字段。
+- **保留边界：** 真实保险机构 API / 核保 / 理赔、真实银行对接、征信、退保、罚息、钱包充值提现、管理后台金融视图与通知均排除（D10 / D12）。
+- **依赖：** `trip-plans` / `trip-companions` 只读；`user-auth` 注册事务内初始化钱包；`user-credit` 仅作账本范式参照，不读写信用分。

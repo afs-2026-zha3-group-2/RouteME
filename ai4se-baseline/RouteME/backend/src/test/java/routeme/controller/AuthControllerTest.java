@@ -1,5 +1,6 @@
 package routeme.controller;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -7,11 +8,14 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import java.util.List;
 
-import org.junit.jupiter.api.Test;import org.springframework.beans.factory.annotation.Autowired;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.http.MediaType;
+import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.ResultActions;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -33,6 +37,9 @@ class AuthControllerTest {
     @Autowired
     private MockMvc mockMvc;
 
+    @Autowired
+    private JdbcClient jdbcClient;
+
     @Test
     void in_validRegister_out_createdSessionAndUser() throws Exception {
         register(REGISTER_BODY)
@@ -45,6 +52,37 @@ class AuthControllerTest {
                 .andExpect(jsonPath("$.user.interests.length()").value(0))
                 .andExpect(jsonPath("$.user.profile_complete").value(false))
                 .andExpect(jsonPath("$.user.password_hash").doesNotExist());
+    }
+
+    @Test
+    void in_validRegister_out_walletCreatedWithInitialBalance() throws Exception {
+        // Given
+        MvcResult registered = register(REGISTER_BODY)
+                .andExpect(status().isCreated())
+                .andReturn();
+        Number userId = JsonPath.read(registered.getResponse().getContentAsString(), "$.user.id");
+
+        // When / Then：注册与建钱包同事务，成功后立即有一条 1,000,000 分的钱包。
+        assertEquals(1, walletRows(userId.longValue()), "registration creates exactly one wallet");
+        assertEquals(1_000_000, walletBalance(userId.longValue()), "wallet starts at 1,000,000 cents");
+    }
+
+    @Test
+    void in_failedRegister_out_noWalletCreated() throws Exception {
+        // Given
+        int before = allWalletRows();
+        register(REGISTER_BODY).andExpect(status().isCreated());
+        int afterFirst = allWalletRows();
+
+        // When：重复用户名与非法密码都失败。
+        register(REGISTER_BODY).andExpect(status().isConflict());
+        register(REGISTER_BODY.replace("\"routeme-demo\"", "\"short\""))
+                .andExpect(status().isBadRequest());
+        int afterFailures = allWalletRows();
+
+        // Then
+        assertEquals(before + 1, afterFirst, "first registration creates one wallet");
+        assertEquals(afterFirst, afterFailures, "failed registrations leave no wallet");
     }
 
     @Test
@@ -271,5 +309,23 @@ class AuthControllerTest {
         return mockMvc.perform(post("/api/auth/login")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(body));
+    }
+
+    private int walletRows(long userId) {
+        return jdbcClient.sql("SELECT COUNT(*) FROM user_wallet WHERE user_id = :userId")
+                .param("userId", userId)
+                .query(Integer.class)
+                .single();
+    }
+
+    private int walletBalance(long userId) {
+        return jdbcClient.sql("SELECT balance_cents FROM user_wallet WHERE user_id = :userId")
+                .param("userId", userId)
+                .query(Integer.class)
+                .single();
+    }
+
+    private int allWalletRows() {
+        return jdbcClient.sql("SELECT COUNT(*) FROM user_wallet").query(Integer.class).single();
     }
 }

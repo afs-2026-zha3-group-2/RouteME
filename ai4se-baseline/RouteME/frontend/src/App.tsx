@@ -13,6 +13,8 @@ import { loadSessionUser, loadUsers, logoutAccount } from './api';
 import { ChatPage } from './chat/ChatPage';
 import { LearningPage } from './credit/LearningPage';
 import { CreditProvider } from './credit/CreditContext';
+import { FinancePage } from './finance/FinancePage';
+import { TripFinancePage } from './finance/TripFinancePage';
 import { ShareExperiencePage } from './experiences/ShareExperiencePage';
 import { SupportPage } from './help/SupportPage';
 import { HomePage } from './home/HomePage';
@@ -197,6 +199,10 @@ export function App() {
             {route.name === 'detail' && (
               <TripDetailPage currentUser={currentUser} tripId={route.tripId} />
             )}
+            {route.name === 'tripFinance' && (
+              <TripFinancePage currentUser={currentUser} tripId={route.tripId} />
+            )}
+            {route.name === 'finance' && <FinancePage currentUser={currentUser} />}
             {route.name === 'applications' && (
               <ApplicationsPage currentUser={currentUser} tripId={route.tripId} />
             )}
