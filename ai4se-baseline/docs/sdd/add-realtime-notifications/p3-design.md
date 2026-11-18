@@ -32,7 +32,7 @@
 | D5 | 拒绝（`rejected`）同样通知申请者，不只接受 | `design.md` §5.1 |
 | D6 | 通知写入失败**不回滚**任何业务动作：`write()` 内部捕获 + `log.warn`，生产者不加 `try/catch` | `design.md` §5.2、§10 R-1 |
 | D7 | 收件人定向：每个事件发给相关方，永不自通知（`actorId == recipientId` 直接丢弃） | `design.md` §5.1、§5.2 |
-| D8 | 六处徽标口径：铃铛 / 侧栏通知中心 / 账号菜单 = `total`；侧栏与移动 tab 聊天入口、会话列表 = `CHAT` | `design.md` §6.3 |
+| D8 | 六处徽标口径：铃铛 / 侧栏通知中心 / 账号菜单 = `total`；侧栏与移动 tab 聊天入口、会话列表 = `CHAT`（G2 后由 D-17 改为侧栏四入口分摊，见 `p4-implementation.md`） | `design.md` §6.3 |
 | D9 | 标读三范围：单条 / 全部 / 单个会话（`trip_id` + 对方 `user_id`），全部按 `recipient_id` 限定 | `design.md` §5.5 |
 | D10 / D10b | 保留既有 3 秒轮询兜底；`formatChatTime` 迁到叶子 `utils/chatTime.ts` 以断开依赖环 | `design.md` §6.5、§10 R-10 |
 | D11 | 流端点用 `user_id` 查询参数（与既有 `X-User-Id` 同级信任，见 R-3） | `design.md` §4.4 |

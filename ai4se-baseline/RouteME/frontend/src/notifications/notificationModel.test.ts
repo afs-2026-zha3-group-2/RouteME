@@ -12,6 +12,7 @@ import {
   markOneLocal,
   notificationAvailable,
   notificationHref,
+  railBadgeCounts,
   shouldToast,
   typeCount,
   unreadByConversation,
@@ -564,6 +565,50 @@ describe('notificationModel', () => {
       expect(() => unreadByConversation([item])).not.toThrow();
       expect(() => shouldToast(item, conversationKey(3, 2))).not.toThrow();
       expect(shouldToast(item, conversationKey(3, 2))).toBe(true);
+    });
+  });
+});
+
+describe('railBadgeCounts', () => {
+  it('splits eight types across four rail entries that add up to the total', () => {
+    const counts: NotificationCounts = {
+      total: 38,
+      by_type: {
+        TRIP: 5,
+        APPLICATION: 14,
+        CHAT: 5,
+        CREDIT: 2,
+        REPORT: 3,
+        ACCOUNT: 2,
+        SERVICE: 3,
+        SYSTEM: 4,
+      },
+    };
+
+    const badges = railBadgeCounts(counts);
+
+    expect(badges).toEqual({ trips: 19, chat: 5, support: 3, account: 11 });
+    expect(badges.trips + badges.chat + badges.support + badges.account).toBe(counts.total);
+  });
+
+  it('keeps the four entries at zero for an empty inbox', () => {
+    expect(railBadgeCounts(emptyCounts())).toEqual({
+      trips: 0,
+      chat: 0,
+      support: 0,
+      account: 0,
+    });
+  });
+
+  it('routes non-trip, non-chat, non-service types to the account entry', () => {
+    const counts = emptyCounts();
+    counts.by_type.SYSTEM = 4;
+
+    expect(railBadgeCounts(counts)).toEqual({
+      trips: 0,
+      chat: 0,
+      support: 0,
+      account: 4,
     });
   });
 });

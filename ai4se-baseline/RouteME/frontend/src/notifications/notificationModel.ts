@@ -44,6 +44,32 @@ export function typeCount(counts: NotificationCounts, type: string): number {
   return counts.by_type[type as NotificationType] ?? 0;
 }
 
+/** 侧栏各功能入口的未读徽标口径：四项之和恒等于 `counts.total`。 */
+export type RailBadgeCounts = {
+  trips: number;
+  chat: number;
+  support: number;
+  account: number;
+};
+
+/**
+ * 把八类未读分摊到侧栏的功能入口：行程与同行申请归「我的旅行」，聊天归「同行消息」，
+ * 客服归「联系客服」，其余（信用分 / 举报 / 账号 / 系统）归账号入口。
+ * 每个类型只落在一个入口，避免与铃铛的总数重复计算。
+ */
+export function railBadgeCounts(counts: NotificationCounts): RailBadgeCounts {
+  return {
+    trips: typeCount(counts, 'TRIP') + typeCount(counts, 'APPLICATION'),
+    chat: typeCount(counts, 'CHAT'),
+    support: typeCount(counts, 'SERVICE'),
+    account:
+      typeCount(counts, 'CREDIT')
+      + typeCount(counts, 'REPORT')
+      + typeCount(counts, 'ACCOUNT')
+      + typeCount(counts, 'SYSTEM'),
+  };
+}
+
 /** 状态由后端下发；防御性兼容只带 `read_at` 的旧载荷。 */
 export function isUnread(item: AppNotification): boolean {
   return item.status === 'READ' ? false : true;

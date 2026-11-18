@@ -11,6 +11,7 @@ import { tripMessages } from '../i18n/tripMessages';
 import { NotificationBadge } from '../notifications/NotificationBadge';
 import { NotificationBell } from '../notifications/NotificationBell';
 import { useNotifications } from '../notifications/NotificationContext';
+import { railBadgeCounts } from '../notifications/notificationModel';
 import { AccountStatusBanner } from '../profile/AccountStatusBanner';
 import { publisherSummary } from '../profile/profileDisplay';
 import type { Route } from '../route';
@@ -46,22 +47,16 @@ const NAV_ITEMS: NavItem[] = [
 const SUPPORT_ITEM: NavItem = { key: 'support', label: adminMessages.supportNav, href: '#/support' };
 
 // 侧栏比底部导航多一个客服入口：窄屏改用悬浮入口与账号菜单进入，避免底栏挤成 7 项。
-const NOTIFICATIONS_ITEM: NavItem = {
-  key: 'notifications',
-  label: notificationMessages.centerEntry,
-  href: '#/notifications',
-};
-
+// 通知中心不占侧栏位置：从铃铛面板的「查看全部通知」与账号菜单进入。
 const RAIL_ITEMS: NavItem[] = [
   ...NAV_ITEMS,
-  NOTIFICATIONS_ITEM,
   SUPPORT_ITEM,
 ];
 
 const NAV_GROUPS: Array<{ title: string; items: NavItem[] }> = [
   { title: '浏览', items: RAIL_ITEMS.filter((item) => item.key === 'discover' || item.key === 'map') },
   { title: '规划', items: RAIL_ITEMS.filter((item) => item.key === 'create' || item.key === 'aiPlanner') },
-  { title: '我的', items: RAIL_ITEMS.filter((item) => item.key === 'mine' || item.key === 'finance' || item.key === 'chat' || item.key === 'notifications' || item.key === 'support') },
+  { title: '我的', items: RAIL_ITEMS.filter((item) => item.key === 'mine' || item.key === 'finance' || item.key === 'chat' || item.key === 'support') },
 ];
 
 function activeKey(route: Route): NavKey | null {
@@ -88,13 +83,6 @@ function activeKey(route: Route): NavKey | null {
   }
   if (route.name === 'support') {
     return 'support';
-  }
-  if (
-    route.name === 'notifications'
-    || route.name === 'creditRecords'
-    || route.name === 'reportDetail'
-  ) {
-    return 'notifications';
   }
   if (route.name.startsWith('admin')) {
     return 'admin';
@@ -264,6 +252,24 @@ type Props = {
 export function AppShell({ currentUser, onLogout, route, children }: Props) {
   const active = activeKey(route);
   const { counts } = useNotifications();
+  /**
+   * 侧栏按功能分摊未读数：行程与同行申请归「我的旅行」，聊天归「同行消息」，
+   * 客服归「联系客服」，其余（信用分 / 举报 / 账号 / 系统）归账号。
+   * 四项之和恒等于未读总数，与铃铛徽标一致。
+   */
+  const railBadges = railBadgeCounts(counts);
+  const railBadgeOf = (key: NavKey): number => {
+    if (key === 'mine') {
+      return railBadges.trips;
+    }
+    if (key === 'chat') {
+      return railBadges.chat;
+    }
+    if (key === 'support') {
+      return railBadges.support;
+    }
+    return 0;
+  };
   const isAdmin = currentUser.role === 'ADMIN';
   /** 管理员只保留浏览 / 规划 / 发布与后台入口；我的旅行、同行消息、联系客服不向管理员展示。 */
   const hiddenForAdmin: NavKey[] = ['mine', 'chat', 'support'];
@@ -455,19 +461,21 @@ export function AppShell({ currentUser, onLogout, route, children }: Props) {
                     href={item.href}
                     aria-current={active === item.key ? 'page' : undefined}
                     aria-label={
-                      item.key === 'chat' && counts.by_type.CHAT > 0
-                        ? notificationMessages.chatUnreadLabel(counts.by_type.CHAT)
-                        : item.key === 'notifications' && counts.total > 0
-                          ? notificationMessages.centerEntryUnread(counts.total)
-                          : undefined
+                      railBadgeOf(item.key) > 0
+                        ? item.key === 'chat'
+                          ? notificationMessages.chatUnreadLabel(railBadges.chat)
+                          : notificationMessages.entryUnread(item.label, railBadgeOf(item.key))
+                        : undefined
                     }
                   >
                     <NavIcon name={item.key} />
                     <span>{item.label}</span>
                     {item.key === 'chat' ? (
-                      <NotificationBadge count={counts.by_type.CHAT} testId="rail-chat-badge" />
-                    ) : item.key === 'notifications' ? (
-                      <NotificationBadge count={counts.total} testId="rail-notification-badge" />
+                      <NotificationBadge count={railBadges.chat} testId="rail-chat-badge" />
+                    ) : item.key === 'mine' ? (
+                      <NotificationBadge count={railBadges.trips} testId="rail-trips-badge" />
+                    ) : item.key === 'support' ? (
+                      <NotificationBadge count={railBadges.support} testId="rail-support-badge" />
                     ) : null}
                   </a>
                 ))}
@@ -496,11 +504,20 @@ export function AppShell({ currentUser, onLogout, route, children }: Props) {
             className="rail-user"
             aria-haspopup="menu"
             aria-expanded={accountOpen}
-            aria-label={`账号：${currentUser.nickname}`}
+            aria-label={
+              railBadges.account > 0
+                ? `账号：${currentUser.nickname}，${railBadges.account} 条未读`
+                : `账号：${currentUser.nickname}`
+            }
             title="账号"
             onClick={toggleAccountMenu}
           >
             <Avatar user={currentUser} size="sm" />
+            <NotificationBadge
+              count={railBadges.account}
+              testId="rail-account-badge"
+              className="rail-user-badge"
+            />
             <span className="rail-user-text">
               <b>{currentUser.nickname}</b>
               <i>{publisherSummary(currentUser) || tripMessages.profileIncompleteShort}</i>

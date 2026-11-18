@@ -1312,7 +1312,7 @@ MVP 无推送、无通知；以下为点赞与信用状态的展示面契约。
 | 提示条 | 聊天类只在对应会话未打开时提示；其余类型恒提示（D14） |
 | 不可用 | 保留正文、显示「相关内容当前不可查看」、不跳转、仍标读 |
 | 空态 / 失败 | 无通知时给空态；推送断开时保留最后一次计数，不显示错误弹窗 |
-| 探针 | `notification-bell`、`notification-badge`、`notification-panel`、`notification-item`、`notification-mark-all`、`notification-center`、`notification-filter-<TYPE>`、`notification-center-item`、`rail-notification-badge`、`account-notification-badge`、`rail-chat-badge`、`tab-chat-badge`、`chat-unread-badge` |
+| 探针 | `notification-bell`、`notification-badge`、`notification-panel`、`notification-item`、`notification-mark-all`、`notification-center`、`notification-filter-<TYPE>`、`notification-center-item`、`rail-trips-badge`、`rail-support-badge`、`rail-account-badge`、`account-notification-badge`、`rail-chat-badge`、`tab-chat-badge`、`chat-unread-badge` |
 
 ## REQ-025 增补 — 退出同行扣分与低信用自动限制
 

@@ -71,6 +71,16 @@ test('[V1] 1440 / 768 / 390 浅色：徽标、面板、未读文字可读且不�
 
     await expect(page.getByTestId('notification-badge')).toHaveText('2', { timeout: 5000 });
     await expect(page.getByTestId('rail-chat-badge')).toHaveText('1');
+    // 侧栏按功能分摊：申请归「我的旅行」、消息归「同行消息」，两者之和等于铃铛。
+    await expect(page.getByTestId('rail-trips-badge')).toHaveText('1');
+    let railSum = 0;
+    for (const id of ['rail-trips-badge', 'rail-chat-badge', 'rail-support-badge', 'rail-account-badge']) {
+      const badge = page.getByTestId(id);
+      if ((await badge.count()) > 0) {
+        railSum += Number((await badge.first().textContent()) ?? '0');
+      }
+    }
+    expect(railSum, `${viewport.width}px 侧栏徽标之和等于铃铛`).toBe(2);
     await page.getByTestId('notification-bell').click();
     const panel = page.getByTestId('notification-panel');
     await expect(panel).toBeVisible();

@@ -18,7 +18,7 @@
 | T8 | 流服务与接口：`NotificationStreamService` / `impl`（注册表、多连接、`afterCommit` 发布、20 s 心跳、清理、单连接失败隔离）、`NotificationController`（4 端点，SSE 头）、`NotificationControllerTest`、`NotificationStreamServiceTest`、`/reports/mine` + `MyReportResponse` | R8 / R6 | `service`、`service/impl`、`controller`、`src/test` | T4 | D10 / B1–B8 | C2 |
 | T9 | 前端纯函数与请求：`notificationModel.ts`（`emptyCounts` / `typeCount` / `isUnread` / `conversationKey` / `applySnapshot` / `applyCounts` / `applyEvent` / 三个标读归约 / `unreadByConversation` / `notificationHref` / `notificationAvailable` / `shouldToast` / `badgeLabel`）、`notificationModel.test.ts`、`types.ts` 类型、`api.ts` 请求 | R6 / R7 | `frontend/src/notifications`、`types.ts`、`api.ts` | T1 | D11 / F1–F9 | C3 |
 | T10 | 叶子模块迁移：`formatChatTime` 从 `chat/chatTime.ts` 移到 `utils/chatTime.ts`，改 4 处 import，测试文件同步迁移且断言不改 | R6（时间展示） | `frontend/src/utils`、`chat`、`admin` | T9 | D12 / F1 | C3 |
-| T11 | 前端壳层：`NotificationContext`（快照 → `EventSource` → `onopen` 对账、活动会话、提示条）、`NotificationBadge`、`NotificationBell`、`NotificationPanel`、`notificationMessages.ts`、`App.tsx` 挂载、`AppShell` 铃铛 / 侧栏通知中心入口 / 账号菜单入口 / 聊天徽标、`route.ts` 增加 `#/notifications` | R6 / R7 / R8 | `frontend/src/notifications`、`i18n`、`App.tsx`、`AppShell.tsx`、`route.ts`、`styles.css` | T9 / T10 | D13 / F5–F8、M1 / M3 / M4 / M5 | C3 |
+| T11 | 前端壳层：`NotificationContext`（快照 → `EventSource` → `onopen` 对账、活动会话、提示条）、`NotificationBadge`、`NotificationBell`、`NotificationPanel`、`notificationMessages.ts`、`App.tsx` 挂载、`AppShell` 铃铛 / 账号菜单入口 / 侧栏四处按功能分摊的徽标、`route.ts` 增加 `#/notifications` | R6 / R7 / R8 | `frontend/src/notifications`、`i18n`、`App.tsx`、`AppShell.tsx`、`route.ts`、`styles.css` | T9 / T10 | D13 / F5–F8、M1 / M3 / M4 / M5 | C3 |
 | T12 | 通知中心与跳转页：`NotificationCenterPage`（八类筛选 + 全部已读 + 空态 + 不可用提示）、`CreditRecordsPage`、`ReportDetailPage`、路由接入 | R6 | `frontend/src/notifications`、`credit`、`reports`、`route.ts` | T11 | D14 / F5–F7、N1–N3 | C3 |
 | T13 | 聊天整合：`ChatPage` 登记活动会话、打开会话标读、活动会话推送追加、3 秒轮询兜底；`ChatList` 分会话徽标 | R4 / R7 | `ChatPage.tsx`、`ChatList.tsx` | T11 | M6 / M8 | C3 |
 | T14 | E2E：`e2e/tests/notifications.spec.ts`（M1–M10 + N1–N3，多上下文，记录 T0 并断言 3000 ms）与 `notifications-walkthrough.spec.ts`（V1–V4，浅色三档截图） | R1–R8 | `RouteME/e2e/tests` | T12 / T13 | D13–D15 / M1–M10、N1–N3、V1–V4 | C4 / C5 |
@@ -31,7 +31,7 @@
 |---|---|---|
 | C1 | `cd ai4se-baseline/RouteME/backend; .\mvnw.cmd -B -ntp test -Dtest=OpenApiTest` | 通过；0.26.0、路径与 schema 必需字段在位 |
 | C2 | `cd ai4se-baseline/RouteME/backend; .\mvnw.cmd -B -ntp test` | 全绿 671/671（合流后 `clean test`）；通知相关 10 个文件 48 条 |
-| C3 | `cd ai4se-baseline/RouteME/frontend; npm run typecheck; npm test; npm run build` | 类型通过；530/530（63 文件）；构建成功 |
+| C3 | `cd ai4se-baseline/RouteME/frontend; npm run typecheck; npm test; npm run build` | 类型通过；533/533（63 文件）；构建成功 |
 | C4 | `cd ai4se-baseline/RouteME/e2e; npx playwright test tests/notifications.spec.ts` | 13/13（M1–M10 + N1–N3） |
 | C5 | `cd ai4se-baseline/RouteME/e2e; npx playwright test tests/notifications-walkthrough.spec.ts` | 4/4（V1–V4） |
 | C6 | `cd ai4se-baseline; openspec validate add-realtime-notifications --strict` | `valid` |
@@ -110,9 +110,9 @@
 - [x] **T8 流服务与接口：注册表、心跳、4 个端点、SSE 头、举报自查**
 - [x] **T9 前端纯函数与请求：`notificationModel` + 类型 + API**
 - [x] **T10 叶子模块迁移：`formatChatTime` → `utils/`**
-- [x] **T11 前端壳层：Provider、铃铛、面板、六处徽标、浅色样式**
+- [x] **T11 前端壳层：Provider、铃铛、面板、侧栏四处分摊徽标 + 账号菜单、浅色样式**
 - [x] **T12 通知中心与跳转页：八类筛选、全部已读、信用记录、举报详情**
 - [x] **T13 聊天整合：活动会话、标读、追加、分会话徽标**
 - [x] **T14 E2E：`notifications.spec.ts` 13 条 + `notifications-walkthrough.spec.ts` 4 条**
 - [x] **T15 文档一致性：知识库、registry、SDD 阶段记录、工作区文档**
-- [x] **T16 回归与走查：后端 671、前端 530、E2E 13 + 4、浅色三档截图**
+- [x] **T16 回归与走查：后端 671、前端 533、E2E 13 + 4、浅色三档截图**

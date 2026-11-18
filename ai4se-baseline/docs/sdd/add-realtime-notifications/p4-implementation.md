@@ -35,7 +35,7 @@
 |---|---|---|
 | T9 纯函数与请求 | `notifications/notificationModel.ts`：`emptyCounts` / `typeCount` / `isUnread` / `conversationKey` / `applySnapshot`（`lastReadSeq` 护栏、50 条截断、计数逐项取大）/ `applyCounts` / `applyEvent`（活动会话即时标读）/ 三个标读归约 / `unreadByConversation` / `notificationHref`（八种 `kind`）/ `notificationAvailable` / `shouldToast` / `badgeLabel`（0 为空、不截断 `99+`）；`types.ts`、`api.ts` | Pass |
 | T10 叶子迁移 | `formatChatTime` 由 `chat/chatTime.ts` 迁至 `utils/chatTime.ts`，同步 4 处 import，断开 `notifications → chat` 反向依赖；测试断言未改 | Pass |
-| T11 壳层 | `NotificationContext`（REST 快照 → `EventSource` → `onopen` 对账、活动会话、提示条、切换用户清理）、`NotificationBadge`、`NotificationBell`（click 展开，Escape 关闭并归还焦点）、`NotificationPanel`（`createPortal` + `position: fixed` 自算定位，最新 50 条、全部已读、查看全部通知）、`notificationMessages.ts`；`App.tsx` 挂 Provider；`AppShell` 铃铛 + 侧栏「通知中心」入口 + 账号菜单入口（`total`）+ 侧栏 / 移动 tab 聊天入口（`CHAT`）；`route.ts` 增 `#/notifications` | Pass |
+| T11 壳层 | `NotificationContext`（REST 快照 → `EventSource` → `onopen` 对账、活动会话、提示条、切换用户清理）、`NotificationBadge`、`NotificationBell`（click 展开，Escape 关闭并归还焦点）、`NotificationPanel`（`createPortal` + `position: fixed` 自算定位，最新 50 条、全部已读、查看全部通知）、`notificationMessages.ts`；`App.tsx` 挂 Provider；`AppShell` 铃铛 + 账号菜单入口（`total`）+ 侧栏四处按功能分摊的徽标（我的旅行 / 同行消息 / 联系客服 / 账号，和为 `total`）+ 移动 tab 聊天入口（`CHAT`）；`route.ts` 增 `#/notifications` | Pass |
 | T12 通知中心与跳转页 | `NotificationCenterPage`（八类筛选 `notification-filter-<TYPE>` 带数字 +「全部」、全部已读、类型标签、重要标记、未读 / 已读文字、空态、不可用提示）；`CreditRecordsPage`（承接 `credit`）；`ReportDetailPage`（承接 `report`，数据来自 `GET /reports/mine`） | Pass |
 | T13 聊天整合 | `ChatPage` 打开会话即按 `(trip_id, other_user_id)` 标读、活动会话推送直接追加、保留 3 s 轮询兜底；`ChatList` 分会话未读徽标（`chat-unread-badge`） | Pass |
 
@@ -56,7 +56,7 @@
 | 通知相关后端测试 | `target/surefire-reports/*Notification*.txt` | **10 个文件 / 48 条**：Controller 9、Service 10、Producer 6、Hook 3、FailureIsolation 3、Stream 3、TextUtils 7、TypeEnum 4、Entity 2、Migration 1 |
 | 契约与接口子集 | `mvnw.cmd -B -ntp test -Dtest=OpenApiTest,NotificationControllerTest,ReportControllerTest` | **40/40**（`OpenApiTest` 含 0.26.0、4 条通知路径、`/reports/mine`、枚举与 `maxItems=50` 断言） |
 | 前端类型（C3） | `frontend/npm run typecheck` | Pass（`tsc --noEmit`，无输出） |
-| 前端单测（C3） | `frontend/npm test` | **530 tests / 63 files Pass**（新增 `notificationModel.test.ts`；合流 `add-travel-finance` 的 39 条 / 4 文件） |
+| 前端单测（C3） | `frontend/npm test` | **533 tests / 63 files Pass**（新增 `notificationModel.test.ts`；含 `railBadgeCounts` 3 条；合流 `add-travel-finance` 的 39 条 / 4 文件） |
 | 前端构建（C3） | `frontend/npm run build` | Pass：`dist/assets/index-*.js` 1,783.40 kB / gzip 554.38 kB、`index-*.css` 189.51 kB / gzip 33.07 kB；仅有既有 chunk 体积 warning |
 | 通知功能 E2E（C4） | `npx playwright test tests/notifications.spec.ts --workers=1` | **13 passed**（M1–M10 + N1–N3；合流后对空库 `e2e-notif-8081.db` 复跑） |
 | 走查 E2E（C5） | `npx playwright test tests/notifications-walkthrough.spec.ts --workers=1` | **4 passed**（V1–V4，约 25 s；重出浅色三档截图） |
@@ -91,6 +91,7 @@
 | D-14 | 徽标数字 | `badgeLabel` 返回原始数字（0 为空串），不做 `99+` 截断；数字是唯一计数信息载体，颜色只作强调 | 与 S30-26 一致 |
 | D-15 | 身份认证只发一次 | `identity_verified` 只在资料首次变为完整时产生；去重键 `system_identity:{userId}` 兜底，后续修改资料不重复通知 | 与 S30-20 一致 |
 | D-16 | 合流后编号顺延 | 2026-11-18 合流 `origin/main` 时 `add-travel-finance`（PR #42，契约 0.25.0 / `V30__add_travel_finance.sql` / REQ-028 / S29）先入 `main`，本 change 按「后到者顺延」改为 **REQ-029 / S30 / 契约 0.26.0 / `V31__add_notifications.sql`**；迁移、枚举注释、`OpenApiTest`、OpenSpec 工件、`requirement-workspace` 与知识库同步改号 | `proposal.md`「变更历史」、`registry.md`、`docs/sdd/README.md`；后端与契约全量复跑 |
+| D-17 | 侧栏徽标改为按功能分摊 | 2026-11-18 G2 后发起人要求「左栏不要通知中心入口，且左栏各功能数字之和等于铃铛」：移除 `RAIL_ITEMS` 里的通知中心入口（仍可从铃铛面板「查看全部通知」与账号菜单进入），把八类未读分区到「我的旅行 = `TRIP`+`APPLICATION`」「同行消息 = `CHAT`」「联系客服 = `SERVICE`」「账号 = `CREDIT`+`REPORT`+`ACCOUNT`+`SYSTEM`」四个入口，分区逻辑收敛到 `notificationModel.railBadgeCounts`（穷尽八类、每类只落一个入口），四项之和恒等于 `counts.total`；E2E 增 `rail-trips-badge` / `rail-support-badge` / `rail-account-badge` 与 `railBadgeSum` 断言 | 回写 `spec.md` S30-26 与计数 Requirement、`design.md` §6.3 / §6.7 / R-4、`atdd-design.md` M4 / M10、`proposal.md` D19；前端 533/533、通知 E2E 13 + 走查 4 全绿 |
 
 ## 6. 残余风险
 
@@ -120,7 +121,7 @@
 | 角色 | 批准人 | 确认内容 | 批准时间 |
 |---|---|---|---|
 | 发起人 / IO | WAYNE | 扩围范围（八类 / 22 事件 / 通知中心 / 目标跳转）、规格与一致性复核 0 BLOCKER | 2026-11-18T10:20+0800 |
-| 开发者 / SA | Karena | 扩围实现与四层证据（后端 671 / 前端 530 / E2E 13 + 4 / 浅色三档）、偏差 D-8…D-15 | 2026-11-18（扩围） |
+| 开发者 / SA | Karena | 扩围实现与四层证据（后端 671 / 前端 533 / E2E 13 + 4 / 浅色三档）、偏差 D-8…D-17 | 2026-11-18（扩围） |
 
 **G2 结论：Pass**。门禁口径经签署确认：以「通知 E2E 13 条全绿 + 走查 4 条全绿 + 失败集与基线同构」判定，不要求全量 0 失败。
 

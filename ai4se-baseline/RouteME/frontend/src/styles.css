@@ -763,6 +763,7 @@ svg {
   text-align: left;
   color: var(--ink-2);
   cursor: pointer;
+  position: relative;
   transition: background 0.16s, color 0.16s, box-shadow 0.18s, transform 0.18s;
 }
 
@@ -973,6 +974,14 @@ svg {
 
 .rail-link .count-badge {
   margin-left: auto;
+}
+
+/* 侧栏账号入口的徽标贴在头像右上角，与铃铛徽标同一套视觉。 */
+.rail-user .count-badge.rail-user-badge {
+  position: absolute;
+  top: 2px;
+  left: 27px;
+  pointer-events: none;
 }
 
 .notification-bell {

@@ -40,7 +40,7 @@ flowchart LR
   CT --> ST
   FE -->|REST 对账 / 标读| CT
 
-  FE --> SHELL[AppShell：铃铛 / 通知中心入口 / 账号菜单 / 聊天徽标]
+  FE --> SHELL[AppShell：铃铛 / 账号菜单 / 侧栏四入口分摊徽标]
   FE --> LIST[ChatList：会话级未读]
   FE --> CHAT[ChatPage：追加与标读]
   FE --> CENTER[NotificationCenterPage：八类筛选]
@@ -65,7 +65,7 @@ flowchart LR
 | `NotificationCenterPage.tsx` | 同上 | `#/notifications`：八类筛选（带数字）、全部已读、类型标签、重要标记、不可用提示 |
 | `NotificationBadge.tsx` | 同上 | 数字徽标（0 不渲染），供铃铛 / 侧栏 / 账号菜单 / tab / 会话行复用 |
 | `notificationMessages.ts` | `frontend/src/i18n/` | 类型标签、空态、全部已读、不可用、加载失败等固定文案 |
-| `App.tsx` / `AppShell.tsx` / `route.ts` | 既有 | 挂载提供者；铃铛；侧栏通知中心入口、账号菜单入口、聊天徽标；`#/notifications` 路由 |
+| `App.tsx` / `AppShell.tsx` / `route.ts` | 既有 | 挂载提供者；铃铛；侧栏按功能分摊的四处徽标、账号菜单入口；`#/notifications` 路由 |
 | `ChatPage.tsx` / `ChatList.tsx` | 既有 | 打开会话标读、活动会话登记、推送追加、分会话徽标 |
 | `CreditRecordsPage.tsx` / `ReportDetailPage.tsx` | 新增 | 承接 `credit` 与 `report` 两类跳转 |
 | `chatTime.ts`（迁移） | `frontend/src/chat/` → `frontend/src/utils/` | `formatChatTime` 改为叶子模块，见 R-10；`notifications` 只依赖 `utils`，不依赖 `chat` |
@@ -277,12 +277,16 @@ data: {"notification":{...},"message":null}
 | 位置 | 数字 | 探针 |
 |---|---|---|
 | 顶栏铃铛 | `counts.total` | `notification-badge` |
-| 侧栏「通知中心」入口 | `counts.total` | `rail-notification-badge` |
-| 账号菜单入口 | `counts.total` | `account-notification-badge` |
-| 侧栏聊天入口 | `counts.by_type.CHAT` | `rail-chat-badge` |
+| 账号菜单里的通知中心入口 | `counts.total` | `account-notification-badge` |
+| 侧栏「我的旅行」入口 | `TRIP` + `APPLICATION` | `rail-trips-badge` |
+| 侧栏「同行消息」入口 | `CHAT` | `rail-chat-badge` |
+| 侧栏「联系客服」入口 | `SERVICE` | `rail-support-badge` |
+| 侧栏账号入口（左下角头像） | `CREDIT` + `REPORT` + `ACCOUNT` + `SYSTEM` | `rail-account-badge` |
 | ≤900 px 移动 tab 聊天入口 | `counts.by_type.CHAT` | `tab-chat-badge` |
 | 会话列表行 | 该会话的 `CHAT` 未读 | `chat-unread-badge` |
 
+- 侧栏不再单列「通知中心」入口：通知中心从铃铛面板的「查看全部通知」与账号菜单进入。
+- 侧栏四个入口把八类未读分摊完，四项之和恒等于 `counts.total`；每个类型只计入一个入口，因此与铃铛口径一致，不会重复计数。
 - 0 时不渲染；数字以文本呈现，可读语义放在外层 `aria-label`。
 
 ### 6.4 面板与通知中心
@@ -305,7 +309,7 @@ data: {"notification":{...},"message":null}
 
 ### 6.7 E2E 探针
 
-`notification-bell`、`notification-badge`、`notification-panel`、`notification-item`、`notification-mark-all`、`notification-center`、`notification-center-item`、`notification-center-mark-all`、`notification-filter-ALL`、`notification-filter-<TYPE>`、`notification-center-empty`、`rail-notification-badge`、`account-notification-badge`、`rail-chat-badge`、`tab-chat-badge`、`chat-unread-badge`、`report-detail`、`report-detail-status`。
+`notification-bell`、`notification-badge`、`notification-panel`、`notification-item`、`notification-mark-all`、`notification-center`、`notification-center-item`、`notification-center-mark-all`、`notification-filter-ALL`、`notification-filter-<TYPE>`、`notification-center-empty`、`rail-trips-badge`、`rail-support-badge`、`rail-account-badge`、`account-notification-badge`、`rail-chat-badge`、`tab-chat-badge`、`chat-unread-badge`、`report-detail`、`report-detail-status`。
 
 ## 7. 端点 → Requirement → 场景
 
@@ -358,7 +362,7 @@ data: {"notification":{...},"message":null}
 | R-1 | 代理缓冲导致 3 秒口径不达标 | 控制器写禁缓冲响应头 + 20 s 心跳；E2E 经 Vite 代理实测 |
 | R-2 | 内存 emitter 在重启 / 多实例下失效 | REST 对账把「丢事件」降级为「延迟」；单进程 demo 可接受 |
 | R-3 | 查询参数身份可伪造 | 与既有 `X-User-Id` 同级暴露；真实鉴权 change 收口 |
-| R-4 | 六处计数（铃铛 / 侧栏 / 账号菜单 / tab / 会话行）漂移 | 同一 store 派生 + reducer 纯函数单测 |
+| R-4 | 多处计数（铃铛 / 侧栏四入口 / 账号菜单 / tab / 会话行）漂移 | 同一 store 派生 + reducer 纯函数单测；侧栏四项按类型分区，和恒等于 `total` |
 | R-5 | 行无限增长 | D13 明确不清理；长期另开需求 |
 | R-6 | 50 条展示上限导致会话级徽标少计 | 接受为展示边界；通知入口以服务端计数为准 |
 | R-7 | 命名冲突：既有 `NotificationService` 语义 | 流服务命名为 `NotificationStreamService`，写入服务保留 `NotificationService` |

@@ -19,6 +19,7 @@ export const notificationMessages = {
   centerTitle: '通知中心',
   centerEntry: '通知中心',
   centerEntryUnread: (count: number) => `通知中心，${count} 条未读`,
+  entryUnread: (label: string, count: number) => `${label}，${count} 条未读`,
   viewAll: '查看全部通知',
   markAll: '全部已读',
   empty: '暂时没有新通知',

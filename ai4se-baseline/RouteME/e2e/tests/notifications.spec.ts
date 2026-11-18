@@ -13,6 +13,21 @@ const CHAT_BODY = '.chat-body';
 
 type Session = { context: BrowserContext; page: Page };
 
+/**
+ * 侧栏四个功能入口的徽标之和。铃铛是总数，侧栏按功能分摊，两者必须相等。
+ */
+async function railBadgeSum(page: Page): Promise<number> {
+  let sum = 0;
+  for (const id of ['rail-trips-badge', 'rail-chat-badge', 'rail-support-badge', 'rail-account-badge']) {
+    const badge = page.getByTestId(id);
+    if ((await badge.count()) === 0) {
+      continue;
+    }
+    sum += Number((await badge.first().textContent()) ?? '0');
+  }
+  return sum;
+}
+
 async function newSession(browser: Browser): Promise<Session> {
   const context = await browser.newContext();
   return { context, page: await context.newPage() };
@@ -258,7 +273,12 @@ test('[M4] counts split per type and self messages are refused', async ({ browse
   await expect(a.page.getByTestId('notification-badge')).toHaveText('5', { timeout: 3000 });
   await expect(a.page.getByTestId('rail-chat-badge')).toHaveText('3');
   await expect(a.page.getByTestId('tab-chat-badge')).toHaveText('3');
-  await expect(a.page.getByTestId('rail-notification-badge')).toHaveText('5');
+  // 侧栏按功能分摊：行程 + 同行申请归「我的旅行」，客服与账号入口此时为 0。
+  await expect(a.page.getByTestId('rail-trips-badge')).toHaveText('2');
+  await expect(a.page.getByTestId('rail-support-badge')).toHaveCount(0);
+  await expect(a.page.getByTestId('rail-account-badge')).toHaveCount(0);
+  await expect(a.page.getByTestId('rail-notification-badge')).toHaveCount(0);
+  expect(await railBadgeSum(a.page)).toBe(5);
 
   const snapshot = await notificationsViaApi(a.page, publisher.id);
   expect(snapshot.counts).toEqual({
@@ -514,7 +534,9 @@ test('[N1] the notification centre groups eight types, filters with numbers and 
 
   await openShell(a.page, publisher);
   await expect(a.page.getByTestId('notification-badge')).toHaveText('2', { timeout: 3000 });
-  await expect(a.page.getByTestId('rail-notification-badge')).toHaveText('2');
+  await expect(a.page.getByTestId('rail-trips-badge')).toHaveText('1');
+  await expect(a.page.getByTestId('rail-chat-badge')).toHaveText('1');
+  expect(await railBadgeSum(a.page)).toBe(2);
 
   // 账号菜单与左下角账号按钮同口径：入口也带数字徽标。
   await a.page.getByRole('button', { name: `账号：${publisher.nickname}` }).click();
@@ -561,7 +583,9 @@ test('[N1] the notification centre groups eight types, filters with numbers and 
 
   await a.page.getByTestId('notification-center-mark-all').click();
   await expect(a.page.getByTestId('notification-badge')).toHaveCount(0);
-  await expect(a.page.getByTestId('rail-notification-badge')).toHaveCount(0);
+  await expect(a.page.getByTestId('rail-trips-badge')).toHaveCount(0);
+  await expect(a.page.getByTestId('rail-chat-badge')).toHaveCount(0);
+  expect(await railBadgeSum(a.page)).toBe(0);
   await expect(filterCount('ALL')).toHaveText('0');
   await expect(a.page.getByTestId('notification-center-item')).toHaveCount(2);
   await expect(a.page.locator('[data-testid="notification-center-item"][data-status="UNREAD"]'))
