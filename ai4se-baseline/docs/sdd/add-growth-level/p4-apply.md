@@ -99,5 +99,5 @@
 
 - **P4 结论：Pass with documented debt**（§6.3 / §6.4 / §6.7 为既有 E2E 债务，与本 change 无关；§6.8 的 SQLite 并发 500 已在本 change 内修复并加回归用例；§6.10 为 main 带入的契约 lint 错误，已顺带修正）。
 - 未写 G2：按流程由 VL（Neal）签署；建议下一步 `/sdd:local-verify-report` 汇总本记录与门禁输出，再取 G2。
-- **收口补记（2026-11-18）：** 已执行 `/sdd:local-verify-report`（`docs/ai4se-plugins/20261118-155434-local-verify-report.md`，Overall Pass；E2E 白名单首跑 27/28、原样重跑 28/28）；**G2 Pass**（VL=Neal，按用户指示代记录，`g2-decision.md`）；**G3 Conditional**（SA=Jacky，授权快进合并，归档条件 C3 待 P5，`g3-decision.md`）；已按用户指示快进合并 `main`。
+- **收口补记（2026-11-18）：** 已执行 `/sdd:local-verify-report`（`docs/ai4se-plugins/20261118-155434-local-verify-report.md`，Overall Pass；E2E 白名单首跑 27/28、原样重跑 28/28）；**G2 Pass**（VL=Neal，按用户指示代记录，`g2-decision.md`）；**G3 Conditional**（SA=Jacky，授权快进合并，归档条件 C3 待 P5，`g3-decision.md`）；已按用户指示快进合并 `main`（基线 `origin/main@693e0943`；合并后复验：后端 766 / 前端 561 / typecheck / 定向 E2E 11/11）。
 - P5 归档（C1 已实现，无额外挂账）与 Living Spec 合并待 G3 / SA 指示；契约 0.30.0 + V34 已落地，后续 change 顺延需复核占用。
