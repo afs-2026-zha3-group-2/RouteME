@@ -79,6 +79,7 @@ public final class UpstreamStubs {
             PORT = SERVER.getAddress().getPort();
             SERVER.createContext("/stub-ai/chat/completions", UpstreamStubs::handleAi);
             SERVER.createContext("/stub-weather/v1/forecast", UpstreamStubs::handleWeather);
+            SERVER.createContext("/stub-weather/v1/ensemble", UpstreamStubs::handleWeather);
             SERVER.setExecutor(Executors.newCachedThreadPool());
             SERVER.start();
         } catch (IOException error) {

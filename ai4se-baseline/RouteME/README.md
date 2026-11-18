@@ -102,7 +102,7 @@ npm run dev                          # http://localhost:5173，/api 代理到 80
 
 打开 <http://localhost:5173>，用种子账号登录（`linjianxia` / `chenyu` / `sunian` / `zhouye`，密码均为 `123456`）。
 
-冒烟接口：`GET /api/greeting`、`GET /api/users`、`GET /api/trips`、`GET /api/experiences`、`GET /api/weather/forecast`（`destination_code` + `date`，Open-Meteo 免 Key）。
+冒烟接口：`GET /api/greeting`、`GET /api/users`、`GET /api/trips`、`GET /api/experiences`、`GET /api/weather/forecast`（`destination_code` + `date`，Open-Meteo 免 Key）。天气主用 `api.open-meteo.com`；该主机在部分网络会被阻断，此时自动切到同一数据源的集合预报主机 `ensemble-api.open-meteo.com`（可用 `OPEN_METEO_FALLBACK_BASE_URL` 覆盖），集合接口不提供降雨概率，该字段返回 null。
 
 ## SQLite 数据
 
