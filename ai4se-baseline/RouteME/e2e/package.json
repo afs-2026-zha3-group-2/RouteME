@@ -4,7 +4,13 @@
   "version": "0.1.0",
   "type": "module",
   "scripts": {
-    "test": "playwright test"
+    "test": "playwright test",
+    "test:smoke": "node ../../scripts/e2e-smoke.mjs",
+    "test:changed": "playwright test --only-changed=origin/main",
+    "test:last-failed": "playwright test --last-failed",
+    "test:full": "playwright test --reporter=line",
+    "test:shards": "node ../../scripts/e2e-shard.mjs",
+    "debt:diff": "node ../../scripts/e2e-debt-diff.mjs --root ../.."
   },
   "devDependencies": {
     "@playwright/test": "^1.56.0",

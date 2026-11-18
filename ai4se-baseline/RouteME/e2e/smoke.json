@@ -1,0 +1,27 @@
+{
+  "$comment": "Smoke set for the P4 fast lane. Titles MUST be exact top-level `test('...')` titles (a test inside `test.describe` needs its full `describe > test` path). Keep this list to user-visible core flows; everything else belongs to the full run.",
+  "cases": [
+    { "file": "auth.spec.ts", "title": "shows the logout entry for a registered account" },
+    { "file": "auth.spec.ts", "title": "logs out a registered account and rejects the old token" },
+    { "file": "trips.spec.ts", "title": "shows the identity gate with login form and the unfinished trip list" },
+    { "file": "trips.spec.ts", "title": "publishes a trip and finds it in the home list" },
+    { "file": "trips.spec.ts", "title": "filters the list by interest tag and keeps the filters visible" },
+    { "file": "companions.spec.ts", "title": "applies inline and keeps the pending state after reload" },
+    { "file": "companions.spec.ts", "title": "withdraws a pending application and restores the inline form" },
+    { "file": "weather.spec.ts", "title": "展示目的地首日天气与出行提醒" },
+    { "file": "weather.spec.ts", "title": "日期超出预报窗口时提示暂无预报" },
+    { "file": "experiences.spec.ts", "title": "shows seeded experiences in the travel experience view" },
+    { "file": "experiences.spec.ts", "title": "shares an experience and reuses it to publish a new plan" },
+    { "file": "mine.spec.ts", "title": "shows the four groups with counts and the published group by default" },
+    { "file": "profile.spec.ts", "title": "registers and lands on the profile setup page" },
+    { "file": "profile.spec.ts", "title": "saves a complete profile and opens the public profile" },
+    {
+      "file": "credit.spec.ts",
+      "title": "shows the initial credit line on a newly registered profile and keeps it after refresh"
+    },
+    {
+      "file": "ai-planner.spec.ts",
+      "title": "A3 generates a complete itinerary with weather, budget and AMap stats"
+    }
+  ]
+}

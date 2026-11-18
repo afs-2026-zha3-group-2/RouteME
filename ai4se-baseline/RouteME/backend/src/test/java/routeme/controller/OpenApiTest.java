@@ -23,6 +23,10 @@ class OpenApiTest {
 
     private static final Path SPEC_PATH = Path.of("..", "openapi.yaml");
 
+    // Single source for version assertions: bump openapi.yaml info.version and this
+    // constant together (one edit point instead of five scattered literals).
+    private static final String CONTRACT_VERSION = "0.31.0";
+
     private static final List<String> HTTP_METHODS = List.of("get", "post", "put", "patch", "delete");
 
     private static final List<String> ADMIN_CONSOLE_PATHS = List.of(
@@ -79,7 +83,7 @@ class OpenApiTest {
 
         // Then
         assertAll(
-                () -> assertEquals("0.31.0", info.get("version"), "info.version"),
+                () -> assertEquals(CONTRACT_VERSION, info.get("version"), "info.version"),
                 () -> assertTrue(responses(likeExperience).containsKey("201"), "first like returns 201"),
                 () -> assertTrue(responses(likeExperience).containsKey("200"), "duplicate like returns 200"),
                 () -> assertTrue(responses(likeExperience).containsKey("403"), "self like returns 403"),
@@ -185,7 +189,7 @@ class OpenApiTest {
 
         // Then
         assertAll(
-                () -> assertEquals("0.31.0", info.get("version"), "info.version"),
+                () -> assertEquals(CONTRACT_VERSION, info.get("version"), "info.version"),
                 () -> assertTrue(paths(document).containsKey("/users"), "/users declared"),
                 () -> assertTrue(paths(document).containsKey("/trips/{tripId}"), "detail path declared"),
                 () -> assertTrue(
@@ -786,7 +790,7 @@ class OpenApiTest {
 
         // Then
         assertAll(
-                () -> assertEquals("0.31.0", info.get("version"), "info.version"),
+                () -> assertEquals(CONTRACT_VERSION, info.get("version"), "info.version"),
                 () -> assertTrue(paths(document).keySet().containsAll(ADMIN_CONSOLE_PATHS), "admin console paths"),
                 () -> assertEquals(17L, adminOperations, "admin console operations"),
                 () -> assertTrue(
@@ -917,7 +921,7 @@ class OpenApiTest {
 
         // Then
         assertAll(
-                () -> assertEquals("0.31.0", asMap(document.get("info")).get("version"), "info.version"),
+                () -> assertEquals(CONTRACT_VERSION, asMap(document.get("info")).get("version"), "info.version"),
                 () -> assertTrue(responses(startSession).containsKey("201"), "session start returns 201"),
                 () -> assertTrue(
                         responses(startSession).keySet().containsAll(List.of("401", "404", "409", "429")),
@@ -1093,7 +1097,7 @@ class OpenApiTest {
 
         // Then
         assertAll(
-                () -> assertEquals("0.31.0", info.get("version"), "info.version"),
+                () -> assertEquals(CONTRACT_VERSION, info.get("version"), "info.version"),
                 () -> assertTrue(
                         paths(document).keySet().containsAll(List.of(
                                 "/trips/{tripId}/finance",
@@ -1346,7 +1350,7 @@ class OpenApiTest {
 
         // Then
         assertAll(
-                () -> assertEquals("0.31.0", info.get("version"), "info.version"),
+                () -> assertEquals(CONTRACT_VERSION, info.get("version"), "info.version"),
                 () -> assertTrue(
                         paths(document).containsKey("/notifications")
                                 && paths(document).containsKey("/notifications/stream")

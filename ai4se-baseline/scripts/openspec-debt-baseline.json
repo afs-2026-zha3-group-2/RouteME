@@ -1,0 +1,12 @@
+{
+  "recordedAt": "2026-11-18",
+  "note": "Pre-existing openspec strict-validation debt, exempted from the CI gate. New failures still fail the gate. Remove an entry once the owning change fixes it (销账).",
+  "allow": [
+    {
+      "item": "change/add-admin-console",
+      "reason": "specs/admin-console/spec.md Requirement '举报详情与处理' body exceeds 500 chars (strict WARNING). Pre-existing since the change was authored; split the requirement text when the owning change is next revised. No behavior change implied.",
+      "recordedAt": "2026-11-18",
+      "ownerChange": "add-admin-console"
+    }
+  ]
+}

@@ -1,0 +1,19 @@
+{
+  "name": "routeme-sdd-tooling",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Repo tooling: ID lint, sign ledger, archive queue, E2E debt diff, contract/styles split. Run scripts with node from the repository root; install deps once with npm install --prefix ai4se-baseline/scripts.",
+  "scripts": {
+    "bundle": "redocly bundle ../RouteME/openapi/root.yaml -o ../RouteME/openapi.yaml",
+    "lint:contract": "redocly lint ../RouteME/openapi.yaml --config ../RouteME/redocly.yaml",
+    "check:ids": "node check-id-collisions.mjs --root ../..",
+    "openspec:gate": "node openspec-gate.mjs --root ../..",
+    "ledger": "node sign-ledger.mjs --root ../..",
+    "queue": "node archive-queue.mjs --root ../.."
+  },
+  "devDependencies": {
+    "@redocly/cli": "^1.34.0",
+    "yaml": "^2.6.0"
+  }
+}

@@ -1,0 +1,8 @@
+{
+  "recordedAt": "2026-11-18",
+  "note": "Pre-existing numbering debt found when the collision lint landed. Entries are reported as BASELINE, not failures. Remove an entry once the underlying renumbering/rename is done. REQ-018: experience-photos keeps REQ-018 (registry authority); admin-console reused the number in registry + requirement-workspace files and must be renumbered by its owner. REQ-023: admin-dashboard was renumbered to REQ-026 in docs/sdd on merge, but its intents/requirements filenames still carry REQ-023; experience-like-credit owns REQ-023.",
+  "allow": [
+    "REQ REQ-018",
+    "REQ REQ-023"
+  ]
+}
