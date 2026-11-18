@@ -4,9 +4,9 @@
 - **能力：** `user-credit`（ADDED Requirements：举报违规扣分规则 / 记账与幂等 / 低分联动）+ `admin-console`（MODIFIED Requirements：举报详情与处理）；两者既有 Requirement 均由未归档 change 提供（`add-credit-account` / `add-admin-console`），本变更 MUST 晚于它们归档
 - **规模：** S（1 个处置表单改造 + 1 条扣分记账 + 1 次迁移 + 契约升版；无新增端点）
 - **规则：** `@rule:spec-first`、`@rule:sdd-artifacts`、`@rule:api-contract`、`@rule:java-patterns`、`@rule:web-coding-style`、`@rule:tdd-cycle`、`@rule:prototype-ui-alignment`
-- **本回合状态：** P1 提案定稿（D1–D5）；Delta 草稿（`user-credit` ADDED 3 Requirement / 16 Scenario + `admin-console` MODIFIED 1 Requirement / 19 Scenario），`openspec validate add-report-credit-deduction --strict` → valid（仅有一处 INFO：`admin-console` 活规格尚未存在，归档阶段才校验）；未改业务代码。
+- **本回合状态：** P2 Delta 收敛完成（D1–D5）；Delta（`user-credit` ADDED 3 Requirement / 16 Scenario + `admin-console` MODIFIED 1 Requirement / 20 Scenario），`openspec validate add-report-credit-deduction --strict` → valid（仅有一处 INFO：`admin-console` 活规格尚未存在，归档阶段才校验）；未改业务代码。
 
-## 问题
+## Why
 
 信用账户、账本与记账服务已在 `origin/main` 落地（`V20__add_credit_account.sql`、`CreditService.book`），低分自动限制链路已在 `add-credit-exit-restriction` 落地（`CreditChangedEvent` → `credit_restriction`），举报处置队列已在 `add-admin-console` 落地（4 态 + 成立 / 不成立）。但三条链目前互不相连：
 
@@ -16,7 +16,7 @@
 
 本变更做这条链的**扣分段垂直切片**：举报核实成立 → 管理员选违规类型 + 填违规原因 → 系统按规则扣分并写信用记录 → 跌破 60 时既有链路自动限制。账号处罚动作从举报页移除（用户管理页保留），信用明细页与通知不在本变更。
 
-## 范围
+## What Changes
 
 **In scope**
 
@@ -30,7 +30,7 @@
 - **契约与前端**：`openapi.yaml` 升次版本；前端举报详情页表单、预览、处理历史与错误映射同步。
 - **登记**：`stories.md` / `registry.md` / `handoff.md` 登记 REQ-028 → `add-report-credit-deduction`。
 
-**Out of scope**
+## Out of Scope
 
 - 用户举报提交端的原因枚举（仍为 4 类 `harassment / fake / safety / other`）与举报入口（S14 / REQ-012）。
 - 用户端 / 管理端信用记录明细页、分数变化历史、申诉通道（用户裁决 D2）。
@@ -40,7 +40,7 @@
 - 历史已处理举报的补扣或重算（不回填）。
 - 引入第二套 UI 组件库或独立「信用中心」页面。
 
-## 影响面
+## Impact
 
 | 位置 | 改动 |
 |---|---|
@@ -192,9 +192,9 @@
 
 | # | 结果 | 说明 |
 |---|---|---|
-| 1 Intent clear | Pass | §问题 一句话可对外：举报核实成立 → 选违规类型 → 系统自动扣分 |
+| 1 Intent clear | Pass | §Why 一句话可对外：举报核实成立 → 选违规类型 → 系统自动扣分 |
 | 2 Actors defined | Pass | §1 四个角色 + 权限边界 |
-| 3 Scope bounded | Pass | §范围 in / out 均非空；账号处置与信用明细显式排除 |
+| 3 Scope bounded | Pass | §What Changes / §Out of Scope 均非空；账号处置与信用明细显式排除 |
 | 4 Scenarios concrete | Pass | §2 共 26 条，均含可观察结果（分值、状态、记录字段） |
 | 5 Exception / boundary | Pass | R-10、R-12、R-17、R-24 ~ R-26 |
 | 6 Results verifiable | Pass | 分值、状态、账本字段、幂等与预览均可断言 |

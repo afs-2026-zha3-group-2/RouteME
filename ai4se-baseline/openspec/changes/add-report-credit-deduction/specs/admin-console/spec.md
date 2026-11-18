@@ -8,7 +8,7 @@
 
 处理 MUST 填写处理说明（成立时为违规原因，不成立时为驳回说明；必填，≤500 字）。成立时 MUST 选择 8 类违规类型之一（`HARASSMENT` / `FAKE_TRIP` / `FRAUD_RISK` / `ILLEGAL_CONTENT` / `IMPERSONATION` / `NO_SHOW_DISRUPTION` / `PRIVACY_LEAK` / `OTHER`），`OTHER` MUST 再选择 -5 / -10 / -20 / -30 之一；系统 MUST 按 `user-credit` 的举报违规扣分规则计算扣分，并在同一事务内把举报置为 `RESOLVED` 并写入信用记录；处理前详情 MUST 展示被举报用户「当前分数 → 本次扣分 → 处理后分数」，处理后分数 MUST 按 0 截断。举报处置 MUST NOT 改变被举报用户的账号状态，MUST NOT 在举报页提供暂停 / 封禁 / 更新封禁 / 恢复入口（这些能力保留在用户管理页）。不成立时置 `REJECTED`，MUST NOT 扣分或写入信用记录。对非 `PROCESSING` 举报执行处理 MUST 返回 409 `REPORT_NOT_PROCESSING`；被举报用户不可推导时 MUST 返回 400 `INVALID_INPUT` 且举报保持 `PROCESSING`。
 
-处理记录 MUST 保留；已处理详情 MUST 展示所选违规类型、本次实际扣分、处理人、处理时间与违规原因；历史已处理举报的处罚动作字段 MUST 只作为历史值只读展示，MUST NOT 作为新数据处理。举报人 MUST 能看到受理与最终状态。
+处理记录 MUST 保留；已处理详情 MUST 展示所选违规类型、本次实际扣分、处理人、处理时间与违规原因；历史已处理举报的处罚动作字段 MUST 只作为历史值只读展示，MUST NOT 作为新数据处理。历史举报若没有违规类型或实际扣分，详情 MUST 以空值降级展示并 MUST NOT 报错。举报人 MUST 能看到受理与最终状态。
 
 #### Scenario: 开始处理
 
@@ -120,10 +120,17 @@
 - **Then** MUST 展示所选违规类型、本次实际扣分、处理人、处理时间与违规原因
 - **And** 历史处罚动作字段只能作为历史值只读展示
 
+#### Scenario: 历史举报降级展示
+
+- **Given** 一条在本次变更前已处理的历史举报，没有违规类型与实际扣分
+- **When** 管理员打开举报详情
+- **Then** 详情 MUST 正常加载，违规类型与本次扣分 MUST 以空值 / 未记录展示
+- **And** 历史处罚动作字段 MUST 只读展示，MUST NOT 报错或推断新值
+
 #### Scenario: 举报不成立
 
 - **Given** 举报状态为 `PROCESSING` 且管理员判定举报不成立
-- **When** 管理员填写违规原因并选择驳回
+- **When** 管理员填写驳回说明并选择驳回
 - **Then** 举报状态 MUST 变为 `REJECTED`，被举报用户状态与分数不变
 - **And** MUST NOT 生成信用记录
 - **And** 处理记录保留
