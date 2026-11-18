@@ -1823,6 +1823,106 @@ REQ-010：聊天页按原型重构、聊天准入与退出语义调整、集合�
 - **阶段：** 单阶段；无归档前置依赖（`travel-finance` 全新能力），但需与在途 `add-realtime-notifications` 协调契约版本与迁移号。
 - **质量自检（split-heuristics）：** 子目标一句话可说明 ✓；端到端可观察（充值初始余额 → 买保险 / 借款 → 扣 5% → 还款）✓；可独立运行 ✓；capability 名真实（`travel-finance`）✓；无依赖环 ✓；33 场景接近单 change 上限，P2 可再合并同义场景。
 
+## 31. REQ-031 变更影响 — 路线完成度（S32 / issue #45）
+
+- **日期：** 2026-11-18 ｜ **触发：** GitHub issue #45「路线完成度」+ 用户裁决 D1–D8
+- **粒度：** 应用架构（资料响应契约 / 完成度派生归属 / 个人主页展示面 / 独立性边界），非代码设计
+- **基线：** `origin/main@aa320dc`（分支 `feature/add-route-completion`，独立 worktree）
+
+### 30.1 Requirement set
+
+- `requirement-workspace/requirements/REQ-031-route-completion.md`（Ready 条目，19 场景 S32-1 ~ S32-19，blocking OQ 0，DoR BLOCKER 0）
+- `requirement-workspace/intents/REQ-031-route-completion.md`（意图捕获 + 证据锚点 + D1–D8）
+- 新增能力：`route-completion`（ADDED）；只读依赖 `user-profile` / `user-profiles`（资料响应承载）；未来只读 `trip-plans` / `trip-companions`
+- 用户裁决：D1 仅预留 + 数据不足 / D2 阈值 ≥1 条已结束行程 / D3 本期不做列表 / D4 REQ-031·S32·`add-route-completion`·`route-completion` / D5 标签 + 百分比 / D6 发布者 + `ACCEPTED` 同行者 / D7 仅接口字段无迁移 / D8 本人他人同口径 + 状态码
+
+### 30.2 As-is asset inventory（evidence paths）
+
+| 资产 | 路径 | 现状 |
+|---|---|---|
+| 资料响应 | `backend/src/main/java/routeme/response/UserProfileResponse.java` | 已含资料、信用分、`joinedAt`、`stats`、账号状态；无完成度字段 |
+| 资料端点 | `backend/src/main/java/routeme/controller/UserProfileController.java` | `GET /users/{userId}/profile`；本人含生日，他人省生日 |
+| 个人主页 | `frontend/src/profile/ProfilePage.tsx` | hero 含头像、昵称、徽标、`.profile-credit` 信用行、chips；无完成度行 |
+| 状态映射范式 | `frontend/src/profile/creditDisplay.ts`、`i18n/tripMessages.ts` | 信用等级英文码 → 文案；可复用为完成度状态码 |
+| 前端类型 | `frontend/src/types.ts`、`api.ts` | `UserProfile` 与 `loadUserProfile`；无完成度字段 |
+| 契约 | `RouteME/openapi.yaml` | `info.version: 0.26.0`；`UserProfile` schema；`/users/{userId}/profile` |
+| 行程状态 | `openspec/changes/add-trip-completion/`（REQ-011） | `completed_at` + 四态派生；未来完成度样本来源 |
+| 同行关系 | Living Spec `openspec/specs/trip-companions/spec.md` | `ACCEPTED` 即同行者；未来样本范围 |
+| 信用分 | `openspec/changes/add-credit-account/`、`V20__add_credit_account.sql` | 独立账户 + 账本；本 change 不读不写 |
+| 推荐引擎 | 提交 `c516d76` | 同行者推荐 / 匹配引擎已全部移除；无「推荐列表」可承接 |
+| 完成度实现 | 全仓 grep `完成度 / completion_rate / route_completion` | **0 命中**（除地图注释与历史文档）：无任何完成度代码 |
+| 原型 | `docs/prototype/v1`（归档）、`v2`（六屏设计板） | 均无路线完成度元素；v1 不得结构性改动 |
+| 迁移 | `backend/src/main/resources/db/migration/` | 头为 `V30`；本 change **无迁移** |
+
+### 30.3 As-is → proposed delta（逐资产）
+
+| 资产 | As-is | Proposed delta |
+|---|---|---|
+| 资料响应 | 无完成度 | 增加 `route_completion_rate`（0–100 整数或 null）+ `route_completion_state`（`good` / `neutral` / `watch` / `insufficient`），只读 |
+| 后端派生 | 无 | 新增单点派生：样本 <1 或数值 null → `insufficient`；≥80 → `good`；70–79 → `neutral`；<70 → `watch`；非法值降级 `insufficient` |
+| 数据源 | 无打卡聚合 | 本期无源：恒返回 null + `insufficient`；不得用统计 / 已结束行程数伪造 |
+| 前端类型 | 无字段 | `UserProfile` 增加两字段（可选 / 可空），`loadUserProfile` 不变 |
+| 个人主页 | 信用行下方无内容 | 新增完成度行：四态文案 + 百分比；`insufficient` 只显示「暂无足够完成记录」 |
+| i18n | 无文案 | 新增「路线完成度」「信誉良好」「请留意行程完成情况」「暂无足够完成记录」 |
+| 契约 | 0.26.0 | 次版本（预计 0.27.0）+ `UserProfile` schema 两字段 + 示例；`OpenApiTest` 同步 |
+| 数据表 / 迁移 | 无 | **无 delta**（D7） |
+| 列表 / 弹窗 / 详情 | 无 | **无 delta**（D3） |
+| 信用分 / 统计 / 成长等级 | 既有 | **无 delta**；新增回归断言验独立性 |
+| 管理端 | 无 | **无 delta** |
+| 原型 | v1 归档 / v2 设计板 | **不修改**；P3 以 preview + 生产 UI 截图作为界面证据 |
+
+### 30.4 Blast radius（应用架构）
+
+- **后端（1 处响应扩展 + 1 个派生单点）：** `UserProfileResponse` 追加两个字段；完成度派生纯逻辑（新类 / 常量）；资料服务装配时调用（本期返回常量数据不足）。
+- **契约（1 处扩展）：** `openapi.yaml` `UserProfile` schema + 示例；`OpenApiTest` 版本断言。
+- **前端（1 页 + 类型 / 文案）：** `ProfilePage` hero 增加完成度行；`types.ts` / `tripMessages.ts`；无路由变化。
+- **数据（0）：** 无表、无列、无迁移。
+- **管理端（0）：** 无角色、端点与页面。
+- **不影响：** 登录 / 注册、发布、申请、聊天、体验、信用分、管理后台、首页列表、地图、资料弹窗与统计。
+- **运行时风险面：** 资料读取多一次纯函数调用；无写入、无并发敏感路径。
+
+### 30.5 Artifact impact（specs / tests / docs）
+
+| 工件 | 影响 |
+|---|---|
+| OpenSpec Delta | `route-completion` **ADDED**（字段预留与数据不足 / 阈值派生 / 个人主页展示 / 独立性 / 兼容）；无 MODIFIED、无 REMOVED |
+| 长期规格 | 归档后新增 Living Spec `openspec/specs/route-completion/spec.md` |
+| 契约 | `openapi.yaml` 次版本（预计 0.27.0）+ `UserProfile` schema；后端契约测试同步 |
+| 后端测试 | 派生单测（边界 80/79/70/69/0/null/非法）；资料 API 断言字段存在与类型；独立性回归（信用字段、`stats` 不变） |
+| 前端测试 | 状态 → 文案纯函数单测；个人主页渲染（四态 + 数据不足）；无 DOM 渲染层 |
+| E2E | `route-completion.spec.ts`：数据不足态、四态模拟（接口拦截或夹具）、本人 / 他人同口径、信用行保持不变 |
+| 知识库 | 无需新增接口文档（仅字段扩展）；`docs/knowledge/interfaces/README.md` 按需补一行 |
+| 阶段记录 | `docs/sdd/add-route-completion/p1-intent.md` 等；`docs/sdd/README.md` 索引 |
+| 评审 | `docs/reviews/20261118-add-route-completion-{proposal,spec}-review.md` |
+
+### 30.6 Dual-track notes（OpenSpec vs agile）
+
+- **OpenSpec 轨：** 单 change `add-route-completion`，单能力 `route-completion`（ADDED）；字段、派生与展示写在同一 Delta。
+- **Agile 轨：** 故事 S32「路线完成度」（迭代 3 / P1 / 3 点）；不另拆故事。
+- **并列轨道：** 人工打卡、聚合算法、列表 / 详情 / 弹窗展示、成长等级（issue #44）分属不同故事；本需求不预留空壳端点或字段。
+
+### 30.7 Risks & blockers
+
+| 级别 | 项 | 说明 / 缓解 |
+|---|---|---|
+| Risk | 「预留」被实现成假数据 | D1 写死；Delta 明确禁止；API 断言 null + insufficient |
+| Risk | 前端自行计算阈值 | Delta 规定只做字典映射；单测与代码审阅检查无 80 / 70 常量 |
+| Risk | 与信用分 / 统计误接 | 独立性场景 + 回归断言；不新增账本记录 |
+| Risk | 契约版本撞号 | 基线 0.26.0；P3 按合并顺序确认（预计 0.27.0） |
+| Risk | 展示行与 hero 版式冲突 | 复用 `.profile-credit` 行模式；P3 预览 + 四宽度 × 深浅色走查 |
+| Risk | 资料弹窗等既有面被误改 | Delta 明确 out of scope；E2E 断言弹窗不变 |
+| Risk | 未来聚合口径漂移 | D2 / D6 固化；聚合算法后续卡片 |
+| Risk | 「推荐列表」被误解为本期范围 | D3 写死：推荐引擎已移除，本期不做列表 |
+| Blocker | 无 | blocking OQ = 0；DoR BLOCKER = 0；A0 ⑨–⑫ 全过 |
+
+### 30.8 Suggested split boundaries（供 proposal-split / story-split）
+
+- **一个 change：** `add-route-completion` ← REQ-031（迭代 3 / S32）。
+- **不拆字段 / 派生 / 展示：** 三者是同一字段从后端到个人主页的端到端链路；拆开会产生「有字段无展示」或「有展示无来源」的不完整验收。
+- **不并入人工打卡与聚合：** 后续独立卡片；本 change 不预留表或端点。
+- **不并入列表 / 弹窗 / 详情展示：** D3 本期不做；未来可复用同一状态码另开增量。
+- **阶段：** 单阶段；无归档前置依赖（全新能力）；契约版本需与在途 change 按合并顺序协调。
+- **质量自检（split-heuristics）：** 子目标一句话可说明 ✓；端到端可观察（资料响应字段 → 个人主页行）✓；可独立运行 ✓；capability 名真实（`route-completion`）✓；无依赖环 ✓；19 场景适合单 change。
 ## 29. REQ-030 变更影响 — 举报违规扣减信用分（issue #29）
 
 > 编号说明（2026-11-18）：合并 `origin/main@2bf9148` 时 REQ-028 / S29 / V30 与 REQ-029 / S30 已被 `add-travel-finance` 占用，本节按「后到者顺延」改为 **REQ-030 / S31 / §29 / V31**。

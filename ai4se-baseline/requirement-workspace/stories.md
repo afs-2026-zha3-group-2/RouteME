@@ -552,10 +552,34 @@
 - **保留边界：** 真实保险机构 API / 核保 / 理赔、真实银行对接、征信、退保、罚息、钱包充值提现、管理后台金融视图与通知均排除（D10 / D12）。
 - **依赖：** `trip-plans` / `trip-companions` 只读；`user-auth` 注册事务内初始化钱包；`user-credit` 仅作账本范式参照，不读写信用分。
 
-## Traceability（REQ-030）
+---
+
+# Story list — REQ-031（路线完成度 / issue #45）
+
+- **故事：** S32 路线完成度（GitHub issue #45；优先级 P1；迭代 3；3 点；落点页面：个人主页。原 issue 另含推荐列表 / 行程详情，按用户裁决 D3 本期不做）
+- **需求编号说明：** `origin/main@8992853` 已用 REQ-029 / S30（`refine-publish-route-map`）与 REQ-030（`add-report-credit-deduction`）；本需求起草时登记为 REQ-029 / S30，同日两次顺延，按用户裁决最终为 **REQ-031 / S32**。
+- **Change：** `add-route-completion`（`route-completion` ADDED）
+- **垂直切片：** 只负责「后端完成度字段与状态派生 → 个人主页展示入口」；人工打卡、真实聚合、列表 / 详情 / 弹窗展示不在本故事。
+- **规则口径：** 本期无数据源，所有用户「暂无足够完成记录」；阈值 ≥80 信誉良好 / 70–79 中性 / <70 请留意；与信用分、资料统计、LV1–LV5 成长等级独立；状态码由后端返回，前端只映射。
+- **更新时间：** 2026-11-18
+
+| Story | Title | 角色 | Priority | Iteration | Points | Page | Parent REQ | Change | Status |
+|---|---|---|---|---|---|---|---|---|---|
+| S32 | 路线完成度 | 寻找旅行搭子的浏览者 | P1 | 迭代 3 | 3 | 个人主页 | REQ-031 | `add-route-completion` | P1 drafted（2026-11-18） |
+
+## Traceability（REQ-031）
 
 | Story | Requirement scenarios | Change spec | Story file |
 |---|---|---|---|
+| S32 | REQ-031 §4 S32-1 ~ S32-19 | `openspec/changes/add-route-completion/specs/route-completion/spec.md`（ADDED，P1 草稿） | 无独立故事文件：19 场景由 Ready 条目 + proposal + Delta 承接（与 REQ-012 / REQ-019 / REQ-027 同口径） |
+
+## Notes（REQ-031）
+
+- **不拆故事：** 字段、派生与个人主页展示是同一条端到端链路；拆开会产生「有字段无展示」或「有展示无来源」。
+- **单 capability：** `route-completion`（ADDED）；不改 `user-profile` / `user-profiles` / `user-credit` 的 Requirement。
+- **本期不做：** 人工打卡与聚合算法、推荐列表、资料弹窗、行程卡、行程详情、管理端、通知（D1 / D3 / D7）。
+- **独立性：** 不读写信用分与账本、不改 `stats`、不依赖成长等级（S32-17 / S32-18）。
+- **归档约束：** 全新能力，无前置归档依赖；Living Spec 归档后新增 `openspec/specs/route-completion/`。
 | S31 | REQ-030 §4 R-1 ~ R-26 | `openspec/changes/add-report-credit-deduction/specs/user-credit/spec.md` + `specs/admin-console/spec.md` | 无独立故事文件：以意图 + proposal + Delta 承接（与 REQ-012 / REQ-019 同口径） |
 
 ## Notes（REQ-030）

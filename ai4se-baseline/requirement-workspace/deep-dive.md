@@ -1534,3 +1534,89 @@ MVP 无推送、无通知；以下为金融信息的 UI 展示面契约。
 - **E2E 影响：** 详情页新增入口区块，既有 `trips.spec.ts` 断言可能受版式影响；新增 `travel-finance.spec.ts` 覆盖购买、借款、还款与余额不足。
 - `{TBD}`：无。非阻塞项（契约 / 迁移号、端点与字段形状、原型截点）已在 REQ-028 §8 标 deferred。
 - A0 门 ⑨–⑫：全部通过。
+
+## REQ-031 增补 — 路线完成度（S32 / issue #45）
+
+> 基线 `origin/main@aa320dc`；用户裁决 D1–D8 见 `intents/REQ-031-route-completion.md` 与 `requirements/REQ-031-route-completion.md` §8。
+
+### ① 数据契约（Data contract）
+
+| # | 概念 | grain（粒度） | 字段清单 | 状态迁移 | 来源 |
+|---|---|---|---|---|---|
+| A | **用户级路线完成度（派生，不落库）** | 每用户 1 个派生值 | `route_completion_rate`（integer 0–100 或 `null`）、`route_completion_state`（`good` / `neutral` / `watch` / `insufficient`）、内部输入 `ended_trip_count`（样本数） | 无持久状态；每次读取由「完成度数值 + 样本数」派生：`null` 或样本 <1 → `insufficient`；≥80 → `good`；70–79 → `neutral`；<70 → `watch` | 未来人工打卡聚合；本版无数据源，恒为 `null` + `insufficient` |
+| B | **资料响应扩展（API 契约）** | 每次 `GET /users/{userId}/profile` 响应 | 在既有 `UserProfile` 上追加 A 的两个只读字段；不新增端点、不做批量接口 | 无状态；新增字段可空，不影响既有消费者 | `openapi.yaml` `UserProfile` schema；`UserProfileResponse` |
+| C | **单行程完成度（未来，不实现）** | 每条已结束行程 1 个值 | 计划有效打卡点数、实际完成打卡点数、单行程完成度 = 实际 / 计划 | 未实现；后续独立卡片 | issue #45「数据来源预留」 |
+| D | **数据充足判定（派生规则）** | 每用户 | 条件 = `ended_trip_count ≥ 1` **且** `rate != null` | 任一不满足 → `insufficient`；本期第一条恒不成立（无聚合数据） | 用户裁决 D2 / D6 |
+| E | **状态阈值（常量，不落表）** | 4 档 | `good` ≥80；`neutral` 70–79；`watch` 0–69；`insufficient` 无数据 | 无数值迁移；后端单点常量 | issue #45 / D5 |
+| F | **展示映射（前端字典）** | 每个状态码 1 条 | `good` → 「信誉良好」；`neutral` → 无标签（仅百分比）；`watch` → 「请留意行程完成情况」；`insufficient` → 「暂无足够完成记录」 | 无状态；纯字典 | D5 / D8；沿用 `credit_level` 模式 |
+
+- **唯一真相：** 数值与状态码由后端派生；前端只做字典映射，不得出现 80 / 70 阈值常量或根据页面数据计算状态。
+- **不改动既有数据：** 不新增表 / 列 / 迁移；不读写 `user_credit_account` / `credit_ledger`；不读写 `stats`；不新增成长等级字段。
+- **数值口径：** `rate` 必须是 0–100 的整数；非整数 / 越界 / 非数值一律降级为 `insufficient`（安全口径，MUST NOT 落入 `good`）。
+- **本期边界：** 数据源为空，所有用户（含演示用户与有已结束行程的用户）一律 `null` + `insufficient`；不得用已结束行程数或 `stats.completed` 冒充百分比。
+
+### ② 边界归属（Boundary attribution）
+
+| 规则 | 分支 | in / out | 理由 |
+|---|---|---|---|
+| 字段返回 | 任意已存在用户（本人 / 他人） | in | `S32-1`；同口径 |
+| 数据不足 | 无打卡数据源（本期全部用户） | in → `insufficient` | `S32-2` / `S32-3` |
+| 数据充足 | 已结束行程 ≥1 且 `rate != null` | in → 按阈值派生 | `S32-4` / D2 |
+| 样本范围 | 仅 `completed` 行程 | in | `S32-5` / D6 |
+| 样本范围 | 进行中 / 尚未开始 / 已取消 | out | `S32-5` / issue AC 3 |
+| 样本范围 | 发布者 + `ACCEPTED` 同行者 | in（未来） | D6 |
+| 阈值 | `rate` 80–100 | in → `good` | `S32-6` |
+| 阈值 | `rate` 70–79 | in → `neutral` | `S32-7` |
+| 阈值 | `rate` 0–69 | in → `watch` | `S32-8` |
+| 阈值 | 非整数 / <0 / >100 | in → 降级 `insufficient` | `S32-9` |
+| 展示 | 个人主页 hero 信用行附近 | in | `S32-11` |
+| 展示 | 资料弹窗 / 行程卡 / 行程详情 / 列表 | out（本期） | D3；未来可复用状态码 |
+| 文案 | 「骗子」「危险用户」「不可信」等定性结论 | out（禁止） | `S32-14` / issue AC 11 |
+| 独立性 | 读写信用分 / 账本 | out（禁止） | `S32-17` |
+| 独立性 | 改写 `stats` / 读取成长等级 | out（禁止） | `S32-18` |
+| 访问控制 | 未登录 / 未知用户 | in（沿用 401 / 404） | `S32-19` |
+| 数据存储 | 新表 / 迁移 / 写入端点 | out | D7 |
+| 数据来源 | 临时 / 占位 / 演示数值 | out（禁止） | D1 |
+| 管理端 | 配置 / 修正 / 申诉 | out | issue 不含管理端 |
+| 通知 | 推送 / 邮件 / 短信 | out | issue 不含通知 |
+
+### ③ 跨 REQ 一致性（Cross-REQ consistency）
+
+| 能力 | 各 REQ 的 grain + 字段 | aligned? | anchor REQ |
+|---|---|---|---|
+| `user-profile`（REQ-008，未归档） | 资料响应含信用字段、`joinedAt`、`stats`、状态；REQ-031 只追加两个只读字段，不改既有字段语义 | ✓ aligned（不改其 Requirement） | REQ-008 / `add-user-profile` |
+| `user-profiles`（REQ-009，未归档） | 复用同一 `GET /users/{userId}/profile`；REQ-031 字段对本人 / 他人同口径 | ✓ aligned | REQ-009 / `add-user-profiles` |
+| `user-credit`（REQ-019，未归档） | 信用分账户 + 账本，独立存储；REQ-031 不读不写，仅并列展示 | ✓ aligned（`S32-17` 断言） | REQ-019 / `add-credit-account` |
+| `trip-plans` / `add-trip-completion`（REQ-011，未归档） | 行程 `completed` 语义与 `completed_at`；REQ-031 未来只读 | ✓ aligned（本期不计算） | REQ-011 |
+| `trip-companions`（REQ-003，Living） | `ACCEPTED` 申请者即同行者；REQ-031 未来只读 | ✓ aligned | REQ-003 |
+| 成长等级（issue #44，未实现） | LV1–LV5 经验与等级，独立系统；REQ-031 不读写 | ✓ aligned（`S32-18` 断言） | issue #44（无 change） |
+| `design-system` | 复用 `.profile-credit` 行、`badge`、色阶与间距令牌 | ✓ aligned | `openspec/specs/design-system/spec.md` |
+
+无未收敛的 ✗；A0 门 ⑪ 通过。
+
+### ④ 通知 / 展示契约（Notification / display contract）
+
+MVP 无推送、无通知；以下为完成度的 UI 展示面契约。
+
+| trigger / surface（展示面） | recipient role | content + display fields | channel | cardinality | source |
+|---|---|---|---|---|---|
+| 个人主页 hero — 完成度行 | 本人 / 浏览者 | 状态码 → 文案；`good` / `watch` 同时显示「路线完成度 NN%」；`neutral` 只显示百分比；`insufficient` 只显示「暂无足够完成记录」 | 应用内页面 | 每页 1 处 | `S32-11` ~ `S32-16` |
+| 资料弹窗 / 行程卡 / 行程详情 / 列表 | — | **本期不存在**；未来可复用同一状态码与简化标签 | —（不存在） | 0 | D3 |
+| 通知 / 推送 / 邮件 | — | **不存在** | —（不存在） | 0 | issue 不含通知 |
+
+- 文案固定为「信誉良好」「请留意行程完成情况」「暂无足够完成记录」；`neutral` 不附加标签。
+- 百分比格式为整数 + `%`（本期数据不足不出现百分比）。
+- 前端只读状态码字典；无展示面缺 display-fields；A0 门 ⑫ 通过。
+
+### 探针记录（REQ-031 路线完成度）
+
+- **状态派生单点：** 阈值只在后端一处实现（建议独立纯函数 / 常量），单测覆盖 80 / 79 / 70 / 69 / 0 / null / 非法值；前端不得复制阈值。
+- **响应承载：** `UserProfileResponse` 使用 `@JsonInclude(NON_NULL)`；**P2 已定稿（2026-11-18）：数据不足时省略 `route_completion_rate`（值语义为 null），`route_completion_state` 恒返回并列入 `UserProfile.required`；前端按「缺失或 null = 数据不足」处理。**
+- **数据源缺失：** 本期没有任何完成度聚合来源；服务层不得以 `stats.completed`、已结束行程数或演示数据替代，返回常量 `insufficient` 即可。
+- **展示位：** `ProfilePage` hero 已有 `.profile-credit` 行（信用分）；完成度行紧随其后，复用同一行高与色阶语义，避免新增卡片层级。
+- **状态与主题：** `good` 使用正向色阶、`watch` 使用警示色阶、`neutral` 与 `insufficient` 使用中性色阶；不得使用危险红表达「警惕」（避免定性）。
+- **接口兼容：** 新增字段可空；既有 `ProfileModal` / `TripCard` / 详情页不消费该字段，行为不变；`OpenApiTest` 版本断言需同步（预计 0.27.0）。
+- **E2E 影响：** 个人主页新增一行，既有 `profile` 相关断言可能受版式影响；新增 `route-completion.spec.ts` 覆盖数据不足与四态（通过接口拦截 / 夹具模拟状态码）。
+- **原型：** v1 已归档、v2 为六屏设计板且无完成度元素；不修改归档原型，P3 以 preview 页面与生产 UI 截图作为界面证据。
+- `{TBD}`：无。非阻塞项（契约版本、字段命名与序列化细节、未来聚合算法、原型证据形式）已在 REQ-031 §8 标 deferred。
+- A0 门 ⑨–⑫：全部通过。
