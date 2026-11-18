@@ -8,7 +8,7 @@
 
 | 分类 | 文件 | 规则数 | 管什么 |
 |---|---|---|---|
-| process | [rules/process/rules.md](process/rules.md) | 5 | 规格先行、TDD 纪律、提交时机/message/提交前检查、分支与 PR、评审方式 |
+| process | [rules/process/rules.md](process/rules.md) | 7 | 规格先行、工件评审门禁、TDD 纪律、提交时机/message/提交前检查、分支与 PR、评审方式、编号与版本治理 |
 | architecture | [rules/architecture/rules.md](architecture/rules.md) | 5 | 接口契约、分层与依赖方向、无循环依赖、编排与执行分离、Java 模式与持久化 |
 | quality | [rules/quality/rules.md](quality/rules.md) | 4 | 语言无关编码风格、Java 编码风格、跨端命名与术语、前端 Web 编码风格 |
 | testing | [rules/testing/rules.md](testing/rules.md) | 2 | Java 测试命名/结构/放置、前端三层测试 |
@@ -18,9 +18,9 @@
 
 ## 规则 ID 一览
 
-共 23 条。括号内是优先级。
+共 25 条。括号内是优先级。
 
-- **process** — `spec-first`(Critical)、`tdd-cycle`(Critical)、`git-commit-conventions`(Critical)、`git-branching-and-pr`(High)、`code-review-checklist`(High)
+- **process** — `spec-first`(Critical)、`artifact-review-gate`(Critical)、`tdd-cycle`(Critical)、`git-commit-conventions`(Critical)、`git-branching-and-pr`(High)、`code-review-checklist`(High)、`id-allocation`(Critical)
 - **architecture** — `api-contract`(Critical)、`package-structure`(Critical)、`no-circular-dependency`(Critical)、`orchestration-execution-separation`(Critical)、`java-patterns`(High)
 - **quality** — `coding-style`(Critical)、`java-coding-style`(High)、`naming-conventions`(High)、`web-coding-style`(High)
 - **testing** — `java-testing`(High)、`web-testing`(High)

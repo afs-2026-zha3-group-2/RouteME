@@ -51,3 +51,83 @@ jobs:
         run: npm install --no-audit --no-fund
       - name: Build and test
         run: npm run build && npm test
+
+  spec-lint:
+    name: Spec / contract / numbering gates
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - name: Upgrade npm
+        run: npm install -g npm@11
+      - name: Conflict marker scan
+        run: |
+          if git grep -nE '^(<{7} |>{7} )' -- 'ai4se-baseline/RouteME' 'ai4se-baseline/openspec' 'ai4se-baseline/requirement-workspace'; then
+            echo 'Merge conflict markers found'; exit 1
+          fi
+      - name: Install tooling deps
+        run: npm install --no-audit --no-fund
+        working-directory: ai4se-baseline/scripts
+      - name: ID collision lint (REQ / S / Flyway)
+        run: node ai4se-baseline/scripts/check-id-collisions.mjs --root .
+      - name: OpenSpec strict validation (debt baseline exempted)
+        run: node ai4se-baseline/scripts/openspec-gate.mjs --root .
+      - name: Contract lint (redocly)
+        run: npm run lint:contract
+        working-directory: ai4se-baseline/scripts
+
+  e2e-smoke:
+    name: E2E smoke (fresh DB)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up JDK 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: maven
+          cache-dependency-path: ai4se-baseline/RouteME/backend/pom.xml
+      - name: Set up Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: ai4se-baseline/RouteME/frontend/package-lock.json
+      - name: Upgrade npm
+        run: npm install -g npm@11
+      - name: Start backend on a fresh database
+        working-directory: ai4se-baseline/RouteME/backend
+        env:
+          SPRING_DATASOURCE_URL: jdbc:sqlite:../SqlLite/e2e-ci.db
+        run: |
+          chmod +x mvnw
+          ./mvnw -B -ntp spring-boot:run > ../backend-e2e-ci.log 2>&1 &
+          for i in $(seq 1 60); do
+            curl -sf http://localhost:8080/api/greeting > /dev/null && break
+            sleep 2
+          done
+          curl -sf http://localhost:8080/api/greeting > /dev/null
+      - name: Start frontend dev server
+        working-directory: ai4se-baseline/RouteME/frontend
+        run: |
+          npm install --no-audit --no-fund
+          npm run dev > ../frontend-e2e-ci.log 2>&1 &
+          for i in $(seq 1 30); do
+            curl -sf http://localhost:5173 > /dev/null && break
+            sleep 2
+          done
+          curl -sf http://localhost:5173 > /dev/null
+      - name: Install Playwright browsers
+        working-directory: ai4se-baseline/RouteME/e2e
+        run: |
+          npm install --no-audit --no-fund
+          npx playwright install --with-deps chromium
+      - name: Run smoke specs and attribute failures
+        working-directory: ai4se-baseline/RouteME/e2e
+        run: |
+          npx playwright test auth.spec.ts trips.spec.ts --reporter=json > e2e-report.json || true
+          node ../../scripts/e2e-debt-diff.mjs --root ../../.. --report e2e-report.json

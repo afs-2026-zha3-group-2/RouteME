@@ -1,0 +1,21 @@
+{
+  "recordedAt": "2026-11-18",
+  "$comment": "Known-red E2E tests. The diff tool (scripts/e2e-debt-diff.mjs) compares a Playwright JSON report against `entries`: a failure listed here is documented debt (cite the reason, do not re-investigate), anything else is a NEW failure introduced by the current change. Never add an entry without a real attribution.",
+  "entries": [],
+  "skipped": [
+    {
+      "file": "tests/profile.spec.ts",
+      "title": "skips setup and completes the profile later from mine",
+      "reason": "The `.mine-profile-card` block was removed from the my-trips page; the spec still asserts on it. Marked test.fixme until the my-trips profile entry is reintroduced or the spec is rewritten.",
+      "recordedAt": "2026-11-18",
+      "ownerChange": "pending: my-trips profile entry"
+    },
+    {
+      "file": "tests/profile.spec.ts",
+      "title": "keeps a session-less viewer read-only",
+      "reason": "Same removed `.mine-profile-card` selector as the previous entry; the rail-menu half of the case still has value, so the whole case stays disabled rather than half-asserting.",
+      "recordedAt": "2026-11-18",
+      "ownerChange": "pending: my-trips profile entry"
+    }
+  ]
+}

@@ -17,7 +17,7 @@
 | rules/_LOG | 规则变更日志（只追加） | [rules/_LOG.md](rules/_LOG.md) |
 | rules/architecture | 架构规则 5 条：`api-contract`、`package-structure`、`no-circular-dependency`、`orchestration-execution-separation`、`java-patterns` | [rules/architecture/rules.md](rules/architecture/rules.md) |
 | rules/documentation | 文档规则 2 条：`document-conventions`、`sdd-artifacts` | [rules/documentation/rules.md](rules/documentation/rules.md) |
-| rules/process | 流程规则 5 条：`spec-first`、`tdd-cycle`、`git-commit-conventions`、`git-branching-and-pr`、`code-review-checklist` | [rules/process/rules.md](rules/process/rules.md) |
+| rules/process | 流程规则 7 条：`spec-first`、`artifact-review-gate`、`tdd-cycle`、`git-commit-conventions`、`git-branching-and-pr`、`code-review-checklist`、`id-allocation` | [rules/process/rules.md](rules/process/rules.md) |
 | rules/quality | 质量规则 4 条：`coding-style`、`java-coding-style`、`naming-conventions`、`web-coding-style` | [rules/quality/rules.md](rules/quality/rules.md) |
 | rules/security | 安全规则 5 条：`security-baseline`、`no-hardcoded-secrets`、`pii-scrubbing`、`prompt-injection-defense`、`java-security` | [rules/security/rules.md](rules/security/rules.md) |
 | rules/testing | 测试规则 2 条：`java-testing`、`web-testing` | [rules/testing/rules.md](rules/testing/rules.md) |

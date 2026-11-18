@@ -63,17 +63,35 @@ Windows     cd RouteME/backend; .\mvnw.cmd spring-boot:run    # 启动 8080
 - 冒烟：`GET /api/greeting`、`GET /api/users`、`GET /api/trips`、`GET /api/experiences`（其余 `/trips*`、`/me/*`、`/matches*` 需 `X-User-Id`，1–3 为演示账户）。
 - 契约校验：`cd RouteME; npx @redocly/cli lint openapi.yaml`（0 error），或 `cd RouteME/backend; .\mvnw.cmd -Dtest=OpenApiTest test`。
 - 前端：`cd RouteME/frontend; npm run build; npm test`。
-- 端到端：后端与前端启动后 `cd RouteME/e2e; npx playwright test`（90 个用例；本地门禁，CI 不跑 Playwright）。全量前必须 fresh DB：备份并删除 `SqlLite/routeme.db` 后重启后端由 Flyway 重建（V1–V17），否则累积行程挤出种子卡片致首页断言失败。
+- 端到端：后端与前端启动后 `cd RouteME/e2e; npx playwright test`（本地门禁；CI 另有 `e2e-smoke` job 跑 auth/trips 子集，fresh DB）。全量前必须 fresh DB：备份并删除 `SqlLite/routeme.db` 后重启后端由 Flyway 重建，否则累积行程挤出种子卡片致首页断言失败。并发会话环境下用隔离端口（`PORT` / `ROUTEME_API_TARGET` / `ROUTEME_E2E_BASE_URL`）与独立库文件（`SPRING_DATASOURCE_URL`），不碰他人实例。
 - 时钟口径（2026-11-17）：后端测试涉及种子行程状态一律 `@Import(FixedClockTestConfig.class)`（NOW=2026-11-16T09:00Z）并用 `trip.status(NOW)`；生产代码一律用注入 `clock.instant()`，禁用无参 `status()`（Instant.now()）——日期翻篇后种子行程过期会误判 COMPLETED（updateMeeting 409 缺陷已修）。e2e 首页断言用未来日期行程，不依赖固定种子出发日。
+
+## SDD 治理工具链（2026-11-18）
+
+工具脚本集中在 `ai4se-baseline/scripts/`（Node，依赖一次安装：`npm install --prefix ai4se-baseline/scripts`）；配套技能见 `skills/sdd-*`（merge-main / id-allocate / sign-ledger / worktree-ops / e2e-debt-baseline / archive-queue）。规则依据：`@rule:id-allocation`、`@rule:web-testing#合并后五项重验`。
+
+| 命令（仓库根执行） | 作用 |
+|---|---|
+| `node ai4se-baseline/scripts/check-id-collisions.mjs --root . [--next]` | REQ/S/Flyway/契约版本撞号 lint；`--next` 给出下一空闲号（含在途分支占用）；历史撞号豁免见 `scripts/id-collision-baseline.json` |
+| `node ai4se-baseline/scripts/openspec-gate.mjs --root .` | openspec validate --all --strict（CLI 包名 `@fission-ai/openspec`，钉住 1.16.1，必须 `--no-interactive`）；既有债务豁免见 `scripts/openspec-debt-baseline.json` |
+| `npm run lint:contract --prefix ai4se-baseline/scripts` | redocly lint 契约（0 error；既有 warning 多为故意构造的 rejected/invalid 示例） |
+| `node ai4se-baseline/scripts/sign-ledger.mjs --root .` | 生成 `docs/sdd/sign-ledger.md` 签署台账（脚本生成不手改） |
+| `node ai4se-baseline/scripts/archive-queue.mjs --root .` | 生成 `docs/sdd/archive-queue.md` 归档依赖拓扑队列（只排序不执行归档） |
+| `node ai4se-baseline/scripts/e2e-debt-diff.mjs --root . --report <json> [--update-new]` | Playwright JSON 报告 vs `e2e/known-failures.json` 三分类（NEW/BASELINE/RESOLVED） |
+| `node ai4se-baseline/scripts/split-openapi.mjs --root . [--out-dir D \| --execute]` | 契约按 capability 拆 12 组 + redocly bundle 语义等价校验；默认 dry-run，`--execute` 带 hash 稳定性闸门（并发编辑时中止） |
+| `node ai4se-baseline/scripts/split-styles.mjs --root . [--out-dir D \| --execute]` | styles.css 按 banner 拆段 + 字节级拼接等价校验；同样带稳定性闸门 |
+| `cd RouteME/frontend; npm run gen:api-types` | openapi-typescript 从契约生成 `src/api/generated.ts`，合并后重新生成即可，不手工取并集 |
+
+拆分工具落地约束：openapi.yaml / styles.css 正被并发会话编辑时只做 `--out-dir` 临时副本验证，不 `--execute`；落地前重采构建产物 CSS 哈希基线。
 
 ## CI / CD
 
 ```text
-CI  .github/workflows/ci.yml   push/PR：backend verify、frontend build+test（无 Docker）
+CI  .github/workflows/ci.yml   push/PR：backend verify、frontend build+test、spec-lint、e2e-smoke（无 Docker）
 CD  .github/workflows/cd.yml   CI 在 main 全绿后：构建单文件 jar + dist，上传工件并发布 GitHub Release
 ```
 
-- **CI（已跑通）**：两个 job —— `backend`（JDK 21，`./mvnw -B -ntp verify`）、`frontend`（Node 22 + npm 11，`npm install` + `build` + `test`）。CI 不装 Docker。
+- **CI（已跑通）**：四个 job —— `backend`（JDK 21，`./mvnw -B -ntp verify`）、`frontend`（Node 22 + npm 11，`npm install` + `build` + `test`）、`spec-lint`（冲突标记扫描 + 编号撞车 lint + openspec strict 门禁 + redocly 契约 lint，2026-11-18 新增）、`e2e-smoke`（fresh DB + auth/trips 子集 + 债务基线 diff，2026-11-18 新增）。CI 不装 Docker。
 - **CD（GitHub 原生）**：`Build and publish release` — 构建前端 `dist` → 复制进 `backend/src/main/resources/static` → 打包可执行 jar → 上传 `routeme-standalone-<sha>.jar` 与 `routeme-frontend-dist.zip` → `gh release create build-<sha>`（`permissions: contents: write`，标签已存在则只上传工件）。
 - **没有第三方部署平台**：不再使用 Render 或 Docker。GitHub Actions 只提供构建/测试/交付能力，没有 Java 运行时，也没有公网地址；运行交付物用 `java -jar`（jar 内含前端），入口见 [RouteME/README.md](../../RouteME/README.md#ci--cd全部在-github无外部服务)。
 - **`SQLITE_CANTOPEN` 防护**：`routeme.config.SqliteDirectory` 在启动前按 `SPRING_DATASOURCE_URL` 创建数据库父目录（H2 与 `:memory:` 跳过），独立 jar 首次运行不需要手工建目录。

@@ -196,6 +196,20 @@ npx playwright test   # 端到端，需要后端已启动
 
 要求：类型检查零错误；改动的模块有对应测试；界面改动时至少跑通受影响的那条端到端用例。验收场景与端到端用例名的对应关系见 `@rule:sdd-artifacts`。
 
+### 合并后五项重验
+
+合并 main（或解决冲突）后 MUST 全量重验五项，结果写进验证报告，不因「另一端没改」跳过：
+
+| 项 | 命令口径 |
+|---|---|
+| 后端全量 | `mvnw -B -ntp verify`（Windows 需 `MAVEN_OPTS=-Djavax.net.ssl.trustStoreType=WINDOWS-ROOT`） |
+| 前端全量 | `npm test` + `npm run build` |
+| 规格 strict | `node ai4se-baseline/scripts/openspec-gate.mjs --root .`（基线债务豁免，新增失败即红） |
+| 契约 lint | `npm run lint:contract --prefix ai4se-baseline/scripts`（0 error；既有 warning 按基线引用） |
+| fresh DB E2E | 独立端口 + 全新 SQLite 库跑 `npx playwright test --reporter=json`，再用 `scripts/e2e-debt-diff.mjs` 对 `e2e/known-failures.json` 做三分类：NEW（本次引入，必修）/ BASELINE（引用归因不重查）/ RESOLVED（提示销账） |
+
+并发会话环境下重验用隔离端口与 fresh DB，不碰他人实例；结束后按 PID/端口精确停掉自建进程。编号与版本裁决见 `@rule:id-allocation`。
+
 ### 检查项
 
 | 检查 | 阻断点 |
@@ -206,6 +220,7 @@ npx playwright test   # 端到端，需要后端已启动
 | 新记录断言是否先按唯一名筛选；弹出菜单是否避免 scroll 监听关闭 | pr-merge |
 | `npm run typecheck` 与 `npm run build` 是否通过 | pr-merge |
 | 界面改动是否跑通受影响的端到端用例 | pr-merge |
+| 合并后是否跑齐五项重验，E2E 失败是否按基线三分类归因 | pr-merge |
 
 ### 示例
 

@@ -18,6 +18,7 @@
 | git-commit-conventions | 提交时机、commit message（必须英文）与提交前检查 | Critical | always | — |
 | git-branching-and-pr | 分支、PR、换行符与回滚 | High | always | — |
 | code-review-checklist | 评审方式与规则入口 | High | manual | — |
+| id-allocation | 编号与契约版本预分配、撞号检测与顺延 | Critical | always | — |
 
 ## spec-first
 
@@ -359,6 +360,54 @@ target/  node_modules/  dist/  .metals/  *.mv.db  *.trace.db  .idea/  *.iml  e2e
 ### 例外
 
 - `docs` / `chore` / `style` 类提交只应用与改动范围相关的条目。
+
+## id-allocation
+
+**编号与契约版本治理：预分配即占用，撞号在 P1 与 CI 拦截，顺延只发生在合并收口。** 依据：编号只看 main 不看队友在途分支，导致单个 change 最多四次顺延（credit-recovery REQ-022→027）。
+
+### 唯一权威源
+
+| 对象 | 权威源 |
+|---|---|
+| REQ / S 号 | `requirement-workspace/registry.md` + 各 active change 的 `allocation.md` |
+| Flyway 号 | `RouteME/backend/src/main/resources/db/migration/` 文件名 |
+| 契约版本 | `RouteME/openapi.yaml` `info.version` |
+
+### 预分配（P1）
+
+- 起草 proposal 时先跑 `node ai4se-baseline/scripts/check-id-collisions.mjs --root . --next` 取下一个空闲 REQ / S / Flyway 号与契约 minor，写入 `openspec/changes/<change-id>/allocation.md`（编号、日期、分配人）。
+- **在途分支的号也算占用**：脚本扫描 registry、全部 active change 的 allocation、迁移文件名与契约；写入 allocation 即占用，无论是否合并。
+- 废弃 change 的号不回收，历史引用必须保持有效。
+
+### 撞号与顺延
+
+- 合并前与 CI 跑 `node ai4se-baseline/scripts/check-id-collisions.mjs --root .`：同编号对应不同对象即撞（REQ 按 slug 判定，registry 行是占用权威；Flyway 重复 `V<n>__` 必撞）。
+- 裁决规则固定为**后到者顺延**：后合并的 change 取「已占用最大值 + 1」，只改自己的工件（registry 行、intents/requirements、proposal、Delta Spec、阶段记录），不手工全文搜索替换。
+- Flyway 多车道并行时按迭代计划预留号段，P1 从本车道号段取号；撞号在 lint 拦截，不等到 fresh DB 启动失败。
+
+### 契约版本
+
+- 新增路径/字段 = minor +1；纯文案/示例 = patch +1；破坏性变更 = 显式人工裁决并记入 design。
+- 合并时 `info.version` 冲突取更高 minor，机械裁决不逐次讨论。
+- 版本断言单点化：`OpenApiTest` 用单一 `CONTRACT_VERSION` 常量，升版只改 yaml 与该常量两处；前端 API 类型由 `npm run gen:api-types`（openapi-typescript）从契约生成，不手写 API 形状类型。
+
+### 基线豁免
+
+- 历史撞号登记在 `scripts/id-collision-baseline.json`，openspec strict 既有债务登记在 `scripts/openspec-debt-baseline.json`；命中基线报 BASELINE 不失败，新增违规仍失败。每条豁免必须带归因与登记日期，修复后销账。
+
+### 检查项
+
+| 检查 | 阻断点 |
+|---|---|
+| P1 是否写 allocation.md 且编号来自 `--next`（含在途占用） | pr-merge |
+| 编号撞车 lint 是否通过（基线豁免除外） | ci |
+| 契约升版是否符合 minor/patch 规则，版本断言是否单点 | pr-merge |
+| 顺延是否只改后到者自己的工件 | pr-merge |
+
+### 例外
+
+- 纯文档 / 工具脚本改动不分配业务编号。
+- 基线豁免清单内的历史撞号不要求追溯改号，只要求不再新增。
 
 ## 为什么这样定
 
