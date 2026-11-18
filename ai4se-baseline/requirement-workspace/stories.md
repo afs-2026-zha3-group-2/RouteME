@@ -462,7 +462,7 @@
 
 | Story | Title | 角色 | Priority | Iteration | Points | Page | Parent REQ | Change | Status |
 |---|---|---|---|---|---|---|---|---|---|
-| S28 | 发布行程在地图上规划路线 | 发布者 | P0 | 迭代 3 | 3 | 发布行程 · 路线规划段 | REQ-027 | `refine-publish-route-map` | P2 Pass / G1 Pass（2026-11-18） |
+| S28 | 发布行程在地图上规划路线 | 发布者 | P0 | 迭代 3 | 3 | 发布行程 · 路线规划段 | REQ-027 | `refine-publish-route-map` | P3 Pass（2026-11-18） |
 
 ## Traceability（REQ-027）
 
