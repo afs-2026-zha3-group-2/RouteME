@@ -1,50 +1,33 @@
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import { createTrip, loadMatches, loadTrips } from './api';
+import { createTrip, loadTrips } from './api';
 
 describe('loadTrips', () => {
-      afterEach(() => {
-        vi.unstubAllGlobals();
-      });
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
 
-      it('sends the demo identity header and serializes the filters', async () => {
-        const fetchMock = vi.fn().mockResolvedValue(
-          new Response(JSON.stringify([]), {
-            status: 200,
-            headers: { 'Content-Type': 'application/json' },
-          }),
-        );
-        vi.stubGlobal('fetch', fetchMock);
+  it('sends the demo identity header and serializes the filters', async () => {
+    const fetchMock = vi.fn().mockResolvedValue(
+      new Response(JSON.stringify([]), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' },
+      }),
+    );
+    vi.stubGlobal('fetch', fetchMock);
 
-        await expect(
-          loadTrips(2, { destination_code: '440400', tags: ['摄影', '海边'], sort: 'new' }),
-        ).resolves.toEqual([]);
+    await expect(
+      loadTrips(2, { destination_code: '440400', tags: ['摄影', '海边'], sort: 'new' }),
+    ).resolves.toEqual([]);
 
-        const [url, init] = fetchMock.mock.calls[0] as [string, RequestInit];
-        const parsed = new URL(url, 'http://localhost');
-        expect(parsed.pathname).toBe('/api/trips');
-        expect(parsed.searchParams.get('destination_code')).toBe('440400');
-        expect(parsed.searchParams.get('tags')).toBe('摄影,海边');
-        expect(parsed.searchParams.get('sort')).toBe('new');
-        expect((init.headers as Headers).get('X-User-Id')).toBe('2');
-      });
-
-              it('loads match candidates with the match sort by default', async () => {
-                const fetchMock = vi.fn().mockResolvedValue(
-                  new Response(JSON.stringify([]), {
-                    status: 200,
-                    headers: { 'Content-Type': 'application/json' },
-                  }),
-                );
-                vi.stubGlobal('fetch', fetchMock);
-
-                await expect(loadMatches(2, { sort: 'match' })).resolves.toEqual([]);
-
-                const [url] = fetchMock.mock.calls[0] as [string, RequestInit];
-                const parsed = new URL(url, 'http://localhost');
-                expect(parsed.pathname).toBe('/api/matches');
-                expect(parsed.searchParams.get('sort')).toBe('match');
-              });
-            });
+    const [url, init] = fetchMock.mock.calls[0] as [string, RequestInit];
+    const parsed = new URL(url, 'http://localhost');
+    expect(parsed.pathname).toBe('/api/trips');
+    expect(parsed.searchParams.get('destination_code')).toBe('440400');
+    expect(parsed.searchParams.get('tags')).toBe('摄影,海边');
+    expect(parsed.searchParams.get('sort')).toBe('new');
+    expect((init.headers as Headers).get('X-User-Id')).toBe('2');
+  });
+});
 
     describe('createTrip', () => {
       afterEach(() => {

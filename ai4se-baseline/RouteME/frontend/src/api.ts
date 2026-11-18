@@ -26,11 +26,9 @@ import type {
   LeavePreview,
   LeaveReason,
   LeaveResult,
-  MatchCandidate,
   MyTrips,
   Page,
   Paging,
-  RecommendationList,
   ReportRequest,
   ServiceMessage,
   ServiceSessionDetail,
@@ -200,28 +198,6 @@ export async function loadTrips(
 ): Promise<Page<TripSummary>> {
   const response = await request(`/trips${tripQuery(filters, paging)}`, undefined, userId);
   return (await response.json()) as Page<TripSummary>;
-}
-
-export async function loadMatches(
-  userId: number,
-  filters: TripFilters = {},
-  paging?: Paging,
-): Promise<Page<MatchCandidate>> {
-  const response = await request(`/matches${tripQuery(filters, paging)}`, undefined, userId);
-  return (await response.json()) as Page<MatchCandidate>;
-}
-
-export async function loadMatch(userId: number, tripId: number): Promise<MatchCandidate> {
-  const response = await request(`/matches/${tripId}`, undefined, userId);
-  return (await response.json()) as MatchCandidate;
-}
-
-export async function loadTripRecommendations(
-  userId: number,
-  tripId: number,
-): Promise<RecommendationList> {
-  const response = await request(`/trips/${tripId}/recommendations`, undefined, userId);
-  return (await response.json()) as RecommendationList;
 }
 
 export async function loadTrip(userId: number, tripId: number): Promise<TripDetail> {

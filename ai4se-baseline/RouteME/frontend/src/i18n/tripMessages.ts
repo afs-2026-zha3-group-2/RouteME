@@ -22,9 +22,6 @@ export const tripMessages = {
   dateFromLabel: '出发不早于',
   dateToLabel: '出发不晚于',
   sortLabel: '排序',
-  sortMatch: '按匹配度',
-  
-  
   sortDate: '按出发日期',
   sortNew: '按最新发布',
   tagsLabel: '兴趣',
@@ -190,10 +187,6 @@ export const tripMessages = {
   applicationsNoMessage: '未填写申请说明',
   applicationsChat: '进入聊天',
   
-  matchPanelWhy: '为什么推荐给你',
-  matchRuleHint:
-    '规则可解释：目的地相同 50 分，日期相同 30 分、相差一天 20 分，每个共同兴趣 10 分（最多 20 分）。',
-  matchNoBasis: '暂时没有足够的偏好信息，先按行程本身展示。',
   leaveTrip: '退出同行',
   leaveConfirm: '退出后这条行程的聊天会保留，仍可继续和发布者沟通，确定退出吗？',
   leaveSuccess: '已退出这条行程',
