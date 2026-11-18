@@ -49,7 +49,7 @@ async function generateRoute(page: Page) {
 
 async function publish(page: Page, title: string) {
   await page.getByLabel('标题').fill(title);
-  await page.getByRole('button', { name: /^发\s*布$/ }).click();
+  await page.getByRole('button', { name: /^发\s*布/ }).click();
 }
 
 async function createTripWithStops(page: Page, title: string, stops: string[]) {
@@ -115,7 +115,7 @@ test('reorders stops and keeps the new order after publishing', async ({ page })
   await publish(page, title);
   await expect(page).toHaveURL(/#\/trips\/\d+$/);
   await expect(page.getByRole('heading', { name: title })).toBeVisible();
-  await expect(page.locator('.detail-stops li')).toHaveText(['情侣路', '香洲港']);
+  await expect(page.locator('.route-strip-name')).toHaveText(['情侣路', '香洲港']);
 });
 
 test('recalculates the route when the travel mode changes', async ({ page }) => {
@@ -178,8 +178,10 @@ test('keeps the fallback copy free of backend details', async ({ page }) => {
   await setAmapRouteFail(page, true);
   await generateRoute(page);
 
-  const copy = await page.locator('.publish-route-side').innerText();
-  expect(copy).toContain('路线服务暂时不可用');
+  const side = page.locator('.publish-route-side');
+  // 近似提示在地图失败回调之后渲染，等它出现再读文案。
+  await expect(side).toContainText('路线服务暂时不可用');
+  const copy = await side.innerText();
   for (const word of ['后端', '端口', '代理', '重载', '8080', 'Key']) {
     expect(copy).not.toContain(word);
   }
@@ -227,8 +229,7 @@ test('blocks publishing when a stop is still a coordinate placeholder', async ({
   await expect(waypointNames(page)).toHaveText(['情侣路']);
 
   await page.getByLabel('标题').fill(`E2E 占位名 ${Date.now()}`);
-  await page.locator('#trip-capacity').fill('4');
-  await page.getByRole('button', { name: /^发\s*布$/ }).click();
+  await page.getByRole('button', { name: /^发\s*布/ }).click();
 
   await expect(page.getByText('途经点不能是坐标占位名，请改为可识别的地名')).toBeVisible();
   await expect(page).toHaveURL(/#\/trips\/new/);

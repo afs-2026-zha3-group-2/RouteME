@@ -500,21 +500,23 @@ test('A8 shows the over-budget gap and reduces budget on demand', async ({ page 
   await page.getByTestId('ai-budget').locator('input').fill('500');
   await generate(page);
 
-  await expect(page.getByTestId('ai-budget-card')).toContainText('预计超过预算 80 元');
-  await page.getByRole('button', { name: 'AI 帮我降低预算' }).click();
+  await expect(page.locator('.ai-over-budget')).toContainText('预计超过预算 80 元');
+  await page.getByRole('button', { name: '帮我降低预算' }).click();
   await expect(page.getByTestId('ai-budget-card')).toContainText('370');
-  await expect(page.getByTestId('ai-budget-card')).not.toContainText('预计超过预算');
+  await expect(page.locator('.ai-over-budget')).toHaveCount(0);
   const lastRequest = state.aiRequests[state.aiRequests.length - 1] as any;
   expect(lastRequest.reduce_budget).toBe(true);
   expect(lastRequest.budget_cents).toBe(50000);
 
   // 未填预算档：不提示超支、无降预算按钮，估算仍展示。
+  await openConditions(page);
   await page.getByTestId('ai-budget').locator('input').fill('');
+  await closeConditions(page);
   await page.getByTestId('ai-regenerate').click();
   await expect(page.getByTestId('ai-budget-card')).toContainText('580');
-  await expect(page.getByTestId('ai-budget-card')).toContainText('AI 估算');
-  await expect(page.getByTestId('ai-budget-card')).not.toContainText('预计超过预算');
-  await expect(page.getByRole('button', { name: 'AI 帮我降低预算' })).toHaveCount(0);
+  await expect(page.getByTestId('ai-budget-card')).toContainText('参考估算');
+  await expect(page.locator('.ai-over-budget')).toHaveCount(0);
+  await expect(page.getByRole('button', { name: '帮我降低预算' })).toHaveCount(0);
 });
 
 /* ---------- A9 重新生成（E8） ---------- */
@@ -523,9 +525,10 @@ test('A9 regenerates with the current conditions', async ({ page }) => {
   await fillRequired(page);
   await generate(page);
 
-  await pickSelect(page, 'ai-interests', '自然');
-  await page.keyboard.press('Escape');
+  await openConditions(page);
+  await page.getByTestId('ai-interests').getByText('自然', { exact: true }).click();
   await page.getByTestId('ai-pace').getByText('宽松', { exact: true }).click();
+  await closeConditions(page);
   state.plan = 'lowBudget';
   await page.getByTestId('ai-regenerate').click();
   await expect(page.getByTestId('ai-budget-card')).toContainText('370');
@@ -614,7 +617,7 @@ test('A11 saves the snapshot, publishes it and shows the AI badge', async ({ pag
   await expect(summary).toContainText('24');
   await expect(summary).toContainText('多云');
   await expect(summary).toContainText('460');
-  await expect(summary).toContainText('AI 估算');
+  await expect(summary).toContainText('参考估算');
 
   // 首页可见（相对日期口径）。
   await page.goto('/');

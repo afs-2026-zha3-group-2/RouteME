@@ -130,7 +130,7 @@ test('filters the list by interest tag and keeps the filters visible', async ({ 
   await page.goto('/');
   await expandPageSize(page);
 
-  await page.getByRole('checkbox', { name: '摄影', exact: true }).click();
+  await page.getByRole('checkbox', { name: /摄影/ }).click();
 
   await expect(page.getByText('已应用筛选')).toBeVisible();
   await expect(page.locator('.trip-card', { hasText: title })).toBeVisible();
@@ -169,7 +169,7 @@ await expect(page.getByRole('heading', { name: '集合与预算' })).toBeVisible
   await setDate(page, '结束日期', isoDaysFromToday(7));
   await addRouteStop(page, '香洲港');
   await addRouteStop(page, '情侣路');
-  await page.getByRole('checkbox', { name: '摄影', exact: true }).click();
+  await page.getByRole('checkbox', { name: /摄影/ }).click();
 
   await page.getByRole('button', { name: /^发\s*布/ }).click();
 
