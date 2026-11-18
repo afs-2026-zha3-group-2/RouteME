@@ -10,16 +10,22 @@ wastes time; this skill turns attribution into a mechanical diff.
 
 ## Files
 
-- Baseline: `ai4se-baseline/RouteME/e2e/known-failures.json` — one entry per known
-  failing test: `file`, `title`, `reason`, `recordedAt`, `ownerChange`.
+- Baseline: `ai4se-baseline/RouteME/e2e/known-failures.json` — three tiers:
+  `entries` (attributed debt; drives the diff), `skipped` (already `test.fixme`'d,
+  never counted as failures) and `pending` (observed reds still needing root cause —
+  recording them is fine, but `pending` never exempts a failure from the NEW list).
 - Diff tool: `ai4se-baseline/scripts/e2e-debt-diff.mjs`.
+- Fast lanes: `e2e-shard.mjs` (isolated shards), `e2e-smoke.mjs` (curated set,
+  `e2e/smoke.json`), `e2e-db.mjs` (template database). Manual: `RouteME/e2e/README.md`.
 
 ## After each E2E run
 
-1. Run Playwright with a JSON reporter, e.g. from `ai4se-baseline/RouteME/e2e`:
-   `npx playwright test --reporter=json > e2e-report.json` (fresh DB first: start the
-   backend with `SPRING_DATASOURCE_URL=jdbc:sqlite:<fresh>.db`; a polluted dev DB
-   invalidates the whole run).
+1. Prefer a sharded run with a JSON report so the database is guaranteed pristine:
+   `node ai4se-baseline/scripts/e2e-shard.mjs --shards 1 --json-dir .tmp-e2e/report`.
+   A polluted dev DB invalidates the whole run, and so does a stale dev server (it may
+   serve an older build than the working tree). Manual: `npx playwright test
+   --reporter=json` from `ai4se-baseline/RouteME/e2e` against a DB copied via
+   `e2e-db.mjs reset`.
 2. `node ai4se-baseline/scripts/e2e-debt-diff.mjs --report <path> --root .` prints:
    - NEW failures (not in baseline): introduced by this change — must fix or get an
      explicit user decision before reporting Pass.

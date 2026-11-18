@@ -1,0 +1,85 @@
+{
+  "$comment": "Raw A/B measurement of the RouteME E2E full suite, 2026-11-18. Group A = one stack, one Playwright worker (the pre-optimisation execution shape). Group B = the new shard runner (3 shards, 3 isolated stacks). Test code and frontend sources are identical across all runs (git diff 407b7db2..53f8c557 -- e2e/tests frontend/src is empty).",
+  "measuredAt": "2026-11-18T20:31:41+08:00",
+  "environment": {
+    "commit": "53f8c557",
+    "node": "v24.18.0",
+    "playwright": "1.65.0",
+    "cpu": "Intel(R) Core(TM) i7-14700 (28 logical cores)",
+    "ramGb": 31.7,
+    "os": "Windows",
+    "trace": "off",
+    "reporter": "json"
+  },
+  "suiteSize": {
+    "specFiles": 31,
+    "tests": 217
+  },
+  "runs": [
+    {
+      "id": "A",
+      "label": "serial, single stack (before)",
+      "command": "node ai4se-baseline/scripts/e2e-shard.mjs --shards 1 --skip-build --run-id abA --json-dir ...",
+      "shards": 1,
+      "wallSeconds": 1104,
+      "wallMinutes": 18.4,
+      "passed": 189,
+      "failed": 18,
+      "skipped": 10,
+      "testSumSeconds": 1043,
+      "passSeconds": 686,
+      "failSeconds": 357,
+      "startupOverheadSeconds": 61
+    },
+    {
+      "id": "B1",
+      "label": "3 shards (after), sample 1",
+      "command": "node ai4se-baseline/scripts/e2e-shard.mjs --shards 3 --parallel 3 --skip-build --run-id abB --json-dir ...",
+      "shards": 3,
+      "wallSeconds": 463,
+      "wallMinutes": 7.72,
+      "passed": 208,
+      "failed": 7,
+      "skipped": 2,
+      "testSumSeconds": 930,
+      "passSeconds": 781,
+      "failSeconds": 149,
+      "shardTestSeconds": [432, 243, 255]
+    },
+    {
+      "id": "B2",
+      "label": "3 shards (after), sample 2",
+      "command": "node ai4se-baseline/scripts/e2e-shard.mjs --shards 3 --parallel 3 --skip-build --run-id abB2 --json-dir ...",
+      "shards": 3,
+      "wallSeconds": 470,
+      "wallMinutes": 7.83,
+      "passed": 209,
+      "failed": 6,
+      "skipped": 2,
+      "testSumSeconds": 948,
+      "passSeconds": 805,
+      "failSeconds": 144,
+      "shardTestSeconds": [439, 250, 260]
+    }
+  ],
+  "headline": {
+    "baselineSeconds": 1104,
+    "optimizedSecondsMean": 466.5,
+    "speedup": 2.37,
+    "savedSeconds": 637.5,
+    "savedPercent": 58
+  },
+  "derived": {
+    "serialTestThroughputSecondsPerSuite": 1043,
+    "balancedShardCeilingSeconds": 310,
+    "measuredShardLongPoleSeconds": [432, 439],
+    "parallelEfficiencyPct": 67,
+    "timeoutCostPerFailingTestSeconds": 30,
+    "serialTimeoutCostSeconds": 357,
+    "shardedTimeoutCostSeconds": [149, 144]
+  },
+  "notes": [
+    "Group A produced 18 failures while B produced 6-7 on identical code: one long serial run accumulates test data in a single database, which blocks profile/credit assertions. Each shard gets a fresh database, so sharding also removes a class of data-pollution failures rather than only saving wall time.",
+    "Shard distribution is by test count, not duration, so shard 1 carries ~1.75x the test time of shards 2/3. Balancing by duration would bring the wall time toward ~310s of test work plus startup, i.e. roughly 6.7 min."
+  ]
+}

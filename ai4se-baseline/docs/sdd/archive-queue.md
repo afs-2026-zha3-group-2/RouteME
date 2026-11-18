@@ -32,35 +32,38 @@ Archiving stays human-approved (default: do NOT auto-archive). Execute ready cha
 5. add-credit-account
 6. add-credit-exit-restriction
 7. add-credit-recovery
-8. add-match-reason
-9. add-report-credit-deduction
-10. add-route-completion
-11. add-travel-finance
-12. add-traveler-recommendation
-13. add-trip-cancel
-14. add-trip-completion
-15. add-trip-publish
-16. add-trip-weather
-17. add-user-auth
-18. add-user-logout
-19. add-user-profile
-20. add-user-profiles
-21. refine-detail-companions
-22. refine-experience-share
-23. refine-inspiration-home
-24. refine-my-trips
-25. refine-safety-report
-26. refine-service-inbox-unread
-27. refine-service-workbench-live
-28. refine-trip-application
-29. refine-trip-chat
-30. refine-trip-map
-31. refine-user-support-entry
-32. remove-home-greeting-note
-33. add-destination-area-filters
-34. add-experience-photos
-35. refine-publish-route-map
-36. add-experience-like-credit
+8. add-growth-level
+9. add-match-reason
+10. add-realtime-notifications
+11. add-report-credit-deduction
+12. add-route-completion
+13. add-travel-finance
+14. add-traveler-recommendation
+15. add-trip-cancel
+16. add-trip-completion
+17. add-trip-publish
+18. add-trip-weather
+19. add-user-auth
+20. add-user-logout
+21. add-user-profile
+22. add-user-profiles
+23. refine-detail-companions
+24. refine-experience-share
+25. refine-inspiration-home
+26. refine-my-trips
+27. refine-safety-report
+28. refine-service-close
+29. refine-service-inbox-unread
+30. refine-service-workbench-live
+31. refine-trip-application
+32. refine-trip-chat
+33. refine-trip-map
+34. refine-user-support-entry
+35. remove-home-greeting-note
+36. add-destination-area-filters
+37. add-experience-photos
+38. refine-publish-route-map
+39. add-experience-like-credit
 
 ## Per-change status
 
@@ -76,7 +79,9 @@ Archiving stays human-approved (default: do NOT auto-archive). Execute ready cha
 | add-destination-area-filters | refine-inspiration-home | docs/sdd/README.md index note | Conditional | G2=Conditional; after refine-inspiration-home |
 | add-experience-like-credit | add-credit-account, add-experience-photos | docs/sdd/README.md index note | missing | G2=missing; after add-credit-account; after add-experience-photos |
 | add-experience-photos | refine-experience-share | docs/sdd/README.md index note | missing | G2=missing; after refine-experience-share |
+| add-growth-level | — | — | missing | G2=missing |
 | add-match-reason | — | — | Pass | READY |
+| add-realtime-notifications | — | — | missing | G2=missing |
 | add-report-credit-deduction | add-admin-console, add-credit-account | docs/sdd/README.md index note | missing | G2=missing; after add-admin-console; after add-credit-account |
 | add-route-completion | — | — | Pass | READY |
 | add-travel-finance | — | — | Pass with documented debt | READY |
@@ -95,6 +100,7 @@ Archiving stays human-approved (default: do NOT auto-archive). Execute ready cha
 | refine-my-trips | — | — | Pass | READY |
 | refine-publish-route-map | refine-trip-map, add-trip-publish | docs/sdd/README.md index note | missing | G2=missing; after refine-trip-map; after add-trip-publish |
 | refine-safety-report | — | — | missing | G2=missing |
+| refine-service-close | add-admin-console | docs/sdd/README.md index note | Pass | after add-admin-console |
 | refine-service-inbox-unread | add-admin-console | docs/sdd/README.md index note | missing | G2=missing; after add-admin-console |
 | refine-service-workbench-live | add-admin-console | docs/sdd/README.md index note | missing | G2=missing; after add-admin-console |
 | refine-trip-application | — | — | Pass | READY |

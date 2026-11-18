@@ -1,0 +1,78 @@
+{
+  "date": "2026-11-18",
+  "description": "SDD efficiency skills before/after data. Every value is measured or sourced from repo records. See 20261118-skill-efficiency-data.md for evidence columns.",
+  "gate_runtime_seconds": {
+    "check-id-collisions": 0.14,
+    "openspec-gate": 4.85,
+    "sign-ledger": 0.21,
+    "archive-queue": 0.17,
+    "e2e-debt-diff": 0.14
+  },
+  "renumber_rework": {
+    "files_per_renumber_samples": [
+      { "commit": "c2352b87", "files": 23, "lines": 200 },
+      { "commit": "464d9b80", "files": 24, "lines": 100 }
+    ],
+    "historical_deferral_counts": {
+      "add-credit-recovery": 4,
+      "add-growth-level": 5,
+      "add-report-credit-deduction": 2,
+      "add-user-profiles": 2,
+      "add-experience-like-credit": 1,
+      "add-admin-dashboard": 1
+    },
+    "new_collisions_merged_after_gates": 0,
+    "negative_probe": { "duplicate_V36": "FAIL exit 1", "after_removal": "PASS exit 0" }
+  },
+  "merge_operations": {
+    "all_branch_merge_window_minutes": 50,
+    "window_commits": { "from": "d0f1f3f3 16:10", "to": "33443990 17:00" },
+    "branches_merged": 6,
+    "concurrent_pushes_absorbed": 2,
+    "conflict_files": { "refine-service-close": 10, "add-growth-level-round2": 7, "admin-dashboard-historical": 8 },
+    "semantic_misplacement_caught_by_reverify": 1,
+    "reverification": { "backend": "780/780", "frontend": "572/572 + build", "openspec": "44 pass / 1 baseline / 0 new", "redocly_errors": 0 }
+  },
+  "contract_hotspots": {
+    "openapi_version_assertions": { "before": 5, "after": 1 },
+    "openapi_yaml_lines": { "at_report": 6189, "current": 6874 },
+    "styles_css_lines": { "at_report": 11608, "current": 10974 },
+    "ci_jobs": { "before": 2, "after": 4 }
+  },
+  "e2e": {
+    "full_suite_ab_measured": {
+      "a_serial_minutes": 18.4,
+      "b_shard3_minutes": [7.72, 7.83],
+      "speedup": 2.37,
+      "saved_minutes_per_run": 10.6,
+      "cases": 217,
+      "b_sample_diff_pct": 1.5,
+      "same_code_evidence": "git diff 407b7db2..53f8c557 -- e2e/tests frontend/src is empty",
+      "source": "docs/ai4se-plugins/20261118-203141-e2e-full-suite-ab-report.md (commit a9f6819d)"
+    },
+    "full_suite_wall_minutes_early_sample": 9,
+    "smoke_cases": 16,
+    "smoke_execution_seconds": 57.1,
+    "smoke_result": { "passed": 15, "failed": 1, "failed_is_pending_debt": true },
+    "db_setup_before": "drop + replay 36 Flyway migrations per run",
+    "db_setup_after": "template copy, seconds",
+    "known_reds_reattributed_manually_before": 33,
+    "attribution_runtime_seconds_after": 0.14,
+    "dead_case_timeout_waste_before_minutes": 10
+  },
+  "process_visibility": {
+    "g2_pending_visible": { "before_min": 8, "after": 22, "scanned_changes": 39 },
+    "archive_queue": { "active": 39, "ready": 16, "cycles": 0 },
+    "branch_cleanup": { "deleted": 6, "ancestor_checked": 6, "wrong_deletions": 0 },
+    "worktree_drill_residue": 0
+  },
+  "test_scale_background": {
+    "backend": { "at_landing": 678, "after_merge": 780 },
+    "frontend": { "at_landing": 514, "after_merge": 572 }
+  },
+  "caveats": [
+    "50-minute window covers 6 branches + 2 concurrent catch-ups + 2 full re-verifications; not a single-branch timing",
+    "sharded full-suite numbers are A/B measured with identical code and two B samples (1.5% apart); 57.1s is smoke test execution only (excludes stack boot)",
+    "deferral counts are historical stock; gate value = 0 new collisions merged + negative probe"
+  ]
+}

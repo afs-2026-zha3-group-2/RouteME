@@ -37,6 +37,19 @@
 - `refine-safety-report`：本批评审启动后由并发工作创建，评审时只有 `proposal.md` 与增量 spec，尚无 `design.md` / `tasks.md` / 实现，故未纳入；其已有独立的 proposal / spec 工件评审。
 - `openspec/changes/archive/`：已归档变更，不重复评审。
 
+## Skill 使用记录（2026-11-18）
+
+提效方案落地的 6 个新 skill 的真实使用证据（非工件评审报告，不适用签署矩阵）；未用过的操作已经发起人批准后补跑。问题/用法/前后对比的汇报依据层见 [skill 提效依据文档](../sdd/20261118-skill-efficiency-evidence.md)；纯数据版（可直接绘图）见 [数据表](../sdd/20261118-skill-efficiency-data.md) 与 [JSON](../sdd/20261118-skill-efficiency-data.json)。
+
+| skill | 使用方式 | 记录 |
+|---|---|---|
+| sdd-merge-main | 6 分支全量合并实战 | [记录](20261118-skill-usage-sdd-merge-main.md) |
+| sdd-id-allocate | 五次顺延裁决 + 门禁负向探针 | [记录](20261118-skill-usage-sdd-id-allocate.md) |
+| sdd-archive-queue | 实跑生成归档队列（39 active / 16 ready） | [记录](20261118-skill-usage-sdd-archive-queue.md) |
+| sdd-sign-ledger | 实跑生成签署台账（22 G2 待签） | [记录](20261118-skill-usage-sdd-sign-ledger.md) |
+| sdd-worktree-ops | 分支清理 + worktree 创建/移除演练 | [记录](20261118-skill-usage-sdd-worktree-ops.md) |
+| sdd-e2e-debt-baseline | fresh-DB smoke 16 例实跑 + debt-diff 归因 | [记录](20261118-skill-usage-sdd-e2e-debt-baseline.md) |
+
 ## 维护规则
 
 1. 新增或实质修改 change 后，重跑 `all-specs-review`，按 `20261116-<change-id>-all-specs-review.md` 的命名新增报告；同日重评追加 `-2` 序号，不覆盖旧报告。

@@ -11,7 +11,6 @@
     { "file": "weather.spec.ts", "title": "展示目的地首日天气与出行提醒" },
     { "file": "weather.spec.ts", "title": "日期超出预报窗口时提示暂无预报" },
     { "file": "experiences.spec.ts", "title": "shows seeded experiences in the travel experience view" },
-    { "file": "experiences.spec.ts", "title": "shares an experience and reuses it to publish a new plan" },
     { "file": "mine.spec.ts", "title": "shows the four groups with counts and the published group by default" },
     { "file": "profile.spec.ts", "title": "registers and lands on the profile setup page" },
     { "file": "profile.spec.ts", "title": "saves a complete profile and opens the public profile" },
