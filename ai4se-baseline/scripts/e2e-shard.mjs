@@ -27,6 +27,7 @@ import {
   ensureDir,
   jdbcFor,
   mvnwCommand,
+  pruneStaleMigrations,
   quoteArg,
   resetDbFromTemplate,
   startCommand,
@@ -172,6 +173,13 @@ async function prewarmBuild() {
     console.error('[e2e-shard] prewarm failed:\n' + tailFile(logFile, 40));
     process.exit(1);
   }
+
+  // Maven never deletes resources whose source disappeared, so a migration dropped by a
+  // merge survives in the output folder and Flyway aborts with a duplicate version.
+  const pruned = pruneStaleMigrations();
+  if (pruned.length) {
+    console.log(`[e2e-shard] dropped stale migrations: ${pruned.join(', ')}`);
+  }
   console.log('[e2e-shard] build is up to date');
 }
 
@@ -199,7 +207,10 @@ async function runShard(shard) {
   const frontend = startCommand({
     label: `frontend:${shardPlan.frontendPort}`,
     // Vite is launched through its JS entry: the `npm` shim is unreliable here.
-    commandString: `${quoteArg(process.execPath)} ${quoteArg(VITE_CLI)} --port ${shardPlan.frontendPort} --strictPort`,
+    // Vite is launched through its JS entry: the `npm` shim is unreliable here.
+    // `--host 127.0.0.1` keeps the bind on IPv4 so the readiness probe and Playwright
+    // never disagree with Vite's default `localhost` (which can resolve to ::1 only).
+    commandString: `${quoteArg(process.execPath)} ${quoteArg(VITE_CLI)} --host 127.0.0.1 --port ${shardPlan.frontendPort} --strictPort`,
     cwd: FRONTEND_DIR,
     env: { ROUTEME_API_TARGET: `http://127.0.0.1:${shardPlan.backendPort}` },
     logFile: shardPlan.frontendLog,

@@ -42,17 +42,39 @@ export function jdbcFor(dbPath) {
   return `jdbc:sqlite:${path.resolve(dbPath)}`;
 }
 
+/** Sidecar files SQLite keeps next to a database (WAL mode). */
+export const DB_SIDECARS = ['-wal', '-shm'];
+
+/**
+ * Copy a database together with its WAL sidecars.
+ *
+ * The backend runs SQLite in WAL mode, and the compose/stop path kills the process, so
+ * committed pages can still live in `<db>-wal`. Copying only the main file produces an
+ * empty database that looks fine until the first query.
+ */
+export function copyDbSet(fromPath, toPath) {
+  ensureDir(path.dirname(toPath));
+  for (const suffix of DB_SIDECARS) {
+    fs.rmSync(toPath + suffix, { force: true });
+  }
+  fs.copyFileSync(fromPath, toPath);
+  for (const suffix of DB_SIDECARS) {
+    if (fs.existsSync(fromPath + suffix)) {
+      fs.copyFileSync(fromPath + suffix, toPath + suffix);
+    }
+  }
+  return toPath;
+}
+
 /** Copy the pristine template to a fresh per-run database file. */
 export function resetDbFromTemplate(targetPath, templatePath = TEMPLATE_DB) {
   if (!fs.existsSync(templatePath)) {
     throw new Error(
       `template DB missing: ${templatePath}\n` +
-        'build it once with: node ai4se-baseline/scripts/e2e-db.mjs bootstrap',
+        'build it once with: node ai4se-baseline/scripts/e2e-db.mjs build',
     );
   }
-  ensureDir(path.dirname(targetPath));
-  fs.copyFileSync(templatePath, targetPath);
-  return targetPath;
+  return copyDbSet(templatePath, targetPath);
 }
 
 export function mvnwCommand() {
@@ -66,6 +88,31 @@ export function mvnwCommand() {
  * `node_modules`, which fails; calling Vite's own entry through `node` is portable.
  */
 export const VITE_CLI = path.join(FRONTEND_DIR, 'node_modules', 'vite', 'bin', 'vite.js');
+
+/**
+ * Remove resources whose source disappeared from the `dev-run` output directory.
+ *
+ * Maven's resource copying never deletes files, so a migration dropped by a merge stays
+ * in `target-run/classes/db/migration` and Flyway then aborts with "More than one
+ * migration with version N". Pruning only that folder keeps the fix targeted (a full
+ * `clean` would wipe classes the running dev backend may still load).
+ */
+export function pruneStaleMigrations() {
+  const sourceDir = path.join(BACKEND_DIR, 'src', 'main', 'resources', 'db', 'migration');
+  const outputDir = path.join(BACKEND_DIR, 'target-run', 'classes', 'db', 'migration');
+  if (!fs.existsSync(sourceDir) || !fs.existsSync(outputDir)) {
+    return [];
+  }
+  const expected = new Set(fs.readdirSync(sourceDir));
+  const removed = [];
+  for (const name of fs.readdirSync(outputDir)) {
+    if (!expected.has(name)) {
+      fs.rmSync(path.join(outputDir, name), { force: true });
+      removed.push(name);
+    }
+  }
+  return removed;
+}
 
 /**
  * Start a long-running command and stream its output into a log file.

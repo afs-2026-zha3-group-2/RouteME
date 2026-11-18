@@ -63,8 +63,28 @@ Windows     cd RouteME/backend; .\mvnw.cmd spring-boot:run    # 启动 8080
 - 冒烟：`GET /api/greeting`、`GET /api/users`、`GET /api/trips`、`GET /api/experiences`（其余 `/trips*`、`/me/*`、`/matches*` 需 `X-User-Id`，1–3 为演示账户）。
 - 契约校验：`cd RouteME; npx @redocly/cli lint openapi.yaml`（0 error），或 `cd RouteME/backend; .\mvnw.cmd -Dtest=OpenApiTest test`。
 - 前端：`cd RouteME/frontend; npm run build; npm test`。
-- 端到端：后端与前端启动后 `cd RouteME/e2e; npx playwright test`（本地门禁；CI 另有 `e2e-smoke` job 跑 auth/trips 子集，fresh DB）。全量前必须 fresh DB：备份并删除 `SqlLite/routeme.db` 后重启后端由 Flyway 重建，否则累积行程挤出种子卡片致首页断言失败。并发会话环境下用隔离端口（`PORT` / `ROUTEME_API_TARGET` / `ROUTEME_E2E_BASE_URL`）与独立库文件（`SPRING_DATASOURCE_URL`），不碰他人实例。
+- 端到端：详见下节「E2E 效率手册」；完整操作手册在 [RouteME/e2e/README.md](../../RouteME/e2e/README.md)。
 - 时钟口径（2026-11-17）：后端测试涉及种子行程状态一律 `@Import(FixedClockTestConfig.class)`（NOW=2026-11-16T09:00Z）并用 `trip.status(NOW)`；生产代码一律用注入 `clock.instant()`，禁用无参 `status()`（Instant.now()）——日期翻篇后种子行程过期会误判 COMPLETED（updateMeeting 409 缺陷已修）。e2e 首页断言用未来日期行程，不依赖固定种子出发日。
+
+## E2E 效率手册（2026-11-18）
+
+全量串行约 9 分钟，瓶颈是「串行执行 + 已知红跑满 30s 超时 + 每轮删库重放 Flyway」。四个工具改变这一点（脚本在 `ai4se-baseline/scripts/`，详细说明见 `RouteME/e2e/README.md`）：
+
+| 场景 | 命令（仓库根执行） | 说明 |
+|---|---|---|
+| 建模板库（一次性） | `node ai4se-baseline/scripts/e2e-db.mjs build` | 编译一次后在 8090 把空库迁到最新版本，产出 `SqlLite/routeme.template.db`；迁移有新增后重建 |
+| 取干净库 | `node ai4se-baseline/scripts/e2e-db.mjs reset --name <id>` | 秒级复制模板，替代「删库 + Flyway 重放」 |
+| 全量分片 | `node ai4se-baseline/scripts/e2e-shard.mjs` | 默认 3 分片并行，每片独立后端（8081+）/ Vite（5174+）/ 数据库 / uploads |
+| 快速门禁 | `node ai4se-baseline/scripts/e2e-smoke.mjs` | 15 条核心闭环（清单 `RouteME/e2e/smoke.json`）；默认自带隔离环境，`--base-url` 才复用现有服务；实测 76 s 全绿 |
+| 只跑改动 / 上轮失败 | `cd RouteME/e2e; npm run test:changed` / `npm run test:last-failed` | Playwright `--only-changed=origin/main` / `--last-failed` |
+| 失败归因 | `node ai4se-baseline/scripts/e2e-debt-diff.mjs --root . --report <json>` | 输出 `passed/failed/skipped (baseline/new)` 三分类 |
+
+- **为什么分片而不是 `workers > 1`：** 单后端单 SQLite 下 `credit-learning.spec.ts` 直接写库、多条 spec 共享种子用户 1–4，提高 workers 会互相踩；分片 = 按文件切 + 每片独立环境。
+- **构建只做一次：** 分片前统一 `mvnw -Pdev-run compile` → 清理 `target-run/classes` 里源已删除的迁移 → 生成 `target-run/classpath.txt`，各分片用 `java -cp` 启动，不让 N 个 Maven 争抢同一输出目录。
+- **已知红三档（`RouteME/e2e/known-failures.json`）：** `entries` 已归因的既有失败、`skipped` 已改 `test.fixme` 的死用例（不烧超时）、`pending` 观察到但未定根因的红（不参与豁免）。
+- **实测（2026-11-18，3 分片）：** 200 passed / 14 failed / 2 skipped，8.96 min（14 条失败各跑满 30s 约占 7 分钟）；smoke 16 条 15 passed，1.8 min（含建库与启停）。归因干净时全量预期 3 分钟量级。
+- **环境陷阱：** 直接复用开发服务器会把「旧构建」当成代码缺陷（实测 8080 跑合并前代码时 smoke 全红），所以 smoke 默认自建环境。
+- **WAL 细节：** 后端用 WAL 模式，进程被强杀时已提交页可能还在 `<db>-wal`；模板与分发必须连同 `-wal`/`-shm` 一起复制（`copyDbSet`），否则得到看似正常的空库。
 
 ## SDD 治理工具链（2026-11-18）
 
@@ -77,7 +97,7 @@ Windows     cd RouteME/backend; .\mvnw.cmd spring-boot:run    # 启动 8080
 | `npm run lint:contract --prefix ai4se-baseline/scripts` | redocly lint 契约（0 error；既有 warning 多为故意构造的 rejected/invalid 示例） |
 | `node ai4se-baseline/scripts/sign-ledger.mjs --root .` | 生成 `docs/sdd/sign-ledger.md` 签署台账（脚本生成不手改） |
 | `node ai4se-baseline/scripts/archive-queue.mjs --root .` | 生成 `docs/sdd/archive-queue.md` 归档依赖拓扑队列（只排序不执行归档） |
-| `node ai4se-baseline/scripts/e2e-debt-diff.mjs --root . --report <json> [--update-new]` | Playwright JSON 报告 vs `e2e/known-failures.json` 三分类（NEW/BASELINE/RESOLVED） |
+| `node ai4se-baseline/scripts/e2e-debt-diff.mjs --root . --report <json> [--update-new]` | Playwright JSON 报告 vs `e2e/known-failures.json`：`passed/failed/skipped` 统计 + NEW/BASELINE/RESOLVED 分类（`skipped` 不计入失败） |
 | `node ai4se-baseline/scripts/split-openapi.mjs --root . [--out-dir D \| --execute]` | 契约按 capability 拆 12 组 + redocly bundle 语义等价校验；默认 dry-run，`--execute` 带 hash 稳定性闸门（并发编辑时中止） |
 | `node ai4se-baseline/scripts/split-styles.mjs --root . [--out-dir D \| --execute]` | styles.css 按 banner 拆段 + 字节级拼接等价校验；同样带稳定性闸门 |
 | `cd RouteME/frontend; npm run gen:api-types` | openapi-typescript 从契约生成 `src/api/generated.ts`，合并后重新生成即可，不手工取并集 |

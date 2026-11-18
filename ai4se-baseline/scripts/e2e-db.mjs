@@ -15,13 +15,15 @@ import path from 'node:path';
 
 import {
   BACKEND_DIR,
-  IS_WINDOWS,
+  DB_SIDECARS,
   SQLITE_DIR,
   TEMPLATE_DB,
   TMP_DIR,
+  copyDbSet,
   ensureDir,
   jdbcFor,
   mvnwCommand,
+  pruneStaleMigrations,
   resetDbFromTemplate,
   startCommand,
   stopTree,
@@ -39,7 +41,13 @@ function argOf(name) {
 
 function sizeOf(filePath) {
   const stat = fs.statSync(filePath);
-  return `${(stat.size / 1024).toFixed(0)} KB, mtime ${stat.mtime.toISOString()}`;
+  const walBytes = DB_SIDECARS.reduce(
+    (total, suffix) =>
+      total + (fs.existsSync(filePath + suffix) ? fs.statSync(filePath + suffix).size : 0),
+    0,
+  );
+  const total = stat.size + walBytes;
+  return `${(total / 1024).toFixed(0)} KB${walBytes ? ' (incl. WAL)' : ''}, mtime ${stat.mtime.toISOString()}`;
 }
 
 function describeTemplate() {
@@ -54,8 +62,31 @@ async function buildTemplate() {
   const port = Number(argOf('--port') ?? 8090);
   const logFile = path.join(TMP_DIR, 'bootstrap-backend.log');
   fs.rmSync(buildDb, { force: true });
-  fs.rmSync(`${buildDb}-journal`, { force: true });
+  for (const suffix of ['-journal', ...DB_SIDECARS]) {
+    fs.rmSync(buildDb + suffix, { force: true });
+  }
   ensureDir(TMP_DIR);
+
+  // Compile first so stale output can be pruned before Flyway reads it: Maven's resource
+  // copy never deletes files whose source disappeared, and a leftover migration makes
+  // Flyway fail with "More than one migration with version N".
+  const buildLog = path.join(TMP_DIR, 'bootstrap-build.log');
+  const build = startCommand({
+    label: 'bootstrap-build',
+    commandString: `${mvnwCommand()} -Pdev-run -B -q compile`,
+    cwd: BACKEND_DIR,
+    env: { LOG_PATH: path.join(TMP_DIR, 'bootstrap-logs') },
+    logFile: buildLog,
+  });
+  const buildCode = await new Promise((resolve) => build.child.on('exit', (code) => resolve(code ?? 1)));
+  if (buildCode !== 0) {
+    console.error(`[e2e-db] backend build failed:\n${tailFile(buildLog, 30)}`);
+    process.exit(1);
+  }
+  const pruned = pruneStaleMigrations();
+  if (pruned.length) {
+    console.log(`[e2e-db] dropped stale migrations: ${pruned.join(', ')}`);
+  }
 
   console.log(`[e2e-db] migrating an empty database via the backend on port ${port} ...`);
   const backend = startCommand({
@@ -87,9 +118,21 @@ async function buildTemplate() {
     console.error('[e2e-db] backend booted but no database file was produced');
     process.exit(1);
   }
-  fs.copyFileSync(buildDb, TEMPLATE_DB);
-  fs.rmSync(buildDb, { force: true });
-  fs.rmSync(`${buildDb}-journal`, { force: true });
+  // WAL mode: the migrations may still live in `<db>-wal` (the kill skips the checkpoint),
+  // so the template has to carry the sidecars or it would be an empty database.
+  copyDbSet(buildDb, TEMPLATE_DB);
+  const baked = fs.statSync(TEMPLATE_DB).size +
+    DB_SIDECARS.reduce(
+      (total, suffix) =>
+        total + (fs.existsSync(TEMPLATE_DB + suffix) ? fs.statSync(TEMPLATE_DB + suffix).size : 0),
+      0,
+    );
+  if (baked < 64 * 1024) {
+    console.warn(`[e2e-db] WARNING: template is only ${(baked / 1024).toFixed(0)} KB — migrations may not be baked in`);
+  }
+  for (const suffix of ['', '-journal', ...DB_SIDECARS]) {
+    fs.rmSync(buildDb + suffix, { force: true });
+  }
   console.log(`[e2e-db] template ready: ${TEMPLATE_DB} (${sizeOf(TEMPLATE_DB)})`);
 }
 

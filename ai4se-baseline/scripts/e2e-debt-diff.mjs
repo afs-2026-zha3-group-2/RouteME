@@ -31,10 +31,16 @@ const baselineKeys = new Map(baseline.entries.map(e => [keyOf(e.file, e.title), 
 // Walk Playwright JSON suites recursively; collect failed tests.
 const failed = [];
 let passed = 0;
+let skipped = 0;
 function walk(suite, fileHint) {
   const file = suite.file ?? fileHint;
   for (const spec of suite.specs ?? []) {
     for (const test of spec.tests ?? []) {
+      // `skipped` covers `test.fixme` / `test.skip`: deliberately disabled, never a failure.
+      if (test.status === 'skipped') {
+        skipped += 1;
+        continue;
+      }
       const ok = test.status === 'expected';
       if (ok) { passed += 1; continue; }
       // flaky tests that eventually passed are not failures
@@ -57,7 +63,7 @@ const failedKeys = new Set(failed.map(f => keyOf(f.file, f.title)));
 const resolved = baseline.entries.filter(e => !failedKeys.has(keyOf(e.file, e.title)));
 
 console.log(`# E2E debt diff (${today})`);
-console.log(`passed=${passed} failed=${failed.length} (baseline=${baselineFailures.length} new=${newFailures.length})`);
+console.log(`passed=${passed} failed=${failed.length} skipped=${skipped} (baseline=${baselineFailures.length} new=${newFailures.length})`);
 if (baselineFailures.length) {
   console.log('\n## BASELINE failures (cite recorded reason, do not re-investigate)');
   for (const f of baselineFailures) console.log(`- ${f.file} :: ${f.title} — ${f.reason} [${f.ownerChange ?? 'unassigned'}]`);
