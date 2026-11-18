@@ -11399,8 +11399,7 @@ a.admin-metric-card:focus-visible {
   color: var(--ink-3);
 }
 
-.fin-field .ant-input-number,
-.fin-field .ant-select {
+.fin-field .ant-input-number {
   width: 100%;
 }
 

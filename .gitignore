@@ -1,5 +1,7 @@
 # Maven
 target/
+# 开发态专用输出（pom 的 dev-run profile）：与 target/ 分开，测试编译不会打断正在运行的后端
+target-run/
 .mvn/wrapper/maven-wrapper.jar
 
 # Node
@@ -25,6 +27,7 @@ dist/
 !.vscode/settings.json
 .metals/
 .bloop/
+_ao_ppt_build
 
 # OS
 .DS_Store

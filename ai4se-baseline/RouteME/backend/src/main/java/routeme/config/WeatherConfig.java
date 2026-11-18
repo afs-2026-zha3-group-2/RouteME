@@ -33,6 +33,16 @@ public class WeatherConfig {
         return build(properties.geocodingBaseUrl());
     }
 
+    /**
+     * 备用预报客户端：Open-Meteo 集合预报主机。
+     *
+     * <p>与主用接口同一数据源、不同主机；主用主机被网络阻断时由业务层切换，超时策略保持一致。</p>
+     */
+    @Bean
+    public RestClient weatherEnsembleRestClient(WeatherProperties properties) {
+        return build(properties.fallbackBaseUrl());
+    }
+
     private static RestClient build(String baseUrl) {
         SimpleClientHttpRequestFactory factory = new SimpleClientHttpRequestFactory();
         factory.setConnectTimeout(CONNECT_TIMEOUT);

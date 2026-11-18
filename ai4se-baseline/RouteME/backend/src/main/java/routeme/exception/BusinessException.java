@@ -19,6 +19,21 @@ public abstract class BusinessException extends RuntimeException {
         this.status = status;
     }
 
+    /**
+     * 带根因的业务异常：需要保留上游 I/O 原因（连接超时 / DNS 失败）时使用，
+     * 便于调用方区分「网络不可达」与「上游返回错误」。
+     *
+     * @param code    契约错误码
+     * @param status  HTTP 状态
+     * @param message 错误细节
+     * @param cause   根因
+     */
+    protected BusinessException(String code, HttpStatus status, String message, Throwable cause) {
+        super(message, cause);
+        this.code = code;
+        this.status = status;
+    }
+
     public String code() {
         return code;
     }
