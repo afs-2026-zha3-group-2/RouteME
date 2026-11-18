@@ -71,7 +71,7 @@
 3. **S29-3 钱包唯一且余额只经账本变化** — Given 用户已拥有钱包，When 用户重复登录、刷新页面或重复读取，Then 该用户 SHALL 仍只有一条钱包记录，余额 MUST NOT 因读取而改变；仓库中 MUST NOT 存在任何可由客户端直接改写余额的端点。
 4. **S29-4 余额与账本可回算** — Given 用户钱包存在任意笔流水，When 按流水回算，Then 「初始余额 + 所有入账 − 所有出账」MUST 等于当前余额；每条流水 MUST 记录变更前余额、变更后余额、方向、金额、业务类型、关联业务与发生时间，且满足「变更前 ± 金额 = 变更后」。
 
-### B. 保险购买
+### B. 第三方保险入口与状态回写
 
 5. **S29-5 保障页展示行程上下文与第三方提供方** — Given 用户打开某条可交易行程的「旅行保障」页，Then SHALL 展示目的地、出发 / 结束日期、同行人数、实际保险提供方名称与保障类别，以及保单 / 理赔 / 紧急求助入口；RouteME MUST NOT 展示自有的保费、保额或商品价格。
 6. **S29-6 借款 5% 服务费与利息精确到分** — Given 借款本金 1,000 元、期限 14 天，Then 服务费 SHALL 为 50 元、净额 950 元、利息 7 元、应还金额 1,007 元；服务费与利息 MUST 用整数运算四舍五入到分，不得出现浮点尾差；保险不向用户收平台费。
@@ -122,11 +122,11 @@
 - **借款（D3）：** 本金 100–2,000 元整（10,000–200,000 分）；期限仅 7 / 14 / 30 天；即时通过；`disbursed_cents = principal_cents − service_fee_cents`；`interest_cents = principal × 5 × term_days / 10000`；`repay_cents = principal_cents + interest_cents`；到期时刻 = 发放时刻 + 期限；逾期为读取时派生，不落独立状态，罚息在还款时结清。
 - **单笔进行中（D3）：** 每用户最多 1 笔 `ACTIVE` 借款；数据库部分唯一索引兜底，服务层同步校验。
 - **资格（D5）：** 发布者 + 该行程 `ACCEPTED` 申请者；行程状态 `recruiting` / `full` / `ongoing`；借款必须绑定行程。
-- **账号状态：** 购买 / 借款要求 `ACTIVE`（沿用 `AccountStatusService` 写守卫）；还款不受 `SUSPENDED` / `BANNED` 阻断。
+- **账号状态：** 投保 / 借款要求 `ACTIVE`（沿用 `AccountStatusService` 写守卫）；还款不受 `SUSPENDED` / `BANNED` 阻断。
 - **幂等（D8）：** 保险以「用户 + 行程」唯一约束兜底；借款以「用户 + `ACTIVE`」唯一索引兜底；还款以状态迁移兜底；重复请求不得二次扣款。
 - **数据模型：** `user_wallet`、`wallet_ledger`、`insurance_policy`、`travel_loan` 共 4 张表；不改 `app_users`、`user_credit_account`、`credit_ledger`；不新建商品目录表或订单表（保险记录 / 借款记录本身即业务记录）。
 - **迁移与引擎：** 新增 2 个迁移（`V30` 建表 + 回填，`V32` 重建 `travel_loan` 增补利息 / 罚息），必须同时在 SQLite（生产）与 H2（测试）执行。
-- **契约与迁移排他：** 基线 `openapi.yaml` 0.17.0、迁移头 `V23`；P3 先落 0.25.0 + `V30`，main 前进到 0.27.0 + `V31` 后按后到者顺延规则落定 **0.28.0 + `V32`**；`OpenApiTest` 断言版本。
+- **契约与迁移排他：** 基线 `openapi.yaml` 0.17.0、迁移头 `V23`；P3 先落 0.25.0 + `V30`，main 前进到 0.27.0 + `V31` 后按后到者顺延规则落定 **0.28.0 + `V32`**（其后通知变更合并，main 已到 0.29.0 + `V33`）；`OpenApiTest` 断言版本。
 - **测试边界：** 前端单测无 DOM（vitest node 环境）；费用 / 资格 / 状态文案等纯逻辑走 vitest，页面行为走 Playwright E2E。
 - **原型：** rebase 后 `docs/prototype/v1` 已归档；本 change 不新增原型资产，页面行为以 Delta Spec、生产 UI 与 Playwright E2E 为准。
 - **业务规则不可自行推断：** 任何未在本条目固化的口径（具体端点形状、字段命名、错误码、页面版式）只能按 §8 deferred 处理，不得在实现中临时决定。
@@ -142,8 +142,8 @@
 | 写守卫 | `AccountStatusService.assertCanWrite`，`ACTIVE` / `SUSPENDED` / `BANNED` |
 | 注册单事务 | `AuthServiceImpl.register` → `DemoUserService.createAccount`；已内嵌 `CreditService.ensureAccount`，可同事务初始化钱包 |
 | 金额惯例 | `budget_min_cents` / `budget_max_cents` 为整数分 |
-| 迁移头 | 当前 `V32__add_loan_interest_penalty.sql`；基线为 `V23__add_travel_mode.sql` |
-| 契约版本 | `openapi.yaml` `info.version: 0.28.0`；`OpenApiTest` 断言 |
+| 迁移头 | 本 change 为 `V32__add_loan_interest_penalty.sql`；main 当前 `V33__add_notifications.sql`；基线为 `V23__add_travel_mode.sql` |
+| 契约版本 | 本 change 为 `info.version: 0.28.0`；main 当前 0.29.0（通知变更）；`OpenApiTest` 断言 |
 | 前端路由 | `route.ts` 手写 hash 路由；`App.tsx` `renderContent`；详情页 `#/trips/{id}` |
 | 账号菜单 | `AppShell.tsx` `rail-menu` 含「编辑资料」「退出」两项 |
 | 详情页分区 | `TripDetailPage.tsx` `detail-section`：天气 / 途经点 / 发布者 / 同行者 / 体验 / 匹配 / 申请 |
@@ -175,7 +175,7 @@
 | blocking | resolved | 是否对接真实机构？ | IO | D9：不对接，demo |
 | blocking | resolved | 明确不做什么？ | IO | D10：理赔、退保、分期 / 复利、充值提现、管理后台、通知、信用分影响 |
 | non-blocking | resolved | 账号被封禁是否阻断还款？ | SA | 还款不受账号状态阻断（S29-30） |
-| non-blocking | resolved | 契约版本号与迁移号（0.17.0 / V23 之后） | Dev | 已确认：0.28.0 + `V32`（main 0.27.0 + `V31` 之后顺延） |
+| non-blocking | resolved | 契约版本号与迁移号（0.17.0 / V23 之后） | Dev | 已确认：0.28.0 + `V32`（main 0.27.0 + `V31` 之后顺延；其后 main 到 0.29.0 + `V33`） |
 | non-blocking | resolved | 端点形状、字段命名、错误码与页面版式 | SA | P3 已定稿：`TravelLoan` 含 `interest_cents` / `penalty_cents` / `total_repay_cents` |
 | non-blocking | resolved | 原型截点（钱包卡 / 借款表单） | Dev | rebase 后 `docs/prototype/v1` 已归档，以生产 UI + E2E 为准 |
 
