@@ -57,6 +57,13 @@
 - **Then** 返回 409 `SESSION_CLOSED`
 - **And** 既有 `closed_at` / `closed_by` 不被覆盖
 
+#### Scenario: 三个未结束状态都有结束入口
+
+- **Given** 会话处于 `WAITING`、`HANDLING` 或 `RESOLVED`
+- **When** 用户打开 `#/support`
+- **Then** 会话头 SHALL 显示「结束会话」按钮
+- **And** 确认弹窗文案按状态区分（`WAITING` 提示结束后取消排队）
+
 #### Scenario: 结束后可重新发起
 
 - **Given** 用户上一条客服会话已 `CLOSED`
@@ -96,6 +103,7 @@
 - **When** 用户打开 `#/support`
 - **Then** 会话头显示「待用户确认」与「客服已标记处理完成，如问题已解决请结束会话」类提示
 - **And** 显示「结束会话」按钮
+- **And** 用户端 MUST NOT 展示标记完成的客服身份
 - **And** 系统 MUST NOT 自动结束会话
 
 #### Scenario: 用户发言恢复处理中
@@ -127,6 +135,13 @@
 - **When** 查看会话头动作区
 - **Then** MUST NOT 出现「结束会话」按钮
 - **And** `HANDLING` 时只出现「标记处理完成」
+
+#### Scenario: 标记完成按钮仅处理中可见
+
+- **Given** 会话处于 `WAITING`、`RESOLVED` 或 `CLOSED`
+- **When** 客服查看会话头动作区
+- **Then** MUST NOT 出现「标记处理完成」
+- **And** 仅 `HANDLING` 时出现且点击直接生效
 
 #### Scenario: 管理端筛选与待确认可见
 

@@ -2,7 +2,7 @@
 
 - **需求来源：** GitHub Issue [#38](https://github.com/afs-2026-zha3-group-2/RouteME/issues/38)「客服服务BUG-客服无法结束会话」｜ **需求条目：** `requirement-workspace/requirements/REQ-028-service-close.md`（S29）
 - **能力：** `customer-service`（**ADDED Requirements**）；依赖 `user-support`（入口，未归档）、`user-auth`（已归档）、`trip-companions`（隔离不变量，已归档）
-- **规模：** M（新增 1 组 ADDED Requirement / 28 Scenario；新增 `V30` 迁移 + 契约 0.25.0；用户端结束、客服标记完成、四态状态机、两个新端点、删除一个端点）
+- **规模：** M（新增 1 组 ADDED Requirement / 30 Scenario；新增 `V30` 迁移 + 契约 0.25.0；用户端结束、客服标记完成、四态状态机、两个新端点、删除一个端点）
 - **规则：** `@rule:spec-first`、`@rule:api-contract`、`@rule:java-patterns`、`@rule:web-coding-style`、`@rule:security-baseline`、`@rule:tdd-cycle`、`@rule:sdd-artifacts`
 
 ## Why
@@ -57,7 +57,7 @@
 | `frontend/src/i18n/adminMessages.ts` / `api.ts` / `types.ts` | 新文案、新接口、状态 union |
 | `openapi.yaml` | 0.25.0；`ServiceSessionStatus` 增 `RESOLVED`；两个新端点；删除 close；摘要 / 详情增 `resolved_at` |
 | 测试 | 后端状态机 / API / 迁移双引擎；前端状态派生纯函数；E2E `customer-service` / `admin` 改写 |
-| `openspec/changes/refine-service-close/specs/customer-service/spec.md` | ADDED：3 Requirement / 28 Scenario |
+| `openspec/changes/refine-service-close/specs/customer-service/spec.md` | ADDED：3 Requirement / 30 Scenario（P2 收敛补 2 条 UI 场景与 1 条 MUST NOT 断言） |
 
 ## 决策
 

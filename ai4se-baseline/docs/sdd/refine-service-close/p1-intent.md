@@ -19,12 +19,12 @@
 | Ready 需求 | `requirement-workspace/requirements/REQ-028-service-close.md` | 六字段、36 场景（U / A / M / D / G / S / R）、OQ、DoR |
 | deep-dive | `requirement-workspace/deep-dive.md`「REQ-028 增补」 | 四表：数据契约 / 边界 / 跨 REQ / 展示 |
 | impact | `requirement-workspace/impact-brief.md` §25 | As-is / Delta / Blast radius / Risks / Split |
-| 故事 | `requirement-workspace/stories.md` S29 | 优先级 / 迭代 / 点数 TBD（待 IO） |
+| 故事 | `requirement-workspace/stories.md` S29 | P0 / 迭代 2 / 2 点（2026-11-18 经 IO 确认） |
 | 台账 | `registry.md`、`handoff.md` | REQ-028 行与映射 |
 | 提案 | `openspec/changes/refine-service-close/proposal.md` | Why / What / Out of Scope / 决策 / 验收信号 / 取代声明 |
-| Delta | `openspec/changes/refine-service-close/specs/customer-service/spec.md` | ADDED 3 Requirement / 28 Scenario |
+| Delta | `openspec/changes/refine-service-close/specs/customer-service/spec.md` | ADDED 3 Requirement / 28 Scenario（P2 收敛补 2 条 UI 场景与 1 条 MUST NOT 断言后为 30） |
 | 质量检查 | `docs/ai4se-plugins/20261118-100200-quality-checklist-report.md` | P1 Overall Pass；checkpoint `20261118-100126` |
-| 评审 | `docs/reviews/20261118-refine-service-close-proposal-review.md`、`-spec-review.md` | 均 Pass；待签署 |
+| 评审 | `docs/reviews/20261118-refine-service-close-proposal-review.md`、`-spec-review.md` | 均 Pass；WAYNE + Lewis Liu 已签（2026-11-18） |
 
 - `openspec validate refine-service-close --strict` → **valid**。
 
