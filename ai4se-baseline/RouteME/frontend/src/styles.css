@@ -1447,13 +1447,8 @@ svg {
   padding: 14px;
 }
 
-.publish-preview-frame {
-  transition: max-width 0.2s var(--ease);
-}
-
-.publish-preview-frame.is-mobile {
-  max-width: 320px;
-  margin: 0 auto;
+.publish-side-head .panel-title {
+  margin: 0;
 }
 
 .publish-companions-card .ant-card-body {
@@ -1486,11 +1481,6 @@ svg {
   justify-self: center;
 }
 
-@media (max-width: 1180px) {
-  .ai-condition-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-}
 @media (max-width: 900px) {
   .publish-grid {
     grid-template-columns: 1fr;
@@ -9077,35 +9067,6 @@ svg {
   height: clamp(420px, 56vh, 560px);
 }
 
-/* ---------- 规划条件（抽屉内单列） ---------- */
-.ai-conditions-drawer .ai-condition-grid {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 12px;
-  margin-top: 10px;
-}
-
-.ai-condition-actions {
-  display: flex;
-  gap: 10px;
-  flex-wrap: wrap;
-  margin-top: 16px;
-}
-
-.ai-origin-tools {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  flex-wrap: wrap;
-  margin-top: 4px;
-}
-
-.ai-origin-tools .ant-btn {
-  padding: 0 4px;
-  height: 22px;
-  font-size: 11.5px;
-}
-
 /* ---------- 对话线程 ---------- */
 .ai-thread {
   display: flex;
@@ -11042,30 +11003,6 @@ a.admin-metric-card:focus-visible {
   margin: 0 0 2px;
 }
 
-.publish-preview-device {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-
-.publish-preview-device .ant-select {
-  min-width: 96px;
-}
-
-.publish-preview-device .ant-segmented {
-  padding: 2px;
-  border-radius: 999px;
-  background: var(--surface-2);
-  font-size: 11.5px;
-}
-
-.publish-preview-device .ant-segmented-item-selected {
-  background: var(--surface);
-  box-shadow: var(--sh-1);
-  color: var(--t-lagoon);
-  font-weight: 700;
-}
-
 .publish-preview-card .ant-card-body {
   padding: 14px;
 }
@@ -11074,11 +11011,6 @@ a.admin-metric-card:focus-visible {
   display: grid;
   gap: 8px;
   max-width: 100%;
-}
-
-.publish-preview-card-body.is-mobile {
-  max-width: 330px;
-  margin: 0 auto;
 }
 
 .ppc-cover {
@@ -11225,6 +11157,17 @@ a.admin-metric-card:focus-visible {
   color: var(--t-jade);
   font-size: 10.5px;
   font-weight: 700;
+}
+
+/* 预览里同步显示同行设置，改动即时可见 */
+.ppc-facts {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  padding-top: 6px;
+  font-size: 11px;
+  color: var(--ink-3);
 }
 
 /* 同行设置：三个下拉一行 */
@@ -11842,51 +11785,61 @@ a.admin-metric-card:focus-visible {
    - 更换地点改为大搜索框 + 地图选点的弹窗
    ============================================================ */
 
-/* 规划条件：常驻可见的高对比摘要 */
-.ai-condition-summary {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  flex-wrap: wrap;
-  padding: 7px 10px;
-  border: 1px solid color-mix(in srgb, var(--lagoon) 20%, var(--line));
-  border-radius: 12px;
-  background: color-mix(in srgb, var(--lagoon) 5%, var(--surface));
+/* 历史对话抽屉：每段旅行一条，切回去整份上下文都在 */
+.ai-history-actions {
+  margin-bottom: 12px;
 }
 
-.ai-condition-chip {
-  display: inline-flex;
-  align-items: center;
-  max-width: 170px;
-  padding: 2px 9px;
-  border-radius: 999px;
-  background: var(--surface);
+.ai-history-list {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.ai-history-item {
+  display: grid;
+  gap: 3px;
+  width: 100%;
+  padding: 10px 12px;
   border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface);
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 0.16s var(--ease), box-shadow 0.16s var(--ease);
+}
+
+.ai-history-item:hover {
+  border-color: color-mix(in srgb, var(--lagoon) 40%, transparent);
+}
+
+.ai-history-item.is-active {
+  border-color: color-mix(in srgb, var(--lagoon) 55%, transparent);
+  background: color-mix(in srgb, var(--lagoon) 8%, var(--surface));
+  box-shadow: var(--sh-1);
+}
+
+.ai-history-title {
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--ink);
+}
+
+.ai-history-preview {
   font-size: 11.5px;
+  line-height: 1.5;
   color: var(--ink-2);
-  white-space: nowrap;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
   overflow: hidden;
-  text-overflow: ellipsis;
 }
 
-.ai-condition-chip.is-missing {
-  border-color: color-mix(in srgb, var(--warn) 40%, transparent);
-  color: var(--t-warn);
-  background: color-mix(in srgb, var(--warn) 8%, var(--surface));
-}
-
-.ai-condition-missing {
-  font-size: 11.5px;
-  font-weight: 700;
-  color: var(--t-warn);
-}
-
-.ai-conditions-btn.ant-btn {
-  margin-left: auto;
-  min-height: 28px;
-  padding: 0 16px;
-  border-radius: 999px;
-  font-weight: 700;
+.ai-history-meta {
+  font-size: 10.5px;
+  color: var(--ink-3);
 }
 
 /* 对话区：气泡更宽、输入区更舒展 */
@@ -12003,10 +11956,16 @@ a.admin-metric-card:focus-visible {
 }
 
 /* 条件抽屉里的地点搜索也放大一档：小输入框很难点中候选项 */
-.ai-conditions-drawer .amap-search-box .ant-input,
-.ai-conditions-drawer .amap-search-box .ant-input-affix-wrapper {
-  min-height: 40px;
-  border-radius: 10px;
+.ai-history-drawer .ant-drawer-body {
+  padding-top: 12px;
+}
+
+.ai-chat-toolbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
 }
 
 @media (max-width: 1180px) {
@@ -12030,13 +11989,5 @@ a.admin-metric-card:focus-visible {
     height: calc(100vh - 230px);
     max-height: calc(100vh - 230px);
     min-height: 440px;
-  }
-
-  .ai-condition-summary {
-    align-items: flex-start;
-  }
-
-  .ai-conditions-btn.ant-btn {
-    margin-left: 0;
   }
 }

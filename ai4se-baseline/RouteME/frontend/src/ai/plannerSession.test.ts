@@ -4,6 +4,7 @@ import {
   createPlannerSession,
   describeSession,
   loadSessionStore,
+  MAX_PLANNER_SESSIONS,
   parseSessionStore,
   plannerStorageKey,
   readSessionStore,
@@ -69,6 +70,22 @@ describe('plannerSession store', () => {
     expect(next.sessions).toHaveLength(1);
     expect(next.sessions[0].title).toBe('珠海');
     expect(next.activeId).toBe(session.id);
+  });
+
+  it('orders sessions by recency and caps the history length', () => {
+    let store = { activeId: '', sessions: [] as ReturnType<typeof createPlannerSession>[] };
+    const created = Array.from({ length: MAX_PLANNER_SESSIONS + 3 }, (_, index) =>
+      createPlannerSession({ ...defaultPlannerForm(), date: `2026-12-${String((index % 28) + 1).padStart(2, '0')}` }, index + 1),
+    );
+    store = { activeId: created[0].id, sessions: [created[0]] };
+    for (const session of created.slice(1)) {
+      store = upsertSession(store, session);
+    }
+    expect(store.sessions).toHaveLength(MAX_PLANNER_SESSIONS);
+    // 最近更新的排在最前面。
+    expect(store.sessions[0].updatedAt).toBeGreaterThanOrEqual(
+      store.sessions[store.sessions.length - 1].updatedAt,
+    );
   });
 
   it('describes a session by destination, then by first user message', () => {

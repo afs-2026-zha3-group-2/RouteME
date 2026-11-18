@@ -11,6 +11,10 @@ import type { PlannerFormValues } from './plannerForm';
 export type PlanIntent = {
   /** 文本中出现的城市名（离线地名库口径，未带「市」后缀）。 */
   destinationName: string | null;
+  /** 「从 X 出发」里的出发地名称，仍需页面用高德换成坐标。 */
+  originName: string | null;
+  /** 文本里提到的旅行日期（yyyy-MM-dd）；未提到时为 null（表单默认今天）。 */
+  date: string | null;
   duration: AiDuration | null;
   /** 元；`''` 表示文本里没有预算。保留字符串口径与表单一致。 */
   budgetYuan: string | null;
@@ -131,10 +135,96 @@ export function findCityInText(text: string): string | null {
   return best === null ? null : best.city;
 }
 
+/** 本地日期 yyyy-MM-dd：不用 toISOString，避免 UTC 偏移把日期推前一天。 */
+function toIsoDate(date: Date): string {
+  const pad = (value: number) => String(value).padStart(2, '0');
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
+}
+
+const WEEKDAY_INDEX: Record<string, number> = {
+  一: 1,
+  二: 2,
+  三: 3,
+  四: 4,
+  五: 5,
+  六: 6,
+  日: 0,
+  天: 0,
+};
+
+/**
+ * 文本里的出行日期 → yyyy-MM-dd。
+ *
+ * <p>支持：今天 / 明天 / 后天 / 大后天、N 天后、下周X、本周X、M月D日、YYYY-MM-DD。
+ * 解析不到返回 null（表单默认今天），绝不猜一个具体日期。
+ */
+export function parseDateInText(text: string, now: Date = new Date()): string | null {
+  const iso = /(\d{4})-(\d{1,2})-(\d{1,2})/.exec(text);
+  if (iso !== null) {
+    const date = new Date(Number(iso[1]), Number(iso[2]) - 1, Number(iso[3]));
+    return Number.isNaN(date.getTime()) ? null : toIsoDate(date);
+  }
+  const monthDay = /(\d{1,2})\s*月\s*(\d{1,2})\s*[日号]/.exec(text);
+  if (monthDay !== null) {
+    const month = Number(monthDay[1]);
+    const day = Number(monthDay[2]);
+    if (month >= 1 && month <= 12 && day >= 1 && day <= 31) {
+      // 今年的该日期已过时顺延到明年，避免生成一个过去的行程。
+      const candidate = new Date(now.getFullYear(), month - 1, day);
+      const date = candidate < new Date(now.getFullYear(), now.getMonth(), now.getDate())
+        ? new Date(now.getFullYear() + 1, month - 1, day)
+        : candidate;
+      return toIsoDate(date);
+    }
+    return null;
+  }
+  if (/大后天/.test(text)) {
+    return toIsoDate(new Date(now.getFullYear(), now.getMonth(), now.getDate() + 3));
+  }
+  if (/后天/.test(text)) {
+    return toIsoDate(new Date(now.getFullYear(), now.getMonth(), now.getDate() + 2));
+  }
+  if (/明天|明日/.test(text)) {
+    return toIsoDate(new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1));
+  }
+  if (/今天|今日/.test(text)) {
+    return toIsoDate(now);
+  }
+  const daysLater = /(\d{1,2})\s*天后/.exec(text);
+  if (daysLater !== null) {
+    const days = Number(daysLater[1]);
+    if (days > 0 && days <= 60) {
+      return toIsoDate(new Date(now.getFullYear(), now.getMonth(), now.getDate() + days));
+    }
+  }
+  // 「本周X / 下周X」按星期几推算；「周末」按最近的周六算。
+  const weekday = /(本周|这周|下周|星期|礼拜|周)([一二三四五六日天])/.exec(text);
+  if (weekday !== null) {
+    const target = WEEKDAY_INDEX[weekday[2]];
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const delta = (target - today.getDay() + 7) % 7 + (weekday[1] === '下周' ? 7 : 0);
+    return toIsoDate(new Date(today.getFullYear(), today.getMonth(), today.getDate() + delta));
+  }
+  if (/周末/.test(text)) {
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const delta = (6 - today.getDay() + 7) % 7;
+    return toIsoDate(new Date(today.getFullYear(), today.getMonth(), today.getDate() + delta));
+  }
+  return null;
+}
+
+/** 「从 X 出发 / 由 X 出发」里的出发地；拿不到就返回 null（沿用已有出发地）。 */
+export function parseOriginName(text: string): string | null {
+  const found = /(?:从|由|在)\s*([^\s，,。；;、]{2,12}?)\s*(?:出发|开始|启程|走|出发地)/.exec(text);
+  return found === null ? null : found[1];
+}
+
 /** 自然语言 → 规划条件；未提到的字段保持 null，调用方按需合并。 */
-export function parsePlanIntent(text: string): PlanIntent {
+export function parsePlanIntent(text: string, now: Date = new Date()): PlanIntent {
   return {
     destinationName: findCityInText(text),
+    originName: parseOriginName(text),
+    date: parseDateInText(text, now),
     duration: parseDuration(text),
     budgetYuan: parseBudget(text),
     pace: parsePace(text),
@@ -146,6 +236,9 @@ export function parsePlanIntent(text: string): PlanIntent {
 /** 条件里是否有任何可用信息（目的地在页面上解析坐标，故不计入）。 */
 export function intentHasCondition(intent: PlanIntent): boolean {
   return (
+    intent.destinationName !== null ||
+    intent.originName !== null ||
+    intent.date !== null ||
     intent.duration !== null ||
     intent.budgetYuan !== null ||
     intent.pace !== null ||
@@ -167,6 +260,7 @@ export function applyIntent(
   return {
     ...form,
     destination: intent.destinationName === null ? form.destination : (destination ?? form.destination),
+    date: intent.date ?? form.date,
     duration: intent.duration ?? form.duration,
     budgetYuan: intent.budgetYuan ?? form.budgetYuan,
     pace: intent.pace ?? form.pace,
