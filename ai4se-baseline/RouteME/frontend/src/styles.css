@@ -1918,8 +1918,8 @@ svg {
 /* ---------- 网格与骨架 ---------- */
 .trip-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-  gap: 16px;
+  grid-template-columns: 1fr;
+  gap: 14px;
   margin-top: 18px;
 }
 
@@ -2030,9 +2030,10 @@ svg {
 /* 左图右文：封面竖排在卡片左侧，城市名压在图片底部 */
 .tc-cover {
   position: relative;
-  flex: 0 0 30%;
-  min-width: 108px;
-  max-width: 148px;
+  flex: 0 0 260px;
+  min-width: 220px;
+  max-width: 280px;
+  min-height: 200px;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
@@ -2258,6 +2259,22 @@ svg {
 
 .tc-cap .tc-meter.is-full .ant-progress-bg {
   background: var(--grad-sunset);
+}
+
+@media (max-width: 900px) {
+  .tc-cover {
+    flex-basis: 200px;
+    min-width: 180px;
+    max-width: 200px;
+  }
+}
+
+@media (max-width: 680px) {
+  .tc-cover {
+    flex: 0 0 30%;
+    min-width: 108px;
+    max-width: 148px;
+  }
 }
 
 /* ---------- 体验卡 ---------- */
