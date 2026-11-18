@@ -1588,7 +1588,6 @@ svg {
   width: 100%;
 }
 
-.detail-stops,
 .detail-participants {
   margin: 0;
   padding-left: 20px;
@@ -3567,7 +3566,6 @@ svg {
   box-shadow: var(--sh-1);
 }
 
-.detail-stops li,
 .detail-participants li {
   font-size: 13.5px;
   line-height: 1.7;
@@ -5651,17 +5649,6 @@ svg {
   font-size: 10.5px;
   color: var(--ink-3);
   white-space: nowrap;
-}
-
-.detail-stop-button {
-  border: 0;
-  background: transparent;
-  padding: 0;
-  color: var(--map-route);
-  font: inherit;
-  cursor: pointer;
-  text-decoration: underline;
-  text-underline-offset: 3px;
 }
 
 @media (max-width: 700px) {

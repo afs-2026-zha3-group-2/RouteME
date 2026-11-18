@@ -594,8 +594,8 @@ test('detail page keeps the map and warns when a stop is off the gazetteer', asy
   await expect(section).toBeVisible();
   await expect(section.locator('.amap-overlay-marker')).toHaveCount(1);
   await expect(section.locator('.amap-trip-alert')).toContainText('有 1 个途经点未能定位');
-  await expect(page.locator('.detail-stops')).toContainText('香洲港集合');
-  await expect(page.locator('.detail-stops')).toContainText('不存在的地点XYZ');
+  await expect(section.locator('.route-strip')).toContainText('香洲港集合');
+  await expect(section.locator('.route-strip')).toContainText('不存在的地点XYZ');
 });
 
 test('meeting edit replaces the single area and the API guards limit and ownership', async ({ page }) => {

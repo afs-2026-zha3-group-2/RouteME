@@ -519,19 +519,6 @@ export function TripDetailPage({ currentUser, tripId }: Props) {
               </div>
             )}
             {!hasStops && <p className="form-hint">{tripMessages.detailMapNoStops}</p>}
-            <ol className="detail-stops">
-              {trip.stops.map((stop, index) => (
-                <li key={`${stop}-${index}`}>
-                  {hasStops ? (
-                    <button type="button" className="detail-stop-button" onClick={() => focusPlace(stop)}>
-                      {stop}
-                    </button>
-                  ) : (
-                    stop
-                  )}
-                </li>
-              ))}
-            </ol>
             <dl className="detail-facts">
               <div>
                 <dt>{tripMessages.detailMeetingArea}</dt>
