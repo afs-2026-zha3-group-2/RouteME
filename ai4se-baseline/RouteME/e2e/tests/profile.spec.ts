@@ -1,4 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
+import { verifyStudentViaApi } from './support';
 
 // Relative by default: API rows must land on the same backend the page talks to.
 // An absolute default (http://localhost:8080) silently seeds another backend when
@@ -41,6 +42,7 @@ async function registerViaApi(
   });
   expect(response.status()).toBe(201);
   const session = (await response.json()) as { token: string; user: { id: number } };
+  await verifyStudentViaApi(page, session);
   return { username, nickname, token: session.token, userId: session.user.id };
 }
 

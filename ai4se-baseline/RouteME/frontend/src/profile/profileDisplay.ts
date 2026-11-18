@@ -40,6 +40,7 @@ export function hasPublicContent(profile: UserProfile): boolean {
     text(profile.mbti) !== '' ||
     text(profile.travel_style) !== '' ||
     text(profile.bio) !== '' ||
+    profile.student_verified ||
     (profile.age !== null && profile.age !== undefined)
   );
 }
@@ -66,5 +67,6 @@ export function profileToUser(profile: UserProfile): DemoUser {
     major: profile.major ?? null,
     job: profile.job ?? null,
     profile_complete: profile.profile_complete,
+    student_verified: profile.student_verified,
   };
 }

@@ -1,6 +1,6 @@
 # P2 规格记录 — add-growth-level
 
-- **Change：** `add-growth-level`（REQ-033 / S34 用户成长等级 LV1–LV5；编号四次顺延）｜ **阶段：** P2（Delta 收敛 + AC/DoV + 一致性检查 + G1）
+- **Change：** `add-growth-level`（REQ-033 / S34 用户成长等级 LV1–LV5；编号第五次顺延）｜ **阶段：** P2（Delta 收敛 + AC/DoV + 一致性检查 + G1）
 - **日期：** 2026-11-18 ｜ **记录人：** Jay（AO）
 - **基线：** `origin/main@8992853`（P2 阶段），其后合并至 `origin/main@f2bad40`（契约 0.26.0 / 迁移头 `V31__report_credit_deduction.sql`，#29 已并入）
 
@@ -52,4 +52,4 @@
 ## 8. 提交记录
 
 - P2 产物（Delta 校验、`dov-ac-review.md`、`consistency-lint.md`、`g1-decision.md`、本记录、`registry.md` / `docs/sdd/README.md` 状态）随阶段提交 `docs(p2): add-growth-level converge delta with AC/DoV, lint and G1` 落盘（`bf74658`），并 push 到 `origin/feature/add-growth-level`。
-- 2026-11-18 合并 `origin/main@f2bad40`（含 #29）后，编号由 REQ-030 / S31 顺延为 **REQ-033 / S34**；契约 / 迁移基线更新为 0.26.0 + V31，本 change 落定 0.30.0 + V34；G1 Decision / Conditions / Approvers 按内容不变沿用。
+- 2026-11-18 合并 `origin/main@f2bad40`（含 #29）后，编号由 REQ-030 / S31 顺延为 **REQ-033 / S34**；契约 / 迁移基线更新为 0.26.0 + V31，本 change 落定 0.31.0 + V35；G1 Decision / Conditions / Approvers 按内容不变沿用。

@@ -1,5 +1,5 @@
 import { expect, type Page } from '@playwright/test';
-import { acceptApplicationViaApi, applyViaApi, createTripViaApi } from './support';
+import { acceptApplicationViaApi, applyViaApi, createTripViaApi, verifyStudentViaApi } from './support';
 
 // 与 support.ts 保持一致：本地直连前端同源的 /api。
 const API = '/api';
@@ -29,6 +29,7 @@ export async function registerViaApi(page: Page, nicknamePrefix = '信用'): Pro
   });
   expect(response.status()).toBe(201);
   const session = (await response.json()) as { token: string; user: { id: number } };
+  await verifyStudentViaApi(page, session);
   return { username, userId: session.user.id, token: session.token };
 }
 

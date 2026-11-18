@@ -11,6 +11,7 @@ const publisher: DemoUser = {
   bio: '周末基本在山里。',
   interests: [],
   profile_complete: true,
+  student_verified: true,
 };
 
 function tripWith(

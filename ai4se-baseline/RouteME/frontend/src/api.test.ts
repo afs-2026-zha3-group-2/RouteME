@@ -8,7 +8,42 @@ import {
   loadTripFinance,
   openInsurancePurchase,
   repayLoan,
+  verifyStudentIdentity,
 } from './api';
+
+describe('verifyStudentIdentity', () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it('posts the verification body with the bearer token', async () => {
+    const fetchMock = vi.fn().mockResolvedValue(
+      new Response(JSON.stringify({ id: 9, nickname: '新同学', student_verified: true }), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' },
+      }),
+    );
+    vi.stubGlobal('fetch', fetchMock);
+
+    await expect(
+      verifyStudentIdentity('session-token', {
+        name: '张三',
+        school: '中山大学',
+        code: 'AB12CD34EF56',
+      }),
+    ).resolves.toMatchObject({ id: 9, student_verified: true });
+
+    const [url, init] = fetchMock.mock.calls[0] as [string, RequestInit];
+    expect(url).toBe('/api/users/me/student-verification');
+    expect(init.method).toBe('POST');
+    expect((init.headers as Headers).get('Authorization')).toBe('Bearer session-token');
+    expect(JSON.parse(init.body as string)).toEqual({
+      name: '张三',
+      school: '中山大学',
+      code: 'AB12CD34EF56',
+    });
+  });
+});
 
 describe('loadTrips', () => {
   afterEach(() => {

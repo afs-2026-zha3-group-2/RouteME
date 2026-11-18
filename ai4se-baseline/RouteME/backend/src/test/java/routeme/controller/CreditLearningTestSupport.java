@@ -23,11 +23,13 @@ import routeme.constant.CreditLearningConstant;
 import routeme.credit.LearningQuestionBank;
 import routeme.entity.CreditLearningSessionEntity;
 import routeme.entity.CreditLedgerEntity;
+import routeme.entity.UserEntity;
 import routeme.mapper.CreditLearningSessionMapper;
 import routeme.mapper.CreditLedgerMapper;
 import routeme.mapper.UserCreditAccountMapper;
 import routeme.pojo.CreditBooking;
 import routeme.service.CreditService;
+import routeme.service.DemoUserService;
 import routeme.utils.JsonListUtils;
 
 /**
@@ -60,6 +62,9 @@ abstract class CreditLearningTestSupport {
 
     @Autowired
     protected LearningQuestionBank questionBank;
+
+    @Autowired
+    protected DemoUserService demoUserService;
 
     protected ResultActions startSession(long userId) throws Exception {
         return mockMvc.perform(post(SESSIONS).header("X-User-Id", userId));
@@ -110,6 +115,12 @@ abstract class CreditLearningTestSupport {
                 .andExpect(status().isCreated())
                 .andReturn();
         Number userId = JsonPath.read(registered.getResponse().getContentAsString(), "$.user.id");
+        // 新注册账号默认未过学信网认证；涉及发布的用例需要先补齐门槛。
+        UserEntity entity = demoUserService.getById(userId.longValue());
+        entity.setStudentVerified(true);
+        entity.setStudentVerifiedName(username);
+        entity.setStudentVerifiedSchool("中山大学");
+        demoUserService.updateById(entity);
         return userId.longValue();
     }
 

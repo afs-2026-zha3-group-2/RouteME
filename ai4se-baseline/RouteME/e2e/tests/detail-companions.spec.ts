@@ -6,6 +6,7 @@ import {
   createTripViaApi,
   loginAs,
   switchUser,
+  verifyStudentViaApi,
 } from './support';
 
 async function registerSparseCompanion(page: Page): Promise<{ id: number; nickname: string }> {
@@ -19,7 +20,8 @@ async function registerSparseCompanion(page: Page): Promise<{ id: number; nickna
     },
   });
   expect(response.status()).toBe(201);
-  const session = (await response.json()) as { user: { id: number } };
+  const session = (await response.json()) as { token: string; user: { id: number } };
+  await verifyStudentViaApi(page, session);
   return { id: session.user.id, nickname };
 }
 
@@ -97,7 +99,7 @@ test('falls back to job or nickname when profile fields are missing', async ({ p
   await page.goto(`/#/trips/${created.id}`);
 
   const zhouye = page.locator('.companion-card', { hasText: '周野' });
-  await expect(zhouye.locator('.publisher-name')).toHaveText('周野 · 产品经理');
+  await expect(zhouye.locator('.publisher-name')).toHaveText('周野 · 学生');
   await expect(zhouye.locator('.publisher-bio')).not.toHaveText('');
   await expect(zhouye.locator('.tag').first()).toBeVisible();
 

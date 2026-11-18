@@ -109,6 +109,15 @@ export function ProfilePage({ currentUser, userId, canEdit }: Props) {
               ) : (
                 <span className="badge muted">{tripMessages.profileIncompleteBadge}</span>
               )}
+              {profile.student_verified ? (
+                <span className="badge jade">{tripMessages.studentVerifyVerifiedBadge}</span>
+              ) : (
+                isSelf && (
+                  <a className="badge muted" href="#/verify/student">
+                    {tripMessages.studentVerifyPendingBadge}
+                  </a>
+                )
+              )}
             </Typography.Title>
             <GrowthBadge level={profile.growth?.level} withLabel />
           </div>
@@ -172,6 +181,21 @@ export function ProfilePage({ currentUser, userId, canEdit }: Props) {
         />
       )}
 
+      {isSelf && !profile.student_verified && (
+        <Alert
+          type="warning"
+          showIcon
+          className="profile-incomplete-notice"
+          title={tripMessages.studentVerifyBannerTitle}
+          description={tripMessages.studentVerifyBannerBody}
+          action={
+            <Button size="small" type="primary" onClick={() => (window.location.hash = '#/verify/student')}>
+              {tripMessages.studentVerifyBannerAction}
+            </Button>
+          }
+        />
+      )}
+
       {!hasPublicContent(profile) ? (
         <p className="profile-empty profile-card">{tripMessages.profileEmpty}</p>
       ) : (
@@ -190,6 +214,14 @@ export function ProfilePage({ currentUser, userId, canEdit }: Props) {
                   <div className="profile-fact">
                     <dt>{tripMessages.profileFactsJob}</dt>
                     <dd>{profile.job}</dd>
+                  </div>
+                )}
+                {profile.student_verified && (
+                  <div className="profile-fact">
+                    <dt>{tripMessages.studentVerifyTitle}</dt>
+                    <dd>
+                      {profile.student_verified_school ?? tripMessages.studentVerifyVerifiedBadge}
+                    </dd>
                   </div>
                 )}
                 {(profile.mbti ?? '') !== '' && (

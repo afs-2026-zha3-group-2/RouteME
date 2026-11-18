@@ -5,6 +5,7 @@ import { deleteAdminExperience } from '../api';
 import { ExperienceCard } from '../experiences/ExperienceCard';
 import { useExperiences } from '../experiences/useExperiences';
 import { adminMessages } from '../i18n/adminMessages';
+import { useStudentGate } from '../identity/StudentVerificationGate';
 import { tripMessages } from '../i18n/tripMessages';
 import { useUserCredits } from '../profiles/useUserCredits';
 import { useGrowthLevels } from '../profiles/useGrowthLevels';
@@ -42,6 +43,7 @@ export function HomePage({ currentUser, token }: Props) {
   const growth = useGrowthLevels(publisherIds, currentUser.id);
   const resultsRef = useRef<HTMLDivElement>(null);
   const [deletingId, setDeletingId] = useState<number | null>(null);
+  const studentGate = useStudentGate(currentUser);
 
   /** 管理员可在旅行灵感列表直接删除任意一条；后端同步清理图片与点赞。 */
   const removeExperience = async (experience: Experience) => {
@@ -72,7 +74,9 @@ export function HomePage({ currentUser, token }: Props) {
   const summary = describeFilters(filters);
 
   const goPublish = () => {
-    window.location.hash = '#/trips/new';
+    studentGate.requireVerified(() => {
+      window.location.hash = '#/trips/new';
+    });
   };
 
   const publishAction = (
@@ -83,6 +87,7 @@ export function HomePage({ currentUser, token }: Props) {
 
   return (
     <main className="trip-page">
+      {studentGate.prompt}
       <section className="disc-hero">
         <h1 className="greet">
           {greetingForHour(new Date().getHours())}，<em>{currentUser.nickname}</em>。

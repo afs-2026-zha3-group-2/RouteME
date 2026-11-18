@@ -136,7 +136,7 @@
 - **配置：** `routeme.growth.publish-exp` 默认 10，正整数值；不提供管理端。
 - **不回填：** 历史发布 / 点赞 / 已处理举报不补发、不补扣。
 - **只读展示：** 他人只可见等级；本人可见当前经验与距下一级；具体字段形状 P3 定。
-- **契约 / 迁移排他：** 基线 `openapi.yaml` 0.26.0、Flyway 头 `V31__report_credit_deduction.sql`（#29 已并入 main）；本 change 落定 0.30.0 + V34，P3 排他确认。
+- **契约 / 迁移排他：** 基线 `openapi.yaml` 0.26.0、Flyway 头 `V31__report_credit_deduction.sql`（#29 已并入 main）；本 change 落定 0.31.0 + V35，P3 排他确认。
 - **#29 冲突：** #29 已并入 main（`f2bad40`），`AdminReportServiceImpl.resolve` 已有「扣信用分」；本 change 在其后并列追加「扣成长经验」，不覆盖既有副作用。
 
 ## 6. Context（证据）

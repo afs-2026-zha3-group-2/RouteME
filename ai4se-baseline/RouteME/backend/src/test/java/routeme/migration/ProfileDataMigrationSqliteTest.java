@@ -16,7 +16,8 @@ import org.springframework.jdbc.datasource.DriverManagerDataSource;
 /**
  * 在临时 SQLite 文件库执行全部迁移，验证 V12 写入第 4 个演示用户与其行程、
  * V13 把该用户的职业与 MBTI 从 school 文案搬到各自的列、
- * V15 为其落库 zhouye / 123456 的登录凭据。
+ * V15 为其落库 zhouye / 123456 的登录凭据、
+ * V34 把该用户改为在校学生并给演示账号补齐学信网认证。
  */
 class ProfileDataMigrationSqliteTest {
 
@@ -44,6 +45,12 @@ class ProfileDataMigrationSqliteTest {
         String nickname = jdbcClient.sql("SELECT nickname FROM app_users WHERE id = 4").query(String.class).single();
         String interests = jdbcClient.sql("SELECT interests FROM app_users WHERE id = 4").query(String.class).single();
         String createdAt = jdbcClient.sql("SELECT created_at FROM app_users WHERE id = 4").query(String.class).single();
+        int studentVerified = jdbcClient.sql("SELECT student_verified FROM app_users WHERE id = 4")
+                .query(Integer.class)
+                .single();
+        String verifiedSchool = jdbcClient.sql("SELECT student_verified_school FROM app_users WHERE id = 4")
+                .query(String.class)
+                .single();
         int credentialless = jdbcClient
                 .sql("SELECT COUNT(*) FROM app_users WHERE id = 4 AND username IS NULL AND password_hash IS NULL")
                 .query(Integer.class)
@@ -71,11 +78,13 @@ class ProfileDataMigrationSqliteTest {
                 () -> assertEquals(7, trips, "seeded trips"),
                 () -> assertEquals("周野", nickname, "profile viewer nickname"),
                 () -> assertEquals("", school, "identity lives in job / mbti, not school"),
-                () -> assertEquals("产品经理", job, "non-student job"),
-                () -> assertEquals("INFP", mbti, "non-student mbti"),
+                () -> assertEquals("学生", job, "the viewer is an in-school student"),
+                () -> assertEquals("INFP", mbti, "student mbti"),
                 () -> assertEquals("上海", city, "non-student city"),
                 () -> assertTrue(interests.contains("展览"), "interests stored as JSON text"),
                 () -> assertEquals("2026-03-15T09:20:00Z", createdAt, "fixed joined time"),
+                () -> assertEquals(1, studentVerified, "demo accounts are CHSI-verified"),
+                () -> assertEquals("同济大学", verifiedSchool, "viewer verification school"),
                 () -> assertEquals(0, credentialless, "V15 gives the viewer account login credentials"),
                 () -> assertEquals("zhouye", viewerUsername, "viewer username is the pinyin of the nickname"),
                 () -> assertEquals(4, publisherId, "trip belongs to the new user"),

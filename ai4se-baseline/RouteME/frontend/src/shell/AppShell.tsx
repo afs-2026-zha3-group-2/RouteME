@@ -7,6 +7,7 @@ import { adminMessages } from '../i18n/adminMessages';
 import { financeMessages } from '../i18n/financeMessages';
 import { notificationMessages } from '../i18n/notificationMessages';
 import { GateScene } from '../identity/GateScene';
+import { StudentShield } from '../identity/StudentVerificationGate';
 import { tripMessages } from '../i18n/tripMessages';
 import { NotificationBadge } from '../notifications/NotificationBadge';
 import { NotificationBell } from '../notifications/NotificationBell';
@@ -536,6 +537,23 @@ export function AppShell({
                     <span>{adminMessages.supportNav}</span>
                   </a>
                 )}
+                {!isAdmin && (
+                  <a
+                    className="rail-menu-item"
+                    role="menuitem"
+                    href="#/verify/student"
+                    onClick={() => setAccountOpen(false)}
+                  >
+                    <svg viewBox="0 0 20 20" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M10 2.8 16.4 5v5.1c0 3.4-2.5 5.8-6.4 7.1-3.9-1.3-6.4-3.7-6.4-7.1V5z" />
+                      <path d="m7.3 10 1.9 1.9 3.6-3.8" />
+                    </svg>
+                    <span>{tripMessages.studentVerifyMenu}</span>
+                    {!currentUser.student_verified && (
+                      <i className="rail-menu-badge">{tripMessages.studentVerifyPendingBadge}</i>
+                    )}
+                  </a>
+                )}
                 <a
                   className="rail-menu-item"
                   role="menuitem"
@@ -593,6 +611,18 @@ export function AppShell({
           banExpiresAt={selfProfile?.ban_expires_at}
           className="view-status-notice"
         />
+        {!isAdmin && !currentUser.student_verified && route.name !== 'studentVerification' && (
+          <div className="chsi-banner" role="status">
+            <StudentShield small />
+            <div className="chsi-banner-text">
+              <b>{tripMessages.studentVerifyBannerTitle}</b>
+              <span>{tripMessages.studentVerifyBannerBody}</span>
+            </div>
+            <a className="chsi-banner-action" href="#/verify/student">
+              {tripMessages.studentVerifyBannerAction}
+            </a>
+          </div>
+        )}
         {restricted && route.name !== 'creditLearning' ? <CreditRestrictionGate /> : children}
       </div>
 

@@ -1,10 +1,10 @@
 openapi: 3.0.3
 info:
   title: RouteME API
-  version: 0.30.0
+  version: 0.31.0
   description: |
     RouteME 后端对外契约。本文件是前后端唯一事实源，字段名、类型、状态码与错误码只在这里定稿。
-        当前包含：脚手架问候语、演示账户与账号认证（注册/登录/会话/退出）、旅行计划（浏览/筛选/发布/详情/结束），同行匹配、申请、退出、聊天、我的旅行与举报，游后体验分享与参考发布所需数据，管理后台（用户管理 / 举报处置 / 人工客服）与用户侧帮助入口，AI 智能行程推荐（生成/快照保存与读取，天气复用目的地天气接口），以及目的地天气提醒与信用分账户、安全学习恢复信用分的考试会话与判分，旅行保障（演示钱包 / 保险 / 借款 / 还款）。
+        当前包含：脚手架问候语、演示账户与账号认证（注册/登录/会话/退出）、旅行计划（浏览/筛选/发布/详情/结束），同行匹配、申请、退出、聊天、我的旅行与举报，游后体验分享与参考发布所需数据，管理后台（用户管理 / 举报处置 / 人工客服）与用户侧帮助入口，AI 智能行程推荐（生成/快照保存与读取，天气复用目的地天气接口），以及目的地天气提醒与信用分账户、安全学习恢复信用分的考试会话与判分，旅行保障（演示钱包 / 保险 / 借款 / 还款），学信网学籍认证（演示核验）与核心动作门槛。
         行程与体验列表按页返回：`page` 从 1 起，`size` 默认 20、上限 50。
         目的地为用户在地图地点库中搜索或点选的城市/地点名称，不再限定固定枚举。
 servers:
@@ -368,6 +368,53 @@ paths:
                     code: SESSION_INVALID
         '403':
           $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/Unexpected'
+  /users/me/student-verification:
+    post:
+      operationId: verifyStudentIdentity
+      summary: 提交学信网学籍认证
+      description: |
+        需要登录会话。演示核验：姓名、院校与 12 位学信网在线验证码通过格式校验后即置为已认证，
+        验证码不落库。认证是发布行程、申请同行、发送消息与分享体验的前置门槛；管理员账号豁免。
+        重复提交会刷新认证院校与认证时间。
+      parameters:
+        - $ref: '#/components/parameters/BearerToken'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StudentVerificationRequest'
+      responses:
+        '200':
+          description: 认证通过后的用户摘要
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DemoUser'
+        '400':
+          description: 字段校验失败，`fields` 为字段名 → 原因码
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                invalidCode:
+                  value:
+                    code: INVALID_INPUT
+                    fields:
+                      code: INVALID_OPTION
+        '401':
+          description: 缺少有效会话
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                invalidSession:
+                  value:
+                    code: SESSION_INVALID
         '500':
           $ref: '#/components/responses/Unexpected'
   /users/{userId}/avatar:
@@ -3610,7 +3657,7 @@ components:
           description: 问候语文本，来自 greetings 表的 message 列
     DemoUser:
       type: object
-      required: [id, nickname, avatar_initial, bio, interests, profile_complete, role, status]
+      required: [id, nickname, avatar_initial, bio, interests, profile_complete, student_verified, role, status]
       properties:
         id:
           type: integer
@@ -3666,13 +3713,17 @@ components:
           type: boolean
           readOnly: true
           description: 由必填字段派生的资料完善状态，不落库
+        student_verified:
+          type: boolean
+          readOnly: true
+          description: 学信网学籍认证状态；未认证时发布 / 申请 / 聊天 / 分享体验返回 403 `STUDENT_VERIFICATION_REQUIRED`
         role:
           $ref: '#/components/schemas/AccountRole'
         status:
           $ref: '#/components/schemas/AccountStatus'
     UserProfile:
       type: object
-      required: [id, nickname, avatar_initial, interests, profile_complete, credit_score, credit_level, credit_restricted, route_completion_state]
+      required: [id, nickname, avatar_initial, interests, profile_complete, student_verified, credit_score, credit_level, credit_restricted, route_completion_state]
       properties:
         id:
           type: integer
@@ -3755,6 +3806,21 @@ components:
           type: boolean
           readOnly: true
           description: 六项必填同时成立时为 true；NULL / 空串 / 非法日期都算缺失
+        student_verified:
+          type: boolean
+          readOnly: true
+          description: 学信网学籍认证状态，任意视角均返回
+        student_verified_school:
+          type: string
+          nullable: true
+          readOnly: true
+          description: 认证院校；未认证时省略
+        student_verified_at:
+          type: string
+          format: date-time
+          nullable: true
+          readOnly: true
+          description: 认证通过时间，UTC；未认证时省略
         credit_score:
           type: integer
           minimum: 0
@@ -3950,6 +4016,24 @@ components:
           type: string
           maxLength: 500
           description: 选填
+    StudentVerificationRequest:
+      type: object
+      required: [name, school, code]
+      properties:
+        name:
+          type: string
+          minLength: 2
+          maxLength: 20
+          description: 学信网学籍上的真实姓名；只作核验留痕，不下发给他人
+        school:
+          type: string
+          minLength: 2
+          maxLength: 60
+          description: 认证院校
+        code:
+          type: string
+          pattern: '^[A-Za-z0-9]{12}$'
+          description: 学信网学籍在线验证报告的 12 位在线验证码；只做格式校验，不落库
     AuthRegisterRequest:
       type: object
       required: [username, password, nickname]
@@ -6474,11 +6558,11 @@ components:
              REPORT_NOT_PROCESSING, EMAIL_TAKEN, SESSION_ALREADY_HANDLING, SESSION_NOT_HANDLING, SESSION_CLOSED,
              CREDIT_RESTRICTED, LEARNING_NOT_ELIGIBLE, LEARNING_EXAM_QUOTA_EXCEEDED, LEARNING_RECOVERY_QUOTA_EXCEEDED,
              LEARNING_NOT_COMPLETED, LEARNING_SESSION_NOT_FOUND, LEAVE_RECORD_NOT_FOUND, NOTIFICATION_NOT_FOUND,
-             INSUFFICIENT_BALANCE, ACTIVE_LOAN_EXISTS, LOAN_NOT_ACTIVE]
+             INSUFFICIENT_BALANCE, ACTIVE_LOAN_EXISTS, LOAN_NOT_ACTIVE, STUDENT_VERIFICATION_REQUIRED]
         fields:
           type: object
           description: |
-            仅资料校验失败（400 `INVALID_INPUT`）时出现：字段名 → 原因码。
+            仅资料校验与学信网认证校验失败（400 `INVALID_INPUT`）时出现：字段名 → 原因码。
             其他错误不携带该键。
           additionalProperties:
             type: string

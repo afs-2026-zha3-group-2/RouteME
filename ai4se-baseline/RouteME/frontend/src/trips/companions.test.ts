@@ -10,6 +10,7 @@ function member(id: number, nickname: string): DemoUser {
     bio: '',
     interests: [],
     profile_complete: true,
+    student_verified: true,
   };
 }
 

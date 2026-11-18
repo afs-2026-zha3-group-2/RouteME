@@ -40,6 +40,7 @@ import routeme.service.CreditRestrictionGuard;
 import routeme.service.DemoUserService;
 import routeme.service.TripCancelledEvent;
 import routeme.service.AccountStatusService;
+import routeme.service.StudentVerificationService;
 import routeme.service.TripCompletedEvent;
 import routeme.service.TripPlanService;
 
@@ -59,6 +60,7 @@ public class TripPlanServiceImpl extends AbstractServiceImpl<TripPlanMapper, Tri
     private final Clock clock;
     private final ApplicationEventPublisher events;
     private final AccountStatusService accountStatusService;
+    private final StudentVerificationService studentVerificationService;
 
     public TripPlanServiceImpl(
             DemoUserService demoUserService,
@@ -66,13 +68,15 @@ public class TripPlanServiceImpl extends AbstractServiceImpl<TripPlanMapper, Tri
             CreditRestrictionGuard creditRestrictionGuard,
             Clock clock,
             ApplicationEventPublisher events,
-            AccountStatusService accountStatusService) {
+            AccountStatusService accountStatusService,
+            StudentVerificationService studentVerificationService) {
         this.demoUserService = demoUserService;
         this.aiItineraryService = aiItineraryService;
         this.creditRestrictionGuard = creditRestrictionGuard;
         this.clock = clock;
         this.events = events;
         this.accountStatusService = accountStatusService;
+        this.studentVerificationService = studentVerificationService;
     }
 
     @Override
@@ -80,6 +84,7 @@ public class TripPlanServiceImpl extends AbstractServiceImpl<TripPlanMapper, Tri
     public TripPlan create(TripCreateRequest request, long publisherId) {
         accountStatusService.assertCanWrite(publisherId, WriteScopeEnum.BUSINESS);
         creditRestrictionGuard.requireNotRestricted(publisherId);
+        studentVerificationService.requireVerified(publisherId);
         Instant now = clock.instant();
         // AI 链接校验：快照必须存在且归属发布人，否则 INVALID_INPUT（B9 / B10）。
         if (request.aiItineraryId() != null) {

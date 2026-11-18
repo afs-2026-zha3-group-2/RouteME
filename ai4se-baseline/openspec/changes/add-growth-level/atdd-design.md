@@ -25,7 +25,7 @@
 
 - **API（后端集成测试，先红后绿）：** `GrowthAccountApiTest`（A1–A3）、`GrowthLevelApiTest`（A4–A6）、`GrowthPublishApiTest`（A7–A9）、`GrowthLikeApiTest`（A10–A12）、`GrowthDailyCapApiTest`（A13–A15）、`GrowthReportApiTest`（A16–A18）、`GrowthLedgerApiTest`（A19–A21）、`GrowthVisibilityApiTest`（A22–A23）、`GrowthConcurrencyTest`（A24–A26）。
 - **E2E（Playwright，先红后绿）：** `e2e/tests/growth-level.spec.ts`（E1–E8），新增 helper `e2e/tests/growthSupport.ts`（注册账号、造已完成行程 + 体验、点赞 N 次、读 `/users/growth`）。
-- **契约：** 先改 `openapi.yaml`（0.30.0：`/profile` 追加 `growth` 对象、新增 `/users/growth`），`OpenApiTest` 版本断言先行更新。
+- **契约：** 先改 `openapi.yaml`（0.31.0：`/profile` 追加 `growth` 对象、新增 `/users/growth`），`OpenApiTest` 版本断言先行更新。
 
 ## 3. 本地 / CI 门禁（沿用既有工程，不新增 CI 语义）
 

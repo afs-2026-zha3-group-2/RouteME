@@ -10,6 +10,7 @@ export type Route =
   | { name: 'chat'; tripId?: number; userId?: number }
   | { name: 'share'; tripId: number }
   | { name: 'profileSetup' }
+  | { name: 'studentVerification' }
   | { name: 'userProfile'; userId: number }
   | { name: 'notifications' }
   | { name: 'creditRecords' }
@@ -61,6 +62,9 @@ export function parseRoute(hash: string): Route {
   }
   if (path === '/profile/setup') {
     return { name: 'profileSetup' };
+  }
+  if (path === '/verify/student') {
+    return { name: 'studentVerification' };
   }
   if (path === '/support') {
     return { name: 'support' };
@@ -169,6 +173,9 @@ export function routeToHash(route: Route): string {
   }
   if (route.name === 'profileSetup') {
     return '#/profile/setup';
+  }
+  if (route.name === 'studentVerification') {
+    return '#/verify/student';
   }
   if (route.name === 'support') {
     return '#/support';

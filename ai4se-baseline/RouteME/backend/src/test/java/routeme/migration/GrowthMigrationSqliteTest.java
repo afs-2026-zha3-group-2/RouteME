@@ -15,7 +15,7 @@ import org.springframework.jdbc.core.simple.JdbcClient;
 import org.springframework.jdbc.datasource.DriverManagerDataSource;
 
 /**
- * V34：建成长账户与经验流水两张表，并把 app_users 全表回填为 0 EXP。
+ * V35：建成长账户与经验流水两张表，并把 app_users 全表回填为 0 EXP。
  * 覆盖全新库与「已停在上一个版本再升级」两条路径，并确认不回填历史事件。
  */
 class GrowthMigrationSqliteTest {
@@ -48,7 +48,7 @@ class GrowthMigrationSqliteTest {
                 () -> assertEquals(0, minimumExp, "initial exp is 0"),
                 () -> assertEquals(0, maximumExp, "initial exp is 0"),
                 () -> assertEquals(0, ledgerRows, "backfill writes no ledger rows"),
-                () -> assertEquals(1, applied, "V34 applied once"));
+                () -> assertEquals(1, applied, "V35 applied once"));
     }
 
     @Test

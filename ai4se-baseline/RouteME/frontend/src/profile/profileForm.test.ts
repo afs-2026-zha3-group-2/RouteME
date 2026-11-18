@@ -233,6 +233,7 @@ describe('profileToForm', () => {
         avatar_initial: '新',
         interests: [],
         profile_complete: false,
+        student_verified: false,
         credit_score: 80,
         credit_level: 'good',
         credit_restricted: false,

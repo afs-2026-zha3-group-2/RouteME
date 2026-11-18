@@ -3,7 +3,7 @@ import { dirname, resolve } from 'node:path';
 import { DatabaseSync } from 'node:sqlite';
 import { fileURLToPath } from 'node:url';
 import { expect, test, type Page } from '@playwright/test';
-import { pickDestination } from './support';
+import { pickDestination, verifyStudentViaApi } from './support';
 import { installAmapStub } from './support/amapStub';
 
 /**
@@ -47,6 +47,7 @@ async function registerViaApi(page: Page): Promise<{ userId: number; token: stri
   });
   expect(response.status()).toBe(201);
   const session = (await response.json()) as { token: string; user: { id: number } };
+  await verifyStudentViaApi(page, session);
   return { userId: session.user.id, token: session.token };
 }
 

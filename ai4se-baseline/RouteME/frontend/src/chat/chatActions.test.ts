@@ -10,6 +10,7 @@ const user = (id: number): DemoUser => ({
   bio: '',
   interests: [],
   profile_complete: true,
+  student_verified: true,
   avatar_url: null,
   city: null,
   major: null,

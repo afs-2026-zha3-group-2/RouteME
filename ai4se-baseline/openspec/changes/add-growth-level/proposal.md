@@ -1,6 +1,6 @@
 # 变更提案：add-growth-level
 
-- **需求来源：** GitHub Issue [#44](https://github.com/afs-2026-zha3-group-2/RouteME/issues/44)「用户成长等级 LV1–LV5」（P1 / 迭代 3 / 3 点）｜ **需求条目：** `requirement-workspace/requirements/REQ-033-growth-level.md`（41 场景，blocking OQ 0，DoR BLOCKER 0）｜ **故事：** S34（编号四次顺延：REQ-029 / S30 → REQ-030 / S31 → REQ-033 / S34）
+- **需求来源：** GitHub Issue [#44](https://github.com/afs-2026-zha3-group-2/RouteME/issues/44)「用户成长等级 LV1–LV5」（P1 / 迭代 3 / 3 点）｜ **需求条目：** `requirement-workspace/requirements/REQ-033-growth-level.md`（41 场景，blocking OQ 0，DoR BLOCKER 0）｜ **故事：** S34（编号第五次顺延：REQ-029 / S30 → REQ-030 / S31 → REQ-033 / S34）
 - **能力：** `user-growth`（ADDED）；只读消费 `trip-experiences`（体验首次创建 / 点赞）与 `admin-console`（举报成立）；`user-credit` 完全分离
 - **规模：** M（2 张表 + 1 次迁移 + 3 处事件挂接 + 2 处读取扩字段 + 6 处展示面；无管理端）
 - **规则：** `@rule:api-contract`、`@rule:java-patterns`、`@rule:web-coding-style`、`@rule:security-baseline`、`@rule:tdd-cycle`、`@rule:sdd-artifacts`；原型先行：`docs/prototype/prototype.html` + `styles.css`
@@ -30,7 +30,7 @@ RouteME 已有信用分这一独立体系（`user_credit_account` + `credit_ledg
 - **展示与可见性**：6 处展示面（个人主页、资料弹窗、详情发布者区、首页行程卡、申请处理页申请者行、详情同行者卡片）显示 `LVn`；本人额外可见当前经验与距下一级所需经验，LV5 显示已满级；他人只可见等级，不返回、不展示具体经验值；成长等级与信用分并列但文案可区分，不得称为信用等级或官方安全认证。
 - **读取接口**：在既有个人主页响应与批量信用读取响应上追加只读成长字段（具体形状 P3 定）；不新增客户端修改经验 / 等级的写端点。
 - **故事与登记**：`stories.md` / `stories/REQ-033-growth-level.story.md` / `registry.md` / `handoff.md` 登记 REQ-033 / S34 → `add-growth-level`。
-- **契约与迁移**：`openapi.yaml` 升次版本（预计 0.30.0）；迁移 `V34`；基线 0.26.0 + V31（#29 已并入 main），P3 排他确认。
+- **契约与迁移**：`openapi.yaml` 升次版本（预计 0.31.0）；迁移 `V35`；基线 0.26.0 + V31（#29 已并入 main），P3 排他确认。
 
 ## Out of Scope
 
@@ -83,7 +83,7 @@ RouteME 已有信用分这一独立体系（`user_credit_account` + `credit_ledg
 | 展示面（D11） | 6 处：主页 / 弹窗 / 详情发布者 / 行程卡 / 申请者行 / 同行者卡片；只用 `LVn` | issue 的 3 个落点 + 信用分既有 5 面 + 同行者卡片 |
 | 明确不做（D12） | 明细页 / 排行榜 / 通知 / 权益 / 管理端 / 中文头衔 | 保持切片最小，避免范围膨胀 |
 | #29 关系（D13） | #29 已并入 main；在其「扣信用分」之后并列追加「扣成长经验」 | 不覆盖既有副作用，冲突点已消除 |
-| 契约 / 迁移（D14） | P3 排他；落定 0.30.0 + V34 | 基线 0.26.0 + V31（#29 已并入 main） |
+| 契约 / 迁移（D14） | P3 排他；落定 0.31.0 + V35 | 基线 0.26.0 + V31（#29 已并入 main） |
 
 ## 验收信号
 

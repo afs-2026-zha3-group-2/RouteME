@@ -76,7 +76,9 @@ class CreditLearningMigrationSqliteTest {
                 () -> assertEquals(0, sessions, "new table starts empty"),
                 () -> assertEquals(4, accounts, "credit accounts untouched"),
                 () -> assertEquals(0, ledgerRows, "credit ledger untouched"),
-                () -> assertEquals(userColumnsBefore, userColumns, "app_users keeps its columns"),
+                () -> assertTrue(
+                        userColumns.containsAll(userColumnsBefore),
+                        "app_users keeps its columns when learning tables are added"),
                 () -> assertTrue(userColumns.contains("travel_style"), "app_users columns stay unchanged"),
                 () -> assertFalse(userColumns.contains("score"), "app_users keeps no score column"),
                 () -> assertFalse(userColumns.contains("restricted"), "app_users keeps no restriction column"),

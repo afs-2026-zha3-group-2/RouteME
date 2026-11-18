@@ -41,6 +41,7 @@ describe('parseRoute', () => {
 
     it('maps the profile setup and public profile paths', () => {
       expect(parseRoute('#/profile/setup')).toEqual({ name: 'profileSetup' });
+      expect(parseRoute('#/verify/student')).toEqual({ name: 'studentVerification' });
       expect(parseRoute('#/users/12')).toEqual({ name: 'userProfile', userId: 12 });
       expect(parseRoute('#/users/abc')).toEqual({ name: 'notFound' });
     });

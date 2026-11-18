@@ -35,7 +35,7 @@
 ## Code-review highlights
 
 - 合并 `origin/main@ef23f6cf` 时 9 个冲突文件均采用「双方保留」：`UserProfileResponse` 6 参工厂、`UserProfileController` 同时装配成长与路线完成度、`AdminReportServiceImpl` 同时保留 GrowthService 与 NotificationService、`tripMessages` / `styles.css` 两段并存。`[fact]`
-- 第四次顺延一次性收敛：REQ-033 / S34、契约 0.30.0、`V34__add_growth_level.sql`；growth 专属文件与共享台账均同步，main 的 REQ-031 / REQ-032 行保持不动。`[fact]`
+- 第五次顺延一次性收敛：REQ-033 / S34、契约 0.31.0、`V35__add_growth_level.sql`；growth 专属文件与共享台账均同步，main 的 REQ-031 / REQ-032 行保持不动。`[fact]`
 - 修复真实缺陷：SQLite 唯一键只抛 `UncategorizedSQLException`，`GrowthServiceImpl` 改捕获 `DataAccessException` 并重读确认；新增 `GrowthServiceImplTest` 2/2（先红后绿），8 并发探针修复后 16/16 均 200。`[fact]`
 - 顺带修正 main 的通知 schema（`Notification.actor` / 推送 `message` 缺 `type: object`），使契约 lint 回到 0 error；语义不变。`[fact]`
 - 无越界实现：未做经验明细页 / 排行榜 / 通知 / 权益 / 管理端 / 存量回填；成长与信用表完全分离。`[inference]`（建议保留 `GrowthConstant` 与 `Credit*` 的无交叉 grep 作为复审点）

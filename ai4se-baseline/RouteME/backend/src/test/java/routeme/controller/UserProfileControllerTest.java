@@ -407,10 +407,12 @@ class UserProfileControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.nickname").value("周野"))
                 .andExpect(jsonPath("$.school").doesNotExist())
-                .andExpect(jsonPath("$.job").value("产品经理"))
+                .andExpect(jsonPath("$.job").value("学生"))
                 .andExpect(jsonPath("$.mbti").value("INFP"))
                 .andExpect(jsonPath("$.city").value("上海"))
                 .andExpect(jsonPath("$.birthday").doesNotExist())
+                .andExpect(jsonPath("$.student_verified").value(true))
+                .andExpect(jsonPath("$.student_verified_school").value("同济大学"))
                 .andExpect(jsonPath("$.profile_complete").value(true));
     }
 

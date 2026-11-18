@@ -28,12 +28,14 @@ public record UserAccount(
         String travelStyle,
         String email,
         String role,
-        String status) {
+        String status,
+        boolean studentVerified) {
 
     public DemoUser toDemoUser() {
         return new DemoUser(
                 id, nickname, avatarInitial, avatarUrl, school, city, major, job, bio, interests,
                 ProfileRules.complete(nickname, birthday, gender, city, interests, travelStyle, Clock.systemUTC()),
+                studentVerified,
                 role,
                 status);
     }

@@ -37,6 +37,7 @@ const demoUser = (id: number, nickname = `用户${id}`): DemoUser => ({
   bio: '',
   interests: [],
   profile_complete: true,
+  student_verified: true,
 });
 
 const target = (overrides: Partial<NotificationTarget> = {}): NotificationTarget => ({

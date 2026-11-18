@@ -24,7 +24,22 @@ export async function createUserViaApi(
     token: string;
     user: { id: number; nickname: string };
   };
+  await verifyStudentViaApi(page, session);
   return { id: session.user.id, token: session.token, nickname: session.user.nickname };
+}
+
+/** 新注册账号默认未过学信网认证；E2E 需要核心动作时先补齐门槛。 */
+export async function verifyStudentViaApi(
+  page: Page,
+  account: { token: string },
+  name = 'E2E 同学',
+  school = '中山大学',
+): Promise<void> {
+  const response = await page.request.post(`${API}/users/me/student-verification`, {
+    headers: { Authorization: `Bearer ${account.token}` },
+    data: { name, school, code: 'E2E123456789' },
+  });
+  expect(response.ok()).toBeTruthy();
 }
 
 export async function loginAsAdmin(page: Page): Promise<ApiAccount> {

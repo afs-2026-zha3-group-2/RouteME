@@ -19,6 +19,7 @@ public record DemoUserResponse(
         String bio,
         List<String> interests,
         boolean profileComplete,
+        boolean studentVerified,
         String role,
         String status) {
 
@@ -35,6 +36,7 @@ public record DemoUserResponse(
                 user.bio(),
                 user.interests(),
                 user.profileComplete(),
+                user.studentVerified(),
                 user.role(),
                 user.status());
     }

@@ -79,7 +79,7 @@ class OpenApiTest {
 
         // Then
         assertAll(
-                () -> assertEquals("0.30.0", info.get("version"), "info.version"),
+                () -> assertEquals("0.31.0", info.get("version"), "info.version"),
                 () -> assertTrue(responses(likeExperience).containsKey("201"), "first like returns 201"),
                 () -> assertTrue(responses(likeExperience).containsKey("200"), "duplicate like returns 200"),
                 () -> assertTrue(responses(likeExperience).containsKey("403"), "self like returns 403"),
@@ -185,7 +185,7 @@ class OpenApiTest {
 
         // Then
         assertAll(
-                () -> assertEquals("0.30.0", info.get("version"), "info.version"),
+                () -> assertEquals("0.31.0", info.get("version"), "info.version"),
                 () -> assertTrue(paths(document).containsKey("/users"), "/users declared"),
                 () -> assertTrue(paths(document).containsKey("/trips/{tripId}"), "detail path declared"),
                 () -> assertTrue(
@@ -395,6 +395,9 @@ class OpenApiTest {
                 () -> assertTrue(paths(document).containsKey("/users/{userId}/profile"), "profile read declared"),
                 () -> assertTrue(paths(document).containsKey("/users/me/profile"), "profile save declared"),
                 () -> assertTrue(paths(document).containsKey("/users/me/avatar"), "avatar upload declared"),
+                () -> assertTrue(
+                        paths(document).containsKey("/users/me/student-verification"),
+                        "student verification declared"),
                 () -> assertTrue(paths(document).containsKey("/users/{userId}/avatar"), "avatar read declared"),
                 () -> assertTrue(
                         required(demoUser).containsAll(
@@ -783,7 +786,7 @@ class OpenApiTest {
 
         // Then
         assertAll(
-                () -> assertEquals("0.30.0", info.get("version"), "info.version"),
+                () -> assertEquals("0.31.0", info.get("version"), "info.version"),
                 () -> assertTrue(paths(document).keySet().containsAll(ADMIN_CONSOLE_PATHS), "admin console paths"),
                 () -> assertEquals(17L, adminOperations, "admin console operations"),
                 () -> assertTrue(
@@ -914,7 +917,7 @@ class OpenApiTest {
 
         // Then
         assertAll(
-                () -> assertEquals("0.30.0", asMap(document.get("info")).get("version"), "info.version"),
+                () -> assertEquals("0.31.0", asMap(document.get("info")).get("version"), "info.version"),
                 () -> assertTrue(responses(startSession).containsKey("201"), "session start returns 201"),
                 () -> assertTrue(
                         responses(startSession).keySet().containsAll(List.of("401", "404", "409", "429")),
@@ -1090,7 +1093,7 @@ class OpenApiTest {
 
         // Then
         assertAll(
-                () -> assertEquals("0.30.0", info.get("version"), "info.version"),
+                () -> assertEquals("0.31.0", info.get("version"), "info.version"),
                 () -> assertTrue(
                         paths(document).keySet().containsAll(List.of(
                                 "/trips/{tripId}/finance",
@@ -1343,7 +1346,7 @@ class OpenApiTest {
 
         // Then
         assertAll(
-                () -> assertEquals("0.30.0", info.get("version"), "info.version"),
+                () -> assertEquals("0.31.0", info.get("version"), "info.version"),
                 () -> assertTrue(
                         paths(document).containsKey("/notifications")
                                 && paths(document).containsKey("/notifications/stream")

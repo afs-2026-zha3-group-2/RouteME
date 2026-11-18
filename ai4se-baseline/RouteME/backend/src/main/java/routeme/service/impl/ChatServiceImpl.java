@@ -32,6 +32,7 @@ import routeme.service.ChatService;
 import routeme.service.CreditRestrictionGuard;
 import routeme.service.DemoUserService;
 import routeme.service.NotificationService;
+import routeme.service.StudentVerificationService;
 import routeme.service.TripPlanService;
 
 /**
@@ -64,6 +65,7 @@ public class ChatServiceImpl extends AbstractServiceImpl<ChatMessageMapper, Chat
     private final Clock clock;
     private final AccountStatusService accountStatusService;
     private final NotificationService notificationService;
+    private final StudentVerificationService studentVerificationService;
 
     public ChatServiceImpl(
             TripPlanService tripPlanService,
@@ -72,7 +74,8 @@ public class ChatServiceImpl extends AbstractServiceImpl<ChatMessageMapper, Chat
             CreditRestrictionGuard creditRestrictionGuard,
             Clock clock,
             AccountStatusService accountStatusService,
-            NotificationService notificationService) {
+            NotificationService notificationService,
+            StudentVerificationService studentVerificationService) {
         this.tripPlanService = tripPlanService;
         this.applicationService = applicationService;
         this.demoUserService = demoUserService;
@@ -80,6 +83,7 @@ public class ChatServiceImpl extends AbstractServiceImpl<ChatMessageMapper, Chat
         this.clock = clock;
         this.accountStatusService = accountStatusService;
         this.notificationService = notificationService;
+        this.studentVerificationService = studentVerificationService;
     }
 
     @Override
@@ -127,6 +131,7 @@ public class ChatServiceImpl extends AbstractServiceImpl<ChatMessageMapper, Chat
     @Transactional
     public ChatMessage send(long tripId, long senderId, ChatMessageRequest request) {
         accountStatusService.assertCanWrite(senderId, WriteScopeEnum.BUSINESS);
+        studentVerificationService.requireVerified(senderId);
         TripPlan trip = tripPlanService.requireCurrent(tripId);
         long receiverId = request == null ? 0 : request.receiverId();
         requireAccess(trip, senderId, receiverId);

@@ -20,7 +20,7 @@ test('opens the publisher profile from a trip card without entering the detail p
   await expect(modal).toBeVisible();
   await expect(page).not.toHaveURL(/#\/trips\//);
   await expect(modal.getByText('周野', { exact: true })).toBeVisible();
-  await expect(modal.getByText('产品经理 · INFP')).toBeVisible();
+  await expect(modal.getByText('学生 · INFP')).toBeVisible();
   await expect(modal.getByText(/加入于/)).toBeVisible();
   await expect(modal.locator('.tag', { hasText: '城市漫步' }).first()).toBeVisible();
   await expect(modal.getByText('你们的共同兴趣：展览')).toBeVisible();

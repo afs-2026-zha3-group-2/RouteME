@@ -31,6 +31,7 @@ import { centsToYuan, sumBudgetCents } from '../ai/budgetMath';
 import { tripMessages } from '../i18n/tripMessages';
 import { financeMessages } from '../i18n/financeMessages';
 import { financeEntryVisible } from '../finance/financeEligibility';
+import { useStudentGate } from '../identity/StudentVerificationGate';
 import { insuranceStatusLabel } from '../finance/financeLabels';
 import { CreditRestrictedNotice } from '../credit/CreditRestrictedNotice';
 import { useMyCredit } from '../credit/CreditContext';
@@ -127,6 +128,7 @@ export function TripDetailPage({ currentUser, tripId }: Props) {
   const [reportOpen, setReportOpen] = useState(false);
   const [experiences, setExperiences] = useState<Experience[] | null>(null);
   const [insurance, setInsurance] = useState<InsuranceSummary | null>(null);
+  const studentGate = useStudentGate(currentUser);
 
   const updateExperience = (next: Experience) => {
     setExperiences((previous) =>
@@ -362,6 +364,10 @@ export function TripDetailPage({ currentUser, tripId }: Props) {
     if (submitting) {
       return;
     }
+    if (!studentGate.allowed) {
+      studentGate.requireVerified(() => undefined);
+      return;
+    }
     setSubmitting(true);
     setFeedback(null);
     try {
@@ -408,6 +414,7 @@ export function TripDetailPage({ currentUser, tripId }: Props) {
 
   return (
     <main className="form-page">
+      {studentGate.prompt}
       <div className="detail-stack">
         <a
           href="#/"
