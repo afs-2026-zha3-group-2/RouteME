@@ -19,7 +19,7 @@
 | 共享分析 | [`deep-dive.md`](../../../requirement-workspace/deep-dive.md)「REQ-030 增补」、[`impact-brief.md`](../../../requirement-workspace/impact-brief.md) §30 | ①–④ 四表 + 探针记录；as-is 清单、逐资产 delta、blast radius、risks、split boundaries |
 | 登记 | [`registry.md`](../../../requirement-workspace/registry.md)（REQ-030）、[`handoff.md`](../../../requirement-workspace/handoff.md) | P1 映射与状态 |
 | 提案 | [`proposal.md`](../../openspec/changes/add-route-completion/proposal.md) | Why / What Changes / Out of Scope / Impact / 决策 D1–D8 / 10 条验收信号 / 8 项残余风险 / 交付边界 |
-| Delta | [`specs/route-completion/spec.md`](../../openspec/changes/add-route-completion/specs/route-completion/spec.md) | ADDED 6 Requirement / 19 Scenario |
+| Delta | [`specs/route-completion/spec.md`](../../openspec/changes/add-route-completion/specs/route-completion/spec.md) | ADDED 6 Requirement / 18 Scenario（P2 更正计数；REQ 的 S31-3 与 S31-15 在 Delta 合并为同一场景） |
 | 工件评审 | [`proposal-review`](../../reviews/20261118-add-route-completion-proposal-review.md)、[`spec-review`](../../reviews/20261118-add-route-completion-spec-review.md) | 2026-11-18，均 Pass（0 BLOCKER / 0 WARNING / 5 SUGGESTION） |
 | P1 质量检查 | [`20261118-133154-quality-checklist-report.md`](../ai4se-plugins/20261118-133154-quality-checklist-report.md)、[`checkpoints`](../ai4se-plugins/20261118-133129-quality-checklist-checkpoints.md) | Overall Pass（P1-1 ~ P1-4 全 Pass；P1-5 / P1-6 Skipped） |
 
@@ -37,7 +37,7 @@
 ## 4. 校验
 
 - `openspec validate add-route-completion --strict` → `Change 'add-route-completion' is valid`。
-- `openspec show add-route-completion --json` → 6 个 Delta 条目，均为 `route-completion`；合计 6 Requirement / 19 Scenario。
+- `openspec show add-route-completion --json` → 6 个 Delta 条目，均为 `route-completion`；合计 6 Requirement / 18 Scenario（P2 更正：起草时误记为 19；REQ 的 S31-3 与 S31-15 在 Delta 合并为同一场景）。
 - 基线核实：`openapi.yaml` `info.version: 0.25.0`；迁移头 `V30`；本 change 无迁移；`UserProfileResponse` 无完成度字段；`ProfilePage` 已有 `.profile-credit` 行；`c516d76` 已移除推荐引擎。
 - 未运行后端 / 前端测试：P1 尚无实现，按 `all-specs-review` 记 N/A；契约 lint 与 E2E 属 P4。
 - P1 质量检查：`docs/ai4se-plugins/20261118-133154-quality-checklist-report.md`（Overall Pass）。

@@ -4,20 +4,21 @@
 
 ### Requirement: 预留路线完成度字段与数据不足口径
 
-系统 SHALL 在 `GET /api/users/{userId}/profile` 响应中为本人读取与他人读取同时返回两个只读字段：`route_completion_rate`（0–100 的整数，或空值）与 `route_completion_state`（`good` / `neutral` / `watch` / `insufficient`）。当前版本没有任何人工打卡数据源，系统 MUST 对所有用户返回 `route_completion_rate = null` 与 `route_completion_state = insufficient`；系统 MUST NOT 使用已结束行程数量、资料统计（`stats`）或任何临时规则伪造完成度数值。两个新增字段 MUST 为可空，且 MUST NOT 改变既有字段的值与含义。
+系统 SHALL 在 `GET /api/users/{userId}/profile` 响应中为本人读取与他人读取返回两个只读字段：`route_completion_state`（`good` / `neutral` / `watch` / `insufficient`，MUST 恒出现）与 `route_completion_rate`（0–100 的整数；仅当存在有效完成度数值时出现）。当前版本没有任何人工打卡数据源，系统 MUST 对所有用户返回 `route_completion_state = insufficient` 并 MUST 省略 `route_completion_rate`（其值语义为空）；系统 MUST NOT 使用已结束行程数量、资料统计（`stats`）或任何临时规则伪造完成度数值，MUST NOT 以 `0` 或任何默认百分比填充。两个新增字段 MUST NOT 改变既有字段的值与含义。
 
 #### Scenario: 接口返回预留字段
 
 - **Given** 任意已存在的用户（本人或他人）
 - **When** 调用 `GET /api/users/{userId}/profile`
-- **Then** 响应同时包含 `route_completion_rate` 与 `route_completion_state`
+- **Then** 响应包含 `route_completion_state`
+- **And** 存在有效完成度数值时，响应同时包含 `route_completion_rate`；数据不足时响应省略该字段
 - **And** 两个字段均为只读，客户端无法通过任何请求体改写
 
 #### Scenario: 本期恒为数据不足
 
 - **Given** 当前版本没有人工打卡与完成度聚合数据源（包括演示用户与存在已结束行程的用户）
 - **When** 读取任意用户资料
-- **Then** `route_completion_rate` 为 `null`
+- **Then** 响应不包含 `route_completion_rate`（值语义为空，MUST NOT 返回 `0` 或占位百分比）
 - **And** `route_completion_state` 为 `insufficient`
 - **And** 不出现任何由已结束行程数、`stats` 或演示数据推算出的百分比
 
@@ -46,23 +47,27 @@
 #### Scenario: 信誉良好边界
 
 - **Given** 完成度数值为 80
+- **When** 派生信誉状态
 - **Then** 状态为 `good`
 - **And** 数值为 100 时同样为 `good`
 
 #### Scenario: 中性区间边界
 
 - **Given** 完成度数值为 70 或 79
+- **When** 派生信誉状态
 - **Then** 状态为 `neutral`
 - **And** 不展示「信誉良好」或「请留意行程完成情况」
 
 #### Scenario: 警惕边界
 
 - **Given** 完成度数值为 69 或 0
+- **When** 派生信誉状态
 - **Then** 状态为 `watch`
 
 #### Scenario: 非法数值降级
 
 - **Given** 上游给出非整数、负数或大于 100 的完成度数值
+- **When** 派生信誉状态
 - **Then** 系统不展示该数值
 - **And** 状态降级为 `insufficient`
 - **And** 不会落入 `good`
@@ -80,37 +85,43 @@
 
 #### Scenario: 个人主页展示入口
 
-- **Given** 用户打开任意用户（本人或他人）的个人主页
+- **Given** 任意用户（本人或他人）的个人主页存在
+- **When** 打开该主页
 - **Then** hero 信用行附近展示一行「路线完成度」
 - **And** 资料弹窗、行程卡、行程详情页与列表页不出现该展示
 
 #### Scenario: 信誉良好展示
 
 - **Given** 后端返回 `route_completion_state = good` 且 `route_completion_rate = 85`
+- **When** 渲染个人主页
 - **Then** 页面显示「路线完成度 85% · 信誉良好」
 
 #### Scenario: 中性展示
 
 - **Given** 后端返回 `route_completion_state = neutral` 且 `route_completion_rate = 75`
+- **When** 渲染个人主页
 - **Then** 页面显示「路线完成度 75%」
 - **And** 不附加任何信誉标签
 
 #### Scenario: 警惕展示与措辞边界
 
 - **Given** 后端返回 `route_completion_state = watch` 且 `route_completion_rate = 55`
+- **When** 渲染个人主页
 - **Then** 页面显示「路线完成度 55% · 请留意行程完成情况」
 - **And** 页面不出现「骗子」「危险用户」「不可信」等定性结论
 
 #### Scenario: 数据不足展示
 
 - **Given** 后端返回 `route_completion_state = insufficient`
+- **When** 渲染个人主页
 - **Then** 页面只显示「暂无足够完成记录」
 - **And** 不显示 0% 或任何默认百分比
 - **And** 不显示「信誉良好」或「请留意行程完成情况」
 
 #### Scenario: 本人 / 他人同口径
 
-- **Given** 本人查看自己的个人主页，且浏览者查看同一资料
+- **Given** 同一份用户资料
+- **When** 本人与浏览者分别打开该个人主页
 - **Then** 两侧完成度字段与文案一致
 - **And** 本版本不提供编辑或隐藏开关
 
@@ -120,7 +131,8 @@
 
 #### Scenario: 与信用分独立
 
-- **Given** 任意用户的资料响应
+- **Given** 任意用户
+- **When** 读取该用户的资料响应
 - **Then** `credit_score` / `credit_level` / `credit_restricted` 等既有字段与变更前完全一致
 - **And** 完成度派生不读取、不写入 `user_credit_account` 与 `credit_ledger`
 - **And** 一次完成度读取不产生任何信用账本记录
@@ -128,17 +140,18 @@
 #### Scenario: 与资料统计、成长等级独立
 
 - **Given** 任意用户
+- **When** 读取资料并生成完成度字段
 - **Then** `stats` 中的 `published` / `completed` / `joined` / `shared` 保持不变，且不被用作完成度数值
 - **And** 本版本不新增、不读取 LV1–LV5 成长等级字段
 
 ### Requirement: 资料响应兼容与访问控制
 
-两个新增字段 MUST 为可空，且 MUST NOT 破坏既有前端消费者对 `UserProfile` 的解析。未登录或未知用户的既有 401 与 404 行为 MUST 保持不变。`openapi.yaml` MUST 同步更新 `UserProfile` schema 与示例，并通过契约测试与规格校验。
+`route_completion_rate` MUST 可空且数据不足时省略（与 `UserProfile` 既有的非空序列化约定一致）；`route_completion_state` MUST 恒返回并列入 `UserProfile.required`。两者 MUST NOT 破坏既有前端消费者对 `UserProfile` 的解析，前端 MUST 把「字段缺失」与 `null` 同等视为数据不足。未登录或未知用户的既有 401 与 404 行为 MUST 保持不变。`openapi.yaml` MUST 同步更新 `UserProfile` schema 与示例，并通过契约测试与规格校验。
 
 #### Scenario: 既有访问控制与兼容
 
 - **Given** 未登录用户或未知用户
 - **When** 读取资料
 - **Then** 既有 401（如 `DEMO_USER_REQUIRED` 或会话无效）与 404（`USER_NOT_FOUND`）行为保持不变
-- **And** 既有前端消费者在新增字段可空的情况下仍能正常解析
-- **And** `openapi.yaml` 已同步更新并通过契约测试与 Redocly 校验
+- **And** 既有前端消费者在 `route_completion_rate` 缺失时仍能正常解析，缺失与 `null` 同等视为数据不足
+- **And** `openapi.yaml` 的 `UserProfile` 已声明 `route_completion_state`（列入 `required`）与可空、可省略的 `route_completion_rate`，并通过契约测试与 Redocly 校验

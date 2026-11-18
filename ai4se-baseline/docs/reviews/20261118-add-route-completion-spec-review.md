@@ -72,3 +72,7 @@
 | Delta Spec | 1 / 1（WAYNE） | WAYNE（IO） | 2026-11-18 | 发起人确认批准 | 全文 |
 | 本评审报告 | 1 / 2（WAYNE） | WAYNE（IO） | 2026-11-18 | 同上 | 结论与签署位 |
 | 本评审报告 | 2 / 2（当前开发者） | Neal（当前开发者） | 2026-11-18 | 发起人确认当前开发者 | 结论与签署位 |
+
+## 变更摘要（P2，2026-11-18）
+
+- 本报告审计的 Delta 已在 P2 有两个变化：（1）计数更正——Delta 实际为 6 Requirement / **18** Scenario（起草时误记为 19；REQ 的 S31-3 与 S31-15 在 Delta 合并为同一场景，属事实性更正，不改语义）；（2）序列化口径按 P2 裁决语义修订（数据不足时省略 `route_completion_rate`；`route_completion_state` 恒返回并列入 `required`），语义变更已由 [`-review-2`](20261118-add-route-completion-spec-review-2.md) 重新评审，本报告结论仅对修订前文本有效。

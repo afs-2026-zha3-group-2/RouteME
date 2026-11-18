@@ -32,15 +32,15 @@
 |---|---|
 | 浏览者 | 已登录后查看任意用户个人主页；只能看到对方公开资料中的完成度状态，不得看到任何打卡明细或他人隐私数据。 |
 | 资料本人 | 查看自己的个人主页；完成度与浏览者看到的同口径（D8），本切片不提供编辑入口。 |
-| 系统 | 返回 `route_completion_rate`（0–100 整数或空）与 `route_completion_state`（`good` / `neutral` / `watch` / `insufficient`）；无数据源时统一返回空 + `insufficient`。 |
+| 系统 | 返回 `route_completion_state`（`good` / `neutral` / `watch` / `insufficient`，恒出现）与 `route_completion_rate`（0–100 整数，仅数据足够时出现）；无数据源时省略 `route_completion_rate`、`route_completion_state = insufficient`。 |
 | 管理员 | 本切片无管理端页面、配置、人工修正或申诉入口。 |
 
 ## 3. In / Out scope
 
 **In scope**
 
-- 契约：`GET /api/users/{userId}/profile` 响应增加两个只读字段：`route_completion_rate`（integer 0–100，可空）与 `route_completion_state`（英文状态码）；`openapi.yaml` 更新 `UserProfile` schema 与示例。
-- 后端：新增完成度状态派生逻辑（输入：完成度数值 + 已结束行程样本数；输出：状态码）；本期数据源为空，所有用户返回 `rate = null` + `state = insufficient`。
+- 契约：`GET /api/users/{userId}/profile` 响应增加两个只读字段：`route_completion_state`（英文状态码，恒出现并列入 `UserProfile.required`）与 `route_completion_rate`（integer 0–100，可空；数据不足时省略，与类级 `@JsonInclude(NON_NULL)` 一致）；`openapi.yaml` 更新 `UserProfile` schema 与示例。
+- 后端：新增完成度状态派生逻辑（输入：完成度数值 + 已结束行程样本数；输出：状态码）；本期数据源为空，所有用户为「省略 rate + `state = insufficient`」。
 - 前端：`UserProfile` 类型增加两字段；个人主页 hero 在信用行下方新增完成度展示行；四态文案映射（信誉良好 / 中性不标签 / 请留意行程完成情况 / 暂无足够完成记录）；仅做字典映射，不做阈值判断。
 - 独立性：完成度字段不读取、不写入信用分（`credit_score` / `credit_level` / `credit_ledger`）、资料统计（`stats`）、成长等级；信用行与统计展示保持原样。
 - 测试：后端派生逻辑单测（四档 + 边界 + 数据不足 + 异常输入）；API 断言字段存在且类型正确；前端映射函数单测；个人主页 E2E（数据不足态 + 四态模拟）。
@@ -60,8 +60,8 @@
 
 ### A. 接口字段与数据不足
 
-1. **S31-1 接口预留字段** — Given 任意已存在用户，When 调用 `GET /api/users/{userId}/profile`，Then 响应 SHALL 同时包含 `route_completion_rate` 与 `route_completion_state` 两个只读字段；字段 MUST 同时出现在本人读取与他人读取的响应中。
-2. **S31-2 本期恒为数据不足** — Given 当前版本没有任何人工打卡数据源（包括演示用户与存在已结束行程的用户），When 读取任意用户资料，Then `route_completion_rate` MUST 为 `null`，`route_completion_state` MUST 为 `insufficient`；系统 MUST NOT 用已结束行程数、资料统计或任何临时规则伪造百分比。
+1. **S31-1 接口预留字段** — Given 任意已存在用户，When 调用 `GET /api/users/{userId}/profile`，Then 响应 SHALL 包含 `route_completion_state`，且存在有效完成度数值时同时包含 `route_completion_rate`；数据不足时响应 MUST 省略 `route_completion_rate`；`route_completion_state` MUST 同时出现在本人读取与他人读取的响应中。
+2. **S31-2 本期恒为数据不足** — Given 当前版本没有任何人工打卡数据源（包括演示用户与存在已结束行程的用户），When 读取任意用户资料，Then 响应 MUST 省略 `route_completion_rate`（值语义为空，MUST NOT 返回 `0` 或占位值），`route_completion_state` MUST 为 `insufficient`；系统 MUST NOT 用已结束行程数、资料统计或任何临时规则伪造百分比。
 3. **S31-3 数据不足不显示百分比** — Given 用户状态为 `insufficient`，When 打开其个人主页，Then 完成度区域 MUST 只显示「暂无足够完成记录」，MUST NOT 显示任何百分比数字，MUST NOT 显示「信誉良好」或「请留意行程完成情况」。
 4. **S31-4 足够数据门槛** — Given 未来聚合数据可用，When 用户已结束行程数量 ≥1 且存在有效完成度数值，Then 系统 SHALL 按数值派生状态；Given 已结束行程数量为 0，或数值为空，Then 状态 MUST 为 `insufficient`。
 5. **S31-5 只统计已结束行程** — Given 用户只有进行中、尚未开始或已取消的行程，When 派生完成度，Then 这些行程 MUST NOT 计入样本；本期此类用户 MUST 返回 `insufficient`。
@@ -87,11 +87,11 @@
 
 17. **S31-17 与信用分独立** — Given 任意用户的资料响应，Then `credit_score` / `credit_level` / `credit_restricted` 等既有字段 MUST 与变更前完全一致；完成度派生 MUST NOT 读取或写入 `user_credit_account` / `credit_ledger`；一次完成度读取 MUST NOT 产生任何信用账本记录。
 18. **S31-18 与资料统计、成长等级独立** — Given 任意用户，Then `stats`（`published` / `completed` / `joined` / `shared`）MUST 保持不变且 MUST NOT 被用作完成度数值；本切片 MUST NOT 新增或读取 LV1–LV5 成长等级字段。
-19. **S31-19 既有访问控制与兼容** — Given 未登录或未知用户，When 读取资料，Then 既有 401（`DEMO_USER_REQUIRED` / 会话无效）与 404（`USER_NOT_FOUND`）行为 MUST 保持不变；Given 既有前端消费者，Then 新增字段 MUST 为可空且不破坏既有解析；`openapi.yaml` MUST 同步更新并通过 `OpenApiTest` 与 Redocly 校验。
+19. **S31-19 既有访问控制与兼容** — Given 未登录或未知用户，When 读取资料，Then 既有 401（`DEMO_USER_REQUIRED` / 会话无效）与 404（`USER_NOT_FOUND`）行为 MUST 保持不变；Given 既有前端消费者，Then `route_completion_rate` 可空且数据不足时省略、`route_completion_state` 恒返回并列入 `required`，前端把「缺失」与 `null` 同等视为数据不足；`openapi.yaml` MUST 同步更新并通过 `OpenApiTest` 与 Redocly 校验。
 
 ## 5. Constraints
 
-- **数据口径（D1 / D2）：** 本期无人工打卡数据源；`route_completion_rate` 恒为 `null`、`route_completion_state` 恒为 `insufficient`；不得用 `stats.completed`、已结束行程数或任何临时规则替代。未来数据充足条件 = 已结束行程 ≥1 条且存在有效完成度数值。
+- **数据口径（D1 / D2）：** 本期无人工打卡数据源；`route_completion_rate` 恒为空（响应省略该字段）、`route_completion_state` 恒为 `insufficient`；不得用 `stats.completed`、已结束行程数或任何临时规则替代。未来数据充足条件 = 已结束行程 ≥1 条且存在有效完成度数值。
 - **阈值（issue / D5）：** `rate ≥ 80` → `good`；`70 ≤ rate < 80` → `neutral`；`0 ≤ rate < 70` → `watch`；`rate = null` 或样本不足 → `insufficient`。数值为 0–100 整数。
 - **展示形态（D5）：** 标签 + 百分比；`insufficient` 只显示「暂无足够完成记录」；`neutral` 只显示百分比；文案固定为「信誉良好」「请留意行程完成情况」「暂无足够完成记录」。
 - **统计范围（D6，未来）：** 仅用户作为发布者或 `ACCEPTED` 同行者参与的 `completed` 行程；进行中、未开始、已取消 MUST NOT 计入。

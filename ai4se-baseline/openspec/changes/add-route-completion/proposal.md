@@ -15,11 +15,11 @@ issue #45 要求让正在找旅行搭子的人看到「其他用户过去行程�
 
 ## What Changes
 
-- **接口字段预留：** `GET /api/users/{userId}/profile` 响应追加两个只读字段：`route_completion_rate`（0–100 整数或 `null`）与 `route_completion_state`（`good` / `neutral` / `watch` / `insufficient`）；本人读取与他人读取同口径。当前版本无数据源，所有用户返回 `null` + `insufficient`，不得用已结束行程数或 `stats` 伪造数值。
+- **接口字段预留：** `GET /api/users/{userId}/profile` 响应追加两个只读字段：`route_completion_rate`（0–100 整数；数据不足时省略，值语义为 `null`）与 `route_completion_state`（`good` / `neutral` / `watch` / `insufficient`，恒出现）；本人读取与他人读取同口径。当前版本无数据源，所有用户为「省略 rate + `insufficient`」，不得用已结束行程数或 `stats` 伪造数值。
 - **数据充足判定：** 仅当用户已结束行程 ≥1 条且存在有效完成度数值时视为数据足够；仅统计 `completed` 行程，进行中 / 尚未开始 / 已取消不计入；未来聚合覆盖用户作为发布者或 `ACCEPTED` 同行者参与的已结束行程。
 - **阈值派生（后端单点）：** `rate ≥ 80` → `good`；`70 ≤ rate < 80` → `neutral`；`0 ≤ rate < 70` → `watch`；`rate = null` 或样本不足 → `insufficient`；非法数值（非整数 / <0 / >100）降级为 `insufficient`。前端只做状态码 → 文案字典映射，不得复制 80 / 70 阈值。
 - **个人主页展示：** `ProfilePage` hero 信用行附近新增一行「路线完成度」：`good` 显示「路线完成度 NN% · 信誉良好」；`watch` 显示「路线完成度 NN% · 请留意行程完成情况」；`neutral` 只显示「路线完成度 NN%」；`insufficient` 只显示「暂无足够完成记录」。不得出现「骗子」「危险用户」「不可信」等定性结论。
-- **独立性与兼容：** 不读写信用账户 / 账本、不改 `stats`、不新增或读取成长等级字段；新增字段可空，既有 401 / 404 行为不变；`openapi.yaml` 同步 `UserProfile` schema 与示例（契约版本 P3 排他确认，预计 0.26.0）。
+- **独立性与兼容：** 不读写信用账户 / 账本、不改 `stats`、不新增或读取成长等级字段；`route_completion_rate` 可空且数据不足时省略、`route_completion_state` 恒返回并列入 `required`，既有 401 / 404 行为不变；`openapi.yaml` 同步 `UserProfile` schema 与示例（契约版本 P3 排他确认，预计 0.26.0）。
 - **登记：** `registry.md` / `handoff.md` / `stories.md`（S31）登记 REQ-030 → `add-route-completion`；`docs/sdd/add-route-completion/` 阶段记录。
 
 ## Out of Scope
@@ -39,7 +39,7 @@ issue #45 要求让正在找旅行搭子的人看到「其他用户过去行程�
 | `backend/src/main/java/routeme/response/UserProfileResponse.java` | 追加 `routeCompletionRate`、`routeCompletionState` 两个只读字段（序列化名 `route_completion_rate` / `route_completion_state`） |
 | 后端派生（新增小类 / 常量，名称 P3 定） | 单点实现「数据充足判定 + 阈值派生」；本期资料装配时返回 `null` + `insufficient` |
 | 后端资料读取路径 | `UserProfileController` / `UserProfileService` 装配响应时补两字段；不新增端点 |
-| `RouteME/openapi.yaml` | `UserProfile` schema 追加两字段与示例；版本 P3 排他确认（预计 `0.26.0`） |
+| `RouteME/openapi.yaml` | `UserProfile` schema 追加两字段与示例（`route_completion_state` 列入 `required`；`route_completion_rate` 可空可省略）；版本 P3 排他确认（预计 `0.26.0`） |
 | `frontend/src/types.ts` | `UserProfile` 增加两字段（可选 / 可空） |
 | `frontend/src/profile/ProfilePage.tsx` | hero 信用行附近新增「路线完成度」行；四态文案与百分比展示 |
 | `frontend/src/i18n/tripMessages.ts` | 新增「路线完成度」「信誉良好」「请留意行程完成情况」「暂无足够完成记录」 |
@@ -47,7 +47,7 @@ issue #45 要求让正在找旅行搭子的人看到「其他用户过去行程�
 | 后端测试 | 派生单测（80 / 79 / 70 / 69 / 0 / null / 非法）；资料 API 字段断言；信用字段与 `stats` 不变回归 |
 | 前端测试 | 状态 → 文案纯函数单测；个人主页四态渲染（无 DOM 渲染层走纯函数） |
 | E2E | `route-completion.spec.ts`：数据不足态、四态模拟（接口拦截或夹具）、本人 / 他人同口径、信用行与弹窗不变 |
-| `openspec/changes/add-route-completion/specs/route-completion/spec.md` | ADDED（6 Requirement / 19 Scenario） |
+| `openspec/changes/add-route-completion/specs/route-completion/spec.md` | ADDED（6 Requirement / 18 Scenario） |
 | Living Spec | 归档时新增 `openspec/specs/route-completion/spec.md` |
 | 数据 / 迁移 / 管理端 / 路由 | **无改动**（D7 无表无迁移；D3 无列表入口；无新路由） |
 
@@ -55,7 +55,7 @@ issue #45 要求让正在找旅行搭子的人看到「其他用户过去行程�
 
 | 决策点 | 选择 | 理由 |
 |---|---|---|
-| 数据口径（D1） | 仅预留 + 数据不足：所有用户 `null` + `insufficient`，不造假数据；后端仍实现阈值派生 | 最贴合 issue「先完成字段、接口和 UI 展示入口，打卡后续独立实现」；避免用已结束行程冒充有效完成 |
+| 数据口径（D1） | 仅预留 + 数据不足：所有用户「省略 rate + `insufficient`」，不造假数据；后端仍实现阈值派生 | 最贴合 issue「先完成字段、接口和 UI 展示入口，打卡后续独立实现」；避免用已结束行程冒充有效完成 |
 | 数据阈值（D2） | ≥1 条已结束行程且存在有效完成度数值 | 未来数据足够的可判定门槛；少于 1 条直接数据不足 |
 | 展示面（D3） | 仅个人主页 `ProfilePage`；推荐列表 / 弹窗 / 详情 / 列表本期不做 | 推荐引擎已在 `c516d76` 移除；issue 的「用户主页或详情页」由个人主页满足；不重建推荐引擎 |
 | 编号 / 命名（D4） | REQ-030 / S31 / `add-route-completion` / `route-completion` | `origin/main@aa320dc` 已用至 REQ-028 / S29；REQ-029 / S30 由并行 `add-growth-level`（issue #44）登记，按用户裁决顺延为 REQ-030 / S31 |
@@ -67,8 +67,8 @@ issue #45 要求让正在找旅行搭子的人看到「其他用户过去行程�
 
 ## 验收信号
 
-1. 任意用户（本人 / 他人）调用 `GET /api/users/{userId}/profile`，响应同时包含 `route_completion_rate` 与 `route_completion_state` 两个只读字段。
-2. 当前版本读取任意用户（含演示用户与有已结束行程的用户），`route_completion_rate` 恒为 `null`、`route_completion_state` 恒为 `insufficient`；不出现任何伪造百分比。
+1. 任意用户（本人 / 他人）调用 `GET /api/users/{userId}/profile`，响应新增 `route_completion_state`（恒出现，列入 `required`）与 `route_completion_rate`（仅数据足够时出现）两个只读字段。
+2. 当前版本读取任意用户（含演示用户与有已结束行程的用户），响应省略 `route_completion_rate`、`route_completion_state` 恒为 `insufficient`；不出现任何伪造百分比。
 3. 派生单测覆盖 `rate = 80 / 79 / 70 / 69 / 0 / null / 非法值`：80→`good`、79→`neutral`、70→`neutral`、69→`watch`、0→`watch`、null→`insufficient`、非法→`insufficient`。
 4. 打开任意用户个人主页，hero 信用行附近展示一行「暂无足够完成记录」，不显示 0% 或任何默认百分比；不出现「信誉良好」或「请留意行程完成情况」。
 5. 通过夹具 / 接口拦截模拟 `good` / `neutral` / `watch` 时，页面分别显示「路线完成度 85% · 信誉良好」「路线完成度 75%」「路线完成度 55% · 请留意行程完成情况」；无「骗子」「危险用户」「不可信」等措辞。

@@ -1534,7 +1534,7 @@ MVP 无推送、无通知；以下为完成度的 UI 展示面契约。
 ### 探针记录（REQ-030 路线完成度）
 
 - **状态派生单点：** 阈值只在后端一处实现（建议独立纯函数 / 常量），单测覆盖 80 / 79 / 70 / 69 / 0 / null / 非法值；前端不得复制阈值。
-- **响应承载：** `UserProfileResponse` 使用 `@JsonInclude(NON_NULL)`；`route_completion_rate` 为空时是否序列化为 `null` 需在 P2 / P3 明确（前端按「缺失或 null = 数据不足」双兼容）。
+- **响应承载：** `UserProfileResponse` 使用 `@JsonInclude(NON_NULL)`；**P2 已定稿（2026-11-18）：数据不足时省略 `route_completion_rate`（值语义为 null），`route_completion_state` 恒返回并列入 `UserProfile.required`；前端按「缺失或 null = 数据不足」处理。**
 - **数据源缺失：** 本期没有任何完成度聚合来源；服务层不得以 `stats.completed`、已结束行程数或演示数据替代，返回常量 `insufficient` 即可。
 - **展示位：** `ProfilePage` hero 已有 `.profile-credit` 行（信用分）；完成度行紧随其后，复用同一行高与色阶语义，避免新增卡片层级。
 - **状态与主题：** `good` 使用正向色阶、`watch` 使用警示色阶、`neutral` 与 `insufficient` 使用中性色阶；不得使用危险红表达「警惕」（避免定性）。
