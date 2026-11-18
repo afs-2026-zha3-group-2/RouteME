@@ -6,6 +6,7 @@ import {
   effectiveAccountStatus,
   serviceStatusLabel,
   serviceStatusTone,
+  statusActionLabel,
 } from './adminStatus';
 
 const NOW = Date.parse('2026-11-16T09:00:00Z');
@@ -39,7 +40,13 @@ describe('account status presentation', () => {
   it('exposes only legal transitions', () => {
     expect(availableActions('ACTIVE')).toEqual(['SUSPEND', 'BAN']);
     expect(availableActions('SUSPENDED')).toEqual(['BAN', 'RESTORE']);
-    expect(availableActions('BANNED')).toEqual([]);
+    expect(availableActions('BANNED')).toEqual(['BAN', 'RESTORE']);
+  });
+
+  it('labels an existing ban as an update', () => {
+    expect(statusActionLabel('BAN', 'BANNED')).toBe('更新封禁');
+    expect(statusActionLabel('BAN', 'ACTIVE')).toBe('封禁账号');
+    expect(statusActionLabel('RESTORE', 'BANNED')).toBe('恢复账号');
   });
 
   it('labels every customer service state', () => {

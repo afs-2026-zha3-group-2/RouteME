@@ -92,14 +92,41 @@ class AccountStatusServiceTest {
     }
 
     @Test
-    void in_bannedUser_out_banAgainRejected() {
+    void in_bannedUser_out_banAgainUpdatesReasonAndExpiry() {
+        accountStatusService.ban(
+                TARGET_USER, ADMIN_ID, "first", BanReasonEnum.HARASSMENT, null, FUTURE);
+        Instant extended = FUTURE.plusSeconds(86_400);
+
+        accountStatusService.ban(
+                TARGET_USER,
+                ADMIN_ID,
+                "second",
+                BanReasonEnum.PRIVACY_LEAK,
+                "再次泄露",
+                extended);
+
+        UserEntity row = demoUserService.getById(TARGET_USER);
+        assertAll(
+                () -> assertEquals("BANNED", row.getStatus(), "still banned"),
+                () -> assertEquals("second", row.getStatusReason(), "reason updated"),
+                () -> assertEquals("PRIVACY_LEAK", row.getBanReasonCode(), "ban reason updated"),
+                () -> assertEquals("再次泄露", row.getBanReasonNote(), "ban note updated"),
+                () -> assertEquals(extended.toString(), row.getBanExpiresAt(), "expiry extended"));
+    }
+
+    @Test
+    void in_bannedUser_out_restoreToActive() {
         accountStatusService.ban(
                 TARGET_USER, ADMIN_ID, "first", BanReasonEnum.HARASSMENT, null, FUTURE);
 
-        assertThrows(
-                InvalidStatusTransitionException.class,
-                () -> accountStatusService.ban(
-                        TARGET_USER, ADMIN_ID, "second", BanReasonEnum.HARASSMENT, null, FUTURE));
+        accountStatusService.restore(TARGET_USER, ADMIN_ID, "人工恢复");
+
+        UserEntity row = demoUserService.getById(TARGET_USER);
+        assertAll(
+                () -> assertEquals("ACTIVE", row.getStatus(), "restored"),
+                () -> assertEquals("人工恢复", row.getStatusReason(), "restore reason"),
+                () -> assertEquals(
+                        FUTURE.toString(), row.getBanExpiresAt(), "ban history retained"));
     }
 
     @Test

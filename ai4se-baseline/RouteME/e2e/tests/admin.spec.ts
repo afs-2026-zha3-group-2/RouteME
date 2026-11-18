@@ -420,21 +420,20 @@ test.describe('[I1] admin console access and user management', () => {
     await expect(page.getByText('骚扰或不当言行')).toBeVisible();
     await expect(page.getByText('2035-01-01 12:00')).toBeVisible();
 
+    // BANNED 仍可在用户管理页更新封禁或恢复（举报页已不再提供处罚动作）。
+    await expect(page.getByRole('button', { name: '更新封禁' })).toBeVisible();
+    await expect(page.getByRole('button', { name: '恢复账号' })).toBeVisible();
+    await expect(page.getByRole('button', { name: '封禁账号' })).toHaveCount(0);
+    await page.getByRole('button', { name: '更新封禁' }).click();
+    await expect(page.locator('.ant-modal-title')).toHaveText('更新封禁');
+    await page.getByRole('dialog').getByRole('button', { name: /取\s*消/ }).click();
+
     const bannedSuspend = await setUserStatusViaApi(page, admin.token, victim.id, {
       action: 'SUSPEND',
       reason: '非法迁移',
     });
     expect(bannedSuspend.status()).toBe(409);
     expect(((await bannedSuspend.json()) as { code: string }).code).toBe(
-      'INVALID_STATUS_TRANSITION',
-    );
-
-    // BANNED 只能通过举报处置更新封禁，本端点不可恢复。
-    const bannedRestore = await setUserStatusViaApi(page, admin.token, victim.id, {
-      action: 'RESTORE',
-    });
-    expect(bannedRestore.status()).toBe(409);
-    expect(((await bannedRestore.json()) as { code: string }).code).toBe(
       'INVALID_STATUS_TRANSITION',
     );
 
@@ -488,6 +487,32 @@ test.describe('[I1] admin console access and user management', () => {
     expect(profileBody.ban_expires_at).toBeTruthy();
     expect(profileBody.status_reason ?? null).toBeNull();
     expect(profileBody.ban_reason_note ?? null).toBeNull();
+
+    // 更新封禁：新的理由 / 补充说明 / 解封时间覆盖旧值。
+    const updatedBan = await setUserStatusViaApi(page, admin.token, victim.id, {
+      action: 'BAN',
+      reason: '延长封禁',
+      ban_reason_code: 'PRIVACY_LEAK',
+      ban_reason_note: '再次泄露隐私',
+      ban_expires_at: '2035-06-01T12:00:00Z',
+    });
+    expect(updatedBan.ok()).toBeTruthy();
+    const updatedDetail = await adminUserDetail(page, admin.token, victim.id);
+    expect(updatedDetail.status).toBe('BANNED');
+    expect(updatedDetail.ban_reason_code).toBe('PRIVACY_LEAK');
+    expect(updatedDetail.ban_reason_note).toBe('再次泄露隐私');
+
+    // 恢复：BANNED 可直接恢复为 ACTIVE，封禁信息只保留为历史。
+    const restored = await setUserStatusViaApi(page, admin.token, victim.id, {
+      action: 'RESTORE',
+      reason: '人工复核恢复',
+    });
+    expect(restored.ok()).toBeTruthy();
+    const restoredDetail = await adminUserDetail(page, admin.token, victim.id);
+    expect(restoredDetail.status).toBe('ACTIVE');
+    expect(restoredDetail.ban_expires_at ?? null).toBeNull();
+    const restoredTrip = await createTripViaApi(page, victim.id, `恢复后行程_${Date.now()}`);
+    expect(restoredTrip.id).toBeGreaterThan(0);
   });
 });
 
@@ -497,7 +522,7 @@ test.describe('[I2] report queue and resolution', () => {
     const reported = await createUserViaApi(page, `被举报人_${Date.now()}`);
     const trip = await createTripViaApi(page, reported.id, `被举报行程_${Date.now()}`);
     const note = 'E2E 举报备注：行程描述与实际情况不符';
-    const resolutionNote = 'E2E 处理备注：已核实并暂停账号';
+    const resolutionNote = 'E2E 处理备注：已核实虚假行程信息';
 
     const submitted = await page.request.post(`${API}/reports`, {
       headers: writeHeaders(reporter.id),
@@ -536,47 +561,38 @@ test.describe('[I2] report queue and resolution', () => {
     expect(duplicate.status()).toBe(409);
     expect(((await duplicate.json()) as { code: string }).code).toBe('REPORT_NOT_PENDING');
 
+    // 成立表单只留违规类型：未选类型时前端拦截，不发请求。
+    const form = page.locator('.admin-form');
+    await expect(form.getByText('处罚动作')).toHaveCount(0);
+    await expect(form.getByText('封禁理由')).toHaveCount(0);
+    await expect(form.getByText('解封时间')).toHaveCount(0);
     await page.getByLabel('举报成立').check();
-    await page.getByRole('button', { name: '处罚动作' }).click();
-    await page.getByRole('option', { name: '暂停账号' }).click();
+    await page.getByLabel('违规原因').fill(resolutionNote);
     await page.getByRole('button', { name: '提交处理' }).click();
-    await expect(page.getByText('必填，500 字以内')).toBeVisible();
+    await expect(form.locator('.ant-typography-danger')).toHaveText('请选择违规类型');
 
-    await page.getByLabel('处理备注').fill(resolutionNote);
+    await page.getByRole('button', { name: '违规类型' }).click();
+    await page.getByRole('option', { name: '发布虚假行程信息（-15）' }).click();
+    await expect(
+      page.getByTestId('report-deduction-preview').locator('.admin-deduction-value'),
+    ).toHaveText(['80', '-15', '65']);
     await page.getByRole('button', { name: '提交处理' }).click();
     await expect(page.locator('.admin-detail-hero').getByText('已处理')).toBeVisible();
 
+    // 扣分落账，但不改账号状态（账号处置留给用户管理页）。
     const reportedDetail = await adminUserDetail(page, admin.token, reported.id);
-    expect(reportedDetail.status).toBe('SUSPENDED');
+    expect(reportedDetail.status).toBe('ACTIVE');
+    const profile = await page.request.get(`${API}/users/${reported.id}/profile`, {
+      headers: { 'X-User-Id': String(reported.id) },
+    });
+    expect(profile.ok()).toBeTruthy();
+    expect(((await profile.json()) as { credit_score: number }).credit_score).toBe(65);
 
     // 用户侧不再展示举报进度；改由管理员在举报详情确认处理结果与备注。
     await page.goto(`/#/admin/reports/${created.id}`);
     await expect(page.locator('.admin-detail-hero')).toContainText('已处理');
 
-    // 已受限用户：另一条举报走「维持暂停」，状态保持不变。
-    const second = await page.request.post(`${API}/reports`, {
-      headers: writeHeaders(reporter.id),
-      data: { target_type: 'user', target_id: reported.id, reason: 'safety', note: '安全问题' },
-    });
-    expect(second.status()).toBe(201);
-    const secondReport = await findReportId(
-      page,
-      reporter.token,
-      (item) => item.target_id === reported.id && item.reason === 'safety',
-    );
-
-    await loginAsAdmin(page);
-    await page.goto(`/#/admin/reports/${secondReport.id}`);
-    await page.getByRole('button', { name: '开始处理' }).click();
-    await page.getByLabel('举报成立').check();
-    await page.getByRole('button', { name: '处罚动作' }).click();
-    await page.getByRole('option', { name: '维持暂停' }).click();
-    await page.getByLabel('处理备注').fill('维持现有暂停');
-    await page.getByRole('button', { name: '提交处理' }).click();
-    await expect(page.locator('.admin-detail-hero').getByText('已处理')).toBeVisible();
-    expect((await adminUserDetail(page, admin.token, reported.id)).status).toBe('SUSPENDED');
-
-    // 举报不成立：不改用户状态，举报人看到「举报不成立」。
+    // 举报不成立：不改账号状态、不扣分。
     const third = await page.request.post(`${API}/reports`, {
       headers: writeHeaders(reporter.id),
       data: { target_type: 'user', target_id: reported.id, reason: 'other', note: '误报' },
@@ -597,7 +613,8 @@ test.describe('[I2] report queue and resolution', () => {
     });
     expect(reject.ok()).toBeTruthy();
     expect(((await reject.json()) as { status: string }).status).toBe('REJECTED');
-    expect((await adminUserDetail(page, admin.token, reported.id)).status).toBe('SUSPENDED');
+    expect((await adminUserDetail(page, admin.token, reported.id)).status).toBe('ACTIVE');
+    expect(((await profile.json()) as { credit_score: number }).credit_score).toBe(65);
 
     // 举报不成立：状态只在管理后台可见（用户侧不再有举报进度页）。
     await page.goto(`/#/admin/reports/${thirdReport.id}`);
@@ -664,7 +681,7 @@ test.describe('[I3] customer service workbench', () => {
     expect(((await userView.json()) as { status: string }).status).toBe('HANDLING');
 
     await page.getByRole('button', { name: '结束会话' }).click();
-    await page.getByRole('button', { name: /确\s*认/ }).click();
+    await page.locator('.ant-popover').getByRole('button', { name: /确\s*认/ }).click();
     await expect(page.getByText('会话已结束，只能查看历史消息。')).toBeVisible();
     await expect(page.locator('.service-chat .bubble').filter({ hasText: userMessage })).toBeVisible();
 
