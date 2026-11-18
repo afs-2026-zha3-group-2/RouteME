@@ -16,7 +16,7 @@
 | Delta（`admin-console`） | [`specs/admin-console/spec.md`](../../../openspec/changes/add-report-credit-deduction/specs/admin-console/spec.md) | MODIFIED 1 Requirement / 20 Scenario（P2 新增历史降级场景） |
 | AC / DoV 复核 | [`dov-ac-review.md`](../../../openspec/changes/add-report-credit-deduction/dov-ac-review.md) | AC 4/4 Pass、DoV 5/5 Pass；映射 R-1 ~ R-26 全覆盖 |
 | 一致性检查 | [`consistency-lint.md`](../../../openspec/changes/add-report-credit-deduction/consistency-lint.md) | **Partial**（BLOCKER 0 / WARNING 2 / SUGGESTION 2 / N/A 6） |
-| G1 决策 | 未产出 | **Pending**（待 IO + SA 具名签署；未代签） |
+| G1 决策 | [`g1-decision.md`](../../../openspec/changes/add-report-credit-deduction/g1-decision.md) | **Conditional**（C1–C4；IO = WAYNE / SA = Jacky，2026-11-18） |
 
 ## 3. 本阶段收敛
 
@@ -38,10 +38,10 @@
 
 | 角色 | 姓名 | 确认内容 | 日期 |
 |---|---|---|---|
-| IO | WAYNE（待确认） | Delta Spec 与 G1 结论 | — |
-| SA | Jacky / Karena 之一（待指定） | Delta Spec、D1 替换 2 条基线场景、G1 结论 | — |
+| IO | WAYNE | Delta Spec、G1 Conditional 结论与 C1–C4 | 2026-11-18 |
+| SA | Jacky | Delta Spec、D1 替换追认、G1 Conditional 结论与 C1–C4 | 2026-11-18 |
 
-**G1 结论：Pending。** P2 工件齐备且自检通过；未取得 IO + SA 具名签署前 P3 不得开工，`g1-decision.md` 不在本回合创建。
+**G1 结论：Conditional。** 条件 C1（用户管理页处罚回归任务）/ C2（401 / 403 / 404 回归用例）由 Dev 在 P3 承接；C3（D1 替换追认）已随本记录签署完成；C4（归档顺序）为 P5 约束。
 
 ## 6. 带入 P3 的跟踪项
 
