@@ -26,6 +26,7 @@ import routeme.request.AuthRegisterRequest;
 import routeme.service.AuthService;
 import routeme.service.CreditService;
 import routeme.service.DemoUserService;
+import routeme.service.WalletService;
 import routeme.utils.PasswordUtils;
 
 /**
@@ -42,11 +43,14 @@ public class AuthServiceImpl extends AbstractServiceImpl<AuthSessionMapper, Auth
 
     private final DemoUserService demoUserService;
     private final CreditService creditService;
+    private final WalletService walletService;
     private final Clock clock;
 
-    public AuthServiceImpl(DemoUserService demoUserService, CreditService creditService, Clock clock) {
+    public AuthServiceImpl(
+            DemoUserService demoUserService, CreditService creditService, WalletService walletService, Clock clock) {
         this.demoUserService = demoUserService;
         this.creditService = creditService;
+        this.walletService = walletService;
         this.clock = clock;
     }
 
@@ -74,6 +78,8 @@ nickname.substring(0, 1),
                 email);
         // 注册与建信用账户同事务：注册失败时不留下半成品账户。
         creditService.ensureAccount(user.id());
+        // 钱包与账号同事务：新账号注册成功即拥有 1,000,000 分。
+        walletService.ensureWallet(user.id());
         return issue(user.id());
     }
 

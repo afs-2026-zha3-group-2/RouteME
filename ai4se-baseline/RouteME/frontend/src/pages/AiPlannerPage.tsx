@@ -10,22 +10,7 @@
  * - 条件表单收进抽屉、地图收进弹窗：两者都不占参考稿的版式位置。
  */
 import { useCallback, useEffect, useMemo, useRef, useState, type DragEvent } from 'react';
-import {
-  Alert,
-  Button,
-  Card,
-  DatePicker,
-  Drawer,
-  Input,
-  InputNumber,
-  Modal,
-  Segmented,
-  Select,
-  Spin,
-  Tag,
-  Typography,
-} from 'antd';
-import zhCN from 'antd/es/locale/zh_CN';
+import { Alert, Button, Card, Drawer, Input, Modal, Spin, Tag, Typography } from 'antd';
 import dayjs from 'dayjs';
 import 'dayjs/locale/zh-cn';
 import { ApiError, fetchWeatherForecast, generateAiItinerary, saveAiItinerary } from '../api';
@@ -80,8 +65,6 @@ import { BrandMark } from '../shell/BrandMark';
 import { cityPhoto } from '../trips/cityPhotos';
 import { formatMonthDay, weekdayLabel } from '../trips/tripDateFormat';
 import type {
-  AiDuration,
-  AiPace,
   AiPlanStop,
   AiTravelMode,
   DemoUser,
@@ -90,8 +73,6 @@ import type {
   RouteWaypoint,
   WeatherForecast,
 } from '../types';
-import { appDatePickerProps } from '../utils/datePickerProps';
-import { dayjsToIso, isoToDayjs } from '../utils/dates';
 
 // 与发布页一致：日期弹层月份名保持中文。
 dayjs.locale('zh-cn');
@@ -100,26 +81,9 @@ type Props = {
   currentUser: DemoUser;
 };
 
-/** 时间轴按天分组：day 随景点对象在编辑（ spread / swap ）中保留。 */
-type PlaceSlot = 'origin' | 'destination';
-
 type ReplyTab = 'overview' | 'day' | 'food' | 'stay' | 'budget';
 
 const DEFAULT_CENTER = { lng: 113.264, lat: 23.129 };
-
-/** 兴趣偏好：与发布页标签同一套口径（外加 City Walk / 亲子 / 小众），预填时不会丢标签。 */
-const INTEREST_OPTIONS = [
-  '美食',
-  '摄影',
-  '海边',
-  '夜景',
-  '历史',
-  '展览',
-  '自然',
-  'City Walk',
-  '亲子',
-  '小众',
-];
 
 function isResolved<T extends ResolvedStop>(stop: T): stop is T & { lng: number; lat: number } {
   return stop.resolved && stop.lng !== undefined && stop.lat !== undefined;
@@ -211,10 +175,6 @@ export function AiPlannerPage({ currentUser }: Props) {
   const [weather, setWeather] = useState<WeatherForecast | null>(initialSession.weather);
   const [weatherLoading, setWeatherLoading] = useState(false);
   const [weatherError, setWeatherError] = useState(false);
-  const [pickMode, setPickMode] = useState(false);
-  const [pickTarget, setPickTarget] = useState<PlaceSlot>('origin');
-  const [candidates, setCandidates] = useState<PlaceResult[] | null>(null);
-  const [candidatesLoading, setCandidatesLoading] = useState(false);
   const [replaceIndex, setReplaceIndex] = useState<number | null>(null);
   const [replaceCandidates, setReplaceCandidates] = useState<PlaceResult[] | null>(null);
   const [replaceLoading, setReplaceLoading] = useState(false);
@@ -225,14 +185,12 @@ export function AiPlannerPage({ currentUser }: Props) {
   const [saveError, setSaveError] = useState<string | null>(null);
   const [map, setMap] = useState<AmapMap | null>(null);
   const [replaceMap, setReplaceMap] = useState<AmapMap | null>(null);
-  const [locating, setLocating] = useState(false);
-  const [locateFailed, setLocateFailed] = useState(false);
   const [composer, setComposer] = useState('');
   const [sending, setSending] = useState(false);
   const [messages, setMessages] = useState<ChatMessage[]>(initialSession.messages);
   const [replyTab, setReplyTab] = useState<ReplyTab>('overview');
   const [replyDay, setReplyDay] = useState(1);
-  const [conditionsOpen, setConditionsOpen] = useState(false);
+  const [historyOpen, setHistoryOpen] = useState(false);
   const [mapOpen, setMapOpen] = useState(false);
 
   const routeTokenRef = useRef(0);
@@ -261,7 +219,6 @@ export function AiPlannerPage({ currentUser }: Props) {
     setWeatherError(false);
     setGenerateError(null);
     setSaveError(null);
-    setLocateFailed(false);
     setRoute(null);
     setRouteError(null);
     setReplaceIndex(null);
@@ -321,10 +278,6 @@ export function AiPlannerPage({ currentUser }: Props) {
     threadEndRef.current?.scrollIntoView({ block: 'nearest' });
   }, [messages.length, generating]);
 
-  const update = (patch: Partial<PlannerFormValues>) => {
-    setForm((previous) => ({ ...previous, ...patch }));
-  };
-
   const busy = generating || sending;
 
   const pushMessage = useCallback((message: Pick<ChatMessage, 'role' | 'text' | 'tone'>) => {
@@ -335,74 +288,6 @@ export function AiPlannerPage({ currentUser }: Props) {
       { id, time: clockNow(), tone: message.tone, role: message.role, text: message.text },
     ]);
   }, []);
-
-  /* ---------- 地点：搜索 / 定位 / 地图点击 ---------- */
-
-  const pickPlace = (slot: PlaceSlot) => (place: PlaceResult) => {
-    update({ [slot]: { name: place.name, lng: place.lng, lat: place.lat } });
-  };
-
-  const onMapClick = (point: LngLat) => {
-    if (!pickMode) {
-      return;
-    }
-    setCandidatesLoading(true);
-    setCandidates([]);
-    // 点击点本身永远可选（坐标精确等于点击位置），附近 POI 只是额外候选。
-    Promise.all([
-      reverseGeocode(point[0], point[1]).catch(() => null),
-      aroundPlaces(point[0], point[1], 500).catch(() => [] as PlaceResult[]),
-    ])
-      .then(([exact, nearby]) => {
-        const list: PlaceResult[] = exact === null ? [] : [exact];
-        for (const place of nearby) {
-          if (!list.some((item) => item.id === place.id)) {
-            list.push(place);
-          }
-        }
-        setCandidates(list);
-      })
-      .finally(() => setCandidatesLoading(false));
-  };
-
-  const pickCandidate = (place: PlaceResult) => {
-    pickPlace(pickTarget)(place);
-    setCandidates(null);
-  };
-
-  const locateOrigin = () => {
-    if (!('geolocation' in navigator)) {
-      setLocateFailed(true);
-      return;
-    }
-    setLocating(true);
-    setLocateFailed(false);
-    navigator.geolocation.getCurrentPosition(
-      (position) => {
-        const lng = position.coords.longitude;
-        const lat = position.coords.latitude;
-        reverseGeocode(lng, lat)
-          .then((place) => {
-            update({ origin: { name: place.name, lng: place.lng, lat: place.lat } });
-          })
-          .catch(() => {
-            update({
-              origin: {
-                name: aiMessages.currentLocation,
-                lng: Number(lng.toFixed(6)),
-                lat: Number(lat.toFixed(6)),
-              },
-            });
-          })
-          .finally(() => setLocating(false));
-      },
-      () => {
-        setLocating(false);
-        setLocateFailed(true);
-      },
-      { timeout: 8000 },
-    );
-  };
 
   /* ---------- 天气：预览（目的地 + 日期）→ generate 权威切换（L-02） ---------- */
 
@@ -491,8 +376,6 @@ export function AiPlannerPage({ currentUser }: Props) {
     setGenerateError(null);
     setSaveError(null);
     setReplyTab('overview');
-    // 生成时收起条件抽屉：用户要立刻看到右侧行程，而不是被 400px 抽屉挡住。
-    setConditionsOpen(false);
     try {
       const response = await generateAiItinerary(
         currentUser.id,
@@ -574,7 +457,26 @@ export function AiPlannerPage({ currentUser }: Props) {
     window.setTimeout(() => document.getElementById('ai-composer-input')?.focus(), 0);
   };
 
-  /* ---------- 对话：自然语言 → 条件 → 生成 ---------- */
+  /** 从历史抽屉切回某段对话：整份上下文一起换回来，旧对话不会被清空。 */
+  const openSession = (id: string) => {
+    if (busy || id === activeSessionId) {
+      setHistoryOpen(false);
+      return;
+    }
+    const target = sessionStore.sessions.find((session) => session.id === id);
+    if (target === undefined) {
+      return;
+    }
+    hydrate(target);
+    setSessionStore((previous) => {
+      const next = { ...previous, activeId: id };
+      writeSessionStore(currentUser.id, next);
+      return next;
+    });
+    setHistoryOpen(false);
+  };
+
+  /* ---------- 对话：像助手一样理解条件、主动追问、直接出方案 ---------- */
 
   const sendChat = async (raw: string) => {
     const text = raw.trim();
@@ -582,44 +484,59 @@ export function AiPlannerPage({ currentUser }: Props) {
       return;
     }
     setComposer('');
+    pushMessage({ role: 'user', tone: 'default', text });
     setSending(true);
     try {
       const intent = parsePlanIntent(text);
       let nextForm = form;
-      let resolvedName: string | null = null;
+      let resolvedDestination: string | null = null;
       let unresolvedDestination: string | null = null;
+
       if (intent.destinationName !== null) {
         const place = await resolveCityPlace(intent.destinationName);
         if (place !== null) {
-          resolvedName = place.name;
+          resolvedDestination = place.name;
           nextForm = {
             ...nextForm,
             destination: { name: place.name, lng: place.lng, lat: place.lat },
           };
-          if (nextForm.origin === null) {
-            // 纯对话模式下没有出发地：先用同城中心起步，用户可在「规划条件」里改。
-            nextForm = {
-              ...nextForm,
-              origin: { name: place.name, lng: place.lng, lat: place.lat },
-            };
-          }
         } else {
           unresolvedDestination = intent.destinationName;
         }
       }
-      nextForm = applyIntent(nextForm, { ...intent, destinationName: null });
+
+      let resolvedOrigin: string | null = null;
+      let unresolvedOrigin: string | null = null;
+      if (intent.originName !== null) {
+        const place = await resolveCityPlace(intent.originName);
+        if (place !== null) {
+          resolvedOrigin = place.name;
+          nextForm = {
+            ...nextForm,
+            origin: { name: place.name, lng: place.lng, lat: place.lat },
+          };
+        } else {
+          unresolvedOrigin = intent.originName;
+        }
+      }
+
+      nextForm = applyIntent(nextForm, {
+        ...intent,
+        destinationName: null,
+        originName: null,
+      });
 
       // 换了一个目的地且当前会话已有内容：开一份新会话，两段旅行互不覆盖。
       const currentDestination = form.destination?.name ?? '';
       const startsNewTrip =
-        resolvedName !== null &&
-        resolvedName !== currentDestination &&
+        resolvedDestination !== null &&
+        resolvedDestination !== currentDestination &&
+        resolvedDestination !== '' &&
         (messages.length > 0 || planMeta !== null);
       if (startsNewTrip) {
         beginSession(createPlannerSession(nextForm));
       }
 
-      pushMessage({ role: 'user', tone: 'default', text });
       setForm(nextForm);
 
       if (unresolvedDestination !== null) {
@@ -630,28 +547,47 @@ export function AiPlannerPage({ currentUser }: Props) {
         });
         return;
       }
+      if (unresolvedOrigin !== null) {
+        pushMessage({
+          role: 'assistant',
+          tone: 'default',
+          text: aiMessages.intentOriginMissing(unresolvedOrigin),
+        });
+        return;
+      }
+
+      // 没提出发地：默认从目的地同城出发，并在消息里说明（agent 不静默替用户决定）。
+      let originNote: string | null = null;
+      if (nextForm.origin === null && nextForm.destination !== null) {
+        const assumed = nextForm.destination;
+        nextForm = { ...nextForm, origin: assumed };
+        originNote = aiMessages.originAssumed(assumed.name);
+      }
 
       const summary = aiMessages.intentSummary([
-        intent.destinationName,
+        resolvedDestination ?? intent.destinationName,
+        resolvedOrigin,
+        intent.date === null ? null : intent.date,
         intent.duration === null ? null : aiMessages.durationLabels[intent.duration],
         intent.budgetYuan === null ? null : aiMessages.intentBudget(intent.budgetYuan),
         intent.pace === null ? null : aiMessages.paceOptions[intent.pace],
         intent.interests.length === 0 ? null : intent.interests.join('、'),
       ]);
+
       if (!canGenerate(nextForm)) {
-        const missing = [
-          nextForm.origin === null ? '出发地' : null,
-          nextForm.destination === null ? '目的地' : null,
-          nextForm.date === '' ? '日期' : null,
-        ].filter((item): item is string => item !== null);
+        // 还缺关键条件：像一个助理那样把问题问清楚，而不是让用户去找表单。
         pushMessage({
           role: 'assistant',
           tone: 'default',
-          text: aiMessages.chatMissing(missing.join('、')),
+          text: aiMessages.agentAskDestination,
         });
         return;
       }
+
       await generate(false, nextForm, summary === '' ? undefined : summary);
+      if (originNote !== null) {
+        pushMessage({ role: 'assistant', tone: 'default', text: originNote });
+      }
     } finally {
       setSending(false);
     }
@@ -683,7 +619,7 @@ export function AiPlannerPage({ currentUser }: Props) {
     const nextForm = { ...form, ...patch };
     setForm(nextForm);
     if (!canGenerate(nextForm)) {
-      pushMessage({ role: 'assistant', tone: 'default', text: aiMessages.chatMissing('出发地、目的地或日期') });
+      pushMessage({ role: 'assistant', tone: 'default', text: aiMessages.agentAskDestination });
       return;
     }
     setSending(true);
@@ -936,43 +872,25 @@ export function AiPlannerPage({ currentUser }: Props) {
         <Card className="panel ai-chat-card" data-testid="ai-thread-card">
           <div className="ai-chat-toolbar">
             <span className="ai-chat-toolbar-title">{aiMessages.tabPlan}</span>
-            <Button
-              size="small"
-              data-testid="ai-new-chat"
-              disabled={busy}
-              onClick={newChat}
-            >
-              {aiMessages.newChat}
-            </Button>
-          </div>
-
-          {/* 规划条件不再藏在角落：常驻摘要 + 高对比入口，缺项时直接标红。 */}
-          <div className="ai-condition-summary" data-testid="ai-condition-summary">
-            <span className={form.destination === null ? 'ai-condition-chip is-missing' : 'ai-condition-chip'}>
-              {form.destination?.name ?? aiMessages.destinationLabel}
-            </span>
-            <span className={form.origin === null ? 'ai-condition-chip is-missing' : 'ai-condition-chip'}>
-              {form.origin?.name ?? aiMessages.originLabel}
-            </span>
-            <span className="ai-condition-chip">{form.date === '' ? aiMessages.dateLabel : form.date}</span>
-            <span className="ai-condition-chip">{aiMessages.durationOptions[form.duration]}</span>
-            <span className="ai-condition-chip">{aiMessages.modeOptions[form.travelMode]}</span>
-            {form.budgetYuan !== '' && (
-              <span className="ai-condition-chip">¥{form.budgetYuan}</span>
-            )}
-            {!canGenerate(form) && (
-              <span className="ai-condition-missing">{aiMessages.conditionMissing}</span>
-            )}
-            <Button
-              className="ai-conditions-btn"
-              type="primary"
-              size="small"
-              data-testid="ai-conditions-toggle"
-              disabled={busy}
-              onClick={() => setConditionsOpen(true)}
-            >
-              {aiMessages.conditionsEntry}
-            </Button>
+            <div className="ai-chat-toolbar-actions">
+              <Button
+                size="small"
+                data-testid="ai-history-toggle"
+                disabled={busy}
+                onClick={() => setHistoryOpen(true)}
+              >
+                {aiMessages.historyEntry(sessionStore.sessions.length)}
+              </Button>
+              <Button
+                size="small"
+                type="primary"
+                data-testid="ai-new-chat"
+                disabled={busy}
+                onClick={newChat}
+              >
+                {aiMessages.newChat}
+              </Button>
+            </div>
           </div>
 
           <div className="ai-inspiration-row" data-testid="ai-suggestions">
@@ -1595,250 +1513,65 @@ export function AiPlannerPage({ currentUser }: Props) {
         </section>
       </div>
 
-      {/* ==================== 规划条件（抽屉） ==================== */}
+      {/* ==================== 历史对话（抽屉） ==================== */}
       <Drawer
-        title={aiMessages.conditionsTitle}
-        open={conditionsOpen}
-        onClose={() => setConditionsOpen(false)}
-        width={400}
-        className="ai-conditions-drawer"
+        title={aiMessages.historyTitle}
+        open={historyOpen}
+        onClose={() => setHistoryOpen(false)}
+        width={360}
+        className="ai-history-drawer"
         destroyOnHidden
       >
-        <p className="form-hint">{aiMessages.conditionsHint}</p>
-        <div className="ai-condition-grid">
-          <div className="form-field ai-place-field" data-testid="ai-origin-field">
-            <label className="form-label" htmlFor="ai-origin-input">
-              <span>{aiMessages.originLabel}</span>
-              <span className="req" aria-hidden="true">*</span>
-            </label>
-            <PlaceSearchBox
-              inputId="ai-origin-input"
-              ariaLabel={aiMessages.originLabel}
-              placeholder={aiMessages.placeSearchPlaceholder}
-              onPick={pickPlace('origin')}
-            />
-            <div className="ai-origin-tools">
-              <Button size="small" type="text" loading={locating} onClick={locateOrigin}>
-                {locating ? aiMessages.locateLoading : aiMessages.useCurrentLocation}
-              </Button>
-              {locateFailed && (
-                <span className="ai-inline-error" role="alert">
-                  {aiMessages.locateFailed}
-                </span>
-              )}
-            </div>
-            {form.origin !== null && (
-              <div className="ai-selected-place">
-                <span className="ai-place-chip" data-testid="ai-origin-name">
-                  {form.origin.name}
-                </span>
-                <span className="ai-place-coords">
-                  {form.origin.lng.toFixed(4)}, {form.origin.lat.toFixed(4)}
-                </span>
-              </div>
-            )}
-          </div>
-
-          <div className="form-field ai-place-field" data-testid="ai-destination-field">
-            <label className="form-label" htmlFor="ai-destination-input">
-              <span>{aiMessages.destinationLabel}</span>
-              <span className="req" aria-hidden="true">*</span>
-            </label>
-            <PlaceSearchBox
-              inputId="ai-destination-input"
-              ariaLabel={aiMessages.destinationLabel}
-              placeholder={aiMessages.placeSearchPlaceholder}
-              onPick={pickPlace('destination')}
-            />
-            {form.destination !== null && (
-              <div className="ai-selected-place">
-                <span className="ai-place-chip" data-testid="ai-destination-name">
-                  {form.destination.name}
-                </span>
-                <span className="ai-place-coords">
-                  {form.destination.lng.toFixed(4)}, {form.destination.lat.toFixed(4)}
-                </span>
-              </div>
-            )}
-          </div>
-
-          <div className="form-field">
-            <label className="form-label" htmlFor="ai-date-input">
-              <span>{aiMessages.dateLabel}</span>
-              <span className="req" aria-hidden="true">*</span>
-            </label>
-            <div className="trip-date-anchor" data-testid="ai-date">
-              <DatePicker
-                {...appDatePickerProps}
-                id="ai-date-input"
-                className="trip-date"
-                format="YYYY-MM-DD"
-                placeholder="选择日期"
-                locale={zhCN.DatePicker}
-                needConfirm
-                allowClear={false}
-                minDate={dayjs()}
-                maxDate={dayjs().add(16, 'day')}
-                value={isoToDayjs(form.date)}
-                onChange={(value) => update({ date: dayjsToIso(value) })}
-              />
-            </div>
-          </div>
-
-          <div className="form-field">
-            <span className="form-label">{aiMessages.durationLabel}</span>
-            <div data-testid="ai-duration">
-              <Segmented
-                block
-                options={Object.entries(aiMessages.durationOptions).map(([value, label]) => ({
-                  label,
-                  value,
-                }))}
-                value={form.duration}
-                onChange={(value) => update({ duration: value as AiDuration })}
-              />
-            </div>
-          </div>
-
-          <div className="form-field">
-            <label className="form-label" htmlFor="ai-budget-input">
-              <span>{aiMessages.budgetLabel}</span>
-              <span className="opt">选填</span>
-            </label>
-            <div data-testid="ai-budget">
-              <InputNumber
-                id="ai-budget-input"
-                min={0}
-                precision={0}
-                style={{ width: '100%' }}
-                placeholder="如 500"
-                value={form.budgetYuan === '' ? null : Number(form.budgetYuan)}
-                onChange={(value) => update({ budgetYuan: value === null ? '' : String(value) })}
-              />
-            </div>
-          </div>
-
-          <div className="form-field">
-            <span className="form-label">{aiMessages.modeLabel}</span>
-            <div data-testid="ai-mode">
-              <Select
-                aria-label={aiMessages.modeLabel}
-                style={{ width: '100%' }}
-                options={Object.entries(aiMessages.modeOptions).map(([value, label]) => ({
-                  label,
-                  value,
-                }))}
-                value={form.travelMode}
-                onChange={(value) => update({ travelMode: value as AiTravelMode })}
-              />
-            </div>
-          </div>
-
-          <div className="form-field">
-            <span className="form-label">{aiMessages.interestsLabel}</span>
-            <div
-              className="chip-row ai-interest-chips"
-              data-testid="ai-interests"
-              role="group"
-              aria-label={aiMessages.interestsLabel}
-            >
-              {INTEREST_OPTIONS.map((tag) => (
-                <Tag.CheckableTag
-                  key={tag}
-                  checked={form.interests.includes(tag)}
-                  onChange={() =>
-                    update({
-                      interests: form.interests.includes(tag)
-                        ? form.interests.filter((item) => item !== tag)
-                        : [...form.interests, tag],
-                    })
-                  }
-                >
-                  {tag}
-                </Tag.CheckableTag>
-              ))}
-            </div>
-            <span className="form-hint">{aiMessages.interestsHint}</span>
-          </div>
-
-          <div className="form-field">
-            <span className="form-label">{aiMessages.paceLabel}</span>
-            <div data-testid="ai-pace">
-              <Segmented
-                block
-                options={Object.entries(aiMessages.paceOptions).map(([value, label]) => ({
-                  label,
-                  value,
-                }))}
-                value={form.pace}
-                onChange={(value) => update({ pace: value as AiPace })}
-              />
-            </div>
-          </div>
-        </div>
-
-        <div className="ai-condition-actions">
-          <Button
-            data-testid="ai-map-pick"
-            aria-pressed={mapOpen && pickMode}
-            type={pickMode ? 'primary' : 'default'}
-            onClick={() => {
-              setPickMode(true);
-              setMapOpen(true);
-              setConditionsOpen(false);
-            }}
-          >
-            {aiMessages.mapPick}
-          </Button>
+        <div className="ai-history-actions">
           <Button
             type="primary"
-            data-testid="ai-generate"
-            disabled={!canGenerate(form) || busy}
-            loading={generating}
-            onClick={() => void generate(false)}
+            block
+            disabled={busy}
+            onClick={() => {
+              setHistoryOpen(false);
+              newChat();
+            }}
           >
-            {aiMessages.generate}
+            {aiMessages.newChat}
           </Button>
         </div>
-        {!canGenerate(form) && <p className="form-hint">{aiMessages.requiredHint}</p>}
+        <ul className="ai-history-list" data-testid="ai-history-list">
+          {sessionStore.sessions.map((session) => {
+            const active = session.id === activeSessionId;
+            const last = session.messages[session.messages.length - 1];
+            const preview = last === undefined ? aiMessages.historyEmpty : last.text;
+            return (
+              <li key={session.id}>
+                <button
+                  type="button"
+                  className={active ? 'ai-history-item is-active' : 'ai-history-item'}
+                  aria-current={active ? 'true' : undefined}
+                  onClick={() => openSession(session.id)}
+                >
+                  <span className="ai-history-title">{session.title}</span>
+                  <span className="ai-history-preview">{preview}</span>
+                  <span className="ai-history-meta">
+                    {session.stops.length > 0
+                      ? aiMessages.historyStops(session.stops.length)
+                      : aiMessages.historyNoPlan}
+                  </span>
+                </button>
+              </li>
+            );
+          })}
+        </ul>
       </Drawer>
 
-      {/* ==================== 路线地图（弹窗） ==================== */}
+      {/* ==================== 路线地图（只读查看，不再承担选点） ==================== */}
       <Modal
         open={mapOpen}
-        onCancel={() => {
-          setMapOpen(false);
-          setPickMode(false);
-          setCandidates(null);
-        }}
+        onCancel={() => setMapOpen(false)}
         footer={null}
         width={860}
         title={aiMessages.mapModalTitle}
         className="ai-map-modal"
         destroyOnHidden
       >
-        <div className="ai-map-toolbar">
-          <Segmented
-            data-testid="ai-map-pick-target"
-            options={[aiMessages.originLabel, aiMessages.destinationLabel]}
-            value={pickTarget === 'origin' ? aiMessages.originLabel : aiMessages.destinationLabel}
-            onChange={(value) =>
-              setPickTarget(value === aiMessages.originLabel ? 'origin' : 'destination')
-            }
-          />
-          <Button
-            size="small"
-            type={pickMode ? 'primary' : 'default'}
-            aria-pressed={pickMode}
-            onClick={() => {
-              setPickMode((previous) => !previous);
-              setCandidates(null);
-            }}
-          >
-            {pickMode ? aiMessages.mapPickStop : aiMessages.mapPick}
-          </Button>
-          <span className="form-hint">{aiMessages.mapPickHint}</span>
-        </div>
         <div className="ai-map-wrap">
           <AmapContainer
             className="ai-map-container"
@@ -1847,7 +1580,6 @@ export function AiPlannerPage({ currentUser }: Props) {
             zoom={11}
             ariaLabel={aiMessages.mapAriaLabel}
             onReady={setMap}
-            onMapClick={onMapClick}
           >
             <RouteLayer
               map={map}
@@ -1857,43 +1589,6 @@ export function AiPlannerPage({ currentUser }: Props) {
               onFocus={setFocusId}
               numbers={numbers}
             />
-            {pickMode && candidates !== null && (
-              <div
-                className="ai-map-candidates"
-                data-testid="ai-map-candidates"
-                role="dialog"
-                aria-label={aiMessages.mapCandidates}
-              >
-                <div className="ai-candidates-head">
-                  <span>{aiMessages.mapCandidates}</span>
-                  <button
-                    type="button"
-                    aria-label={aiMessages.closeCandidates}
-                    onClick={() => setCandidates(null)}
-                  >
-                    ×
-                  </button>
-                </div>
-                {candidatesLoading ? (
-                  <div className="ai-candidates-state" role="status">
-                    <Spin size="small" />
-                  </div>
-                ) : candidates.length === 0 ? (
-                  <p className="ai-candidates-state">{aiMessages.mapCandidatesEmpty}</p>
-                ) : (
-                  <ul className="ai-candidates-list">
-                    {candidates.map((place) => (
-                      <li key={place.id}>
-                        <button type="button" onClick={() => pickCandidate(place)}>
-                          <span className="ai-candidate-name">{place.name}</span>
-                          <span className="ai-candidate-meta">{place.address}</span>
-                        </button>
-                      </li>
-                    ))}
-                  </ul>
-                )}
-              </div>
-            )}
           </AmapContainer>
         </div>
       </Modal>
@@ -1965,7 +1660,7 @@ export function AiPlannerPage({ currentUser }: Props) {
                         <Spin size="small" />
                       </div>
                     ) : replaceCandidates.length === 0 ? (
-                      <p className="ai-candidates-state">{aiMessages.mapCandidatesEmpty}</p>
+                      <p className="ai-candidates-state">{aiMessages.replaceMapEmpty}</p>
                     ) : (
                       <ul className="ai-candidates-list">
                         {replaceCandidates.map((place) => (

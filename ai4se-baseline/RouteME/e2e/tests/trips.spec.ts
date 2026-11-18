@@ -593,6 +593,47 @@ test.describe('date pickers under reduced motion', () => {
     expect(box!.x).toBeLessThan(1280);
     await expect(panel.locator('.ant-picker-time-panel')).toBeVisible();
   });
+
+  // 同一个「减少动态效果」缺陷也会把 Select 下拉层钉到 -1000vw / -1000vh：
+  // 同行设置（招募人数 / 出行方式 / 难度强度）点开后看不见任何选项，等于无法编辑。
+  test('opens the companions select dropdowns instead of rendering them off-screen', async ({
+    page,
+  }) => {
+    await loginAs(page, 1);
+    await page.goto('/#/trips/new');
+
+    const settings = page.getByTestId('companions-settings');
+    await settings.scrollIntoViewIfNeeded();
+
+    for (const [index, label, option] of [
+      [0, '招募人数', '9 人'],
+      [1, '出行方式', '骑行'],
+      [2, '难度强度', '挑战'],
+    ] as const) {
+      // 弹层挂在字段容器内（appSelectProps），因此按字段定位，避开上一个弹层的收起动画。
+      const field = settings.locator('.form-field').nth(index);
+      await settings.getByLabel(label, { exact: true }).click();
+      const popup = field.locator('.app-select-popup');
+      await expect(popup).toBeVisible();
+      const optionItem = popup.locator('.ant-select-item-option', { hasText: option }).first();
+      await expect(optionItem).toBeVisible();
+      // 关键回归点：弹层与选项必须在视口内，而不是被钉在 -1000vw / -1000vh。
+      const box = await optionItem.boundingBox();
+      expect(box).not.toBeNull();
+      expect(box!.x).toBeGreaterThanOrEqual(0);
+      expect(box!.y).toBeGreaterThanOrEqual(0);
+      expect(box!.x).toBeLessThan(1280);
+      expect(box!.height).toBeGreaterThan(0);
+
+      await optionItem.click();
+      await expect(settings).toContainText(option);
+    }
+
+    // 三项都进到预览里，改动真的生效。
+    await expect(page.locator('.ppc-people')).toContainText('1 / 9');
+    await expect(page.locator('.ppc-facts')).toContainText('骑行');
+    await expect(page.locator('.ppc-facts')).toContainText('挑战');
+  });
 });
 
 test('publisher cancels a recruiting trip from the detail page after confirming the reason', async ({

@@ -3,6 +3,8 @@ import {
   applyIntent,
   findCityInText,
   intentHasCondition,
+  parseDateInText,
+  parseOriginName,
   parsePlanIntent,
 } from './chatIntent';
 import { emptyPlannerForm } from './plannerForm';
@@ -54,6 +56,44 @@ describe('findCityInText', () => {
   });
 });
 
+describe('parseDateInText', () => {
+  const now = new Date(2026, 10, 18, 10, 0);
+
+  it('resolves relative days from today', () => {
+    expect(parseDateInText('今天出发', now)).toBe('2026-11-18');
+    expect(parseDateInText('明天去', now)).toBe('2026-11-19');
+    expect(parseDateInText('后天去', now)).toBe('2026-11-20');
+    expect(parseDateInText('3 天后出发', now)).toBe('2026-11-21');
+  });
+
+  it('resolves month/day and iso dates', () => {
+    expect(parseDateInText('11月20日去珠海', now)).toBe('2026-11-20');
+    expect(parseDateInText('2026-12-01 出发', now)).toBe('2026-12-01');
+  });
+
+  it('resolves weekday and weekend mentions', () => {
+    // 2026-11-18 是周三：本周六 = 11-21，下周六 = 11-28。
+    expect(parseDateInText('本周六出发', now)).toBe('2026-11-21');
+    expect(parseDateInText('下周六出发', now)).toBe('2026-11-28');
+    expect(parseDateInText('周末去', now)).toBe('2026-11-21');
+  });
+
+  it('returns null when the text carries no date', () => {
+    expect(parseDateInText('去珠海玩两天', now)).toBeNull();
+  });
+});
+
+describe('parseOriginName', () => {
+  it('reads the place before 出发', () => {
+    expect(parseOriginName('从广州南站出发去珠海')).toBe('广州南站');
+    expect(parseOriginName('由佛山出发')).toBe('佛山');
+  });
+
+  it('returns null when no origin is stated', () => {
+    expect(parseOriginName('珠海两天一夜')).toBeNull();
+  });
+});
+
 describe('applyIntent', () => {
   const base = { ...emptyPlannerForm, destination: null };
 
@@ -78,5 +118,11 @@ describe('applyIntent', () => {
     const place = { name: '珠海市', lng: 113.57, lat: 22.27 };
     expect(applyIntent(base, parsePlanIntent('两天一夜'), place).destination).toBeNull();
     expect(applyIntent(base, parsePlanIntent('珠海两天一夜'), place).destination).toEqual(place);
+  });
+
+  it('applies the parsed date only when the text mentions one', () => {
+    const merged = applyIntent(base, parsePlanIntent('明天去珠海', new Date(2026, 10, 18)));
+    expect(merged.date).toBe('2026-11-19');
+    expect(applyIntent(base, parsePlanIntent('去珠海')).date).toBe(base.date);
   });
 });

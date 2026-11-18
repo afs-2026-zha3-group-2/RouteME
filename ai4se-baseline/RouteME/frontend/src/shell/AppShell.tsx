@@ -4,6 +4,7 @@ import { loadUserProfile } from '../api';
 import { useMyCredit } from '../credit/CreditContext';
 import { CreditRestrictionGate } from '../credit/CreditRestrictionGate';
 import { adminMessages } from '../i18n/adminMessages';
+import { financeMessages } from '../i18n/financeMessages';
 import { GateScene } from '../identity/GateScene';
 import { tripMessages } from '../i18n/tripMessages';
 import { AccountStatusBanner } from '../profile/AccountStatusBanner';
@@ -13,7 +14,7 @@ import type { DemoUser, UserProfile } from '../types';
 import { Avatar } from './Avatar';
 import { BrandMark } from './BrandMark';
 
-type NavKey = 'discover' | 'create' | 'aiPlanner' | 'mine' | 'chat' | 'support' | 'admin';
+type NavKey = 'discover' | 'create' | 'aiPlanner' | 'mine' | 'finance' | 'chat' | 'support' | 'admin';
 
 type NavItem = { key: NavKey; label: string; href: string };
 
@@ -22,6 +23,7 @@ const NAV_ITEMS: NavItem[] = [
   { key: 'create', label: tripMessages.publish, href: '#/trips/new' },
   { key: 'aiPlanner', label: 'AI 规划', href: '#/ai-planner' },
   { key: 'mine', label: tripMessages.mineTitle, href: '#/mine' },
+  { key: 'finance', label: financeMessages.navEntry, href: '#/finance' },
   { key: 'chat', label: tripMessages.chatNav, href: '#/chat' },
 ];
 
@@ -37,7 +39,7 @@ const RAIL_ITEMS: NavItem[] = [
 const NAV_GROUPS: Array<{ title: string; items: NavItem[] }> = [
   { title: '浏览', items: RAIL_ITEMS.filter((item) => item.key === 'discover') },
   { title: '规划', items: RAIL_ITEMS.filter((item) => item.key === 'create' || item.key === 'aiPlanner') },
-  { title: '我的', items: RAIL_ITEMS.filter((item) => item.key === 'mine' || item.key === 'chat' || item.key === 'support') },
+  { title: '我的', items: RAIL_ITEMS.filter((item) => item.key === 'mine' || item.key === 'finance' || item.key === 'chat' || item.key === 'support') },
 ];
 
 function activeKey(route: Route): NavKey | null {
@@ -52,6 +54,9 @@ function activeKey(route: Route): NavKey | null {
   }
   if (route.name === 'mine') {
     return 'mine';
+  }
+  if (route.name === 'finance' || route.name === 'tripFinance') {
+    return 'finance';
   }
   if (route.name === 'chat') {
     return 'chat';
@@ -101,6 +106,22 @@ function NavIcon({ name }: { name: NavKey }) {
       >
         <path d="M10 3.2 11.6 8l4.8 1.6-4.8 1.6L10 16l-1.6-4.8L3.6 9.6 8.4 8Z" />
         <path d="M15.6 3v3M14.1 4.5h3" />
+      </svg>
+    );
+  }
+  if (name === 'finance') {
+    return (
+      <svg
+        viewBox="0 0 20 20"
+        aria-hidden="true"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.7"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      >
+        <path d="M3.5 7.5A2.5 2.5 0 0 1 6 5h8.5A2 2 0 0 1 16.5 7v7a2 2 0 0 1-2 2H6a2.5 2.5 0 0 1-2.5-2.5z" />
+        <path d="M3.5 8.5h13M13.2 12h.9" />
       </svg>
     );
   }
@@ -463,6 +484,18 @@ export function AppShell({
                       : tripMessages.accountMenuViewProfile}
                   </span>
                 </a>
+                <a
+                  className="rail-menu-item"
+                  role="menuitem"
+                  href="#/finance"
+                  onClick={() => setAccountOpen(false)}
+                >
+                  <svg viewBox="0 0 20 20" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M3.5 7.5A2.5 2.5 0 0 1 6 5h8.5A2 2 0 0 1 16.5 7v7a2 2 0 0 1-2 2H6a2.5 2.5 0 0 1-2.5-2.5z" />
+                    <path d="M3.5 8.5h13M13.2 12h.9" />
+                  </svg>
+                  <span>{financeMessages.navEntry}</span>
+                </a>
                 <div className="rail-menu-sep" role="separator" />
                 <button
                   type="button"
@@ -499,6 +532,7 @@ export function AppShell({
         {NAV_ITEMS.filter(
           (item) =>
             item.key !== 'aiPlanner' &&
+            item.key !== 'finance' &&
             !(isAdmin && (item.key === 'mine' || item.key === 'chat')),
         ).map((item) => (
           <a

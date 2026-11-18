@@ -7,7 +7,6 @@ import {
   Input,
   InputNumber,
   Progress,
-  Segmented,
   Select,
   Space,
   Tag,
@@ -27,7 +26,7 @@ import { tripMessages } from '../i18n/tripMessages';
 import { AmapPlacePicker } from '../map/amap/AmapPlacePicker';
 import type { DemoUser, TripSummary } from '../types';
 import { WeatherCard } from '../weather/WeatherCard';
-import { appDatePickerProps, appDateTimePickerProps } from '../utils/datePickerProps';
+import { appDatePickerProps, appDateTimePickerProps, appSelectProps } from '../utils/datePickerProps';
 import {
   dayjsToIso,
   dayjsToLocalDateTime,
@@ -38,6 +37,7 @@ import {
   addTag,
   emptyTripForm,
   initialTripForm,
+  DEFAULT_MEETING_TIME,
   toCreateRequest,
   validateTripForm,
   type TripFieldErrors,
@@ -48,6 +48,7 @@ import { clearTripDraft, readTripDraft, writeTripDraft, type TripDraft } from '.
 import { cityPhoto } from './cityPhotos';
 import { formatMonthDay } from './tripDateFormat';
 import {
+  DEFAULT_DIFFICULTY,
   DIFFICULTY_TAGS,
   INTEREST_TAGS,
   MAX_CAPACITY,
@@ -55,7 +56,8 @@ import {
   MAX_TAGS,
   MAX_TAG_LENGTH,
   MAX_TITLE_LENGTH,
-MIN_CAPACITY,
+  MIN_CAPACITY,
+  TRIP_TRAVEL_MODE_LABELS,
 } from './tripOptions';
 import { PublishRouteEditor } from './PublishRouteEditor';
 import { statusLabel } from './tripStatus';
@@ -92,7 +94,6 @@ export function TripCreatePage({ currentUser, fromTripId, aiItineraryId }: Props
     fromTripId === undefined && aiItineraryId === undefined ? readTripDraft() : null,
   );
   const [draftNotice, setDraftNotice] = useState<string | null>(null);
-  const [previewDevice, setPreviewDevice] = useState<'mobile' | 'web'>('mobile');
 
   useEffect(() => {
     if (fromTripId === undefined) {
@@ -151,8 +152,9 @@ export function TripCreatePage({ currentUser, fromTripId, aiItineraryId }: Props
       : cityLabel(values.destinationCode).replace(/市$/, '');
   const hasDestination = values.destinationCode !== '';
 
-  /** 难度强度不新增后端字段：写入同名兴趣标签（最多保留 5 个）。 */
-  const difficulty = DIFFICULTY_TAGS.find((tag) => values.tags.includes(tag)) ?? null;
+  /** 难度强度不新增后端字段：写入同名兴趣标签（最多保留 5 个）。
+   *  新表单已预置默认难度，因此下拉框显示的就是真的会被提交的标签。 */
+  const difficulty = DIFFICULTY_TAGS.find((tag) => values.tags.includes(tag)) ?? DEFAULT_DIFFICULTY;
   const setDifficulty = (tag: string) => {
     const rest = values.tags.filter(
       (item) => !(DIFFICULTY_TAGS as readonly string[]).includes(item),
@@ -388,11 +390,24 @@ export function TripCreatePage({ currentUser, fromTripId, aiItineraryId }: Props
                       format="YYYY-MM-DD"
                       placeholder="选择日期"
                       locale={zhCN.DatePicker}
-                      needConfirm
                       allowClear={false}
                       minDate={dayjs()}
                       value={isoToDayjs(values.startDate)}
-                      onChange={(value) => update({ startDate: dayjsToIso(value) })}
+                      onChange={(value) => {
+                        // 点击即选中并关闭弹层；结束日期早于新的出发日期时自动跟随。
+                        const startDate = dayjsToIso(value);
+                        const patch: Partial<TripFormValues> = { startDate };
+                        if (startDate !== '' && (values.endDate === '' || values.endDate < startDate)) {
+                          patch.endDate = startDate;
+                        }
+                        if (startDate !== '' && values.meetingTime !== '') {
+                          const nextMeeting = `${startDate}T${DEFAULT_MEETING_TIME}`;
+                          if (values.meetingTime < nextMeeting) {
+                            patch.meetingTime = nextMeeting;
+                          }
+                        }
+                        update(patch);
+                      }}
                       status={errors.startDate === undefined ? undefined : 'error'}
                     />
                   </div>
@@ -411,9 +426,8 @@ export function TripCreatePage({ currentUser, fromTripId, aiItineraryId }: Props
                       format="YYYY-MM-DD"
                       placeholder="选择日期"
                       locale={zhCN.DatePicker}
-                      needConfirm
                       allowClear={false}
-                      minDate={dayjs()}
+                      minDate={isoToDayjs(values.startDate) ?? dayjs()}
                       value={isoToDayjs(values.endDate)}
                       onChange={(value) => update({ endDate: dayjsToIso(value) })}
                       status={errors.endDate === undefined ? undefined : 'error'}
@@ -669,28 +683,9 @@ invalid={errors.stops !== undefined}
                 <h3 className="panel-title">{tripMessages.previewLiveTitle}</h3>
                 <span className="form-hint">{tripMessages.previewLiveSubtitle}</span>
               </div>
-              <div className="publish-preview-device">
-                <span className="form-hint">{tripMessages.previewDeviceLabel}</span>
-                <Segmented
-                  size="small"
-                  aria-label={tripMessages.previewDeviceLabel}
-                  value={previewDevice}
-                  onChange={(value) => setPreviewDevice(value as 'mobile' | 'web')}
-                  options={[
-                    { label: tripMessages.previewDeviceMobile, value: 'mobile' },
-                    { label: tripMessages.previewDeviceWeb, value: 'web' },
-                  ]}
-                />
-              </div>
             </div>
 
-            <article
-              className={
-                previewDevice === 'mobile'
-                  ? 'publish-preview-card-body is-mobile'
-                  : 'publish-preview-card-body'
-              }
-            >
+            <article className="publish-preview-card-body">
               <div className="ppc-cover">
                 {cover !== null ? (
                   <img src={cover} alt={`${destination}城市照片`} />
@@ -710,7 +705,7 @@ invalid={errors.stops !== undefined}
               <h4 className="ppc-title">{previewTrip.title}</h4>
               <p className="ppc-meta">
                 {values.startDate === '' ? '日期待定' : formatMonthDay(values.startDate)} ·{' '}
-                {destination}
+                {destination} · {TRIP_TRAVEL_MODE_LABELS[values.travelMode]}
               </p>
               {values.tags.length > 0 && (
                 <div className="ppc-tags">
@@ -746,6 +741,14 @@ invalid={errors.stops !== undefined}
                 />
                 <span className="ppc-status">{statusLabel('recruiting')}</span>
               </div>
+              <div className="ppc-facts">
+                <span>
+                  {tripMessages.sideTravelMode}：{TRIP_TRAVEL_MODE_LABELS[values.travelMode]}
+                </span>
+                <span>
+                  {tripMessages.sideDifficulty}：{difficulty}
+                </span>
+              </div>
             </article>
           </Card>
 
@@ -761,6 +764,7 @@ invalid={errors.stops !== undefined}
                   <span>{tripMessages.sideMembers}</span>
                 </label>
                 <Select
+                  {...appSelectProps}
                   id="trip-capacity"
                   aria-label={tripMessages.sideMembers}
                   className="publish-select"
@@ -778,10 +782,11 @@ invalid={errors.stops !== undefined}
                   <span>{tripMessages.sideDifficulty}</span>
                 </label>
                 <Select
+                  {...appSelectProps}
                   id="trip-difficulty"
                   aria-label={tripMessages.sideDifficulty}
                   className="publish-select"
-                  value={difficulty ?? DIFFICULTY_TAGS[0]}
+                  value={difficulty}
                   onChange={(value) => setDifficulty(String(value))}
                   options={DIFFICULTY_TAGS.map((tag) => ({ label: tag, value: tag }))}
                 />
