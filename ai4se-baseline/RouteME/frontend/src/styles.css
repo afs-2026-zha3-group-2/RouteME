@@ -5222,6 +5222,7 @@ button.notification-row:hover {
   display: inline-flex;
   align-items: center;
   gap: 6px;
+  width: fit-content;
   padding: 1px 8px;
   border-radius: 999px;
   border: 1px solid var(--lagoon);
