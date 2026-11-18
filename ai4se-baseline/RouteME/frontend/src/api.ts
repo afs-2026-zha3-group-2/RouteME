@@ -440,6 +440,14 @@ export async function loadMyExperiences(userId: number): Promise<Experience[]> {
   return (await response.json()) as Experience[];
 }
 
+/** 管理员删除任意一条旅行灵感（后端会同步清理图片与点赞）。 */
+export async function deleteAdminExperience(
+  token: string,
+  experienceId: number,
+): Promise<void> {
+  await request(`/admin/experiences/${experienceId}`, bearerInit(token, { method: 'DELETE' }));
+}
+
 export async function shareExperience(
   userId: number,
   tripId: number,

@@ -1,6 +1,7 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Alert, Button, Skeleton } from 'antd';
 import { loadAdminServiceSession, loadAdminServiceSessions } from '../../api';
+import { startChatPolling } from '../../chat/chatPolling';
 import { adminMessages } from '../../i18n/adminMessages';
 import { Avatar } from '../../shell/Avatar';
 import { EmptyState } from '../../shell/EmptyState';
@@ -38,7 +39,12 @@ export function AdminServicePage({ token, currentUser }: Props) {
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const [detail, setDetail] = useState<ServiceSessionDetail | null>(null);
   const [detailError, setDetailError] = useState<string | null>(null);
+  const [waitingTotal, setWaitingTotal] = useState(0);
   const narrow = useIsNarrow();
+
+  /** 最新筛选条件：轮询回调不重建定时器，也能拿到当前页与状态。 */
+  const filtersRef = useRef({ status, page, size });
+  filtersRef.current = { status, page, size };
 
   useEffect(() => {
     let active = true;
@@ -98,6 +104,37 @@ export function AdminServicePage({ token, currentUser }: Props) {
     setSelectedId(id);
   };
 
+  /** 队列静默轮询：用户新发的消息 / 新会话不需要手动点「刷新」即可出现。 */
+  useEffect(() => {
+    let alive = true;
+    const tick = () => {
+      if (document.hidden) {
+        return;
+      }
+      const current = filtersRef.current;
+      loadAdminServiceSessions(token, current)
+        .then((loaded) => {
+          if (alive) {
+            setData(loaded);
+          }
+        })
+        .catch(() => undefined);
+      loadAdminServiceSessions(token, { status: 'WAITING', page: 1, size: 1 })
+        .then((page) => {
+          if (alive) {
+            setWaitingTotal(page.total);
+          }
+        })
+        .catch(() => undefined);
+    };
+    tick();
+    const stop = startChatPolling(tick);
+    return () => {
+      alive = false;
+      stop();
+    };
+  }, [token]);
+
   const refreshList = () => {
     setReloadKey((previous) => previous + 1);
     if (selectedId !== null) {
@@ -109,6 +146,23 @@ export function AdminServicePage({ token, currentUser }: Props) {
 
   return (
     <AdminLayout active="service" title={adminMessages.serviceTitle}>
+      {waitingTotal > 0 && status !== 'WAITING' && (
+        <div className="admin-waiting-banner" role="status">
+          <span>
+            {adminMessages.serviceWaitingBanner}（{waitingTotal}）
+          </span>
+          <Button
+            size="small"
+            onClick={() => {
+              setStatus('WAITING');
+              setSelectedId(null);
+            }}
+          >
+            {adminMessages.serviceWaitingFilter}
+          </Button>
+        </div>
+      )}
+
       <div className="admin-toolbar">
         <div className="admin-filter">
           <span className="admin-filter-label">{adminMessages.serviceStatusFilter}</span>
@@ -126,6 +180,8 @@ export function AdminServicePage({ token, currentUser }: Props) {
           {adminMessages.refresh}
         </Button>
       </div>
+
+      <p className="admin-note admin-service-live-hint">{adminMessages.serviceLiveHint}</p>
 
       {error !== null && (
         <Alert

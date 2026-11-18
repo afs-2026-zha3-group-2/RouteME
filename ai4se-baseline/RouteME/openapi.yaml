@@ -2165,6 +2165,30 @@ paths:
           $ref: '#/components/responses/Conflict'
         '500':
           $ref: '#/components/responses/Unexpected'
+  /admin/experiences/{experienceId}:
+    delete:
+      operationId: deleteAdminExperience
+      summary: 删除任意旅行灵感
+      description: 管理员删除任意一条游后体验（旅行灵感），同时清理其图片（含文件）与点赞。
+      parameters:
+        - $ref: '#/components/parameters/BearerToken'
+        - name: experienceId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '204':
+          description: 已删除
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/AdminRequired'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/Unexpected'
   /admin/dashboard:
     get:
       operationId: getAdminDashboard

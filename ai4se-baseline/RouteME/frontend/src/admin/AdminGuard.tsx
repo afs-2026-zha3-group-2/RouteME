@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 import { adminMessages } from '../i18n/adminMessages';
 import type { DemoUser } from '../types';
+import { AdminSessionProvider } from './AdminSessionContext';
 
 type Props = {
   currentUser: DemoUser;
@@ -39,5 +40,9 @@ export function AdminGuard({ currentUser, token, children }: Props) {
       </main>
     );
   }
-  return <>{children(token)}</>;
+  return (
+    <AdminSessionProvider value={{ currentUser, token }}>
+      {children(token)}
+    </AdminSessionProvider>
+  );
 }

@@ -818,6 +818,30 @@ class OpenApiTest {
     }
 
     @Test
+    void in_openApiFile_out_adminExperienceDeleteDeclared() throws IOException {
+        // Given
+        Map<String, Object> document = loadYaml(SPEC_PATH);
+
+        // When
+        Map<String, Object> deleteExperience =
+                operation(document, "/admin/experiences/{experienceId}", "delete");
+
+        // Then
+        assertAll(
+                () -> assertEquals("deleteAdminExperience", deleteExperience.get("operationId"),
+                        "operationId"),
+                () -> assertTrue(
+                        parameterNames(document, deleteExperience).containsAll(
+                                List.of("Authorization", "experienceId")),
+                        "admin bearer + path id"),
+                () -> assertTrue(
+                        responses(deleteExperience).keySet().containsAll(
+                                List.of("204", "401", "403", "404", "500")),
+                        "delete status codes")
+        );
+    }
+
+    @Test
     void in_openApiFile_out_creditRecoveryContractDeclared() throws IOException {
         // Given
         Map<String, Object> document = loadYaml(SPEC_PATH);
