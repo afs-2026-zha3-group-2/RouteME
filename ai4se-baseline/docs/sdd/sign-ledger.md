@@ -16,7 +16,9 @@ this ledger only shows presence and headline status. Collect missing signatures 
 | add-destination-area-filters | proposal/design/tasks | yes | 1 | Conditional | Conditional | — |
 | add-experience-like-credit | proposal/design/tasks | yes | 4 | Pass | — | — |
 | add-experience-photos | proposal/design/tasks | yes | 5 | Pass | — | — |
+| add-growth-level | proposal/design/tasks | yes | 4 | Pass | — | — |
 | add-match-reason | proposal/design/tasks | yes | 1 | Pass | Pass | — |
+| add-realtime-notifications | proposal/design/tasks | yes | 5 | Pass | — | — |
 | add-report-credit-deduction | proposal/design/tasks | yes | 4 | Pass | — | — |
 | add-route-completion | proposal/design/tasks | yes | 5 | Pass | Pass | — |
 | add-travel-finance | proposal/design/tasks | yes | 6 | Pass | Pass with documented debt | — |
@@ -35,6 +37,7 @@ this ledger only shows presence and headline status. Collect missing signatures 
 | refine-my-trips | proposal/design/tasks | yes | 5 | Pass | Pass | — |
 | refine-publish-route-map | proposal/design/tasks | yes | 7 | Pass | — | — |
 | refine-safety-report | proposal/design/tasks | yes | 6 | Pass | — | — |
+| refine-service-close | proposal/design/tasks | yes | 4 | Pass | Pass | — |
 | refine-service-inbox-unread | proposal/tasks | yes | 0 | — | — | — |
 | refine-service-workbench-live | proposal/tasks | yes | 0 | — | — | — |
 | refine-trip-application | proposal/design/tasks | yes | 1 | Pass | Pass | — |
@@ -43,7 +46,7 @@ this ledger only shows presence and headline status. Collect missing signatures 
 | refine-user-support-entry | proposal/tasks | yes | 0 | — | — | — |
 | remove-home-greeting-note | proposal/tasks | yes | 0 | — | — | — |
 
-## G2 backlog (20)
+## G2 backlog (22)
 
 - add-admin-console (no g2 file)
 - add-admin-experience-moderation (no g2 file)
@@ -52,6 +55,8 @@ this ledger only shows presence and headline status. Collect missing signatures 
 - add-destination-area-filters (Conditional)
 - add-experience-like-credit (no g2 file)
 - add-experience-photos (no g2 file)
+- add-growth-level (no g2 file)
+- add-realtime-notifications (no g2 file)
 - add-report-credit-deduction (no g2 file)
 - add-traveler-recommendation (no g2 file)
 - add-trip-cancel (no g2 file)
