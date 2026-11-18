@@ -23,6 +23,7 @@ import {
   PLAYWRIGHT_CLI,
   SQLITE_DIR,
   TMP_DIR,
+  VITE_CLI,
   ensureDir,
   jdbcFor,
   mvnwCommand,
@@ -197,7 +198,8 @@ async function runShard(shard) {
 
   const frontend = startCommand({
     label: `frontend:${shardPlan.frontendPort}`,
-    commandString: `${quoteArg('npm')} run dev -- --port ${shardPlan.frontendPort} --strictPort`,
+    // Vite is launched through its JS entry: the `npm` shim is unreliable here.
+    commandString: `${quoteArg(process.execPath)} ${quoteArg(VITE_CLI)} --port ${shardPlan.frontendPort} --strictPort`,
     cwd: FRONTEND_DIR,
     env: { ROUTEME_API_TARGET: `http://127.0.0.1:${shardPlan.backendPort}` },
     logFile: shardPlan.frontendLog,

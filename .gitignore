@@ -37,6 +37,10 @@ Thumbs.db
 # Playwright (预留)
 test-results/
 playwright-report/
+blob-report/
+e2e-report*.json
+# Local E2E scaffolding: per-shard logs, uploads and JSON reports (scripts/e2e-*.mjs)
+ai4se-baseline/RouteME/e2e/.tmp-e2e/
 
 # Logs (logback writes to backend/logs via LOG_PATH; never commit log files)
 *.log
