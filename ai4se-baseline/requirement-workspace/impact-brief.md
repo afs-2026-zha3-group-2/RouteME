@@ -1719,3 +1719,93 @@ REQ-010：聊天页按原型重构、聊天准入与退出语义调整、集合�
 - **不并入：** 管理端核实与人工封禁、信用明细页、安全学习/客服入口、正向加分事件。
 - **依赖：** `user-credit`（账本/账户）、`trip-companions`（退出/申请）、`trip-cancellation`（取消事件）、五展示面。
 - **质量自检（split-heuristics）：** 子目标一句话 ✓；端到端可观察（48h 退出 -5 → 80→75；65→55 自动限制 → 只读/清退）✓；可独立运行 ✓；capability 名真实（`credit-enforcement`）✓；无依赖环 ✓；场景 46 条 > 阈值但按用户裁决合并，P2 可在同一 change 内拆 Requirement 组。
+
+## 25. REQ-028 变更影响 — 举报违规扣减信用分（issue #29）
+
+- **日期：** 2026-11-18 ｜ **触发：** `/sdd:p1`（GitHub issue #29）
+- **基线：** `origin/main@f0d093a`；分支 `feature/add-report-credit-deduction`
+- **粒度：** 应用架构（能力边界 / 数据所有权 / 契约 / 状态 / 展示面），非代码设计
+
+### 25.1 Requirement set
+
+- `requirement-workspace/requirements/REQ-028-report-credit-deduction.md`（六字段 + 26 场景 + OQ + DoR）
+- `requirement-workspace/intents/REQ-028-report-credit-deduction.md`
+- 故事：`requirement-workspace/stories.md` 登记 S29（不新建独立故事文件：以意图 + proposal + Delta 承接，与 REQ-012 / REQ-019 同口径）
+- 能力：`user-credit`（ADDED：举报违规扣分结算）+ `admin-console`（MODIFIED：举报处置表单与接口）。
+- **Delta 预判：** `openspec/changes/add-report-credit-deduction/specs/user-credit/spec.md`（ADDED）+ `.../specs/admin-console/spec.md`（MODIFIED）；因 `admin-console` 尚未归档，归档 MUST 排在 `add-admin-console` 之后（P2 校验已用 probe 确认：`MODIFIED` 对不存在活规格在 `validate` 阶段通过、归档阶段拒绝）。
+
+### 25.2 As-is asset inventory（evidence paths）
+
+| 资产 | 路径 | 现状 |
+|---|---|---|
+| 举报表 / 实体 | `V7__create_reports.sql`、`V21__admin_console.sql`、`V22__report_context_trip.sql`、`ReportEntity`、`Report` | 4 态与处置元数据；无违规类型 / 扣分列 |
+| 举报处置服务 | `AdminReportServiceImpl`（`start` / `resolve` / `applyPenalty`） | 成立只执行 `SUSPEND / BAN / UPDATE_BAN`；`KEEP` 直接返回 |
+| 举报处置接口 | `AdminReportController`：`GET /api/admin/reports`、`/{id}`、`/{id}/start`、`/{id}/resolve` | 请求含 `action` / `ban_*`；无违规类型 |
+| 被举报用户推导 | `ReportTargetService.reportedUserId` | 用户 = 本人、行程 = 发布者、体验 = 作者 |
+| 账号处置 | `AdminUserController` + `StatusActionModal` + `userActionForm.ts` | 用户详情页可独立暂停 / 封禁 / 更新 / 恢复 |
+| 信用账户 / 账本 | `V20__add_credit_account.sql`、`CreditServiceImpl`、`CreditLedgerEntity` | 0–100、前后快照、幂等、零值留痕；无举报原因码 |
+| 低分限制 | `CreditEnforcementServiceImpl.onCreditChanged` + `credit_restriction` | 跨 60 自动限制 / 解除；已把「举报核实扣分」列为触发示例 |
+| 信用展示 | `useUserCredits` / `creditDisplay.ts` / 五展示面 | 只读展示，不需修改 |
+| 举报处置前端 | `AdminReportDetailPage.tsx` / `reportActionForm.ts` / `adminMessages.ts` / `types.ts` / `api.ts` | 成立表单含处罚动作 + 封禁字段；无扣分预览 |
+| 举报列表前端 | `AdminReportsPage.tsx` | 列表列不含违规类型 / 扣分 |
+| 契约 | `RouteME/openapi.yaml` | `0.24.0`；`AdminReportResolveRequest` 含处罚字段；无违规类型 |
+| 迁移 | `db/migration` | head `V27`；`reports` 无违规类型 / 扣分列 |
+| 测试 | `AdminReportControllerTest`、`admin.spec.ts` | 覆盖开始 / 成立并暂停 / 封禁 / 驳回；需按 D1 重写 |
+| 原型 | `docs/prototype` | 无管理端举报处置界面；P3 先补截点 |
+
+### 25.3 As-is → proposed delta
+
+| 资产 | As-is | Proposed delta |
+|---|---|---|
+| `user-credit` | 账户 + 账本 + 展示；无举报原因码 | ADDED：举报违规类型与扣分规则、记账、幂等、零值留痕、月度上限不适用、低分联动只消费既有事件 |
+| `admin-console` | 举报成立由管理员选处罚动作与封禁理由 | MODIFIED：成立只选违规类型 + 填违规原因；移除处罚动作与封禁字段；详情补当前分数 / 预览 / 违规类型与本次扣分 |
+| `credit-enforcement` | 跨 60 自动限制 / 解除 | 只读复用，不改 Delta |
+| `trip-plans` / `trip-companions` / `trip-experiences` | 被举报用户推导 | 只读复用，不改语义 |
+| 契约 | `0.24.0`；`resolve` 请求含 `action` / `ban_*` | 升 `0.25.0`：请求改为 `outcome` / `violation_type` / `other_deduction` / `note`；详情响应补被举报用户信用与违规类型 / 实际扣分 |
+| 迁移 | `V27` | `V28__report_credit_deduction.sql`：`reports` 追加 `violation_type` / `applied_deduction`（可空，兼容历史） |
+| 前端 | 成立表单含处罚动作 + 封禁字段 | 违规类型选择 + `OTHER` 档位 + 三分段预览 + 处理历史改版；类型 / API / 文案同步 |
+
+### 25.4 Blast radius（应用架构）
+
+- **举报域：** resolve 请求与成立分支重建；详情响应扩展；列表不变（默认不加列）；报告留痕新增字段。
+- **信用域：** 新增业务调用方（举报扣分）；新增原因码常量；不改账户 / 账本结构。
+- **低分限制域：** 通过 `CreditChangedEvent` 自动触发；无代码改动（需回归）。
+- **账号域：** 举报页不再调用 `AccountStatusService`；用户管理页保持。
+- **前端管理端：** 表单、预览、处理历史、错误映射、类型与 API 客户端；列表与用户页不动。
+- **契约 / 测试：** openapi 与 `OpenApiTest`；后端 `AdminReportControllerTest`；E2E `admin.spec.ts` 重写相关用例并保留用户管理页回归。
+
+### 25.5 Artifact impact
+
+- **OpenSpec：** 新增 `openspec/changes/add-report-credit-deduction/`（proposal + 双 Delta + design + tasks）。
+- **需求工作区：** 意图 / Ready / deep-dive 增补 / impact §25 / stories S29 / registry / handoff。
+- **代码：** 后端 `AdminReportServiceImpl` / 请求 / 响应 / 枚举 / 原因码常量；前端 `AdminReportDetailPage` / `reportActionForm.ts` / `adminMessages.ts` / `types.ts` / `api.ts`。
+- **迁移：** `V28` 双引擎（SQLite + H2）。
+- **测试：** 扣分规则单测、幂等 / 并发、预览口径、低分联动回归、E2E。
+- **文档 / 知识库：** P0–P4 阶段记录、质量报告、评审报告；P5 暂不执行。
+
+### 25.6 Dual-track notes（OpenSpec vs agile）
+
+- **OpenSpec 轨：** 单 change `add-report-credit-deduction`；双能力（`user-credit` ADDED + `admin-console` MODIFIED）。
+- **Agile 轨：** 单故事 S29（信用系统迭代 1 / Story 2 / P0 / 3 点）；不拆多故事（一个垂直切片：举报成立 → 扣分 → 低分限制）。
+- **场景数量：** 26 条，在单 change 阈值内；P2 如需收敛，可在同一 change 内重组 Requirement 组。
+
+### 25.7 Risks & blockers
+
+| 级别 | 项 | 说明 / 缓解 |
+|---|---|---|
+| Risk | `admin-console` 未归档 | MODIFIED Delta 在归档阶段会被拒绝；归档 MUST 排在 `add-admin-console` 之后（与 `add-credit-recovery` 对 `add-credit-account` 同口径） |
+| Risk | 移除处罚动作与已交付 S22 行为冲突 | D1 已裁决，属用户当次显式指示；P2 G1 SA 追认；P4 回归用户管理页暂停 / 封禁 |
+| Risk | `resolution_action` 历史数据与新语义共存 | 新值不再写入；旧值只读展示保留；不做回填 |
+| Risk | 预览与实际截断不一致 | 预览以服务端响应为准；E2E 断言 5 → -10 → 0 |
+| Risk | 并发 resolve 双重扣分 | 状态条件更新 + 账本幂等唯一索引双保险；单测覆盖 |
+| Risk | 契约 / 迁移号撞号 | P3 排他确认；预计 `0.25.0` + `V28` |
+| Risk | 管理端原型缺失 | P3 先补截点（`@rule:prototype-ui-alignment`），只复用现有 `.admin-*` 令牌 |
+| Blocker | 无 | blocking OQ=0、DoR BLOCKER=0、deep-dive ⑨–⑫ 全过 |
+
+### 25.8 Suggested split boundaries（供 proposal-split / story-split）
+
+- **一个 change：** `add-report-credit-deduction` ← REQ-028（S29）。
+- **不拆故事：** 举报成立 → 扣分 → 低分限制必须同批交付才能端到端验收。
+- **不并入：** 账号处置动作（保留在用户管理页）、举报提交端原因枚举、信用明细页、其他扣分 / 加分事件（#30–#32）、月度扣分上限。
+- **依赖：** `user-credit`（账本 / 账户）、`admin-console`（举报处置）、`credit-enforcement`（低分联动）。
+- **质量自检（split-heuristics）：** 子目标一句话 ✓；端到端可观察（80 → 65；80 → 50 自动限制）✓；可独立运行 ✓；capability 名真实 ✓；无依赖环 ✓；场景 26 条在阈值内。

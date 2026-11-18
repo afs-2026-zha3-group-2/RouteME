@@ -485,3 +485,31 @@
 - **口径依赖既有能力：** 账号有效状态复用 `admin-console` 的惰性恢复；行程状态复用 `TripPlan.status` 的四态推导；本故事不重复定义。
 - **边界：** 趋势图、时间范围选择、导出、自动刷新与更多维度统计均不在本故事。
 - 未接入外部 ALM；本表为仓库内权威故事清单，ALM Sync 状态记为 Pending。
+
+---
+
+# Story list — REQ-028（S29 举报违规扣减信用分）
+
+- **来源：** GitHub Issue #29「[P0] 举报违规扣减信用分」（信用系统迭代 1 / Story 2 / 3 点 / 落点页面：举报详情页 / 用户信用记录）
+- **Change：** `add-report-credit-deduction`（`user-credit` ADDED + `admin-console` MODIFIED）
+- **口径：** 一条故事 = 举报成立表单（违规类型 + 违规原因）+ 一份信用扣分结算 + 一次低分联动；账号处罚动作从举报页移除（用户管理页保留）。
+- **编号说明：** REQ-019…REQ-027 已占用，本需求登记为 **REQ-028**；现有最大故事号为 S28（安全学习恢复），本故事顺延为 **S29**。
+- **更新时间：** 2026-11-18
+
+| Story | Title | 角色 | Priority | Iteration | Points | Page | Parent REQ | Change | Status |
+|---|---|---|---|---|---|---|---|---|---|
+| S29 | 举报违规扣减信用分 | 平台管理员 | P0 | 信用系统迭代 1 | 3 | 举报详情页 / 用户信用记录 | REQ-028 | `add-report-credit-deduction` | P1 drafted（2026-11-18） |
+
+## Traceability（REQ-028）
+
+| Story | Requirement scenarios | Change spec | Story file |
+|---|---|---|---|
+| S29 | REQ-028 §4 R-1 ~ R-26 | `openspec/changes/add-report-credit-deduction/specs/user-credit/spec.md` + `specs/admin-console/spec.md` | 无独立故事文件：以意图 + proposal + Delta 承接（与 REQ-012 / REQ-019 同口径） |
+
+## Notes（REQ-028）
+
+- **不拆故事：** 违规类型选择、扣分记账与低分联动是同一条垂直切片；拆开无法端到端验收。
+- **账号处置解耦：** 举报页不再暂停 / 封禁；用户管理页保留既有能力（D1）。
+- **记录可见性：** 只写账本并在举报详情留痕，不做用户端 / 管理端信用明细页（D2）。
+- **低分限制：** 复用既有 `CreditChangedEvent`，不新增限制逻辑（D3）。
+- **边界：** 举报提交端原因枚举、其他扣分 / 加分事件、月度扣分上限、通知均不在本故事。

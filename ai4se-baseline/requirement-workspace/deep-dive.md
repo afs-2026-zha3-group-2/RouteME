@@ -1357,3 +1357,79 @@ MVP 无推送、无通知；以下为点赞与信用状态的展示面契约。
 - `ProfilePage` 的 hero 信用行与 `creditDisplay.ts` 只派生分数 + 等级；限制徽标与原因说明需要新增纯函数与 i18n 文案。
 - 所有种子账号 80 分，没有低信用演示数据；P3 需要决定 E2E 是新增种子、测试夹具还是直接调用记账服务。
 - `{TBD}`：无。非阻塞项（低信用测试数据、限制记录表名、系统取消方法命名）在 P1 §8 标 deferred / P3 设计定。
+
+## REQ-028 增补 — 举报违规扣减信用分（issue #29）
+
+### ① 数据契约（Data contract）
+
+| 概念 | grain | 字段 | 状态迁移 | 来源 |
+|---|---|---|---|---|
+| 举报处置结果（复用 `reports`） | 每条举报 1 行 | 既有 `status` / `processed_by` / `processing_at` / `resolved_at` / `resolution_note`；新增 `violation_type`（8 类码值，仅 RESOLVED 有值）/ `applied_deduction`（≤0 的实际生效量，仅 RESOLVED 有值）；既有 `resolution_action` 保留历史值、不再写入新值 | PENDING → PROCESSING → RESOLVED / REJECTED；终态后不再变化 | `AdminReportServiceImpl.resolve` |
+| 信用账本（复用 `credit_ledger`） | 每次扣分 1 条 | `reason_code = REPORT_VIOLATION`；`applied_delta`（0 ~ -30）；`score_before` / `score_after`；`related_type = REPORT`；`related_id = reportId`；`idempotency_key = REPORT_VIOLATION:<reportId>`；`occurred_at` | append-only；同一举报唯一；零值合法 | `CreditService.book` |
+| 信用账户（复用 `user_credit_account`） | 每用户 1 行 | `score` 0–100；扣分后 `score = max(0, before - tier)` | 只由记账服务更新；缺失按 80 建立 | `CreditServiceImpl` |
+| 低分限制（复用 `credit_restriction`） | 每段限制 1 行 | 既有字段；由 `CreditChangedEvent` 驱动 | 跨 60 下沿建 active；跨 60 上沿 lifted | `CreditEnforcementServiceImpl` |
+| 违规类型取值域 | 8 个码值 | `HARASSMENT(-10)` / `FAKE_TRIP(-15)` / `FRAUD_RISK(-30)` / `ILLEGAL_CONTENT(-20)` / `IMPERSONATION(-20)` / `NO_SHOW_DISRUPTION(-10)` / `PRIVACY_LEAK(-30)` / `OTHER(-5/-10/-20/-30)` | 静态表 | issue #29 扣分表 |
+
+- **只扣分一次：** `reports.status` 的条件更新 + 账本幂等键双保险；终态举报不可再次处理。
+- **报告留痕与账本分离：** 报告存「违规类型 + 实际扣分」，账本存「分数前后 + 关联」；两边通过 `reportId` 对齐。
+- **0 分裁断：** `applied_deduction = 0` 与账本 `applied_delta = 0` 仍合法；不写负数余额。
+- **历史兼容：** 新增列可空；`resolution_action` 保留历史值只读；旧举报不补扣。
+
+### ② 边界归属（Boundary attribution）
+
+| 规则 | 分支 | 归属 | 说明 |
+|---|---|---|---|
+| 处理结果 | RESOLVED | in | 必选违规类型；写报告留痕并扣分 |
+| 处理结果 | REJECTED | out | 不扣分、不写账本；清除预览 |
+| 违规类型 | 7 类固定 | in | 服务端派生扣分 |
+| 违规类型 | OTHER + -5/-10/-20/-30 | in | 必选档位；其他档位 400 |
+| 违规类型 | 缺失 / 未知 | out | 400 `INVALID_INPUT`；状态不变 |
+| 扣分值 | 客户端自定义 | out | 忽略 / 拒绝；以服务端派生为准 |
+| 举报状态 | PENDING | out | 409 `REPORT_NOT_PENDING`（开始处理前不可 resolve） |
+| 举报状态 | RESOLVED / REJECTED | out | 409 `REPORT_NOT_PROCESSING` |
+| 举报状态 | PROCESSING | in | 唯一可处理状态 |
+| 账号状态 | 任意 | out | 举报处置 MUST NOT 改变；用户管理页独立 |
+| 低分联动 | 跨 60 下沿 | in | 既有 `CreditChangedEvent` 自动限制 / 清退 |
+| 低分联动 | 恰好 60 / ≥60 | out | 不触发 |
+| 已受限 | 再次扣分 | in | 分数继续扣；不重复建限制 / 不重复清退 |
+| 幂等 | 重复 / 并发 resolve | in | 只成功一次；一条账本 |
+| 信用记录可见面 | 用户端 / 管理端明细 | out | 只在账本与举报详情留痕 |
+| 历史举报 | 已处理 | out | 不回填、不重算 |
+
+### ③ 跨 REQ 一致性（Cross-REQ consistency）
+
+| 能力 | per-REQ grain + fields | aligned? | anchor REQ |
+|---|---|---|---|
+| `user-credit` | 账户 1 条/用户；账本 append-only；原因码 + 前后快照 + 幂等键；零值留痕 | ✓ 复用，仅新增原因码 `REPORT_VIOLATION` 与调用方 | REQ-019 |
+| `admin-console` | 举报 4 态；处置备注 / 处理人 / 时间；处置动作 | ✓ MODIFIED：动作改为违规类型 + 扣分；不改队列 / 筛选 / 详情上下文 | REQ-018（add-admin-console） |
+| `credit-enforcement` | 分数跨 60 自动限制 / 解除；只读守卫 | ✓ 只消费事件，不改规则 | REQ-025 |
+| `trip-plans` / `trip-companions` / `trip-experiences` | 被举报用户 = 发布者 / 作者 | ✓ 只读推导 | REQ-002 / REQ-003 / REQ-004 |
+| `user-auth` | 管理员角色与权限 | ✓ 只读复用 `requireAdmin` | REQ-018 |
+
+- **未收敛 ✗：** 无。
+
+### ④ 通知 / 展示契约（Notification / display contract）
+
+| surface | recipient | content + display fields | channel | cardinality |
+|---|---|---|---|---|
+| 举报详情（PROCESSING） | 管理员 | 被举报用户当前分数 + 违规类型选择 + 「当前 → 本次扣分 → 处理后」预览 + 违规原因 | 应用内表单 | 每次 1 处 |
+| 举报详情（RESOLVED） | 管理员 | 违规类型、本次实际扣分、处理人、处理时间、违规原因 | 应用内文本 | 每举报 1 处 |
+| 举报详情（REJECTED） | 管理员 | 处理人、处理时间、违规原因；无扣分信息 | 应用内文本 | 每举报 1 处 |
+| 信用展示面 | 被举报用户 / 他人 | 沿用既有五展示面显示新分数与等级 | 应用内文本 | 既有口径 |
+| 低分限制提示 | 被举报用户 | 由既有 `credit-enforcement` 展示；本 change 不新增 | 应用内提示 | 既有口径 |
+| 信用明细 / 通知 | 任何人 | MUST NOT 新增 | — | 0 |
+
+- **展示字段完整性：** 预览三值（当前 / 本次 / 处理后）与处理结果（类型 / 实际扣分）都可从服务端响应派生。
+- **无 notification：** 不新增站内信、推送、邮件。
+
+### 探针记录（REQ-028 举报违规扣分）
+
+- `CreditService.book` 已具备裁断 / 零值留痕 / 幂等键 / 前后快照；举报扣分无需改账本表结构，只需新增原因码常量。
+- `reports` 无违规类型与扣分列；报告留痕需要 `V28` 追加可空列（SQLite + H2 兼容）。
+- `AdminReportResolveRequest` 当前含 `action` / `banReasonCode` / `banReasonNote` / `banExpiresAt`；移除后需同步 openapi、前端 `reportActionForm.ts` 与后端测试。
+- `AdminReportDetailResponse` 无被举报用户信用字段；预览可直接扩展详情响应（管理端一次取数），避免前端再调公共 `/users/credits`。
+- `BanReasonEnum` 与 issue 的 8 类码值同名；复用还是新建 `ReportViolationType` 属 P3 命名决策（OQ-1），行为不变。
+- 现有 `AdminReportController` 无违规类型端点；resolve 为唯一写入口，改动面集中。
+- 现有举报处置 E2E（`admin.spec.ts`）含「成立并处罚 / 暂停 / 封禁」场景；D1 移除动作后需要重写这些用例，并保留「用户管理页暂停 / 封禁」回归。
+- 所有种子账号 80 分；E2E 预览用例可直接用种子分数断言（80 → 65 等），不需要造低分数据；跌破 60 的联动场景用 0 分或 -30 类型造数。
+- `{TBD}`：无。非阻塞项（枚举归属、字段命名、列表列、契约 / 迁移号）在 §8 标 open / deferred，P3 定。
