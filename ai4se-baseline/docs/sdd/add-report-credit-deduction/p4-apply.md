@@ -17,9 +17,9 @@
 | 迁移 | `V30__report_credit_deduction.sql`（两列可空） | 全新隔离库与 H2 均 V1–V30 重放成功 |
 | 后端 | `ReportViolationEnum`（8 类 + `OTHER` 四档）、`CreditService.snapshot`（只读、缺失 80、不建账户）、`AdminReportServiceImpl.resolve` 重写（类型校验 → `min(deduction, before)` → 条件更新 → `book` → 明细）、移除处罚动作 / 封禁字段写入 | `AdminReportControllerTest` 26、`ReportViolationEnumTest` 6、`CreditServiceSnapshotTest` 2、`ReportCreditConcurrencyTest` 1 |
 | 后端（D-4 扩展） | `AccountStatusService`：BANNED 允许更新封禁 / 恢复；用户管理页新增「更新封禁」 | `AdminUserControllerTest` / `AccountStatusServiceTest` 全绿；E2E `[I1] bans…` 覆盖 |
-| 前端 | `types.ts`、`reportViolation.ts`（双端同值映射）、`reportActionForm.ts`（新状态与校验）、`AdminReportDetailPage`（违规类型 / OTHER 档位 / 三段预览 / 详情信用 / 历史违规字段 / 旧动作只读）、`adminMessages.ts`、`styles.css`（`.admin-deduction-*` 仅主题令牌） | `typecheck` + 483 tests / 61 files + `build` |
+| 前端 | `types.ts`、`reportViolation.ts`（双端同值映射）、`reportActionForm.ts`（新状态与校验）、`AdminReportDetailPage`（违规类型 / OTHER 档位 / 三段预览 / 详情信用 / 历史违规字段 / 旧动作只读）、`adminMessages.ts`、`styles.css`（`.admin-deduction-*` 仅主题令牌） | `typecheck` + 492 tests / 61 files + `build`（合并 `origin/main@23c1088` 后复验） |
 | E2E | 新增 `admin-report-credit.spec.ts`（E1–E7 / E9 / R1 / R3）；改写 `admin.spec.ts` 举报用例；用户管理页暂停 / 封禁 / 更新封禁 / 恢复回归 | 两份 spec **17/17**（6 + 11） |
-| 文档 | `tasks.md` 勾选 1.1–1.12 + 执行偏差 D-1–D-5；本记录；`docs/ai4se-plugins/20261118-114448-local-verify-report.md` | — |
+| 文档 | `tasks.md` 勾选 1.1–1.12 + 执行偏差 D-1–D-6；本记录；`docs/ai4se-plugins/20261118-114448-local-verify-report.md` | — |
 
 ## 3. 关键实现口径
 
@@ -40,17 +40,17 @@
 
 ## 5. 执行偏差
 
-见 `tasks.md`「执行偏差记录（P4）」D-1–D-5。其中 **D-4 为范围扩展**：举报页移除处罚动作后，BANNED 在后台失去唯一更新入口；经用户 2026-11-18 裁决，在用户管理页补齐「更新封禁 / 恢复」，属关闭 G1 C1 的最小必要改动。
+见 `tasks.md`「执行偏差记录（P4）」D-1–D-6。其中 **D-4 为范围扩展**：举报页移除处罚动作后，BANNED 在后台失去唯一更新入口；经用户 2026-11-18 裁决，在用户管理页补齐「更新封禁 / 恢复」，属关闭 G1 C1 的最小必要改动。
 
 ## 6. 门禁结果
 
 | 项 | 命令 | 结果 |
 |---|---|---|
-| 后端 | `./mvnw.cmd -B -o verify` | **594 tests / 87 classes，0 failures / 0 errors**，BUILD SUCCESS |
+| 后端 | `./mvnw.cmd -B -o verify` | **596 tests / 88 classes，0 failures / 0 errors**，BUILD SUCCESS（合并 `origin/main@23c1088` 后复验） |
 | 前端类型 | `npm run typecheck` | Pass |
-| 前端单测 | `npm run test` | **483 tests / 61 files** Pass |
+| 前端单测 | `npm run test` | **492 tests / 61 files** Pass（合并后复验） |
 | 前端构建 | `npm run build` | Pass（仅既有主 chunk >500 kB 警告） |
-| E2E | `npx playwright test tests/admin-report-credit.spec.ts tests/admin.spec.ts` | **17/17**（隔离库 + 后端 8082 / Vite 5174） |
+| E2E | `npx playwright test tests/admin-report-credit.spec.ts tests/admin.spec.ts` | **17/17**（合并后复验；隔离库 + 后端 8082 / Vite 5174） |
 | 契约 | `npx --no-install @redocly/cli lint openapi.yaml` | valid（0 error / 25 既有 warning） |
 | 规格 | `npx openspec validate add-report-credit-deduction --strict` | valid（归档顺序 INFO 为已知约束） |
 
@@ -65,3 +65,8 @@
 ## 8. 提交记录
 
 P4 产物一次性提交：`feat(p4): add-report-credit-deduction report violation credit deduction`；提交后 `git pull --no-rebase --no-edit` 再 `git push`。提交范围仅本阶段产物（后端 / 前端 / E2E / 契约 / 迁移 / 文档 / 台账），不含无关改动。
+
+## 9. 合并 origin/main 与复验
+
+- 合并 `origin/main@23c1088`（5 个提交，含 AI 单页对话与 `CreditRestrictionGate`）；无代码冲突；`openapi.yaml` 仍为 `0.25.0`，迁移头仍为 `V30`（本 change 独占）。
+- 合并后复验：后端 **596/596**（+2 来自 main）、前端 **492/492**（+9 来自 main）+ `build`、E2E **17/17**（本 change 6 + admin 11）、`openspec validate --strict` valid、Redocly valid（0 error / 25 既有 warning）。

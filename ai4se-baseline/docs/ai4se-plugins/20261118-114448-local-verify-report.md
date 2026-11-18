@@ -21,13 +21,15 @@
 
 | Command | Source | Exit | Summary |
 |---------|--------|------|---------|
-| `./mvnw.cmd -B -o verify`（ai4se-baseline/RouteME/backend） | `.github/workflows/ci.yml` | 0 | **594 tests / 87 classes，0 failures / 0 errors**，BUILD SUCCESS（含 V1–V30） |
+| `./mvnw.cmd -B -o verify`（ai4se-baseline/RouteME/backend） | `.github/workflows/ci.yml` | 0 | **596 tests / 88 classes，0 failures / 0 errors**，BUILD SUCCESS（含 V1–V30；合并 `origin/main@23c1088` 后复验） |
 | `npm run typecheck`（ai4se-baseline/RouteME/frontend） | `.github/workflows/ci.yml` | 0 | `tsc --noEmit` 通过 |
-| `npm run test`（ai4se-baseline/RouteME/frontend） | `.github/workflows/ci.yml` | 0 | **483 tests / 61 files passed** |
-| `npm run build`（ai4se-baseline/RouteME/frontend） | `.github/workflows/ci.yml` | 0 | 1649 modules；仅既有主 chunk 1.74 MB >500 kB 警告 |
+| `npm run test`（ai4se-baseline/RouteME/frontend） | `.github/workflows/ci.yml` | 0 | **492 tests / 61 files passed**（合并后复验） |
+| `npm run build`（ai4se-baseline/RouteME/frontend） | `.github/workflows/ci.yml` | 0 | 构建成功；仅既有主 chunk >500 kB 警告 |
 | `npx --no-install @redocly/cli lint openapi.yaml`（ai4se-baseline/RouteME） | T1 验证 | 0 | valid；**0 error / 25 warning**，warnings 均为既有 invalid-example 示例，无 `/admin/reports` 路径 |
 | `npx openspec validate add-report-credit-deduction --strict`（ai4se-baseline） | P2/P3 同口径 | 0 | valid；INFO 提示 `admin-console` 需待 `add-admin-console` 归档后才能归档（C4 已知约束） |
-| `npx playwright test tests/admin-report-credit.spec.ts tests/admin.spec.ts`（ai4se-baseline/RouteME/e2e） | atdd-design §4 | 0 | **17 passed（1.3m）**：新增 6 + admin 回归 11 |
+| `npx playwright test tests/admin-report-credit.spec.ts tests/admin.spec.ts`（ai4se-baseline/RouteME/e2e） | atdd-design §4 | 0 | **17 passed**：新增 6 + admin 回归 11；合并后复验仍 17/17 |
+
+**合并复验（`origin/main@23c1088`）：** 无冲突；`openapi.yaml` 仍为 `0.25.0`、迁移头仍为 `V30`；后端 **596/596**、前端 **492/492** + `build`、E2E **17/17**、OpenSpec valid、Redocly valid。
 
 **E2E 隔离环境：** 全新 SQLite `C:\Git\ITA\RouteME\.worktrees\add-report-credit-deduction\.e2e-data\routeme.db`（V1–V30 重放）；后端 `8082`（终端复用导致 `SERVER_PORT` 覆盖计划值 8081）+ Vite `5174` + `ROUTEME_E2E_BASE_URL=http://localhost:5174`。
 
