@@ -1,5 +1,6 @@
 import { expect, test, type Page } from '@playwright/test';
 import { readFileSync } from 'node:fs';
+import { verifyStudentViaApi } from './support';
 
 // 路线完成度（S32 / REQ-031）：只在个人主页 hero 出现，文案只由后端状态码决定。
 const API = '/api';
@@ -21,6 +22,7 @@ async function registerViaApi(page: Page, nickname = `完成度${uniqueSuffix()}
   });
   expect(response.status()).toBe(201);
   const session = (await response.json()) as { token: string; user: { id: number; nickname: string } };
+  await verifyStudentViaApi(page, session);
   return { id: session.user.id, token: session.token, nickname: session.user.nickname };
 }
 
