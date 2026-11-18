@@ -1719,3 +1719,106 @@ REQ-010：聊天页按原型重构、聊天准入与退出语义调整、集合�
 - **不并入：** 管理端核实与人工封禁、信用明细页、安全学习/客服入口、正向加分事件。
 - **依赖：** `user-credit`（账本/账户）、`trip-companions`（退出/申请）、`trip-cancellation`（取消事件）、五展示面。
 - **质量自检（split-heuristics）：** 子目标一句话 ✓；端到端可观察（48h 退出 -5 → 80→75；65→55 自动限制 → 只读/清退）✓；可独立运行 ✓；capability 名真实（`credit-enforcement`）✓；无依赖环 ✓；场景 46 条 > 阈值但按用户裁决合并，P2 可在同一 change 内拆 Requirement 组。
+
+## 28. REQ-028 变更影响 — 旅行保障与小额借款（旅行金融迭代 1）
+
+> 合并说明（2026-11-18）：本 change 已 rebase 到 `origin/main@822471c`；编号由 REQ-024 / S25 顺延为 **REQ-028 / S29**，契约 **0.25.0** + 迁移 **`V30`**；下文「As-is」保留 P1 时点基线 `origin/main@b50e416` 的观察，不作为当前基线。
+
+- **日期：** 2026-11-17 ｜ **触发：** 发起人原始诉求（保险 + 小额借款 + 5% 服务费）+ `/sdd:p0` 裁决 D1–D10
+- **粒度：** 应用架构（钱包数据所有权 / 注册集成点 / 行程资格 / 页面与入口 / 收费口径），非代码设计
+- **基线：** `origin/main@b50e416`（分支 `feature/add-travel-finance`）
+
+### 28.1 Requirement set
+
+- `requirement-workspace/requirements/REQ-028-travel-finance.md`（Ready 条目，33 场景 S29-1 ~ S29-33，blocking OQ 0，DoR BLOCKER 0）
+- `requirement-workspace/intents/REQ-028-travel-finance.md`（意图捕获 + 证据锚点 + D1–D10）
+- 新增能力：`travel-finance`（ADDED）；只读依赖 `trip-plans` / `trip-companions`；`user-auth` 注册集成点；`user-credit` 仅作账本范式参照
+- 用户裁决：D1 演示钱包 / D2 保险 + 借款各收 5% / D3 借款 100–2,000 元整、7·14·30 天、0 利息、每人 1 笔进行中 / D4 三款固定保险 / D5 发布者 + ACCEPTED 同行者 + 三种行程状态 / D6 行程详情 + 账号菜单 / D7 `add-travel-finance` + `travel-finance` / D8 整数分 / D9 不对接真实机构 / D10 理赔退保罚息提现管理后台通知排除
+
+### 28.2 As-is asset inventory（evidence paths）
+
+| 资产 | 路径 | 现状 |
+|---|---|---|
+| 金融能力 | 全仓 grep `wallet / insurance / loan / premium / service_fee / balance_cents` | **0 命中**（除地图第三方脚本注释）：无钱包、无保险、无借款 |
+| 既有账本 | `backend/.../db/migration/V20__add_credit_account.sql`、`entity/CreditLedgerEntity.java`、`service/impl/CreditServiceImpl.java` | 只有信用分账本；append-only + 前后快照 + 幂等键可作范式，但无余额概念 |
+| 注册链路 | `backend/.../service/impl/AuthServiceImpl.java` | `@Transactional`；校验 → `DemoUserService.createAccount` → `issue`；已内嵌 `CreditService.ensureAccount` |
+| 账号状态 | `backend/.../service/AccountStatusService.java`、`enums/WriteScopeEnum.java` | `ACTIVE` / `SUSPENDED` / `BANNED`；`assertCanWrite` 唯一写守卫 |
+| 行程 | `backend/.../entity/TripPlanEntity.java`、`pojo/TripPlan.java` | 发布者、起止日期、人数；状态派生 `cancelled > completed > ongoing > full > recruiting` |
+| 同行关系 | `backend/.../entity/TripApplicationEntity.java`、`enums/ApplicationStatusEnum.java` | `ACCEPTED` 即同行者；发布者不在申请表 |
+| 契约 | `RouteME/openapi.yaml` | `info.version: 0.17.0`；由 `OpenApiTest` 断言 |
+| 迁移 | `backend/src/main/resources/db/migration/` | 头为 `V23__add_travel_mode.sql`；在途 `add-realtime-notifications` 声明 V24 |
+| 前端路由 | `frontend/src/route.ts`、`App.tsx` | 手写 hash 路由；详情 `#/trips/{id}`；账号页 `#/users/{id}` / `#/profile/setup` |
+| 账号菜单 | `frontend/src/shell/AppShell.tsx` | `rail-menu` 只有「编辑资料」「退出」 |
+| 详情页 | `frontend/src/trips/TripDetailPage.tsx` | `detail-section` 分区：天气 / 途经点 / 发布者 / 同行者 / 体验 / 匹配 / 申请 |
+| 金额惯例 | `backend/.../entity/TripPlanEntity.java` | `budget_min_cents` / `budget_max_cents` 整数分 |
+| 测试基线 | P0 记录 | 后端 434 / 60 reports / 0 fail；前端 344 / 46 files |
+
+### 28.3 As-is → proposed delta（逐资产）
+
+| 资产 | As-is | Proposed delta |
+|---|---|---|
+| 数据表 | 无金融表 | **新增** `user_wallet`（每用户 1 条余额）+ `wallet_ledger`（append-only）+ `insurance_policy`（唯一约束用户 × 行程 × 风险）+ `travel_loan`（部分唯一索引用户 × `ACTIVE`）；**不改** `app_users` / 信用表 |
+| 历史数据 | 无钱包 | 迁移按 `app_users` 全表回填 1,000,000 分 |
+| 注册链路 | 建账号 + 信用账户 | 同事务内追加钱包初始化；失败分支不落钱包 |
+| 保险 | 无 | 3 款固定商品常量；购买扣「保费 + 5%」；保单保障期 `max(购买日, start_date) ~ end_date` |
+| 借款 | 无 | 100–2,000 元整、7/14/30 天；服务费 5% 从本金扣；净额入账；应还 = 本金；到期 = 发放 + 期限；逾期派生无罚息 |
+| 钱包 | 无 | 余额只经保险 / 借款 / 还款变化；每笔写账本并可回算；无客户端直接改余额端点 |
+| 资格 | 无 | 发布者 + `ACCEPTED` 同行者；`recruiting` / `full` / `ongoing`；购买 / 借款要求 `ACTIVE`，还款不限状态 |
+| 契约 | 0.17.0 | 次版本 + 钱包 / 保险 / 借款端点与 schema；版本在 P3 排他确认 |
+| 前端路由 | 无金融路由 | `#/trips/{tripId}/finance` + `#/finance`；`App.tsx` 渲染 |
+| 前端口 | 详情页无金融入口、账号菜单 2 项 | 详情页新增入口区块；账号菜单新增「旅行保障」 |
+| 原型 | 无 | P3 补钱包卡 / 商品卡 / 借款表单 / 保单与借款列表截点（rebase 后撤回：v1 已归档，界面证据以生产 UI 为准） |
+| 管理端 | 无金融视图 | **无 delta**（D10 排除） |
+
+### 28.4 Blast radius（应用架构）
+
+- **后端（1 个新能力 + 2 处集成）：** 新增钱包 / 账本 / 保单 / 借款实体与 mapper、钱包服务、保险服务、借款服务；注册链路插入钱包初始化；行程读取路径拼接资格判断。
+- **数据（4 表 + 1 迁移）：** 建表 + 钱包回填；双引擎可执行。
+- **契约（1 处扩展）：** 新增金融端点与 schema；`OpenApiTest` 版本断言同步。
+- **前端（2 页 + 2 入口 + 类型 / 文案）：** 行程维度保障页、账号聚合页；详情页入口与账号菜单；`api.ts` / `types.ts` / `i18n`。
+- **管理端（0）：** 不新增角色、端点与页面。
+- **不影响：** 首页、地图、行程创建 / 申请 / 聊天 / 体验 / 举报 / 信用分 / 管理后台的既有行为。
+- **运行时风险面：** 注册事务多一次写入；购买 / 借款 / 还款为高频一致性与并发敏感路径。
+
+### 28.5 Artifact impact（specs / tests / docs）
+
+| 工件 | 影响 |
+|---|---|
+| OpenSpec Delta | `travel-finance` **ADDED**（钱包与账本 / 保险商品与购买 / 保单查询 / 借款与还款 / 5% 服务费 / 资格与入口 / 精度与幂等）；无 MODIFIED、无 REMOVED |
+| 长期规格 | 归档后新增 Living Spec `openspec/specs/travel-finance/spec.md` |
+| 契约 | `openapi.yaml` 次版本 + 钱包 / 保险 / 借款 schema；后端契约测试同步 |
+| 后端测试 | 钱包服务单测（初始化 / 扣款 / 入账 / 前后快照 / 并发 / 幂等）；保险服务（价格 / 保障期 / 重复 / 余额不足 / 资格）；借款服务（边界 / 净额 / 到期 / 单笔 / 还款 / 逾期）；注册集成；响应断言 |
+| 前端测试 | 费用与展示纯函数单测（5% 拆分、净额、应还、到期、状态文案、格式化） |
+| E2E | 购买保险 → 余额减少 → 保单可见；借款 → 净额到账 → 还款 → 已还清；余额不足 / 非同行者 / 已结束行程 / 逾期展示 |
+| 知识库 | `docs/knowledge/interfaces/README.md` 需登记新增金融端点 |
+| 阶段记录 | `docs/sdd/add-travel-finance/p1..p4`；`docs/sdd/README.md` 索引 |
+| 评审 | `docs/reviews/20261117-add-travel-finance-proposal-review.md` 等 |
+
+### 28.6 Dual-track notes（OpenSpec vs agile）
+
+- **OpenSpec 轨：** 单 change `add-travel-finance`，单能力 `travel-finance`（ADDED）；保险与借款写在同一 Delta，避免钱包与费率双份定义。
+- **Agile 轨：** 故事 S29「旅行保障与小额借款」（旅行金融 1 / P0 / 5 点）即业务口径；不另拆多条故事。
+- **并列轨道：** 理赔、征信、真实机构对接、钱包充值提现、管理后台金融视图分属不同故事；本需求不预留空壳端点。
+
+### 28.7 Risks & blockers
+
+| 级别 | 项 | 说明 / 缓解 |
+|---|---|---|
+| Risk | 契约版本号撞号 | 在途 `add-realtime-notifications` 声明 0.18.0；本 change 在 P3 按合并顺序确认 |
+| Risk | 迁移号撞号 | 基线 V23、在途 V24；P3 排他确认，不预设 |
+| Risk | 「5%」在借款端被误解为加到还款额 | 需求与 Delta 同时写死「从发放额扣」；`repay_amount_cents = principal_cents` |
+| Risk | 余额并发双花 / 重复扣款 | 条件更新或事务内重读 + 保单唯一 + 借款部分唯一 + 还款状态迁移；单测覆盖 |
+| Risk | 封禁用户无法还款导致债务永续 | 还款不走 `assertCanWrite(BUSINESS)`；`S29-30` 显式验收 |
+| Risk | 汇率 / 浮点误差 | 全整数分；借款整元；后端禁止 `double` |
+| Risk | 非同行者通过直连端点绕过 UI | 服务端资格校验为唯一权威，UI 只做展示 |
+| Risk | 原型无金融骨架 | `@rule:prototype-ui-alignment`；P3 先补截点再实现 |
+| Risk | 与 `add-realtime-notifications` 同改 `openapi.yaml` | P3 / P4 合并时按顺序重排版本与迁移号，PR 描述记录 |
+| Blocker | 无 | blocking OQ = 0；DoR BLOCKER = 0；A0 ⑨–⑫ 全过 |
+
+### 28.8 Suggested split boundaries（供 proposal-split / story-split）
+
+- **一个 change：** `add-travel-finance` ← REQ-028（旅行金融迭代 1 / S29）。
+- **不拆保险与借款：** 两者共用钱包、5% 费率、账本与页面；拆开会产生两套余额与收费逻辑。
+- **不并入理赔 / 征信 / 管理后台：** 这些是后续故事，本 change 不预留端点。
+- **阶段：** 单阶段；无归档前置依赖（`travel-finance` 全新能力），但需与在途 `add-realtime-notifications` 协调契约版本与迁移号。
+- **质量自检（split-heuristics）：** 子目标一句话可说明 ✓；端到端可观察（充值初始余额 → 买保险 / 借款 → 扣 5% → 还款）✓；可独立运行 ✓；capability 名真实（`travel-finance`）✓；无依赖环 ✓；33 场景接近单 change 上限，P2 可再合并同义场景。

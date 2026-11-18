@@ -1726,6 +1726,23 @@ svg {
     opacity: 1 !important;
     transform: none !important;
   }
+
+  /*
+   * 同一个缺陷也命中 antd Select：下拉层被钉在 -1000vw / -1000vh，点开看不到选项
+   * （同行设置、每页条数都会失效）。挂到字段容器后同样固定在字段下方。
+   */
+  .app-select-popup {
+    left: 0 !important;
+    right: auto !important;
+    top: calc(100% + 4px) !important;
+    bottom: auto !important;
+  }
+}
+
+/* Select 弹层挂在字段容器内，容器必须是定位上下文 */
+.form-field:has(> .ant-select),
+.pager-size {
+  position: relative;
 }
 
 .label {
@@ -12148,5 +12165,487 @@ a.admin-metric-card:focus-visible {
     height: calc(100vh - 230px);
     max-height: calc(100vh - 230px);
     min-height: 440px;
+  }
+}
+
+/* ---------------- 旅行保障（REQ-028） ---------------- */
+.fin-page {
+  display: grid;
+  gap: 18px;
+  width: 100%;
+  max-width: 1120px;
+  margin: 0 auto;
+  padding-bottom: 88px;
+}
+
+.fin-head {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.fin-back {
+  display: inline-block;
+  margin-bottom: 6px;
+  font-size: 13px;
+  color: var(--t-lagoon);
+}
+
+.fin-title {
+  margin: 0;
+  font-size: 26px;
+  font-weight: 800;
+  color: var(--t-lagoon);
+}
+
+.fin-sub {
+  margin: 6px 0 0;
+  font-size: 13.5px;
+  color: var(--ink-3);
+}
+
+.fin-tags {
+  display: flex;
+  gap: 8px;
+}
+
+.fin-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.35fr) minmax(0, 0.65fr);
+  gap: 16px;
+  align-items: start;
+}
+
+.fin-main,
+.fin-aside {
+  display: grid;
+  gap: 16px;
+}
+
+.fin-section,
+.fin-wallet {
+  padding: 18px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+  background: var(--surface);
+  box-shadow: var(--sh-1);
+}
+
+.fin-wallet {
+  background: var(--grad-shore);
+  border-color: transparent;
+  color: var(--on-deep);
+}
+
+.fin-wallet .panel-title {
+  color: var(--on-deep);
+}
+
+.fin-wallet .panel-title::after {
+  background: linear-gradient(90deg, rgba(255, 255, 255, 0.4), transparent);
+}
+
+.fin-wallet-label {
+  margin: 0 0 4px;
+  font-size: 12.5px;
+  letter-spacing: 0.04em;
+  color: rgba(244, 251, 255, 0.78);
+}
+
+.fin-balance {
+  margin: 0 0 10px;
+  font-family: var(--font-num);
+  font-size: 30px;
+  font-weight: 800;
+}
+
+.fin-wallet-foot {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  font-size: 12px;
+  color: rgba(244, 251, 255, 0.78);
+}
+
+.fin-link {
+  display: inline-block;
+  margin-top: 12px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--t-lagoon);
+}
+
+.fin-section .fin-link,
+.fin-wallet .fin-link {
+  display: block;
+}
+
+.fin-wallet .fin-link {
+  color: var(--on-deep-accent);
+}
+
+.fin-hint,
+.fin-empty {
+  margin: 0 0 12px;
+  font-size: 12.5px;
+  line-height: 1.6;
+  color: var(--ink-3);
+}
+
+.fin-warning {
+  margin: 0 0 10px;
+  padding: 10px 12px;
+  border-radius: var(--r-sm);
+  background: color-mix(in srgb, var(--warn) 14%, transparent);
+  font-size: 13px;
+  color: var(--t-warn);
+}
+
+.fin-error {
+  margin: 8px 0 0;
+  font-size: 12.5px;
+  color: var(--t-danger);
+}
+
+.fin-plan-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 12px;
+}
+
+.fin-plan {
+  display: grid;
+  gap: 8px;
+  padding: 14px;
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+  background: var(--surface-2);
+}
+
+.fin-plan-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 14.5px;
+}
+
+.fin-plan-cover {
+  margin: 0;
+  font-size: 12.5px;
+  color: var(--ink-2);
+}
+
+.fin-price {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 12.5px;
+  color: var(--ink-3);
+}
+
+.fin-price b {
+  font-family: var(--font-num);
+  color: var(--ink);
+}
+
+.fin-total {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin: 0;
+  padding-top: 8px;
+  border-top: 1px dashed var(--line-2);
+  font-size: 12.5px;
+  color: var(--ink-3);
+}
+
+.fin-total b {
+  font-family: var(--font-num);
+  font-size: 16px;
+  color: var(--t-lagoon);
+}
+
+.fin-owned {
+  margin: 0;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--t-jade);
+}
+
+.fin-form {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.fin-field {
+  display: grid;
+  gap: 6px;
+}
+
+.fin-label {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--ink-2);
+}
+
+.fin-label i {
+  margin-left: 6px;
+  font-style: normal;
+  font-weight: 400;
+  color: var(--ink-3);
+}
+
+.fin-field .ant-input-number,
+.fin-field .ant-select {
+  width: 100%;
+}
+
+.fin-preview {
+  margin: 0 0 12px;
+  padding: 10px 12px;
+  border-radius: var(--r-sm);
+  background: color-mix(in srgb, var(--jade) 10%, transparent);
+  font-size: 13px;
+  color: var(--ink-2);
+}
+
+.fin-preview b {
+  font-family: var(--font-num);
+  color: var(--t-jade);
+}
+
+.fin-list,
+.fin-trip-list,
+.fin-ledger {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.fin-row {
+  display: grid;
+  gap: 6px;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+  background: var(--surface-2);
+}
+
+.fin-row-main,
+.fin-row-side,
+.fin-row-meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.fin-row-main b {
+  font-size: 13.5px;
+}
+
+.fin-row-main span,
+.fin-row-side span,
+.fin-row-meta span {
+  font-size: 12px;
+  color: var(--ink-3);
+}
+
+.fin-row-side b,
+.fin-ledger-amount {
+  font-family: var(--font-num);
+  font-size: 13.5px;
+}
+
+/* 应还金额是本页最需要被一眼看到的数字：加粗放大并用主色，标签退为小字。 */
+.fin-repay {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 6px;
+}
+
+.fin-repay em {
+  font-style: normal;
+  font-size: 11.5px;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  color: var(--ink-3);
+}
+
+.fin-repay b,
+.fin-row-side .fin-repay b {
+  font-family: var(--font-num);
+  font-size: 18px;
+  font-weight: 700;
+  line-height: 1.15;
+  color: var(--t-lagoon);
+}
+
+.fin-row-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.fin-trip-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+  background: var(--surface-2);
+  color: inherit;
+}
+
+.fin-trip-row:hover {
+  border-color: var(--line-2);
+  background: var(--surface-3);
+}
+
+.fin-trip-main {
+  display: grid;
+  gap: 2px;
+}
+
+.fin-trip-main b {
+  font-size: 13.5px;
+}
+
+.fin-trip-main i {
+  font-style: normal;
+  font-size: 12px;
+  color: var(--ink-3);
+}
+
+.fin-facts {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin: 0;
+}
+
+.fin-facts div {
+  padding: 10px;
+  border-radius: var(--r-sm);
+  background: var(--surface-2);
+}
+
+.fin-facts dt {
+  font-size: 12px;
+  color: var(--ink-3);
+}
+
+.fin-facts dd {
+  margin: 4px 0 0;
+  font-family: var(--font-num);
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.fin-ledger-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 8px 0;
+  border-bottom: 1px dashed var(--line);
+}
+
+.fin-ledger-row:last-child {
+  border-bottom: none;
+}
+
+.fin-ledger-type {
+  display: grid;
+  gap: 2px;
+  font-size: 12.5px;
+}
+
+.fin-ledger-type i {
+  font-style: normal;
+  font-size: 11.5px;
+  color: var(--ink-3);
+}
+
+.fin-ledger-amount.credit {
+  color: var(--t-jade);
+}
+
+.fin-ledger-amount.debit {
+  color: var(--t-danger);
+}
+
+.fin-entry .detail-actions {
+  margin-top: 10px;
+}
+
+.fin-trip-facts {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  margin-bottom: 14px;
+}
+
+.fin-insurance-status {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0 0 10px;
+  font-size: 13.5px;
+  font-weight: 600;
+}
+
+.fin-subtitle {
+  margin: 16px 0 8px;
+  font-size: 13.5px;
+  font-weight: 700;
+  color: var(--ink-2);
+}
+
+.fin-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.fin-links .fin-link {
+  margin-top: 4px;
+}
+
+.fin-insurance-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 16px;
+}
+
+.fin-provider {
+  margin: 16px 0 4px;
+  font-size: 13px;
+  color: var(--ink-2);
+}
+
+@media (max-width: 900px) {
+  .fin-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+
+@media (max-width: 560px) {
+  .fin-title {
+    font-size: 22px;
+  }
+
+  .fin-facts,
+  .fin-trip-facts {
+    grid-template-columns: minmax(0, 1fr);
   }
 }
