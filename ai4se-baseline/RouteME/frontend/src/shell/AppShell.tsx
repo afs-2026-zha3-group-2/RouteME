@@ -166,12 +166,19 @@ function NavIcon({ name }: { name: NavKey }) {
 
 type Props = {
   currentUser: DemoUser;
+  isAuthenticated: boolean;
   onLogout: () => void;
   route: Route;
   children: ReactNode;
 };
 
-export function AppShell({ currentUser, onLogout, route, children }: Props) {
+export function AppShell({
+  currentUser,
+  isAuthenticated,
+  onLogout,
+  route,
+  children,
+}: Props) {
   const active = activeKey(route);
   const { restricted } = useMyCredit();
   const navBlockedTitle = (item: NavItem) =>
@@ -433,7 +440,11 @@ export function AppShell({ currentUser, onLogout, route, children }: Props) {
                     <path d="M13.4 3.6a1.6 1.6 0 0 1 2.3 0l.7.7a1.6 1.6 0 0 1 0 2.3l-8 8-3.4.7.7-3.4z" />
                     <path d="M11.6 5.4 14 7.8" />
                   </svg>
-                  <span>编辑我的资料</span>
+                  <span>
+                    {isAuthenticated
+                      ? tripMessages.accountMenuEditProfile
+                      : tripMessages.accountMenuViewProfile}
+                  </span>
                 </a>
                 <div className="rail-menu-sep" role="separator" />
                 <button

@@ -385,6 +385,8 @@ export const tripMessages = {
   authDivider: '或者用演示身份直接进入',
   authLoggedIn: '已登录',
   authLogout: '退出登录',
+  accountMenuEditProfile: '编辑我的资料',
+  accountMenuViewProfile: '查看我的资料',
   authLogoutWarning: '已退出本机，会话可能仍有效',
   authFailed: '操作失败',
   authErrorUsernameRequired: '请输入用户名',
@@ -451,7 +453,7 @@ export const tripMessages = {
   profileCancel: '取消',
   profileSaveHint: '保存后可随时在「我的」里修改',
   profileSaveFailed: '保存资料失败',
-  profileDemoReadonly: '演示身份不能编辑资料；登录后可以完善自己的资料。',
+  profileReadonlyNote: '当前为只读浏览：可以查看资料，登录后可以完善和修改自己的资料。',
   profileErrorNickname: '请填写昵称（20 字以内）',
   profileErrorBirthday: '请选择合法生日（1900-01-01 至今天）',
   profileErrorGender: '请选择性别',
@@ -466,6 +468,13 @@ export const tripMessages = {
   profileErrorJob: '职业最多 20 字',
   profileErrorOption: '请选择有效的选项',
   profileErrorForbidden: '演示身份不能保存资料',
+
+  // 无会话的只读资料
+  profileReadonlyTitle: '我的资料',
+  profileReadonlyInfoSection: '账号信息',
+  profileFactsNickname: '昵称',
+  profileFactsBirthday: '生日',
+  profileFactsGender: '性别',
 
   // 个人主页
   profilePublicTitle: '个人主页',
