@@ -1,6 +1,8 @@
 # RouteME E2E
 
-Playwright 端到端用例。全量约 190 条、串行实测约 9 分钟；下面的工具把常见场景压到 1–3 分钟。
+Playwright 端到端用例：31 个 spec / 217 条用例。全量墙钟从 **18.4 min（单环境串行）降到 7.7 min（3 分片）**，约 **2.37×**，每次省约 11 分钟；快速门禁 76 s。
+
+A/B 实测依据：[20261118-203141-e2e-full-suite-ab-report.md](../../docs/ai4se-plugins/20261118-203141-e2e-full-suite-ab-report.md)（同代码、同参数、B 组两次采样差 1.5%）。
 
 ## 日常命令
 
@@ -9,7 +11,7 @@ Playwright 端到端用例。全量约 190 条、串行实测约 9 分钟；下�
 | 快速门禁 | `npm run test:smoke` | 15 条核心闭环，清单在 [smoke.json](smoke.json)；**自带隔离环境**（独立后端/Vite/干净库），实测 76 s 全绿 |
 | 只跑改动波及的 | `npm run test:changed` | Playwright `--only-changed=origin/main` |
 | 只跑上轮失败 | `npm run test:last-failed` | Playwright `--last-failed` |
-| 全量（分片） | `npm run test:shards` | 3 分片 × 独立后端 + Vite + 数据库 |
+| 全量（分片） | `npm run test:shards` | 3 分片 × 独立后端 + Vite + 数据库；实测 7.7 min |
 | 全量（单环境） | `npm run test:full` | 需要自己先起后端与前端；等价 `npx playwright test` |
 
 smoke 默认不碰你正在跑的开发服务器：`npm run test:smoke` 会自己拉一套环境（新库 + 8081/5174）。
@@ -32,6 +34,8 @@ node ../../scripts/e2e-smoke.mjs --base-url http://127.0.0.1:5173
 - 种子行程被挤出首页第一页会让列表断言失败。
 
 所以并行只做在**分片**层面：按文件切分，每片一套独立环境。手动开 `workers` 时请同时给每片独立库（`SPRING_DATASOURCE_URL`）。
+
+实测还发现一个副作用：同一个库跑完 190 条用例后，`profiles.spec.ts` 等后段断言会被前段写入的数据拖红（串行组 18 条失败里有 6 条属于此类，各烧 30 s）；分片每片一个干净库，这类失败自然消失。
 
 ## 数据库
 
@@ -61,6 +65,7 @@ node ../../scripts/e2e-shard.mjs -- --grep "@smoke"               # `--` 之后�
 - 后端端口从 `8081` 起、前端从 `5174` 起，第 N 片依次 +N-1；数据库为 `SqlLite/e2e-<runId>-s<N>.db`；日志与上传目录在 `.tmp-e2e/<runId>/shard<N>/`（已 gitignore）。
 - 构建只做一次：启动分片前统一 `mvnw -Pdev-run compile` 并生成 `target-run/classpath.txt`，各分片用 `java -cp` 启动，避免 N 个 Maven 争抢同一 `target-run/`。
 - 结束后自动停进程并删除临时库；`--keep` 保留现场，`Ctrl+C` 会尽量停掉所有已启动的进程。
+- **分片数跟机器走：** 8 核以上用默认 3 片；4 核机器用 `--shards 2 --parallel 2`。Playwright 按用例数量分片、不看耗时，所以 shard 1 往往最长（实测 432 s vs 243/255 s），并行效率约 67%；按耗时均衡或加到 4–5 片后预期约 6.7 min。
 
 ## 失败归因
 

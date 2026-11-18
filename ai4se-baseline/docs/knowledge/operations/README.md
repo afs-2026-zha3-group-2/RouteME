@@ -68,7 +68,7 @@ Windows     cd RouteME/backend; .\mvnw.cmd spring-boot:run    # 启动 8080
 
 ## E2E 效率手册（2026-11-18）
 
-全量串行约 9 分钟，瓶颈是「串行执行 + 已知红跑满 30s 超时 + 每轮删库重放 Flyway」。四个工具改变这一点（脚本在 `ai4se-baseline/scripts/`，详细说明见 `RouteME/e2e/README.md`）：
+全量 E2E 的墙钟时间从 **18.4 min 降到 7.7 min（2.37×，每次省约 11 min）**，A/B 实测依据见 [20261118-203141-e2e-full-suite-ab-report.md](../../ai4se-plugins/20261118-203141-e2e-full-suite-ab-report.md)。瓶颈原是「串行执行 + 已知红跑满 30s 超时 + 每轮删库」。四个工具改变这一点（脚本在 `ai4se-baseline/scripts/`，详细说明见 `RouteME/e2e/README.md`）：
 
 | 场景 | 命令（仓库根执行） | 说明 |
 |---|---|---|
@@ -82,7 +82,10 @@ Windows     cd RouteME/backend; .\mvnw.cmd spring-boot:run    # 启动 8080
 - **为什么分片而不是 `workers > 1`：** 单后端单 SQLite 下 `credit-learning.spec.ts` 直接写库、多条 spec 共享种子用户 1–4，提高 workers 会互相踩；分片 = 按文件切 + 每片独立环境。
 - **构建只做一次：** 分片前统一 `mvnw -Pdev-run compile` → 清理 `target-run/classes` 里源已删除的迁移 → 生成 `target-run/classpath.txt`，各分片用 `java -cp` 启动，不让 N 个 Maven 争抢同一输出目录。
 - **已知红三档（`RouteME/e2e/known-failures.json`）：** `entries` 已归因的既有失败、`skipped` 已改 `test.fixme` 的死用例（不烧超时）、`pending` 观察到但未定根因的红（不参与豁免）。
-- **实测（2026-11-18，3 分片）：** 200 passed / 14 failed / 2 skipped，8.96 min（14 条失败各跑满 30s 约占 7 分钟）；smoke 16 条 15 passed，1.8 min（含建库与启停）。归因干净时全量预期 3 分钟量级。
+- **实测（2026-11-18，同代码 A/B，commit `53f8c557`）：** 单环境串行 **18.40 min**（189 passed / 18 failed / 10 skipped）；3 分片 **7.72 / 7.83 min**（208–209 passed / 6–7 failed / 2 skipped），即 **2.37×，省 10.6 min（−58%）**。B 组两次采样差 1.5%，可复现。
+- **为什么串行还更红：** 一次长跑把约 190 条用例的数据累进同一个库，`profiles.spec.ts` 等后段断言被前段写入影响（A 组 18 条失败里有 6 条是这类 30s 超时）；分片每片一个干净库，这类失败自然消失。**只调大 workers 而不隔离库得不到这个收益。**
+- **余量：** Playwright 按用例数量分片，shard 1 承担约 1.75 倍耗时（432/243/255 s），并行效率 67%；改按耗时均衡或 4 分片后墙钟预期约 6.7 min（2.75×）。
+- **机器依赖：** 分片数要跟核数走；4 核机器用 `--shards 2 --parallel 2`，否则多套后端启动会互相拖慢。
 - **环境陷阱：** 直接复用开发服务器会把「旧构建」当成代码缺陷（实测 8080 跑合并前代码时 smoke 全红），所以 smoke 默认自建环境。
 - **WAL 细节：** 后端用 WAL 模式，进程被强杀时已提交页可能还在 `<db>-wal`；模板与分发必须连同 `-wal`/`-shm` 一起复制（`copyDbSet`），否则得到看似正常的空库。
 

@@ -58,7 +58,8 @@ const bootTimeout = Number(argOf('--boot-timeout', '300')) * 1_000;
 const jsonDir = argOf('--json-dir');
 const keep = flag('--keep');
 const dryRun = flag('--dry-run');
-const prewarm = !flag('--no-prewarm');
+// `--skip-build` is the documented name; `--no-prewarm` is kept as an alias.
+const skipBuild = flag('--skip-build') || flag('--no-prewarm');
 const runId = argOf('--run-id', `s${Date.now().toString(36)}`);
 
 /** Stacks that are up right now, so Ctrl+C can still stop them. */
@@ -120,10 +121,14 @@ function summarize(reportPath) {
     const report = JSON.parse(fs.readFileSync(reportPath, 'utf8'));
     let passed = 0;
     let failed = 0;
+    let skipped = 0;
     const walk = (suite) => {
       for (const spec of suite.specs ?? []) {
         for (const test of spec.tests ?? []) {
-          if (test.status === 'expected' || test.status === 'flaky') {
+          // `test.fixme` / `test.skip` are deliberate: count them apart from failures.
+          if (test.status === 'skipped') {
+            skipped += 1;
+          } else if (test.status === 'expected' || test.status === 'flaky') {
             passed += 1;
           } else {
             failed += 1;
@@ -137,7 +142,7 @@ function summarize(reportPath) {
     for (const suite of report.suites ?? []) {
       walk(suite);
     }
-    return { passed, failed };
+    return { passed, failed, skipped };
   } catch {
     return null;
   }
@@ -266,7 +271,9 @@ async function main() {
     return;
   }
 
-  if (prewarm) {
+  if (skipBuild) {
+    console.log('[e2e-shard] --skip-build: reusing the existing backend classes');
+  } else {
     await prewarmBuild();
   }
 
@@ -286,13 +293,16 @@ async function main() {
     (acc, result) => ({
       passed: acc.passed + (result.stats?.passed ?? 0),
       failed: acc.failed + (result.stats?.failed ?? 0),
+      skipped: acc.skipped + (result.stats?.skipped ?? 0),
     }),
-    { passed: 0, failed: 0 },
+    { passed: 0, failed: 0, skipped: 0 },
   );
 
   console.log('\n# e2e shards');
   for (const result of results) {
-    const stats = result.stats ? `passed=${result.stats.passed} failed=${result.stats.failed}` : '';
+    const stats = result.stats
+      ? `passed=${result.stats.passed} failed=${result.stats.failed} skipped=${result.stats.skipped}`
+      : '';
     console.log(`- shard ${result.shard}: exit=${result.code} ${stats}`);
   }
   if (jsonDir) {
