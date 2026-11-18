@@ -137,14 +137,15 @@ public class GrowthServiceImpl extends AbstractServiceImpl<GrowthExpLedgerMapper
         if (booking.nominalDelta() <= 0) {
             return Math.max(booking.nominalDelta(), -before);
         }
-        int remaining = Math.max(0, GrowthConstant.DAILY_POSITIVE_LIMIT - usedToday(booking.userId()));
+        int remaining = Math.max(0, GrowthConstant.DAILY_POSITIVE_LIMIT - positiveExpToday(booking.userId()));
         return Math.min(booking.nominalDelta(), remaining);
     }
 
     /**
      * 当日已实发的正向经验：按北京时间自然日，只统计实发为真的发布与获赞流水。
      */
-    private int usedToday(long userId) {
+    @Override
+    public int positiveExpToday(long userId) {
         Instant dayStart = LocalDate.ofInstant(clock.instant(), TripTimeZoneConstant.ZONE)
                 .atStartOfDay(TripTimeZoneConstant.ZONE)
                 .toInstant();

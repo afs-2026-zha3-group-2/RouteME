@@ -123,22 +123,24 @@ export function ProfilePage({ currentUser, userId, canEdit }: Props) {
                 )
               )}
             </Typography.Title>
-            <GrowthBadge level={profile.growth?.level} withLabel />
           </div>
           <p className="profile-hero-meta">
+            <GrowthBadge level={profile.growth?.level} withLabel />
             {ageZodiac !== '' && <span>{ageZodiac}</span>}
             {(profile.city ?? '') !== '' && <span>{profile.city}</span>}
             {(profile.gender ?? '') !== '' && <span>{profile.gender}</span>}
           </p>
-          <p className={`profile-credit ${creditTone(profile.credit_level)}`}>
-            {creditLine(profile.credit_score, profile.credit_level)}
-            {profile.credit_restricted && (
-              <span className="badge danger credit-restricted-badge">
-                {creditRestrictedBadge(profile.credit_restricted)}
-              </span>
-            )}
-          </p>
-          <p className={`profile-completion ${completion.tone}`}>{completion.text}</p>
+          <div className="profile-status-row">
+            <p className={`profile-credit ${creditTone(profile.credit_level)}`}>
+              {creditLine(profile.credit_score, profile.credit_level)}
+              {profile.credit_restricted && (
+                <span className="badge danger credit-restricted-badge">
+                  {creditRestrictedBadge(profile.credit_restricted)}
+                </span>
+              )}
+            </p>
+            <p className={`profile-completion ${completion.tone}`}>{completion.text}</p>
+          </div>
           {isSelf && profile.credit_restricted && (
             <p className="restriction-note">
               {creditRestrictionNote(profile.credit_restriction_reason)}
@@ -158,12 +160,16 @@ export function ProfilePage({ currentUser, userId, canEdit }: Props) {
             </div>
           )}
         </div>
-        {isSelf && canEdit && !profileIsAdmin && (
-          <Button onClick={() => (window.location.hash = '#/profile/setup')}>
-            {tripMessages.profileEditEntry}
-          </Button>
+        {isSelf && (
+          <div className="profile-hero-side">
+            {canEdit && !profileIsAdmin && (
+              <Button onClick={() => (window.location.hash = '#/profile/setup')}>
+                {tripMessages.profileEditEntry}
+              </Button>
+            )}
+            <GrowthProgressBlock growth={profile.growth} />
+          </div>
         )}
-        {isSelf && <GrowthProgressBlock growth={profile.growth} />}
       </header>
 
       {/* 本人受限时顶栏已有同一条提示，避免同一页重复两次。 */}

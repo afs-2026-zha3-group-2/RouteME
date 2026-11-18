@@ -50,9 +50,12 @@ export function expProgress(growth: UserGrowth | null | undefined): GrowthProgre
   const remaining = Math.max(0, Math.floor(growth.exp_to_next));
   const cap = exp + remaining;
   const percent = cap === 0 ? 100 : Math.min(100, Math.max(0, Math.round((exp / cap) * 100)));
+  // 每日额度：服务端给值，缺失时按产品默认 20 兜底；今日已获取不超过上限。
+  const dailyLimit = typeof growth.daily_limit === 'number' ? growth.daily_limit : 20;
+  const dailyExp = Math.min(dailyLimit, Math.max(0, Math.floor(growth.daily_exp ?? 0)));
   return {
     percent,
     counter: profileMessages.growthExpCounter(exp, cap),
-    hint: `${profileMessages.growthToNext(normalizeLevel(growth.level) + 1, remaining)} · ${profileMessages.growthDailyHint}`,
+    hint: profileMessages.growthDailyCounter(dailyExp, dailyLimit),
   };
 }

@@ -3990,6 +3990,16 @@ components:
           type: boolean
           readOnly: true
           description: 是否已达 LV5；仅本人在个人主页读取时返回
+        daily_exp:
+          type: integer
+          minimum: 0
+          readOnly: true
+          description: 当日（Asia/Shanghai 自然日）已实发的正向经验；仅本人读取时返回
+        daily_limit:
+          type: integer
+          minimum: 0
+          readOnly: true
+          description: 每日正向经验上限；仅本人读取时返回
     UserGrowthEntry:
       type: object
       required: [user_id, level]

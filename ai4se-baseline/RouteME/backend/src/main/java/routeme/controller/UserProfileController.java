@@ -86,7 +86,7 @@ public class UserProfileController {
                 self,
                 target.getCreatedAt(),
                 userProfileStatsService.stats(userId),
-                UserGrowthResponse.from(growth, self),
+                UserGrowthResponse.from(growth, self, self ? growthService.positiveExpToday(userId) : null),
                 RouteCompletionPolicy.evaluate(null, 0));
     }
 

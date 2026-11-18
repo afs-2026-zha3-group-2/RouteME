@@ -16,7 +16,7 @@ export const profileMessages = {
   // 本人成长进度（他人不返回经验，不调用这些文案）
   growthProgressTitle: '成长经验',
   growthExpCounter: (exp: number, cap: number) => `${exp} / ${cap} EXP`,
-  growthToNext: (nextLevel: number, remaining: number) => `距 LV${nextLevel} 还需 ${remaining} EXP`,
-  growthDailyHint: '正向经验每日最多 +20（Asia/Shanghai）',
+  /** 底部提示只说明每日正向经验上限与今日已获取的额度。 */
+  growthDailyCounter: (used: number, limit: number) => `今日经验 ${used} / ${limit}`,
   growthMaxHint: '已满级，经验继续累计',
 } as const;

@@ -43,11 +43,11 @@ test('E1/E8/R4 本人可见等级与经验进度，他人只看到 LVn', async (
 
   await useAccount(page, author);
   await page.goto(`/#/users/${author.userId}`);
-  const pill = page.locator('.profile-name-row .growth-pill').first();
+  const pill = page.locator('.profile-hero-meta .growth-pill').first();
   await expect(pill).toContainText('LV3');
   await expect(pill).toContainText('成长等级');
   await expect(page.locator('.growth-progress .gp-top b')).toHaveText('240 / 300 EXP');
-  await expect(page.locator('.growth-progress .gp-hint')).toContainText('距 LV4 还需 60 EXP');
+  await expect(page.locator('.growth-progress .gp-hint')).toContainText('今日经验 0 / 20');
   // R4：只出现 LVn，不出现中文头衔或 LV6。
   await expect(pill).toHaveText(/^LV[1-5]/);
   await expect(page.getByText(/LV6|青铜|白银|黄金|铂金|钻石/)).toHaveCount(0);
@@ -55,7 +55,7 @@ test('E1/E8/R4 本人可见等级与经验进度，他人只看到 LVn', async (
   // E8：他人视角只显示等级，不返回也不渲染经验数字。
   await useAccount(page, viewer);
   await page.goto(`/#/users/${author.userId}`);
-  await expect(page.locator('.profile-name-row .growth-pill').first()).toContainText('LV3');
+  await expect(page.locator('.profile-hero-meta .growth-pill').first()).toContainText('LV3');
   await expect(page.locator('.growth-progress')).toHaveCount(0);
   await expect(page.getByText(/240|EXP|成长经验/)).toHaveCount(0);
   // 成长与信用并列但文案区分。
@@ -73,7 +73,7 @@ test('E2 发布体验后本人进度 +10，信用分不受影响', async ({ page
   await publishExperience(page, author.userId, trip.id);
   await page.reload();
   await expect(page.locator('.growth-progress .gp-top b')).toHaveText('10 / 100 EXP');
-  await expect(page.locator('.growth-progress .gp-hint')).toContainText('距 LV2 还需 90 EXP');
+  await expect(page.locator('.growth-progress .gp-hint')).toContainText('今日经验 10 / 20');
 
   // R3：成长事件只写成长账本，不改信用分。
   expect(await creditScore(page, author.userId)).toBe(80);
@@ -120,7 +120,7 @@ test('E3 举报成立后本人等级回退可见', async ({ page }) => {
 
   await useAccount(page, author);
   await page.goto(`/#/users/${author.userId}`);
-  await expect(page.locator('.profile-name-row .growth-pill').first()).toContainText('LV3');
+  await expect(page.locator('.profile-hero-meta .growth-pill').first()).toContainText('LV3');
   await expect(page.locator('.growth-progress .gp-top b')).toHaveText('250 / 300 EXP');
 });
 

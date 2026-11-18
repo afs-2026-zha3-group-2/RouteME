@@ -275,6 +275,28 @@ export function HomePage({ currentUser, token }: Props) {
             </p>
           </section>
 
+          <section className="home-banner">
+            <p className="home-banner-script">
+              {tripMessages.homeBannerLine1}
+              <br />
+              {tripMessages.homeBannerLine2}
+            </p>
+            <dl className="home-banner-stats">
+              <div>
+                <dd>{bannerStats === null ? '—' : bannerStats.total}</dd>
+                <dt>{tripMessages.homeStatTrips}</dt>
+              </div>
+              <div>
+                <dd>{bannerStats === null ? '—' : bannerStats.destinations}</dd>
+                <dt>{tripMessages.homeStatDests}</dt>
+              </div>
+              <div>
+                <dd>{bannerStats === null ? '—' : bannerStats.joined}</dd>
+                <dt>{tripMessages.homeStatJoined}</dt>
+              </div>
+            </dl>
+          </section>
+
           <section className="filters home-filters" aria-label="筛选行程">
             <div className="filter-row home-pill-row">
               <div className="field">
@@ -564,28 +586,6 @@ export function HomePage({ currentUser, token }: Props) {
                 />
               </div>
             )}
-
-          <section className="home-banner">
-            <p className="home-banner-script">
-              {tripMessages.homeBannerLine1}
-              <br />
-              {tripMessages.homeBannerLine2}
-            </p>
-            <dl className="home-banner-stats">
-              <div>
-                <dd>{bannerStats === null ? '—' : bannerStats.total}</dd>
-                <dt>{tripMessages.homeStatTrips}</dt>
-              </div>
-              <div>
-                <dd>{bannerStats === null ? '—' : bannerStats.destinations}</dd>
-                <dt>{tripMessages.homeStatDests}</dt>
-              </div>
-              <div>
-                <dd>{bannerStats === null ? '—' : bannerStats.joined}</dd>
-                <dt>{tripMessages.homeStatJoined}</dt>
-              </div>
-            </dl>
-          </section>
         </div>
 
         <aside className="home-side" aria-label="旅途助手">

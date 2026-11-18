@@ -22,6 +22,11 @@ public interface GrowthService {
     List<UserGrowth> readAll(List<Long> userIds);
 
     /**
+     * 当日（北京时间自然日）已实发的正向经验，用于个人主页的每日上限提示。
+     */
+    int positiveExpToday(long userId);
+
+    /**
      * 记账：正向按每日上限截断、负向最低 0；流水与账户同事务，幂等键重复时不再改动。
      */
     UserGrowth book(GrowthBooking booking);

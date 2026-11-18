@@ -27,12 +27,25 @@ describe('isMaxLevel', () => {
 });
 
 describe('expProgress', () => {
-  it('shows current exp, cap and distance to the next level', () => {
-    expect(expProgress({ level: 3, exp: 240, exp_to_next: 60, max_level: false })).toEqual({
+  it('shows current exp, cap and daily positive budget', () => {
+    expect(
+      expProgress({
+        level: 3,
+        exp: 240,
+        exp_to_next: 60,
+        max_level: false,
+        daily_exp: 12,
+        daily_limit: 20,
+      }),
+    ).toEqual({
       percent: 80,
       counter: '240 / 300 EXP',
-      hint: '距 LV4 还需 60 EXP · 正向经验每日最多 +20（Asia/Shanghai）',
+      hint: '今日经验 12 / 20',
     });
+  });
+
+  it('falls back to 0 / 20 when daily budget fields are missing', () => {
+    expect(expProgress({ level: 1, exp: 0, exp_to_next: 100 })?.hint).toBe('今日经验 0 / 20');
   });
 
   it('shows 400+ and max level for LV5', () => {

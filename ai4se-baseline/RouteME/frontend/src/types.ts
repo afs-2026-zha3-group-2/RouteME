@@ -46,12 +46,16 @@ export type UserCreditEntry = {
 /** 成长等级：由后端按总经验实时派生（LV1–LV5），不落库。 */
 export type GrowthLevel = 1 | 2 | 3 | 4 | 5;
 
-/** 个人主页成长信息；本人额外包含经验与满级标记。 */
+/** 个人主页成长信息；本人额外包含经验、满级标记与今日正向经验额度。 */
 export type UserGrowth = {
   level: GrowthLevel;
   exp?: number;
   exp_to_next?: number | null;
   max_level?: boolean;
+  /** 当日（Asia/Shanghai 自然日）已获取的正向经验；仅本人返回。 */
+  daily_exp?: number | null;
+  /** 每日正向经验上限；仅本人返回。 */
+  daily_limit?: number | null;
 };
 
 /** 批量成长等级项（`GET /api/users/growth`）；不含经验值。 */

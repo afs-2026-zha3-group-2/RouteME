@@ -5164,9 +5164,30 @@ button.notification-row:hover {
   gap: 18px;
 }
 
+/* 主信息内的状态行：信用分与路线完成度并排，避免各占一行显得松散 */
+.profile-status-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+
+/* 右侧操作列：编辑入口与成长进度成组，按钮靠右上；基准宽固定，把余量留给主信息 */
+.profile-hero-side {
+  flex: 0 1 380px;
+  max-width: 440px;
+  display: grid;
+  gap: 10px;
+  align-content: center;
+}
+
+.profile-hero-side > .ant-btn {
+  justify-self: end;
+}
+
 .profile-hero-main {
   display: grid;
-  flex: 1;
+  flex: 1 1 320px;
   gap: 6px;
   min-width: 0;
 }
@@ -5572,6 +5593,22 @@ button.notification-row:hover {
   font-size: 11.5px;
   line-height: 1.55;
   color: var(--ink-3);
+}
+
+/* 中等宽度：侧栏独占下一行，主信息留足宽度让状态胶囊并排 */
+@media (max-width: 1200px) {
+  .profile-hero {
+    flex-wrap: wrap;
+  }
+
+  .profile-hero-side {
+    flex: 1 1 100%;
+    max-width: 440px;
+  }
+
+  .profile-hero-side > .ant-btn {
+    justify-self: start;
+  }
 }
 
 /* ---------- profile: compact fields ---------- */
@@ -13017,21 +13054,31 @@ a.admin-metric-card:focus-visible {
   margin-top: 2px;
 }
 
+/* 轨道用深色半透明：无论落在场景的深绿还是浅金区域，都能托住浅色文字。
+   全局 .ant-segmented 规则带 !important，这里必须同权重覆盖。 */
 .home-hero .view-seg {
   padding: 4px;
   border-radius: 999px;
-  background: rgba(246, 241, 228, 0.14);
-  border: 1px solid rgba(246, 241, 228, 0.24);
+  background: rgba(10, 30, 22, 0.5) !important;
+  border: 1px solid rgba(246, 241, 228, 0.3);
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+  box-shadow: inset 0 1px 0 rgba(246, 241, 228, 0.14), 0 12px 26px -22px rgba(4, 16, 11, 0.7);
 }
 
 .home-hero .view-seg .ant-segmented-item {
   border-radius: 999px;
-  color: rgba(246, 241, 228, 0.86);
+  color: rgba(246, 241, 228, 0.97);
   font-weight: 650;
+  text-shadow: 0 1px 6px rgba(8, 26, 18, 0.5);
+  transition: color 0.16s, background 0.16s;
 }
 
-.home-hero .view-seg .ant-segmented-item:hover {
-  color: #fff8e6;
+/* specificity + !important 压过 antd 内置 hover token，避免悬停时浅色块吃掉文字对比度 */
+.home-hero .view-seg .ant-segmented-item:not(.ant-segmented-item-selected):not(.ant-segmented-item-disabled):hover {
+  color: #fff8e6 !important;
+  background: rgba(4, 16, 11, 0.28) !important;
+  text-shadow: 0 1px 8px rgba(8, 26, 18, 0.55);
 }
 
 .home-hero .view-seg .ant-segmented-item-selected,
@@ -13042,7 +13089,12 @@ a.admin-metric-card:focus-visible {
 
 .home-hero .view-seg .ant-segmented-item-selected {
   color: var(--forest);
-  box-shadow: 0 4px 12px -6px rgba(10, 30, 22, 0.6);
+  box-shadow: 0 4px 12px -6px rgba(10, 30, 22, 0.6) !important;
+  text-shadow: none;
+}
+
+.home-hero .view-seg .ant-segmented-item-selected .ant-segmented-item-label {
+  color: var(--forest);
 }
 
 /* ---------- 筛选 pills ---------- */
@@ -13122,11 +13174,25 @@ a.admin-metric-card:focus-visible {
   color: #f6f1e4;
 }
 
+/* 带图标的收藏开关：不参与 flex 压缩，图标与文字同一行居中 */
+.filter-tags .home-fav-toggle {
+  display: inline-flex;
+  align-items: center;
+  flex: none;
+}
+
+/* 全局 svg 是 display:block，antd 的内层包裹 span 用 flex 把图标与文字排回一行 */
+.filter-tags .home-fav-toggle > span {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
 .home-fav-toggle svg {
+  flex: none;
   width: 13px;
   height: 13px;
-  margin-right: 4px;
-  vertical-align: -2px;
+  margin-right: 0;
   fill: currentColor;
 }
 
@@ -13216,15 +13282,16 @@ a.admin-metric-card:focus-visible {
   margin-top: 12px;
 }
 
-/* ---------- 首页行程卡：上图下文三列 ---------- */
+/* ---------- 首页行程卡：横向单条，左图右文 ---------- */
 .home-main .trip-grid {
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 16px;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 14px;
   margin-top: 14px;
 }
 
 .home-main .trip-card {
-  flex-direction: column;
+  flex-direction: row;
+  align-items: stretch;
   border-radius: 18px;
   border-color: var(--hm-line);
   background: var(--paper);
@@ -13235,28 +13302,41 @@ a.admin-metric-card:focus-visible {
 }
 
 .home-main .tc-cover {
-  flex: none;
-  width: 100%;
-  min-width: 0;
-  max-width: none;
-  height: 148px;
-  min-height: 148px;
-  padding: 10px;
-  border-right: 0;
-  border-bottom: 1px solid var(--hm-line);
+  flex: 0 0 268px;
+  width: 268px;
+  min-width: 236px;
+  max-width: 280px;
+  height: auto;
+  min-height: 196px;
+  padding: 12px 10px;
+  border-right: 1px solid var(--hm-line);
+  border-bottom: 0;
 }
 
 .home-main .tc-dest {
-  font-size: 17px;
+  font-size: 18px;
 }
 
 .home-main .tc-body {
-  padding: 13px 14px 14px;
-  gap: 8px;
+  padding: 16px 20px 16px;
+  gap: 9px;
 }
 
 .home-main .tc-title {
-  font-size: 15px;
+  font-size: 17px;
+}
+
+/* 路线最长按两行预留，三条卡片高度保持一致 */
+.home-main .tc-route {
+  min-height: 42px;
+}
+
+/* 单条卡很宽，底部动作收成胶囊，避免一整条大色块 */
+.home-main .tc-detail {
+  align-self: flex-start;
+  margin-top: 2px;
+  padding: 8px 20px;
+  border-radius: 999px;
 }
 
 .tc-match {
@@ -13361,7 +13441,7 @@ a.admin-metric-card:focus-visible {
   justify-content: space-between;
   flex-wrap: wrap;
   gap: 24px;
-  margin-top: 26px;
+  margin-top: 16px;
   padding: 24px 30px;
   border-radius: var(--r-lg);
   border: 1px solid var(--hm-line);
@@ -13926,10 +14006,6 @@ a.admin-metric-card:focus-visible {
   .home-layout {
     grid-template-columns: minmax(0, 1fr) 300px;
   }
-
-  .home-main .trip-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
 }
 
 @media (max-width: 1100px) {
@@ -13951,11 +14027,41 @@ a.admin-metric-card:focus-visible {
   .home-pill-row {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
+
+  .home-main .tc-cover {
+    flex-basis: 216px;
+    width: 216px;
+    min-width: 196px;
+  }
 }
 
 @media (max-width: 680px) {
   .home-main .trip-grid {
     grid-template-columns: minmax(0, 1fr);
+  }
+
+  /* 窄屏单条卡回退为上图下文，避免左图挤掉正文 */
+  .home-main .trip-card {
+    flex-direction: column;
+  }
+
+  .home-main .tc-cover {
+    flex: none;
+    width: 100%;
+    min-width: 0;
+    max-width: none;
+    height: 148px;
+    min-height: 148px;
+    padding: 10px;
+    border-right: 0;
+    border-bottom: 1px solid var(--hm-line);
+  }
+
+  .home-main .tc-detail {
+    align-self: stretch;
+    margin-top: 10px;
+    padding: 9px 12px;
+    border-radius: 11px;
   }
 
   .home-side {
