@@ -3133,6 +3133,14 @@ svg {
   color: var(--ink-2);
 }
 
+/* 「我申请的」行内历史摘要：同一行程多次申请的结果计数。 */
+.mr-note .mr-summary {
+  display: block;
+  margin-top: 4px;
+  color: var(--ink-3);
+  font-size: 11.5px;
+}
+
 .mr-actions {
   display: flex;
   gap: 7px;

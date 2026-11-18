@@ -40,6 +40,7 @@ public class TripApplicationEntity {
         entity.setApplicantId(application.applicantId());
         entity.setMessage(application.message());
         entity.setStatus(application.status().name());
+        entity.setStatusReason(application.statusReason());
         entity.setCreatedAt(application.createdAt().toString());
         entity.setDecidedAt(application.decidedAt() == null ? null : application.decidedAt().toString());
         return entity;
@@ -53,7 +54,8 @@ public class TripApplicationEntity {
                 message,
                 ApplicationStatusEnum.valueOf(status),
                 Instant.parse(createdAt),
-                decidedAt == null ? null : Instant.parse(decidedAt));
+                decidedAt == null ? null : Instant.parse(decidedAt),
+                statusReason);
     }
 
     public Long getId() {

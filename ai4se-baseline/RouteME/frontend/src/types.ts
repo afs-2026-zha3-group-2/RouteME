@@ -264,6 +264,8 @@ export type LeaveRecord = {
   applied_delta: number;
   monthly_ordinal: number;
   attachments: LeaveRecordAttachment[];
+  /** 这次退出所属的同行申请 id；旧数据可能为空。 */
+  application_id?: number | null;
 };
 
 export type TripCreateRequest = {
@@ -307,7 +309,27 @@ export type TripApplication = {
   status: ApplicationStatus;
   created_at: string;
   decided_at: string | null;
+  /** 状态原因码：USER_CANCEL / PUBLISHER_REJECT / USER_EXIT / TRIP_CANCELLED / TRIP_COMPLETED / CREDIT_RESTRICTION；旧后端缺省。 */
+  status_reason?: string | null;
   trip: TripSummary;
+};
+
+/** 「我申请的」按行程聚合后的状态计数；total 含当前这次申请。 */
+export type AppliedStatusCounts = {
+  total: number;
+  pending: number;
+  accepted: number;
+  rejected: number;
+  cancelled: number;
+  left: number;
+};
+
+/** 同一行程的多次申请聚成一行：latest 决定行状态与动作，history 供记录时间线使用。 */
+export type AppliedTripGroup = {
+  trip_id: number;
+  latest: TripApplication;
+  history: TripApplication[];
+  counts: AppliedStatusCounts;
 };
 
 export type ChatMessage = {

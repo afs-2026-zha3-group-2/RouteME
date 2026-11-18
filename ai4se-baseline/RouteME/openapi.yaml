@@ -4041,6 +4041,12 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/LeaveRecordAttachment'
+        application_id:
+          type: integer
+          format: int64
+          nullable: true
+          readOnly: true
+          description: 这次退出所属的同行申请 id；旧数据可能为空
     LeaveRecordAttachment:
       type: object
       required: [id, content_type, size_bytes, url]
@@ -4178,6 +4184,11 @@ components:
           format: date-time
           nullable: true
           readOnly: true
+        status_reason:
+          type: string
+          nullable: true
+          readOnly: true
+          description: 状态原因码：USER_CANCEL / PUBLISHER_REJECT / USER_EXIT / TRIP_CANCELLED / TRIP_COMPLETED / CREDIT_RESTRICTION
         trip:
           $ref: '#/components/schemas/TripPlan'
     ChatMessage:
