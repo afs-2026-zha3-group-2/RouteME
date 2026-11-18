@@ -52,15 +52,6 @@
         <include refid="openTripOrder"/>
     </select>
 
-    <!-- 全量：匹配分只能在应用层排序，搜索先取完整候选集。 -->
-    <select id="selectOpenList" resultType="routeme.entity.TripPlanEntity">
-        SELECT <include refid="tripColumns"/>
-          FROM trip_plans t
-          JOIN app_users u ON u.id = t.publisher_id
-        <include refid="openTripFilter"/>
-        <include refid="openTripOrder"/>
-    </select>
-
     <!-- 到期但尚未物化的行程：completed_at 为空且结束日期早于今天。 -->
     <select id="selectExpiredIds" resultType="java.lang.Long">
         SELECT t.id

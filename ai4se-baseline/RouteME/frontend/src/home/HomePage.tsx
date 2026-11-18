@@ -20,7 +20,7 @@ import {
 } from '../trips/tripFilters';
 import { AreaCascader } from '../area/AreaCascader';
 import { INTEREST_TAGS } from '../trips/tripOptions';
-import { useMatches } from '../trips/useMatches';
+import { useTrips } from '../trips/useTrips';
 import { appDatePickerProps } from '../utils/datePickerProps';
 import { dayjsToIso, isoToDayjs } from '../utils/dates';
 import { greetingForHour } from './greeting';
@@ -34,9 +34,9 @@ type Props = {
 export function HomePage({ currentUser, token }: Props) {
   const [view, setView] = useState<'plans' | 'experiences'>('plans');
   const [filters, setFilters] = useState<FilterState>(emptyFilterState);
-  const { state, reload, setPage, setSize } = useMatches(currentUser.id, filters);
+  const { state, reload, setPage, setSize } = useTrips(currentUser.id, filters);
   const experiences = useExperiences(currentUser.id, filters);
-  const publisherIds = state.status === 'ready' ? state.matches.map(({ trip }) => trip.publisher.id) : [];
+  const publisherIds = state.status === 'ready' ? state.trips.map((trip) => trip.publisher.id) : [];
   const credits = useUserCredits(publisherIds, currentUser.id);
   const resultsRef = useRef<HTMLDivElement>(null);
   const [deletingId, setDeletingId] = useState<number | null>(null);
@@ -154,7 +154,6 @@ export function HomePage({ currentUser, token }: Props) {
                 ariaLabel={tripMessages.sortLabel}
                 value={filters.sort}
                 options={[
-                  { value: 'match', label: tripMessages.sortMatch },
                   { value: 'date', label: tripMessages.sortDate },
                   { value: 'new', label: tripMessages.sortNew },
                 ]}
@@ -231,8 +230,8 @@ export function HomePage({ currentUser, token }: Props) {
       {view === 'plans' && state.status === 'ready' && state.total > 0 && (
         <div ref={resultsRef} className="list-block">
           <div className="trip-grid">
-            {state.matches.map(({ trip, match }) => (
-              <TripCard key={trip.id} trip={trip} match={match} credit={credits[trip.publisher.id]} />
+            {state.trips.map((trip) => (
+              <TripCard key={trip.id} trip={trip} credit={credits[trip.publisher.id]} />
             ))}
           </div>
           <Pager

@@ -2208,46 +2208,6 @@ svg {
   border-color: color-mix(in srgb, var(--lagoon) 20%, transparent);
 }
 
-.tc-match {
-  display: flex;
-  align-items: center;
-  gap: 9px;
-  padding: 9px 11px;
-  border-radius: 11px;
-  background: color-mix(in srgb, var(--amber) 11%, transparent);
-  border: 1px solid color-mix(in srgb, var(--amber) 24%, transparent);
-}
-
-.match-ring {
-  width: 34px;
-  height: 34px;
-  flex: none;
-  position: relative;
-}
-
-.match-ring .ant-progress,
-.match-ring .ant-progress-inner {
-  display: block;
-}
-
-.match-ring .ant-progress-indicator {
-  font-family: var(--font-num);
-  font-size: 10px;
-  font-weight: 800;
-  color: var(--t-warn);
-}
-
-.match-ring .ant-progress-circle-rail {
-  stroke: color-mix(in srgb, var(--warn) 22%, transparent);
-}
-
-
-.match-reason {
-  font-size: 11.5px;
-  line-height: 1.45;
-  color: var(--ink-2);
-}
-
 .tc-foot {
   margin-top: auto;
   padding-top: 12px;
@@ -3582,35 +3542,6 @@ svg {
 .detail-participant-chat {
   margin-top: 0;
   font-size: 12.5px;
-}
-
-.match-summary {
-  display: flex;
-  align-items: center;
-  gap: 18px;
-  flex-wrap: wrap;
-}
-
-.match-summary .ant-progress-circle-rail {
-  stroke: color-mix(in srgb, var(--warn) 22%, transparent);
-}
-
-
-.match-summary .match-reason {
-  font-size: 13px;
-  line-height: 1.55;
-  color: var(--ink-2);
-}
-
-.match-summary .ant-progress-indicator {
-  font-family: var(--font-num);
-  font-size: 14px;
-  font-weight: 800;
-  color: var(--t-warn);
-}
-
-.match-rule {
-  margin-top: 6px;
 }
 
 .safety-note {
@@ -11663,15 +11594,6 @@ a.admin-metric-card:focus-visible {
   color: inherit;
 }
 
-/* 同行者推荐：分值与分项全部来自后端，这里只负责排版。 */
-.recommendation-list {
-  display: grid;
-  gap: 10px;
-  margin: 10px 0 0;
-  padding: 0;
-  list-style: none;
-}
-
 .admin-metric-total {
   font-family: var(--font-num);
   font-size: 1.7rem;
@@ -11712,104 +11634,6 @@ a.admin-metric-card:focus-visible {
   margin: 0;
   padding: 0;
   list-style: none;
-}
-
-.recommendation-row {
-  display: grid;
-  gap: 8px;
-  padding: 12px;
-  border: 1px solid var(--line);
-  border-radius: var(--r);
-  background: var(--surface-2);
-}
-
-.recommendation-user {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 0;
-  border: 0;
-  background: transparent;
-  text-align: left;
-  cursor: pointer;
-}
-
-.recommendation-user:hover .publisher-name {
-  text-decoration: underline;
-}
-
-.recommendation-user-body {
-  display: grid;
-  gap: 2px;
-  min-width: 0;
-}
-
-.recommendation-trip {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  gap: 8px;
-  font-size: 13px;
-}
-
-.recommendation-score {
-  display: grid;
-  gap: 4px;
-}
-
-.recommendation-score-value {
-  font-family: var(--font-num);
-  font-size: 18px;
-  font-weight: 800;
-  color: var(--t-warn);
-}
-
-.recommendation-reasons {
-  font-size: 12.5px;
-  line-height: 1.5;
-  color: var(--ink-2);
-}
-
-.recommendation-interest {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 4px;
-}
-
-.recommendation-breakdown {
-  font-size: 12.5px;
-  color: var(--ink-2);
-}
-
-.recommendation-breakdown summary {
-  width: fit-content;
-  color: var(--brand-ink);
-  cursor: pointer;
-}
-
-.recommendation-breakdown-list {
-  display: grid;
-  gap: 2px;
-  margin: 6px 0 0;
-  padding: 0;
-  list-style: none;
-}
-
-.recommendation-breakdown-list li {
-  display: block;
-  line-height: 1.6;
-}
-
-.recommendation-breakdown-points {
-  font-family: var(--font-num);
-  font-variant-numeric: tabular-nums;
-  color: var(--t-warn);
-}
-
-@media (max-width: 900px) {
-  .recommendation-row {
-    padding: 10px;
-  }
 }
 
 .admin-chart-legend li {

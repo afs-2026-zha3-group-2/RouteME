@@ -12,7 +12,7 @@ const SAFETY_HINT = '安全提示';
 const RECEIPT = '已收到，我们会处理';
 const PRIVATE_MARKERS = ['电话：', '身份证', '门牌', '证件号'];
 
-// 只读场景复用种子行程，避免新增行程挤占首页按匹配度取前 15 条的卡片位。
+// 只读场景复用种子行程，避免新增行程挤占首页前 15 条的卡片位。
 const OTHER_TRIP_ID = 5; // 深圳大鹏半岛海岸线徒步：发布者 user 2，招募中
 const OTHER_TRIP_TITLE = '深圳大鹏半岛海岸线徒步';
 const OWN_TRIP_ID = 1; // 珠海情侣路摄影一日游：发布者 user 1，已结束

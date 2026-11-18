@@ -8,7 +8,7 @@ import routeme.request.TripQuery;
 import routeme.exception.InvalidInputException;
 
 /**
- * 行程列表与匹配列表共用的查询参数解析。
+ * 行程列表查询参数解析。
  */
 public final class TripQueryParam {
 
@@ -31,16 +31,6 @@ public final class TripQueryParam {
         }
         if ("new".equals(raw)) {
             return TripQuery.SortOrder.NEW;
-        }
-        throw new InvalidInputException("unsupported sort: " + raw);
-    }
-
-    public static TripQuery.SortOrder parseSortWithMatch(String raw) {
-        if (raw == null || raw.isBlank() || "match".equals(raw)) {
-            return TripQuery.SortOrder.MATCH;
-        }
-        if ("date".equals(raw) || "new".equals(raw)) {
-            return parseSort(raw);
         }
         throw new InvalidInputException("unsupported sort: " + raw);
     }

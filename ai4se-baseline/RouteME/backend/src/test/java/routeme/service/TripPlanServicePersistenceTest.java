@@ -13,6 +13,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import routeme.config.FixedClockTestConfig;
 import routeme.enums.TripStatusEnum;
+import routeme.param.PageParam;
 import routeme.pojo.TripPlan;
 import routeme.request.TripQuery;
 
@@ -30,7 +31,9 @@ class TripPlanServicePersistenceTest {
     @Test
     void in_seededData_out_unfinishedTripsWithProjectedStatus() {
         // When
-        List<TripPlan> unfinished = tripPlanService.findOpen(TripQuery.empty());
+        List<TripPlan> unfinished = tripPlanService
+                .searchPage(TripQuery.empty(), PageParam.parse(1, PageParam.MAX_SIZE))
+                .items();
         TripPlan full = tripPlanService.require(6L);
         TripPlan completed = tripPlanService.require(1L);
 
