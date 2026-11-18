@@ -8,6 +8,7 @@ import {
   formatDistance,
   formatDuration,
   haversineMeters,
+  dedupeNearby,
   isRelevantName,
   longestCommonSubstring,
   matchCatalogPlace,
@@ -137,6 +138,47 @@ describe('AmapService mapping', () => {
       [113.32, 23.1],
       [113.33, 23.11],
       [113.34, 23.12],
+    ]);
+  });
+
+  it('parses Riding results whose segments live in rides instead of steps', () => {
+    // AMap.Riding 2.0 返回 routes[0].rides；只读 steps 会退化成两点直线。
+    const leg = toRouteLeg(
+      {
+        distance: 4000,
+        time: 960,
+        rides: [
+          { path: [lngLat(113.32, 23.1), lngLat(113.33, 23.11)] },
+          { path: [lngLat(113.33, 23.11), lngLat(113.34, 23.12)] },
+        ],
+      },
+      [113.3, 23.1],
+      [113.4, 23.2],
+    );
+    expect(leg.distanceMeters).toBe(4000);
+    expect(leg.durationSeconds).toBe(960);
+    expect(leg.path).toEqual([
+      [113.32, 23.1],
+      [113.33, 23.11],
+      [113.34, 23.12],
+    ]);
+  });
+
+  it('merges rides after steps when both are present', () => {
+    const leg = toRouteLeg(
+      {
+        distance: 10,
+        time: 5,
+        steps: [{ path: [lngLat(1, 1), lngLat(2, 2)] }],
+        rides: [{ path: [lngLat(2, 2), lngLat(3, 3)] }],
+      },
+      [0, 0],
+      [9, 9],
+    );
+    expect(leg.path).toEqual([
+      [1, 1],
+      [2, 2],
+      [3, 3],
     ]);
   });
 
@@ -501,5 +543,36 @@ describe('nearby distance helpers', () => {
   it('takes a short name from a reverse-geocoded address', () => {
     expect(pickRegeocodeName('广东省珠海市香洲区唐家湾镇淇澳社区')).toBe('淇澳社区');
     expect(pickRegeocodeName('')).toBe('');
+  });
+});
+
+describe('dedupeNearby', () => {
+  const spot = (id: string, lng: number, lat: number) => ({
+    id,
+    name: id,
+    address: '',
+    city: '广州',
+    district: '',
+    lng,
+    lat,
+    type: '风景名胜',
+    distanceMeters: 0,
+  });
+
+  it('keeps one pin for spots that sit on top of each other', () => {
+    const kept = dedupeNearby([
+      spot('广州塔', 113.3245, 23.1064),
+      spot('广州塔A区', 113.32455, 23.10643),
+      spot('登塔大厅', 113.32452, 23.10641),
+    ], 150);
+    expect(kept.map((item) => item.id)).toEqual(['广州塔']);
+  });
+
+  it('keeps spots that are far enough apart', () => {
+    const kept = dedupeNearby([
+      spot('广州塔', 113.3245, 23.1064),
+      spot('越秀公园', 113.2644, 23.1291),
+    ], 700);
+    expect(kept.map((item) => item.id)).toEqual(['广州塔', '越秀公园']);
   });
 });

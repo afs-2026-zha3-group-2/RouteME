@@ -3849,7 +3849,7 @@ components:
         label:
           type: string
           readOnly: true
-          description: 可读维度文案，例如「目的地相同」「共同兴趣摄影」
+          description: 可读维度文案，例如「目的地相同」「旅行日期相差 1 天」「共同兴趣摄影」
         points:
           type: integer
           minimum: 0
@@ -3873,7 +3873,7 @@ components:
           items:
             type: string
           readOnly: true
-          description: 逐项原因，例如「目的地相同 +50」
+          description: 逐项原因，例如「目的地相同 +50」；前端 MUST 只拼装这些命中项，不得自行推断或补写理由
         breakdown:
           type: array
           items:

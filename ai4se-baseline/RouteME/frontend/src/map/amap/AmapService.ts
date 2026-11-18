@@ -10,7 +10,7 @@
  * 纯映射函数单独导出，便于在 Node 环境测试。
  */
 
-import { amapServiceHost } from './config';
+import { amapConfig, amapServiceHost } from './config';
 import { loadAmap } from './loader';
 import {
   PLACES,
@@ -85,6 +85,8 @@ export type SdkRoute = {
   distance?: number | string;
   time?: number | string;
   steps?: SdkStep[];
+  /** 骑行（AMap.Riding）2.0 把分段放在 rides，而不是 steps。 */
+  rides?: SdkStep[];
   transits?: SdkTransit[];
 };
 
@@ -321,7 +323,8 @@ export function toRouteLeg(
     throw new AmapApiError('ROUTE_NOT_FOUND', '没有找到可用路线');
   }
   const points: LngLat[] = [];
-  for (const step of route.steps ?? []) {
+  // 步行 / 驾车：steps；骑行（Riding 插件）：rides。两者都存在时按顺序拼接。
+  for (const step of [...(route.steps ?? []), ...(route.rides ?? [])]) {
     appendStepPath(points, step);
   }
   return {
@@ -902,6 +905,151 @@ export function sortByDistance(
       distanceMeters: Math.round(haversineMeters([lng, lat], [place.lng, place.lat])),
     }))
     .sort((left, right) => left.distanceMeters - right.distanceMeters);
+}
+
+/**
+ * 去掉挤在一起的重复条目（同名景点常有「A 区 / 登塔大厅 / 观景平台」等子点）。
+ *
+ * <p>按传入顺序保留，任一已保留条目的距离小于 `minMeters` 时丢弃后者；这样
+ * 地图图钉不会叠成一团，也不会把同一个景点标出七八次。
+ */
+export function dedupeNearby(places: NearbyPlace[], minMeters = 150): NearbyPlace[] {
+  const kept: NearbyPlace[] = [];
+  for (const place of places) {
+    const tooClose = kept.some(
+      (existing) => haversineMeters([existing.lng, existing.lat], [place.lng, place.lat]) < minMeters,
+    );
+    if (!tooClose) {
+      kept.push(place);
+    }
+  }
+  return kept;
+}
+
+/**
+ * 附近景点（风景名胜），用于地图上的景点图钉层。
+ *
+ * <p>有城市名时走高德「城市 + 风景名胜分类」全城检索：结果分布在整个城市，
+ * 图钉才铺得开；没有城市名时退回点击点附近检索。失败返回空数组，不影响选点与路线。
+ */
+export async function scenicSpots(
+  lng: number,
+  lat: number,
+  city?: string,
+  limit = 10,
+): Promise<NearbyPlace[]> {
+  const scoped = (city ?? '').trim();
+  try {
+    const remote =
+      scoped === '' || scoped === '中国'
+        ? await remoteScenicSpots(lng, lat, 12000)
+        : await remoteScenicSpotsByCity(scoped);
+    // 1100 米间隔：同名景点常有「A 区 / 观景平台」等子点，靠太近会叠成一团。
+    return dedupeNearby(sortByDistance(remote, lng, lat), 1100).slice(0, limit);
+  } catch {
+    return [];
+  }
+}
+
+/** REST POI（v3/place/text）字段与 SDK 不同：location 是 "lng,lat" 字符串。 */
+type RestPoi = {
+  id?: string;
+  name?: string;
+  address?: string | string[];
+  cityname?: string | string[];
+  adname?: string | string[];
+  location?: string;
+  type?: string;
+};
+
+function restPoiToResult(poi: RestPoi): PlaceResult | null {
+  const name = readText(poi.name);
+  const [lng, lat] = String(poi.location ?? '').split(',').map(Number);
+  if (name === '' || !Number.isFinite(lng) || !Number.isFinite(lat)) {
+    return null;
+  }
+  return {
+    id: readText(poi.id) === '' ? `scenic-${lng},${lat}` : readText(poi.id),
+    name,
+    address: readText(poi.address),
+    city: readText(poi.cityname),
+    district: readText(poi.adname),
+    lng,
+    lat,
+    type: readText(poi.type),
+  };
+}
+
+/** 全城景点检索：经同源代理请求 v3/place/text（分类 = 风景名胜）。 */
+async function remoteScenicSpotsByCity(city: string): Promise<PlaceResult[]> {
+  const base = amapConfig.proxyPath;
+  // 直连模式（proxyPath=off）拿不到 web 服务接口，交给附近检索兜底。
+  if (base === 'off' || typeof fetch !== 'function') {
+    return [];
+  }
+  const pages = [1, 2];
+  const results = await Promise.all(
+    pages.map(async (page) => {
+      const query = new URLSearchParams({
+        types: '风景名胜',
+        city,
+        citylimit: 'true',
+        offset: '20',
+        page: String(page),
+        extensions: 'base',
+      });
+      const response = await fetch(`${base}/v3/place/text?${query.toString()}`, {
+        headers: { Accept: 'application/json' },
+      });
+      if (!response.ok) {
+        return [] as PlaceResult[];
+      }
+      const body = (await response.json().catch(() => null)) as
+        | { status?: string; pois?: RestPoi[] | string }
+        | null;
+      if (body?.status !== '1' || !Array.isArray(body.pois)) {
+        return [] as PlaceResult[];
+      }
+      return body.pois
+        .map(restPoiToResult)
+        .filter((place): place is PlaceResult => place !== null);
+    }),
+  );
+  return results.flat();
+}
+
+async function remoteScenicSpots(
+  lng: number,
+  lat: number,
+  radius: number,
+): Promise<PlaceResult[]> {
+  const sdk = await loadSdk();
+  // type 走高德 POI 分类（风景名胜），比关键词「景点」更准。
+  // 单页 20 条几乎都挤在同一片街区，多取 2 页再按距离去重，图钉才铺得开。
+  const searchPage = (pageIndex: number) =>
+    new Promise<PlaceResult[]>((resolve, reject) => {
+      const service = new sdk.PlaceSearch({
+        type: '风景名胜',
+        pageSize: 20,
+        pageIndex,
+        extensions: 'base',
+      });
+      service.searchNearBy('', [lng, lat], radius, (status, result) => {
+        if (status === 'no_data') {
+          resolve([]);
+          return;
+        }
+        if (status !== 'complete') {
+          reject(sdkError(status, result?.info, result?.infocode));
+          return;
+        }
+        const pois = result?.poiList?.pois ?? [];
+        resolve(pois.map(toPlaceResult).filter((place): place is PlaceResult => place !== null));
+      });
+    });
+
+  const pages = await Promise.all([searchPage(1), searchPage(2), searchPage(3)]);
+  return pages.flat();
 }
 
 /**

@@ -1,5 +1,16 @@
 import { useEffect, useState, type ReactNode } from 'react';
-import { Alert, Button, Card, DatePicker, Input, InputNumber, Segmented, Space, Tag, Typography } from 'antd';
+import {
+  Alert,
+  Button,
+  Card,
+  DatePicker,
+  Input,
+  InputNumber,
+  Segmented,
+  Space,
+  Tag,
+  Typography,
+} from 'antd';
 import zhCN from 'antd/es/locale/zh_CN';
 import dayjs from 'dayjs';
 import 'dayjs/locale/zh-cn';
@@ -31,7 +42,9 @@ import {
   type TripFormValues,
 } from './tripForm';
 import { addMeetingArea } from './meetingForm';
+import { clearTripDraft, readTripDraft, writeTripDraft, type TripDraft } from './tripDraft';
 import {
+  DIFFICULTY_TAGS,
   INTEREST_TAGS,
   MAX_STOPS,
   MAX_TAGS,
@@ -44,6 +57,9 @@ import { TripCard } from './TripCard';
 
 // The publish form is Chinese-only; keep the picker panel month names Chinese too.
 dayjs.locale('zh-cn');
+
+/** 行程简介长度上限（参考稿 42/200 口径）。 */
+const MAX_NOTE_LENGTH = 200;
 
 type Props = {
   currentUser: DemoUser;
@@ -66,6 +82,11 @@ export function TripCreatePage({ currentUser, fromTripId, aiItineraryId }: Props
   const [tagError, setTagError] = useState<string | null>(null);
   const [meetingDraft, setMeetingDraft] = useState('');
   const [meetingDraftError, setMeetingDraftError] = useState<string | null>(null);
+  const [draft, setDraft] = useState<TripDraft | null>(() =>
+    fromTripId === undefined && aiItineraryId === undefined ? readTripDraft() : null,
+  );
+  const [draftNotice, setDraftNotice] = useState<string | null>(null);
+  const [previewDevice, setPreviewDevice] = useState<'mobile' | 'web'>('web');
 
   useEffect(() => {
     if (fromTripId === undefined) {
@@ -146,6 +167,15 @@ export function TripCreatePage({ currentUser, fromTripId, aiItineraryId }: Props
     created_at: new Date().toISOString(),
   };
 
+  /** 难度强度不新增后端字段：写入同名兴趣标签（最多保留 5 个）。 */
+  const difficulty = DIFFICULTY_TAGS.find((tag) => values.tags.includes(tag)) ?? null;
+  const setDifficulty = (tag: string) => {
+    const rest = values.tags.filter(
+      (item) => !(DIFFICULTY_TAGS as readonly string[]).includes(item),
+    );
+    update({ tags: [tag, ...rest].slice(0, MAX_TAGS) });
+  };
+
   const addCustomTag = () => {
     const next = addTag(values.tags, tagDraft);
     if (next === values.tags) {
@@ -163,6 +193,20 @@ export function TripCreatePage({ currentUser, fromTripId, aiItineraryId }: Props
     setTagError(null);
   };
 
+  const saveDraft = () => {
+    setDraft(writeTripDraft(values));
+    setDraftNotice(tripMessages.draftSaved);
+  };
+
+  const restoreDraft = () => {
+    if (draft === null) {
+      return;
+    }
+    setValues(draft.values);
+    setDraft(null);
+    setDraftNotice(tripMessages.draftRestored);
+  };
+
   const submit = async () => {
     const found = validateTripForm(values);
     setErrors(found);
@@ -173,6 +217,7 @@ export function TripCreatePage({ currentUser, fromTripId, aiItineraryId }: Props
     setSubmitError(null);
     try {
       const created = await createTrip(currentUser.id, toCreateRequest(values, aiItineraryId));
+      clearTripDraft();
       window.location.hash = `#/trips/${created.id}`;
     } catch (error: unknown) {
       // 后端业务错误（如 AI 快照不属于当前用户）优先展示 message，而非错误码。
@@ -190,20 +235,17 @@ export function TripCreatePage({ currentUser, fromTripId, aiItineraryId }: Props
 
   return (
     <main className="form-page publish-page">
-      <div className="page-head">
+      <header className="publish-hero">
         <div>
           <Typography.Title level={2} className="page-title">
             {tripMessages.createTitle}
           </Typography.Title>
           <p className="page-sub">{tripMessages.createSubtitle}</p>
         </div>
-        <a className="ghost-link" href="#/ai-planner">
-          {aiMessages.tryAiLink}
-        </a>
         <Button className="page-back" onClick={() => (window.location.hash = '#/')}>
-          {tripMessages.backHome}
+          {tripMessages.createBackHome}
         </Button>
-      </div>
+      </header>
 
       {fromTripId !== undefined && (
         <Alert
@@ -236,156 +278,206 @@ export function TripCreatePage({ currentUser, fromTripId, aiItineraryId }: Props
         />
       )}
 
+      {draft !== null && (
+        <Alert
+          className="prefill-banner"
+          data-testid="trip-draft-banner"
+          type="info"
+          showIcon
+          title={tripMessages.draftRestoreTitle}
+          action={
+            <Space size="small">
+              <Button size="small" type="primary" onClick={restoreDraft}>
+                {tripMessages.draftRestoreAction}
+              </Button>
+              <Button size="small" onClick={() => setDraft(null)}>
+                {tripMessages.draftDismissAction}
+              </Button>
+            </Space>
+          }
+        />
+      )}
+      {draftNotice !== null && (
+        <Alert className="prefill-banner" type="success" showIcon title={draftNotice} />
+      )}
+
       <div className="publish-grid">
         <div className="publish-main">
-          <Card className="panel publish-panel">
-            <h3 className="panel-title">{tripMessages.sectionBasics}</h3>
-            <div className="form-stack">
-            <Field
-              label={tripMessages.fieldTitle}
-              htmlFor="trip-title"
-              error={errors.title}
-              required
-              counter={`${values.title.length}/${MAX_TITLE_LENGTH}`}
-            >
-              <Input
-                {...fieldProps('trip-title', errors.title)}
-                maxLength={MAX_TITLE_LENGTH}
-                value={values.title}
-                onChange={(event) => update({ title: event.target.value })}
-              />
-            </Field>
-
-            <Field
-              label={tripMessages.fieldDestination}
-              htmlFor="trip-destination"
-              error={errors.destination}
-              required
-            >
-              <AreaCascader
-                id="trip-destination"
-                ariaLabel={tripMessages.fieldDestination}
-                ariaDescribedBy={
-                  errors.destination !== undefined ? 'trip-destination-error' : undefined
-                }
-                invalid={errors.destination !== undefined}
-                value={values.destinationCode}
-                onChange={(code) => update({ destinationCode: code })}
-                placeholder="请选择省 / 市"
-              />
-            </Field>
-
-            <div className="form-row">
-              <Field
-                label={tripMessages.fieldStartDate}
-                htmlFor="trip-start-date"
-                error={errors.startDate}
-                required
-              >
-<div className="trip-date-anchor">
-                  <DatePicker
-                    {...appDatePickerProps}
-                    {...fieldProps('trip-start-date', errors.startDate)}
-                    className="trip-date"
-                    format="YYYY-MM-DD"
-                    placeholder="选择日期"
-                    locale={zhCN.DatePicker}
-                    needConfirm
-                    allowClear={false}
-                    minDate={dayjs()}
-                    value={isoToDayjs(values.startDate)}
-                    onChange={(value) => update({ startDate: dayjsToIso(value) })}
-                    status={errors.startDate === undefined ? undefined : 'error'}
-                  />
-                </div>
-              </Field>
-              <Field
-                label={tripMessages.fieldEndDate}
-                htmlFor="trip-end-date"
-                error={errors.endDate}
-                required
-              >
-<div className="trip-date-anchor">
-                  <DatePicker
-                    {...appDatePickerProps}
-                    {...fieldProps('trip-end-date', errors.endDate)}
-                    className="trip-date"
-                    format="YYYY-MM-DD"
-                    placeholder="选择日期"
-                    locale={zhCN.DatePicker}
-                    needConfirm
-                    allowClear={false}
-                    minDate={dayjs()}
-                    value={isoToDayjs(values.endDate)}
-                    onChange={(value) => update({ endDate: dayjsToIso(value) })}
-                    status={errors.endDate === undefined ? undefined : 'error'}
-                  />
-                </div>
-              </Field>
+          <Card className="panel ai-import-card" data-testid="ai-import-banner">
+            <span className="ai-import-icon" aria-hidden="true">
+              ✦
+            </span>
+            <div className="ai-import-text">
+              <h3 className="ai-import-title">{tripMessages.aiImportTitle}</h3>
+              <p className="form-hint">{tripMessages.aiImportHint}</p>
             </div>
-            </div>
+            <Button
+              type="primary"
+              ghost
+              data-testid="ai-import-action"
+              onClick={() => (window.location.hash = '#/ai-planner')}
+            >
+              {tripMessages.aiImportAction} →
+            </Button>
           </Card>
 
           <Card className="panel publish-panel">
-            <h3 className="panel-title">{tripMessages.sectionRoute}</h3>
-            <div className="form-stack">
-            <Field label={tripMessages.fieldStops} htmlFor="trip-stops" error={errors.stops}>
-              <AmapPlacePicker
-                mode="multi"
-                inputId="trip-stops"
-                ariaLabel={tripMessages.fieldStops}
-                invalid={errors.stops !== undefined}
-                value={values.stops}
-                onChange={(stops) => update({ stops })}
-                max={MAX_STOPS}
-                showMap
-                city={cityForSearch}
-                placeholder="搜索地点名称，必须能在地图上搜到"
-                emptyHint="至少两个途经点。请从搜索候选中选择，或直接点击地图。"
-              />
-            </Field>
-            {!hasDestination && (
-              <p className="form-hint">{tripMessages.waypointNeedsDestination}</p>
-            )}
-            <div className="form-field" role="group" aria-label={tripMessages.fieldTravelMode}>
-              <span className="form-label">{tripMessages.fieldTravelMode}</span>
-              <Segmented
-                block
-                aria-label={tripMessages.fieldTravelMode}
-                value={values.travelMode}
-                onChange={(value) => update({ travelMode: value as TripTravelMode })}
-                options={TRIP_TRAVEL_MODES.map((mode) => ({
-                  label: TRIP_TRAVEL_MODE_LABELS[mode],
-                  value: mode,
-                }))}
-              />
-              <span className="form-hint">{tripMessages.hintTravelMode}</span>
-            </div>
-          </div>
-          </Card>
-
-          <Card className="panel publish-panel">
-            <h3 className="panel-title">{tripMessages.sectionExtras}</h3>
+            <h3 className="panel-title">
+              <span className="step-badge" aria-hidden="true">
+                1
+              </span>
+              {tripMessages.sectionBasics}
+              <span className="panel-hint">{tripMessages.basicsHint}</span>
+            </h3>
             <div className="form-stack">
               <Field
-                label={tripMessages.fieldCapacity}
-                htmlFor="trip-capacity"
-                error={errors.capacity}
+                label={tripMessages.fieldTitle}
+                htmlFor="trip-title"
+                error={errors.title}
                 required
-                hint={tripMessages.hintCapacity}
+                counter={`${values.title.length}/${MAX_TITLE_LENGTH}`}
               >
-                <InputNumber
-                  {...fieldProps('trip-capacity', errors.capacity)}
-                  min={2}
-                  max={12}
-                  precision={0}
-                  style={{ width: '100%' }}
-                  value={values.capacity === '' ? null : Number(values.capacity)}
-                  onChange={(value) => update({ capacity: value === null ? '' : String(value) })}
-                  status={errors.capacity === undefined ? undefined : 'error'}
+                <Input
+                  {...fieldProps('trip-title', errors.title)}
+                  maxLength={MAX_TITLE_LENGTH}
+                  value={values.title}
+                  onChange={(event) => update({ title: event.target.value })}
                 />
               </Field>
 
+              <Field
+                label={tripMessages.fieldDestination}
+                htmlFor="trip-destination"
+                error={errors.destination}
+                required
+              >
+                <AreaCascader
+                  id="trip-destination"
+                  ariaLabel={tripMessages.fieldDestination}
+                  ariaDescribedBy={
+                    errors.destination !== undefined ? 'trip-destination-error' : undefined
+                  }
+                  invalid={errors.destination !== undefined}
+                  value={values.destinationCode}
+                  onChange={(code) => update({ destinationCode: code })}
+                  placeholder="请选择省 / 市"
+                />
+              </Field>
+
+              <div className="form-row">
+                <Field
+                  label={tripMessages.fieldStartDate}
+                  htmlFor="trip-start-date"
+                  error={errors.startDate}
+                  required
+                >
+                  <div className="trip-date-anchor">
+                    <DatePicker
+                      {...appDatePickerProps}
+                      {...fieldProps('trip-start-date', errors.startDate)}
+                      className="trip-date"
+                      format="YYYY-MM-DD"
+                      placeholder="选择日期"
+                      locale={zhCN.DatePicker}
+                      needConfirm
+                      allowClear={false}
+                      minDate={dayjs()}
+                      value={isoToDayjs(values.startDate)}
+                      onChange={(value) => update({ startDate: dayjsToIso(value) })}
+                      status={errors.startDate === undefined ? undefined : 'error'}
+                    />
+                  </div>
+                </Field>
+                <Field
+                  label={tripMessages.fieldEndDate}
+                  htmlFor="trip-end-date"
+                  error={errors.endDate}
+                  required
+                >
+                  <div className="trip-date-anchor">
+                    <DatePicker
+                      {...appDatePickerProps}
+                      {...fieldProps('trip-end-date', errors.endDate)}
+                      className="trip-date"
+                      format="YYYY-MM-DD"
+                      placeholder="选择日期"
+                      locale={zhCN.DatePicker}
+                      needConfirm
+                      allowClear={false}
+                      minDate={dayjs()}
+                      value={isoToDayjs(values.endDate)}
+                      onChange={(value) => update({ endDate: dayjsToIso(value) })}
+                      status={errors.endDate === undefined ? undefined : 'error'}
+                    />
+                  </div>
+                </Field>
+              </div>
+
+              <Field
+                label={tripMessages.fieldNoteTitle}
+                htmlFor="trip-note"
+                optional
+                counter={`${values.note.length}/${MAX_NOTE_LENGTH}`}
+                hint={tripMessages.hintNote}
+              >
+                <Input.TextArea
+                  id="trip-note"
+                  rows={3}
+                  maxLength={MAX_NOTE_LENGTH}
+                  value={values.note}
+                  placeholder="写点想让同行者知道的事：路线亮点、集合方式、对同行者的期待…"
+                  onChange={(event) => update({ note: event.target.value })}
+                />
+              </Field>
+            </div>
+          </Card>
+
+          <Card className="panel publish-panel">
+            <h3 className="panel-title">
+              <span className="step-badge" aria-hidden="true">
+                2
+              </span>
+              {tripMessages.sectionRoute}
+              <span className="panel-hint">{tripMessages.routeSectionHint}</span>
+              <Button
+                size="small"
+                className="panel-action"
+                data-testid="route-ai-recommend"
+                onClick={() => (window.location.hash = '#/ai-planner')}
+              >
+                {tripMessages.routeRecommendAction}
+              </Button>
+            </h3>
+            <div className="form-stack">
+              <Field label={tripMessages.fieldStops} htmlFor="trip-stops" error={errors.stops}>
+                <AmapPlacePicker
+                  mode="multi"
+                  inputId="trip-stops"
+                  ariaLabel={tripMessages.fieldStops}
+                  invalid={errors.stops !== undefined}
+                  value={values.stops}
+                  onChange={(stops) => update({ stops })}
+                  max={MAX_STOPS}
+                  showMap
+                  city={cityForSearch}
+                  placeholder="搜索地点名称，必须能在地图上搜到"
+                  emptyHint="至少两个途经点。请从搜索候选中选择，或直接点击地图。"
+                />
+              </Field>
+              {!hasDestination && (
+                <p className="form-hint">{tripMessages.waypointNeedsDestination}</p>
+              )}
+            </div>
+          </Card>
+
+          <Card className="panel publish-panel">
+            <h3 className="panel-title">
+              <span className="step-badge" aria-hidden="true">
+                3
+              </span>
+              {tripMessages.sectionExtras}
+            </h3>
+            <div className="form-stack">
               <Field
                 label={tripMessages.fieldMeetingArea}
                 htmlFor="trip-meeting-area"
@@ -474,7 +566,9 @@ export function TripCreatePage({ currentUser, fromTripId, aiItineraryId }: Props
                     precision={0}
                     style={{ width: '100%' }}
                     value={values.budgetMin === '' ? null : Number(values.budgetMin)}
-                    onChange={(value) => update({ budgetMin: value === null ? '' : String(value) })}
+                    onChange={(value) =>
+                      update({ budgetMin: value === null ? '' : String(value) })
+                    }
                     status={errors.budget === undefined ? undefined : 'error'}
                   />
                 </Field>
@@ -485,7 +579,9 @@ export function TripCreatePage({ currentUser, fromTripId, aiItineraryId }: Props
                     precision={0}
                     style={{ width: '100%' }}
                     value={values.budgetMax === '' ? null : Number(values.budgetMax)}
-                    onChange={(value) => update({ budgetMax: value === null ? '' : String(value) })}
+                    onChange={(value) =>
+                      update({ budgetMax: value === null ? '' : String(value) })
+                    }
                   />
                 </Field>
               </div>
@@ -493,73 +589,165 @@ export function TripCreatePage({ currentUser, fromTripId, aiItineraryId }: Props
           </Card>
 
           <Card className="panel publish-panel">
-            <h3 className="panel-title">{tripMessages.sectionTags}</h3>
-            <div className="form-stack">
-            <div className="form-field" role="group" aria-label={tripMessages.fieldTags}>
-              <span className="form-label">{tripMessages.fieldTags}</span>
-              <span className="chip-row">
-                {INTEREST_TAGS.map((tag) => {
-                  const checked = values.tags.includes(tag);
-                  return (
-                    <Tag.CheckableTag
-                      key={tag}
-                      checked={checked}
-                      onChange={() =>
-                        update({
-                          tags: checked
-                            ? values.tags.filter((item) => item !== tag)
-                            : values.tags.length >= MAX_TAGS
-                              ? values.tags
-                              : [...values.tags, tag],
-                        })
-                      }
-                    >
-                      {tag}
-                    </Tag.CheckableTag>
-                  );
-                })}
-                {values.tags
-                  .filter((tag) => !(INTEREST_TAGS as readonly string[]).includes(tag))
-                  .map((tag) => (
-                    <Tag
-                      key={tag}
-                      closable
-                      onClose={() => update({ tags: values.tags.filter((item) => item !== tag) })}
-                    >
-                      {tag}
-                    </Tag>
-                  ))}
+            <h3 className="panel-title">
+              <span className="step-badge" aria-hidden="true">
+                4
               </span>
-              <Space.Compact style={{ width: '100%', marginTop: 8 }}>
-                <Input
-                  value={tagDraft}
-                  maxLength={MAX_TAG_LENGTH}
-                  placeholder={`自定义兴趣标签（最多 ${MAX_TAGS} 个，每个 ${MAX_TAG_LENGTH} 字以内）`}
-                  onChange={(event) => {
-                    setTagDraft(event.target.value);
-                    setTagError(null);
-                  }}
-                  onPressEnter={addCustomTag}
-                />
-                <Button onClick={addCustomTag} disabled={tagDraft.trim() === ''}>
-                  添加标签
-                </Button>
-              </Space.Compact>
-              {tagError !== null && <Typography.Text type="warning">{tagError}</Typography.Text>}
-              {errors.tags !== undefined && (
-                <Typography.Text type="danger">{errors.tags}</Typography.Text>
-              )}
+              {tripMessages.sectionTags}
+            </h3>
+            <div className="form-stack">
+              <div className="form-field" role="group" aria-label={tripMessages.fieldTags}>
+                <span className="form-label">{tripMessages.fieldTags}</span>
+                <span className="chip-row">
+                  {INTEREST_TAGS.map((tag) => {
+                    const checked = values.tags.includes(tag);
+                    return (
+                      <Tag.CheckableTag
+                        key={tag}
+                        checked={checked}
+                        onChange={() =>
+                          update({
+                            tags: checked
+                              ? values.tags.filter((item) => item !== tag)
+                              : values.tags.length >= MAX_TAGS
+                                ? values.tags
+                                : [...values.tags, tag],
+                          })
+                        }
+                      >
+                        {tag}
+                      </Tag.CheckableTag>
+                    );
+                  })}
+                  {values.tags
+                    .filter((tag) => !(INTEREST_TAGS as readonly string[]).includes(tag))
+                    .map((tag) => (
+                      <Tag
+                        key={tag}
+                        closable
+                        onClose={() =>
+                          update({ tags: values.tags.filter((item) => item !== tag) })
+                        }
+                      >
+                        {tag}
+                      </Tag>
+                    ))}
+                </span>
+                <Space.Compact style={{ width: '100%', marginTop: 8 }}>
+                  <Input
+                    value={tagDraft}
+                    maxLength={MAX_TAG_LENGTH}
+                    placeholder={`自定义兴趣标签（最多 ${MAX_TAGS} 个，每个 ${MAX_TAG_LENGTH} 字以内）`}
+                    onChange={(event) => {
+                      setTagDraft(event.target.value);
+                      setTagError(null);
+                    }}
+                    onPressEnter={addCustomTag}
+                  />
+                  <Button onClick={addCustomTag} disabled={tagDraft.trim() === ''}>
+                    添加标签
+                  </Button>
+                </Space.Compact>
+                {tagError !== null && <Typography.Text type="warning">{tagError}</Typography.Text>}
+                {errors.tags !== undefined && (
+                  <Typography.Text type="danger">{errors.tags}</Typography.Text>
+                )}
+              </div>
             </div>
+          </Card>
+        </div>
 
-            <Field label={tripMessages.fieldNote} htmlFor="trip-note" optional>
-              <Input.TextArea
-                id="trip-note"
-                rows={3}
-                value={values.note}
-                onChange={(event) => update({ note: event.target.value })}
+        <aside className="publish-side">
+          <Card className="panel publish-preview-card">
+            <div className="publish-side-head">
+              <h3 className="panel-title">{tripMessages.previewLabel}</h3>
+              <Segmented
+                size="small"
+                aria-label={tripMessages.previewDeviceLabel}
+                value={previewDevice}
+                onChange={(value) => setPreviewDevice(value as 'mobile' | 'web')}
+                options={[
+                  { label: tripMessages.previewDeviceMobile, value: 'mobile' },
+                  { label: tripMessages.previewDeviceWeb, value: 'web' },
+                ]}
               />
-            </Field>
+            </div>
+            <div
+              className={
+                previewDevice === 'mobile'
+                  ? 'publish-preview-frame is-mobile'
+                  : 'publish-preview-frame'
+              }
+            >
+              <TripCard trip={previewTrip} preview />
+            </div>
+          </Card>
 
+          <Card className="panel publish-companions-card" data-testid="companions-settings">
+            <h3 className="panel-title">{tripMessages.companionsTitle}</h3>
+            <div className="form-stack">
+              <Field
+                label={tripMessages.sideMembers}
+                htmlFor="trip-capacity"
+                error={errors.capacity}
+                required
+                hint={tripMessages.hintCapacity}
+              >
+                <InputNumber
+                  {...fieldProps('trip-capacity', errors.capacity)}
+                  min={2}
+                  max={12}
+                  precision={0}
+                  style={{ width: '100%' }}
+                  value={values.capacity === '' ? null : Number(values.capacity)}
+                  onChange={(value) => update({ capacity: value === null ? '' : String(value) })}
+                  status={errors.capacity === undefined ? undefined : 'error'}
+                />
+              </Field>
+
+              <div className="form-field" role="group" aria-label={tripMessages.sideTravelMode}>
+                <span className="form-label">{tripMessages.sideTravelMode}</span>
+                <Segmented
+                  block
+                  size="small"
+                  aria-label={tripMessages.sideTravelMode}
+                  value={values.travelMode}
+                  onChange={(value) => update({ travelMode: value as TripTravelMode })}
+                  options={TRIP_TRAVEL_MODES.map((mode) => ({
+                    label: TRIP_TRAVEL_MODE_LABELS[mode],
+                    value: mode,
+                  }))}
+                />
+                <span className="form-hint">{tripMessages.hintTravelMode}</span>
+              </div>
+
+              <div className="form-field" role="group" aria-label={tripMessages.sideDifficulty}>
+                <span className="form-label">{tripMessages.sideDifficulty}</span>
+                <Segmented
+                  block
+                  size="small"
+                  aria-label={tripMessages.sideDifficulty}
+                  value={difficulty ?? '未设置'}
+                  onChange={(value) => setDifficulty(String(value))}
+                  options={DIFFICULTY_TAGS.map((tag) => ({ label: tag, value: tag }))}
+                />
+                <span className="form-hint">{tripMessages.hintDifficulty}</span>
+              </div>
+            </div>
+          </Card>
+
+          <WeatherCard destinationCode={values.destinationCode} date={values.startDate} />
+
+          <Card className="panel safety-panel">
+            <h3 className="panel-title">{tripMessages.publishSafetyTitle}</h3>
+            <ul className="safety-list">
+              <li>{tripMessages.publishSafetyTipPublic}</li>
+              <li>{tripMessages.publishSafetyTipClear}</li>
+              <li>{tripMessages.publishSafetyTipReview}</li>
+            </ul>
+          </Card>
+
+          <div className="publish-submit">
             {restricted && <CreditRestrictedNotice />}
             {restricted && (
               <p className="publish-guard-note">
@@ -569,7 +757,6 @@ export function TripCreatePage({ currentUser, fromTripId, aiItineraryId }: Props
                 {tripMessages.publishGuardRemaining}
               </p>
             )}
-
             {submitError !== null && (
               <Alert
                 type="error"
@@ -578,33 +765,23 @@ export function TripCreatePage({ currentUser, fromTripId, aiItineraryId }: Props
                 description={submitError}
               />
             )}
-
             <div className="form-actions">
-              <Button type="primary" loading={submitting} disabled={restricted} onClick={submit}>
+              <Button data-testid="trip-save-draft" onClick={saveDraft}>
+                {tripMessages.saveDraft}
+              </Button>
+              <Button
+                type="primary"
+                loading={submitting}
+                disabled={restricted}
+                onClick={submit}
+              >
                 {tripMessages.createSubmit}
               </Button>
-              <Button onClick={() => (window.location.hash = '#/')}>
-                {tripMessages.createCancel}
-              </Button>
             </div>
-            </div>
-          </Card>
-        </div>
-
-        <aside className="publish-side">
-          <div>
-            <span className="preview-label">{tripMessages.previewLabel}</span>
-            <TripCard trip={previewTrip} preview />
+            <Button type="link" onClick={() => (window.location.hash = '#/')}>
+              {tripMessages.createCancel}
+            </Button>
           </div>
-          <WeatherCard destinationCode={values.destinationCode} date={values.startDate} />
-          <Card className="panel safety-panel">
-            <h3 className="panel-title">{tripMessages.publishSafetyTitle}</h3>
-            <ul className="safety-list">
-              <li>{tripMessages.publishSafetyTipPublic}</li>
-              <li>{tripMessages.publishSafetyTipClear}</li>
-              <li>{tripMessages.publishSafetyTipReview}</li>
-            </ul>
-          </Card>
         </aside>
       </div>
     </main>
@@ -613,7 +790,9 @@ export function TripCreatePage({ currentUser, fromTripId, aiItineraryId }: Props
 
 /** Wires a control to its field label and, when invalid, to its error text. */
 function fieldProps(id: string, error?: string) {
-  return error === undefined ? { id } : { id, 'aria-invalid': true, 'aria-describedby': `${id}-error` };
+  return error === undefined
+    ? { id }
+    : { id, 'aria-invalid': true, 'aria-describedby': `${id}-error` };
 }
 
 function Field({

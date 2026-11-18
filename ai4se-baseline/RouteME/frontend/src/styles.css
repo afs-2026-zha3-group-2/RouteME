@@ -1331,6 +1331,150 @@ svg {
 .trip-date-anchor {
   position: relative;
 }
+
+/* ---------- 发布页 v2：AI 导入横幅 / 步骤卡 / 同行设置 / 提交区 ---------- */
+.publish-hero {
+  display: flex;
+  align-items: flex-end;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-bottom: 18px;
+}
+
+.publish-hero .page-back {
+  margin-left: auto;
+}
+
+.ai-import-card.ant-card {
+  background: linear-gradient(
+    118deg,
+    color-mix(in srgb, var(--lagoon) 14%, var(--surface)),
+    color-mix(in srgb, var(--dusk) 12%, var(--surface)) 55%,
+    var(--surface)
+  );
+  border-color: color-mix(in srgb, var(--lagoon) 26%, transparent);
+}
+
+.ai-import-card .ant-card-body {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+  padding: 16px 18px;
+}
+
+.ai-import-icon {
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 12px;
+  background: var(--grad-tide);
+  color: var(--on-deep);
+  font-size: 18px;
+}
+
+.ai-import-text {
+  flex: 1;
+  min-width: 190px;
+}
+
+.ai-import-title {
+  margin: 0 0 4px;
+  font-size: 15px;
+  font-weight: 800;
+  color: var(--ink);
+}
+
+.step-badge {
+  display: inline-grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--lagoon-soft);
+  color: var(--t-lagoon);
+  font-size: 12px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
+.publish-panel .panel-title {
+  flex-wrap: wrap;
+  row-gap: 4px;
+}
+
+.panel-title .panel-hint {
+  font-size: 11.5px;
+  font-weight: 500;
+  color: var(--ink-3);
+}
+
+.panel-title .panel-action {
+  margin-left: auto;
+}
+
+.publish-side-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 10px;
+}
+
+.publish-side-head .panel-title {
+  margin: 0;
+}
+
+.publish-preview-card .ant-card-body {
+  padding: 14px;
+}
+
+.publish-preview-frame {
+  transition: max-width 0.2s var(--ease);
+}
+
+.publish-preview-frame.is-mobile {
+  max-width: 320px;
+  margin: 0 auto;
+}
+
+.publish-companions-card .ant-card-body {
+  padding: 16px;
+}
+
+.publish-submit {
+  display: grid;
+  gap: 10px;
+  padding: 14px;
+  border-radius: var(--r);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  box-shadow: var(--sh-1);
+}
+
+.publish-submit .form-actions {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 10px;
+  padding-top: 0;
+  border-top: 0;
+}
+
+.publish-submit .form-actions .ant-btn {
+  width: 100%;
+}
+
+.publish-submit > .ant-btn-link {
+  justify-self: center;
+}
+
+@media (max-width: 1180px) {
+  .ai-condition-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
 @media (max-width: 900px) {
   .publish-grid {
     grid-template-columns: 1fr;
@@ -8950,41 +9094,398 @@ svg {
 }
 
 /* ============================================================
-   AI 智能规划（add-ai-itinerary）：左条件 / 中地图 / 右结果三栏。
-   只用既有令牌；≤1100px 右栏下移，≤768px 单列堆叠。
+   AI 智能规划（add-ai-itinerary）：左对话 / 右完整行程预览（参考稿 v2）。
+   只用既有令牌；≤1100px 预览列下移，≤768px 单列堆叠。
    ============================================================ */
-.ai-planner-page {
+.ai-chat-page {
   width: 100%;
   max-width: 1440px;
   margin: 0 auto;
   padding-bottom: 88px;
 }
 
-.ai-planner-grid {
+.ai-hero {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-bottom: 18px;
+}
+
+.ai-hero-text {
+  min-width: 0;
+}
+
+.ai-hero-title {
+  margin: 0 !important;
+  font-size: clamp(1.6rem, 3.2vw, 2.4rem) !important;
+  font-weight: 800 !important;
+  letter-spacing: -0.03em !important;
+  color: var(--ink) !important;
+}
+
+.ai-hero-sub {
+  margin: 6px 0 0;
+  font-size: 13.5px;
+  color: var(--ink-3);
+}
+
+.ai-hero .page-back {
+  margin-left: auto;
+}
+
+.ai-chat-grid {
   display: grid;
-  grid-template-columns: 320px minmax(0, 1fr) 360px;
+  grid-template-columns: minmax(0, 1.6fr) minmax(320px, 0.95fr);
   gap: 18px;
   align-items: start;
 }
 
-.ai-form,
-.ai-result {
-  min-width: 0;
-}
-
-.ai-result {
+.ai-chat-col,
+.ai-preview-col {
   display: flex;
   flex-direction: column;
   gap: 14px;
-}
-
-.ai-map {
   min-width: 0;
 }
 
 .ai-map-container {
   min-height: 480px;
   height: clamp(480px, 72vh, 780px);
+}
+
+/* ---------- 规划条件（紧凑三列，避免遮住对话） ---------- */
+.ai-condition-card .ant-card-body {
+  padding: 16px;
+}
+
+.ai-condition-head {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 10px;
+}
+
+.ai-condition-head .panel-title {
+  margin: 0;
+}
+
+.ai-condition-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px 12px;
+}
+
+.ai-condition-actions {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 12px;
+}
+
+.ai-origin-tools {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-top: 4px;
+}
+
+.ai-origin-tools .ant-btn {
+  padding: 0 4px;
+  height: 22px;
+  font-size: 11.5px;
+}
+
+/* ---------- 对话线程 ---------- */
+.ai-thread {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 4px 2px;
+}
+
+.ai-msg {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.ai-msg.is-user {
+  flex-direction: row;
+  justify-content: flex-end;
+}
+
+.ai-avatar {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: var(--grad-shore);
+  color: var(--on-deep);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+}
+
+.ai-avatar.is-user {
+  background: var(--grad-sunset);
+}
+
+.ai-bubble {
+  max-width: min(560px, 92%);
+  padding: 14px 16px;
+  border-radius: var(--r);
+  background: var(--surface);
+  border: 1px solid var(--line);
+  box-shadow: var(--sh-1);
+}
+
+.ai-bubble.is-user {
+  background: var(--lagoon-soft);
+  border-color: color-mix(in srgb, var(--lagoon) 26%, transparent);
+}
+
+.ai-bubble-title {
+  margin: 0 0 6px;
+  font-size: 14px;
+  font-weight: 800;
+  color: var(--ink);
+}
+
+.ai-bubble-text {
+  margin: 0 0 8px;
+  font-size: 13px;
+  line-height: 1.65;
+  color: var(--ink-2);
+}
+
+.ai-bubble-text:last-child {
+  margin-bottom: 0;
+}
+
+.ai-welcome-list {
+  display: grid;
+  gap: 5px;
+  margin: 8px 0 10px;
+  padding-left: 20px;
+  font-size: 12.5px;
+  line-height: 1.55;
+  color: var(--ink-2);
+}
+
+.ai-suggestions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 10px;
+}
+
+.ai-suggestion-chip,
+.ai-quick-chip {
+  padding: 5px 12px;
+  border-radius: 999px;
+  border: 1px solid var(--line-2);
+  background: var(--surface-2);
+  color: var(--ink-2);
+  font-size: 12px;
+  cursor: pointer;
+  transition: background 0.18s var(--ease), color 0.18s var(--ease);
+}
+
+.ai-suggestion-chip:hover:not(:disabled),
+.ai-quick-chip:hover:not(:disabled) {
+  background: var(--surface);
+  color: var(--t-lagoon);
+  border-color: color-mix(in srgb, var(--lagoon) 45%, transparent);
+}
+
+.ai-suggestion-chip:disabled,
+.ai-quick-chip:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.ai-msg-time {
+  display: block;
+  margin-top: 6px;
+  font-size: 10.5px;
+  color: var(--ink-3);
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.ai-plan-summary {
+  margin: 8px 0 10px;
+  padding: 12px 14px;
+  border-radius: var(--r-sm);
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+}
+
+.ai-plan-summary-title {
+  margin: 0 0 8px;
+  font-size: 13.5px;
+  font-weight: 800;
+  color: var(--t-lagoon);
+}
+
+.ai-plan-highlights {
+  display: grid;
+  gap: 4px;
+  margin: 0 0 8px;
+  padding: 0;
+  list-style: none;
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--ink-2);
+}
+
+.ai-plan-summary-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  font-size: 11.5px;
+  color: var(--ink-3);
+  font-variant-numeric: tabular-nums;
+}
+
+.ai-msg-error {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  color: var(--t-danger);
+  font-size: 13px;
+}
+
+/* ---------- 输入框 ---------- */
+.ai-composer .ant-card-body {
+  padding: 12px;
+}
+
+.ai-composer-input.ant-input {
+  border: 0;
+  box-shadow: none;
+  padding: 4px 6px;
+  resize: none;
+}
+
+.ai-composer-bar {
+  display: flex;
+  align-items: flex-end;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 8px;
+}
+
+.ai-composer-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  flex: 1;
+  min-width: 0;
+}
+
+/* ---------- 右侧：完整行程预览 ---------- */
+.ai-preview-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.ai-preview-head .panel-title {
+  margin-bottom: 2px;
+}
+
+.ai-preview-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.ai-preview-empty {
+  margin-top: 12px;
+}
+
+.ai-preview-empty-text {
+  margin: 0 0 12px;
+  font-size: 12.5px;
+  color: var(--ink-3);
+}
+
+.ai-preview-facts {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px 14px;
+  margin: 0;
+}
+
+.ai-preview-facts dt {
+  font-size: 10.5px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--ink-3);
+}
+
+.ai-preview-facts dd {
+  margin: 2px 0 0;
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.ai-preview-meta {
+  margin-top: 12px;
+}
+
+.ai-preview-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 10px;
+}
+
+.ai-map-card .ant-card-body {
+  padding: 14px;
+}
+
+/* 预览列的路线地图只做上下文定位，不抢行程时间轴的视觉重心 */
+.ai-map-card .ai-map-container {
+  min-height: 300px;
+  height: clamp(300px, 34vh, 380px);
+}
+
+.ai-map-head {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 10px;
+}
+
+.ai-map-head .panel-title {
+  margin: 0;
+}
+
+/* 预览列只有一列宽，编辑动作改为一行胶囊，避免把时间轴撑高 */
+.ai-preview-col .ai-stop-actions {
+  flex-direction: row;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0 2px;
+  grid-column: 2 / -1;
+}
+
+.ai-preview-col .ai-stop-actions .ant-btn {
+  height: 22px;
+  padding: 0 6px;
+  font-size: 11px;
 }
 
 /* ---------- 左栏：地点与条件 ---------- */
@@ -9596,12 +10097,12 @@ a.admin-metric-card:focus-visible {
 
 /* ---------- 响应式降级 ---------- */
 @media (max-width: 1100px) {
-  .ai-planner-grid {
-    grid-template-columns: 300px minmax(0, 1fr);
+  .ai-chat-grid {
+    grid-template-columns: 1fr;
   }
 
-  .ai-result {
-    grid-column: 1 / -1;
+  .ai-preview-col {
+    order: 2;
   }
 
   .ai-map-container {
@@ -9611,7 +10112,7 @@ a.admin-metric-card:focus-visible {
 }
 
 @media (max-width: 768px) {
-  .ai-planner-grid {
+  .ai-condition-grid {
     grid-template-columns: 1fr;
   }
 
@@ -9822,6 +10323,36 @@ a.admin-metric-card:focus-visible {
   display: flex;
   flex-wrap: wrap;
   gap: 4px;
+}
+
+.recommendation-breakdown {
+  font-size: 12.5px;
+  color: var(--ink-2);
+}
+
+.recommendation-breakdown summary {
+  width: fit-content;
+  color: var(--brand-ink);
+  cursor: pointer;
+}
+
+.recommendation-breakdown-list {
+  display: grid;
+  gap: 2px;
+  margin: 6px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.recommendation-breakdown-list li {
+  display: block;
+  line-height: 1.6;
+}
+
+.recommendation-breakdown-points {
+  font-family: var(--font-num);
+  font-variant-numeric: tabular-nums;
+  color: var(--t-warn);
 }
 
 @media (max-width: 900px) {
