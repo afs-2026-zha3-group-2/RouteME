@@ -72,6 +72,15 @@ test('publisher opens third-party insurance, syncs the state, borrows and repays
   await expect(page.getByTestId('insurance-status')).toContainText('保障中');
   await expect(page.getByRole('button', { name: '已完成投保（演示同步）' })).toHaveCount(0);
 
+  // 期限是三档常驻选项（7 / 14 / 30 天），点击即可切换，不需要打开下拉。
+  const termGroup = page.getByRole('radiogroup', { name: '期限' });
+  await expect(termGroup).toBeVisible();
+  await expect(termGroup.locator('.ant-segmented-item')).toHaveText(['7 天', '14 天', '30 天']);
+  await termGroup.locator('.ant-segmented-item', { hasText: '7 天' }).click();
+  await expect(termGroup.locator('.ant-segmented-item-selected')).toHaveText('7 天');
+  await termGroup.locator('.ant-segmented-item', { hasText: '14 天' }).click();
+  await expect(termGroup.locator('.ant-segmented-item-selected')).toHaveText('14 天');
+
   // 借 1,000 元 / 14 天：到账 950.00，应还 1,000.00。
   await expect(page.getByTestId('loan-preview')).toContainText('¥950.00');
   await expect(page.getByTestId('loan-preview')).toContainText('¥1,000.00');
