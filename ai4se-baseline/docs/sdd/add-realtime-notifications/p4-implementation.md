@@ -57,9 +57,9 @@
 | 契约与接口子集 | `mvnw.cmd -B -ntp test -Dtest=OpenApiTest,NotificationControllerTest,ReportControllerTest` | **40/40**（`OpenApiTest` 含 0.26.0、4 条通知路径、`/reports/mine`、枚举与 `maxItems=50` 断言） |
 | 前端类型（C3） | `frontend/npm run typecheck` | Pass（`tsc --noEmit`，无输出） |
 | 前端单测（C3） | `frontend/npm test` | **530 tests / 63 files Pass**（新增 `notificationModel.test.ts`；合流 `add-travel-finance` 的 39 条 / 4 文件） |
-| 前端构建（C3） | `frontend/npm run build` | Pass：`dist/assets/index-*.js` 1,749.54 kB / gzip 544.24 kB、`index-*.css` 178.99 kB / gzip 31.23 kB；仅有既有 chunk 体积 warning |
-| 通知功能 E2E（C4） | `npx playwright test tests/notifications.spec.ts --workers=1` | **13 passed**（M1–M10 + N1–N3） |
-| 走查 E2E（C5） | `npx playwright test tests/notifications-walkthrough.spec.ts --workers=1` | **4 passed**（V1–V4，约 30 s） |
+| 前端构建（C3） | `frontend/npm run build` | Pass：`dist/assets/index-*.js` 1,783.40 kB / gzip 554.38 kB、`index-*.css` 189.51 kB / gzip 33.07 kB；仅有既有 chunk 体积 warning |
+| 通知功能 E2E（C4） | `npx playwright test tests/notifications.spec.ts --workers=1` | **13 passed**（M1–M10 + N1–N3；合流后对空库 `e2e-notif-8081.db` 复跑） |
+| 走查 E2E（C5） | `npx playwright test tests/notifications-walkthrough.spec.ts --workers=1` | **4 passed**（V1–V4，约 25 s；重出浅色三档截图） |
 | 截图证据 | `docs/preview/notifications-{1440,768,390}-light.png` | 3 张浅色；深色 3 张已随 `main` 移除主题切换一并删除 |
 | 规格校验（C6） | `openspec validate add-realtime-notifications --strict` | `Change 'add-realtime-notifications' is valid` |
 
@@ -137,7 +137,8 @@
 | G2 签署 | `29e811b` docs(p4): sign off G2 and mark REQ-023 p4-pass |
 | G2 后修正（D-7） | `0f9b4de` fix(notifications): anchor the bell panel like the account menu |
 | 八类扩围（D-8…D-15） | `2652bfe` feat(notifications): expand to the eight-type notification centre（含 REQ-029 / S30 工件、契约 0.26.0、前端通知中心与跳转页、E2E 13 + 4、浅色三档截图） |
-| 合流 `origin/main`（D-16） | 合并 `add-travel-finance`（PR #42）后按「后到者顺延」改为 REQ-029 / S30 / 0.26.0 / `V31`，并解 `AppShell` / `openapi.yaml` / `OpenApiTest` / `registry` 冲突 |
+| 合流 `origin/main`（D-16） | `72ff75d` merge: 合并 `add-travel-finance`（PR #42）后按「后到者顺延」改为 REQ-029 / S30 / 0.26.0 / `V31`，并解 `AppShell` / `openapi.yaml` / `OpenApiTest` / `registry` 冲突；合流后后端 `clean test` 671/671、前端 530/530 |
+| 走查证据刷新 | `bf2fe23` test(notifications): 合流后重跑 `notifications.spec.ts` 13/13 与 `notifications-walkthrough.spec.ts` 4/4，重出浅色三档截图 |
 
 ## 9. 下一步
 
