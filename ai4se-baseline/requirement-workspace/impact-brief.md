@@ -1749,7 +1749,7 @@ REQ-010：聊天页按原型重构、聊天准入与退出语义调整、集合�
 | 举报处置前端 | `AdminReportDetailPage.tsx` / `reportActionForm.ts` / `adminMessages.ts` / `types.ts` / `api.ts` | 成立表单含处罚动作 + 封禁字段；无扣分预览 |
 | 举报列表前端 | `AdminReportsPage.tsx` | 列表列不含违规类型 / 扣分 |
 | 契约 | `RouteME/openapi.yaml` | `0.24.0`；`AdminReportResolveRequest` 含处罚字段；无违规类型 |
-| 迁移 | `db/migration` | head `V27`；`reports` 无违规类型 / 扣分列 |
+| 迁移 | `db/migration` | head `V29`；`reports` 无违规类型 / 扣分列 |
 | 测试 | `AdminReportControllerTest`、`admin.spec.ts` | 覆盖开始 / 成立并暂停 / 封禁 / 驳回；需按 D1 重写 |
 | 原型 | `docs/prototype` | 无管理端举报处置界面；P3 先补截点 |
 
@@ -1762,7 +1762,7 @@ REQ-010：聊天页按原型重构、聊天准入与退出语义调整、集合�
 | `credit-enforcement` | 跨 60 自动限制 / 解除 | 只读复用，不改 Delta |
 | `trip-plans` / `trip-companions` / `trip-experiences` | 被举报用户推导 | 只读复用，不改语义 |
 | 契约 | `0.24.0`；`resolve` 请求含 `action` / `ban_*` | 升 `0.25.0`：请求改为 `outcome` / `violation_type` / `other_deduction` / `note`；详情响应补被举报用户信用与违规类型 / 实际扣分 |
-| 迁移 | `V27` | `V28__report_credit_deduction.sql`：`reports` 追加 `violation_type` / `applied_deduction`（可空，兼容历史） |
+| 迁移 | `V29` | `V30__report_credit_deduction.sql`：`reports` 追加 `violation_type` / `applied_deduction`（可空，兼容历史） |
 | 前端 | 成立表单含处罚动作 + 封禁字段 | 违规类型选择 + `OTHER` 档位 + 三分段预览 + 处理历史改版；类型 / API / 文案同步 |
 
 ### 25.4 Blast radius（应用架构）
@@ -1779,7 +1779,7 @@ REQ-010：聊天页按原型重构、聊天准入与退出语义调整、集合�
 - **OpenSpec：** 新增 `openspec/changes/add-report-credit-deduction/`（proposal + 双 Delta + design + tasks）。
 - **需求工作区：** 意图 / Ready / deep-dive 增补 / impact §25 / stories S29 / registry / handoff。
 - **代码：** 后端 `AdminReportServiceImpl` / 请求 / 响应 / 枚举 / 原因码常量；前端 `AdminReportDetailPage` / `reportActionForm.ts` / `adminMessages.ts` / `types.ts` / `api.ts`。
-- **迁移：** `V28` 双引擎（SQLite + H2）。
+- **迁移：** `V30` 双引擎（SQLite + H2）。
 - **测试：** 扣分规则单测、幂等 / 并发、预览口径、低分联动回归、E2E。
 - **文档 / 知识库：** P0–P4 阶段记录、质量报告、评审报告；P5 暂不执行。
 
@@ -1798,7 +1798,7 @@ REQ-010：聊天页按原型重构、聊天准入与退出语义调整、集合�
 | Risk | `resolution_action` 历史数据与新语义共存 | 新值不再写入；旧值只读展示保留；不做回填 |
 | Risk | 预览与实际截断不一致 | 预览以服务端响应为准；E2E 断言 5 → -10 → 0 |
 | Risk | 并发 resolve 双重扣分 | 状态条件更新 + 账本幂等唯一索引双保险；单测覆盖 |
-| Risk | 契约 / 迁移号撞号 | P3 排他确认；预计 `0.25.0` + `V28` |
+| Risk | 契约 / 迁移号撞号 | P3 排他确认；预计 `0.25.0` + `V30` |
 | Risk | 管理端原型缺失 | P3 先补截点（`@rule:prototype-ui-alignment`），只复用现有 `.admin-*` 令牌 |
 | Blocker | 无 | blocking OQ=0、DoR BLOCKER=0、deep-dive ⑨–⑫ 全过 |
 

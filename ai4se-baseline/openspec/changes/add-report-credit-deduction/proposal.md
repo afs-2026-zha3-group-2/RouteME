@@ -44,7 +44,7 @@
 
 | 位置 | 改动 |
 |---|---|
-| `backend/src/main/resources/db/migration/V28__report_credit_deduction.sql`（新增，号待 P3 排他） | `reports` 追加 `violation_type` / `applied_deduction`（可空，兼容历史）；不建新表 |
+| `backend/src/main/resources/db/migration/V30__report_credit_deduction.sql`（新增，号待 P3 排他） | `reports` 追加 `violation_type` / `applied_deduction`（可空，兼容历史）；不建新表 |
 | 后端 `service/impl/AdminReportServiceImpl` | 成立分支改为「校验违规类型 → 计算扣分 → 条件更新报告 → `CreditService.book`」；移除 `applyPenalty` 与账号状态调用 |
 | 后端 `request/AdminReportResolveRequest` | 字段改为 `outcome` / `violation_type` / `other_deduction` / `note`；移除 `action` / `ban_*` |
 | 后端 `response/AdminReportDetailResponse` | 追加被举报用户当前信用分数与等级、违规类型、本次实际扣分（历史值可空） |
@@ -144,7 +144,7 @@
 - **月度口径：** 扣分不受体验获赞月度 +20 上限影响；本变更不引入扣分月度上限。
 - **低分限制：** 只经由既有 `CreditChangedEvent` 消费，不新增限制判定或第二张限制表（D3）。
 - **记录可见性：** 信用记录只在账本与举报详情留痕；不新增用户端 / 管理端信用明细页（D2）。
-- **契约与迁移排他：** `openapi.yaml` 当前 `0.24.0`、Flyway 头 `V27`；预计使用 `0.25.0` 与 `V28`，P3 按合并顺序排他确认。
+- **契约与迁移排他：** `openapi.yaml` 当前 `0.24.0`、Flyway 头 `V29`；预计使用 `0.25.0` 与 `V30`，P3 按合并顺序排他确认。
 - **历史不回填：** 已处理的举报不补扣、不重算。
 - **原型缺口：** 管理端举报处置界面不在原型 v1 中；P3 先补截点（`@rule:prototype-ui-alignment`）。
 - **归档顺序：** `admin-console` 与 `user-credit` 均未归档；本变更 MUST 排在 `add-admin-console` 与 `add-credit-account` 之后归档。
@@ -161,7 +161,7 @@
 | 账本结构 | `V20__add_credit_account.sql`：`credit_ledger` + 幂等唯一索引 |
 | 低分自动限制 | `CreditEnforcementServiceImpl.onCreditChanged`（`>= 60 → < 60` 触发；`< 60 → >= 60` 解除） |
 | 账号处置可独立执行 | `AdminUserDetailPage` + `StatusActionModal` + `AdminUserController` |
-| 当前契约 / 迁移头 | `openapi.yaml` `0.24.0`；`V27__add_credit_learning.sql` |
+| 当前契约 / 迁移头 | `openapi.yaml` `0.24.0`；`V29__credit_exit_application.sql` |
 | 已处理举报记录 | `reports.resolution_action` / `resolution_note` / `processed_by` / `resolved_at` |
 
 ## 5. Affected capabilities
@@ -216,5 +216,5 @@
 | `resolution_action` 历史数据与新语义共存 | 旧举报仍显示历史动作 | 新值不再写入；旧值只读展示；不回填 |
 | 预览与实际截断不一致 | 管理员误解实际扣分 | 预览以服务端响应为准；E2E 断言 5 → -10 → 0 |
 | 并发 resolve 双重扣分 | 重复扣分 | 状态条件更新 + 账本幂等唯一索引双保险；单测覆盖 |
-| 契约 / 迁移号撞号 | 合并冲突 | P3 排他确认；预计 `0.25.0` + `V28` |
+| 契约 / 迁移号撞号 | 合并冲突 | P3 排他确认；预计 `0.25.0` + `V30` |
 | 管理端原型缺失 | 视觉无法对照 | P3 先补截点；只复用现有 `.admin-*` 令牌 |

@@ -116,7 +116,7 @@
 - **月度口径：** 扣分不受体验获赞月度 +20 上限影响；本 change 不引入扣分月度上限。
 - **低分限制：** 只经由既有 `CreditChangedEvent` 消费，不新增限制判定或第二张限制表（D3）。
 - **记录可见性：** 信用记录只在账本与举报详情留痕；不新增用户端 / 管理端信用明细页（D2）。
-- **契约与迁移排他：** `openapi.yaml` 当前 `0.24.0`、Flyway 头 `V27`；预计本变更使用 `0.25.0` 与 `V28`，P3 按合并顺序排他确认。
+- **契约与迁移排他：** `openapi.yaml` 当前 `0.24.0`、Flyway 头 `V29`；预计本变更使用 `0.25.0` 与 `V30`，P3 按合并顺序排他确认。
 - **历史不回填：** 已处理的举报不补扣、不重算。
 - **原型缺口：** 管理端举报处置界面不在原型 v1 中；P3 先补截点（`@rule:prototype-ui-alignment`）。
 
@@ -132,7 +132,7 @@
 | 账本结构 | `V20__add_credit_account.sql`：`credit_ledger` + 幂等唯一索引 |
 | 低分自动限制 | `CreditEnforcementServiceImpl.onCreditChanged`（`>= 60 → < 60` 触发；`< 60 → >= 60` 解除） |
 | 账号处置可独立执行 | `AdminUserDetailPage` + `StatusActionModal` + `AdminUserController` |
-| 当前契约 / 迁移头 | `openapi.yaml` `0.24.0`；`V27__add_credit_learning.sql` |
+| 当前契约 / 迁移头 | `openapi.yaml` `0.24.0`；`V29__credit_exit_application.sql` |
 
 ## 7. Affected capabilities
 

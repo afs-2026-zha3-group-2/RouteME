@@ -35,7 +35,7 @@
 | 管理端账号处置可独立执行 | 用户详情页 `StatusActionModal` + `AdminUserController`（暂停 / 封禁 / 更新封禁 / 恢复） | 从举报页移除处罚动作不会丢失账号处置能力 |
 | 举报详情页已有处理历史区 | `AdminReportDetailPage`：处理人 / 处理时间 / 完成时间 / 处罚动作 / 处理结果 | 需把「处罚动作」改为「违规类型 + 本次扣分」，并补当前分数与预览 |
 | 被举报用户推导唯一 | `ReportTargetService.reportedUserId(report)`：用户 = 本人、行程 = 发布者、体验 = 作者 | 扣分对象无需新增字段 |
-| 契约与迁移头 | `openapi.yaml` `0.24.0`、Flyway 头 `V27__add_credit_learning.sql` | 迁移 / 契约号 P3 排他确认（预计 `V28` / `0.25.0`） |
+| 契约与迁移头 | `openapi.yaml` `0.24.0`、Flyway 头 `V29__credit_exit_application.sql` | 迁移 / 契约号 P3 排他确认（预计 `V30` / `0.25.0`） |
 | 原型无举报处置界面 | `docs/prototype` grep `举报` 仅命中用户侧入口与回执 | P3 先补管理端截点（`@rule:prototype-ui-alignment`） |
 
 ## 用户裁决（2026-11-18）
