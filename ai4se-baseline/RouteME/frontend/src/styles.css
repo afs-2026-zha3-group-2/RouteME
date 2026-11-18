@@ -12338,6 +12338,30 @@ a.admin-metric-card:focus-visible {
   font-size: 13.5px;
 }
 
+/* 应还金额是本页最需要被一眼看到的数字：加粗放大并用主色，标签退为小字。 */
+.fin-repay {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 6px;
+}
+
+.fin-repay em {
+  font-style: normal;
+  font-size: 11.5px;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  color: var(--ink-3);
+}
+
+.fin-repay b,
+.fin-row-side .fin-repay b {
+  font-family: var(--font-num);
+  font-size: 18px;
+  font-weight: 700;
+  line-height: 1.15;
+  color: var(--t-lagoon);
+}
+
 .fin-row-actions {
   display: inline-flex;
   align-items: center;

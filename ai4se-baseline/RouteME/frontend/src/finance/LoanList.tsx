@@ -53,9 +53,10 @@ export function LoanList({ loans, tripTitles, busyLoanId, onRepay }: Props) {
               </span>
             </div>
             <div className="fin-row-side">
-              <b>
-                {m.loanRepayPreview} {money(loan.repay_cents)}
-              </b>
+              <span className="fin-repay">
+                <em>{m.loanRepayPreview}</em>
+                <b>{money(loan.repay_cents)}</b>
+              </span>
               <span>
                 {m.loanNetPreview} {money(loan.disbursed_cents)} · {m.loanFeePreview}{' '}
                 {money(loan.service_fee_cents)}

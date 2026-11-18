@@ -27,8 +27,11 @@ export function LoanForm({ activeLoan, disabled, submitting, onSubmit }: Props) 
         <h3 className="panel-title">{m.loanTitle}</h3>
         <p className="fin-warning">{m.loanActiveHint}</p>
         <Typography.Text type="secondary">
-          {m.loanNetPreview} {money(activeLoan.disbursed_cents)} · {m.loanRepayPreview}{' '}
-          {money(activeLoan.repay_cents)}
+          {m.loanNetPreview} {money(activeLoan.disbursed_cents)} ·{' '}
+          <span className="fin-repay">
+            <em>{m.loanRepayPreview}</em>
+            <b>{money(activeLoan.repay_cents)}</b>
+          </span>
         </Typography.Text>
         <a className="fin-link" href="#/finance">
           {m.loanActiveLink}
@@ -89,8 +92,12 @@ export function LoanForm({ activeLoan, disabled, submitting, onSubmit }: Props) 
       </div>
       {invalid && <p className="fin-error">{m.loanInvalidAmount}</p>}
       <p className="fin-preview" data-testid="loan-preview">
-        {m.loanNetPreview} <b>{money(netOf(principalCents))}</b> · {m.loanRepayPreview}{' '}
-        <b>{money(principalCents)}</b>（{m.loanFeePreview} {money(fee)}，{m.loanNoInterest}）
+        {m.loanNetPreview} <b>{money(netOf(principalCents))}</b> ·{' '}
+        <span className="fin-repay">
+          <em>{m.loanRepayPreview}</em>
+          <b>{money(principalCents)}</b>
+        </span>
+        （{m.loanFeePreview} {money(fee)}，{m.loanNoInterest}）
       </p>
       <Button
         type="primary"
