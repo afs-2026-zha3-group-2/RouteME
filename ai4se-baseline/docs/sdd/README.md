@@ -79,6 +79,7 @@
 - 一个 change 的每个阶段对应**一次提交**，提交信息为 `<type>(p<N>): <change-id> <description>`。
   - 该写法是 `@rule:git-commit-conventions`（只允许 `verify` / `archive` 两个 stage）的本地扩展：本仓库按阶段留痕，因此 stage 位使用 `p0`–`p4`。`change-id` 仍出现在每条信息里，可从提交反查规格。
   - P4 仍承担该 change 的 verify 语义：代码、测试、验证证据与 G2 签署在同一条链路内。
+- **提交信息必须全英文（强制，含阶段提交与 merge 提交）：** 主题与正文都不得出现中文字符，`<type>`、`<stage>`、`<change-id>`、`<description>` 均为英文；中文专名写成英文原词或拼音。详见 `@rule:git-commit-conventions`。
 - 每个阶段提交必须包含该阶段的签署记录；签署缺失视为阶段未完成。
 - 提交前必须满足「记录人姓名规则」：记录人、Owner、签署人已确认为当次实际开发人。
 - 未归档的 change 不产生 P5 提交；P5 记录随归档提交写入 `changes/archive/`。
