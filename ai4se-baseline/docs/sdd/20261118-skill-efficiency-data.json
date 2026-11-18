@@ -40,7 +40,17 @@
     "ci_jobs": { "before": 2, "after": 4 }
   },
   "e2e": {
-    "full_suite_wall_minutes_before": 9,
+    "full_suite_ab_measured": {
+      "a_serial_minutes": 18.4,
+      "b_shard3_minutes": [7.72, 7.83],
+      "speedup": 2.37,
+      "saved_minutes_per_run": 10.6,
+      "cases": 217,
+      "b_sample_diff_pct": 1.5,
+      "same_code_evidence": "git diff 407b7db2..53f8c557 -- e2e/tests frontend/src is empty",
+      "source": "docs/ai4se-plugins/20261118-203141-e2e-full-suite-ab-report.md (commit a9f6819d)"
+    },
+    "full_suite_wall_minutes_early_sample": 9,
     "smoke_cases": 16,
     "smoke_execution_seconds": 57.1,
     "smoke_result": { "passed": 15, "failed": 1, "failed_is_pending_debt": true },
@@ -62,7 +72,7 @@
   },
   "caveats": [
     "50-minute window covers 6 branches + 2 concurrent catch-ups + 2 full re-verifications; not a single-branch timing",
-    "sharded full-suite ~3 min is a projection, not yet measured; 57.1s is smoke test execution only (excludes stack boot)",
+    "sharded full-suite numbers are A/B measured with identical code and two B samples (1.5% apart); 57.1s is smoke test execution only (excludes stack boot)",
     "deferral counts are historical stock; gate value = 0 new collisions merged + negative probe"
   ]
 }
