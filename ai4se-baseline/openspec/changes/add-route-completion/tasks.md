@@ -19,7 +19,7 @@
 - [x] T6 个人主页展示：hero 追加完成度行；i18n 4 条；`.profile-completion` 四档样式；产物 `profile/ProfilePage.tsx`、`i18n/tripMessages.ts`、`styles.css`；验收：与 T0 预览一致；四宽度 × 深浅色无溢出；弹窗 / 卡片 / 详情 / 列表无该行。
 - [x] T7 E2E（先红）：`route-completion.spec.ts` A9–A14；验收：真态「暂无足够完成记录」；`page.route` 注入 good / neutral / watch 文案正确；禁用措辞不存在；无列表 / 详情出现。
 - [x] T8 全量回归 + 本地验证报告：产物 `docs/ai4se-plugins/<ts>-local-verify-report.md`；验收：后端 `mvnw verify`、前端 `typecheck / build / test`、E2E 本 spec + 受影响回归、`openspec validate --strict`、Redocly 全绿或有归因。
-- [ ] T9 阶段收尾：P4 阶段记录 + G2 决策（VL 签署）+ 质量检查；产物 `docs/sdd/add-route-completion/p4-implement.md`、`g2-decision.md`、P4 质量报告；验收：记录提交、G2 签署位齐、P4 质量 Overall Pass。
+- [x] T9 阶段收尾：P4 阶段记录 + G2 决策（VL 签署）+ 质量检查；产物 `docs/sdd/add-route-completion/p4-implement.md`、`g2-decision.md`、P4 质量报告；验收：记录提交、G2 签署位齐、P4 质量 Overall Pass。
 
 ## 对齐自检（Spec ↔ Design ↔ Tasks ↔ ATDD）
 
