@@ -1,11 +1,11 @@
-# REQ-030 意图捕获 — 路线完成度（issue #45 / S31）
+# REQ-031 意图捕获 — 路线完成度（issue #45 / S32）
 
-- **需求编号：** REQ-030
+- **需求编号：** REQ-031
 - **Change：** `add-route-completion`
 - **能力：** `route-completion`（ADDED）
 - **来源：** GitHub issue #45「路线完成度」（作者 Jaha0711，指派 Neal802；OPEN；P1 / 迭代 3 / 3 点；落点页面：用户主页 / 推荐列表 / 行程详情）
 - **状态：** Discovery Go；阻塞 OQ 0；DoR BLOCKER 0
-- **编号说明：** 起草时按 `origin/main@aa320dc` 顺位登记为 REQ-029 / S30；同日发现并行 change `add-growth-level`（issue #44 用户成长等级）已在独立 worktree 登记同号，按用户裁决（2026-11-18）本 change 改为 **REQ-030 / S31**；change-id / 能力名不变。
+- **编号说明：** 起草时按 `origin/main@aa320dc` 顺位登记为 REQ-029 / S30；随后 `origin/main@8992853` 已用 REQ-029 / S30（`refine-publish-route-map`）与 REQ-030（`add-report-credit-deduction`），并行 change `add-growth-level` 已推送 REQ-030 / S31；按用户裁决（2026-11-18）本 change 最终为 **REQ-031 / S32**；change-id / 能力名不变。
 - **基线：** `origin/main@aa320dc`（独立 worktree `.worktrees/add-route-completion`，分支 `feature/add-route-completion`）
 
 ## 1. 原始诉求（issue #45 摘要）
@@ -51,7 +51,7 @@
 | D1 | 当前版本没有人工打卡，数值从哪里来？ | **仅预留 + 数据不足**：所有用户一律返回「暂无足够完成记录」；不做临时计算、不造假数据；后端仍实现阈值 → 标签派生逻辑 | 最贴合 issue「当前版本先完成字段、接口和 UI 展示入口，打卡后续实现」；避免用已结束行程冒充有效完成 |
 | D2 | 多少条已结束行程算「足够数据」？ | **≥1 条**已结束行程，且存在有效完成度数据（本期不存在） | 满足阈值时即展示；少于 1 条直接数据不足 |
 | D3 | 「推荐列表」指哪个现有界面？ | **本期不做列表类落点**；只做个人主页 | main 的同行者推荐引擎已在 `c516d76` 移除，当前没有对应的推荐列表；不重建推荐引擎 |
-| D4 | 编号与命名 | **REQ-030 / S31**；change `add-route-completion`；capability `route-completion`；分支 `feature/add-route-completion` | `aa320dc` 上 REQ-028 / S29 已被 `add-travel-finance` 占用；REQ-029 / S30 由并行 `add-growth-level`（issue #44）登记，按用户裁决顺延为 REQ-030 / S31 |
+| D4 | 编号与命名 | **REQ-031 / S32**；change `add-route-completion`；capability `route-completion`；分支 `feature/add-route-completion` | `aa320dc` 上 REQ-028 / S29 已被 `add-travel-finance` 占用；REQ-029 / S30 由并行 `add-growth-level`（issue #44）登记，按用户裁决顺延为 REQ-031 / S32 |
 | D5 | 「具体路线完成度」的展示形态？ | **标签 + 百分比**；数据不足时只显示「暂无足够完成记录」 | 让浏览者既能看到数值又能看到信誉结论；中性档只显示百分比 |
 | D6 | 未来聚合的统计范围？ | **发布者 + 已接受同行者**参与的已结束行程都计入 | 作为同行者履约同样代表「经常完成旅行计划」 |
 | D7 | 「预留字段」落在哪一层？ | **仅接口字段**：`GET /users/{userId}/profile` 响应增加只读完成度字段；不落库、不新增迁移 | 本期无写入方，先建表属于死重；未来打卡聚合上线后再决定存储 |
@@ -103,5 +103,5 @@
 | 前端自行算标签（违反 AC 12） | 后端返回状态码；Delta 规定前端只做字典映射；单测覆盖「页面不得出现阈值常量」 |
 | 与信用分 / 统计被误接 | Delta 增加独立性要求与回归断言（信用字段、`stats` 不变） |
 | 未来聚合口径漂移 | D2 / D6 固化「≥1 条已结束行程 + 发布者/同行者」；聚合算法仍属后续卡片 |
-| 契约版本与在途 change 撞号 | P3 按合并顺序排他确认（当前基线 0.25.0，本 change 预计 0.26.0） |
+| 契约版本与在途 change 撞号 | P3 按合并顺序排他确认（当前基线 0.25.0，本 change 预计 0.27.0） |
 | 展示位与既有 hero 版式冲突 | 复用 `.profile-credit` 同区域行模式；P3 预览 + 1440/1024/768/390 × 深浅色走查 |

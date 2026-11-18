@@ -51,6 +51,14 @@ public class CreditServiceImpl extends AbstractServiceImpl<CreditLedgerMapper, C
     }
 
     @Override
+    public UserCredit snapshot(long userId) {
+        UserCreditAccountEntity existing = accountMapper.selectById(userId);
+        return existing == null
+                ? UserCredit.of(userId, UserCredit.INITIAL_SCORE)
+                : toCredit(existing);
+    }
+
+    @Override
     @Transactional
     public UserCredit ensureAccount(long userId) {
         UserCreditAccountEntity existing = accountMapper.selectById(userId);

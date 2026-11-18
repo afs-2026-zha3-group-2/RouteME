@@ -1,4 +1,4 @@
-# P2 — add-route-completion（REQ-030 / S31 路线完成度）
+# P2 — add-route-completion（REQ-031 / S32 路线完成度）
 
 - **日期：** 2026-11-18 ｜ **记录人：** Neal（当前开发者）｜ **阶段：** P2 Pass（G1 Pass）
 - **Change：** `add-route-completion`
@@ -11,15 +11,15 @@
 |---|---|---|
 | 提案 | `openspec/changes/add-route-completion/proposal.md` | P1 已签（WAYNE）；P2 仅同步序列化措辞与计数 |
 | P1 Delta | `openspec/changes/add-route-completion/specs/route-completion/spec.md` | ADDED 6 Requirement / 19 Scenario（起草误记） |
-| 需求条目 | `requirement-workspace/requirements/REQ-030-route-completion.md` | 19 场景 S31-1 ~ S31-19；blocking OQ 0；DoR BLOCKER 0 |
-| 意图 / 深挖 / 影响面 | `intents/REQ-030-route-completion.md`、`deep-dive.md`「REQ-030 增补」、`impact-brief.md` §30 | D1–D8；①–④ 四表；as-is 与逐资产 delta |
-| 只读基线 | `UserProfileResponse`（类级 `@JsonInclude(NON_NULL)`）、`openapi.yaml` 0.25.0 `UserProfile`、`ProfilePage` hero `.profile-credit` | 无完成度实现；既有可空字段均 `nullable: true` 且不入 `required` |
+| 需求条目 | `requirement-workspace/requirements/REQ-031-route-completion.md` | 19 场景 S32-1 ~ S32-19；blocking OQ 0；DoR BLOCKER 0 |
+| 意图 / 深挖 / 影响面 | `intents/REQ-031-route-completion.md`、`deep-dive.md`「REQ-031 增补」、`impact-brief.md` §31 | D1–D8；①–④ 四表；as-is 与逐资产 delta |
+| 只读基线 | `UserProfileResponse`（类级 `@JsonInclude(NON_NULL)`）、`openapi.yaml` 0.25.0（合并后 0.26.0）`UserProfile`、`ProfilePage` hero `.profile-credit` | 无完成度实现；既有可空字段均 `nullable: true` 且不入 `required` |
 
 ## 2. Delta 收敛
 
-- **空值序列化（P1 评审 F-1 / F-3，用户 2026-11-18 裁决）：** 数据不足时 **省略** `route_completion_rate`（值语义为空），沿用类级 `@JsonInclude(NON_NULL)`；`route_completion_state` **恒返回并列入 `UserProfile.required`**。Delta 5 处、proposal 5 处、Ready（S31-1 / S31-2 / S31-19 / Constraints）与 deep-dive 探针记录同步。
+- **空值序列化（P1 评审 F-1 / F-3，用户 2026-11-18 裁决）：** 数据不足时 **省略** `route_completion_rate`（值语义为空），沿用类级 `@JsonInclude(NON_NULL)`；`route_completion_state` **恒返回并列入 `UserProfile.required`**。Delta 5 处、proposal 5 处、Ready（S32-1 / S32-2 / S32-19 / Constraints）与 deep-dive 探针记录同步。
 - **场景结构：** 18/18 场景补齐 Given / When / Then（P2 新增 12 处 `When`）。
-- **计数更正：** Delta 实为 6 Requirement / 18 Scenario（P1 误记 19）；REQ 的 S31-3 与 S31-15 在「数据不足展示」合并为一个场景，映射见 `dov-ac-review.md`。
+- **计数更正：** Delta 实为 6 Requirement / 18 Scenario（P1 误记 19）；REQ 的 S32-3 与 S32-15 在「数据不足展示」合并为一个场景，映射见 `dov-ac-review.md`。
 - `openspec validate add-route-completion --strict` → `Change 'add-route-completion' is valid`；`openspec show --json` → 6 个 Delta 条目均为 `route-completion`。
 
 ## 3. AC / DoV 复核
@@ -35,7 +35,7 @@
 `openspec/changes/add-route-completion/consistency-lint.md`：
 
 - **Verdict：Pass** — 0 BLOCKER / 0 WARNING / 5 SUGGESTION / 6 N/A。
-- SUGGESTION：计数更正已消解、P3 契约细节（`required` 写法 / 示例 / 0.26.0）、Living Spec 待 P5 新建、聚合算法显式推迟、P4 断言锁定「省略 vs null」。
+- SUGGESTION：计数更正已消解、P3 契约细节（`required` 写法 / 示例 / 0.27.0）、Living Spec 待 P5 新建、聚合算法显式推迟、P4 断言锁定「省略 vs null」。
 
 ## 5. G1（`openspec/changes/add-route-completion/g1-decision.md`）
 
@@ -45,7 +45,7 @@
 | SA | Jacky | Pass | 2026-11-18 | 发起人当次会话确认 |
 
 - **Decision：Pass（无条件）**。
-- 后续跟踪（非 G1 条件）：T1 契约定稿（`nullable` / `required` / 示例 / 0.26.0）、T2 原型先行（完成度行版式与色阶）、T3 E2E 夹具、T4 归档顺序、T5 未来打卡与聚合算法独立开卡。
+- 后续跟踪（非 G1 条件）：T1 契约定稿（`nullable` / `required` / 示例 / 0.27.0）、T2 原型先行（完成度行版式与色阶）、T3 E2E 夹具、T4 归档顺序、T5 未来打卡与聚合算法独立开卡。
 
 ## 6. 工件评审
 
@@ -64,7 +64,7 @@
 
 | 阶段 | 提交 | 说明 |
 |---|---|---|
-| P1 | `9be83e6` | `docs(p1): add-route-completion add REQ-030 S31 intent proposal and delta` |
+| P1 | `9be83e6` | `docs(p1): add-route-completion add REQ-031 S32 intent proposal and delta` |
 | P2 | 待提交 | `docs(p2): add-route-completion refine the delta and record G1` |
 
 ## 9. 下一阶段

@@ -10,8 +10,8 @@
 
 | id | severity | phase | location | issue | suggested_fix | evidence | authority |
 |---|---|---|---|---|---|---|---|
-| L-01 | SUGGESTION（已消解） | p2 | `specs/route-completion/spec.md` 头部计数 / proposal「Impact」 | P1 起草时把 Delta 场景数误记为 19（REQ 提示 S31-3 与 S31-15 在 Delta 合并为同一场景，实际 18） | 已在 P2 更正 Delta 头部、proposal、p1-intent 与 spec 评审报告（追加变更摘要），无需进一步动作 | `[fact]` | spec |
-| L-02 | SUGGESTION（P3 承接） | p2 | Delta「资料响应兼容与访问控制」 | 契约层细节（`UserProfile.required` 的具体写法、示例值、契约版本 `0.26.0`）未在 Delta 展开 | P3 契约定稿时写入 `openapi.yaml` 并同步 `OpenApiTest`；Delta 已定「恒返回并列入 `required` / 可空可省略」的行为口径 | `[inference]` | spec |
+| L-01 | SUGGESTION（已消解） | p2 | `specs/route-completion/spec.md` 头部计数 / proposal「Impact」 | P1 起草时把 Delta 场景数误记为 19（REQ 提示 S32-3 与 S32-15 在 Delta 合并为同一场景，实际 18） | 已在 P2 更正 Delta 头部、proposal、p1-intent 与 spec 评审报告（追加变更摘要），无需进一步动作 | `[fact]` | spec |
+| L-02 | SUGGESTION（P3 承接） | p2 | Delta「资料响应兼容与访问控制」 | 契约层细节（`UserProfile.required` 的具体写法、示例值、契约版本 `0.27.0`）未在 Delta 展开 | P3 契约定稿时写入 `openapi.yaml` 并同步 `OpenApiTest`；Delta 已定「恒返回并列入 `required` / 可空可省略」的行为口径 | `[inference]` | spec |
 | L-03 | SUGGESTION | p2 | `openspec/specs/route-completion/`（不存在） | `route-completion` 为新能力，Living Spec 尚不存在 | P5 归档时新建 Living Spec；本 change 的归档需排在 `add-credit-account` / `add-travel-finance` 等已合并但未归档的 change 之后，无冲突 | `[fact]` | spec |
 | L-04 | SUGGESTION（显式推迟） | p2 | Delta「数据充足判定与统计范围」 | 未来聚合算法（单行程均值 vs 打卡点加权）与样本门槛的进一步细化未定 | 已由 proposal「Out of Scope」显式推迟到后续卡片；若未来口径与本 Delta 冲突，先改规格 | `[fact]` | proposal |
 | L-05 | SUGGESTION（P3/P4 验证） | p2 | Delta「预留路线完成度字段与数据不足口径」 | 「数据不足时省略字段」依赖 `UserProfileResponse` 类级 `@JsonInclude(NON_NULL)`；若 P3 改成逐字段覆盖或其他序列化策略，需回写 Delta | P4 用 API 断言锁定「数据不足时 JSON 不含 `route_completion_rate`、含 `route_completion_state = insufficient`」 | `[inference]` | code |
@@ -69,7 +69,7 @@
 ## Residual risks
 
 - 本版本全部用户为 `insufficient`；`good` / `neutral` / `watch` 依赖夹具或接口拦截验证，真实数据路径待打卡聚合卡片。
-- 契约版本 `0.26.0` 依赖合并顺序；被在途 change 抢占时整体顺延并同步 `OpenApiTest`。
+- 契约版本 `0.27.0` 依赖合并顺序；被在途 change 抢占时整体顺延并同步 `OpenApiTest`。
 - 若 P3 改变序列化策略（逐字段覆盖或统一 `null`），Delta 与本报告的口径需回写并重评。
 - P3 视觉细节（`neutral` / `insufficient` 色阶、行高）未定，需按原型先行并走查四宽度 × 深浅色。
 

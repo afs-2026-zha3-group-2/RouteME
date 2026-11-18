@@ -254,6 +254,46 @@ class AdminUserControllerTest {
     }
 
     @Test
+    void in_bannedUser_out_updateBanChangesReasonAndExpiry() throws Exception {
+        String admin = login("admin", "admin12345");
+        String user = register("UpdateBan");
+        changeStatus(admin, userId(user), """
+                {"action":"BAN","reason":"first","ban_reason_code":"HARASSMENT",
+                 "ban_expires_at":"%s"}
+                """.formatted(FUTURE)).andExpect(status().isOk());
+
+        changeStatus(admin, userId(user), """
+                {"action":"BAN","reason":"extend","ban_reason_code":"PRIVACY_LEAK",
+                 "ban_reason_note":"second","ban_expires_at":"2027-06-01T00:00:00Z"}
+                """)
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("BANNED"))
+                .andExpect(jsonPath("$.status_reason").value("extend"))
+                .andExpect(jsonPath("$.ban_reason_code").value("PRIVACY_LEAK"))
+                .andExpect(jsonPath("$.ban_reason_note").value("second"))
+                .andExpect(jsonPath("$.ban_expires_at").value("2027-06-01T00:00:00Z"));
+    }
+
+    @Test
+    void in_bannedUser_out_restoreToActive() throws Exception {
+        String admin = login("admin", "admin12345");
+        String user = register("RestoreBanned");
+        changeStatus(admin, userId(user), """
+                {"action":"BAN","reason":"ban","ban_reason_code":"HARASSMENT",
+                 "ban_expires_at":"%s"}
+                """.formatted(FUTURE)).andExpect(status().isOk());
+
+        changeStatus(admin, userId(user), """
+                {"action":"RESTORE","reason":"人工恢复"}
+                """)
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("ACTIVE"))
+                .andExpect(jsonPath("$.status_reason").value("人工恢复"))
+                .andExpect(jsonPath("$.ban_expires_at").doesNotExist())
+                .andExpect(jsonPath("$.ban_reason_code").doesNotExist());
+    }
+
+    @Test
     void in_suspendTwice_out_invalidTransition() throws Exception {
         String admin = login("admin", "admin12345");
         String user = register("TwiceSuspend");

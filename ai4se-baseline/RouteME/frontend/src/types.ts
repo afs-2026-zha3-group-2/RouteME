@@ -264,6 +264,8 @@ export type LeaveRecord = {
   applied_delta: number;
   monthly_ordinal: number;
   attachments: LeaveRecordAttachment[];
+  /** 这次退出所属的同行申请 id；旧数据可能为空。 */
+  application_id?: number | null;
 };
 
 export type TripCreateRequest = {
@@ -307,7 +309,27 @@ export type TripApplication = {
   status: ApplicationStatus;
   created_at: string;
   decided_at: string | null;
+  /** 状态原因码：USER_CANCEL / PUBLISHER_REJECT / USER_EXIT / TRIP_CANCELLED / TRIP_COMPLETED / CREDIT_RESTRICTION；旧后端缺省。 */
+  status_reason?: string | null;
   trip: TripSummary;
+};
+
+/** 「我申请的」按行程聚合后的状态计数；total 含当前这次申请。 */
+export type AppliedStatusCounts = {
+  total: number;
+  pending: number;
+  accepted: number;
+  rejected: number;
+  cancelled: number;
+  left: number;
+};
+
+/** 同一行程的多次申请聚成一行：latest 决定行状态与动作，history 供记录时间线使用。 */
+export type AppliedTripGroup = {
+  trip_id: number;
+  latest: TripApplication;
+  history: TripApplication[];
+  counts: AppliedStatusCounts;
 };
 
 export type ChatMessage = {
@@ -403,6 +425,17 @@ export type ReportStatus = 'PENDING' | 'PROCESSING' | 'RESOLVED' | 'REJECTED';
 
 export type ReportResolutionAction = 'SUSPEND' | 'BAN' | 'KEEP' | 'UPDATE_BAN' | 'REJECT';
 
+/** 举报违规类型（扣分由服务端按类型派生）。 */
+export type ReportViolationType =
+  | 'HARASSMENT'
+  | 'FAKE_TRIP'
+  | 'FRAUD_RISK'
+  | 'ILLEGAL_CONTENT'
+  | 'IMPERSONATION'
+  | 'NO_SHOW_DISRUPTION'
+  | 'PRIVACY_LEAK'
+  | 'OTHER';
+
 export type ServiceSessionStatus = 'WAITING' | 'HANDLING' | 'CLOSED';
 
 export type AdminStatusAction = 'SUSPEND' | 'BAN' | 'RESTORE';
@@ -481,6 +514,8 @@ export type ReportedUser = {
   id: number;
   nickname: string;
   status: AccountStatus;
+  credit_score?: number | null;
+  credit_level?: CreditLevel | null;
 };
 
 /** 举报队列行（`GET /admin/reports`）。 */
@@ -543,15 +578,15 @@ export type AdminReportDetail = AdminReportSummary & {
   resolved_at?: string | null;
   resolution_note?: string | null;
   resolution_action?: ReportResolutionAction | null;
+  violation_type?: ReportViolationType | null;
+  applied_deduction?: number | null;
 };
 
 export type AdminReportResolveRequest = {
   outcome: 'RESOLVED' | 'REJECTED';
   note: string;
-  action?: Exclude<ReportResolutionAction, 'REJECT'> | null;
-  ban_reason_code?: BanReasonCode | null;
-  ban_reason_note?: string | null;
-  ban_expires_at?: string | null;
+  violation_type?: ReportViolationType | null;
+  other_deduction?: number | null;
 };
 
 export type ServiceUser = {

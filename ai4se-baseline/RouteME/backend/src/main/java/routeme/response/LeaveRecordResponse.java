@@ -8,6 +8,7 @@ import routeme.entity.CreditExitEventEntity;
 
 /**
  * 本人查看自己的退出记录：原因、说明、信用影响与证明材料；只读。
+ * applicationId 关联这次退出所属的同行关系，旧数据可能为空。
  */
 public record LeaveRecordResponse(
         String reason,
@@ -17,7 +18,8 @@ public record LeaveRecordResponse(
         int theoreticalDelta,
         int appliedDelta,
         int monthlyOrdinal,
-        List<LeaveRecordAttachmentResponse> attachments) {
+        List<LeaveRecordAttachmentResponse> attachments,
+        Long applicationId) {
 
     public static LeaveRecordResponse from(
             CreditExitEventEntity event, List<CreditExitAttachmentEntity> attachments) {
@@ -31,7 +33,8 @@ public record LeaveRecordResponse(
                 event.getMonthlyOrdinal(),
                 attachments.stream()
                         .map(LeaveRecordAttachmentResponse::from)
-                        .toList());
+                        .toList(),
+                event.getApplicationId());
     }
 
     public record LeaveRecordAttachmentResponse(

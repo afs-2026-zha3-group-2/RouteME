@@ -1823,7 +1823,7 @@ REQ-010：聊天页按原型重构、聊天准入与退出语义调整、集合�
 - **阶段：** 单阶段；无归档前置依赖（`travel-finance` 全新能力），但需与在途 `add-realtime-notifications` 协调契约版本与迁移号。
 - **质量自检（split-heuristics）：** 子目标一句话可说明 ✓；端到端可观察（充值初始余额 → 买保险 / 借款 → 扣 5% → 还款）✓；可独立运行 ✓；capability 名真实（`travel-finance`）✓；无依赖环 ✓；33 场景接近单 change 上限，P2 可再合并同义场景。
 
-## 30. REQ-030 变更影响 — 路线完成度（S31 / issue #45）
+## 31. REQ-031 变更影响 — 路线完成度（S32 / issue #45）
 
 - **日期：** 2026-11-18 ｜ **触发：** GitHub issue #45「路线完成度」+ 用户裁决 D1–D8
 - **粒度：** 应用架构（资料响应契约 / 完成度派生归属 / 个人主页展示面 / 独立性边界），非代码设计
@@ -1831,10 +1831,10 @@ REQ-010：聊天页按原型重构、聊天准入与退出语义调整、集合�
 
 ### 30.1 Requirement set
 
-- `requirement-workspace/requirements/REQ-030-route-completion.md`（Ready 条目，19 场景 S31-1 ~ S31-19，blocking OQ 0，DoR BLOCKER 0）
-- `requirement-workspace/intents/REQ-030-route-completion.md`（意图捕获 + 证据锚点 + D1–D8）
+- `requirement-workspace/requirements/REQ-031-route-completion.md`（Ready 条目，19 场景 S32-1 ~ S32-19，blocking OQ 0，DoR BLOCKER 0）
+- `requirement-workspace/intents/REQ-031-route-completion.md`（意图捕获 + 证据锚点 + D1–D8）
 - 新增能力：`route-completion`（ADDED）；只读依赖 `user-profile` / `user-profiles`（资料响应承载）；未来只读 `trip-plans` / `trip-companions`
-- 用户裁决：D1 仅预留 + 数据不足 / D2 阈值 ≥1 条已结束行程 / D3 本期不做列表 / D4 REQ-030·S31·`add-route-completion`·`route-completion` / D5 标签 + 百分比 / D6 发布者 + `ACCEPTED` 同行者 / D7 仅接口字段无迁移 / D8 本人他人同口径 + 状态码
+- 用户裁决：D1 仅预留 + 数据不足 / D2 阈值 ≥1 条已结束行程 / D3 本期不做列表 / D4 REQ-031·S32·`add-route-completion`·`route-completion` / D5 标签 + 百分比 / D6 发布者 + `ACCEPTED` 同行者 / D7 仅接口字段无迁移 / D8 本人他人同口径 + 状态码
 
 ### 30.2 As-is asset inventory（evidence paths）
 
@@ -1845,7 +1845,7 @@ REQ-010：聊天页按原型重构、聊天准入与退出语义调整、集合�
 | 个人主页 | `frontend/src/profile/ProfilePage.tsx` | hero 含头像、昵称、徽标、`.profile-credit` 信用行、chips；无完成度行 |
 | 状态映射范式 | `frontend/src/profile/creditDisplay.ts`、`i18n/tripMessages.ts` | 信用等级英文码 → 文案；可复用为完成度状态码 |
 | 前端类型 | `frontend/src/types.ts`、`api.ts` | `UserProfile` 与 `loadUserProfile`；无完成度字段 |
-| 契约 | `RouteME/openapi.yaml` | `info.version: 0.25.0`；`UserProfile` schema；`/users/{userId}/profile` |
+| 契约 | `RouteME/openapi.yaml` | `info.version: 0.26.0`；`UserProfile` schema；`/users/{userId}/profile` |
 | 行程状态 | `openspec/changes/add-trip-completion/`（REQ-011） | `completed_at` + 四态派生；未来完成度样本来源 |
 | 同行关系 | Living Spec `openspec/specs/trip-companions/spec.md` | `ACCEPTED` 即同行者；未来样本范围 |
 | 信用分 | `openspec/changes/add-credit-account/`、`V20__add_credit_account.sql` | 独立账户 + 账本；本 change 不读不写 |
@@ -1864,7 +1864,7 @@ REQ-010：聊天页按原型重构、聊天准入与退出语义调整、集合�
 | 前端类型 | 无字段 | `UserProfile` 增加两字段（可选 / 可空），`loadUserProfile` 不变 |
 | 个人主页 | 信用行下方无内容 | 新增完成度行：四态文案 + 百分比；`insufficient` 只显示「暂无足够完成记录」 |
 | i18n | 无文案 | 新增「路线完成度」「信誉良好」「请留意行程完成情况」「暂无足够完成记录」 |
-| 契约 | 0.25.0 | 次版本（预计 0.26.0）+ `UserProfile` schema 两字段 + 示例；`OpenApiTest` 同步 |
+| 契约 | 0.26.0 | 次版本（预计 0.27.0）+ `UserProfile` schema 两字段 + 示例；`OpenApiTest` 同步 |
 | 数据表 / 迁移 | 无 | **无 delta**（D7） |
 | 列表 / 弹窗 / 详情 | 无 | **无 delta**（D3） |
 | 信用分 / 统计 / 成长等级 | 既有 | **无 delta**；新增回归断言验独立性 |
@@ -1887,7 +1887,7 @@ REQ-010：聊天页按原型重构、聊天准入与退出语义调整、集合�
 |---|---|
 | OpenSpec Delta | `route-completion` **ADDED**（字段预留与数据不足 / 阈值派生 / 个人主页展示 / 独立性 / 兼容）；无 MODIFIED、无 REMOVED |
 | 长期规格 | 归档后新增 Living Spec `openspec/specs/route-completion/spec.md` |
-| 契约 | `openapi.yaml` 次版本（预计 0.26.0）+ `UserProfile` schema；后端契约测试同步 |
+| 契约 | `openapi.yaml` 次版本（预计 0.27.0）+ `UserProfile` schema；后端契约测试同步 |
 | 后端测试 | 派生单测（边界 80/79/70/69/0/null/非法）；资料 API 断言字段存在与类型；独立性回归（信用字段、`stats` 不变） |
 | 前端测试 | 状态 → 文案纯函数单测；个人主页渲染（四态 + 数据不足）；无 DOM 渲染层 |
 | E2E | `route-completion.spec.ts`：数据不足态、四态模拟（接口拦截或夹具）、本人 / 他人同口径、信用行保持不变 |
@@ -1898,7 +1898,7 @@ REQ-010：聊天页按原型重构、聊天准入与退出语义调整、集合�
 ### 30.6 Dual-track notes（OpenSpec vs agile）
 
 - **OpenSpec 轨：** 单 change `add-route-completion`，单能力 `route-completion`（ADDED）；字段、派生与展示写在同一 Delta。
-- **Agile 轨：** 故事 S31「路线完成度」（迭代 3 / P1 / 3 点）；不另拆故事。
+- **Agile 轨：** 故事 S32「路线完成度」（迭代 3 / P1 / 3 点）；不另拆故事。
 - **并列轨道：** 人工打卡、聚合算法、列表 / 详情 / 弹窗展示、成长等级（issue #44）分属不同故事；本需求不预留空壳端点或字段。
 
 ### 30.7 Risks & blockers
@@ -1908,7 +1908,7 @@ REQ-010：聊天页按原型重构、聊天准入与退出语义调整、集合�
 | Risk | 「预留」被实现成假数据 | D1 写死；Delta 明确禁止；API 断言 null + insufficient |
 | Risk | 前端自行计算阈值 | Delta 规定只做字典映射；单测与代码审阅检查无 80 / 70 常量 |
 | Risk | 与信用分 / 统计误接 | 独立性场景 + 回归断言；不新增账本记录 |
-| Risk | 契约版本撞号 | 基线 0.25.0；P3 按合并顺序确认（预计 0.26.0） |
+| Risk | 契约版本撞号 | 基线 0.26.0；P3 按合并顺序确认（预计 0.27.0） |
 | Risk | 展示行与 hero 版式冲突 | 复用 `.profile-credit` 行模式；P3 预览 + 四宽度 × 深浅色走查 |
 | Risk | 资料弹窗等既有面被误改 | Delta 明确 out of scope；E2E 断言弹窗不变 |
 | Risk | 未来聚合口径漂移 | D2 / D6 固化；聚合算法后续卡片 |
@@ -1917,9 +1917,100 @@ REQ-010：聊天页按原型重构、聊天准入与退出语义调整、集合�
 
 ### 30.8 Suggested split boundaries（供 proposal-split / story-split）
 
-- **一个 change：** `add-route-completion` ← REQ-030（迭代 3 / S31）。
+- **一个 change：** `add-route-completion` ← REQ-031（迭代 3 / S32）。
 - **不拆字段 / 派生 / 展示：** 三者是同一字段从后端到个人主页的端到端链路；拆开会产生「有字段无展示」或「有展示无来源」的不完整验收。
 - **不并入人工打卡与聚合：** 后续独立卡片；本 change 不预留表或端点。
 - **不并入列表 / 弹窗 / 详情展示：** D3 本期不做；未来可复用同一状态码另开增量。
 - **阶段：** 单阶段；无归档前置依赖（全新能力）；契约版本需与在途 change 按合并顺序协调。
 - **质量自检（split-heuristics）：** 子目标一句话可说明 ✓；端到端可观察（资料响应字段 → 个人主页行）✓；可独立运行 ✓；capability 名真实（`route-completion`）✓；无依赖环 ✓；19 场景适合单 change。
+## 29. REQ-030 变更影响 — 举报违规扣减信用分（issue #29）
+
+> 编号说明（2026-11-18）：合并 `origin/main@2bf9148` 时 REQ-028 / S29 / V30 与 REQ-029 / S30 已被 `add-travel-finance` 占用，本节按「后到者顺延」改为 **REQ-030 / S31 / §29 / V31**。
+
+- **日期：** 2026-11-18 ｜ **触发：** `/sdd:p1`（GitHub issue #29）
+- **基线：** `origin/main@f0d093a`；分支 `feature/add-report-credit-deduction`
+- **粒度：** 应用架构（能力边界 / 数据所有权 / 契约 / 状态 / 展示面），非代码设计
+
+### 29.1 Requirement set
+
+- `requirement-workspace/requirements/REQ-030-report-credit-deduction.md`（六字段 + 26 场景 + OQ + DoR）
+- `requirement-workspace/intents/REQ-030-report-credit-deduction.md`
+- 故事：`requirement-workspace/stories.md` 登记 S31（不新建独立故事文件：以意图 + proposal + Delta 承接，与 REQ-012 / REQ-019 同口径）
+- 能力：`user-credit`（ADDED：举报违规扣分结算）+ `admin-console`（MODIFIED：举报处置表单与接口）。
+- **Delta 预判：** `openspec/changes/add-report-credit-deduction/specs/user-credit/spec.md`（ADDED）+ `.../specs/admin-console/spec.md`（MODIFIED）；因 `admin-console` 尚未归档，归档 MUST 排在 `add-admin-console` 之后（P2 校验已用 probe 确认：`MODIFIED` 对不存在活规格在 `validate` 阶段通过、归档阶段拒绝）。
+
+### 29.2 As-is asset inventory（evidence paths）
+
+| 资产 | 路径 | 现状 |
+|---|---|---|
+| 举报表 / 实体 | `V7__create_reports.sql`、`V21__admin_console.sql`、`V22__report_context_trip.sql`、`ReportEntity`、`Report` | 4 态与处置元数据；无违规类型 / 扣分列 |
+| 举报处置服务 | `AdminReportServiceImpl`（`start` / `resolve` / `applyPenalty`） | 成立只执行 `SUSPEND / BAN / UPDATE_BAN`；`KEEP` 直接返回 |
+| 举报处置接口 | `AdminReportController`：`GET /api/admin/reports`、`/{id}`、`/{id}/start`、`/{id}/resolve` | 请求含 `action` / `ban_*`；无违规类型 |
+| 被举报用户推导 | `ReportTargetService.reportedUserId` | 用户 = 本人、行程 = 发布者、体验 = 作者 |
+| 账号处置 | `AdminUserController` + `StatusActionModal` + `userActionForm.ts` | 用户详情页可独立暂停 / 封禁 / 更新 / 恢复 |
+| 信用账户 / 账本 | `V20__add_credit_account.sql`、`CreditServiceImpl`、`CreditLedgerEntity` | 0–100、前后快照、幂等、零值留痕；无举报原因码 |
+| 低分限制 | `CreditEnforcementServiceImpl.onCreditChanged` + `credit_restriction` | 跨 60 自动限制 / 解除；已把「举报核实扣分」列为触发示例 |
+| 信用展示 | `useUserCredits` / `creditDisplay.ts` / 五展示面 | 只读展示，不需修改 |
+| 举报处置前端 | `AdminReportDetailPage.tsx` / `reportActionForm.ts` / `adminMessages.ts` / `types.ts` / `api.ts` | 成立表单含处罚动作 + 封禁字段；无扣分预览 |
+| 举报列表前端 | `AdminReportsPage.tsx` | 列表列不含违规类型 / 扣分 |
+| 契约 | `RouteME/openapi.yaml` | `0.24.0`；`AdminReportResolveRequest` 含处罚字段；无违规类型 |
+| 迁移 | `db/migration` | head `V29`；`reports` 无违规类型 / 扣分列 |
+| 测试 | `AdminReportControllerTest`、`admin.spec.ts` | 覆盖开始 / 成立并暂停 / 封禁 / 驳回；需按 D1 重写 |
+| 原型 | `docs/prototype` | 无管理端举报处置界面；P3 先补截点 |
+
+### 29.3 As-is → proposed delta
+
+| 资产 | As-is | Proposed delta |
+|---|---|---|
+| `user-credit` | 账户 + 账本 + 展示；无举报原因码 | ADDED：举报违规类型与扣分规则、记账、幂等、零值留痕、月度上限不适用、低分联动只消费既有事件 |
+| `admin-console` | 举报成立由管理员选处罚动作与封禁理由 | MODIFIED：成立只选违规类型 + 填违规原因；移除处罚动作与封禁字段；详情补当前分数 / 预览 / 违规类型与本次扣分 |
+| `credit-enforcement` | 跨 60 自动限制 / 解除 | 只读复用，不改 Delta |
+| `trip-plans` / `trip-companions` / `trip-experiences` | 被举报用户推导 | 只读复用，不改语义 |
+| 契约 | `0.24.0`；`resolve` 请求含 `action` / `ban_*` | 升 `0.26.0`：请求改为 `outcome` / `violation_type` / `other_deduction` / `note`；详情响应补被举报用户信用与违规类型 / 实际扣分 |
+| 迁移 | `V29` | `V31__report_credit_deduction.sql`：`reports` 追加 `violation_type` / `applied_deduction`（可空，兼容历史） |
+| 前端 | 成立表单含处罚动作 + 封禁字段 | 违规类型选择 + `OTHER` 档位 + 三分段预览 + 处理历史改版；类型 / API / 文案同步 |
+
+### 29.4 Blast radius（应用架构）
+
+- **举报域：** resolve 请求与成立分支重建；详情响应扩展；列表不变（默认不加列）；报告留痕新增字段。
+- **信用域：** 新增业务调用方（举报扣分）；新增原因码常量；不改账户 / 账本结构。
+- **低分限制域：** 通过 `CreditChangedEvent` 自动触发；无代码改动（需回归）。
+- **账号域：** 举报页不再调用 `AccountStatusService`；用户管理页保持。
+- **前端管理端：** 表单、预览、处理历史、错误映射、类型与 API 客户端；列表与用户页不动。
+- **契约 / 测试：** openapi 与 `OpenApiTest`；后端 `AdminReportControllerTest`；E2E `admin.spec.ts` 重写相关用例并保留用户管理页回归。
+
+### 29.5 Artifact impact
+
+- **OpenSpec：** 新增 `openspec/changes/add-report-credit-deduction/`（proposal + 双 Delta + design + tasks）。
+- **需求工作区：** 意图 / Ready / deep-dive 增补 / impact §29 / stories S31 / registry / handoff。
+- **代码：** 后端 `AdminReportServiceImpl` / 请求 / 响应 / 枚举 / 原因码常量；前端 `AdminReportDetailPage` / `reportActionForm.ts` / `adminMessages.ts` / `types.ts` / `api.ts`。
+- **迁移：** `V31` 双引擎（SQLite + H2）。
+- **测试：** 扣分规则单测、幂等 / 并发、预览口径、低分联动回归、E2E。
+- **文档 / 知识库：** P0–P4 阶段记录、质量报告、评审报告；P5 暂不执行。
+
+### 29.6 Dual-track notes（OpenSpec vs agile）
+
+- **OpenSpec 轨：** 单 change `add-report-credit-deduction`；双能力（`user-credit` ADDED + `admin-console` MODIFIED）。
+- **Agile 轨：** 单故事 S31（信用系统迭代 1 / Story 2 / P0 / 3 点）；不拆多故事（一个垂直切片：举报成立 → 扣分 → 低分限制）。
+- **场景数量：** 26 条，在单 change 阈值内；P2 如需收敛，可在同一 change 内重组 Requirement 组。
+
+### 29.7 Risks & blockers
+
+| 级别 | 项 | 说明 / 缓解 |
+|---|---|---|
+| Risk | `admin-console` 未归档 | MODIFIED Delta 在归档阶段会被拒绝；归档 MUST 排在 `add-admin-console` 之后（与 `add-credit-recovery` 对 `add-credit-account` 同口径） |
+| Risk | 移除处罚动作与已交付 S22 行为冲突 | D1 已裁决，属用户当次显式指示；P2 G1 SA 追认；P4 回归用户管理页暂停 / 封禁 |
+| Risk | `resolution_action` 历史数据与新语义共存 | 新值不再写入；旧值只读展示保留；不做回填 |
+| Risk | 预览与实际截断不一致 | 预览以服务端响应为准；E2E 断言 5 → -10 → 0 |
+| Risk | 并发 resolve 双重扣分 | 状态条件更新 + 账本幂等唯一索引双保险；单测覆盖 |
+| Risk | 契约 / 迁移号撞号 | P3 排他确认；预计 `0.26.0` + `V31` |
+| Risk | 管理端原型缺失 | P3 先补截点（`@rule:prototype-ui-alignment`），只复用现有 `.admin-*` 令牌 |
+| Blocker | 无 | blocking OQ=0、DoR BLOCKER=0、deep-dive ⑨–⑫ 全过 |
+
+### 29.8 Suggested split boundaries（供 proposal-split / story-split）
+
+- **一个 change：** `add-report-credit-deduction` ← REQ-030（S31）。
+- **不拆故事：** 举报成立 → 扣分 → 低分限制必须同批交付才能端到端验收。
+- **不并入：** 账号处置动作（保留在用户管理页）、举报提交端原因枚举、信用明细页、其他扣分 / 加分事件（#30–#32）、月度扣分上限。
+- **依赖：** `user-credit`（账本 / 账户）、`admin-console`（举报处置）、`credit-enforcement`（低分联动）。
+- **质量自检（split-heuristics）：** 子目标一句话 ✓；端到端可观察（80 → 65；80 → 50 自动限制）✓；可独立运行 ✓；capability 名真实 ✓；无依赖环 ✓；场景 26 条在阈值内。

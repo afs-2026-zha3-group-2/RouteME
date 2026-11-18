@@ -30,4 +30,4 @@
 - Optional / not-run / out-of-focus items marked Skipped do not block Overall Pass.
 - Overall aggregates in-focus required items only.
 - This report is not a Gate decision.
-- 计数更正：P1 起草时 Delta 场景数误记为 19，P2 核实为 18（REQ 的 S31-3 与 S31-15 合并为同一场景），已在 Delta 头部、proposal、p1-intent 与 spec 评审报告中更正。
+- 计数更正：P1 起草时 Delta 场景数误记为 19，P2 核实为 18（REQ 的 S32-3 与 S32-15 合并为同一场景），已在 Delta 头部、proposal、p1-intent 与 spec 评审报告中更正。

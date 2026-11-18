@@ -2,8 +2,10 @@ import { describe, expect, it } from 'vitest';
 import type { MyTrips, TripApplication, TripSummary } from '../types';
 import {
   actionsFor,
+  applicationCancelCause,
   dayLabel,
   formatDateRange,
+  groupApplied,
   groupCounts,
   pendingCountFor,
   pendingTargetTripId,
@@ -41,7 +43,11 @@ function trip(id: number, overrides: Partial<TripSummary> = {}): TripSummary {
   };
 }
 
-function application(status: TripApplication['status'], tripSummary = trip(3)): TripApplication {
+function application(
+  status: TripApplication['status'],
+  tripSummary = trip(3),
+  overrides: Partial<TripApplication> = {},
+): TripApplication {
   return {
     id: 1,
     trip_id: tripSummary.id,
@@ -51,6 +57,7 @@ function application(status: TripApplication['status'], tripSummary = trip(3)): 
     created_at: '2026-11-10T00:00:00Z',
     decided_at: null,
     trip: tripSummary,
+    ...overrides,
   };
 }
 
@@ -69,12 +76,20 @@ describe('groupCounts', () => {
   it('counts every group', () => {
     const data = myTrips({
       published: [trip(1), trip(2)],
-      applied: [application('pending'), application('accepted')],
+      applied: [application('pending', trip(3)), application('accepted', trip(4))],
       matched: [trip(3), trip(4)],
       completed: [trip(5), trip(6)],
     });
 
     expect(groupCounts(data)).toEqual({ published: 2, applied: 2, matched: 2, completed: 2 });
+  });
+
+  it('counts a repeated application as one trip', () => {
+    const data = myTrips({
+      applied: [application('left', trip(3)), application('pending', trip(3))],
+    });
+
+    expect(groupCounts(data).applied).toBe(1);
   });
 
   it('returns zeros for empty groups', () => {
@@ -84,6 +99,59 @@ describe('groupCounts', () => {
       matched: 0,
       completed: 0,
     });
+  });
+});
+
+describe('groupApplied', () => {
+  it('collapses repeated applications of the same trip and keeps the newest first', () => {
+    const newest = application('pending', trip(3), {
+      id: 7,
+      created_at: '2026-11-12T00:00:00Z',
+    });
+    const older = application('left', trip(3), {
+      id: 4,
+      created_at: '2026-11-05T00:00:00Z',
+    });
+    const other = application('rejected', trip(4), {
+      id: 2,
+      created_at: '2026-11-01T00:00:00Z',
+    });
+
+    const groups = groupApplied([newest, older, other]);
+
+    expect(groups.map((group) => group.trip_id)).toEqual([3, 4]);
+    expect(groups[0].latest).toBe(newest);
+    expect(groups[0].history).toEqual([newest, older]);
+    expect(groups[0].counts).toEqual({
+      total: 2,
+      pending: 1,
+      accepted: 0,
+      rejected: 0,
+      cancelled: 0,
+      left: 1,
+    });
+    expect(groups[1].counts.total).toBe(1);
+  });
+});
+
+describe('applicationCancelCause', () => {
+  it('explains cancelled applications closed by the trip lifecycle', () => {
+    expect(
+      applicationCancelCause(application('cancelled', trip(3), { status_reason: 'TRIP_CANCELLED' })),
+    ).toBe('trip_cancelled');
+    expect(
+      applicationCancelCause(application('cancelled', trip(3), { status_reason: 'TRIP_COMPLETED' })),
+    ).toBe('trip_completed');
+  });
+
+  it('does not guess when the backend omits the reason code', () => {
+    expect(applicationCancelCause(application('cancelled'))).toBeNull();
+    expect(
+      applicationCancelCause(application('cancelled', trip(3, { status: 'cancelled' }))),
+    ).toBeNull();
+    expect(
+      applicationCancelCause(application('cancelled', trip(3), { status_reason: 'USER_CANCEL' })),
+    ).toBeNull();
   });
 });
 

@@ -10,7 +10,7 @@
 
 | id | topic | choice | rationale | status |
 |----|-------|--------|-----------|--------|
-| C1 | stage-selection | p1 | 本次为 SDD P1 阶段收尾检查（用户当次指示按 SDD 流程推进）；P0 由既有 main 基线承接；编号已由 REQ-029 / S30 改号为 REQ-030 / S31 | skipped-preanswered |
+| C1 | stage-selection | p1 | 本次为 SDD P1 阶段收尾检查（用户当次指示按 SDD 流程推进）；P0 由既有 main 基线承接；编号已由 REQ-029 / S30 改号为 REQ-031 / S32 | skipped-preanswered |
 | C2 | focus | full-stage | P1 全部必选项（P1-1 ~ P1-4）均需核对；P1-5 / P1-6 可选 | skipped-preanswered |
 
 ## Probe

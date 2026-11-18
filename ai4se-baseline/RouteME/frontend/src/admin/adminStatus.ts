@@ -42,7 +42,7 @@ export function accountStatusTone(status: AccountStatus): AdminStatusTone {
 
 /**
  * 合法迁移决定可用动作（design §5.3）：
- * ACTIVE → 暂停 / 封禁；SUSPENDED → 封禁 / 恢复；BANNED → 无（只能通过举报处置更新）。
+ * ACTIVE → 暂停 / 封禁；SUSPENDED → 封禁 / 恢复；BANNED → 更新封禁 / 恢复。
  */
 export function availableActions(status: AccountStatus): AdminStatusAction[] {
   if (status === 'ACTIVE') {
@@ -51,15 +51,21 @@ export function availableActions(status: AccountStatus): AdminStatusAction[] {
   if (status === 'SUSPENDED') {
     return ['BAN', 'RESTORE'];
   }
+  if (status === 'BANNED') {
+    return ['BAN', 'RESTORE'];
+  }
   return [];
 }
 
-export function statusActionLabel(action: AdminStatusAction): string {
+export function statusActionLabel(
+  action: AdminStatusAction,
+  status?: AccountStatus,
+): string {
   if (action === 'SUSPEND') {
     return adminMessages.actionSuspend;
   }
   if (action === 'BAN') {
-    return adminMessages.actionBan;
+    return status === 'BANNED' ? adminMessages.actionUpdateBan : adminMessages.actionBan;
   }
   return adminMessages.actionRestore;
 }

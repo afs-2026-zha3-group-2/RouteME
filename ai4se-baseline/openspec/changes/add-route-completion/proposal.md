@@ -1,6 +1,6 @@
 # 变更提案：add-route-completion
 
-- **需求来源：** GitHub issue #45「路线完成度」（作者 Jaha0711，指派 Neal802；P1 / 迭代 3 / 3 点）｜ **需求条目：** `requirement-workspace/requirements/REQ-030-route-completion.md`｜ **意图：** `requirement-workspace/intents/REQ-030-route-completion.md`
+- **需求来源：** GitHub issue #45「路线完成度」（作者 Jaha0711，指派 Neal802；P1 / 迭代 3 / 3 点）｜ **需求条目：** `requirement-workspace/requirements/REQ-031-route-completion.md`｜ **意图：** `requirement-workspace/intents/REQ-031-route-completion.md`
 - **能力：** `route-completion`（ADDED）；只读依赖 `user-profile` / `user-profiles`（资料响应承载）；未来只读 `trip-plans` / `trip-companions`
 - **规模：** S（0 张表 + 0 次迁移；契约 `UserProfile` 追加 2 个只读字段 + 1 个后端派生单点 + 个人主页 hero 1 行 + 文案 / 类型 / 测试；无管理端、无新路由）
 - **规则：** `@rule:api-contract`、`@rule:java-patterns`、`@rule:web-coding-style`、`@rule:security-baseline`、`@rule:tdd-cycle`、`@rule:sdd-artifacts`；原型对齐见 `docs/prototype/README.md`（v1 已归档、v2 为设计板，本元素按生产 UI 既有模式扩展）
@@ -19,8 +19,8 @@ issue #45 要求让正在找旅行搭子的人看到「其他用户过去行程�
 - **数据充足判定：** 仅当用户已结束行程 ≥1 条且存在有效完成度数值时视为数据足够；仅统计 `completed` 行程，进行中 / 尚未开始 / 已取消不计入；未来聚合覆盖用户作为发布者或 `ACCEPTED` 同行者参与的已结束行程。
 - **阈值派生（后端单点）：** `rate ≥ 80` → `good`；`70 ≤ rate < 80` → `neutral`；`0 ≤ rate < 70` → `watch`；`rate = null` 或样本不足 → `insufficient`；非法数值（非整数 / <0 / >100）降级为 `insufficient`。前端只做状态码 → 文案字典映射，不得复制 80 / 70 阈值。
 - **个人主页展示：** `ProfilePage` hero 信用行附近新增一行「路线完成度」：`good` 显示「路线完成度 NN% · 信誉良好」；`watch` 显示「路线完成度 NN% · 请留意行程完成情况」；`neutral` 只显示「路线完成度 NN%」；`insufficient` 只显示「暂无足够完成记录」。不得出现「骗子」「危险用户」「不可信」等定性结论。
-- **独立性与兼容：** 不读写信用账户 / 账本、不改 `stats`、不新增或读取成长等级字段；`route_completion_rate` 可空且数据不足时省略、`route_completion_state` 恒返回并列入 `required`，既有 401 / 404 行为不变；`openapi.yaml` 同步 `UserProfile` schema 与示例（契约版本 P3 排他确认，预计 0.26.0）。
-- **登记：** `registry.md` / `handoff.md` / `stories.md`（S31）登记 REQ-030 → `add-route-completion`；`docs/sdd/add-route-completion/` 阶段记录。
+- **独立性与兼容：** 不读写信用账户 / 账本、不改 `stats`、不新增或读取成长等级字段；`route_completion_rate` 可空且数据不足时省略、`route_completion_state` 恒返回并列入 `required`，既有 401 / 404 行为不变；`openapi.yaml` 同步 `UserProfile` schema 与示例（契约版本 P3 排他确认，预计 0.27.0）。
+- **登记：** `registry.md` / `handoff.md` / `stories.md`（S32）登记 REQ-031 → `add-route-completion`；`docs/sdd/add-route-completion/` 阶段记录。
 
 ## Out of Scope
 
@@ -39,7 +39,7 @@ issue #45 要求让正在找旅行搭子的人看到「其他用户过去行程�
 | `backend/src/main/java/routeme/response/UserProfileResponse.java` | 追加 `routeCompletionRate`、`routeCompletionState` 两个只读字段（序列化名 `route_completion_rate` / `route_completion_state`） |
 | 后端派生（新增小类 / 常量，名称 P3 定） | 单点实现「数据充足判定 + 阈值派生」；本期资料装配时返回 `null` + `insufficient` |
 | 后端资料读取路径 | `UserProfileController` / `UserProfileService` 装配响应时补两字段；不新增端点 |
-| `RouteME/openapi.yaml` | `UserProfile` schema 追加两字段与示例（`route_completion_state` 列入 `required`；`route_completion_rate` 可空可省略）；版本 P3 排他确认（预计 `0.26.0`） |
+| `RouteME/openapi.yaml` | `UserProfile` schema 追加两字段与示例（`route_completion_state` 列入 `required`；`route_completion_rate` 可空可省略）；版本 P3 排他确认（预计 `0.27.0`） |
 | `frontend/src/types.ts` | `UserProfile` 增加两字段（可选 / 可空） |
 | `frontend/src/profile/ProfilePage.tsx` | hero 信用行附近新增「路线完成度」行；四态文案与百分比展示 |
 | `frontend/src/i18n/tripMessages.ts` | 新增「路线完成度」「信誉良好」「请留意行程完成情况」「暂无足够完成记录」 |
@@ -58,7 +58,7 @@ issue #45 要求让正在找旅行搭子的人看到「其他用户过去行程�
 | 数据口径（D1） | 仅预留 + 数据不足：所有用户「省略 rate + `insufficient`」，不造假数据；后端仍实现阈值派生 | 最贴合 issue「先完成字段、接口和 UI 展示入口，打卡后续独立实现」；避免用已结束行程冒充有效完成 |
 | 数据阈值（D2） | ≥1 条已结束行程且存在有效完成度数值 | 未来数据足够的可判定门槛；少于 1 条直接数据不足 |
 | 展示面（D3） | 仅个人主页 `ProfilePage`；推荐列表 / 弹窗 / 详情 / 列表本期不做 | 推荐引擎已在 `c516d76` 移除；issue 的「用户主页或详情页」由个人主页满足；不重建推荐引擎 |
-| 编号 / 命名（D4） | REQ-030 / S31 / `add-route-completion` / `route-completion` | `origin/main@aa320dc` 已用至 REQ-028 / S29；REQ-029 / S30 由并行 `add-growth-level`（issue #44）登记，按用户裁决顺延为 REQ-030 / S31 |
+| 编号 / 命名（D4） | REQ-031 / S32 / `add-route-completion` / `route-completion` | `origin/main@aa320dc` 已用至 REQ-028 / S29；REQ-029 / S30 由并行 `add-growth-level`（issue #44）登记，按用户裁决顺延为 REQ-031 / S32 |
 | 展示形态（D5） | 标签 + 百分比；数据不足只显示「暂无足够完成记录」；中性档只显示百分比 | 让浏览者既看到数值又看到信誉结论；中性不贴标签符合 issue AC 6 |
 | 统计范围（D6） | 发布者 + `ACCEPTED` 同行者参与的已结束行程 | 作为同行者履约同样代表「经常完成旅行计划」 |
 | 字段落点（D7） | 仅接口字段，不落库、不新增迁移、无写入端点 | 本期无写入方；先建表属于死重，未来聚合上线后再评估存储 |
@@ -85,7 +85,7 @@ issue #45 要求让正在找旅行搭子的人看到「其他用户过去行程�
 | 「预留」被实现成假数据或临时计算 | D1 写死；Delta 明确禁止；验收信号 2 覆盖 |
 | 前端自行算标签（违反 issue AC 12） | Delta 规定只做字典映射；验收信号 6 检查无阈值常量 |
 | 与信用分 / 统计 / 成长等级误接 | Delta 独立性 Requirement + 验收信号 7；回归断言 |
-| 契约版本与在途 change 撞号 | 基线 0.25.0；P3 按合并顺序排他确认（预计 0.26.0） |
+| 契约版本与在途 change 撞号 | 基线 0.26.0；P3 按合并顺序排他确认（预计 0.27.0） |
 | 展示行与 hero 版式冲突 | 复用 `.profile-credit` 行模式；验收信号 10 四宽度 × 深浅色 |
 | 「推荐列表」被误解为本期范围 | D3 写死；proposal / Delta / 故事三处一致 |
 | 未来聚合口径漂移 | D2 / D6 固化；聚合算法仍属后续卡片，本 change 不预留表或端点 |

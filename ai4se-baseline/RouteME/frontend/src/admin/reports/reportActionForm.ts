@@ -1,100 +1,69 @@
 import { adminMessages } from '../../i18n/adminMessages';
-import type {
-  AdminReportResolveRequest,
-  BanReasonCode,
-  ReportResolutionAction,
-} from '../../types';
-
-export type ReportAction = Exclude<ReportResolutionAction, 'REJECT'>;
+import type { AdminReportResolveRequest, ReportViolationType } from '../../types';
 
 export type ReportResolutionFormState = {
   outcome: 'RESOLVED' | 'REJECTED' | '';
   note: string;
-  action: ReportAction | '';
-  banReasonCode: BanReasonCode | '';
-  banReasonNote: string;
-  banExpiresAt: string;
+  violationType: ReportViolationType | '';
+  otherDeduction: number | '';
 };
 
 export type ReportResolutionFormErrors = {
   outcome?: string;
   note?: string;
-  action?: string;
-  banReasonCode?: string;
-  banReasonNote?: string;
-  banExpiresAt?: string;
+  violationType?: string;
+  otherDeduction?: string;
 };
 
 const MAX_NOTE_LENGTH = 500;
-const MAX_BAN_NOTE_LENGTH = 200;
+const OTHER_DEDUCTIONS = [5, 10, 20, 30];
 
 export function emptyReportResolutionForm(): ReportResolutionFormState {
   return {
     outcome: '',
     note: '',
-    action: '',
-    banReasonCode: '',
-    banReasonNote: '',
-    banExpiresAt: '',
+    violationType: '',
+    otherDeduction: '',
   };
 }
 
-function needsBanFields(action: ReportAction | ''): boolean {
-  return action === 'BAN' || action === 'UPDATE_BAN';
-}
-
 /**
- * 举报处理表单校验（A31）：备注必填；成立时必须选择处罚动作；
- * 封禁 / 更新封禁需要 8 项理由、`OTHER` 说明与未来解封时间。
+ * 举报处理表单校验：处理结果与说明必填；成立时必须选违规类型，
+ * `OTHER` 再选 -5 / -10 / -20 / -30 档位。扣分值不在此处指定。
  */
 export function validateReportResolution(
   state: ReportResolutionFormState,
-  nowMs: number,
 ): ReportResolutionFormErrors {
   const errors: ReportResolutionFormErrors = {};
   if (state.outcome === '') {
     errors.outcome = adminMessages.errorOutcomeRequired;
   }
+
   const note = state.note.trim();
   if (note === '') {
-    errors.note = adminMessages.reportResolutionNoteHint;
+    errors.note =
+      state.outcome === 'REJECTED'
+        ? adminMessages.reportRejectionNote
+        : adminMessages.reportResolutionNoteHint;
   } else if (note.length > MAX_NOTE_LENGTH) {
     errors.note = `${adminMessages.reportResolutionNote}（${MAX_NOTE_LENGTH} 字以内）`;
   }
 
   if (state.outcome === 'RESOLVED') {
-    if (state.action === '') {
-      errors.action = adminMessages.errorActionRequired;
-    }
-    if (needsBanFields(state.action)) {
-      if (state.banReasonCode === '') {
-        errors.banReasonCode = adminMessages.errorBanReasonRequired;
-      }
-      const banNote = state.banReasonNote.trim();
-      if (state.banReasonCode === 'OTHER' && banNote === '') {
-        errors.banReasonNote = adminMessages.errorBanNoteRequired;
-      } else if (banNote.length > MAX_BAN_NOTE_LENGTH) {
-        errors.banReasonNote = `${adminMessages.fieldBanNote}（${MAX_BAN_NOTE_LENGTH} 字以内）`;
-      }
-      if (state.banExpiresAt === '') {
-        errors.banExpiresAt = adminMessages.errorBanExpiresRequired;
-      } else {
-        const expiresAt = Date.parse(state.banExpiresAt);
-        if (Number.isNaN(expiresAt) || expiresAt <= nowMs) {
-          errors.banExpiresAt = adminMessages.errorBanExpiresFuture;
-        }
-      }
+    if (state.violationType === '') {
+      errors.violationType = adminMessages.errorViolationRequired;
+    } else if (
+      state.violationType === 'OTHER' &&
+      !OTHER_DEDUCTIONS.includes(Number(state.otherDeduction))
+    ) {
+      errors.otherDeduction = adminMessages.errorOtherDeductionRequired;
     }
   }
-
   return errors;
 }
 
-export function canSubmitReportResolution(
-  state: ReportResolutionFormState,
-  nowMs: number,
-): boolean {
-  return Object.keys(validateReportResolution(state, nowMs)).length === 0;
+export function canSubmitReportResolution(state: ReportResolutionFormState): boolean {
+  return Object.keys(validateReportResolution(state)).length === 0;
 }
 
 export function toResolveRequest(
@@ -104,18 +73,13 @@ export function toResolveRequest(
   if (state.outcome === 'REJECTED') {
     return { outcome: 'REJECTED', note };
   }
-  const base: AdminReportResolveRequest = {
+  return {
     outcome: 'RESOLVED',
     note,
-    action: state.action === '' ? null : state.action,
-  };
-  if (!needsBanFields(state.action)) {
-    return base;
-  }
-  return {
-    ...base,
-    ban_reason_code: state.banReasonCode === '' ? null : state.banReasonCode,
-    ban_reason_note: state.banReasonNote.trim() === '' ? null : state.banReasonNote.trim(),
-    ban_expires_at: state.banExpiresAt === '' ? null : state.banExpiresAt,
+    violation_type: state.violationType === '' ? null : state.violationType,
+    other_deduction:
+      state.violationType === 'OTHER' && state.otherDeduction !== ''
+        ? Number(state.otherDeduction)
+        : null,
   };
 }

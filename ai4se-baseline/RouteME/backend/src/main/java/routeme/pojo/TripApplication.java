@@ -14,7 +14,8 @@ public record TripApplication(
         String message,
         ApplicationStatusEnum status,
         Instant createdAt,
-        Instant decidedAt) {
+        Instant decidedAt,
+        String statusReason) {
 
     public boolean isPending() {
         return status == ApplicationStatusEnum.PENDING;
@@ -31,11 +32,12 @@ public record TripApplication(
         return status == ApplicationStatusEnum.LEFT;
     }
 
-    public TripApplication withStatus(ApplicationStatusEnum next, Instant at) {
-        return new TripApplication(id, tripId, applicantId, message, next, createdAt, at);
+    public TripApplication withStatus(ApplicationStatusEnum next, Instant at, String statusReason) {
+        return new TripApplication(id, tripId, applicantId, message, next, createdAt, at, statusReason);
     }
 
     public TripApplication withId(long newId) {
-        return new TripApplication(newId, tripId, applicantId, message, status, createdAt, decidedAt);
+        return new TripApplication(
+                newId, tripId, applicantId, message, status, createdAt, decidedAt, statusReason);
     }
 }

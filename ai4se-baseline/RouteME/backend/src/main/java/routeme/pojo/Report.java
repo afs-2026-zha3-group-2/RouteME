@@ -20,5 +20,7 @@ public record Report(
         Instant processingAt,
         Instant resolvedAt,
         String resolutionNote,
-        String resolutionAction) {
+        String resolutionAction,
+        String violationType,
+        Integer appliedDeduction) {
 }

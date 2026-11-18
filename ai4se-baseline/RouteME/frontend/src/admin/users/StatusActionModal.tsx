@@ -8,6 +8,7 @@ import { appDatePickerUpProps } from '../../utils/datePickerProps';
 import type { AdminStatusAction, AdminUserDetail, BanReasonCode } from '../../types';
 import { BAN_REASON_OPTIONS } from '../banReasons';
 import { adminErrorText, isStaleAdminError } from '../adminFormat';
+import { effectiveAccountStatus } from '../adminStatus';
 import {
   emptyUserActionForm,
   toStatusRequest,
@@ -25,18 +26,21 @@ type Props = {
   onSaved: (detail: AdminUserDetail) => void;
 };
 
-function titleFor(action: AdminStatusAction): string {
+function titleFor(action: AdminStatusAction, status: string): string {
   if (action === 'SUSPEND') {
     return adminMessages.statusModalSuspendTitle;
   }
   if (action === 'BAN') {
-    return adminMessages.statusModalBanTitle;
+    return status === 'BANNED'
+      ? adminMessages.statusModalUpdateBanTitle
+      : adminMessages.statusModalBanTitle;
   }
   return adminMessages.statusModalRestoreTitle;
 }
 
 /** 暂停 / 封禁 / 恢复：二次确认 + 理由 + 8 项封禁理由 + 未来解封时间。 */
 export function StatusActionModal({ token, user, action, open, onCancel, onSaved }: Props) {
+  const effective = effectiveAccountStatus(user.status, user.ban_expires_at, Date.now());
   const [form, setForm] = useState<UserActionFormState>(() => emptyUserActionForm(action));
   const [errors, setErrors] = useState<UserActionFormErrors>({});
   const [submitError, setSubmitError] = useState<string | null>(null);
@@ -69,7 +73,9 @@ export function StatusActionModal({ token, user, action, open, onCancel, onSaved
         action === 'SUSPEND'
           ? adminMessages.statusSuccessSuspend
           : action === 'BAN'
-            ? adminMessages.statusSuccessBan
+            ? effective === 'BANNED'
+              ? adminMessages.statusSuccessUpdateBan
+              : adminMessages.statusSuccessBan
             : adminMessages.statusSuccessRestore,
       );
       onSaved(updated);
@@ -90,7 +96,7 @@ export function StatusActionModal({ token, user, action, open, onCancel, onSaved
   return (
     <Modal
       open={open}
-      title={titleFor(action)}
+      title={titleFor(action, effective)}
       onCancel={onCancel}
       destroyOnHidden
       footer={[

@@ -3,6 +3,7 @@ import type { PlaceResult } from './AmapService';
 import {
   findSamePoint,
   formatCoords,
+  isCoordinatePlaceholderName,
   pickedPlaceName,
   pointFallbackName,
   toPickedPlace,
@@ -73,6 +74,31 @@ describe('toPickedPlace', () => {
   it('works without a reverse-geocode result', () => {
     const picked = toPickedPlace({ lng: 113.3, lat: 23.1, place: null }, '地图选点');
     expect(picked).toMatchObject({ address: '', city: '', district: '', lng: 113.3, lat: 23.1 });
+  });
+});
+
+describe('isCoordinatePlaceholderName', () => {
+  it('treats the five-decimal map pick fallback as a coordinate placeholder', () => {
+    expect(isCoordinatePlaceholderName(pointFallbackName(113.5767, 22.2859))).toBe(true);
+    expect(isCoordinatePlaceholderName('地图选点 113.57670, 22.28590')).toBe(true);
+  });
+
+  it('rejects coordinate spellings with other decimal lengths and negative values', () => {
+    expect(isCoordinatePlaceholderName('地图选点 113, 22')).toBe(true);
+    expect(isCoordinatePlaceholderName('地图选点 -113.5767, -22.2859')).toBe(true);
+    expect(isCoordinatePlaceholderName('地图选点 113.5767, 22.2859（113.57670, 22.28590）')).toBe(
+      true,
+    );
+  });
+
+  it('keeps readable names that merely mention coordinates', () => {
+    expect(isCoordinatePlaceholderName('中山路（113.27000, 23.12000）')).toBe(false);
+    expect(isCoordinatePlaceholderName('香洲港 地图选点 113.5, 22.2')).toBe(false);
+  });
+
+  it('keeps POI names returned by search', () => {
+    expect(isCoordinatePlaceholderName('广州塔')).toBe(false);
+    expect(isCoordinatePlaceholderName('')).toBe(false);
   });
 });
 

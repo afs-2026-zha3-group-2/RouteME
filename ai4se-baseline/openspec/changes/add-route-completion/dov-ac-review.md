@@ -2,7 +2,7 @@
 
 - **Change：** `add-route-completion`
 - **Delta：** [`specs/route-completion/spec.md`](specs/route-completion/spec.md)（ADDED 6 Requirement / 18 Scenario）
-- **需求：** [`REQ-030-route-completion.md`](../../requirement-workspace/requirements/REQ-030-route-completion.md)（S31-1 ~ S31-19，19 条提示；S31-3 与 S31-15 在 Delta 合并为同一场景）
+- **需求：** [`REQ-031-route-completion.md`](../../requirement-workspace/requirements/REQ-031-route-completion.md)（S32-1 ~ S32-19，19 条提示；S32-3 与 S32-15 在 Delta 合并为同一场景）
 - **日期：** 2026-11-18 ｜ **阶段：** P2（delta-craft review）
 - **工具：** `openspec validate add-route-completion --strict` → `Change 'add-route-completion' is valid`；`openspec show --json` → 6 个 Delta 条目均为 `route-completion`，Requirement 6 / Scenario 18
 
@@ -32,7 +32,7 @@
 | DoV-2 歧义已列出或解决 | Pass | 空值序列化与 `required` 已在本文档定稿并回写 Delta、提案、Ready、deep-dive；未来聚合算法与单行程口径明确留给后续卡片 | 无 blocking 歧义 |
 | DoV-3 IO / SA 残余风险已记录 | Pass | 见「Residual risks」；G1 记录固化 IO = WAYNE、SA = Jacky / Karena 的跟踪项 | 视觉色阶、聚合算法、契约版本 |
 | DoV-4 不以业务实现冒充完成 | Pass | P2 只做 Delta 收敛、AC/DoV 复核与文档同步；未写代码、`openapi.yaml`、迁移 | `openspec validate --strict` 通过 |
-| DoV-5 Requirement 追溯到提案 / 需求 | Pass | S31-1 ~ S31-19 → 6 条 Requirement（S31-3 与 S31-15 合并）；提案验收信号 10 条与场景组可追；无孤儿 Scenario | 映射见下 |
+| DoV-5 Requirement 追溯到提案 / 需求 | Pass | S32-1 ~ S32-19 → 6 条 Requirement（S32-3 与 S32-15 合并）；提案验收信号 10 条与场景组可追；无孤儿 Scenario | 映射见下 |
 
 **DoV：5/5 Pass。**
 
@@ -40,18 +40,18 @@
 
 | Requirement | Delta Scenario | REQ 提示 |
 |---|---|---|
-| 预留路线完成度字段与数据不足口径 | 接口返回预留字段 / 本期恒为数据不足 | S31-1 / S31-2 |
-| 数据充足判定与统计范围 | 足够数据门槛 / 只统计已结束行程 | S31-4 / S31-5 |
-| 阈值派生与后端权威 | 信誉良好边界 / 中性区间边界 / 警惕边界 / 非法数值降级 / 状态由后端派生 | S31-6 ~ S31-10 |
-| 个人主页展示路线完成度 | 个人主页展示入口 / 信誉良好展示 / 中性展示 / 警惕展示与措辞边界 / 数据不足展示 / 本人 / 他人同口径 | S31-11 ~ S31-16；S31-3 与 S31-15 合并为「数据不足展示」 |
-| 与信用分、资料统计及成长等级相互独立 | 与信用分独立 / 与资料统计、成长等级独立 | S31-17 / S31-18 |
-| 资料响应兼容与访问控制 | 既有访问控制与兼容 | S31-19 |
+| 预留路线完成度字段与数据不足口径 | 接口返回预留字段 / 本期恒为数据不足 | S32-1 / S32-2 |
+| 数据充足判定与统计范围 | 足够数据门槛 / 只统计已结束行程 | S32-4 / S32-5 |
+| 阈值派生与后端权威 | 信誉良好边界 / 中性区间边界 / 警惕边界 / 非法数值降级 / 状态由后端派生 | S32-6 ~ S32-10 |
+| 个人主页展示路线完成度 | 个人主页展示入口 / 信誉良好展示 / 中性展示 / 警惕展示与措辞边界 / 数据不足展示 / 本人 / 他人同口径 | S32-11 ~ S32-16；S32-3 与 S32-15 合并为「数据不足展示」 |
+| 与信用分、资料统计及成长等级相互独立 | 与信用分独立 / 与资料统计、成长等级独立 | S32-17 / S32-18 |
+| 资料响应兼容与访问控制 | 既有访问控制与兼容 | S32-19 |
 
 ## Residual risks
 
 - 本版本全部用户为 `insufficient`，`good` / `neutral` / `watch` 只能通过夹具或接口拦截模拟；真实数据路径依赖未来打卡聚合卡片。
 - 未来聚合算法（单行程均值 vs 打卡点加权）未定；若与本 Delta 的「已完成行程 + 发布者 / `ACCEPTED` 同行者」口径冲突，需先改规格。
-- 契约版本依赖合并顺序：当前 `0.25.0`，本 change 预计 `0.26.0`，被在途 change 抢占时整体顺延并同步 `OpenApiTest`。
+- 契约版本依赖合并顺序：当前 `0.26.0`，本 change 预计 `0.27.0`，被在途 change 抢占时整体顺延并同步 `OpenApiTest`。
 - `neutral` / `insufficient` 的色阶与行高未定，P3 按原型先行并做 1440 / 1024 / 768 / 390 × 深浅色走查。
 - 文案固定为「信誉良好 / 请留意行程完成情况 / 暂无足够完成记录」；若产品改文案，需同步 i18n 与 E2E 断言。
 

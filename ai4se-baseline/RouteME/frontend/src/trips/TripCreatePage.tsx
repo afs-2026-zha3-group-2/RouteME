@@ -24,7 +24,7 @@ import { AreaCascader } from '../area/AreaCascader';
 import { cityLabel } from '../area/areaOptions';
 import { tripMessages } from '../i18n/tripMessages';
 import { AmapPlacePicker } from '../map/amap/AmapPlacePicker';
-import type { DemoUser, TripSummary, TripTravelMode } from '../types';
+import type { DemoUser, TripSummary } from '../types';
 import { WeatherCard } from '../weather/WeatherCard';
 import { appDatePickerProps, appDateTimePickerProps, appSelectProps } from '../utils/datePickerProps';
 import {
@@ -58,8 +58,8 @@ import {
   MAX_TITLE_LENGTH,
   MIN_CAPACITY,
   TRIP_TRAVEL_MODE_LABELS,
-  TRIP_TRAVEL_MODES,
 } from './tripOptions';
+import { PublishRouteEditor } from './PublishRouteEditor';
 import { statusLabel } from './tripStatus';
 
 // The publish form is Chinese-only; keep the picker panel month names Chinese too.
@@ -546,18 +546,13 @@ export function TripCreatePage({ currentUser, fromTripId, aiItineraryId }: Props
             </h3>
             <div className="form-stack">
               <Field label={tripMessages.fieldStops} htmlFor="trip-stops" error={errors.stops}>
-                <AmapPlacePicker
-                  mode="multi"
-                  inputId="trip-stops"
-                  ariaLabel={tripMessages.fieldStops}
-                  invalid={errors.stops !== undefined}
-                  value={values.stops}
-                  onChange={(stops) => update({ stops })}
-                  max={MAX_STOPS}
-                  showMap
+                <PublishRouteEditor
+                  stops={values.stops}
+                  travelMode={values.travelMode}
                   city={cityForSearch}
-                  placeholder={tripMessages.stopsSearchPlaceholder}
-                  emptyHint="至少两个途经点。请从搜索候选中选择，或直接点击地图。"
+invalid={errors.stops !== undefined}
+                  onStopsChange={(stops) => update({ stops })}
+                  onTravelModeChange={(travelMode) => update({ travelMode })}
                 />
               </Field>
               {!hasDestination && (
@@ -759,7 +754,7 @@ export function TripCreatePage({ currentUser, fromTripId, aiItineraryId }: Props
 
           <WeatherCard destinationCode={values.destinationCode} date={values.startDate} />
 
-          <Card className="panel publish-companions-card" data-testid="companions-settings">
+<Card className="panel publish-companions-card" data-testid="companions-settings">
             <h3 className="panel-title">
               <span aria-hidden="true">👥</span> {tripMessages.companionsTitle}
             </h3>
@@ -780,23 +775,6 @@ export function TripCreatePage({ currentUser, fromTripId, aiItineraryId }: Props
                     { length: MAX_CAPACITY - MIN_CAPACITY + 1 },
                     (_, index) => MIN_CAPACITY + index,
                   ).map((count) => ({ label: `${count} 人`, value: count }))}
-                />
-              </div>
-              <div className="form-field">
-                <label className="form-label" htmlFor="trip-travel-mode">
-                  <span>{tripMessages.sideTravelMode}</span>
-                </label>
-                <Select
-                  {...appSelectProps}
-                  id="trip-travel-mode"
-                  aria-label={tripMessages.fieldTravelMode}
-                  className="publish-select"
-                  value={values.travelMode}
-                  onChange={(value) => update({ travelMode: value as TripTravelMode })}
-                  options={TRIP_TRAVEL_MODES.map((mode) => ({
-                    label: TRIP_TRAVEL_MODE_LABELS[mode],
-                    value: mode,
-                  }))}
                 />
               </div>
               <div className="form-field">

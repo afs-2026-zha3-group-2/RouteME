@@ -1,4 +1,10 @@
-import type { MyTrips, TripApplication, TripSummary } from '../types';
+import type {
+  AppliedStatusCounts,
+  AppliedTripGroup,
+  MyTrips,
+  TripApplication,
+  TripSummary,
+} from '../types';
 
 export type MineTab = 'published' | 'applied' | 'matched' | 'completed';
 
@@ -23,10 +29,60 @@ const WEEKDAYS = ['周日', '周一', '周二', '周三', '周四', '周五', '�
 export function groupCounts(data: MyTrips): Record<MineTab, number> {
   return {
     published: data.published.length,
-    applied: data.applied.length,
+    // 「我申请的」按行程计数，同一行程的多次申请只算一条。
+    applied: groupApplied(data.applied).length,
     matched: data.matched.length,
     completed: data.completed.length,
   };
+}
+
+/**
+ * 「我申请的」按行程去重：后端按申请时间倒序返回全部申请，
+ * 每组保留首次出现的顺序，`latest` 即该行程最新一次申请。
+ */
+export function groupApplied(applied: TripApplication[]): AppliedTripGroup[] {
+  const groups = new Map<number, AppliedTripGroup>();
+  for (const application of applied) {
+    const existing = groups.get(application.trip_id);
+    if (existing === undefined) {
+      const counts: AppliedStatusCounts = {
+        total: 1,
+        pending: 0,
+        accepted: 0,
+        rejected: 0,
+        cancelled: 0,
+        left: 0,
+      };
+      counts[application.status] += 1;
+      groups.set(application.trip_id, {
+        trip_id: application.trip_id,
+        latest: application,
+        history: [application],
+        counts,
+      });
+      continue;
+    }
+    existing.history.push(application);
+    existing.counts.total += 1;
+    existing.counts[application.status] += 1;
+  }
+  return [...groups.values()];
+}
+
+/**
+ * 待处理申请被系统关闭时状态仍是 cancelled：用后端给出的状态原因码说明真实原因，
+ * 避免用户误以为是自己撤回的；旧后端缺省原因时不做推断。
+ */
+export function applicationCancelCause(
+  application: TripApplication,
+): 'trip_cancelled' | 'trip_completed' | null {
+  if (application.status_reason === 'TRIP_CANCELLED') {
+    return 'trip_cancelled';
+  }
+  if (application.status_reason === 'TRIP_COMPLETED') {
+    return 'trip_completed';
+  }
+  return null;
 }
 
 export function pendingCountFor(data: MyTrips, tripId: number): number {

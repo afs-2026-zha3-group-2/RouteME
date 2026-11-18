@@ -1358,6 +1358,83 @@ MVP 无推送、无通知；以下为点赞与信用状态的展示面契约。
 - 所有种子账号 80 分，没有低信用演示数据；P3 需要决定 E2E 是新增种子、测试夹具还是直接调用记账服务。
 - `{TBD}`：无。非阻塞项（低信用测试数据、限制记录表名、系统取消方法命名）在 P1 §8 标 deferred / P3 设计定。
 
+## REQ-030 增补 — 举报违规扣减信用分（issue #29）
+
+> 编号说明（2026-11-18）：合并 `origin/main@2bf9148` 时 REQ-028 / S29 / V30 与 REQ-029 / S30 已被 `add-travel-finance` 占用，本 change 按「后到者顺延」改为 **REQ-030 / S31 / V31**（change id 不变）。
+
+### ① 数据契约（Data contract）
+
+| 概念 | grain | 字段 | 状态迁移 | 来源 |
+|---|---|---|---|---|
+| 举报处置结果（复用 `reports`） | 每条举报 1 行 | 既有 `status` / `processed_by` / `processing_at` / `resolved_at` / `resolution_note`；新增 `violation_type`（8 类码值，仅 RESOLVED 有值）/ `applied_deduction`（≤0 的实际生效量，仅 RESOLVED 有值）；既有 `resolution_action` 保留历史值、不再写入新值 | PENDING → PROCESSING → RESOLVED / REJECTED；终态后不再变化 | `AdminReportServiceImpl.resolve` |
+| 信用账本（复用 `credit_ledger`） | 每次扣分 1 条 | `reason_code = REPORT_VIOLATION`；`applied_delta`（0 ~ -30）；`score_before` / `score_after`；`related_type = REPORT`；`related_id = reportId`；`idempotency_key = REPORT_VIOLATION:<reportId>`；`occurred_at` | append-only；同一举报唯一；零值合法 | `CreditService.book` |
+| 信用账户（复用 `user_credit_account`） | 每用户 1 行 | `score` 0–100；扣分后 `score = max(0, before - tier)` | 只由记账服务更新；缺失按 80 建立 | `CreditServiceImpl` |
+| 低分限制（复用 `credit_restriction`） | 每段限制 1 行 | 既有字段；由 `CreditChangedEvent` 驱动 | 跨 60 下沿建 active；跨 60 上沿 lifted | `CreditEnforcementServiceImpl` |
+| 违规类型取值域 | 8 个码值 | `HARASSMENT(-10)` / `FAKE_TRIP(-15)` / `FRAUD_RISK(-30)` / `ILLEGAL_CONTENT(-20)` / `IMPERSONATION(-20)` / `NO_SHOW_DISRUPTION(-10)` / `PRIVACY_LEAK(-30)` / `OTHER(-5/-10/-20/-30)` | 静态表 | issue #29 扣分表 |
+
+- **只扣分一次：** `reports.status` 的条件更新 + 账本幂等键双保险；终态举报不可再次处理。
+- **报告留痕与账本分离：** 报告存「违规类型 + 实际扣分」，账本存「分数前后 + 关联」；两边通过 `reportId` 对齐。
+- **0 分裁断：** `applied_deduction = 0` 与账本 `applied_delta = 0` 仍合法；不写负数余额。
+- **历史兼容：** 新增列可空；`resolution_action` 保留历史值只读；旧举报不补扣。
+
+### ② 边界归属（Boundary attribution）
+
+| 规则 | 分支 | 归属 | 说明 |
+|---|---|---|---|
+| 处理结果 | RESOLVED | in | 必选违规类型；写报告留痕并扣分 |
+| 处理结果 | REJECTED | out | 不扣分、不写账本；清除预览 |
+| 违规类型 | 7 类固定 | in | 服务端派生扣分 |
+| 违规类型 | OTHER + -5/-10/-20/-30 | in | 必选档位；其他档位 400 |
+| 违规类型 | 缺失 / 未知 | out | 400 `INVALID_INPUT`；状态不变 |
+| 扣分值 | 客户端自定义 | out | 忽略 / 拒绝；以服务端派生为准 |
+| 举报状态 | PENDING | out | 409 `REPORT_NOT_PENDING`（开始处理前不可 resolve） |
+| 举报状态 | RESOLVED / REJECTED | out | 409 `REPORT_NOT_PROCESSING` |
+| 举报状态 | PROCESSING | in | 唯一可处理状态 |
+| 账号状态 | 任意 | out | 举报处置 MUST NOT 改变；用户管理页独立 |
+| 低分联动 | 跨 60 下沿 | in | 既有 `CreditChangedEvent` 自动限制 / 清退 |
+| 低分联动 | 恰好 60 / ≥60 | out | 不触发 |
+| 已受限 | 再次扣分 | in | 分数继续扣；不重复建限制 / 不重复清退 |
+| 幂等 | 重复 / 并发 resolve | in | 只成功一次；一条账本 |
+| 信用记录可见面 | 用户端 / 管理端明细 | out | 只在账本与举报详情留痕 |
+| 历史举报 | 已处理 | out | 不回填、不重算 |
+
+### ③ 跨 REQ 一致性（Cross-REQ consistency）
+
+| 能力 | per-REQ grain + fields | aligned? | anchor REQ |
+|---|---|---|---|
+| `user-credit` | 账户 1 条/用户；账本 append-only；原因码 + 前后快照 + 幂等键；零值留痕 | ✓ 复用，仅新增原因码 `REPORT_VIOLATION` 与调用方 | REQ-019 |
+| `admin-console` | 举报 4 态；处置备注 / 处理人 / 时间；处置动作 | ✓ MODIFIED：动作改为违规类型 + 扣分；不改队列 / 筛选 / 详情上下文 | REQ-018（add-admin-console） |
+| `credit-enforcement` | 分数跨 60 自动限制 / 解除；只读守卫 | ✓ 只消费事件，不改规则 | REQ-025 |
+| `trip-plans` / `trip-companions` / `trip-experiences` | 被举报用户 = 发布者 / 作者 | ✓ 只读推导 | REQ-002 / REQ-003 / REQ-004 |
+| `user-auth` | 管理员角色与权限 | ✓ 只读复用 `requireAdmin` | REQ-018 |
+
+- **未收敛 ✗：** 无。
+
+### ④ 通知 / 展示契约（Notification / display contract）
+
+| surface | recipient | content + display fields | channel | cardinality |
+|---|---|---|---|---|
+| 举报详情（PROCESSING） | 管理员 | 被举报用户当前分数 + 违规类型选择 + 「当前 → 本次扣分 → 处理后」预览 + 违规原因 | 应用内表单 | 每次 1 处 |
+| 举报详情（RESOLVED） | 管理员 | 违规类型、本次实际扣分、处理人、处理时间、违规原因 | 应用内文本 | 每举报 1 处 |
+| 举报详情（REJECTED） | 管理员 | 处理人、处理时间、违规原因；无扣分信息 | 应用内文本 | 每举报 1 处 |
+| 信用展示面 | 被举报用户 / 他人 | 沿用既有五展示面显示新分数与等级 | 应用内文本 | 既有口径 |
+| 低分限制提示 | 被举报用户 | 由既有 `credit-enforcement` 展示；本 change 不新增 | 应用内提示 | 既有口径 |
+| 信用明细 / 通知 | 任何人 | MUST NOT 新增 | — | 0 |
+
+- **展示字段完整性：** 预览三值（当前 / 本次 / 处理后）与处理结果（类型 / 实际扣分）都可从服务端响应派生。
+- **无 notification：** 不新增站内信、推送、邮件。
+
+### 探针记录（REQ-030 举报违规扣分）
+
+- `CreditService.book` 已具备裁断 / 零值留痕 / 幂等键 / 前后快照；举报扣分无需改账本表结构，只需新增原因码常量。
+- `reports` 无违规类型与扣分列；报告留痕最终由 `V31__report_credit_deduction.sql` 追加可空列（SQLite + H2 兼容）。
+- `AdminReportResolveRequest` 当前含 `action` / `banReasonCode` / `banReasonNote` / `banExpiresAt`；移除后需同步 openapi、前端 `reportActionForm.ts` 与后端测试。
+- `AdminReportDetailResponse` 无被举报用户信用字段；预览可直接扩展详情响应（管理端一次取数），避免前端再调公共 `/users/credits`。
+- `BanReasonEnum` 与 issue 的 8 类码值同名；复用还是新建 `ReportViolationType` 属 P3 命名决策（OQ-1），行为不变。
+- 现有 `AdminReportController` 无违规类型端点；resolve 为唯一写入口，改动面集中。
+- 现有举报处置 E2E（`admin.spec.ts`）含「成立并处罚 / 暂停 / 封禁」场景；D1 移除动作后需要重写这些用例，并保留「用户管理页暂停 / 封禁」回归。
+- 所有种子账号 80 分；E2E 预览用例可直接用种子分数断言（80 → 65 等），不需要造低分数据；跌破 60 的联动场景用 0 分或 -30 类型造数。
+- `{TBD}`：无。非阻塞项（枚举归属、字段命名、列表列、契约 / 迁移号）在 §8 标 open / deferred，P3 定。
 ## REQ-028 增补 — 旅行保障与小额借款（旅行金融迭代 1）
 
 > 合并说明（2026-11-18）：本 change 已 rebase 到 `origin/main@822471c`；编号由 REQ-024 / S25 顺延为 **REQ-028 / S29**，契约 **0.25.0** + 迁移 **`V30`**；本节保留 P1 时点的分析口径，文末「探针记录」记录最终确认。
@@ -1458,9 +1535,9 @@ MVP 无推送、无通知；以下为金融信息的 UI 展示面契约。
 - `{TBD}`：无。非阻塞项（契约 / 迁移号、端点与字段形状、原型截点）已在 REQ-028 §8 标 deferred。
 - A0 门 ⑨–⑫：全部通过。
 
-## REQ-030 增补 — 路线完成度（S31 / issue #45）
+## REQ-031 增补 — 路线完成度（S32 / issue #45）
 
-> 基线 `origin/main@aa320dc`；用户裁决 D1–D8 见 `intents/REQ-030-route-completion.md` 与 `requirements/REQ-030-route-completion.md` §8。
+> 基线 `origin/main@aa320dc`；用户裁决 D1–D8 见 `intents/REQ-031-route-completion.md` 与 `requirements/REQ-031-route-completion.md` §8。
 
 ### ① 数据契约（Data contract）
 
@@ -1482,22 +1559,22 @@ MVP 无推送、无通知；以下为金融信息的 UI 展示面契约。
 
 | 规则 | 分支 | in / out | 理由 |
 |---|---|---|---|
-| 字段返回 | 任意已存在用户（本人 / 他人） | in | `S31-1`；同口径 |
-| 数据不足 | 无打卡数据源（本期全部用户） | in → `insufficient` | `S31-2` / `S31-3` |
-| 数据充足 | 已结束行程 ≥1 且 `rate != null` | in → 按阈值派生 | `S31-4` / D2 |
-| 样本范围 | 仅 `completed` 行程 | in | `S31-5` / D6 |
-| 样本范围 | 进行中 / 尚未开始 / 已取消 | out | `S31-5` / issue AC 3 |
+| 字段返回 | 任意已存在用户（本人 / 他人） | in | `S32-1`；同口径 |
+| 数据不足 | 无打卡数据源（本期全部用户） | in → `insufficient` | `S32-2` / `S32-3` |
+| 数据充足 | 已结束行程 ≥1 且 `rate != null` | in → 按阈值派生 | `S32-4` / D2 |
+| 样本范围 | 仅 `completed` 行程 | in | `S32-5` / D6 |
+| 样本范围 | 进行中 / 尚未开始 / 已取消 | out | `S32-5` / issue AC 3 |
 | 样本范围 | 发布者 + `ACCEPTED` 同行者 | in（未来） | D6 |
-| 阈值 | `rate` 80–100 | in → `good` | `S31-6` |
-| 阈值 | `rate` 70–79 | in → `neutral` | `S31-7` |
-| 阈值 | `rate` 0–69 | in → `watch` | `S31-8` |
-| 阈值 | 非整数 / <0 / >100 | in → 降级 `insufficient` | `S31-9` |
-| 展示 | 个人主页 hero 信用行附近 | in | `S31-11` |
+| 阈值 | `rate` 80–100 | in → `good` | `S32-6` |
+| 阈值 | `rate` 70–79 | in → `neutral` | `S32-7` |
+| 阈值 | `rate` 0–69 | in → `watch` | `S32-8` |
+| 阈值 | 非整数 / <0 / >100 | in → 降级 `insufficient` | `S32-9` |
+| 展示 | 个人主页 hero 信用行附近 | in | `S32-11` |
 | 展示 | 资料弹窗 / 行程卡 / 行程详情 / 列表 | out（本期） | D3；未来可复用状态码 |
-| 文案 | 「骗子」「危险用户」「不可信」等定性结论 | out（禁止） | `S31-14` / issue AC 11 |
-| 独立性 | 读写信用分 / 账本 | out（禁止） | `S31-17` |
-| 独立性 | 改写 `stats` / 读取成长等级 | out（禁止） | `S31-18` |
-| 访问控制 | 未登录 / 未知用户 | in（沿用 401 / 404） | `S31-19` |
+| 文案 | 「骗子」「危险用户」「不可信」等定性结论 | out（禁止） | `S32-14` / issue AC 11 |
+| 独立性 | 读写信用分 / 账本 | out（禁止） | `S32-17` |
+| 独立性 | 改写 `stats` / 读取成长等级 | out（禁止） | `S32-18` |
+| 访问控制 | 未登录 / 未知用户 | in（沿用 401 / 404） | `S32-19` |
 | 数据存储 | 新表 / 迁移 / 写入端点 | out | D7 |
 | 数据来源 | 临时 / 占位 / 演示数值 | out（禁止） | D1 |
 | 管理端 | 配置 / 修正 / 申诉 | out | issue 不含管理端 |
@@ -1507,12 +1584,12 @@ MVP 无推送、无通知；以下为金融信息的 UI 展示面契约。
 
 | 能力 | 各 REQ 的 grain + 字段 | aligned? | anchor REQ |
 |---|---|---|---|
-| `user-profile`（REQ-008，未归档） | 资料响应含信用字段、`joinedAt`、`stats`、状态；REQ-030 只追加两个只读字段，不改既有字段语义 | ✓ aligned（不改其 Requirement） | REQ-008 / `add-user-profile` |
-| `user-profiles`（REQ-009，未归档） | 复用同一 `GET /users/{userId}/profile`；REQ-030 字段对本人 / 他人同口径 | ✓ aligned | REQ-009 / `add-user-profiles` |
-| `user-credit`（REQ-019，未归档） | 信用分账户 + 账本，独立存储；REQ-030 不读不写，仅并列展示 | ✓ aligned（`S31-17` 断言） | REQ-019 / `add-credit-account` |
-| `trip-plans` / `add-trip-completion`（REQ-011，未归档） | 行程 `completed` 语义与 `completed_at`；REQ-030 未来只读 | ✓ aligned（本期不计算） | REQ-011 |
-| `trip-companions`（REQ-003，Living） | `ACCEPTED` 申请者即同行者；REQ-030 未来只读 | ✓ aligned | REQ-003 |
-| 成长等级（issue #44，未实现） | LV1–LV5 经验与等级，独立系统；REQ-030 不读写 | ✓ aligned（`S31-18` 断言） | issue #44（无 change） |
+| `user-profile`（REQ-008，未归档） | 资料响应含信用字段、`joinedAt`、`stats`、状态；REQ-031 只追加两个只读字段，不改既有字段语义 | ✓ aligned（不改其 Requirement） | REQ-008 / `add-user-profile` |
+| `user-profiles`（REQ-009，未归档） | 复用同一 `GET /users/{userId}/profile`；REQ-031 字段对本人 / 他人同口径 | ✓ aligned | REQ-009 / `add-user-profiles` |
+| `user-credit`（REQ-019，未归档） | 信用分账户 + 账本，独立存储；REQ-031 不读不写，仅并列展示 | ✓ aligned（`S32-17` 断言） | REQ-019 / `add-credit-account` |
+| `trip-plans` / `add-trip-completion`（REQ-011，未归档） | 行程 `completed` 语义与 `completed_at`；REQ-031 未来只读 | ✓ aligned（本期不计算） | REQ-011 |
+| `trip-companions`（REQ-003，Living） | `ACCEPTED` 申请者即同行者；REQ-031 未来只读 | ✓ aligned | REQ-003 |
+| 成长等级（issue #44，未实现） | LV1–LV5 经验与等级，独立系统；REQ-031 不读写 | ✓ aligned（`S32-18` 断言） | issue #44（无 change） |
 | `design-system` | 复用 `.profile-credit` 行、`badge`、色阶与间距令牌 | ✓ aligned | `openspec/specs/design-system/spec.md` |
 
 无未收敛的 ✗；A0 门 ⑪ 通过。
@@ -1523,7 +1600,7 @@ MVP 无推送、无通知；以下为完成度的 UI 展示面契约。
 
 | trigger / surface（展示面） | recipient role | content + display fields | channel | cardinality | source |
 |---|---|---|---|---|---|
-| 个人主页 hero — 完成度行 | 本人 / 浏览者 | 状态码 → 文案；`good` / `watch` 同时显示「路线完成度 NN%」；`neutral` 只显示百分比；`insufficient` 只显示「暂无足够完成记录」 | 应用内页面 | 每页 1 处 | `S31-11` ~ `S31-16` |
+| 个人主页 hero — 完成度行 | 本人 / 浏览者 | 状态码 → 文案；`good` / `watch` 同时显示「路线完成度 NN%」；`neutral` 只显示百分比；`insufficient` 只显示「暂无足够完成记录」 | 应用内页面 | 每页 1 处 | `S32-11` ~ `S32-16` |
 | 资料弹窗 / 行程卡 / 行程详情 / 列表 | — | **本期不存在**；未来可复用同一状态码与简化标签 | —（不存在） | 0 | D3 |
 | 通知 / 推送 / 邮件 | — | **不存在** | —（不存在） | 0 | issue 不含通知 |
 
@@ -1531,15 +1608,15 @@ MVP 无推送、无通知；以下为完成度的 UI 展示面契约。
 - 百分比格式为整数 + `%`（本期数据不足不出现百分比）。
 - 前端只读状态码字典；无展示面缺 display-fields；A0 门 ⑫ 通过。
 
-### 探针记录（REQ-030 路线完成度）
+### 探针记录（REQ-031 路线完成度）
 
 - **状态派生单点：** 阈值只在后端一处实现（建议独立纯函数 / 常量），单测覆盖 80 / 79 / 70 / 69 / 0 / null / 非法值；前端不得复制阈值。
 - **响应承载：** `UserProfileResponse` 使用 `@JsonInclude(NON_NULL)`；**P2 已定稿（2026-11-18）：数据不足时省略 `route_completion_rate`（值语义为 null），`route_completion_state` 恒返回并列入 `UserProfile.required`；前端按「缺失或 null = 数据不足」处理。**
 - **数据源缺失：** 本期没有任何完成度聚合来源；服务层不得以 `stats.completed`、已结束行程数或演示数据替代，返回常量 `insufficient` 即可。
 - **展示位：** `ProfilePage` hero 已有 `.profile-credit` 行（信用分）；完成度行紧随其后，复用同一行高与色阶语义，避免新增卡片层级。
 - **状态与主题：** `good` 使用正向色阶、`watch` 使用警示色阶、`neutral` 与 `insufficient` 使用中性色阶；不得使用危险红表达「警惕」（避免定性）。
-- **接口兼容：** 新增字段可空；既有 `ProfileModal` / `TripCard` / 详情页不消费该字段，行为不变；`OpenApiTest` 版本断言需同步（预计 0.26.0）。
+- **接口兼容：** 新增字段可空；既有 `ProfileModal` / `TripCard` / 详情页不消费该字段，行为不变；`OpenApiTest` 版本断言需同步（预计 0.27.0）。
 - **E2E 影响：** 个人主页新增一行，既有 `profile` 相关断言可能受版式影响；新增 `route-completion.spec.ts` 覆盖数据不足与四态（通过接口拦截 / 夹具模拟状态码）。
 - **原型：** v1 已归档、v2 为六屏设计板且无完成度元素；不修改归档原型，P3 以 preview 页面与生产 UI 截图作为界面证据。
-- `{TBD}`：无。非阻塞项（契约版本、字段命名与序列化细节、未来聚合算法、原型证据形式）已在 REQ-030 §8 标 deferred。
+- `{TBD}`：无。非阻塞项（契约版本、字段命名与序列化细节、未来聚合算法、原型证据形式）已在 REQ-031 §8 标 deferred。
 - A0 门 ⑨–⑫：全部通过。

@@ -6,67 +6,78 @@ import {
   validateReportResolution,
 } from './reportActionForm';
 
-const NOW = Date.parse('2026-11-16T09:00:00Z');
-const FUTURE = '2026-11-20T09:00:00Z';
-
 describe('reportActionForm', () => {
   it('requires an outcome and a note', () => {
     const state = emptyReportResolutionForm();
-    expect(validateReportResolution(state, NOW)).toMatchObject({
+    expect(validateReportResolution(state)).toMatchObject({
       outcome: '请选择处理结果',
       note: '必填，500 字以内',
     });
   });
 
-  it('requires an action when the report is upheld', () => {
+  it('requires a violation type when the report is upheld', () => {
     const state = emptyReportResolutionForm();
     state.outcome = 'RESOLVED';
     state.note = '已核实';
-    expect(validateReportResolution(state, NOW)).toEqual({ action: '请选择处罚动作' });
+    expect(validateReportResolution(state)).toEqual({ violationType: '请选择违规类型' });
 
-    state.action = 'KEEP';
-    expect(canSubmitReportResolution(state, NOW)).toBe(true);
+    state.violationType = 'FAKE_TRIP';
+    expect(canSubmitReportResolution(state)).toBe(true);
   });
 
-  it('requires ban fields for BAN and UPDATE_BAN', () => {
+  it('requires an other-deduction tier for OTHER and valid values only', () => {
     const state = emptyReportResolutionForm();
     state.outcome = 'RESOLVED';
     state.note = '证据充分';
-    state.action = 'BAN';
-    expect(validateReportResolution(state, NOW)).toMatchObject({
-      banReasonCode: '请选择封禁理由',
-      banExpiresAt: '请选择解封时间',
-    });
+    state.violationType = 'OTHER';
+    expect(validateReportResolution(state)).toEqual({ otherDeduction: '请选择扣分档位' });
 
-    state.banReasonCode = 'PRIVACY_LEAK';
-    state.banExpiresAt = FUTURE;
-    expect(canSubmitReportResolution(state, NOW)).toBe(true);
+    state.otherDeduction = 15;
+    expect(canSubmitReportResolution(state)).toBe(false);
+
+    state.otherDeduction = 20;
+    expect(canSubmitReportResolution(state)).toBe(true);
   });
 
-  it('does not require ban fields for rejections', () => {
+  it('does not require violation fields for rejections', () => {
     const state = emptyReportResolutionForm();
     state.outcome = 'REJECTED';
     state.note = '证据不足';
-    state.action = '';
-    expect(canSubmitReportResolution(state, NOW)).toBe(true);
+    expect(canSubmitReportResolution(state)).toBe(true);
     expect(toResolveRequest(state)).toEqual({ outcome: 'REJECTED', note: '证据不足' });
   });
 
-  it('maps a ban resolution to the contract request', () => {
+  it('rejects notes longer than 500 characters', () => {
+    const state = emptyReportResolutionForm();
+    state.outcome = 'REJECTED';
+    state.note = 'x'.repeat(501);
+    expect(validateReportResolution(state)).toEqual({ note: '处理备注（500 字以内）' });
+  });
+
+  it('maps a fixed-deduction resolution to the contract request', () => {
     const state = emptyReportResolutionForm();
     state.outcome = 'RESOLVED';
     state.note = ' 多次骚扰 ';
-    state.action = 'BAN';
-    state.banReasonCode = 'HARASSMENT';
-    state.banReasonNote = '已警告仍继续';
-    state.banExpiresAt = FUTURE;
+    state.violationType = 'HARASSMENT';
     expect(toResolveRequest(state)).toEqual({
       outcome: 'RESOLVED',
       note: '多次骚扰',
-      action: 'BAN',
-      ban_reason_code: 'HARASSMENT',
-      ban_reason_note: '已警告仍继续',
-      ban_expires_at: FUTURE,
+      violation_type: 'HARASSMENT',
+      other_deduction: null,
+    });
+  });
+
+  it('maps an OTHER resolution with its deduction tier', () => {
+    const state = emptyReportResolutionForm();
+    state.outcome = 'RESOLVED';
+    state.note = ' 其他违规 ';
+    state.violationType = 'OTHER';
+    state.otherDeduction = 10;
+    expect(toResolveRequest(state)).toEqual({
+      outcome: 'RESOLVED',
+      note: '其他违规',
+      violation_type: 'OTHER',
+      other_deduction: 10,
     });
   });
 });
