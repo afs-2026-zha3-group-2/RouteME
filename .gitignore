@@ -12,6 +12,9 @@ dist/
 # Database files
 *.db
 *.db-journal
+# WAL mode (routeme runs SQLite in WAL) leaves these next to the database file
+*.db-wal
+*.db-shm
 *.sqlite
 
 # IDE
@@ -49,6 +52,8 @@ logs/
 # Local SQLite workspace (keep the folder, ignore data files)
 ai4se-baseline/RouteME/SqlLite/*.db
 ai4se-baseline/RouteME/SqlLite/*.db-journal
+ai4se-baseline/RouteME/SqlLite/*.db-wal
+ai4se-baseline/RouteME/SqlLite/*.db-shm
 ai4se-baseline/RouteME/SqlLite/*.lock.db
 # Avatar uploads are runtime data written by the profile feature
 ai4se-baseline/RouteME/SqlLite/uploads/
