@@ -15,6 +15,7 @@ import { LearningPage } from './credit/LearningPage';
 import { CreditProvider } from './credit/CreditContext';
 import { ShareExperiencePage } from './experiences/ShareExperiencePage';
 import { HelpPage } from './help/HelpPage';
+import { SupportPage } from './help/SupportPage';
 import { HomePage } from './home/HomePage';
 import { tripMessages } from './i18n/tripMessages';
 import { IdentityGate } from './identity/IdentityGate';
@@ -180,7 +181,9 @@ export function App() {
       <ProfileProvider currentUser={currentUser}>
         <CreditProvider currentUser={currentUser}>
           <AppShell currentUser={currentUser} onLogout={logout} route={route}>
-            {route.name === 'home' && <HomePage currentUser={currentUser} />}
+            {route.name === 'home' && (
+              <HomePage currentUser={currentUser} token={authToken} />
+            )}
             {route.name === 'create' && (
               <TripCreatePage
                 currentUser={currentUser}
@@ -226,7 +229,14 @@ export function App() {
                 otherUserId={route.userId}
               />
             )}
-            {route.name === 'help' && <HelpPage currentUser={currentUser} token={authToken} />}
+            {route.name === 'support' && (
+              <SupportPage currentUser={currentUser} token={authToken} />
+            )}
+            {route.name === 'help' && (
+              <AdminGuard currentUser={currentUser} token={authToken}>
+                {(token) => <HelpPage currentUser={currentUser} token={token} />}
+              </AdminGuard>
+            )}
             {route.name === 'adminDashboard' && (
               <AdminGuard currentUser={currentUser} token={authToken}>
                 {(token) => <AdminDashboardPage token={token} />}

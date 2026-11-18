@@ -13,7 +13,7 @@ import type { DemoUser, UserProfile } from '../types';
 import { Avatar } from './Avatar';
 import { BrandMark } from './BrandMark';
 
-type NavKey = 'discover' | 'map' | 'create' | 'aiPlanner' | 'mine' | 'chat' | 'help' | 'admin';
+type NavKey = 'discover' | 'map' | 'create' | 'aiPlanner' | 'mine' | 'chat' | 'support' | 'help' | 'admin';
 
 type NavItem = { key: NavKey; label: string; href: string };
 
@@ -26,16 +26,19 @@ const NAV_ITEMS: NavItem[] = [
   { key: 'chat', label: tripMessages.chatNav, href: '#/chat' },
 ];
 
-// 侧栏比底部导航多一个入口：客服与举报在移动端仍可从账号菜单进入，避免底栏挤成 7 项。
+// 客服是用户侧独立入口；帮助与反馈只在管理组里对内部管理员可见。
+const SUPPORT_ITEM: NavItem = { key: 'support', label: adminMessages.supportNav, href: '#/support' };
+
+// 侧栏比底部导航多一个客服入口：窄屏改用悬浮入口与账号菜单进入，避免底栏挤成 7 项。
 const RAIL_ITEMS: NavItem[] = [
   ...NAV_ITEMS,
-  { key: 'help', label: adminMessages.helpTitle, href: '#/help' },
+  SUPPORT_ITEM,
 ];
 
 const NAV_GROUPS: Array<{ title: string; items: NavItem[] }> = [
   { title: '浏览', items: RAIL_ITEMS.filter((item) => item.key === 'discover' || item.key === 'map') },
   { title: '规划', items: RAIL_ITEMS.filter((item) => item.key === 'create' || item.key === 'aiPlanner') },
-  { title: '我的', items: RAIL_ITEMS.filter((item) => item.key === 'mine' || item.key === 'chat' || item.key === 'help' || item.key === 'admin') },
+  { title: '我的', items: RAIL_ITEMS.filter((item) => item.key === 'mine' || item.key === 'chat' || item.key === 'support') },
 ];
 
 function activeKey(route: Route): NavKey | null {
@@ -56,6 +59,9 @@ function activeKey(route: Route): NavKey | null {
   }
   if (route.name === 'chat') {
     return 'chat';
+  }
+  if (route.name === 'support') {
+    return 'support';
   }
   if (route.name === 'help') {
     return 'help';
@@ -135,6 +141,24 @@ function NavIcon({ name }: { name: NavKey }) {
       </svg>
     );
   }
+  if (name === 'support') {
+    return (
+      <svg
+        viewBox="0 0 20 20"
+        aria-hidden="true"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.7"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      >
+        <path d="M3.8 11.4a6.2 6.2 0 0 1 12.4 0" />
+        <rect x="2.8" y="10.6" width="3.1" height="5" rx="1.5" />
+        <rect x="14.1" y="10.6" width="3.1" height="5" rx="1.5" />
+        <path d="M15.6 15.6v.5a2 2 0 0 1-2 2h-2.4" />
+      </svg>
+    );
+  }
   if (name === 'help') {
     return (
       <svg
@@ -193,6 +217,9 @@ type Props = {
 
 export function AppShell({ currentUser, onLogout, route, children }: Props) {
   const active = activeKey(route);
+  const isAdmin = currentUser.role === 'ADMIN';
+  /** 管理员只保留浏览 / 规划 / 发布与后台入口；我的旅行、同行消息、联系客服不向管理员展示。 */
+  const hiddenForAdmin: NavKey[] = ['mine', 'chat', 'support'];
   const { restricted } = useMyCredit();
   const navBlockedTitle = (item: NavItem) =>
     restricted && item.key === 'create' ? creditRestrictedActionMessage() : undefined;
@@ -364,34 +391,42 @@ export function AppShell({ currentUser, onLogout, route, children }: Props) {
 
       <aside className="rail" aria-label="主导航">
         <nav className="rail-nav">
-          {NAV_GROUPS.map((group) => (
-            <div className="rail-group" key={group.title}>
-              <span className="rail-group-title">{group.title}</span>
-              {group.items.map((item) => (
-                <a
-                  key={item.key}
-                  className={[
-                    active === item.key ? 'rail-link active' : 'rail-link',
-                    navBlockedTitle(item) !== undefined ? 'is-disabled' : '',
-                  ]
-                    .filter((name) => name !== '')
-                    .join(' ')}
-                  href={item.href}
-                  aria-current={active === item.key ? 'page' : undefined}
-                  aria-disabled={navBlockedTitle(item) !== undefined || undefined}
-                  title={navBlockedTitle(item)}
-                  onClick={(event) => {
-                    if (navBlockedTitle(item) !== undefined) {
-                      event.preventDefault();
-                    }
-                  }}
-                >
-                  <NavIcon name={item.key} />
-                  <span>{item.label}</span>
-                </a>
-              ))}
-            </div>
-          ))}
+          {NAV_GROUPS.map((group) => {
+            const items = group.items.filter(
+              (item) => !isAdmin || !hiddenForAdmin.includes(item.key),
+            );
+            if (items.length === 0) {
+              return null;
+            }
+            return (
+              <div className="rail-group" key={group.title}>
+                <span className="rail-group-title">{group.title}</span>
+                {items.map((item) => (
+                  <a
+                    key={item.key}
+                    className={[
+                      active === item.key ? 'rail-link active' : 'rail-link',
+                      navBlockedTitle(item) !== undefined ? 'is-disabled' : '',
+                    ]
+                      .filter((name) => name !== '')
+                      .join(' ')}
+                    href={item.href}
+                    aria-current={active === item.key ? 'page' : undefined}
+                    aria-disabled={navBlockedTitle(item) !== undefined || undefined}
+                    title={navBlockedTitle(item)}
+                    onClick={(event) => {
+                      if (navBlockedTitle(item) !== undefined) {
+                        event.preventDefault();
+                      }
+                    }}
+                  >
+                    <NavIcon name={item.key} />
+                    <span>{item.label}</span>
+                  </a>
+                ))}
+              </div>
+            );
+          })}
           {currentUser.role === 'ADMIN' && (
             <div className="rail-group">
               <span className="rail-group-title">管理</span>
@@ -402,6 +437,14 @@ export function AppShell({ currentUser, onLogout, route, children }: Props) {
               >
                 <NavIcon name="admin" />
                 <span>{adminMessages.title}</span>
+              </a>
+              <a
+                className={active === 'help' ? 'rail-link active' : 'rail-link'}
+                href="#/help"
+                aria-current={active === 'help' ? 'page' : undefined}
+              >
+                <NavIcon name="help" />
+                <span>{adminMessages.helpTitle}</span>
               </a>
             </div>
           )}
@@ -443,6 +486,21 @@ export function AppShell({ currentUser, onLogout, route, children }: Props) {
                 style={{ left: accountMenuAnchor.left, bottom: accountMenuAnchor.bottom }}
                 onKeyDown={moveAccountMenuFocus}
               >
+                {!isAdmin && (
+                  <a
+                    className="rail-menu-item"
+                    role="menuitem"
+                    href="#/support"
+                    onClick={() => setAccountOpen(false)}
+                  >
+                    <svg viewBox="0 0 20 20" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M3.8 11.4a6.2 6.2 0 0 1 12.4 0" />
+                      <rect x="2.8" y="10.6" width="3.1" height="5" rx="1.5" />
+                      <rect x="14.1" y="10.6" width="3.1" height="5" rx="1.5" />
+                    </svg>
+                    <span>{adminMessages.supportNav}</span>
+                  </a>
+                )}
                 <a
                   className="rail-menu-item"
                   role="menuitem"
@@ -488,7 +546,11 @@ export function AppShell({ currentUser, onLogout, route, children }: Props) {
       </div>
 
       <nav className="tabbar" aria-label="底部导航">
-        {NAV_ITEMS.filter((item) => item.key !== 'aiPlanner').map((item) => (
+        {NAV_ITEMS.filter(
+          (item) =>
+            item.key !== 'aiPlanner' &&
+            !(isAdmin && (item.key === 'mine' || item.key === 'chat')),
+        ).map((item) => (
           <a
             key={item.key}
             className={[
@@ -535,6 +597,27 @@ export function AppShell({ currentUser, onLogout, route, children }: Props) {
           <span>账号</span>
         </button>
       </nav>
+
+      {/* 窄屏没有侧栏：客服单独做一个悬浮入口，不挤底部导航。管理员不展示客服入口。 */}
+      {!isAdmin && route.name !== 'support' && (
+        <a className="support-fab" href="#/support" aria-label={adminMessages.supportNav}>
+          <svg
+            viewBox="0 0 20 20"
+            aria-hidden="true"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.7"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <path d="M3.8 11.4a6.2 6.2 0 0 1 12.4 0" />
+            <rect x="2.8" y="10.6" width="3.1" height="5" rx="1.5" />
+            <rect x="14.1" y="10.6" width="3.1" height="5" rx="1.5" />
+            <path d="M15.6 15.6v.5a2 2 0 0 1-2 2h-2.4" />
+          </svg>
+          <span>{adminMessages.supportNav}</span>
+        </a>
+      )}
     </div>
   );
 }

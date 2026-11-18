@@ -2672,6 +2672,29 @@ svg {
   vertical-align: 1px;
 }
 
+/* 管理员删除旅行灵感：与普通操作同一行，但用危险色区分。 */
+.exp-admin-delete {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--t-danger);
+}
+
+.exp-admin-delete svg {
+  width: 15px;
+  height: 15px;
+}
+
+.exp-admin-delete:hover {
+  color: var(--t-danger);
+  background: color-mix(in srgb, var(--danger) 12%, transparent);
+}
+
+.exp-admin-delete:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
 /* 点赞：未赞中性描边，已赞珊瑚实底 + 填充心形；首页卡与详情体验区共用。 */
 .exp-like {
   display: inline-flex;
@@ -7584,6 +7607,43 @@ svg {
   background: var(--grad-shore);
 }
 
+/* 待接入会话数：后台任意页签都能看到的数字徽标。 */
+.admin-tab-badge {
+  display: inline-grid;
+  place-items: center;
+  min-width: 18px;
+  height: 18px;
+  margin-left: 6px;
+  padding: 0 5px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 800;
+  line-height: 1;
+  color: #fff;
+  background: var(--danger);
+  box-shadow: 0 0 0 2px var(--surface);
+  vertical-align: 1px;
+}
+
+.admin-waiting-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 10px 14px;
+  border: 1px solid color-mix(in srgb, var(--lagoon) 32%, var(--line));
+  border-radius: var(--r);
+  background: color-mix(in srgb, var(--lagoon) 10%, var(--surface));
+  font-size: 12.5px;
+  font-weight: 650;
+  color: var(--ink-2);
+}
+
+.admin-service-live-hint {
+  margin: -6px 2px 0;
+}
+
 .admin-body {
   display: grid;
   gap: 16px;
@@ -8338,6 +8398,309 @@ svg {
   margin: 0;
   padding: 0;
   list-style: none;
+}
+
+/* ---------- 联系客服（用户侧独立入口） ---------- */
+
+.support-page {
+  display: grid;
+  gap: 18px;
+  width: 100%;
+  max-width: 1100px;
+  margin: 0 auto;
+}
+
+.support-hero {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  padding: 22px 24px;
+  border: 1px solid var(--line);
+  border-radius: calc(var(--r) + 6px);
+  background:
+    radial-gradient(
+      120% 150% at 0% 0%,
+      color-mix(in srgb, var(--lagoon) 16%, transparent),
+      transparent 62%
+    ),
+    var(--surface);
+  box-shadow: var(--sh-1);
+}
+
+.support-hero-mark {
+  width: 60px;
+  height: 60px;
+  flex: none;
+  display: grid;
+  place-items: center;
+  border-radius: 19px;
+  color: var(--t-lagoon);
+  background: color-mix(in srgb, var(--lagoon) 16%, var(--surface));
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--lagoon) 28%, transparent);
+}
+
+.support-hero-mark svg {
+  width: 31px;
+  height: 31px;
+}
+
+.support-hero-main {
+  display: grid;
+  gap: 6px;
+  min-width: 0;
+}
+
+.support-title {
+  margin: 0;
+  font-size: clamp(1.4rem, 2.6vw, 1.9rem);
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  color: var(--ink);
+}
+
+.support-subtitle {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.65;
+  color: var(--ink-3);
+}
+
+.support-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 4px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.support-chips li {
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 11.5px;
+  font-weight: 650;
+  color: var(--ink-2);
+  background: var(--surface-2);
+  box-shadow: inset 0 0 0 1px var(--line-2);
+}
+
+.support-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.35fr) minmax(240px, 0.65fr);
+  gap: 16px;
+  align-items: start;
+}
+
+.support-card {
+  display: grid;
+  gap: 14px;
+  padding: 18px;
+  border: 1px solid var(--line);
+  border-radius: calc(var(--r) + 4px);
+  background: var(--surface);
+  box-shadow: var(--sh-1);
+}
+
+.support-card-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.support-card-title {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 800;
+  color: var(--ink);
+}
+
+.support-card-hint {
+  margin: 3px 0 0;
+  font-size: 12px;
+  color: var(--ink-3);
+}
+
+/* 会话区域在客服页里不再套一层边框，交给外层卡片统一收口。 */
+.support-card .help-chat {
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+}
+
+.support-card .help-chat-head {
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--surface-2);
+}
+
+.support-empty {
+  display: grid;
+  justify-items: center;
+  gap: 10px;
+  padding: 34px 18px 30px;
+  text-align: center;
+  border: 1px dashed var(--line-2);
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--lagoon) 4%, var(--surface));
+}
+
+.support-empty-icon {
+  width: 52px;
+  height: 52px;
+  display: grid;
+  place-items: center;
+  border-radius: 16px;
+  color: var(--t-lagoon);
+  background: color-mix(in srgb, var(--lagoon) 14%, var(--surface));
+}
+
+.support-empty-icon svg {
+  width: 27px;
+  height: 27px;
+}
+
+.support-empty b {
+  font-size: 15px;
+  color: var(--ink);
+}
+
+.support-empty p {
+  margin: 0;
+  max-width: 38ch;
+  font-size: 12.5px;
+  line-height: 1.7;
+  color: var(--ink-3);
+}
+
+.support-tips {
+  display: grid;
+  gap: 12px;
+  padding: 18px;
+  border: 1px solid var(--line);
+  border-radius: calc(var(--r) + 4px);
+  background: var(--surface);
+  box-shadow: var(--sh-1);
+}
+
+.support-tips-title {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 800;
+  color: var(--ink);
+}
+
+.support-tip-list {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  counter-reset: support-tip;
+}
+
+.support-tip {
+  position: relative;
+  display: grid;
+  gap: 3px;
+  padding: 10px 12px 10px 40px;
+  border-radius: 12px;
+  background: var(--surface-2);
+}
+
+.support-tip::before {
+  counter-increment: support-tip;
+  content: counter(support-tip);
+  position: absolute;
+  left: 12px;
+  top: 10px;
+  width: 20px;
+  height: 20px;
+  display: grid;
+  place-items: center;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 800;
+  color: var(--t-lagoon);
+  background: color-mix(in srgb, var(--lagoon) 18%, var(--surface));
+}
+
+.support-tip b {
+  font-size: 12.5px;
+  color: var(--ink);
+}
+
+.support-tip p {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.65;
+  color: var(--ink-3);
+}
+
+.support-note {
+  margin: 0;
+  font-size: 11.5px;
+  line-height: 1.6;
+  color: var(--ink-3);
+}
+
+.support-fab {
+  display: none;
+}
+
+@media (max-width: 900px) {
+  .support-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .support-hero {
+    align-items: flex-start;
+    gap: 14px;
+    padding: 18px;
+  }
+
+  /* 窄屏悬浮客服入口：位于底部导航上方，不占用底栏格子。 */
+  .support-fab {
+    position: fixed;
+    right: 14px;
+    bottom: calc(74px + env(safe-area-inset-bottom));
+    z-index: 70;
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    padding: 10px 15px 10px 12px;
+    border-radius: 999px;
+    font-size: 12.5px;
+    font-weight: 700;
+    color: var(--t-lagoon);
+    background: color-mix(in srgb, var(--surface) 94%, transparent);
+    box-shadow: var(--sh-2), inset 0 0 0 1px color-mix(in srgb, var(--lagoon) 30%, transparent);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    transition: transform 0.16s, box-shadow 0.16s;
+  }
+
+  .support-fab svg {
+    width: 18px;
+    height: 18px;
+  }
+
+  .support-fab:hover {
+    transform: translateY(-1px);
+  }
+}
+
+@media (max-width: 640px) {
+  .support-hero-mark {
+    width: 48px;
+    height: 48px;
+    border-radius: 15px;
+  }
+
+  .support-hero-mark svg {
+    width: 26px;
+    height: 26px;
+  }
 }
 
 .weather-fact dd {

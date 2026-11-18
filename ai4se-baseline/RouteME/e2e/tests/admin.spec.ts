@@ -223,6 +223,22 @@ test.describe('[M] admin dashboard overview', () => {
     await page.waitForTimeout(300);
     expect(dashboardRequests).toBe(settled);
   });
+
+  test('[M6] admin navigation keeps browse/publish/planning and hides user-only entries', async ({ page }) => {
+    await loginAsAdmin(page);
+    await page.goto('/');
+
+    const rail = page.locator('.rail-link');
+    await expect(rail.filter({ hasText: '旅行灵感' })).toBeVisible();
+    await expect(rail.filter({ hasText: '发布行程' })).toBeVisible();
+    await expect(rail.filter({ hasText: 'AI 规划' })).toBeVisible();
+    await expect(rail.filter({ hasText: '管理后台' })).toBeVisible();
+    await expect(rail.filter({ hasText: '帮助与反馈' })).toBeVisible();
+    await expect(rail.filter({ hasText: '我的旅行' })).toHaveCount(0);
+    await expect(rail.filter({ hasText: '同行消息' })).toHaveCount(0);
+    await expect(rail.filter({ hasText: '联系客服' })).toHaveCount(0);
+    await expect(page.locator('.support-fab')).toHaveCount(0);
+  });
 });
 
 test.describe('[I1] admin console access and user management', () => {
@@ -530,12 +546,9 @@ test.describe('[I2] report queue and resolution', () => {
     const reportedDetail = await adminUserDetail(page, admin.token, reported.id);
     expect(reportedDetail.status).toBe('SUSPENDED');
 
-    await loginAsAccount(page, reporter);
-    await page.goto('/#/help');
-    const reportItem = page.locator('.help-report').filter({ hasText: created.code });
-    await expect(reportItem).toContainText('已处理');
-    await expect(reportItem).toContainText('虚假信息');
-    await expect(page.getByText(resolutionNote)).toHaveCount(0);
+    // 用户侧不再展示举报进度；改由管理员在举报详情确认处理结果与备注。
+    await page.goto(`/#/admin/reports/${created.id}`);
+    await expect(page.locator('.admin-detail-hero')).toContainText('已处理');
 
     // 已受限用户：另一条举报走「维持暂停」，状态保持不变。
     const second = await page.request.post(`${API}/reports`, {
@@ -583,17 +596,21 @@ test.describe('[I2] report queue and resolution', () => {
     expect(((await reject.json()) as { status: string }).status).toBe('REJECTED');
     expect((await adminUserDetail(page, admin.token, reported.id)).status).toBe('SUSPENDED');
 
-    await loginAsAccount(page, reporter);
-    await page.goto('/#/help');
-    await expect(
-      page.locator('.help-report').filter({ hasText: thirdReport.code }),
-    ).toContainText('举报不成立');
+    // 举报不成立：状态只在管理后台可见（用户侧不再有举报进度页）。
+    await page.goto(`/#/admin/reports/${thirdReport.id}`);
+    await expect(page.locator('.admin-detail-hero')).toContainText('举报不成立');
   });
 });
 
 test.describe('[I3] customer service workbench', () => {
-  test('[I3] joins, replies, filters and closes a service session', async ({ page }) => {
+  test('[I3] surfaces a new user session and message without manual refresh, then handles it', async ({ page }) => {
     const user = await createUserViaApi(page, `客服用户_${Date.now()}`);
+
+    const admin = await loginAsAdmin(page);
+    await page.goto('/#/admin/service');
+    await expect(page.getByRole('heading', { name: '客户服务' })).toBeVisible();
+
+    // 管理员已经停在队列页，用户之后才发起会话并发消息。
     const opened = await page.request.post(`${API}/service/sessions`, {
       headers: bearer(user.token),
     });
@@ -601,27 +618,27 @@ test.describe('[I3] customer service workbench', () => {
     const session = (await opened.json()) as { id: number; status: string };
     expect(session.status).toBe('WAITING');
 
-    const admin = await loginAsAdmin(page);
-    await page.goto('/#/admin/service');
-    await expect(page.getByRole('heading', { name: '客户服务' })).toBeVisible();
-
-    await page.getByRole('button', { name: '会话状态' }).click();
-    await page.getByRole('option', { name: '等待接入' }).click();
-    const queueItem = page.locator('.admin-queue-item').filter({ hasText: user.nickname });
-    await expect(queueItem).toBeVisible();
-    await queueItem.click();
-
-    await expect(page.getByText('用户资料').first()).toBeVisible();
-    await expect(page.getByText('相关举报').first()).toBeVisible();
-    await page.getByRole('button', { name: '接入会话' }).click();
-    await expect(page.getByText('处理中').first()).toBeVisible();
-
     const userMessage = '客服你好，我的行程无法发布';
     const userSend = await page.request.post(`${API}/service/sessions/${session.id}/messages`, {
       headers: { ...bearer(user.token), 'Content-Type': 'application/json' },
       data: { content: userMessage },
     });
     expect(userSend.status()).toBe(201);
+
+    // 不点刷新、不改筛选：3 秒轮询把新会话带到队列，页签出现待接入徽标。
+    const queueItem = page.locator('.admin-queue-item').filter({ hasText: user.nickname });
+    await expect(queueItem).toBeVisible({ timeout: 10000 });
+    await expect(page.locator('.admin-tab-badge').first()).toContainText(/\d+/);
+    await expect(page.getByText('有会话正在等待接入')).toBeVisible();
+    await queueItem.click();
+
+    // 接入前就能读到用户消息（只读预览，不要求先接入）。
+    await expect(page.locator('.service-chat .bubble').filter({ hasText: userMessage })).toBeVisible();
+    await expect(page.getByText('用户资料').first()).toBeVisible();
+    await expect(page.getByText('相关举报').first()).toBeVisible();
+    await page.getByRole('button', { name: '接入会话' }).click();
+    await expect(page.getByText('处理中').first()).toBeVisible();
+
     await expect(page.locator('.service-chat .bubble').filter({ hasText: userMessage })).toBeVisible({
       timeout: 5000,
     });

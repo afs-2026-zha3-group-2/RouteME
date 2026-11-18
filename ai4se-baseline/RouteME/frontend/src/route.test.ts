@@ -70,8 +70,9 @@ describe('parseRoute', () => {
       expect(parseRoute('#/admin/experiences')).toEqual({ name: 'notFound' });
     });
 
-    it('maps the help and admin console paths', () => {
+    it('maps the help, support and admin console paths', () => {
       expect(parseRoute('#/help')).toEqual({ name: 'help' });
+      expect(parseRoute('#/support')).toEqual({ name: 'support' });
       expect(parseRoute('#/admin/users')).toEqual({ name: 'adminUsers' });
       expect(parseRoute('#/admin/users/12')).toEqual({ name: 'adminUserDetail', userId: 12 });
       expect(parseRoute('#/admin/reports')).toEqual({ name: 'adminReports' });
@@ -102,6 +103,7 @@ describe('parseRoute', () => {
         { name: 'profileSetup' as const },
         { name: 'userProfile' as const, userId: 7 },
         { name: 'help' as const },
+        { name: 'support' as const },
         { name: 'adminDashboard' as const },
         { name: 'adminUsers' as const },
         { name: 'adminUserDetail' as const, userId: 7 },

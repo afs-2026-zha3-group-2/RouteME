@@ -65,4 +65,10 @@ public interface ExperienceLikeMapper extends BaseMapper<ExperienceLikeEntity> {
             """)
     int deleteByExperienceAndUser(
             @Param("experienceId") long experienceId, @Param("userId") long userId);
+
+    @Delete("""
+            DELETE FROM experience_likes
+             WHERE experience_id = #{experienceId}
+            """)
+    int deleteByExperience(@Param("experienceId") long experienceId);
 }
