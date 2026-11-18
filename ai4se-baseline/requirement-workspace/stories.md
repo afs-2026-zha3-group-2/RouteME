@@ -485,3 +485,33 @@
 - **口径依赖既有能力：** 账号有效状态复用 `admin-console` 的惰性恢复；行程状态复用 `TripPlan.status` 的四态推导；本故事不重复定义。
 - **边界：** 趋势图、时间范围选择、导出、自动刷新与更多维度统计均不在本故事。
 - 未接入外部 ALM；本表为仓库内权威故事清单，ALM Sync 状态记为 Pending。
+
+---
+
+# Story list — REQ-028（issue #38 客服会话结束权交由用户）
+
+> 编号说明：`origin/main@822471c` 当前最大需求号为 REQ-027、S 编号最大为 S28；本故事登记为 **REQ-028 / S29**。
+
+- **来源：** issue #38「客服服务BUG-客服无法结束会话」（无标签；P0 / 迭代 2 / 2 点，2026-11-18 经 IO 确认）
+- **Change：** `refine-service-close`（`customer-service` ADDED Requirement）
+- **口径：** 一条故事 = 一个会话状态机闭环（四态）+ 两个动作（客服标记完成、用户结束）+ 一次契约收敛（删 close、加两接口）
+- **范围：** 含用户结束（`WAITING` / `HANDLING` / `RESOLVED`）、客服标记处理完成、待确认发言回迁、管理端按钮与接口下线；客服评价、超时自动关闭、历史会话列表不在本故事内。
+- **更新时间：** 2026-11-18
+
+| Story | Title | 角色 | Priority | Iteration | Points | Page | Parent REQ | Change | Status |
+|---|---|---|---|---|---|---|---|---|---|
+| S29 | 用户结束客服会话，客服只标记处理完成 | 普通用户 / 客服 | P0 | 迭代 2 | 2 | `#/support` / 管理端客户服务 | REQ-028 | `refine-service-close` | P0 Pass（2026-11-18）；P1 Pass（2026-11-18，WAYNE + Lewis Liu 签） |
+
+## Traceability（REQ-028）
+
+| Story | Requirement scenarios | Change spec | Story file |
+|---|---|---|---|
+| S29 | REQ-028 §4 U-1 ~ U-8 / A-1 ~ A-5 / M-1 ~ M-3 / D-1 ~ D-5 / G-1 ~ G-5 / S-1 ~ S-6 / R-1 ~ R-4（36 条） | `openspec/changes/refine-service-close/specs/customer-service/spec.md`（ADDED） | 无独立故事文件：以意图 + proposal + Delta 承接（与 REQ-012 / REQ-019 / REQ-027 同口径） |
+
+## Notes（REQ-028）
+
+- **不拆故事：** 「客服标记完成 → 用户看到待确认 → 用户结束」是同一状态机闭环；只做用户结束或只做标记完成都会留下不可验收的半成品。
+- **issue 缺陷的处置：** 「客服点击结束会话没反应」不单独修复；按用户 D1 彻底移除结束按钮，管理端 close 接口一并删除。
+- **规格归属：** `customer-service` 尚未进入 `openspec/specs/`，本 change 用 ADDED 追加并声明取代 `add-admin-console` Delta 的两条旧表述；归档 MUST 排在 `add-admin-console` 之后。
+- **行为边界：** 待用户确认不自动关闭（D6）；用户发消息回到 `HANDLING`（D4）；`closed_by` 只记用户（D8）。
+- 未接入外部 ALM；本表为仓库内权威故事清单，ALM Sync 状态记为 Pending。
