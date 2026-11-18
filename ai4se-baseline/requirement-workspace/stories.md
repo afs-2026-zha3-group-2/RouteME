@@ -449,3 +449,33 @@
 - **口径依赖既有能力：** 账号有效状态复用 `admin-console` 的惰性恢复；行程状态复用 `TripPlan.status` 的四态推导；本故事不重复定义。
 - **边界：** 趋势图、时间范围选择、导出、自动刷新与更多维度统计均不在本故事。
 - 未接入外部 ALM；本表为仓库内权威故事清单，ALM Sync 状态记为 Pending。
+
+---
+
+# Story list — REQ-027（S28 发布行程在地图上规划路线）
+
+- **来源：** 发起人 2026-11-18 验收反馈「旅行地图有点冗余，但它在地图上显示路线、添加目的地的能力很好，用它替掉发布行程里的简单路线」
+- **Change：** `refine-publish-route-map`（`trip-plans` MODIFIED：1 Requirement / 18 Scenario）
+- **口径：** 一条故事 = 发布页一个段落（路线规划）+ 一条既有提交链路（`stops` + `travel_mode`）；不新增能力、不改契约、不加迁移
+- **编号说明：** `stories.md` 现有最大编号为 S27（REQ-026），本故事顺延为 **S28**
+- **更新时间：** 2026-11-18
+
+| Story | Title | 角色 | Priority | Iteration | Points | Page | Parent REQ | Change | Status |
+|---|---|---|---|---|---|---|---|---|---|
+| S28 | 发布行程在地图上规划路线 | 发布者 | P0 | 迭代 3 | 3 | 发布行程 · 路线规划段 | REQ-027 | `refine-publish-route-map` | P2 Pass / G1 Pass（2026-11-18） |
+
+## Traceability（REQ-027）
+
+| Story | Requirement scenarios | Change spec | Story file |
+|---|---|---|---|
+| S28 | REQ-027 §4 S28-1 ~ S28-11（+ 基线 7 场景保留） | `openspec/changes/refine-publish-route-map/specs/trip-plans/spec.md`（MODIFIED：1 Requirement / 18 Scenario） | `requirement-workspace/stories/refine-publish-route-map.story.md` |
+
+## Notes（REQ-027）
+
+- **不拆故事：** 「加点 → 排序 → 看到路线 → 提交」是同一条垂直切片；只换面板不做提交校验，会把占位名带进详情页。
+- **复用探索页面板：** `已选途经点`、`出行方式`、`重新生成旅行路线`、`已按直线显示路线`、`行程顺序` 五块直接复用；差异只来自注入的 `modes` / `modeLabels` 与降级文案。
+- **不引入坐标：** 编辑期 `RouteWaypoint[]` 只在内存，提交仍为 `stops: string[]`；契约 0.22.0 与 `trip_plans` 表不变。
+- **页面保留：** 只移除一级导航入口；`#/map` 与省 / 市深链不删。
+- **占位名边界：** 探索页不落库，坐标名只是临时显示；发布侧由提交校验承担，不改 `pointFallbackName` 本体。
+- **边界：** 路线持久化 / 收藏 / 分享、同行者匹配进发布页、AI 规划页改造均不在本故事。
+- 未接入外部 ALM；本表为仓库内权威故事清单，ALM Sync 状态记为 Pending。
