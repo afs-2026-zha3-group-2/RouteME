@@ -112,15 +112,17 @@
 - **推送拓扑：** `NotificationStreamServiceImpl` 的 emitter 注册表在进程内存，仅适用单实例；多实例部署需改为共享通道（Redis pub/sub 或等价机制），本 change 未涉及。
 - **未覆盖：** 并发压测、真实网络抖动下的事件丢失统计（V3 用路由中断模拟，未做弱网长跑）。
 - **既有构建 warning：** 单包 > 500 kB 的 chunk 体积提示自基线存在。
-- **未执行：** PR / CI / G2 签署 / P5 归档。
+- **未执行：** PR / CI / P5 归档（G2 已于 2026-11-18T08:38+0800 签署）。
 
-## 7. G2 待签事项
+## 7. G2 签署
 
-| 角色 | 姓名 | 确认内容 | 状态 |
+| 角色 | 批准人 | 确认内容 | 批准时间 |
 |---|---|---|---|
-| 开发者 | Karena | 实现与记录真实、范围未超出 P1 提案 | 待签 |
-| 独立复核 | WAYNE（IO） | 四层验证证据（后端 472 / 前端 369 / 通知 E2E 14 / 全量 114+34 且与基线一致）、偏差记录、残余风险 | 待签 |
-| 参与复核 | Jay | 走查截图与交互（click 展开、Escape、焦点、390 px 面板）符合 P3 约定 | 待签 |
+| 开发者 | Karena | 实现与记录真实、范围未超出 P1 提案 | 2026-11-18T08:38+0800 |
+| 独立复核（IO） | WAYNE | 四层验证证据（后端 472 / 前端 369 / 通知 E2E 14 / 全量 114+34 且失败集与基线 `1189b65` 同构）、偏差记录 D-1…D-6、残余风险 | 2026-11-18T08:38+0800 |
+| 参与复核 | Jay | 走查截图与交互（click 展开、Escape 关闭并交还焦点、390 px 面板不越界、明暗两套样式）符合 P3 约定 | 2026-11-18T08:38+0800 |
+
+**G2 结论：Pass**。E2E 门禁口径经签署确认：以「通知 14 条全绿 + 失败集与基线同构（27 条硬失败逐条同名）」判定，不要求全量 0 失败。
 
 ## 8. 阶段提交链
 
@@ -128,12 +130,14 @@
 |---|---|
 | P0 | 见 `p0-baseline.md` 记录 |
 | P1 / P2 / P3 | 已推送（P3 签署提交 `b986a3e`） |
-| P4 实现（T1–T11） | 见分支提交历史（`feat(notifications)` 切片） |
-| P4 E2E 与走查（T12、T14） | 本次提交 |
-| P4 文档与登记（T13） | 本次提交 |
+| P4 后端（T1–T7） | `2d07748` feat(notifications): persist events and stream them over SSE |
+| P4 前端（T8–T11） | `345ac5f` feat(notifications): add the bell, panel and numeric unread badges |
+| P4 E2E 与走查（T12、T14） | `a96b3fe` test(notifications): cover the three second budget and narrow screens |
+| P4 文档与登记（T13） | `f30e95c` docs(notifications): record the P4 verification and walkthrough evidence |
+| P4 G2 签署 | 本文件（`docs(p4)` 提交） |
 
 ## 9. 下一步
 
-1. G2 签署（本文件 §7）。
+1. ~~G2 签署~~ — 已过（本文件 §7，2026-11-18T08:38+0800）。
 2. `/sdd:pr-submit` 起 PR → `phase=ci`。
 3. P5 归档：`living-merge` + change summary，把 `notifications` 能力并入 `openspec/specs/`。
