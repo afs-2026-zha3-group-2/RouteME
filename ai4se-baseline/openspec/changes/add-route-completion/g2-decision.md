@@ -11,7 +11,7 @@
 |---|---|---|
 | Local verify report | [`docs/ai4se-plugins/20261118-142210-local-verify-report.md`](../../../docs/ai4se-plugins/20261118-142210-local-verify-report.md) | **Pass**（后端 656、前端 508、E2E 本 spec 6/6；受影响回归 20/22，2 条既有失效已归因） |
 | Implementation commit | `6cd92201`（分支 `feature/add-route-completion`） | 未合入 `main`；合并由用户在 G2 后决定 |
-| Pipeline CI（required） | n/a — PR 尚未创建；CI 在 `/sdd:pr-submit` 后运行，结果回填本记录 | Skipped（pre-PR） |
+| Pipeline CI（required） | GitHub Actions run [#44251721459](https://github.com/afs-2026-zha3-group-2/RouteME/actions/runs/44251721459)（PR [#46](https://github.com/afs-2026-zha3-group-2/RouteME/pull/46)） | **Success**（Backend 1m18s / Frontend 38s） |
 | Pipeline CD | n/a — 未声明部署 | Skipped |
 | Delta Spec | [`specs/route-completion/spec.md`](specs/route-completion/spec.md) | 6 Requirement / 18 Scenario |
 | ATDD / Design / Tasks | [`atdd-design.md`](atdd-design.md)、[`design.md`](design.md)、[`tasks.md`](tasks.md) | T0–T8 完成；T9 收尾随本记录 |
@@ -25,7 +25,7 @@
 | scan | Pass | `openspec validate --strict` valid；Redocly valid（0 error / 23 既有 warning） |
 | review | Pass | 自评审：失败安全、只读、零迁移、零新增查询；无 CRITICAL |
 | evidence | Pass | 本地验证报告 V1–V8 全 Pass；红→绿证据已记录 |
-| ci | Skipped | PR 未创建，CI 未触发（pre-PR） |
+| ci | Pass | PR #46：Backend 与 Frontend 两个 job 均成功（run #44251721459） |
 | cd | Skipped | 未声明部署 |
 
 ## Defect grades
@@ -45,7 +45,7 @@
 | 项 | Owner | 处理时机 |
 |---|---|---|
 | 既有 `profile.spec.ts` 两条失效用例（`.mine-profile-card`） | AO（Neal） | 另开 change 更新该 spec，或随下一次 profile 相关 change 修复 |
-| PR 后 CI 结果回填本记录 | AO（Neal） | `/sdd:pr-submit` 之后 |
+| PR #46 后续 CI / 合并结果跟踪 | AO（Neal） | PR #46 已具备 CI 2/2 成功；按用户 2026-11-18 指示合并 main |
 | 未来聚合（`completed` 样本）接入时替换 `evaluate(null, 0)` 输入 | AO（Neal）+ SA（Jacky） | 聚合类 change（Non-goal，本期不做） |
 
 无 local-verify Waiver（报告 Overall Pass，Waiver=N/A）。
@@ -63,5 +63,5 @@
 
 ## Next
 
-- Decision = Pass：可进入合并 / PR 流程（用户指示后执行），P5 归档暂不启动。
-- PR 创建后按 `phase=ci` 取回 CI 结果并回填 Inputs；若 CI 失败，本记录降级为 Conditional 并指定整改人。
+- PR [#46](https://github.com/afs-2026-zha3-group-2/RouteME/pull/46) 已创建，CI 2/2 成功（run [#44251721459](https://github.com/afs-2026-zha3-group-2/RouteME/actions/runs/44251721459)）；按用户 2026-11-18 指示合并到 `main`。
+- P5 归档暂不启动。
