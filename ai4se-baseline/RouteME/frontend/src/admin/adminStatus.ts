@@ -2,7 +2,7 @@ import { adminMessages } from '../i18n/adminMessages';
 import type { AccountStatus, AdminStatusAction, ServiceSessionStatus } from '../types';
 
 export type AdminStatusTone = 'jade' | 'amber' | 'danger';
-export type ServiceStatusTone = 'amber' | 'surf' | 'muted';
+export type ServiceStatusTone = 'amber' | 'surf' | 'jade' | 'muted';
 
 /** 到期封禁按 `ACTIVE` 计算（与后端 `effectiveStatus` 同口径，读路径不写库）。 */
 export function effectiveAccountStatus(
@@ -70,10 +70,13 @@ export function statusActionLabel(
   return adminMessages.actionRestore;
 }
 
-/** 客服会话三态文案：队列筛选与详情头共用。 */
+/** 客服会话四态文案：队列筛选与详情头共用。 */
 export function serviceStatusLabel(status: ServiceSessionStatus): string {
   if (status === 'HANDLING') {
     return adminMessages.sessionHandling;
+  }
+  if (status === 'RESOLVED') {
+    return adminMessages.sessionResolved;
   }
   if (status === 'CLOSED') {
     return adminMessages.sessionClosed;
@@ -84,6 +87,9 @@ export function serviceStatusLabel(status: ServiceSessionStatus): string {
 export function serviceStatusTone(status: ServiceSessionStatus): ServiceStatusTone {
   if (status === 'HANDLING') {
     return 'surf';
+  }
+  if (status === 'RESOLVED') {
+    return 'jade';
   }
   if (status === 'CLOSED') {
     return 'muted';

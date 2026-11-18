@@ -11,6 +11,7 @@ public record ServiceSessionSummaryResponse(
         String createdAt,
         String joinedAt,
         String closedAt,
+        String resolvedAt,
         String lastMessageAt,
         long messageCount) {
 }

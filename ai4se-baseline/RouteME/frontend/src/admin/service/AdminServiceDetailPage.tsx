@@ -1,9 +1,9 @@
 import { useCallback, useEffect, useState } from 'react';
-import { Alert, Button, Popconfirm, Skeleton, message } from 'antd';
+import { Alert, Button, Skeleton, message } from 'antd';
 import {
-  closeServiceSession,
   joinServiceSession,
   loadAdminServiceSession,
+  resolveServiceSession,
 } from '../../api';
 import { adminMessages } from '../../i18n/adminMessages';
 import type { DemoUser, ServiceSessionDetail } from '../../types';
@@ -67,11 +67,12 @@ export function ServiceSessionPanel({
     }
   };
 
-  const close = async () => {
+  const resolve = async () => {
     setActing(true);
     try {
-      const next = await closeServiceSession(token, session.id);
+      const next = await resolveServiceSession(token, session.id);
       onSessionChange(next);
+      message.success(adminMessages.serviceResolvedToast);
     } catch (caught: unknown) {
       handleFailure(caught);
     } finally {
@@ -105,16 +106,12 @@ export function ServiceSessionPanel({
             </Button>
           )}
           {session.status === 'HANDLING' && (
-            <Popconfirm
-              title={adminMessages.serviceClose}
-              okText={adminMessages.confirm}
-              cancelText={adminMessages.cancel}
-              onConfirm={close}
-            >
-              <Button danger loading={acting}>
-                {adminMessages.serviceClose}
-              </Button>
-            </Popconfirm>
+            <Button type="primary" loading={acting} onClick={resolve}>
+              {adminMessages.serviceResolve}
+            </Button>
+          )}
+          {session.status === 'RESOLVED' && (
+            <span className="admin-note">{adminMessages.serviceResolvedHint}</span>
           )}
         </div>
       </header>

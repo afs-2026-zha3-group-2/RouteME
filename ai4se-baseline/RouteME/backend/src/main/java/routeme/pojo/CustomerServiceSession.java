@@ -11,5 +11,7 @@ public record CustomerServiceSession(
         Instant joinedAt,
         Long joinedBy,
         Instant closedAt,
-        Long closedBy) {
+        Long closedBy,
+        Instant resolvedAt,
+        Long resolvedBy) {
 }

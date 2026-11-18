@@ -1,5 +1,5 @@
 import { adminMessages } from '../i18n/adminMessages';
-import type { ReportStatus } from '../types';
+import type { ReportStatus, ServiceSessionStatus } from '../types';
 
 export type ReportStatusTone = 'amber' | 'surf' | 'jade' | 'muted';
 
@@ -21,6 +21,20 @@ export function reporterStatusLabel(status: ReportStatus): string {
 }
 
 /** 管理端四态文案：同一份映射表的后台措辞。 */
+/** 客服会话四态提示：用户端会话头共用。 */
+export function serviceChatHint(status: ServiceSessionStatus): string {
+  if (status === 'HANDLING') {
+    return adminMessages.helpHandling;
+  }
+  if (status === 'RESOLVED') {
+    return adminMessages.helpResolved;
+  }
+  if (status === 'CLOSED') {
+    return adminMessages.helpClosed;
+  }
+  return adminMessages.helpWaiting;
+}
+
 export function adminStatusLabel(status: ReportStatus): string {
   if (status === 'PROCESSING') {
     return adminMessages.sessionHandling;

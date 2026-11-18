@@ -134,7 +134,7 @@ class AdminDashboardControllerTest {
                 section(section(body, "reports"), "by_status").keySet(),
                 "report status buckets");
         assertEquals(
-                Set.of("WAITING", "HANDLING", "CLOSED"),
+                Set.of("WAITING", "HANDLING", "RESOLVED", "CLOSED"),
                 section(section(body, "service_sessions"), "by_status").keySet(),
                 "service session status buckets");
         assertEquals(FixedClockTestConfig.NOW, Instant.parse((String) body.get("generated_at")), "generated_at");
@@ -331,14 +331,17 @@ class AdminDashboardControllerTest {
 
         insertSession(userId(admin), "WAITING");
         insertSession(userId(admin), "HANDLING");
+        insertSession(userId(admin), "RESOLVED");
         insertSession(userId(admin), "CLOSED");
 
         Map<String, Object> after = fetch(admin);
-        assertEquals(total(before, "service_sessions") + 3, total(after, "service_sessions"), "sessions total");
+        assertEquals(total(before, "service_sessions") + 4, total(after, "service_sessions"), "sessions total");
         assertEquals(bucket(before, "service_sessions", "WAITING") + 1,
                 bucket(after, "service_sessions", "WAITING"), "WAITING bucket");
         assertEquals(bucket(before, "service_sessions", "HANDLING") + 1,
                 bucket(after, "service_sessions", "HANDLING"), "HANDLING bucket");
+        assertEquals(bucket(before, "service_sessions", "RESOLVED") + 1,
+                bucket(after, "service_sessions", "RESOLVED"), "RESOLVED bucket");
         assertEquals(bucket(before, "service_sessions", "CLOSED") + 1,
                 bucket(after, "service_sessions", "CLOSED"), "CLOSED bucket");
     }

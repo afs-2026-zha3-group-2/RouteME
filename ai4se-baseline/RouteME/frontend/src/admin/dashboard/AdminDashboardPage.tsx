@@ -18,7 +18,7 @@ const USER_STATUS_ORDER = ['ACTIVE', 'SUSPENDED', 'BANNED'];
 const TRIP_STATUS_ORDER = ['recruiting', 'full', 'ongoing', 'completed', 'cancelled'];
 const APPLICATION_STATUS_ORDER = ['pending', 'accepted', 'rejected', 'cancelled', 'left'];
 const REPORT_STATUS_ORDER = ['PENDING', 'PROCESSING', 'RESOLVED', 'REJECTED'];
-const SERVICE_SESSION_STATUS_ORDER = ['WAITING', 'HANDLING', 'CLOSED'];
+const SERVICE_SESSION_STATUS_ORDER = ['WAITING', 'HANDLING', 'RESOLVED', 'CLOSED'];
 
 const ROLE_LABELS: Record<string, string> = {
   USER: adminMessages.dashRoleUser,
@@ -57,6 +57,7 @@ const REPORT_STATUS_LABELS: Record<string, string> = {
 const SERVICE_SESSION_STATUS_LABELS: Record<string, string> = {
   WAITING: adminMessages.sessionWaiting,
   HANDLING: adminMessages.sessionHandling,
+  RESOLVED: adminMessages.sessionResolved,
   CLOSED: adminMessages.sessionClosed,
 };
 

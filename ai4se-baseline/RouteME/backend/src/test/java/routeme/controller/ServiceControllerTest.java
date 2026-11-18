@@ -132,7 +132,10 @@ class ServiceControllerTest {
         String admin = login("admin", "admin12345");
         long sessionId = openSession(user);
         join(admin, sessionId);
-        close(admin, sessionId);
+        close(user, sessionId)
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("CLOSED"))
+                .andExpect(jsonPath("$.closed_at").value(FixedClockTestConfig.NOW.toString()));
 
         sendMessage(user, sessionId, "still there?")
                 .andExpect(status().isConflict())
@@ -144,12 +147,107 @@ class ServiceControllerTest {
     }
 
     @Test
+    void in_waitingClose_out_closed() throws Exception {
+        String user = register("CloseWaitingUser");
+        long sessionId = openSession(user);
+
+        close(user, sessionId)
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("CLOSED"))
+                .andExpect(jsonPath("$.closed_at").value(FixedClockTestConfig.NOW.toString()));
+
+        long reopened = openSession(user);
+        org.junit.jupiter.api.Assertions.assertNotEquals(
+                sessionId, reopened, "closing a waiting session frees a new one");
+    }
+
+    @Test
+    void in_resolvedClose_out_keepsResolvedAudit() throws Exception {
+        String user = register("CloseResolvedUser");
+        String admin = login("admin", "admin12345");
+        long sessionId = openSession(user);
+        join(admin, sessionId);
+        resolve(admin, sessionId);
+
+        close(user, sessionId)
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("CLOSED"))
+                .andExpect(jsonPath("$.resolved_at").value(FixedClockTestConfig.NOW.toString()))
+                .andExpect(jsonPath("$.closed_at").value(FixedClockTestConfig.NOW.toString()));
+    }
+
+    @Test
+    void in_otherUsersClose_out_notFound() throws Exception {
+        String owner = register("CloseOwner");
+        String stranger = register("CloseStranger");
+        long sessionId = openSession(owner);
+
+        close(stranger, sessionId).andExpect(status().isNotFound());
+
+        mockMvc.perform(get("/api/service/sessions/current")
+                        .header("Authorization", bearer(owner)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("WAITING"));
+    }
+
+    @Test
+    void in_closeTwice_out_sessionClosed() throws Exception {
+        String user = register("CloseTwiceUser");
+        long sessionId = openSession(user);
+        close(user, sessionId).andExpect(status().isOk());
+
+        close(user, sessionId)
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.code").value("SESSION_CLOSED"));
+    }
+
+    @Test
+    void in_resolvedMessage_out_backToHandling() throws Exception {
+        String user = register("ResolvedChatUser");
+        String admin = login("admin", "admin12345");
+        long sessionId = openSession(user);
+        join(admin, sessionId);
+        resolve(admin, sessionId);
+
+        mockMvc.perform(get("/api/service/sessions/current")
+                        .header("Authorization", bearer(user)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("RESOLVED"))
+                .andExpect(jsonPath("$.resolved_at").value(FixedClockTestConfig.NOW.toString()));
+
+        sendMessage(user, sessionId, "not solved yet").andExpect(status().isCreated());
+
+        mockMvc.perform(get("/api/service/sessions/current")
+                        .header("Authorization", bearer(user)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("HANDLING"))
+                .andExpect(jsonPath("$.resolved_at").doesNotExist());
+    }
+
+    @Test
+    void in_resolvedOpen_out_returnsExisting() throws Exception {
+        String user = register("ResolvedOpenUser");
+        String admin = login("admin", "admin12345");
+        long sessionId = openSession(user);
+        join(admin, sessionId);
+        resolve(admin, sessionId);
+
+        long reopened = openSession(user);
+        org.junit.jupiter.api.Assertions.assertEquals(
+                sessionId, reopened, "RESOLVED still blocks a second open session");
+    }
+
+    @Test
     void in_missingBearer_out_sessionInvalid() throws Exception {
         mockMvc.perform(post("/api/service/sessions"))
                 .andExpect(status().isUnauthorized())
                 .andExpect(jsonPath("$.code").value("SESSION_INVALID"));
 
         mockMvc.perform(get("/api/service/sessions/current"))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.code").value("SESSION_INVALID"));
+
+        mockMvc.perform(post("/api/service/sessions/1/close"))
                 .andExpect(status().isUnauthorized())
                 .andExpect(jsonPath("$.code").value("SESSION_INVALID"));
     }
@@ -209,10 +307,16 @@ class ServiceControllerTest {
                 .andExpect(status().isOk());
     }
 
-    private void close(String admin, long sessionId) throws Exception {
-        mockMvc.perform(post("/api/admin/service/sessions/" + sessionId + "/close")
+    private void resolve(String admin, long sessionId) throws Exception {
+        mockMvc.perform(post("/api/admin/service/sessions/" + sessionId + "/resolve")
                         .header("Authorization", bearer(admin)))
                 .andExpect(status().isOk());
+    }
+
+    private org.springframework.test.web.servlet.ResultActions close(String user, long sessionId)
+            throws Exception {
+        return mockMvc.perform(post("/api/service/sessions/" + sessionId + "/close")
+                .header("Authorization", bearer(user)));
     }
 
     private org.springframework.test.web.servlet.ResultActions changeStatus(

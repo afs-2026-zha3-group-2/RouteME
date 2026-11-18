@@ -13,6 +13,7 @@ public record ServiceSessionDetailResponse(
         String createdAt,
         String joinedAt,
         String closedAt,
+        String resolvedAt,
         String lastMessageAt,
         long messageCount,
         List<ServiceMessageResponse> messages,

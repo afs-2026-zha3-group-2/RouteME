@@ -8,6 +8,7 @@ import routeme.exception.InvalidInputException;
 public enum ServiceSessionStatusEnum {
     WAITING("WAITING"),
     HANDLING("HANDLING"),
+    RESOLVED("RESOLVED"),
     CLOSED("CLOSED");
 
     private final String code;

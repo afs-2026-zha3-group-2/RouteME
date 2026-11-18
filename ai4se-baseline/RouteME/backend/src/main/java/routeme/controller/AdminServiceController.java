@@ -64,12 +64,12 @@ public class AdminServiceController {
                 .orElseGet(() -> ResponseEntity.notFound().build());
     }
 
-    @PostMapping("/{sessionId}/close")
-    public ResponseEntity<ServiceSessionDetailResponse> close(
+    @PostMapping("/{sessionId}/resolve")
+    public ResponseEntity<ServiceSessionDetailResponse> resolve(
             @RequestHeader(value = "Authorization", required = false) String authorization,
             @PathVariable long sessionId) {
         DemoUser admin = adminPrincipalService.requireAdmin(authorization);
-        return customerService.close(sessionId, admin.id())
+        return customerService.resolve(sessionId, admin.id())
                 .map(ResponseEntity::ok)
                 .orElseGet(() -> ResponseEntity.notFound().build());
     }
