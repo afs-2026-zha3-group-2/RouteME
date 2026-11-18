@@ -1457,3 +1457,107 @@ MVP 无推送、无通知；以下为金融信息的 UI 展示面契约。
 - **E2E 影响：** 详情页新增入口区块，既有 `trips.spec.ts` 断言可能受版式影响；新增 `travel-finance.spec.ts` 覆盖购买、借款、还款与余额不足。
 - `{TBD}`：无。非阻塞项（契约 / 迁移号、端点与字段形状、原型截点）已在 REQ-028 §8 标 deferred。
 - A0 门 ⑨–⑫：全部通过。
+
+## REQ-029 增补 — 用户成长等级 LV1–LV5（issue #44）
+
+> 基线 `origin/main@71f3ad4`（契约 0.25.0 / 迁移头 V30）；本 change 独立于在途 `add-report-credit-deduction`（issue #29），两边都改 `AdminReportServiceImpl.resolve`，合并时并列保留「扣信用分 + 扣成长经验」两个副作用。
+
+### ① 数据契约（Data contract）
+
+| # | 概念 | grain（粒度） | 字段清单 | 状态迁移 | 来源 |
+|---|---|---|---|---|---|
+| A | **成长账户** `user_growth_account` | 每用户 1 条（`user_id` PK） | `user_id`（PK，引用 `app_users.id`）、`exp_total`（INT NOT NULL，≥0）、`created_at`、`updated_at` | 无记录 → 0（懒建 / 迁移回填）；n → n + applied；不变量 `exp_total ≥ 0`；等级不落库，读取时由 `exp_total` 派生 | 成长经验服务 |
+| B | **经验流水** `growth_exp_ledger` | 每次经验事件 1 条；append-only | `id`、`user_id`、`reason_code`（`EXPERIENCE_PUBLISH` / `EXPERIENCE_LIKE` / `REPORT_VIOLATION`）、`applied_delta`（INT，实发可正可负可 0）、`exp_before`、`exp_after`、`related_type`（`TRIP` / `EXPERIENCE` / `REPORT`）、`related_id`、`idempotency_key`（唯一）、`occurred_at` | 只追加；不变量 `exp_before + applied_delta = exp_after` 且 `exp_after ≥ 0` | 成长经验服务 |
+| C | **等级**（派生，不落表） | 每用户 1 个 | `LV1` 0–99、`LV2` 100–199、`LV3` 200–299、`LV4` 300–399、`LV5` 400+ | 随 `exp_total` 增大 / 减小即时变化；`LV5` 后继续累计 | D2 / D3 / D15 |
+| D | **发布经验配置**（不落表） | 1 个配置项 | `routeme.growth.publish-exp`（INT，默认 10，>0） | 应用启动时绑定；无运行时管理端 | D5 / D13 |
+| E | **有效点赞**（来源既有表） | `experience_likes` 每行 1 个（`experience_id + user_id` 唯一） | 既有表；取消点赞即删除行；自赞被接口拒绝 | 无新表；成长侧只读计数 | `V24` / `ExperienceLikeServiceImpl` |
+| F | **幂等键**（派生） | 每类事件 1 个 | 发布 `GROWTH_PUBLISH:{tripId}:{authorId}`；点赞 `GROWTH_LIKE:{experienceId}:{tier}`；举报 `GROWTH_REPORT:{reportId}` | 键已存在 → 不再发放；零实发也留流水 | D5–D8 |
+
+- **唯一真相：** 总经验只在 A 表；B 表是审计与回算依据；A 与 B MUST 同事务写入。
+- **不改动既有表：** `user_credit_account` / `credit_ledger` / `app_users` 均不加成长列；`experience_likes` 只读。
+- **等级不落库：** 避免「等级列与总经验不一致」；扣经验后等级随派生回退。
+
+### ② 边界归属（Boundary attribution）
+
+| 规则 | 分支 | in / out | 理由 |
+|---|---|---|---|
+| 发布经验 | 已完成行程 + 发布者 / 接受同行者 + 首次创建 | in | `P-1`；`created = true` |
+| 发布经验 | 编辑 / 重复提交 | in（0） | `P-2`；幂等键已存在 |
+| 发布经验 | 删除后重建 | in（0） | `P-3`；幂等键保留，不回滚 |
+| 发布经验 | 未完成行程 / 非同行者 | out（沿用拒绝） | `P-5`；资格仍由 `ExperienceEligibility` 判 |
+| 发布经验 | 配置值变化 | in | `P-4`；新事件用新值，历史不重算 |
+| 点赞经验 | 第 10/20/30… 档 | in | `K-1` / `K-2`；单篇分档 |
+| 点赞经验 | 11–19 等非档位 | out（0） | `K-3` |
+| 点赞经验 | 取消点赞 / 重新点赞 | in（不回滚 / 不重复） | `K-4` |
+| 点赞经验 | 自赞 | out（沿用拒绝） | `K-5` |
+| 点赞经验 | 多篇体验 | in（各自分档） | `K-6` |
+| 每日上限 | 当日正向合计 < 20 | in（全额实发） | `D-1` |
+| 每日上限 | 跨档且剩余不足 | in（截断实发） | `D-2`；档位仍锁定 |
+| 每日上限 | 次日重试同档 | out（不补发） | `D-3` |
+| 每日上限 | 负向事件 | in（不受上限） | `D-4` |
+| 每日上限 | 日界 | in（Asia/Shanghai） | `D-5` |
+| 举报扣经验 | RESOLVED | in（−50） | `R-1` |
+| 举报扣经验 | REJECTED | out（0） | `R-3` |
+| 举报扣经验 | 同一举报重复处理 | out（0） | `R-2`；幂等键 |
+| 举报扣经验 | 当前经验 < 50 | in（扣到 0） | `R-4` |
+| 举报扣经验 | 上线前已成立举报 | out（不回填） | `R-5` |
+| 展示 | 本人主页 / 本人弹窗 | in（等级 + 经验 + 距下一级） | `V-1` |
+| 展示 | 他人主页 / 弹窗 / 其余 4 面 | in（仅等级） | `V-2` / `V-3` |
+| 展示 | LV5 | in（已满级 / 400+） | `V-4` |
+| 展示 | 与信用分并列 | in（文案区分） | `V-5` |
+| 展示 | 批量读取 | in（仅等级） | `V-6` |
+| 并发 | 同档点赞 / 同举报 / 同行程重试 | in（幂等） | `C-1` ~ `C-3` |
+| 读 | 账户缺失 | in（懒建 0） | `S-3` |
+| 读 / 写 | 用户不存在 | out（沿用 `USER_NOT_FOUND`） | `S-4` |
+| 管理端 | 调整经验 / 配置 / 成长视图 | out | D12 |
+| 明细 | 经验明细页 / 排行榜 / 通知 / 权益 | out | D12 |
+| 回填 | 历史发布 / 点赞 / 举报 | out | D4 |
+| #45 | 路线完成度 / 信誉标签 | out | 独立故事 |
+
+### ③ 跨 REQ 一致性（Cross-REQ consistency）
+
+| 能力 | 各 REQ 的 grain + 字段 | aligned? | anchor REQ |
+|---|---|---|---|
+| `user-credit`（REQ-019 / 023 / 025 / 027，未归档） | 信用账户 + 信用账本 + 五档；成长只借鉴 append-only / 档位锁定，**不读写其表** | ✓ aligned（D1） | REQ-019 / `add-credit-account` |
+| `trip-experiences`（REQ-004 / 018 / 023，未归档） | 体验按（行程, 作者）唯一；点赞按（体验, 用户）唯一、自赞拒绝、取消删行；成长只读事件 | ✓ aligned（不改 Requirement） | REQ-004 / `add-trip-experiences` |
+| `admin-console`（REQ-018，未归档） | 举报 `PENDING → PROCESSING → RESOLVED / REJECTED`，成立只进入一次；成长只挂 RESOLVED 副作用 | ✓ aligned（不改表单 / 状态机） | REQ-018 / `add-admin-console` |
+| `user-profile` / `user-profiles`（REQ-008 / 009，未归档） | 资料读取响应；成长只追加只读字段 | ✓ aligned | REQ-008 / REQ-009 |
+| `user-auth`（REQ-006，Living） | 注册 / 会话；成长账户懒建，不改注册 | ✓ aligned | REQ-006 |
+| `design-system` | 复用 `profile-credit` 相邻样式与现有令牌 | ✓ aligned | `openspec/specs/design-system/spec.md` |
+
+无未收敛的 ✗；A0 门 ⑪ 通过。
+
+### ④ 通知 / 展示契约（Notification / display contract）
+
+无通知 / 推送 / 邮件；以下为成长等级的 UI 展示面契约。
+
+| trigger / surface（展示面） | recipient role | content + display fields | channel | cardinality | source |
+|---|---|---|---|---|---|
+| 个人主页 — 本人 | 本人 | `LVn` + 当前经验 + 距下一级所需经验；LV5 显示已满级 | 应用内页面 | 每页 1 处 | `V-1` / `V-4` |
+| 个人主页 — 他人 | 其他用户 | 仅 `LVn` | 应用内页面 | 每页 1 处 | `V-2` |
+| 资料弹窗 — 本人 / 他人 | 本人 / 其他用户 | 本人同上；他人仅 `LVn` | 应用内弹窗 | 每次 1 处 | `V-2` |
+| 行程详情 — 发布者区 | 查看者 | 仅 `LVn` | 应用内页面 | 每页 1 处 | `V-3` |
+| 首页行程卡 — 发布者行 | 浏览者 | 仅 `LVn` | 应用内卡片 | 每卡 1 处 | `V-3` |
+| 申请处理页 — 申请者行 | 行程发布者 | 仅 `LVn` | 应用内列表 | 每行 1 处 | `V-3` |
+| 详情 — 同行者卡片 | 查看者 | 仅 `LVn` | 应用内卡片 | 每卡 1 处 | `V-3` |
+| 批量只读（列表） | 任意已登录 | 仅 `LVn`；无经验字段 | 应用内 API | 每次 ≤50 | `V-6` |
+| 通知 / 推送 / 邮件 | — | **不存在** | — | 0 | D12 |
+
+- 所有展示面 MUST 使用后端返回的 `LVn`；前端不得按页面数据自行计算等级。
+- 成长等级与信用分并列时，文案 MUST 可区分（如「成长 LV3」与「信用分 80」），不得把成长等级称为信用等级或官方安全认证。
+
+无展示面缺 display-fields；A0 门 ⑫ 通过。
+
+### 探针记录（REQ-029 成长等级）
+
+- **发布事件挂接点：** `ExperienceServiceImpl.upsert` 的 `created = true` 分支；同一事务内调用成长结算，失败回滚体验创建（或按 P3 决定「体验成功、经验失败不阻断」——需在 P3 明确）。
+- **点赞事件挂接点：** `ExperienceLikeServiceImpl.like` 的 `created = true` 分支（取消点赞不调用成长）；`unlike` 不回滚。
+- **举报事件挂接点：** `AdminReportServiceImpl.resolve` 的 `RESOLVED` 分支；#29 合并后同一分支会并列「扣信用分」与「扣成长经验」。
+- **每日额度：** 从 `growth_exp_ledger` 当日 `applied_delta > 0` 求和派生；不建计数表；日界 `Asia/Shanghai`，复用 `TripTimeZoneConstant.ZONE` 或等价常量。
+- **并发：** 幂等键唯一索引兜底；账户更新用条件更新 / 事务内重读，避免双发；点赞档位并发由唯一键防重。
+- **账本时间：** `occurred_at` 存 ISO-8601 字符串，与 `credit_ledger` 口径一致；日界过滤用 `Instant`。
+- **契约 / 迁移排他：** 基线 0.25.0 + V30；本 change 预计 0.26.0 + V31；#29 分支计划 0.25.0 + V30（已被 `add-travel-finance` 占用，合并时顺延），两者按合并顺序排他。
+- **原型缺口：** `docs/prototype` 无成长等级截点；P3 先补原型再实现（项目规则要求原型先行）。
+- **E2E 影响：** 新增成长 E2E（发布 → 点赞 → 升级 → 展示；举报成立扣经验）；既有 `credit.spec.ts` / `trips.spec.ts` / `detail-companions.spec.ts` 可能因新增徽标产生断言漂移，P3 评估。
+- `{TBD}`：无。非阻塞项（契约 / 迁移号、端点与字段形状、原型截点、配置命名）已在 REQ-029 §8 标 deferred。
+- A0 门 ⑨–⑫：全部通过。

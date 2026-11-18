@@ -516,3 +516,30 @@
 - **金额口径：** 整数分；借款只接受整元，保证 5% 恒为整数分，避免浮点与四舍五入争议；保险不出现金额字段。
 - **保留边界：** 真实保险机构 API / 核保 / 理赔、真实银行对接、征信、退保、罚息、钱包充值提现、管理后台金融视图与通知均排除（D10 / D12）。
 - **依赖：** `trip-plans` / `trip-companions` 只读；`user-auth` 注册事务内初始化钱包；`user-credit` 仅作账本范式参照，不读写信用分。
+
+# Story list — REQ-029（用户成长等级 LV1–LV5 / 迭代 3）
+
+- **故事：** S30 用户成长等级 LV1–LV5（GitHub issue #44；优先级 P1；迭代 3；3 点；落点页面：用户主页 / 行程详情 / 同行者信息）
+- **需求编号说明：** `main` 已占用 REQ-001 ~ REQ-028、S01 ~ S29；本需求按「后到者顺延」登记为 REQ-029 / S30；在途 #29 合并时再校。
+- **Change：** `add-growth-level`（`user-growth` ADDED）
+- **垂直切片：** 只负责「经验事件 → 防刷 / 每日上限 → 经验流水 → 等级派生 → 6 处展示」；不含明细页 / 排行榜 / 通知 / 权益 / 管理端 / 回填 / #45。
+- **规则口径：** LV1–LV5，每 100 EXP 一级，LV5 后继续累计；发布已完成行程体验 +10（配置化）；单篇每 10 个有效赞 +5（档位锁定）；正向每日 +20（Asia/Shanghai，跨档按剩余额度截断）；举报成立 −50（每份一次，最低 0，等级随经验回退）；他人只见等级。
+- **更新时间：** 2026-11-18
+
+| Story | Title | 角色 | Priority | Iteration | Points | Page | Parent REQ | Change | Status |
+|---|---|---|---|---|---|---|---|---|---|
+| S30 | 用户成长等级 LV1–LV5 | RouteMe 用户 / 其他用户 | P1 | 迭代 3 | 3 | 个人主页 / 行程详情 / 同行者信息 | REQ-029 | `add-growth-level` | P1 drafted（2026-11-18） |
+
+## Traceability（REQ-029）
+
+| Story | Requirement scenarios | Change spec | Story file |
+|---|---|---|---|
+| S30 | REQ-029 §4 L-1 ~ S-4（41 场景） | `openspec/changes/add-growth-level/specs/user-growth/spec.md`（P2 定稿） | `requirement-workspace/stories/REQ-029-growth-level.story.md` |
+
+## Notes（REQ-029）
+
+- **不拆故事：** 账户、流水、等级、三类事件与展示共用同一经验口径；拆开会产生两套经验。
+- **单 capability：** `user-growth`；`trip-experiences` / `admin-console` / `user-profile` / `user-profiles` 只读消费，不改其 Requirement。
+- **与信用分分离：** 不读写 `user_credit_account` / `credit_ledger`；展示并列但文案区分。
+- **保留边界：** 经验明细页、排行榜、通知、等级权益、管理端、中文头衔、存量回填、#45 路线完成度均排除。
+- **依赖：** 体验发布 / 点赞 / 举报成立的既有事件；配置 `routeme.growth.publish-exp`；契约 / 迁移 P3 排他。
