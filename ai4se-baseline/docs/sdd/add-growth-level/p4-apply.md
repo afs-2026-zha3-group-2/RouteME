@@ -2,7 +2,7 @@
 
 - **Change：** `add-growth-level`（REQ-033 / S34 用户成长等级 LV1–LV5）｜ **阶段：** P4（`/sdd:atdd-apply`）
 - **日期：** 2026-11-18 ｜ **记录人：** Jay（AO）
-- **基线：** P3 收口 `origin/main@8108481`（契约 0.26.0 / 迁移头 `V31__report_credit_deduction.sql`）；本 change 落定 **0.30.0 + `V34__add_growth_level.sql`**
+- **基线：** P3 收口 `origin/main@8108481`（契约 0.26.0 / 迁移头 `V31__report_credit_deduction.sql`）；P4 收口合并 `origin/main@e6ffb406`（其中 `add-route-completion` 占 0.27.0、`add-loan-interest-penalty` 占 0.28.0 + `V32`、`add-realtime-notifications` 占 0.29.0 + `V33`）后第四次顺延，本 change 落定 **0.30.0 + `V34__add_growth_level.sql`**
 - **计划来源：** [`tasks.md`](../../../openspec/changes/add-growth-level/tasks.md) 1.2–1.12；[`design.md`](../../../openspec/changes/add-growth-level/design.md) D1–D14；[`atdd-design.md`](../../../openspec/changes/add-growth-level/atdd-design.md) A1–A26 / E1–E8 / R1–R4
 
 ## 1. 执行切片与结果
@@ -15,9 +15,9 @@
 | p4-4 | 三事件同事务挂接：发布 / 点赞分档 / 举报成立 −50 | Pass（A7–A12 / A16–A18；9/9） |
 | p4-5 | G1 C2 字段级可见性：本人含经验、他人仅 level、批量仅 level | Pass（`GrowthVisibilityApiTest` 3/3；批量缺参与超限 400 补测） |
 | p4-6 | 并发与幂等兜底：同档 / 同举报 / 同发布 8 线程各只结算一次 | Pass（`GrowthConcurrencyTest` 3/3，非事务真实提交 + 按用户清理） |
-| p4-7 | 前端 `growth.ts` + `GrowthBadge` + `GrowthProgressBlock` + `useGrowthLevels` + 6 处展示面 + 令牌样式 | Pass（`growth.test.ts` 7/7；typecheck / 508 单测 / build 全绿） |
+| p4-7 | 前端 `growth.ts` + `GrowthBadge` + `GrowthProgressBlock` + `useGrowthLevels` + 6 处展示面 + 令牌样式 | Pass（`growth.test.ts` 7/7；合并后 typecheck / 63 文件 552 单测 / build 全绿） |
 | p4-8 | E2E `growth-level.spec.ts` + `growthSupport.ts`（注册 / 造已完成行程与体验 / 点赞 / 批量读取 / SQL 种子） | Pass（5/5；E1–E8 + R1–R4） |
-| p4-9 | 门禁、P4 记录、台账更新、提交推送 | 本文件 |
+| p4-9 | 门禁、P4 记录、台账更新、合并 `origin/main@e6ffb406`（9 冲突文件 + 第四次顺延改号 / 改迁移）、提交推送 | 本文件（合并后重跑全部门禁；修复 SQLite 唯一键未翻译为 `DuplicateKeyException` 的首次读并发 500；顺带补齐 main 两个通知 schema 的 `type: object` 以保持 lint 0 error） |
 
 ## 2. 契约与迁移
 
@@ -35,6 +35,7 @@
 
 - **每日上限：** 仅正向事件；按 `Asia/Shanghai` 自然日汇总已有 `applied_delta > 0` 的流水，剩余额度截断；零实发也留流水（`applied_delta = 0`）；负向不受限。
 - **并发兜底：** 幂等键先查 → 懒建账户 → 条件更新 `WHERE exp_total = before` → 唯一键冲突视为已结算 → 主键冲突 `id + 1` 重试（≤3 次）；失败删除暂写流水。
+- **SQLite 唯一键：** SQLite 的 SQLState 为空、错误码 19，Spring 只抛 `UncategorizedSQLException`（`DataAccessException` 子类，**不是** `DuplicateKeyException`），因此账户懒建与流水写入都按 `DataAccessException` 捕获后重读判定；主键碰撞额外用 `selectById` 区分「并发占用同 id」与其它约束错误。`GrowthServiceImplTest` 2/2 固定该行为。
 - **等级派生：** `min(5, max(0, exp) / 100 + 1)`；LV5 返回 `exp_to_next = null`、`max_level = true`；等级不落库。
 
 ## 4. 展示面与可见性
@@ -49,13 +50,14 @@
 
 | 门禁 | 命令 | 结果 |
 |---|---|---|
-| 后端 | `backend> .\mvnw.cmd -B verify` | **Tests run: 675, Failures: 0, Errors: 0, Skipped: 0；BUILD SUCCESS** |
+| 后端 | `backend> .\mvnw.cmd -B clean verify`（合并后） | **Tests run: 766, Failures: 0, Errors: 0, Skipped: 0；BUILD SUCCESS** |
 | 前端类型 | `frontend> npm run typecheck` | 0 error |
-| 前端单测 | `frontend> npm test` | **61 files / 508 tests passed** |
-| 前端构建 | `frontend> npm run build` | built in 4.16s（仅既有 chunk 体积提示） |
-| 契约 | `npx --yes @redocly/cli lint openapi.yaml` | **validated；0 error**（26 条既有风格 warning） |
+| 前端单测 | `frontend> npm test` | **63 files / 552 tests passed**（合并后含 route-completion 与 notifications 单测） |
+| 前端构建 | `frontend> npm run build` | built in 5.48s（仅既有 chunk 体积提示） |
+| 契约 | `npx --yes @redocly/cli lint openapi.yaml` | **validated；0 error**（25 条既有风格 warning；顺带修正 main 两个通知 schema 的 `nullable-type-sibling`） |
 | OpenSpec | `npx --yes openspec validate add-growth-level --strict` | **Change 'add-growth-level' is valid** |
 | E2E 新增 | 独立 SQLite + 后端 8082 + 前端 5175：`npx playwright test tests/growth-level.spec.ts` | **5 passed**（E1/E8/R4、E2、E3、E4–E7、R1/R2） |
+| E2E 合并后定向 | `growth-level` + `route-completion` + `profiles` + `profile`（全新独立库） | **31 passed / 2 failed**；`route-completion` 6/6、`growth-level` 5/5；2 个失败均为既有债务（§6.7） |
 | E2E 回归 | `profiles` / `detail-companions` / `experiences` / `experience-likes` / `admin-report-credit` / `trips` | 61 条中 59 passed；2 个失败均见 §6（既有债务 / 顺序耦合），分文件复核后 green |
 
 - 本地 8081 端口未生效（被本地配置覆盖），实际后端 8082 + 前端 5175；`ROUTEME_API_TARGET` / `ROUTEME_E2E_BASE_URL` / `ROUTEME_E2E_DB` 均指向独立实例与临时库，不污染开发库。
@@ -69,6 +71,10 @@
 4. **既有顺序耦合：** `detail-companions.spec` 会把 seed 用户 4 接受进多条行程，污染随后 `profiles.spec` 的「参与同行 = 0」断言；分文件单跑 `profiles.spec` 8/8 绿，属既有测试顺序问题，登记债务。
 5. **环境变量陷阱：** 本机 shell 遗留 `SPRING_DATASOURCE_URL`（指向另一 worktree 的 SQLite）会让 `mvnw verify` 的 H2 测试 context 全部失败；门禁执行前已清除该变量，记录以便复现。
 6. **G1 Conditional 收口：** C1 重复处理沿用 409 `ReportNotProcessingException`（API 用例 A18 覆盖）；C2 字段级可见性由 `GrowthVisibilityApiTest` + E2E E1/E8 覆盖。
+7. **既有债务（合并后新发现）：** `profile.spec.ts:318` / `:496` 依赖 `.mine-profile-card`，但 `origin/main@e6ffb406` 的「我的旅行」页已无该节点（全仓仅测试引用）；与本 change 无关，登记债务。
+8. **缺陷修复（本 change）：** 合并后定向 E2E 发现新注册用户首次读 `/profile` 时并发懒建账户在 SQLite 上 500（唯一键冲突只抛 `UncategorizedSQLException`）；改为捕获 `DataAccessException` + 重读判定，新增 `GrowthServiceImplTest` 2/2；修复后 8 并发探针 16/16 均 200。
+9. **迁移改名陷阱：** `V32 → V34` 改名后必须 `clean`：`target/classes` 残留旧脚本会让 Flyway 报 `Found more than one migration with version NN`（首次合并后 verify 的 555 errors 即由此而来）。
+10. **main 契约 lint 既有错误：** `add-realtime-notifications` 的 `Notification.actor` 与推送 `message` 在 `allOf` + `nullable` 旁缺 `type: object`，使 `nullable-type-sibling` 报 2 error；本 change 合并时补齐（不改语义），使契约门禁回到 0 error。
 
 ## 7. proposal 13 条验收信号 ↔ 证据（L-02）
 
@@ -86,10 +92,10 @@
 | 10 | 4 处列表 / 详情展示 + 批量只返回等级 | E2E E4–E7；`GrowthLedgerApiTest.in_batchRead_out_onlyLevels` |
 | 11 | 与信用分文案可区分 | `growth.test.ts`（成长文案独立）；E2E E1（信用行仍在、文案为「信用分」）；`growth.ts` 无「信用」字样 |
 | 12 | 并发只结算一次 | `GrowthConcurrencyTest`（3/3：同档 / 同举报 / 同发布 8 线程） |
-| 13 | `openspec validate --strict` + 不回归 | 上表门禁：675 / 508 / 5 / 59 条回归 + Redocly 0 error + OpenSpec valid |
+| 13 | `openspec validate --strict` + 不回归 | 上表门禁：766 / 552 / 5 + 合并后定向 31 / 回归 59 + Redocly 0 error + OpenSpec valid |
 
 ## 8. 结论与下一步
 
-- **P4 结论：Pass with documented debt**（仅 §6 的既有 E2E 债务，与本 change 无关）。
+- **P4 结论：Pass with documented debt**（§6.3 / §6.4 / §6.7 为既有 E2E 债务，与本 change 无关；§6.8 的 SQLite 并发 500 已在本 change 内修复并加回归用例；§6.10 为 main 带入的契约 lint 错误，已顺带修正）。
 - 未写 G2：按流程由 VL（Neal）签署；建议下一步 `/sdd:local-verify-report` 汇总本记录与门禁输出，再取 G2。
 - P5 归档（C1 已实现，无额外挂账）与 Living Spec 合并待 G3 / SA 指示；契约 0.30.0 + V34 已落地，后续 change 顺延需复核占用。

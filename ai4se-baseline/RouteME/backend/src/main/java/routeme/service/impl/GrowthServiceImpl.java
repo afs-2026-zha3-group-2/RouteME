@@ -5,7 +5,7 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.util.List;
 
-import org.springframework.dao.DuplicateKeyException;
+import org.springframework.dao.DataAccessException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -99,7 +99,9 @@ public class GrowthServiceImpl extends AbstractServiceImpl<GrowthExpLedgerMapper
         entity.setUpdatedAt(now);
         try {
             accountMapper.insert(entity);
-        } catch (DuplicateKeyException exception) {
+        } catch (DataAccessException exception) {
+            // SQLite 的唯一键冲突不映射为 DuplicateKeyException（SQLState 为空、错误码 19），
+            // 因此按重读结果判定：并发请求已建好账户时直接采用它。
             UserGrowthAccountEntity concurrent = accountMapper.selectById(userId);
             if (concurrent == null) {
                 throw exception;
@@ -181,9 +183,12 @@ public class GrowthServiceImpl extends AbstractServiceImpl<GrowthExpLedgerMapper
             try {
                 baseMapper.insert(ledger);
                 return true;
-            } catch (DuplicateKeyException exception) {
+            } catch (DataAccessException exception) {
                 if (ledger.getIdempotencyKey() != null && ledgerExists(ledger.getIdempotencyKey())) {
                     return false;
+                }
+                if (baseMapper.selectById(ledger.getId()) == null) {
+                    throw exception;
                 }
                 ledger.setId(ledger.getId() + 1);
             }

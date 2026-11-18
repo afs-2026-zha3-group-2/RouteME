@@ -6632,6 +6632,7 @@ components:
           nullable: true
           readOnly: true
         actor:
+          type: object
           allOf:
             - $ref: '#/components/schemas/DemoUser'
           nullable: true
@@ -6746,8 +6747,8 @@ components:
         notification:
           $ref: '#/components/schemas/Notification'
         message:
+          type: object
           allOf:
             - $ref: '#/components/schemas/ChatMessage'
           nullable: true
           description: 仅 `type=CHAT` 的推送出现，内容为刚保存的消息
-

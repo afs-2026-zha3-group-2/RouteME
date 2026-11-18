@@ -1343,7 +1343,7 @@ class OpenApiTest {
 
         // Then
         assertAll(
-                () -> assertEquals("0.29.0", info.get("version"), "info.version"),
+                () -> assertEquals("0.30.0", info.get("version"), "info.version"),
                 () -> assertTrue(
                         paths(document).containsKey("/notifications")
                                 && paths(document).containsKey("/notifications/stream")
@@ -1430,4 +1430,3 @@ class OpenApiTest {
         );
     }
 }
-
