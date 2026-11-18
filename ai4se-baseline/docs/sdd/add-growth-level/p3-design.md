@@ -2,7 +2,7 @@
 
 - **Change：** `add-growth-level`（REQ-031 / S32 用户成长等级 LV1–LV5）｜ **阶段：** P3（原型先行 + ATDD 设计 + 技术设计 + 任务 + 评审）
 - **日期：** 2026-11-18 ｜ **记录人：** Jay（AO）
-- **基线：** `origin/main@f2bad40`（契约 0.26.0 / 迁移头 `V31__report_credit_deduction.sql`）；本 change 落定 **0.27.0 + `V32__add_growth_level.sql`**
+- **基线：** `origin/main@f2bad40`（契约 0.26.0 / 迁移头 `V31__report_credit_deduction.sql`）；P3 收口前合并 `origin/main@5f0ef7d`（清理已下线的离线 SVG 地图与相关样式，未触及本 change 工件）；本 change 落定 **0.27.0 + `V32__add_growth_level.sql`**
 
 ## 1. 阶段目标
 
@@ -89,7 +89,7 @@
 
 ## 11. 提交记录
 
-- P3 产物（原型 + 8 图、`atdd-design.md`、`design.md`、`tasks.md`、两份评审报告、本记录、`registry.md` / `docs/sdd/README.md` 状态）随阶段提交 `docs(p3): add-growth-level prototype atdd design and tasks` 落盘并 push 到 `origin/feature/add-growth-level`。
+- P3 产物（原型 + 8 图、`atdd-design.md`、`design.md`、`tasks.md`、两份评审报告、本记录、`registry.md` / `docs/sdd/README.md` 状态）随阶段提交 `588ae41` 落盘；随后合并 `origin/main@5f0ef7d`（merge `2a1f347`，清理离线 SVG 地图）并 push 到 `origin/feature/add-growth-level`。
 
 ## 12. 下一阶段
 
