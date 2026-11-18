@@ -1,0 +1,4 @@
+cd RouteME/frontend && npm run typecheck
+cd RouteME/backend && cmd //c mvnw.cmd -q test
+cd RouteME/frontend && npm test
+cd RouteME/e2e && npx playwright test tests/notifications.spec.ts tests/notifications-walkthrough.spec.ts

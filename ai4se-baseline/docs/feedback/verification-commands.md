@@ -30,10 +30,12 @@ Browser E2E. Needs a backend and a Vite dev server; `RouteME/e2e/playwright.conf
 defaults to `http://localhost:5173` and honours `ROUTEME_E2E_BASE_URL`. The
 notification specs are the stop check for this repository (see
 `docs/sdd/add-realtime-notifications/p4-implementation.md` §3 for the baseline
-comparison of the remaining suite).
+comparison of the remaining suite). `add-growth-level` adds
+`tests/growth-level.spec.ts` as its acceptance slice (see
+`docs/sdd/add-growth-level/p4-apply.md` §5).
 
 ```bash
-cd RouteME/e2e && npx playwright test tests/route-completion.spec.ts tests/notifications.spec.ts tests/notifications-walkthrough.spec.ts
+cd RouteME/e2e && npx playwright test tests/growth-level.spec.ts tests/route-completion.spec.ts tests/notifications.spec.ts tests/notifications-walkthrough.spec.ts
 ```
 
 ## Spec / contract
@@ -41,6 +43,7 @@ cd RouteME/e2e && npx playwright test tests/route-completion.spec.ts tests/notif
 ```bash
 openspec validate add-route-completion --strict
 openspec validate add-realtime-notifications --strict
+openspec validate add-growth-level --strict
 cd RouteME && npx --yes @redocly/cli lint openapi.yaml
 ```
 
@@ -53,4 +56,4 @@ Keep one command per line; blank lines and headings end the block.
 cd RouteME/frontend && npm run typecheck
 cd RouteME/backend && cmd //c mvnw.cmd -q test
 cd RouteME/frontend && npm test
-cd RouteME/e2e && npx playwright test tests/notifications.spec.ts tests/notifications-walkthrough.spec.ts
+cd RouteME/e2e && npx playwright test tests/growth-level.spec.ts tests/route-completion.spec.ts tests/notifications.spec.ts tests/notifications-walkthrough.spec.ts
