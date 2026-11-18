@@ -107,6 +107,6 @@ class TravelerRecommendationRankerTest {
                 id, publisherId, "行程" + id, "440100", "广州", date, date,
                 List.of("集合", "终点"), List.of(), null, null, null, null, null, List.of(), 4, 1, null,
                 Instant.parse("2026-11-01T10:00:00Z"), Instant.parse("2026-11-01T10:00:00Z"),
-                null, null, null);
+                null, null, null, null);
     }
 }

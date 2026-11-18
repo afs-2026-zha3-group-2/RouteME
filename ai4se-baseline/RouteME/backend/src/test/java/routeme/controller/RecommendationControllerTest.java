@@ -119,7 +119,8 @@ class RecommendationControllerTest {
                 null,
                 null,
                 List.of("摄影"),
-                4), 4L);
+                4,
+                null), 4L);
         tripPlanService.cancel(created.id(), 4L, new TripCancelRequest("personal", null));
 
         // Then

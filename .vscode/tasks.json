@@ -3,10 +3,10 @@
   "tasks": [
     {
       "label": "backend: run",
-      "detail": "RouteME backend (Spring Boot, port 8080) — 不编译测试，避免未完成的测试阻塞启动",
+      "detail": "RouteME backend (Spring Boot, port 8080)",
       "type": "shell",
-      "command": "cmd",
-      "args": ["/c", ".\\mvnw.cmd spring-boot:run -Dmaven.test.skip=true"],
+      "command": ".\\mvnw.cmd",
+      "args": ["spring-boot:run"],
       "options": {
         "cwd": "${workspaceFolder}\\ai4se-baseline\\RouteME\\backend"
       },

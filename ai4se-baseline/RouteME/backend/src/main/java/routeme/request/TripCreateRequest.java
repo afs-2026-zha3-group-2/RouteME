@@ -8,6 +8,7 @@ import java.util.List;
  *
  * <p>目的地只接受 6 位行政区划二级代码，名称由后端按字典生成。</p>
  *
+ * <p>{@code aiItineraryId} 可空；非空时后端校验快照存在且归属当前用户。</p>
  * <p>{@code travelMode} 选填：driving / bicycling / transit，未填为 null。</p>
  */
 public record TripCreateRequest(
@@ -23,5 +24,6 @@ public record TripCreateRequest(
         Integer budgetMinCents,
         Integer budgetMaxCents,
         List<String> tags,
-        Integer capacity) {
+        Integer capacity,
+        Long aiItineraryId) {
 }

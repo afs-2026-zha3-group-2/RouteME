@@ -122,3 +122,5 @@ T1–T14 全部完成，`tasks.md` 复选框已勾选。T0（原型/预览）在
 | 旧数据 | V27 回填最近一条 `trip_applications.id` | 迁移测试 |
 
 复验结果：后端 **516 tests / 0 failures**；前端 **49 files / 362 tests**；`npm run build` 通过；Redocly valid（0 error / 23 warnings）；`openspec validate --strict` valid；隔离 E2E **credit-exit 5/5**（含再次加入并退出、记录 2 条）。契约 **0.23.0**；迁移 **V27**。按用户指示未 pull / 未 push。
+
+**合并 `origin/main`（最终）：** 远端已占用契约 0.23.0 与迁移 V26/V27（AI 行程 / 安全学习），本 change 按「后到者顺延」最终改为 **契约 0.24.0、迁移 V28（说明与证据）/ V29（application_id）**；合并后复验：后端 **607 / 0 failures**、前端 **475 / 475**、`typecheck` + `build` 通过、Redocly valid、`openspec validate --strict` valid、隔离 E2E **credit-exit 5/5**。

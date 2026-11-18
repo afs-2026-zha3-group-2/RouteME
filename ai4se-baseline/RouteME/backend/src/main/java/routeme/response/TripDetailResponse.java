@@ -35,7 +35,8 @@ public record TripDetailResponse(
         Instant cancelledAt,
         String cancelReason,
         String cancelNote,
-        Instant createdAt) {
+        Instant createdAt,
+        Long aiItineraryId) {
 
     public static TripDetailResponse from(
             TripPlan trip, DemoUser publisher, List<DemoUser> participants, Instant now,
@@ -67,6 +68,7 @@ public record TripDetailResponse(
                 trip.cancelledAt(),
                 includeCancelDetail ? trip.cancelReason() : null,
                 includeCancelDetail ? trip.cancelNote() : null,
-                trip.createdAt());
+                trip.createdAt(),
+                trip.aiItineraryId());
     }
 }

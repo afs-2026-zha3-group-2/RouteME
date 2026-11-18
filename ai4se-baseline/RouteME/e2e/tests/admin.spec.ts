@@ -108,6 +108,142 @@ async function prepareActiveUser(page: Page) {
   return { publisher, victim, victimTrip, publisherTrip };
 }
 
+test.describe('[M] admin dashboard overview', () => {
+  const CARD_IDS = ['users', 'trips', 'applications', 'experiences', 'reports', 'service'];
+
+  test('[M1] admin lands on the overview with six cards and a snapshot time', async ({ page }) => {
+    await loginAsAdmin(page);
+    await page.getByRole('link', { name: '管理后台' }).first().click();
+
+    await expect(page).toHaveURL(/#\/admin$/);
+    await expect(page.getByRole('heading', { name: '概览' })).toBeVisible();
+    await expect(page.getByTestId('dashboard-page')).toBeVisible();
+
+    for (const id of CARD_IDS) {
+      await expect(page.getByTestId(`dashboard-card-${id}`)).toBeVisible();
+      const total = await page.getByTestId(`dashboard-card-${id}-total`).textContent();
+      // 共享库不断言绝对值，只确认是非负整数（允许千分位）。
+      expect(total ?? '').toMatch(/^\d{1,3}(,\d{3})*$/);
+    }
+
+    await expect(page.getByTestId('dashboard-updated-at')).toContainText('最近更新');
+    await expect(page.getByTestId('dashboard-chart-users-role')).toBeVisible();
+    await expect(page.getByTestId('dashboard-chart-users-status')).toBeVisible();
+    // 概览是后台第一个 Tab。
+    await expect(page.locator('.admin-tab').first()).toHaveText('概览');
+  });
+
+  test('[M2] only users, reports and service cards navigate', async ({ page }) => {
+    await loginAsAdmin(page);
+
+    for (const id of ['trips', 'applications', 'experiences']) {
+      await page.goto('/#/admin');
+      await expect(page.getByTestId('dashboard-page')).toBeVisible();
+      const card = page.getByTestId(`dashboard-card-${id}`);
+      await expect(card).toBeVisible();
+      expect(await card.getAttribute('href')).toBeNull();
+      await expect(card.locator('a')).toHaveCount(0);
+      await card.click();
+      await expect(page).toHaveURL(/#\/admin$/);
+    }
+
+    await page.goto('/#/admin');
+    await page.getByTestId('dashboard-card-users').click();
+    await expect(page).toHaveURL(/#\/admin\/users$/);
+    await expect(page.getByRole('heading', { name: '用户管理' })).toBeVisible();
+
+    await page.goto('/#/admin');
+    await page.getByTestId('dashboard-card-reports').click();
+    await expect(page).toHaveURL(/#\/admin\/reports$/);
+    await expect(page.getByRole('heading', { name: '举报管理' })).toBeVisible();
+
+    await page.goto('/#/admin');
+    await page.getByTestId('dashboard-card-service').click();
+    await expect(page).toHaveURL(/#\/admin\/service$/);
+    await expect(page.getByRole('heading', { name: '客户服务' })).toBeVisible();
+  });
+
+  test('[M3] non-admin sees the guard and issues no dashboard request', async ({ page }) => {
+    const outsider = await createUserViaApi(page, `概览越权_${Date.now()}`);
+    await loginAsAccount(page, outsider);
+
+    const adminRequests: string[] = [];
+    page.on('request', (request) => {
+      if (request.url().includes('/api/admin/')) {
+        adminRequests.push(request.url());
+      }
+    });
+
+    await page.goto('/#/admin');
+    await expect(page.getByText('没有访问权限')).toBeVisible();
+    await expect(page.getByTestId('dashboard-page')).toHaveCount(0);
+    await page.waitForTimeout(500);
+    expect(adminRequests).toEqual([]);
+  });
+
+  test('[M4] shows an error and recovers on retry', async ({ page }) => {
+    await loginAsAdmin(page);
+
+    await page.route('**/api/admin/dashboard', async (route) => {
+      await route.fulfill({
+        status: 500,
+        contentType: 'application/json',
+        body: JSON.stringify({ code: 'INTERNAL_ERROR' }),
+      });
+    });
+
+    await page.goto('/#/admin');
+    await expect(page.getByTestId('dashboard-error')).toBeVisible();
+    await expect(page.getByTestId('dashboard-page')).toHaveCount(0);
+
+    await page.unroute('**/api/admin/dashboard');
+    await page.getByTestId('dashboard-retry').click();
+    await expect(page.getByTestId('dashboard-page')).toBeVisible();
+    await expect(page.getByTestId('dashboard-error')).toHaveCount(0);
+  });
+
+  test('[M5] does not poll while the overview stays open', async ({ page }) => {
+    await loginAsAdmin(page);
+    await page.clock.install();
+
+    let dashboardRequests = 0;
+    page.on('request', (request) => {
+      if (request.url().includes('/api/admin/dashboard')) {
+        dashboardRequests += 1;
+      }
+    });
+
+    await page.goto('/#/admin');
+    await expect(page.getByTestId('dashboard-page')).toBeVisible();
+    // 开发态 React StrictMode 会双调用 effect；这里只关心“稳定后不再新增请求”。
+    const settled = dashboardRequests;
+    expect(settled).toBeGreaterThan(0);
+
+    await page.clock.fastForward(60_000);
+    await page.waitForTimeout(300);
+    expect(dashboardRequests).toBe(settled);
+  });
+
+  test('[M6] admin navigation keeps browse/publish/planning and hides user-only entries', async ({ page }) => {
+    await loginAsAdmin(page);
+    await page.goto('/');
+
+    const rail = page.locator('.rail-link');
+    await expect(rail.filter({ hasText: '旅行灵感' })).toBeVisible();
+    await expect(rail.filter({ hasText: '发布行程' })).toBeVisible();
+    await expect(rail.filter({ hasText: 'AI 规划' })).toBeVisible();
+    await expect(rail.filter({ hasText: '管理后台' })).toBeVisible();
+    await expect(rail.filter({ hasText: '帮助与反馈' })).toHaveCount(0);
+    await expect(rail.filter({ hasText: '我的旅行' })).toHaveCount(0);
+    await expect(rail.filter({ hasText: '同行消息' })).toHaveCount(0);
+    await expect(rail.filter({ hasText: '联系客服' })).toHaveCount(0);
+    await expect(page.locator('.support-fab')).toHaveCount(0);
+
+    await page.goto('/#/admin');
+    await expect(page.locator('.admin-tab').filter({ hasText: '帮助与反馈' })).toHaveCount(0);
+  });
+});
+
 test.describe('[I1] admin console access and user management', () => {
   test('[I1] guards direct links, searches users and pages the list', async ({ page }) => {
     const outsider = await createUserViaApi(page, `越权用户_${Date.now()}`);
@@ -126,6 +262,8 @@ test.describe('[I1] admin console access and user management', () => {
     await loginAsAdmin(page);
     await expect(page.getByRole('link', { name: '管理后台' }).first()).toBeVisible();
     await page.getByRole('link', { name: '管理后台' }).first().click();
+    await expect(page).toHaveURL(/#\/admin$/);
+    await page.getByRole('link', { name: '用户管理' }).click();
     await expect(page).toHaveURL(/#\/admin\/users/);
     await expect(page.getByRole('heading', { name: '用户管理' })).toBeVisible();
 
@@ -411,12 +549,9 @@ test.describe('[I2] report queue and resolution', () => {
     const reportedDetail = await adminUserDetail(page, admin.token, reported.id);
     expect(reportedDetail.status).toBe('SUSPENDED');
 
-    await loginAsAccount(page, reporter);
-    await page.goto('/#/help');
-    const reportItem = page.locator('.help-report').filter({ hasText: created.code });
-    await expect(reportItem).toContainText('已处理');
-    await expect(reportItem).toContainText('虚假信息');
-    await expect(page.getByText(resolutionNote)).toHaveCount(0);
+    // 用户侧不再展示举报进度；改由管理员在举报详情确认处理结果与备注。
+    await page.goto(`/#/admin/reports/${created.id}`);
+    await expect(page.locator('.admin-detail-hero')).toContainText('已处理');
 
     // 已受限用户：另一条举报走「维持暂停」，状态保持不变。
     const second = await page.request.post(`${API}/reports`, {
@@ -464,17 +599,21 @@ test.describe('[I2] report queue and resolution', () => {
     expect(((await reject.json()) as { status: string }).status).toBe('REJECTED');
     expect((await adminUserDetail(page, admin.token, reported.id)).status).toBe('SUSPENDED');
 
-    await loginAsAccount(page, reporter);
-    await page.goto('/#/help');
-    await expect(
-      page.locator('.help-report').filter({ hasText: thirdReport.code }),
-    ).toContainText('举报不成立');
+    // 举报不成立：状态只在管理后台可见（用户侧不再有举报进度页）。
+    await page.goto(`/#/admin/reports/${thirdReport.id}`);
+    await expect(page.locator('.admin-detail-hero')).toContainText('举报不成立');
   });
 });
 
 test.describe('[I3] customer service workbench', () => {
-  test('[I3] joins, replies, filters and closes a service session', async ({ page }) => {
+  test('[I3] surfaces a new user session and message without manual refresh, then handles it', async ({ page }) => {
     const user = await createUserViaApi(page, `客服用户_${Date.now()}`);
+
+    const admin = await loginAsAdmin(page);
+    await page.goto('/#/admin/service');
+    await expect(page.getByRole('heading', { name: '客户服务' })).toBeVisible();
+
+    // 管理员已经停在队列页，用户之后才发起会话并发消息。
     const opened = await page.request.post(`${API}/service/sessions`, {
       headers: bearer(user.token),
     });
@@ -482,27 +621,33 @@ test.describe('[I3] customer service workbench', () => {
     const session = (await opened.json()) as { id: number; status: string };
     expect(session.status).toBe('WAITING');
 
-    const admin = await loginAsAdmin(page);
-    await page.goto('/#/admin/service');
-    await expect(page.getByRole('heading', { name: '客户服务' })).toBeVisible();
-
-    await page.getByRole('button', { name: '会话状态' }).click();
-    await page.getByRole('option', { name: '等待接入' }).click();
-    const queueItem = page.locator('.admin-queue-item').filter({ hasText: user.nickname });
-    await expect(queueItem).toBeVisible();
-    await queueItem.click();
-
-    await expect(page.getByText('用户资料').first()).toBeVisible();
-    await expect(page.getByText('相关举报').first()).toBeVisible();
-    await page.getByRole('button', { name: '接入会话' }).click();
-    await expect(page.getByText('处理中').first()).toBeVisible();
-
     const userMessage = '客服你好，我的行程无法发布';
     const userSend = await page.request.post(`${API}/service/sessions/${session.id}/messages`, {
       headers: { ...bearer(user.token), 'Content-Type': 'application/json' },
       data: { content: userMessage },
     });
     expect(userSend.status()).toBe(201);
+
+    // 不点刷新、不改筛选：3 秒轮询把新会话带到队列，页签出现待接入徽标。
+    const queueItem = page.locator('.admin-queue-item').filter({ hasText: user.nickname });
+    await expect(queueItem).toBeVisible({ timeout: 10000 });
+    await expect(page.locator('.admin-tab-badge').first()).toContainText(/\d+/);
+    await expect(page.getByText('有会话正在等待接入')).toBeVisible();
+    // 旧的刷新提示语已移除。
+    await expect(page.getByText('队列与消息每 3 秒自动刷新')).toHaveCount(0);
+    // 新消息置顶 + 气泡提示。
+    await expect(page.locator('.admin-queue-item').first()).toContainText(user.nickname);
+    await expect(queueItem.locator('.admin-queue-bubble')).toContainText('1');
+    await queueItem.click();
+    await expect(queueItem.locator('.admin-queue-bubble')).toHaveCount(0);
+
+    // 接入前就能读到用户消息（只读预览，不要求先接入）。
+    await expect(page.locator('.service-chat .bubble').filter({ hasText: userMessage })).toBeVisible();
+    await expect(page.getByText('用户资料').first()).toBeVisible();
+    await expect(page.getByText('相关举报').first()).toBeVisible();
+    await page.getByRole('button', { name: '接入会话' }).click();
+    await expect(page.getByText('处理中').first()).toBeVisible();
+
     await expect(page.locator('.service-chat .bubble').filter({ hasText: userMessage })).toBeVisible({
       timeout: 5000,
     });

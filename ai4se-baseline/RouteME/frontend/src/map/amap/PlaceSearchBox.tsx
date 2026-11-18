@@ -2,7 +2,14 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import { Input, Spin, Typography } from 'antd';
-import { amapErrorMessage, searchPlaces, type PlaceResult } from './AmapService';
+import {
+  AmapApiError,
+  amapErrorMessage,
+  lastProbeInfocode,
+  probeProxy,
+  searchPlaces,
+  type PlaceResult,
+} from './AmapService';
 
 type Props = {
   city?: string;
@@ -26,6 +33,29 @@ export function PlaceSearchBox({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [activeIndex, setActiveIndex] = useState(-1);
+  /** 高德为何不可用（Key 平台不匹配 / 后端未配置 / 代理不可达），用于说明降级原因。 */
+  const [degradedReason, setDegradedReason] = useState<string | null>(null);
+
+  useEffect(() => {
+    let active = true;
+    probeProxy()
+      .then((result) => {
+        if (!active) {
+          return;
+        }
+        if (result === 'key-invalid') {
+          setDegradedReason(amapErrorMessage(new AmapApiError('AUTH', 'key', lastProbeInfocode())));
+        } else if (result === 'not-configured') {
+          setDegradedReason(amapErrorMessage(new AmapApiError('NOT_CONFIGURED', 'missing key')));
+        } else if (result === 'unavailable') {
+          setDegradedReason(amapErrorMessage(new AmapApiError('PROXY_UNAVAILABLE', 'down')));
+        }
+      })
+      .catch(() => undefined);
+    return () => {
+      active = false;
+    };
+  }, []);
 
   const keyword = query.trim();
 
@@ -63,6 +93,8 @@ export function PlaceSearchBox({
   }, [keyword, city]);
 
   const hasPanel = loading || error !== null || (keyword !== '' && !loading);
+  /** 全部结果来自离线地名库：坐标是示意位置，必须告知用户。 */
+  const degraded = results.length > 0 && results.every((place) => place.approximate === true);
 
   const pick = (place: PlaceResult) => {
     onPick(place);
@@ -142,24 +174,40 @@ export function PlaceSearchBox({
             </div>
           )}
           {!loading && error === null && results.length > 0 && (
-            <ul className="amap-search-list">
-              {results.map((place, index) => (
-                <li key={place.id}>
-                  <button
-                    type="button"
-                    className={index === activeIndex ? 'amap-search-item is-active' : 'amap-search-item'}
-                    onClick={() => pick(place)}
-                    onMouseEnter={() => setActiveIndex(index)}
-                  >
-                    <span className="amap-search-name">{place.name}</span>
-                    <span className="amap-search-meta">
-                      {[place.city, place.district, typeLabel(place.type)].filter((item) => item !== '').join(' · ')}
-                    </span>
-                    {place.address !== '' && <span className="amap-search-address">{place.address}</span>}
-                  </button>
-                </li>
-              ))}
-            </ul>
+            <>
+              {degraded && (
+                <div className="amap-search-degraded" role="status">
+                  高德搜索不可用，以下为内置地名的示意位置（偏差较大）。
+                  需要精确位置时，请直接在地图上点选。
+                  {degradedReason !== null && (
+                    <span className="amap-search-degraded-reason">{degradedReason}</span>
+                  )}
+                </div>
+              )}
+              <ul className="amap-search-list">
+                {results.map((place, index) => (
+                  <li key={place.id}>
+                    <button
+                      type="button"
+                      className={index === activeIndex ? 'amap-search-item is-active' : 'amap-search-item'}
+                      onClick={() => pick(place)}
+                      onMouseEnter={() => setActiveIndex(index)}
+                    >
+                      <span className="amap-search-name">{place.name}</span>
+                      <span className="amap-search-meta">
+                        {[place.city, place.district, typeLabel(place.type)]
+                          .filter((item) => item !== '')
+                          .join(' · ')}
+                      </span>
+                      {place.approximate === true && (
+                        <span className="amap-search-badge">示意位置</span>
+                      )}
+                      {place.address !== '' && <span className="amap-search-address">{place.address}</span>}
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            </>
           )}
         </div>
       )}

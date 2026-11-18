@@ -474,7 +474,8 @@ class CreditExitApiTest {
                 null,
                 null,
                 List.of("摄影"),
-                Integer.valueOf(2)), PUBLISHER);
+                Integer.valueOf(2),
+                null), PUBLISHER);
         TripApplication application = applicationService.apply(
                 trip.id(), APPLICANT, new ApplicationCreateRequest("信用验收"));
         applicationService.accept(application.id(), PUBLISHER);

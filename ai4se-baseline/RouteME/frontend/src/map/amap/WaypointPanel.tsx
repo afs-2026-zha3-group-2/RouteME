@@ -25,6 +25,7 @@ export const MODE_LABELS: Record<TravelMode, string> = {
   walking: '步行',
   driving: '驾车',
   bicycling: '骑行',
+  transit: '公共交通',
 };
 
 export function WaypointPanel({

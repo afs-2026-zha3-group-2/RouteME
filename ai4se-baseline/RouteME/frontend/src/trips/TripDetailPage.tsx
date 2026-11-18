@@ -19,6 +19,7 @@ import {
   applyForTrip,
   cancelApplication,
   completeTrip,
+  loadAiItinerary,
   loadMatch,
   loadMyApplications,
   loadTrip,
@@ -26,6 +27,8 @@ import {
   loadTripExperiences,
   saveTripMeeting,
 } from '../api';
+import { aiMessages } from '../ai/aiMessages';
+import { centsToYuan, sumBudgetCents } from '../ai/budgetMath';
 import { tripMessages } from '../i18n/tripMessages';
 import { CreditRestrictedNotice } from '../credit/CreditRestrictedNotice';
 import { useMyCredit } from '../credit/CreditContext';
@@ -41,7 +44,7 @@ import { creditLine, creditRestrictedBadge, creditTone } from '../profile/credit
 import { useUserCredits } from '../profiles/useUserCredits';
 import { ReportModal } from '../safety/ReportModal';
 import { Avatar } from '../shell/Avatar';
-import type { DemoUser, Experience, MatchCandidate, TripApplication } from '../types';
+import type { AiItinerarySnapshot, DemoUser, Experience, MatchCandidate, TripApplication } from '../types';
 import { WeatherCard } from '../weather/WeatherCard';
 import { applicationEntryState, applicationErrorMessage } from './applicationEntry';
 import { CompanionCard } from './CompanionCard';
@@ -132,6 +135,7 @@ export function TripDetailPage({ currentUser, tripId }: Props) {
   const [meetingDraftError, setMeetingDraftError] = useState<string | null>(null);
   const [cancelOpen, setCancelOpen] = useState(false);
   const [focusStop, setFocusStop] = useState<string | null>(null);
+  const [aiSummary, setAiSummary] = useState<AiItinerarySnapshot | null>(null);
   const mapSectionRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
@@ -173,6 +177,33 @@ export function TripDetailPage({ currentUser, tripId }: Props) {
       })
       .catch(() => undefined);
   }, [currentUser.id, tripId, state]);
+
+  // AI 来源行程加载快照摘要；快照不可读时只隐藏摘要，不影响详情主体（L-05）。
+  useEffect(() => {
+    if (state.status !== 'ready') {
+      return;
+    }
+    const itineraryId = state.trip.ai_itinerary_id;
+    if (itineraryId === null || itineraryId === undefined) {
+      setAiSummary(null);
+      return;
+    }
+    let active = true;
+    loadAiItinerary(currentUser.id, itineraryId)
+      .then((snapshot) => {
+        if (active) {
+          setAiSummary(snapshot);
+        }
+      })
+      .catch(() => {
+        if (active) {
+          setAiSummary(null);
+        }
+      });
+    return () => {
+      active = false;
+    };
+  }, [currentUser.id, state]);
 
   const refreshMyApplication = async () => {
     const applications = await loadMyApplications(currentUser.id);
@@ -373,6 +404,11 @@ export function TripDetailPage({ currentUser, tripId }: Props) {
             <div className="detail-badges">
               <Tag color={statusColor(trip.status)}>{statusLabel(trip.status)}</Tag>
               <Tag>{destinationLabel(trip.destination_code) || trip.destination}</Tag>
+              {trip.ai_itinerary_id != null && (
+                <Tag className="ai-source-badge" data-testid="ai-source-badge">
+                  {aiMessages.sourceBadge}
+                </Tag>
+              )}
               {!isPublisher && (
                 <Button
                   type="link"
@@ -405,6 +441,40 @@ export function TripDetailPage({ currentUser, tripId }: Props) {
           )}
 
           {restricted && <CreditRestrictedNotice />}
+
+          {aiSummary !== null && (
+            <section className="detail-section ai-summary" data-testid="ai-summary">
+              <h3 className="section-title">{aiMessages.aiSummaryTitle}</h3>
+              <dl className="detail-facts">
+                {aiSummary.weather !== null && aiSummary.weather.weather !== null && (
+                  <div>
+                    <dt>{aiMessages.weatherTitle}</dt>
+                    <dd>
+                      {aiSummary.weather.weather.weather_text} {aiSummary.weather.weather.temp_min_c}–
+                      {aiSummary.weather.weather.temp_max_c}°C，{aiMessages.precipitationProbability}{' '}
+                      {aiSummary.weather.weather.precipitation_probability_pct ?? '—'}%
+                    </dd>
+                  </div>
+                )}
+                {aiSummary.ai_budget !== null && (
+                  <div>
+                    <dt>{aiMessages.budgetTotal}</dt>
+                    <dd>
+                      {centsToYuan(sumBudgetCents(aiSummary.ai_budget))} 元{' '}
+                      <Tag className="ai-estimate-tag">{aiMessages.budgetReference}</Tag>
+                    </dd>
+                  </div>
+                )}
+              </dl>
+              {aiSummary.tips.length > 0 && (
+                <ul className="ai-summary-tips">
+                  {aiSummary.tips.map((tip) => (
+                    <li key={tip}>{tip}</li>
+                  ))}
+                </ul>
+              )}
+            </section>
+          )}
 
           {isCancelled && (
             <Alert
@@ -449,19 +519,6 @@ export function TripDetailPage({ currentUser, tripId }: Props) {
               </div>
             )}
             {!hasStops && <p className="form-hint">{tripMessages.detailMapNoStops}</p>}
-            <ol className="detail-stops">
-              {trip.stops.map((stop, index) => (
-                <li key={`${stop}-${index}`}>
-                  {hasStops ? (
-                    <button type="button" className="detail-stop-button" onClick={() => focusPlace(stop)}>
-                      {stop}
-                    </button>
-                  ) : (
-                    stop
-                  )}
-                </li>
-              ))}
-            </ol>
             <dl className="detail-facts">
               <div>
                 <dt>{tripMessages.detailMeetingArea}</dt>

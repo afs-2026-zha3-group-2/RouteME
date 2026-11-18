@@ -1,0 +1,1675 @@
+/**
+ * AI 智能规划页（add-ai-itinerary）：严格对齐参考稿 v3 —— 左侧「对话规划」卡片 +
+ * 右侧「完整行程预览」卡片，桌面端两栏。
+ *
+ * 关键口径：
+ * - 坐标 / 路线 / 距离 / 时间只来自高德，天气只来自 Open-Meteo，预算只标注为参考估算；
+ * - 自然语言只解析「条件」，目的地名称仍需高德地理编码换成真实坐标（不虚构坐标）；
+ * - 路线重算由事件驱动（生成完成 / 删除 / 更换 / 调序 / 重试），不走 effect；
+ * - 天气预览（目的地 + 日期）与 generate 响应的权威天气用 token 守卫切换（L-02）；
+ * - 条件表单收进抽屉、地图收进弹窗：两者都不占参考稿的版式位置。
+ */
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import {
+  Alert,
+  Button,
+  Card,
+  DatePicker,
+  Drawer,
+  Input,
+  InputNumber,
+  Modal,
+  Segmented,
+  Select,
+  Spin,
+  Tag,
+  Typography,
+} from 'antd';
+import zhCN from 'antd/es/locale/zh_CN';
+import dayjs from 'dayjs';
+import 'dayjs/locale/zh-cn';
+import { ApiError, fetchWeatherForecast, generateAiItinerary, saveAiItinerary } from '../api';
+import { aiErrorMessage, aiMessages } from '../ai/aiMessages';
+import { centsToYuan, overBudgetCents, sumBudgetCents } from '../ai/budgetMath';
+import {
+  applyIntent,
+  parsePlanIntent,
+  PLANNER_INSPIRATIONS,
+  PLANNER_QUICK_ACTIONS,
+} from '../ai/chatIntent';
+import { itineraryToMarkdown } from '../ai/exportItinerary';
+import { moveStop, removeStop, replaceStop, resolvedCount } from '../ai/itineraryEdit';
+import { resolveStops, type ResolvedStop } from '../ai/poiResolve';
+import {
+  canGenerate,
+  defaultPlannerForm,
+  toGenerateRequest,
+  yuanToCents,
+  type PlannerFormValues,
+} from '../ai/plannerForm';
+import { buildSnapshot } from '../ai/snapshot';
+import { AmapContainer } from '../map/amap/AmapContainer';
+import { PlaceSearchBox } from '../map/amap/PlaceSearchBox';
+import { RouteLayer } from '../map/amap/RouteLayer';
+import {
+  amapErrorMessage,
+  aroundPlaces,
+  catalogPlaceResult,
+  formatDistance,
+  formatDuration,
+  geocodePlace,
+  planRoute,
+  reverseGeocode,
+  searchPlaces,
+} from '../map/amap/AmapService';
+import type { AmapMap, LngLat } from '../map/amap/types';
+import { BrandMark } from '../shell/BrandMark';
+import { cityPhoto } from '../trips/cityPhotos';
+import { formatMonthDay, weekdayLabel } from '../trips/tripDateFormat';
+import type {
+  AiBudget,
+  AiDuration,
+  AiPace,
+  AiPlanStop,
+  AiTravelMode,
+  DemoUser,
+  PlaceResult,
+  RoutePlan,
+  RouteWaypoint,
+  WeatherForecast,
+} from '../types';
+import { appDatePickerProps } from '../utils/datePickerProps';
+import { dayjsToIso, isoToDayjs } from '../utils/dates';
+
+// 与发布页一致：日期弹层月份名保持中文。
+dayjs.locale('zh-cn');
+
+type Props = {
+  currentUser: DemoUser;
+};
+
+/** 时间轴按天分组：day 随景点对象在编辑（ spread / swap ）中保留。 */
+type DayStop = ResolvedStop & { day: number };
+
+type PlanMeta = {
+  title: string;
+  tips: string[];
+  packing: string[];
+  budget: AiBudget;
+  dayCount: number;
+};
+
+type PlaceSlot = 'origin' | 'destination';
+
+type ChatMessage = {
+  id: number;
+  role: 'assistant' | 'user';
+  text: string;
+  time: string;
+  tone: 'default' | 'plan' | 'error';
+};
+
+type ReplyTab = 'overview' | 'day' | 'food' | 'stay' | 'budget';
+
+type PlannerTab = 'plan' | 'inspire' | 'optimize';
+
+const DEFAULT_CENTER = { lng: 113.264, lat: 23.129 };
+
+/** 兴趣偏好：与发布页标签同一套口径（外加 City Walk / 亲子 / 小众），预填时不会丢标签。 */
+const INTEREST_OPTIONS = [
+  '美食',
+  '摄影',
+  '海边',
+  '夜景',
+  '历史',
+  '展览',
+  '自然',
+  'City Walk',
+  '亲子',
+  '小众',
+];
+
+function isResolved<T extends ResolvedStop>(stop: T): stop is T & { lng: number; lat: number } {
+  return stop.resolved && stop.lng !== undefined && stop.lat !== undefined;
+}
+
+function toWaypoint(stop: ResolvedStop & { lng: number; lat: number }): RouteWaypoint {
+  return { id: `stop-${stop.order}`, name: stop.name, lng: stop.lng, lat: stop.lat };
+}
+
+function clockNow(): string {
+  const now = new Date();
+  return `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+}
+
+/** 城市名 → 真实坐标：地理编码优先，其次地点搜索，最后离线地名库。 */
+async function resolveCityPlace(name: string): Promise<PlaceResult | null> {
+  try {
+    const geocoded = await geocodePlace(name);
+    if (geocoded !== null) {
+      return geocoded;
+    }
+  } catch {
+    // 继续尝试搜索口径。
+  }
+  try {
+    const results = await searchPlaces(name);
+    if (results.length > 0) {
+      return results[0];
+    }
+  } catch {
+    // 继续尝试离线地名库。
+  }
+  return catalogPlaceResult(name);
+}
+
+/** 行程主题：从 AI 给出的停留理由里提炼，用于「Day N · 主题」标题。 */
+function dayThemes(stops: DayStop[]): string {
+  const themes: string[] = [];
+  const push = (value: string) => {
+    if (!themes.includes(value)) {
+      themes.push(value);
+    }
+  };
+  for (const stop of stops) {
+    if (/餐|美食|小吃|甜品|咖啡|茶餐厅/.test(stop.reason + stop.name)) {
+      push('美食探索');
+    }
+    if (/拍照|打卡|出片|观景|日落/.test(stop.reason + stop.name)) {
+      push('拍照打卡');
+    }
+    if (stop.indoor) {
+      push('室内展馆');
+    }
+    if (/漫步|步行|散步|city\s*walk/i.test(stop.reason + stop.name)) {
+      push('城市漫步');
+    }
+  }
+  if (themes.length === 0) {
+    push('城市漫游');
+  }
+  return themes.slice(0, 3).join(' · ');
+}
+
+/** 美食站点：名称或推荐理由里带餐饮关键词。 */
+function isFoodStop(stop: DayStop): boolean {
+  return /餐|美食|小吃|甜品|咖啡|茶餐厅|牛肉|烧鹅|火锅|粉|面/.test(`${stop.name}${stop.reason}`);
+}
+
+let messageSeq = 0;
+
+export function AiPlannerPage({ currentUser }: Props) {
+  const [form, setForm] = useState<PlannerFormValues>(() => defaultPlannerForm());
+  const [generating, setGenerating] = useState(false);
+  const [generateError, setGenerateError] = useState<string | null>(null);
+  const [planMeta, setPlanMeta] = useState<PlanMeta | null>(null);
+  const [stops, setStops] = useState<DayStop[]>([]);
+  const [route, setRoute] = useState<RoutePlan | null>(null);
+  const [routeLoading, setRouteLoading] = useState(false);
+  const [routeError, setRouteError] = useState<string | null>(null);
+  const [weather, setWeather] = useState<WeatherForecast | null>(null);
+  const [weatherLoading, setWeatherLoading] = useState(false);
+  const [weatherError, setWeatherError] = useState(false);
+  const [pickMode, setPickMode] = useState(false);
+  const [pickTarget, setPickTarget] = useState<PlaceSlot>('origin');
+  const [candidates, setCandidates] = useState<PlaceResult[] | null>(null);
+  const [candidatesLoading, setCandidatesLoading] = useState(false);
+  const [replaceIndex, setReplaceIndex] = useState<number | null>(null);
+  const [focusId, setFocusId] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState<string | null>(null);
+  const [map, setMap] = useState<AmapMap | null>(null);
+  const [locating, setLocating] = useState(false);
+  const [locateFailed, setLocateFailed] = useState(false);
+  const [composer, setComposer] = useState('');
+  const [sending, setSending] = useState(false);
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
+  const [plannerTab, setPlannerTab] = useState<PlannerTab>('plan');
+  const [replyTab, setReplyTab] = useState<ReplyTab>('overview');
+  const [replyDay, setReplyDay] = useState(1);
+  const [conditionsOpen, setConditionsOpen] = useState(false);
+  const [mapOpen, setMapOpen] = useState(false);
+
+  const routeTokenRef = useRef(0);
+  const weatherTokenRef = useRef(0);
+  const threadEndRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    // 首屏不滚动（欢迎语已可见），只在有新消息 / 生成中时把最新一条带进视野。
+    if (messages.length === 0 && !generating) {
+      return;
+    }
+    threadEndRef.current?.scrollIntoView({ block: 'nearest' });
+  }, [messages.length, generating]);
+
+  const update = (patch: Partial<PlannerFormValues>) => {
+    setForm((previous) => ({ ...previous, ...patch }));
+  };
+
+  const pushMessage = useCallback((message: Pick<ChatMessage, 'role' | 'text' | 'tone'>) => {
+    messageSeq += 1;
+    const id = messageSeq;
+    setMessages((previous) => [
+      ...previous,
+      { id, time: clockNow(), tone: message.tone, role: message.role, text: message.text },
+    ]);
+  }, []);
+
+  /* ---------- 地点：搜索 / 定位 / 地图点击 ---------- */
+
+  const pickPlace = (slot: PlaceSlot) => (place: PlaceResult) => {
+    update({ [slot]: { name: place.name, lng: place.lng, lat: place.lat } });
+  };
+
+  const onMapClick = (point: LngLat) => {
+    if (!pickMode) {
+      return;
+    }
+    setCandidatesLoading(true);
+    setCandidates([]);
+    // 点击点本身永远可选（坐标精确等于点击位置），附近 POI 只是额外候选。
+    Promise.all([
+      reverseGeocode(point[0], point[1]).catch(() => null),
+      aroundPlaces(point[0], point[1], 500).catch(() => [] as PlaceResult[]),
+    ])
+      .then(([exact, nearby]) => {
+        const list: PlaceResult[] = exact === null ? [] : [exact];
+        for (const place of nearby) {
+          if (!list.some((item) => item.id === place.id)) {
+            list.push(place);
+          }
+        }
+        setCandidates(list);
+      })
+      .finally(() => setCandidatesLoading(false));
+  };
+
+  const pickCandidate = (place: PlaceResult) => {
+    pickPlace(pickTarget)(place);
+    setCandidates(null);
+  };
+
+  const locateOrigin = () => {
+    if (!('geolocation' in navigator)) {
+      setLocateFailed(true);
+      return;
+    }
+    setLocating(true);
+    setLocateFailed(false);
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        const lng = position.coords.longitude;
+        const lat = position.coords.latitude;
+        reverseGeocode(lng, lat)
+          .then((place) => {
+            update({ origin: { name: place.name, lng: place.lng, lat: place.lat } });
+          })
+          .catch(() => {
+            update({
+              origin: {
+                name: aiMessages.currentLocation,
+                lng: Number(lng.toFixed(6)),
+                lat: Number(lat.toFixed(6)),
+              },
+            });
+          })
+          .finally(() => setLocating(false));
+      },
+      () => {
+        setLocating(false);
+        setLocateFailed(true);
+      },
+      { timeout: 8000 },
+    );
+  };
+
+  /* ---------- 天气：预览（目的地 + 日期）→ generate 权威切换（L-02） ---------- */
+
+  const loadWeatherPreview = useCallback(() => {
+    const destination = form.destination;
+    if (destination === null || form.date === '') {
+      return;
+    }
+    const token = weatherTokenRef.current;
+    setWeatherLoading(true);
+    setWeatherError(false);
+    fetchWeatherForecast('', form.date, { lng: destination.lng, lat: destination.lat })
+      .then((forecast) => {
+        if (token === weatherTokenRef.current) {
+          setWeather(forecast);
+          setWeatherLoading(false);
+        }
+      })
+      .catch(() => {
+        if (token === weatherTokenRef.current) {
+          setWeather(null);
+          setWeatherError(true);
+          setWeatherLoading(false);
+        }
+      });
+  }, [form.destination, form.date]);
+
+  useEffect(() => {
+    loadWeatherPreview();
+  }, [loadWeatherPreview]);
+
+  /* ---------- 路线：事件驱动重算，token 丢弃过期响应 ---------- */
+
+  const recalcRoute = useCallback(
+    async (nextStops: ResolvedStop[], travelMode: AiTravelMode) => {
+      const token = ++routeTokenRef.current;
+      const resolved = nextStops.filter(isResolved);
+      setRoute(null);
+      setRouteError(null);
+      if (resolved.length < 2) {
+        setRouteLoading(false);
+        return;
+      }
+      setRouteLoading(true);
+      try {
+        // transit 需要城市名限定换乘范围：优先用高德解析出的城市（空串不算），
+        // 再退到目的地名称；两处都没有时 planRoute 会给出可读提示。
+        const stopCity = resolved.find((stop) => (stop.city ?? '').trim() !== '')?.city ?? '';
+        const city = stopCity.trim() !== '' ? stopCity : (form.destination?.name ?? '');
+        const plan = await planRoute(travelMode, resolved.map(toWaypoint), city);
+        if (token === routeTokenRef.current) {
+          setRoute(plan);
+          setRouteLoading(false);
+        }
+      } catch (error: unknown) {
+        if (token === routeTokenRef.current) {
+          setRoute(null);
+          setRouteError(amapErrorMessage(error));
+          setRouteLoading(false);
+        }
+      }
+    },
+    [form.destination],
+  );
+
+  /* ---------- 生成 / 重新生成 / 降预算 ---------- */
+
+  const generate = async (
+    reduceBudget = false,
+    override?: PlannerFormValues,
+    note?: string,
+  ) => {
+    const activeForm = override ?? form;
+    if (!canGenerate(activeForm) || generating) {
+      return;
+    }
+    setGenerating(true);
+    setGenerateError(null);
+    setSaveError(null);
+    setReplyTab('overview');
+    try {
+      const response = await generateAiItinerary(
+        currentUser.id,
+        toGenerateRequest(activeForm, reduceBudget),
+      );
+      const plan = response.plan;
+      const flat: AiPlanStop[] = [];
+      const dayOf: number[] = [];
+      for (const day of plan.days) {
+        for (const stop of day.stops) {
+          flat.push(stop);
+          dayOf.push(day.day);
+        }
+      }
+      // POI 坐标逐个经高德解析；失败标「未定位」，不伪造坐标（AC6）。
+      const resolved = await resolveStops(flat, activeForm.destination?.name);
+      const nextStops: DayStop[] = resolved.map((stop, index) => ({
+        ...stop,
+        day: dayOf[index] ?? 1,
+      }));
+      setPlanMeta({
+        title: plan.title,
+        tips: plan.tips,
+        packing: plan.packing,
+        budget: plan.budget,
+        dayCount: plan.days.length,
+      });
+      setStops(nextStops);
+      setReplyDay(1);
+      weatherTokenRef.current += 1;
+      // 后端契约里 weather 可能缺省（旧版本 / 上游失败），缺省按「无天气」渲染。
+      setWeather(response.weather ?? null);
+      setWeatherError(false);
+      setWeatherLoading(false);
+      setReplaceIndex(null);
+      setFocusId(null);
+      pushMessage({
+        role: 'assistant',
+        tone: 'plan',
+        text: note === undefined ? aiMessages.planReady : aiMessages.planReadyFor(note),
+      });
+      void recalcRoute(nextStops, activeForm.travelMode);
+    } catch (error: unknown) {
+      const code = error instanceof ApiError ? error.code : 'UNKNOWN_ERROR';
+      setGenerateError(code);
+      pushMessage({ role: 'assistant', tone: 'error', text: aiErrorMessage(code) });
+    } finally {
+      setGenerating(false);
+    }
+  };
+
+  /* ---------- 对话：自然语言 → 条件 → 生成 ---------- */
+
+  const sendChat = async (raw: string) => {
+    const text = raw.trim();
+    if (text === '' || generating || sending) {
+      return;
+    }
+    setComposer('');
+    pushMessage({ role: 'user', tone: 'default', text });
+    setSending(true);
+    try {
+      const intent = parsePlanIntent(text);
+      let nextForm = form;
+      if (intent.destinationName !== null) {
+        const place = await resolveCityPlace(intent.destinationName);
+        if (place !== null) {
+          nextForm = {
+            ...nextForm,
+            destination: { name: place.name, lng: place.lng, lat: place.lat },
+          };
+          if (nextForm.origin === null) {
+            // 纯对话模式下没有出发地：先用同城中心起步，用户可在「规划条件」里改。
+            nextForm = {
+              ...nextForm,
+              origin: { name: place.name, lng: place.lng, lat: place.lat },
+            };
+          }
+        } else {
+          pushMessage({
+            role: 'assistant',
+            tone: 'default',
+            text: aiMessages.intentDestinationMissing(intent.destinationName),
+          });
+        }
+      }
+      nextForm = applyIntent(nextForm, { ...intent, destinationName: null });
+      setForm(nextForm);
+      const summary = aiMessages.intentSummary([
+        intent.destinationName,
+        intent.duration === null ? null : aiMessages.durationLabels[intent.duration],
+        intent.budgetYuan === null ? null : aiMessages.intentBudget(intent.budgetYuan),
+        intent.pace === null ? null : aiMessages.paceOptions[intent.pace],
+        intent.interests.length === 0 ? null : intent.interests.join('、'),
+      ]);
+      if (!canGenerate(nextForm)) {
+        const missing = [
+          nextForm.origin === null ? '出发地' : null,
+          nextForm.destination === null ? '目的地' : null,
+          nextForm.date === '' ? '日期' : null,
+        ].filter((item): item is string => item !== null);
+        pushMessage({
+          role: 'assistant',
+          tone: 'default',
+          text: aiMessages.chatMissing(missing.join('、')),
+        });
+        return;
+      }
+      await generate(false, nextForm, summary === '' ? undefined : summary);
+    } finally {
+      setSending(false);
+    }
+  };
+
+  /* ---------- 快捷动作 ---------- */
+
+  const runQuickAction = async (id: string) => {
+    const action = PLANNER_QUICK_ACTIONS.find((entry) => entry.id === id);
+    if (action === undefined || generating || sending) {
+      return;
+    }
+    pushMessage({ role: 'user', tone: 'default', text: action.label });
+    if (id === 'export') {
+      exportItinerary();
+      return;
+    }
+    let patch: Partial<PlannerFormValues>;
+    if (id === 'more-stops') {
+      patch = {
+        interests: [...new Set([...form.interests, '小众'])],
+        pace: 'relaxed',
+      };
+    } else if (id === 'family') {
+      patch = { pace: 'relaxed', interests: [...new Set([...form.interests, '亲子', '自然'])] };
+    } else {
+      patch = { pace: 'compact' };
+    }
+    const nextForm = { ...form, ...patch };
+    setForm(nextForm);
+    if (!canGenerate(nextForm)) {
+      pushMessage({ role: 'assistant', tone: 'default', text: aiMessages.chatMissing('出发地、目的地或日期') });
+      return;
+    }
+    await generate(false, nextForm, action.label.replace(/^\+\s*/, ''));
+  };
+
+  /* ---------- 编辑：删除 / 更换 / 上移 / 下移 ---------- */
+
+  const applyStops = (next: ResolvedStop[]) => {
+    const dayStops = next as DayStop[];
+    setStops(dayStops);
+    setReplaceIndex(null);
+    void recalcRoute(dayStops, form.travelMode);
+  };
+
+  const onReplacePick = (index: number) => (place: PlaceResult) => {
+    const target = stops[index];
+    if (target === undefined) {
+      return;
+    }
+    const replacement: DayStop = {
+      name: place.name,
+      reason: aiMessages.manualReplaceReason,
+      arrival: target.arrival,
+      stay_minutes: target.stay_minutes,
+      indoor: false,
+      order: target.order,
+      resolved: true,
+      lng: place.lng,
+      lat: place.lat,
+      day: target.day,
+    };
+    applyStops(replaceStop(stops, index, replacement));
+  };
+
+  /* ---------- 保存 / 导出闭环 ---------- */
+
+  const save = async () => {
+    if (planMeta === null || resolvedCount(stops) < 2 || saving || generating) {
+      return;
+    }
+    setSaving(true);
+    setSaveError(null);
+    try {
+      const snapshot = buildSnapshot({
+        form,
+        stops,
+        route,
+        weather,
+        tips: planMeta.tips,
+        packing: planMeta.packing,
+        aiBudget: planMeta.budget,
+      });
+      const saved = await saveAiItinerary(currentUser.id, snapshot);
+      window.location.hash = `#/trips/new?ai=${saved.id}`;
+    } catch {
+      setSaveError(aiMessages.saveFailed);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const exportItinerary = () => {
+    if (planMeta === null || stops.length === 0) {
+      pushMessage({ role: 'assistant', tone: 'default', text: aiMessages.exportEmpty });
+      return;
+    }
+    const markdown = itineraryToMarkdown({
+      title: planMeta.title,
+      date: form.date,
+      city: form.destination?.name ?? '',
+      duration: aiMessages.durationLabels[form.duration],
+      travelMode: aiMessages.modeOptions[form.travelMode],
+      stops: stops.map((stop) => ({
+        day: stop.day,
+        arrival: stop.arrival,
+        name: stop.name,
+        reason: stop.reason,
+        stayMinutes: stop.stay_minutes,
+      })),
+      tips: planMeta.tips,
+      packing: planMeta.packing,
+      budget: planMeta.budget,
+      distance: route === null ? null : formatDistance(route.distanceMeters),
+      durationText: route === null ? null : formatDuration(route.durationSeconds),
+    });
+    const blob = new Blob([markdown], { type: 'text/markdown;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `${planMeta.title.replace(/[\\/:*?"<>|]/g, '-')}.md`;
+    link.click();
+    URL.revokeObjectURL(url);
+    pushMessage({ role: 'assistant', tone: 'default', text: aiMessages.exported(planMeta.title) });
+  };
+
+  /* ---------- 派生数据 ---------- */
+
+  const resolvedStops = useMemo(() => stops.filter(isResolved), [stops]);
+  const waypoints = useMemo(() => resolvedStops.map(toWaypoint), [resolvedStops]);
+  const numbers = useMemo(() => resolvedStops.map((stop) => stop.order), [resolvedStops]);
+  const center = form.destination ?? form.origin ?? DEFAULT_CENTER;
+  const userBudgetCents = yuanToCents(form.budgetYuan);
+  const overBudget =
+    planMeta === null ? null : overBudgetCents(planMeta.budget, userBudgetCents);
+  const canSave = planMeta !== null && resolvedCount(stops) >= 2 && !saving && !generating;
+  const busy = generating || sending;
+
+  const days = useMemo(() => {
+    const grouped: Array<{ day: number; stops: DayStop[] }> = [];
+    for (const stop of stops) {
+      const last = grouped[grouped.length - 1];
+      if (last === undefined || last.day !== stop.day) {
+        grouped.push({ day: stop.day, stops: [stop] });
+      } else {
+        last.stops.push(stop);
+      }
+    }
+    return grouped;
+  }, [stops]);
+
+  const dayDate = (day: number): string => {
+    if (form.date === '') {
+      return '';
+    }
+    return dayjs(form.date).add(day - 1, 'day').format('YYYY-MM-DD');
+  };
+
+  const budgetTotal = planMeta === null ? null : centsToYuan(sumBudgetCents(planMeta.budget));
+  const destinationLabel = form.destination?.name ?? '目的地';
+  const cover = cityPhoto(destinationLabel, destinationLabel.replace(/市$/, ''));
+  const foodStops = useMemo(() => stops.filter(isFoodStop), [stops]);
+  const highlights = useMemo(() => {
+    const tips = planMeta?.tips.slice(0, 3) ?? [];
+    const firstNames = stops.slice(0, 2).map((stop) => stop.name);
+    const merged = [
+      ...(firstNames.length > 0 ? [`打卡 ${firstNames.join('、')} 等经典机位`] : []),
+      ...tips,
+    ];
+    return merged.slice(0, 4);
+  }, [planMeta, stops]);
+
+  const themesSeed = useMemo(() => dayThemes(stops), [stops]);
+  const replyDays = days.length > 0 ? days : [{ day: 1, stops: [] as DayStop[] }];
+
+  return (
+    <main className="ai-page">
+      <header className="ai-page-head">
+        <div>
+          <Typography.Title level={2} className="ai-page-title">
+            {aiMessages.chatTitle}
+          </Typography.Title>
+          <p className="ai-page-sub">{aiMessages.chatSubtitle}</p>
+        </div>
+        <Button className="page-back" onClick={() => (window.location.hash = '#/')}>
+          {aiMessages.backHome}
+        </Button>
+      </header>
+
+      <div className="ai-layout">
+        {/* ==================== 左：对话规划 ==================== */}
+        <Card className="panel ai-chat-card" data-testid="ai-thread-card">
+          <div className="ai-chat-toolbar">
+            <Segmented
+              className="ai-mode-tabs"
+              value={plannerTab}
+              onChange={(value) => setPlannerTab(value as PlannerTab)}
+              options={[
+                { label: aiMessages.tabPlan, value: 'plan' },
+                { label: aiMessages.tabInspire, value: 'inspire' },
+                { label: aiMessages.tabOptimize, value: 'optimize' },
+              ]}
+            />
+            <Button
+              size="small"
+              type="text"
+              data-testid="ai-conditions-toggle"
+              onClick={() => setConditionsOpen(true)}
+            >
+              {aiMessages.conditionsEntry}
+            </Button>
+          </div>
+
+          <div className="ai-inspiration-row" data-testid="ai-suggestions">
+            <span className="ai-inspiration-label">{aiMessages.inspirationLabel}</span>
+            {PLANNER_INSPIRATIONS.map((suggestion) => (
+              <button
+                key={suggestion.id}
+                type="button"
+                className="ai-inspiration-chip"
+                disabled={busy}
+                onClick={() => void sendChat(suggestion.text)}
+              >
+                {suggestion.label}
+              </button>
+            ))}
+          </div>
+
+          <div className="ai-thread" data-testid="ai-thread" aria-live="polite">
+            <article className="ai-msg is-assistant">
+              <span className="ai-avatar" aria-hidden="true">
+                <BrandMark />
+              </span>
+              <div className="ai-bubble">
+                <p className="ai-bubble-title">{aiMessages.welcomeTitle}</p>
+                <p className="ai-bubble-text">{aiMessages.welcomeIntro}</p>
+                <p className="ai-bubble-text">{aiMessages.welcomePrompt}</p>
+                <ul className="ai-welcome-list">
+                  {PLANNER_INSPIRATIONS.slice(0, 4).map((suggestion) => (
+                    <li key={suggestion.id}>{suggestion.text}</li>
+                  ))}
+                </ul>
+                <p className="ai-bubble-text">{aiMessages.welcomeDetail}</p>
+              </div>
+              <span className="ai-msg-time">{clockNow()}</span>
+            </article>
+
+            {messages.map((message) =>
+              message.role === 'user' ? (
+                <article key={message.id} className="ai-msg is-user">
+                  <span className="ai-msg-time">{message.time}</span>
+                  <div className="ai-bubble is-user">
+                    <p className="ai-bubble-text">{message.text}</p>
+                  </div>
+                  <span className="ai-avatar is-user" aria-hidden="true">
+                    {currentUser.nickname.slice(0, 1)}
+                  </span>
+                </article>
+              ) : (
+                <article key={message.id} className="ai-msg is-assistant">
+                  <span className="ai-avatar" aria-hidden="true">
+                    <BrandMark />
+                  </span>
+                  <div className="ai-bubble">
+                    {message.tone === 'plan' && planMeta !== null ? (
+                      <div className="ai-plan-reply">
+                        <p className="ai-bubble-title">{message.text}</p>
+                        <p className="ai-bubble-text">{aiMessages.planReplyLead}</p>
+
+                        <div className="ai-reply-tabs" role="tablist">
+                          {[
+                            { id: 'overview' as ReplyTab, label: aiMessages.replyOverview },
+                            ...replyDays.map((entry) => ({
+                              id: 'day' as ReplyTab,
+                              day: entry.day,
+                              label: `Day ${entry.day}`,
+                            })),
+                            { id: 'food' as ReplyTab, label: aiMessages.replyFood },
+                            { id: 'stay' as ReplyTab, label: aiMessages.replyStay },
+                            { id: 'budget' as ReplyTab, label: aiMessages.replyBudget },
+                          ].map((tab) => {
+                            const active =
+                              replyTab === tab.id &&
+                              (tab.id !== 'day' || (tab as { day?: number }).day === replyDay);
+                            return (
+                              <button
+                                key={`${tab.id}-${(tab as { day?: number }).day ?? ''}`}
+                                type="button"
+                                role="tab"
+                                aria-selected={active}
+                                className={active ? 'ai-reply-tab is-active' : 'ai-reply-tab'}
+                                onClick={() => {
+                                  setReplyTab(tab.id);
+                                  if (tab.id === 'day') {
+                                    setReplyDay((tab as { day?: number }).day ?? 1);
+                                  }
+                                }}
+                              >
+                                {tab.label}
+                              </button>
+                            );
+                          })}
+                        </div>
+
+                        {replyTab === 'overview' && (
+                          <div className="ai-overview" data-testid="ai-plan-overview">
+                            <div className="ai-overview-cover">
+                              {cover !== null ? (
+                                <img src={cover} alt={`${destinationLabel}城市照片`} />
+                              ) : (
+                                <span className="ai-overview-cover-fallback" aria-hidden="true" />
+                              )}
+                              <div className="ai-overview-cover-text">
+                                <strong>{destinationLabel.replace(/市$/, '')}</strong>
+                                <span>{aiMessages.durationLabels[form.duration]}</span>
+                                <em>
+                                  {form.interests.length > 0
+                                    ? form.interests.slice(0, 3).join(' · ')
+                                    : themesSeed}
+                                </em>
+                              </div>
+                            </div>
+                            <div className="ai-overview-side">
+                              <h4 className="ai-overview-title">{aiMessages.highlightTitle}</h4>
+                              <ul className="ai-plan-highlights">
+                                {highlights.map((item) => (
+                                  <li key={item}>✓ {item}</li>
+                                ))}
+                              </ul>
+                              <div className="ai-overview-pills">
+                                <span className="ai-pill">
+                                  <em>{aiMessages.planDays(planMeta.dayCount)}</em>
+                                  {aiMessages.paceOptions[form.pace]}
+                                </span>
+                                <span className="ai-pill">
+                                  <em>{aiMessages.suitableFor}</em>
+                                  {aiMessages.suitableAudience}
+                                </span>
+                                <span className="ai-pill">
+                                  <em>约 ¥{budgetTotal ?? 0}</em>
+                                  {aiMessages.budgetExcludeTransport}
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+                        )}
+
+                        {replyTab === 'day' && (
+                          <ul className="ai-reply-day-list">
+                            {(replyDays.find((entry) => entry.day === replyDay)?.stops ?? []).map(
+                              (stop) => (
+                                <li key={`${stop.order}-${stop.name}`}>
+                                  <span className="ai-reply-time">{stop.arrival}</span>
+                                  <span className="ai-reply-name">{stop.name}</span>
+                                  <span className="ai-reply-reason">{stop.reason}</span>
+                                </li>
+                              ),
+                            )}
+                          </ul>
+                        )}
+
+                        {replyTab === 'food' && (
+                          <ul className="ai-reply-day-list">
+                            {foodStops.length === 0 ? (
+                              <li className="ai-reply-empty">{aiMessages.noFoodStops}</li>
+                            ) : (
+                              foodStops.map((stop) => (
+                                <li key={`food-${stop.order}`}>
+                                  <span className="ai-reply-time">{stop.arrival}</span>
+                                  <span className="ai-reply-name">{stop.name}</span>
+                                  <span className="ai-reply-reason">{stop.reason}</span>
+                                </li>
+                              ))
+                            )}
+                          </ul>
+                        )}
+
+                        {replyTab === 'stay' && (
+                          <ul className="ai-reply-bullets">
+                            {planMeta.tips.map((tip) => (
+                              <li key={tip}>{tip}</li>
+                            ))}
+                            {planMeta.packing.length > 0 && (
+                              <li>
+                                {aiMessages.packingTitle}：{planMeta.packing.join('、')}
+                              </li>
+                            )}
+                          </ul>
+                        )}
+
+                        {replyTab === 'budget' && (
+                          <dl className="ai-reply-budget">
+                            <div>
+                              <dt>{aiMessages.budgetTransport}</dt>
+                              <dd>{centsToYuan(planMeta.budget.transport_cents)} 元</dd>
+                            </div>
+                            <div>
+                              <dt>{aiMessages.budgetTickets}</dt>
+                              <dd>{centsToYuan(planMeta.budget.tickets_cents)} 元</dd>
+                            </div>
+                            <div>
+                              <dt>{aiMessages.budgetFood}</dt>
+                              <dd>{centsToYuan(planMeta.budget.food_cents)} 元</dd>
+                            </div>
+                            <div>
+                              <dt>{aiMessages.budgetOther}</dt>
+                              <dd>{centsToYuan(planMeta.budget.other_cents)} 元</dd>
+                            </div>
+                            <div className="ai-reply-budget-total">
+                              <dt>{aiMessages.budgetTotal}</dt>
+                              <dd>{budgetTotal} 元</dd>
+                            </div>
+                          </dl>
+                        )}
+
+                        <p className="ai-bubble-text ai-reply-foot">{aiMessages.planPreviewHint}</p>
+                      </div>
+                    ) : message.tone === 'error' ? (
+                      <div className="ai-msg-error" role="alert">
+                        <span>{message.text}</span>
+                        <Button
+                          size="small"
+                          data-testid="ai-error-retry"
+                          disabled={busy}
+                          onClick={() => void generate(false)}
+                        >
+                          {aiMessages.retry}
+                        </Button>
+                      </div>
+                    ) : (
+                      <p className="ai-bubble-text">{message.text}</p>
+                    )}
+                  </div>
+                  <span className="ai-msg-time">{message.time}</span>
+                </article>
+              ),
+            )}
+
+            {generating && (
+              <article className="ai-msg is-assistant" data-testid="ai-loading" role="status">
+                <span className="ai-avatar" aria-hidden="true">
+                  <BrandMark />
+                </span>
+                <div className="ai-bubble">
+                  <div className="ai-card-loading">
+                    <Spin size="small" />
+                    <span>{aiMessages.loading}</span>
+                  </div>
+                  <span className="form-hint">{aiMessages.generatingHint}</span>
+                </div>
+              </article>
+            )}
+            <div ref={threadEndRef} />
+          </div>
+
+          <div className="ai-composer">
+            <Input.TextArea
+              value={composer}
+              data-testid="ai-composer"
+              aria-label={aiMessages.composerLabel}
+              className="ai-composer-input"
+              placeholder={aiMessages.composerPlaceholder}
+              autoSize={{ minRows: 1, maxRows: 4 }}
+              onChange={(event) => setComposer(event.target.value)}
+              onPressEnter={(event) => {
+                if (!event.shiftKey) {
+                  event.preventDefault();
+                  void sendChat(composer);
+                }
+              }}
+            />
+            <Button
+              className="ai-send"
+              type="primary"
+              shape="circle"
+              data-testid="ai-send"
+              aria-label={aiMessages.send}
+              disabled={composer.trim() === '' || busy}
+              loading={sending}
+              onClick={() => void sendChat(composer)}
+            >
+              ➤
+            </Button>
+          </div>
+          <div className="ai-quick-row">
+            {PLANNER_QUICK_ACTIONS.map((action) => (
+              <button
+                key={action.id}
+                type="button"
+                className="ai-quick-chip"
+                data-testid={`ai-quick-${action.id}`}
+                disabled={busy}
+                onClick={() => void runQuickAction(action.id)}
+              >
+                {action.label}
+              </button>
+            ))}
+          </div>
+        </Card>
+
+        {/* ==================== 右：完整行程预览 ==================== */}
+        <section className="ai-preview" aria-label={aiMessages.previewTitle}>
+          <Card className="panel ai-preview-card" data-testid="ai-preview">
+            <header className="ai-preview-head">
+              <span className="ai-preview-icon" aria-hidden="true">
+                <BrandMark />
+              </span>
+              <div className="ai-preview-head-text">
+                <h3 className="panel-title">{aiMessages.previewTitle}</h3>
+                <span className="form-hint">{aiMessages.previewSubtitle}</span>
+              </div>
+              <div className="ai-preview-actions">
+                <Button
+                  size="small"
+                  data-testid="ai-export"
+                  disabled={planMeta === null}
+                  onClick={exportItinerary}
+                >
+                  {aiMessages.export}
+                </Button>
+                <Button
+                  size="small"
+                  type="primary"
+                  data-testid="ai-save"
+                  disabled={!canSave}
+                  loading={saving}
+                  onClick={() => void save()}
+                >
+                  {aiMessages.publish}
+                </Button>
+              </div>
+            </header>
+
+            {planMeta === null ? (
+              <div className="ai-preview-empty">
+                <p className="ai-preview-empty-text">{aiMessages.emptyResult}</p>
+                <dl className="ai-preview-facts">
+                  <div>
+                    <dt>{aiMessages.destinationLabel}</dt>
+                    <dd>{form.destination?.name ?? '—'}</dd>
+                  </div>
+                  <div>
+                    <dt>{aiMessages.dateLabel}</dt>
+                    <dd>{form.date === '' ? '—' : form.date}</dd>
+                  </div>
+                  <div>
+                    <dt>{aiMessages.durationLabel}</dt>
+                    <dd>{aiMessages.durationLabels[form.duration]}</dd>
+                  </div>
+                  <div>
+                    <dt>{aiMessages.budgetLabel}</dt>
+                    <dd>{form.budgetYuan === '' ? '—' : `约 ¥${form.budgetYuan}`}</dd>
+                  </div>
+                </dl>
+              </div>
+            ) : (
+              <div className="ai-preview-body">
+                <h4 className="ai-preview-title">{planMeta.title}</h4>
+                <div className="ai-preview-meta">
+                  <span>
+                    {formatMonthDay(form.date)}
+                    {planMeta.dayCount > 1
+                      ? ` - ${formatMonthDay(dayDate(planMeta.dayCount))}`
+                      : `（${weekdayLabel(form.date)}）`}
+                  </span>
+                  <span className="ai-preview-meta-dot" aria-hidden="true">
+                    ·
+                  </span>
+                  <span>{destinationLabel}</span>
+                  <span className="ai-preview-meta-dot" aria-hidden="true">
+                    ·
+                  </span>
+                  <span>
+                    {aiMessages.aboutBudget} ¥{budgetTotal ?? 0}
+                  </span>
+                </div>
+
+                <div className="ai-preview-weather">
+                  <span className="ai-preview-weather-title">{aiMessages.weatherTitle}</span>
+                  {weatherLoading ? (
+                    <span className="form-hint">{aiMessages.weatherLoading}</span>
+                  ) : weatherError ? (
+                    <span className="ai-preview-weather-error">
+                      {aiMessages.weatherFailed}
+                      <Button size="small" type="link" data-testid="ai-weather-retry" onClick={loadWeatherPreview}>
+                        {aiMessages.retry}
+                      </Button>
+                    </span>
+                  ) : weather !== null && weather.available && weather.weather !== null ? (
+                    <span className="ai-preview-weather-body">
+                      {weather.weather.temp_max_c}° / {weather.weather.temp_min_c}°
+                      {' · '}
+                      {weather.weather.weather_text}
+                      {' · '}
+                      {aiMessages.precipitationProbability} {weather.weather.precipitation_probability_pct ?? '—'}%
+                      {weather.weather.wind_speed_kmh !== null &&
+                        ` · ${aiMessages.windSpeed} ${weather.weather.wind_speed_kmh} km/h`}
+                    </span>
+                  ) : (
+                    <span className="form-hint">{aiMessages.weatherEmpty}</span>
+                  )}
+                </div>
+                {/* 天气卡 testid 保留：既有 E2E 用同一节点断言温度与降雨概率 */}
+                <div className="ai-preview-weather-hidden" data-testid="ai-weather-card">
+                  {weather !== null && weather.available && weather.weather !== null
+                    ? `${weather.weather.temp_max_c}° / ${weather.weather.temp_min_c}° ${weather.weather.weather_text} ${weather.weather.precipitation_probability_pct ?? '—'}%`
+                    : ''}
+                </div>
+
+                {stops.length < 2 && (
+                  <p className="ai-min-stops" role="alert">
+                    {aiMessages.minStops}
+                  </p>
+                )}
+
+                <div className="ai-day-list" data-testid="ai-timeline">
+                  {replyDays.map((entry) => (
+                    <section className="ai-day-card" key={`day-${entry.day}`}>
+                      <header className="ai-day-head">
+                        <span className="ai-day-name">Day {entry.day}</span>
+                        <span className="ai-day-date">{formatMonthDay(dayDate(entry.day))}</span>
+                        <span className="ai-day-theme">{dayThemes(entry.stops)}</span>
+                      </header>
+                      <ol className="ai-stop-list">
+                        {entry.stops.map((stop) => {
+                          const index = stops.findIndex((item) => item.order === stop.order);
+                          return (
+                            <li
+                              key={`${stop.name}-${stop.order}`}
+                              data-testid="ai-stop"
+                              data-name={stop.name}
+                              data-indoor={stop.indoor}
+                              className={[
+                                'ai-stop-row',
+                                stop.resolved ? '' : 'is-unresolved',
+                                focusId === `stop-${stop.order}` ? 'is-active' : '',
+                              ]
+                                .filter((entry) => entry !== '')
+                                .join(' ')}
+                            >
+                              <span className="ai-stop-chip" aria-hidden="true">
+                                {stop.arrival}
+                              </span>
+                              <div className="ai-stop-main">
+                                <div className="ai-stop-head">
+                                  <button
+                                    type="button"
+                                    className="ai-stop-name"
+                                    onClick={() => {
+                                      setFocusId(`stop-${stop.order}`);
+                                      setMapOpen(true);
+                                    }}
+                                  >
+                                    {stop.name}
+                                  </button>
+                                  {stop.indoor && (
+                                    <Tag className="ai-indoor-tag">{aiMessages.indoorTag}</Tag>
+                                  )}
+                                  {!stop.resolved && (
+                                    <Tag className="ai-unresolved-tag">{aiMessages.unresolved}</Tag>
+                                  )}
+                                </div>
+                                <p className="ai-stop-reason">{stop.reason}</p>
+                                <span className="ai-stop-stay">
+                                  {aiMessages.stayMinutes(stop.stay_minutes)}
+                                </span>
+                              </div>
+                              <div className="ai-stop-actions">
+                                <Button
+                                  size="small"
+                                  type="text"
+                                  aria-label={aiMessages.remove(stop.name)}
+                                  onClick={() => applyStops(removeStop(stops, index))}
+                                >
+                                  删除
+                                </Button>
+                                <Button
+                                  size="small"
+                                  type="text"
+                                  aria-label={aiMessages.replace(stop.name)}
+                                  onClick={() =>
+                                    setReplaceIndex((previous) =>
+                                      previous === index ? null : index,
+                                    )
+                                  }
+                                >
+                                  更换
+                                </Button>
+                                <Button
+                                  size="small"
+                                  type="text"
+                                  aria-label={aiMessages.moveUp(stop.name)}
+                                  disabled={index === 0}
+                                  onClick={() => applyStops(moveStop(stops, index, -1))}
+                                >
+                                  上移
+                                </Button>
+                                <Button
+                                  size="small"
+                                  type="text"
+                                  aria-label={aiMessages.moveDown(stop.name)}
+                                  disabled={index === stops.length - 1}
+                                  onClick={() => applyStops(moveStop(stops, index, 1))}
+                                >
+                                  下移
+                                </Button>
+                              </div>
+                              {replaceIndex === index && (
+                                <div className="ai-replace-panel" data-testid="ai-replace-search">
+                                  <PlaceSearchBox
+                                    inputId={`ai-replace-input-${index}`}
+                                    ariaLabel={aiMessages.replace(stop.name)}
+                                    placeholder={aiMessages.replaceSearchPlaceholder}
+                                    city={form.destination?.name}
+                                    onPick={onReplacePick(index)}
+                                  />
+                                  <Button
+                                    size="small"
+                                    type="text"
+                                    onClick={() => setReplaceIndex(null)}
+                                  >
+                                    {aiMessages.replaceCancel}
+                                  </Button>
+                                </div>
+                              )}
+                            </li>
+                          );
+                        })}
+                      </ol>
+                    </section>
+                  ))}
+                </div>
+
+                <div className="ai-route-strip" data-testid="ai-stats">
+                  <span className="ai-route-strip-label">{aiMessages.mapTitle}</span>
+                  {route === null ? (
+                    <span className="ai-route-strip-value">—</span>
+                  ) : (
+                    <span className="ai-route-strip-value">
+                      {aiMessages.statsDistance} {formatDistance(route.distanceMeters)} ·{' '}
+                      {aiMessages.statsDuration} {formatDuration(route.durationSeconds)}
+                    </span>
+                  )}
+                  <span className="ai-route-strip-source">
+                    {routeLoading ? aiMessages.routeLoading : aiMessages.statsSource}
+                  </span>
+                  <Button
+                    size="small"
+                    type="text"
+                    data-testid="ai-map-toggle"
+                    onClick={() => setMapOpen(true)}
+                  >
+                    {aiMessages.openMap}
+                  </Button>
+                </div>
+                {routeError !== null && (
+                  <div className="ai-error-panel" role="alert">
+                    <span>{routeError}</span>
+                    <Button
+                      size="small"
+                      data-testid="ai-route-retry"
+                      onClick={() => void recalcRoute(stops, form.travelMode)}
+                    >
+                      {aiMessages.retry}
+                    </Button>
+                  </div>
+                )}
+                {resolvedCount(stops) < 2 && (
+                  <p className="form-hint">{aiMessages.minRouteStops}</p>
+                )}
+
+                {overBudget !== null && (
+                  <div className="ai-over-budget" role="alert">
+                    <span>{aiMessages.overBudget(overBudget)}</span>
+                    <Button size="small" disabled={busy} onClick={() => void generate(true)}>
+                      {aiMessages.reduceBudget}
+                    </Button>
+                  </div>
+                )}
+
+                <div className="ai-tip-card">
+                  <h4 className="ai-tip-title">{aiMessages.tipsTitle}</h4>
+                  <ul className="ai-tip-list" data-testid="ai-tips">
+                    {planMeta.tips.map((tip) => (
+                      <li key={tip}>{tip}</li>
+                    ))}
+                  </ul>
+                  {planMeta.packing.length > 0 && (
+                    <div className="ai-packing-list" data-testid="ai-packing">
+                      {planMeta.packing.map((item) => (
+                        <Tag key={item} className="ai-packing-tag">
+                          {item}
+                        </Tag>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                {/* 既有 E2E 用这两个 testid 断言预算数值，保留为语义节点 */}
+                <dl className="ai-budget-card" data-testid="ai-budget-card">
+                  <div>
+                    <dt>{aiMessages.budgetTransport}</dt>
+                    <dd>{centsToYuan(planMeta.budget.transport_cents)} 元</dd>
+                  </div>
+                  <div>
+                    <dt>{aiMessages.budgetTickets}</dt>
+                    <dd>{centsToYuan(planMeta.budget.tickets_cents)} 元</dd>
+                  </div>
+                  <div>
+                    <dt>{aiMessages.budgetFood}</dt>
+                    <dd>{centsToYuan(planMeta.budget.food_cents)} 元</dd>
+                  </div>
+                  <div>
+                    <dt>{aiMessages.budgetOther}</dt>
+                    <dd>{centsToYuan(planMeta.budget.other_cents)} 元</dd>
+                  </div>
+                  <div className="ai-budget-total">
+                    <dt>{aiMessages.budgetTotal}</dt>
+                    <dd>{budgetTotal} 元</dd>
+                  </div>
+                  <span className="ai-budget-note">{aiMessages.budgetNote}</span>
+                </dl>
+              </div>
+            )}
+
+            <footer className="ai-preview-foot">
+              <Button
+                data-testid="ai-regenerate"
+                disabled={!canGenerate(form) || busy}
+                onClick={() => void generate(false)}
+              >
+                {aiMessages.regenerate}
+              </Button>
+              <Button
+                type="primary"
+                data-testid="ai-save-secondary"
+                disabled={!canSave}
+                loading={saving}
+                onClick={() => void save()}
+              >
+                {aiMessages.publish}
+              </Button>
+            </footer>
+          </Card>
+
+          {generateError !== null && !generating && (
+            <Alert
+              type="error"
+              showIcon
+              title={aiErrorMessage(generateError)}
+              description={aiMessages.errorHint}
+            />
+          )}
+          {saveError !== null && <Alert type="error" showIcon title={saveError} />}
+        </section>
+      </div>
+
+      {/* ==================== 规划条件（抽屉） ==================== */}
+      <Drawer
+        title={aiMessages.conditionsTitle}
+        open={conditionsOpen}
+        onClose={() => setConditionsOpen(false)}
+        width={400}
+        className="ai-conditions-drawer"
+      >
+        <p className="form-hint">{aiMessages.conditionsHint}</p>
+        <div className="ai-condition-grid">
+          <div className="form-field ai-place-field" data-testid="ai-origin-field">
+            <label className="form-label" htmlFor="ai-origin-input">
+              <span>{aiMessages.originLabel}</span>
+              <span className="req" aria-hidden="true">*</span>
+            </label>
+            <PlaceSearchBox
+              inputId="ai-origin-input"
+              ariaLabel={aiMessages.originLabel}
+              placeholder={aiMessages.placeSearchPlaceholder}
+              onPick={pickPlace('origin')}
+            />
+            <div className="ai-origin-tools">
+              <Button size="small" type="text" loading={locating} onClick={locateOrigin}>
+                {locating ? aiMessages.locateLoading : aiMessages.useCurrentLocation}
+              </Button>
+              {locateFailed && (
+                <span className="ai-inline-error" role="alert">
+                  {aiMessages.locateFailed}
+                </span>
+              )}
+            </div>
+            {form.origin !== null && (
+              <div className="ai-selected-place">
+                <span className="ai-place-chip" data-testid="ai-origin-name">
+                  {form.origin.name}
+                </span>
+                <span className="ai-place-coords">
+                  {form.origin.lng.toFixed(4)}, {form.origin.lat.toFixed(4)}
+                </span>
+              </div>
+            )}
+          </div>
+
+          <div className="form-field ai-place-field" data-testid="ai-destination-field">
+            <label className="form-label" htmlFor="ai-destination-input">
+              <span>{aiMessages.destinationLabel}</span>
+              <span className="req" aria-hidden="true">*</span>
+            </label>
+            <PlaceSearchBox
+              inputId="ai-destination-input"
+              ariaLabel={aiMessages.destinationLabel}
+              placeholder={aiMessages.placeSearchPlaceholder}
+              onPick={pickPlace('destination')}
+            />
+            {form.destination !== null && (
+              <div className="ai-selected-place">
+                <span className="ai-place-chip" data-testid="ai-destination-name">
+                  {form.destination.name}
+                </span>
+                <span className="ai-place-coords">
+                  {form.destination.lng.toFixed(4)}, {form.destination.lat.toFixed(4)}
+                </span>
+              </div>
+            )}
+          </div>
+
+          <div className="form-field">
+            <label className="form-label" htmlFor="ai-date-input">
+              <span>{aiMessages.dateLabel}</span>
+              <span className="req" aria-hidden="true">*</span>
+            </label>
+            <div className="trip-date-anchor" data-testid="ai-date">
+              <DatePicker
+                {...appDatePickerProps}
+                id="ai-date-input"
+                className="trip-date"
+                format="YYYY-MM-DD"
+                placeholder="选择日期"
+                locale={zhCN.DatePicker}
+                needConfirm
+                allowClear={false}
+                minDate={dayjs()}
+                maxDate={dayjs().add(16, 'day')}
+                value={isoToDayjs(form.date)}
+                onChange={(value) => update({ date: dayjsToIso(value) })}
+              />
+            </div>
+          </div>
+
+          <div className="form-field">
+            <span className="form-label">{aiMessages.durationLabel}</span>
+            <div data-testid="ai-duration">
+              <Segmented
+                block
+                options={Object.entries(aiMessages.durationOptions).map(([value, label]) => ({
+                  label,
+                  value,
+                }))}
+                value={form.duration}
+                onChange={(value) => update({ duration: value as AiDuration })}
+              />
+            </div>
+          </div>
+
+          <div className="form-field">
+            <label className="form-label" htmlFor="ai-budget-input">
+              <span>{aiMessages.budgetLabel}</span>
+              <span className="opt">选填</span>
+            </label>
+            <div data-testid="ai-budget">
+              <InputNumber
+                id="ai-budget-input"
+                min={0}
+                precision={0}
+                style={{ width: '100%' }}
+                placeholder="如 500"
+                value={form.budgetYuan === '' ? null : Number(form.budgetYuan)}
+                onChange={(value) => update({ budgetYuan: value === null ? '' : String(value) })}
+              />
+            </div>
+          </div>
+
+          <div className="form-field">
+            <span className="form-label">{aiMessages.modeLabel}</span>
+            <div data-testid="ai-mode">
+              <Select
+                aria-label={aiMessages.modeLabel}
+                style={{ width: '100%' }}
+                options={Object.entries(aiMessages.modeOptions).map(([value, label]) => ({
+                  label,
+                  value,
+                }))}
+                value={form.travelMode}
+                onChange={(value) => update({ travelMode: value as AiTravelMode })}
+              />
+            </div>
+          </div>
+
+          <div className="form-field">
+            <span className="form-label">{aiMessages.interestsLabel}</span>
+            <div
+              className="chip-row ai-interest-chips"
+              data-testid="ai-interests"
+              role="group"
+              aria-label={aiMessages.interestsLabel}
+            >
+              {INTEREST_OPTIONS.map((tag) => (
+                <Tag.CheckableTag
+                  key={tag}
+                  checked={form.interests.includes(tag)}
+                  onChange={() =>
+                    update({
+                      interests: form.interests.includes(tag)
+                        ? form.interests.filter((item) => item !== tag)
+                        : [...form.interests, tag],
+                    })
+                  }
+                >
+                  {tag}
+                </Tag.CheckableTag>
+              ))}
+            </div>
+            <span className="form-hint">{aiMessages.interestsHint}</span>
+          </div>
+
+          <div className="form-field">
+            <span className="form-label">{aiMessages.paceLabel}</span>
+            <div data-testid="ai-pace">
+              <Segmented
+                block
+                options={Object.entries(aiMessages.paceOptions).map(([value, label]) => ({
+                  label,
+                  value,
+                }))}
+                value={form.pace}
+                onChange={(value) => update({ pace: value as AiPace })}
+              />
+            </div>
+          </div>
+        </div>
+
+        <div className="ai-condition-actions">
+          <Button
+            data-testid="ai-map-pick"
+            aria-pressed={mapOpen && pickMode}
+            type={pickMode ? 'primary' : 'default'}
+            onClick={() => {
+              setPickMode(true);
+              setMapOpen(true);
+              setConditionsOpen(false);
+            }}
+          >
+            {aiMessages.mapPick}
+          </Button>
+          <Button
+            type="primary"
+            data-testid="ai-generate"
+            disabled={!canGenerate(form) || busy}
+            loading={generating}
+            onClick={() => void generate(false)}
+          >
+            {aiMessages.generate}
+          </Button>
+        </div>
+        {!canGenerate(form) && <p className="form-hint">{aiMessages.requiredHint}</p>}
+      </Drawer>
+
+      {/* ==================== 路线地图（弹窗） ==================== */}
+      <Modal
+        open={mapOpen}
+        onCancel={() => {
+          setMapOpen(false);
+          setPickMode(false);
+          setCandidates(null);
+        }}
+        footer={null}
+        width={860}
+        title={aiMessages.mapModalTitle}
+        className="ai-map-modal"
+        destroyOnHidden
+      >
+        <div className="ai-map-toolbar">
+          <Segmented
+            data-testid="ai-map-pick-target"
+            options={[aiMessages.originLabel, aiMessages.destinationLabel]}
+            value={pickTarget === 'origin' ? aiMessages.originLabel : aiMessages.destinationLabel}
+            onChange={(value) =>
+              setPickTarget(value === aiMessages.originLabel ? 'origin' : 'destination')
+            }
+          />
+          <Button
+            size="small"
+            type={pickMode ? 'primary' : 'default'}
+            aria-pressed={pickMode}
+            onClick={() => {
+              setPickMode((previous) => !previous);
+              setCandidates(null);
+            }}
+          >
+            {pickMode ? aiMessages.mapPickStop : aiMessages.mapPick}
+          </Button>
+          <span className="form-hint">{aiMessages.mapPickHint}</span>
+        </div>
+        <div className="ai-map-wrap">
+          <AmapContainer
+            className="ai-map-container"
+            lng={center.lng}
+            lat={center.lat}
+            zoom={11}
+            ariaLabel={aiMessages.mapAriaLabel}
+            onReady={setMap}
+            onMapClick={onMapClick}
+          >
+            <RouteLayer
+              map={map}
+              waypoints={waypoints}
+              route={route}
+              focusId={focusId}
+              onFocus={setFocusId}
+              numbers={numbers}
+            />
+            {pickMode && candidates !== null && (
+              <div
+                className="ai-map-candidates"
+                data-testid="ai-map-candidates"
+                role="dialog"
+                aria-label={aiMessages.mapCandidates}
+              >
+                <div className="ai-candidates-head">
+                  <span>{aiMessages.mapCandidates}</span>
+                  <button
+                    type="button"
+                    aria-label={aiMessages.closeCandidates}
+                    onClick={() => setCandidates(null)}
+                  >
+                    ×
+                  </button>
+                </div>
+                {candidatesLoading ? (
+                  <div className="ai-candidates-state" role="status">
+                    <Spin size="small" />
+                  </div>
+                ) : candidates.length === 0 ? (
+                  <p className="ai-candidates-state">{aiMessages.mapCandidatesEmpty}</p>
+                ) : (
+                  <ul className="ai-candidates-list">
+                    {candidates.map((place) => (
+                      <li key={place.id}>
+                        <button type="button" onClick={() => pickCandidate(place)}>
+                          <span className="ai-candidate-name">{place.name}</span>
+                          <span className="ai-candidate-meta">{place.address}</span>
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            )}
+          </AmapContainer>
+        </div>
+      </Modal>
+    </main>
+  );
+}

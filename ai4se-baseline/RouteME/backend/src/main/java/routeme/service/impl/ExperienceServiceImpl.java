@@ -24,8 +24,10 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import routeme.entity.TripExperienceEntity;
 import routeme.entity.TripExperiencePhotoEntity;
 import routeme.enums.WriteScopeEnum;
+import routeme.exception.ExperienceNotFoundException;
 import routeme.exception.ForbiddenActionException;
 import routeme.exception.InvalidInputException;
+import routeme.mapper.ExperienceLikeMapper;
 import routeme.mapper.TripExperienceMapper;
 import routeme.mapper.TripExperiencePhotoMapper;
 import routeme.param.PageParam;
@@ -60,6 +62,7 @@ public class ExperienceServiceImpl
     private final TripPlanService tripPlanService;
     private final DemoUserService demoUserService;
     private final TripExperiencePhotoMapper photoMapper;
+    private final ExperienceLikeMapper experienceLikeMapper;
     private final ExperiencePhotoStorage photoStorage;
     private final ExperienceEligibility eligibility;
     private final ExperienceLikeService experienceLikeService;
@@ -71,6 +74,7 @@ public class ExperienceServiceImpl
             TripPlanService tripPlanService,
             DemoUserService demoUserService,
             TripExperiencePhotoMapper photoMapper,
+            ExperienceLikeMapper experienceLikeMapper,
             ExperiencePhotoStorage photoStorage,
             ExperienceEligibility eligibility,
             ExperienceLikeService experienceLikeService,
@@ -80,6 +84,7 @@ public class ExperienceServiceImpl
         this.tripPlanService = tripPlanService;
         this.demoUserService = demoUserService;
         this.photoMapper = photoMapper;
+        this.experienceLikeMapper = experienceLikeMapper;
         this.photoStorage = photoStorage;
         this.eligibility = eligibility;
         this.experienceLikeService = experienceLikeService;
@@ -167,6 +172,26 @@ public class ExperienceServiceImpl
                 .orderByDesc(TripExperienceEntity::getId)).stream()
                 .map(TripExperienceEntity::toExperience)
                 .toList(), authorId);
+    }
+
+    /**
+     * 管理员删除：先清理图片行与点赞，再删主体；图片文件在事务提交后删除。
+     * 外键没有级联，所以子表必须先删。
+     */
+    @Override
+    @Transactional
+    public void delete(long experienceId) {
+        TripExperienceEntity entity = getById(experienceId);
+        if (entity == null) {
+            throw new ExperienceNotFoundException(experienceId);
+        }
+        List<TripExperiencePhotoEntity> photos = photoMapper.selectByExperience(experienceId);
+        if (!photos.isEmpty()) {
+            photoMapper.deleteByIds(photos.stream().map(TripExperiencePhotoEntity::getId).toList());
+        }
+        experienceLikeMapper.deleteByExperience(experienceId);
+        removeById(experienceId);
+        deleteAfterCommit(photos);
     }
 
     private boolean matches(TripExperience experience, String destinationCode, Set<String> tags) {

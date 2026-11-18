@@ -1,23 +1,59 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import {
   AmapApiError,
   amapErrorMessage,
   catalogPlaceResult,
   filterRelevantPlaces,
+  firstTransit,
   formatDistance,
   formatDuration,
   haversineMeters,
+  dedupeNearby,
   isRelevantName,
   longestCommonSubstring,
   matchCatalogPlace,
   normalizeName,
+  parseTransitLeg,
   pickRegeocodeName,
+  planRoute,
   rankPlaces,
   sortByDistance,
   straightLineRoute,
   toPlaceResult,
   toRouteLeg,
 } from './AmapService';
+
+// transit / walking 的 planRoute 用例用 SDK 替身，不加载真实高德脚本。
+const { fakeAmap, transferCalls, transferOptions } = vi.hoisted(() => {
+  const transferCalls: Array<{ origin: unknown; destination: unknown }> = [];
+  const transferOptions: Array<Record<string, unknown> | undefined> = [];
+  class Transfer {
+    constructor(options?: Record<string, unknown>) {
+      transferOptions.push(options);
+    }
+    search(origin: unknown, destination: unknown, cb: (status: string, result: unknown) => void) {
+      transferCalls.push({ origin, destination });
+      cb('complete', {
+        routes: [{ transits: [{ distance: 1000, cost: { duration: 600 }, segments: [] }] }],
+      });
+    }
+  }
+  class Walking {
+    search(_origin: unknown, _destination: unknown, cb: (status: string, result: unknown) => void) {
+      cb('complete', { routes: [{ distance: 500, time: 400, steps: [] }] });
+    }
+  }
+  const fakeAmap = {
+    plugin: (_names: string[], cb?: () => void) => cb?.(),
+    Transfer,
+    Walking,
+  };
+  return { fakeAmap, transferCalls, transferOptions };
+});
+
+vi.mock('./loader', () => ({
+  loadAmap: vi.fn(async () => fakeAmap),
+}));
 
 const lngLat = (lng: number, lat: number) => ({
   getLng: () => lng,
@@ -82,6 +118,70 @@ describe('AmapService mapping', () => {
     ]);
   });
 
+  it('parses raw REST steps whose polyline is a string', () => {
+    // REST 原生 walking/driving steps 用 polyline 字符串（非 SDK path 对象数组）。
+    const leg = toRouteLeg(
+      {
+        distance: '1200',
+        time: '900',
+        steps: [
+          { polyline: '113.32,23.1;113.33,23.11' },
+          { path: '113.33,23.11;113.34,23.12' },
+        ],
+      },
+      [1, 2],
+      [3, 4],
+    );
+    expect(leg.distanceMeters).toBe(1200);
+    expect(leg.durationSeconds).toBe(900);
+    expect(leg.path).toEqual([
+      [113.32, 23.1],
+      [113.33, 23.11],
+      [113.34, 23.12],
+    ]);
+  });
+
+  it('parses Riding results whose segments live in rides instead of steps', () => {
+    // AMap.Riding 2.0 返回 routes[0].rides；只读 steps 会退化成两点直线。
+    const leg = toRouteLeg(
+      {
+        distance: 4000,
+        time: 960,
+        rides: [
+          { path: [lngLat(113.32, 23.1), lngLat(113.33, 23.11)] },
+          { path: [lngLat(113.33, 23.11), lngLat(113.34, 23.12)] },
+        ],
+      },
+      [113.3, 23.1],
+      [113.4, 23.2],
+    );
+    expect(leg.distanceMeters).toBe(4000);
+    expect(leg.durationSeconds).toBe(960);
+    expect(leg.path).toEqual([
+      [113.32, 23.1],
+      [113.33, 23.11],
+      [113.34, 23.12],
+    ]);
+  });
+
+  it('merges rides after steps when both are present', () => {
+    const leg = toRouteLeg(
+      {
+        distance: 10,
+        time: 5,
+        steps: [{ path: [lngLat(1, 1), lngLat(2, 2)] }],
+        rides: [{ path: [lngLat(2, 2), lngLat(3, 3)] }],
+      },
+      [0, 0],
+      [9, 9],
+    );
+    expect(leg.path).toEqual([
+      [1, 1],
+      [2, 2],
+      [3, 3],
+    ]);
+  });
+
   it('throws a route error when there is no route at all', () => {
     expect(() => toRouteLeg(undefined, [1, 2], [3, 4])).toThrow(AmapApiError);
   });
@@ -102,6 +202,15 @@ describe('AmapService mapping', () => {
     expect(amapErrorMessage(new AmapApiError('AMAP_ERROR', 'x', '20800'))).toContain('20800');
   });
 
+  it('keeps the raw upstream reason for unknown errors instead of a bare failure', () => {
+    const message = amapErrorMessage(
+      new AmapApiError('AMAP_ERROR', 'SERVICE_NOT_AVAILABLE', '10050'),
+    );
+    expect(message).toContain('10050');
+    expect(message).toContain('SERVICE_NOT_AVAILABLE');
+    expect(amapErrorMessage(new AmapApiError('UPSTREAM_BUSY', '高德服务繁忙'))).toContain('繁忙');
+  });
+
   it('names the backend proxy when it is unreachable', () => {
     const message = amapErrorMessage(new AmapApiError('PROXY_UNAVAILABLE', 'down'));
     expect(message).toContain('后端');
@@ -110,6 +219,189 @@ describe('AmapService mapping', () => {
 
   it('names the AMap upstream when the proxy forward fails', () => {
     expect(amapErrorMessage(new AmapApiError('UPSTREAM_UNAVAILABLE', 'forward'))).toContain('上游');
+  });
+
+  it('explains a platform mismatch (10009) with actionable copy', () => {
+    const message = amapErrorMessage(new AmapApiError('AUTH', 'auth', '10009'));
+    expect(message).toContain('10009');
+    expect(message).toContain('Web端');
+    expect(message).toContain('s=rsv3');
+  });
+
+  it('explains an unpaired security code (10008)', () => {
+    const message = amapErrorMessage(new AmapApiError('AUTH', 'auth', '10008'));
+    expect(message).toContain('10008');
+    expect(message).toContain('security-js-code');
+  });
+
+  it('explains an unpaired security code', () => {
+    const message = amapErrorMessage(new AmapApiError('AUTH', 'auth', 'INVALID_USER_SCODE'));
+    expect(message).toContain('jscode');
+  });
+});
+
+describe('parseTransitLeg', () => {
+  it('reads distance / duration and merges walking + bus polylines', () => {
+    const leg = parseTransitLeg(
+      {
+        distance: '8200',
+        cost: { duration: '2700' },
+        segments: [
+          { walking: { steps: [{ path: [lngLat(113.32, 23.1), lngLat(113.325, 23.105)] }] } },
+          { bus: { buslines: [{ polyline: '113.325,23.105;113.33,23.11' }] } },
+          { walking: { steps: [{ path: [lngLat(113.33, 23.11), lngLat(113.335, 23.115)] }] } },
+        ],
+      },
+      [113.32, 23.1],
+      [113.335, 23.115],
+    );
+    expect(leg.distanceMeters).toBe(8200);
+    expect(leg.durationSeconds).toBe(2700);
+    expect(leg.path).toEqual([
+      [113.32, 23.1],
+      [113.325, 23.105],
+      [113.33, 23.11],
+      [113.335, 23.115],
+    ]);
+  });
+
+  it('falls back to the straight line when no segment has a path', () => {
+    const leg = parseTransitLeg({ distance: 100, cost: { duration: 60 } }, [1, 2], [3, 4]);
+    expect(leg.path).toEqual([
+      [1, 2],
+      [3, 4],
+    ]);
+  });
+
+  it('throws a route error when there is no transit at all', () => {
+    expect(() => parseTransitLeg(undefined, [1, 2], [3, 4])).toThrow(AmapApiError);
+  });
+
+  it('parses the SDK 2.0 normalized plan shape (path + time + numeric fare)', () => {
+    // 真实 SDK 2.0 Transfer 回调交付 plans[]：方案自带完整折线，时长在 time，
+    // cost 为数值票价（T8 回调拦截证据 t8-transfer-cb.json）。
+    const leg = parseTransitLeg(
+      {
+        distance: 2928,
+        time: 1345,
+        cost: 2,
+        path: [lngLat(113.244, 23.107), lngLat(113.24, 23.105), lngLat(113.237, 23.114)],
+      },
+      [1, 2],
+      [3, 4],
+    );
+    expect(leg.distanceMeters).toBe(2928);
+    expect(leg.durationSeconds).toBe(1345);
+    expect(leg.path).toEqual([
+      [113.244, 23.107],
+      [113.24, 23.105],
+      [113.237, 23.114],
+    ]);
+  });
+
+  it('merges SDK 2.0 segment transit paths when the plan has no path', () => {
+    const leg = parseTransitLeg(
+      {
+        distance: 2100,
+        time: 360,
+        segments: [
+          { transit: { path: [lngLat(113.24, 23.107), lngLat(113.245, 23.11)] } },
+          { transit: { path: [lngLat(113.245, 23.11), lngLat(113.25, 23.115)] } },
+        ],
+      },
+      [1, 2],
+      [3, 4],
+    );
+    expect(leg.durationSeconds).toBe(360);
+    expect(leg.path).toEqual([
+      [113.24, 23.107],
+      [113.245, 23.11],
+      [113.25, 23.115],
+    ]);
+  });
+
+  it('parses the raw REST v3 shape (polyline strings + top-level duration)', () => {
+    // REST 原生结构（直连代理 / 降级兼容）：walking.steps[].polyline 为字符串，
+    // 时长在顶层 duration，cost 为票价字符串（T8 证据 t8-transit-raw.json）。
+    const leg = parseTransitLeg(
+      {
+        distance: '2848',
+        duration: '1227',
+        cost: '2.0',
+        segments: [
+          { walking: { steps: [{ polyline: '113.24,23.12;113.245,23.125' }] } },
+          { bus: { buslines: [{ polyline: '113.245,23.125;113.25,23.13' }] } },
+        ],
+      },
+      [113.24, 23.12],
+      [113.25, 23.13],
+    );
+    expect(leg.distanceMeters).toBe(2848);
+    expect(leg.durationSeconds).toBe(1227);
+    expect(leg.path).toEqual([
+      [113.24, 23.12],
+      [113.245, 23.125],
+      [113.25, 23.13],
+    ]);
+  });
+});
+
+describe('firstTransit', () => {
+  const transit = { distance: 100, cost: { duration: 60 } };
+
+  it('prefers the SDK 2.0 normalized plans shape', () => {
+    const plan = { distance: 2928, time: 1345, cost: 2, path: [] };
+    expect(firstTransit({ plans: [plan] })).toBe(plan);
+    expect(firstTransit({ plans: [plan], routes: [{ transits: [transit] }] })).toBe(plan);
+  });
+
+  it('accepts the routes[0].transits shape', () => {
+    expect(firstTransit({ routes: [{ transits: [transit] }] })).toBe(transit);
+  });
+
+  it('accepts the raw REST route.transits shape', () => {
+    expect(firstTransit({ route: { transits: [transit] } })).toBe(transit);
+  });
+
+  it('returns undefined when neither shape carries a transit', () => {
+    expect(firstTransit(undefined)).toBeUndefined();
+    expect(firstTransit({})).toBeUndefined();
+  });
+});
+
+describe('planRoute with the SDK stub', () => {
+  const waypoints = [
+    { id: 'a', name: '广州塔', lng: 113.3245, lat: 23.1064 },
+    { id: 'b', name: '海心沙', lng: 113.3217, lat: 23.1104 },
+    { id: 'c', name: '花城广场', lng: 113.3236, lat: 23.1203 },
+  ];
+
+  it('sums transit legs and passes the destination city', async () => {
+    transferCalls.length = 0;
+    transferOptions.length = 0;
+
+    const plan = await planRoute('transit', waypoints, '广州市');
+
+    expect(plan.mode).toBe('transit');
+    expect(plan.distanceMeters).toBe(2000);
+    expect(plan.durationSeconds).toBe(1200);
+    expect(plan.legs).toEqual([
+      { fromId: 'a', toId: 'b', distanceMeters: 1000, durationSeconds: 600 },
+      { fromId: 'b', toId: 'c', distanceMeters: 1000, durationSeconds: 600 },
+    ]);
+    expect(transferCalls).toHaveLength(2);
+    expect(transferOptions[0]?.city).toBe('广州市');
+  });
+
+  it('keeps the walking behaviour unchanged', async () => {
+    const plan = await planRoute('walking', waypoints.slice(0, 2));
+    expect(plan.mode).toBe('walking');
+    expect(plan.distanceMeters).toBe(500);
+    expect(plan.durationSeconds).toBe(400);
+  });
+
+  it('still rejects fewer than two waypoints', async () => {
+    await expect(planRoute('transit', waypoints.slice(0, 1), '广州市')).rejects.toThrow(AmapApiError);
   });
 });
 
@@ -260,5 +552,36 @@ describe('nearby distance helpers', () => {
   it('takes a short name from a reverse-geocoded address', () => {
     expect(pickRegeocodeName('广东省珠海市香洲区唐家湾镇淇澳社区')).toBe('淇澳社区');
     expect(pickRegeocodeName('')).toBe('');
+  });
+});
+
+describe('dedupeNearby', () => {
+  const spot = (id: string, lng: number, lat: number) => ({
+    id,
+    name: id,
+    address: '',
+    city: '广州',
+    district: '',
+    lng,
+    lat,
+    type: '风景名胜',
+    distanceMeters: 0,
+  });
+
+  it('keeps one pin for spots that sit on top of each other', () => {
+    const kept = dedupeNearby([
+      spot('广州塔', 113.3245, 23.1064),
+      spot('广州塔A区', 113.32455, 23.10643),
+      spot('登塔大厅', 113.32452, 23.10641),
+    ], 150);
+    expect(kept.map((item) => item.id)).toEqual(['广州塔']);
+  });
+
+  it('keeps spots that are far enough apart', () => {
+    const kept = dedupeNearby([
+      spot('广州塔', 113.3245, 23.1064),
+      spot('越秀公园', 113.2644, 23.1291),
+    ], 700);
+    expect(kept.map((item) => item.id)).toEqual(['广州塔', '越秀公园']);
   });
 });

@@ -60,6 +60,20 @@ API、事件与集成契约。字段一律 snake_case；时间字段为 RFC3339 
 - 加 / 扣分明细、原因、历史与变更记录只在服务端账本（`credit_ledger`）留存，不对外返回；管理端能力尚未交付。
 - 详情（阈值、账本字段、越界裁断、零变化留痕）以 `openapi.yaml` 与 `openspec/specs/user-credit/spec.md`（归档后）为准。
 
+## RouteME 管理后台概览（2026-11-17，`add-admin-dashboard` / REQ-023）
+
+契约源：`RouteME/openapi.yaml`（v0.18.0）。校验：`cd RouteME/backend; .\mvnw.cmd -Dtest=OpenApiTest test`。
+
+| 方法 | 路径 | 说明 |
+|---|---|---|
+| GET | `/admin/dashboard` | 仅管理员可读的即时统计快照；六组计数 + `generated_at`，响应头 `Cache-Control: no-store` |
+
+- 认证：`Authorization: Bearer <token>`；非 `ADMIN` 返回 403 `ADMIN_REQUIRED`，无会话返回 401；受限管理员沿用既有 403 错误码。
+- 响应固定六组：`users`、`trips`、`applications`、`experiences`、`reports`、`service_sessions`；每组含 `total` 与约定状态键，空值零填充，`total` 与分桶同源。
+- 状态口径：账号取 `AccountStatusService.effectiveStatus`（已到期封禁计入 `ACTIVE`）；行程取 `TripPlan.status(now)` 五态；键名保持既有 wire 大小写。
+- 新增窗口：`new_last_7_days` / `new_last_30_days`（仅 users / trips / experiences），按 `Asia/Shanghai` 自然日、以 `created_at` 计算，解析失败的记录不计入新增但保留在 `total`。
+- 每次请求即时聚合，不缓存、不物化、不写库；不含昵称、邮箱、头像等明细。前端只在进入页面与手动刷新时请求，不自动轮询。
+
 ## REST 面
 
 机器可读契约以 `openapi.yaml` 为准，`npm run lint:api` 必须通过。按能力分组：

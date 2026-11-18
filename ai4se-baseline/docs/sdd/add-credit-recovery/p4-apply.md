@@ -1,0 +1,168 @@
+# P4 阶段记录 — add-credit-recovery
+
+- **Change：** `add-credit-recovery`（REQ-027 / S28 安全学习恢复信用分）｜ **阶段：** P4（ATDD apply）
+- **日期：** 2026-11-17 ｜ **记录人：** Lewis Liu（当前开发者）
+- **基点：** 分支 `feature/add-credit-recovery`（基于 `origin/main@ec360dc`）
+- **前置：** G1 **Pass（无条件，2026-11-17，IO=WAYNE / SA=Jacky）**；`design.md` / `tasks.md` 工件评审 Pass（BLOCKER 0，第二签署 Jay）
+
+## 1. 阶段目标
+
+按 `tasks.md` T1 → T13 逐条落绿（每条先写/扩展测试再实现），把 Delta 的 7 Requirement / 29 Scenario 落成：契约 `0.23.0` → `V27` 迁移 → 题库与判分 → 会话 / 记账 / 配额 → 发布拦截 → 前端五态学习页与拦截入口 → E2E。
+
+## 2. 产出
+
+| 任务 | 落点 | 结论 |
+|---|---|---|
+| T1 contract | `openapi.yaml` `0.23.0`：3 端点 / 4 schema / 6 错误码 / `POST /api/trips` 403 | `OpenApiTest` 通过；Redocly valid（0 error / 19 warning） |
+| T2 迁移 | `V27__add_credit_learning.sql`（单表 + `(user_id, month_key)` 索引） | 全新库 V1–V27 与旧库（V20）升级均绿 |
+| T3 题库 | `LearningQuestionBank`（20 题自校验）/ `draw`（四类保底 + 补足 10）/ `CreditMonth` | `CreditLearningDrawTest` 绿（固定 seed 可复算） |
+| T4 会话 | `start` / `completeLessons`，开始即计次；会话只存完成标记 + 抽中题号 | `CreditLearningApiTest` 覆盖 A5–A11 |
+| T5 判分 | `submit`：长度 10、每项 0–3；`score ≥ 8` 通过；已提交会话原样回放 | A12 / A13 / A14 / A10 绿 |
+| T6 记账 | `CreditService.recorded` + `CreditReason`（D14）；先配额后资格；扣减式 `book(delta = 60 - before)` | A15–A22 / A26 / A29 绿；并发只写 1 条账本 |
+| T7 拦截 | 首版：`CreditGateService.assertCanPublish`，只在 `TripController.create` 调用（合并后按裁决改为复用统一守卫，见 §8.6） | `CreditPublishGuardApiTest` 首版 4/4；全量后端 **348/348** |
+| T8 前端底座 | `types.ts` 5 类型 / `api.ts` 3 函数 / `route.ts` `creditLearning` | `route.test.ts` 9/9 |
+| T9 状态机 | `credit/learningState.ts`：`phase` / `toViewModel` / `quizProgress` / `errorMessage` + 判定辅助 | `learningState.test.ts` 10/10 |
+| T10 学习页 | `credit/LearningPage.tsx`（五态）+ `credit/learningPage.css` | 见 P4-D2；刷新走 `sessionStorage` 续考 |
+| T11 拦截入口 | 首版：`trips/publishGuard.ts` + `TripCreatePage` 专用 Alert + `.publish-guard` 样式（合并后改为复用 `CreditRestrictedNotice`，见 §8.6） | `publishGuard.test.ts` 4/4；前端 **308/308**（40 文件） |
+| T12 E2E | `e2e/tests/credit-learning.spec.ts`（3 例） | **3/3 绿**（隔离库 + 8081 / 5174），A1 / A6 / A24 / A25 / D6 |
+| T13 登记 | `registry.md` / `stories.md` / `handoff.md` / 本记录 | 本节 |
+
+## 3. 本阶段裁决
+
+| 编号 | 议题 | 裁决 | 依据 |
+|---|---|---|---|
+| P4-D1 | 阈值复用地 | 首版：`PUBLISH_MIN_SCORE = RECOVERY_TARGET_SCORE`，`CreditGateServiceImpl` 内零字面量 `60`（合并后由 `CreditExitCalculator.RESTRICTION_THRESHOLD` 单点承接，见 §8.6） | design「阈值单点」；回归时改一处即可同时影响放行与恢复 |
+| P4-D2 | 学习页样式落点 | 独立 `src/credit/learningPage.css`（680 行，全 `.cl-*`，页面 `import`），只在 `styles.css` 加发布拦截块 | T10 原写「`styles.css` 增」；主样式表已 6917 行，独立文件等价且不污染主表，令牌仍取原型（`--lagoon` / `--coral` / `--grad-shore` / `--sh-2` / `--r-lg`） |
+| P4-D3 | 状态派生的入参 | `phase({ creditScore, session, result })`（而非 `phase(session, result)`） | 分数与两态一并判定，避免页面各自拼 `score >= 60` 条件 |
+| P4-D4 | 拦截入口分流 | 首版：纯函数 `describePublishFailure(code)` → `creditGuard` / `generic` / `null`，只有 `CREDIT_SCORE_BELOW_60` 进学习引导（合并后该分流随 `publishGuard.ts` 一并删除，见 §8.6） | A1 + D6；页面不写错误码字符串比较，单测可锁「近似码不误命中」 |
+| P4-D5 | E2E 造分与判分答案 | 造分用 SQL 改 `user_credit_account.score` + 补 `SYSTEM_ADJUST` 账本行；判分答案按题面回查服务端题库文件，前 8 对 / 后 2 错 | atdd §4「造分」；答案不进契约，E2E 只能按题库文件回查 |
+| P4-D6 | E2E 运行环境 | 全新 SQLite + 后端 8081 + 前端 5174，跑完删临时库；`ROUTEME_E2E_DB` / `ROUTEME_E2E_BASE_URL` 可覆盖 | atdd §4；不污染开发库与 8080/5173 |
+
+## 4. 校验
+
+| 门禁 | 命令 | 结果 |
+|---|---|---|
+| 后端单测 | `cd RouteME/backend; .\mvnw.cmd -B -ntp test` | **348 tests / 0 failures**（含 `TripControllerTest` 36 条，默认 80 分不受门禁影响） |
+| 前端类型 | `cd RouteME/frontend; npm run typecheck` | 通过 |
+| 前端构建 | `npm run build` | 通过（css 102.81 kB / js 1,315.21 kB） |
+| 前端单测 | `npm test` | **308 tests / 40 files** 全绿 |
+| E2E（本 change） | `cd RouteME/e2e; npx playwright test tests/credit-learning.spec.ts` | **3/3 绿**（隔离环境 16.5s；开发环境 8080/5173 复跑 17.5s 亦绿） |
+| E2E（全量） | `cd RouteME/e2e; npx playwright test` | **102 passed / 17 failed**（119 条，7.5m）；失败全部在 `map.spec.ts`（9）/ `trips.spec.ts`（8），签名为 `[data-testid="china-map"]` 未渲染，同 base 历史报告一致，本 change 未改地图代码与这两份用例 |
+| 规格 | `npx --no-install openspec validate add-credit-recovery --strict` | valid |
+| 契约 | `npx -y @redocly/cli@2 lint openapi.yaml` | 0 error / 19 warning（#18–#19 为提交端点刻意构造的 400 示例，与既有 `trips/post` 的 `rejected` 示例同口径） |
+| 视觉 | 无截图产物：按 DOM 类名（`.cl-*`）与令牌核对五态、940px 单栏、620px 按钮、深色三处提亮 | 通过 |
+| 本地验证 | `/sdd:local-verify` → `docs/ai4se-plugins/20261117-161617-local-verify-report.md` 与 `...-quality-checklist-report.md`（同日时间戳） | **Overall Pass**（P4-1 / P4-2 / P4-6 必选项全 Pass；E3 待 VL） |
+
+## 5. 待签
+
+| 角色 | 事项 | 状态 |
+|---|---|---|
+| VL | `/sdd:local-verify` 报告 + 质量清单 | **报告已产出待独立复核**：`docs/ai4se-plugins/20261117-161617-local-verify-report.md`（Overall Pass）与 `…-quality-checklist-report.md`；E3 未签 |
+| IO + SA | G2 决策 | 待 CI 通过后由 VL 独立签署 `g2-decision.md` |
+
+本阶段记录为开发者自述，不代签 VL / IO / SA。
+
+## 6. 跟踪项
+
+| 项 | 说明 |
+|---|---|
+| local-verify | 本轮只跑本 change 的 E2E spec；全量 E2E 有 base 既有地图用例债务，需在 local-verify 报告中标注 |
+| 契约示例警告 | 提交端点 `invalid` 示例刻意越界以演示 400，触发 `no-invalid-media-type-examples`；与既有 `rejected` 示例同口径，保留 |
+| `pickPlace` 重复 | `support.ts` 已提供共用 `pickPlace`（等候选出现再点），`trips.spec.ts` 内同名本地实现未回改，避免动 749 行既有用例 |
+| 地图 E2E 债务 | 全量 E2E 17 条失败（`china-map` 未渲染）为同 base 既有债务，归地图 owner；本地验证报告已归因，未在本 change 内修 |
+| Maven `-Dtest` 陷阱 | 本机 harness 对 `-Dtest=<具体类名>` 偶发拦截（`code = 40441 ... rmdir`），实际执行建议用通配（如 `-Dtest=CreditPublish*`） |
+| 归档顺序 | 仍 MUST 排在 `add-credit-account` 之后（`openspec/specs/` 尚无 `user-credit`） |
+| 号位复核 | 合并前确认 `add-ai-itinerary` 仍占 `0.15.0 + V21` |
+
+## 7. 提交记录
+
+本阶段**未提交**。新增：后端 `service/CreditGateService(+Impl)`、`constant/CreditLearningConstant.PUBLISH_MIN_SCORE`、8 个测试类（`CreditLearningApi/Recovery/Quota/Concurrency/ReasonLabel/PublishGuard/MigrationSqlite/Draw`）；前端 `credit/{learningState,LearningPage}.ts(x)` + `learningPage.css` + `trips/publishGuard.ts` + 3 个测试文件 + `tripMessages` 文案 + `styles.css`（仅发布拦截块）；E2E `credit-learning.spec.ts` + `support.ts` 共用定位助手；文档 `tasks.md` T1–T13 回填、本记录、`registry.md` / `stories.md` / `handoff.md`、`docs/sdd/README.md`、`docs/ai4se-plugins/20261117-161617-{local-verify,quality-checklist}-report.md`。
+
+## 8. 合并 main 与三轮号位重排（2026-11-17）
+
+> 本节记录 `verify` 提交之后、`/sdd:pr-submit` 之前的合并动作（用户裁决：直接合并到 `main`；删库重建）。
+
+### 8.1 基线偏差
+
+| 事实 | 证据 |
+|---|---|
+| 合并开始时本地 `main = 0524109`，`origin/main = 3db5b14`，本地落后 9 个提交 | `git log --oneline 0524109..origin/main` |
+| 落后提交含 `add-experience-like-credit`（REQ-023 / 契约 0.18.0 / `V24__add_experience_likes.sql`）与「客服与举报」侧栏入口 | 同上 |
+| 首次合并基于本地 `main`，按当时已占号位顺延为 REQ-023 / S25 / 0.18.0 / V24 | 合并回退点 `3a6cf4f` |
+| 第二次同步 `origin/main@3db5b14`：`add-experience-like-credit` 已占 REQ-023 / 0.18.0 / V24，顺延为 REQ-024 / S25 / 0.19.0 / `V25__add_credit_learning.sql` | 合并回退点 `e174b63` |
+| 第三次同步 `origin/main@acf1b1f`：REQ-024 / REQ-025 / 0.20.0 / 0.21.0 均被占，顺延为 REQ-026 / S27 / 0.22.0 / `V27__add_credit_learning.sql` | 合并回退点 `a7d831b`（见 §8.6） |
+| 第四次同步 `origin/main@0f4ab14`：REQ-026 / S27 / 0.22.0 被 `add-admin-dashboard` 占用，顺延为 **REQ-027 / S28 / 契约 0.23.0 / `V27__add_credit_learning.sql`**（迁移号无冲突） | 本节与 §8.7 |
+
+### 8.2 冲突解决
+
+| 文件 | 处置 |
+|---|---|
+| `openapi.yaml` | 以 `origin/main` 全量为底，修回 `/admin/reports/{reportId}` GET 的错误响应块（`origin/main` 自身 `duplicated mapping key` 缺陷），再叠加 learning 三端点 |
+| `api.ts` / `types.ts` / `route.ts` / `route.test.ts` | 双方保留：main 的点赞端点与客服路由 + 本 change 的 learning 端点与 `#/credit/learning` |
+| `OpenApiTest.java` | 版本断言统一 0.23.0，两方契约方法都在 |
+| `registry.md` / `stories.md` / `docs/sdd/README.md` | 两段并存（REQ-023 `add-experience-like-credit` / REQ-027 本 change） |
+| `handoff.md` | 冲突块两侧都保留，本 change 三条改号后接在 like-credit 四条之后 |
+| 迁移撞名 | 本 change 由 `git mv` 三次改名，最终 `V27__add_credit_learning.sql`（`V24` 归 `add-experience_likes`、`V25` 归 `credit_enforcement`、`V26` 归 `ai_itineraries`） |
+| `CreditLearningMigrationSqliteTest` | 先迁到 V26 取 `app_users` 列快照，再迁最新比对；`credit_restriction` 表断言 1（来自 V25）、版本断言 `'27'` |
+| `credit.spec.ts` | 采用 `origin/main` 版本（断言 401/403、含获赞用例），未做本地改写 |
+
+### 8.3 门禁（第四次同步后，最终口径）
+
+| 门禁 | 结果 |
+|---|---|
+| 后端 `mvnw -B -ntp verify` | **597/597**（本地需 `SPRING_DATASOURCE_URL=jdbc:h2:mem:routeme;DB_CLOSE_DELAY=-1`，base 配置优先级债务） |
+| 前端 `typecheck` / `test` / `build` | 通过 / **56 文件 446 tests** / 通过 |
+| `openspec validate add-credit-recovery --strict` | valid |
+| Redocly `lint openapi.yaml` | **0 error / 25 warning**（`Admin*` 的 `nullable-type-sibling` 已随上游同步消失） |
+| 删库重建 | 删除 `SqlLite/routeme.db` 后 `java -jar` 启动，Flyway **V1–V27** 全部重放成功（`Successfully applied 27 migrations`） |
+| 本 change E2E | `credit-learning.spec.ts` **3/3** |
+| 受影响回归 | `credit-restriction` / `credit-exit` / `credit-cancel-reason` / `credit` / `experience-likes` / `mine` / `safety-report` **34/34** + `admin`（dashboard）**10/10**（合计 **47/47**、9 份 spec，`ROUTEME_E2E_BASE_URL=http://localhost:5174`） |
+
+**测试隔离修正**：`CreditLearningConcurrencyTest` 的 `@Transactional(propagation = NOT_SUPPORTED)` 用例会真提交，其上下文若用系统时钟，服务内 `findAllTrips()` → `materializeExpired()` 会把 V4 种子行程（end `2026-11-16`）写成 `completed_at` 并落库，级联污染后续全部用例（表现为 `CreditRestrictionApiTest` 等大面积 409 / 状态漂移）。修正为在类上加 `@Import(FixedClockTestConfig.class)` 并在 `@AfterEach` 清理该用户的 `credit_restriction` 行；只改本 change 测试，未动 base 代码。
+
+### 8.4 与本 change 无关的既有 E2E 债务（合并后复跑归因）
+
+| 用例 | 现象 | 归因 |
+|---|---|---|
+| `map.spec.ts` 9 条 | `[data-testid="china-map"]` / `city-map` 不渲染 | 本机无 AMAP Key 的环境债务（同 base） |
+| `trips.spec.ts` 8 条（140 / 187 / 224 / 242 / 376 / 417 / 451 / 476） | `.place-chip-name`、china-map 等不可见 | 同上 |
+| `auth.spec.ts` 7 条 | 等待 `账号菜单：` 超时 | `origin/main` 的 `AppShell.tsx` 已把 aria-label 改为 `账号：{昵称}`，用例未同步 |
+| `profile.spec.ts` 318 / 496 | `.mine-profile-card` 不存在 | main 的 UI 改版已移除该组类名，`origin/main` 同样不存在 |
+| 全量运行时 `profiles` 4 条 / `experiences` 1 条 | 「参与同行」计数、种子卡位次漂移 | 共享库写入累积；单文件 + 全新库复跑为 **8/8、10/10 全绿** |
+
+结论：**本 change 引入的 E2E 失败 0 条**，上述五类均可在 `origin/main` 复现，归 base owner。
+
+### 8.5 提交与未签项
+
+- 合并先落一个可回退的 merge 提交（基于本地 `main`），再以第二个 merge 提交合入 `origin/main@3db5b14` 完成二次重排，第三个 merge 提交合入 `origin/main@acf1b1f` 完成三次重排，第四个 merge 提交合入 `origin/main@0f4ab14` 完成四次重排；四笔均在本地、未 push。
+- 评审快照（`docs/reviews/20261117-add-credit-recovery-*`）保留起草时的 REQ-022 编号；`20261117-161617-*` 两份报告保留 P4 时的 0.18.0 口径，均在 `registry.md` 编号说明中标注为过程快照。
+
+### 8.6 第三次同步（`origin/main@acf1b1f`）与守卫统一
+
+**号位**：`add-traveler-recommendation` 占 REQ-024、`add-credit-exit-restriction` 占 REQ-025 / S25 / S26 / 0.20.0 / `V25__credit_enforcement.sql`、`add-ai-itinerary` 占 0.21.0 / `V26__ai_itineraries.sql`；本 change 第三次顺延为 **REQ-026 / S27 / 契约 0.22.0 / `V27__add_credit_learning.sql`**（`git mv` 迁移与 intents / requirements 两份条目文件）。
+
+**守卫统一（用户裁决「统一到 main 的守卫」）**：
+
+| 项 | 处置 |
+|---|---|
+| 自建门禁 | 删除 `service/CreditGateService`、`service/impl/CreditGateServiceImpl`、`exception/CreditScoreBelowSixtyException` |
+| 发布入口 | `TripController.create` 回归 main 结构，不再注入门禁；403 由 `TripPlanServiceImpl.create` 的 `creditRestrictionGuard.requireNotRestricted` 抛出 |
+| 契约错误码 | 不再使用 `CREDIT_SCORE_BELOW_60`，统一 `CREDIT_RESTRICTED`（Delta / proposal / design / atdd-design / tasks 同步改写） |
+| 测试 | `CreditPublishGuardApiTest` 由 4 用例收敛为 3 用例（45 分拦截 / 59 拦 60 放行 / 恢复后同一请求成功），删除「其余入口不受影响」用例 |
+| 判定口径 | 受限 = `score < 60` 或存在生效中的 `credit_restriction` 记录；受限于全部写入口，只读能力不受限 |
+
+**前端与 E2E 跟随**：`TripCreatePage` 改用 main 的 `CreditRestrictedNotice`（`.blocked-notice`）+ 本 change 的 `.publish-guard-note` / `.publish-guard-entry` 学习入口，发布按钮 `disabled`；删除 `trips/publishGuard.ts` 与 `publishGuard.test.ts`；`LearningPage` 判分成功后额外调用 `CreditContext.refresh()`，否则回到发布页仍为受限态。`credit-learning.spec.ts` 用例 1 由「填表 + 点发布」改为「进页即断言提示文案、发布按钮禁用、从入口链接进入学习页」。
+
+### 8.7 第四次同步（`origin/main@0f4ab14`）：号位再顺延
+
+| 项 | 处置 |
+|---|---|
+| 来源 | 新合入 `add-admin-dashboard`（管理后台概览统计，无迁移）与地图/原型目录重整（`docs/prototype/v1`、`v2`）等 11 个提交 |
+| 撞号 | 对方已占 **REQ-026 / S27 / 契约 0.22.0**（其 registry 自述「合并 main 顺延，原 0.18.0」） |
+| 本 change 处置 | 按「后到者顺延」改为 **REQ-027 / S28 / 契约 0.23.0**；迁移号 `V27__add_credit_learning.sql` 无冲突，不动文件名 |
+| 冲突文件 | 仅 6 个 `docs/preview/weather-create-*.png`（对方删除、我方曾修改）→ 接受删除（仓库不再保留验证类截图） |
+| 内容校验 | 自动合并后的 `openapi.yaml` 同时包含 `/admin/dashboard`（对方）与 `/credit/learning/*`（本 change），无路径丢失；`OpenApiTest` 版本断言改 0.23.0 |
+| 改号范围 | intents / requirements 两份条目文件 `git mv`；`registry.md`、`stories.md`、`handoff.md`、`docs/sdd/README.md`、本目录 P1–P4、`openspec/changes/add-credit-recovery/*` 与 8 处代码/迁移注释 |
+| 注意 | `V27__add_credit_learning.sql` 首行注释改动会变更 Flyway 校验和，本地旧库需删库重建后再启动 |
+
+- **仍未签署：G2（VL）、E3；本记录不代签。**

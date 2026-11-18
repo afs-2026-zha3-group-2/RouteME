@@ -1,7 +1,10 @@
 import { useRef, useState } from 'react';
-import { Alert, Button, DatePicker, Segmented, Skeleton, Tag } from 'antd';
+import { Alert, Button, DatePicker, Segmented, Skeleton, Tag, message } from 'antd';
+import { adminErrorText } from '../admin/adminFormat';
+import { deleteAdminExperience } from '../api';
 import { ExperienceCard } from '../experiences/ExperienceCard';
 import { useExperiences } from '../experiences/useExperiences';
+import { adminMessages } from '../i18n/adminMessages';
 import { tripMessages } from '../i18n/tripMessages';
 import { useUserCredits } from '../profiles/useUserCredits';
 import { EmptyState } from '../shell/EmptyState';
@@ -21,13 +24,14 @@ import { useMatches } from '../trips/useMatches';
 import { appDatePickerProps } from '../utils/datePickerProps';
 import { dayjsToIso, isoToDayjs } from '../utils/dates';
 import { greetingForHour } from './greeting';
-import type { DemoUser } from '../types';
+import type { DemoUser, Experience } from '../types';
 
 type Props = {
   currentUser: DemoUser;
+  token: string | null;
 };
 
-export function HomePage({ currentUser }: Props) {
+export function HomePage({ currentUser, token }: Props) {
   const [view, setView] = useState<'plans' | 'experiences'>('plans');
   const [filters, setFilters] = useState<FilterState>(emptyFilterState);
   const { state, reload, setPage, setSize } = useMatches(currentUser.id, filters);
@@ -35,6 +39,25 @@ export function HomePage({ currentUser }: Props) {
   const publisherIds = state.status === 'ready' ? state.matches.map(({ trip }) => trip.publisher.id) : [];
   const credits = useUserCredits(publisherIds, currentUser.id);
   const resultsRef = useRef<HTMLDivElement>(null);
+  const [deletingId, setDeletingId] = useState<number | null>(null);
+
+  /** 管理员可在旅行灵感列表直接删除任意一条；后端同步清理图片与点赞。 */
+  const removeExperience = async (experience: Experience) => {
+    if (token === null) {
+      return;
+    }
+    setDeletingId(experience.id);
+    try {
+      await deleteAdminExperience(token, experience.id);
+      message.success(adminMessages.experienceDeleted);
+      experiences.reload();
+    } catch (caught: unknown) {
+      const code = caught instanceof Error ? caught.message : 'UNKNOWN_ERROR';
+      message.error(`${adminMessages.experienceDeleteFailed}：${adminErrorText(code)}`);
+    } finally {
+      setDeletingId(null);
+    }
+  };
 
   const update = (patch: Partial<FilterState>) => {
     setFilters((previous) => ({ ...previous, ...patch }));
@@ -281,6 +304,9 @@ export function HomePage({ currentUser }: Props) {
                   experience={experience}
                   currentUserId={currentUser.id}
                   onLikeChange={experiences.updateExperience}
+                  canDelete={currentUser.role === 'ADMIN' && token !== null}
+                  deleting={deletingId === experience.id}
+                  onDelete={removeExperience}
                 />
               ))}
             </div>

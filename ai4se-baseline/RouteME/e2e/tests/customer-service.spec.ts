@@ -3,6 +3,7 @@ import {
   API,
   createUserViaApi,
   loginAsAccount,
+  loginAsAdmin,
   type ApiAccount,
 } from './support';
 
@@ -72,62 +73,53 @@ async function resolveReport(
   expect(response.ok()).toBeTruthy();
 }
 
-test.describe('[C] help centre and customer service', () => {
-  test('[C1] shows both help blocks and all four report states', async ({ page }) => {
+test.describe('[C] customer service', () => {
+  test('[C1] gives users a dedicated service entry and retires the help centre', async ({ page }) => {
     const reporter = await createUserViaApi(page, `举报状态_${Date.now()}`);
     const reported = await createUserViaApi(page, `举报对象_${Date.now()}`);
     const hiddenNote = '管理员处理备注不应出现在用户侧';
 
     await submitReport(page, reporter.id, reported.id, 'harassment', '骚扰举报');
-    await submitReport(page, reporter.id, reported.id, 'fake', '虚假举报');
-    await submitReport(page, reporter.id, reported.id, 'safety', '安全举报');
-    await submitReport(page, reporter.id, reported.id, 'other', '其他举报');
-
     const pending = await reportIdByReason(page, reporter, 'harassment');
-    const resolved = await reportIdByReason(page, reporter, 'fake');
-    const rejected = await reportIdByReason(page, reporter, 'safety');
-    const processing = await reportIdByReason(page, reporter, 'other');
 
     const token = await adminToken(page);
-    await startReport(page, token, processing.id);
-
-    await startReport(page, token, resolved.id);
-    await resolveReport(page, token, resolved.id, {
+    await startReport(page, token, pending.id);
+    await resolveReport(page, token, pending.id, {
       outcome: 'RESOLVED',
       note: hiddenNote,
       action: 'KEEP',
     });
+    const resolved = await helpReports(page, reporter);
+    expect(resolved.items.find((item) => item.id === pending.id)?.status).toBe('RESOLVED');
 
-    await startReport(page, token, rejected.id);
-    await resolveReport(page, token, rejected.id, {
-      outcome: 'REJECTED',
-      note: hiddenNote,
-    });
-
+    // 用户侧：只有「联系客服」，帮助与反馈已下线。
     await loginAsAccount(page, reporter);
-    await page.goto('/#/help');
+    await expect(page.locator('.rail-link').filter({ hasText: '联系客服' })).toBeVisible();
+    await expect(page.locator('.rail-link').filter({ hasText: '帮助与反馈' })).toHaveCount(0);
 
-    await expect(page.getByRole('heading', { name: '联系人工客服' })).toBeVisible();
-    await expect(page.getByRole('heading', { name: '我的举报' })).toBeVisible();
-    await expect(page.getByRole('button', { name: '联系人工客服' })).toBeVisible();
-
-    const item = (code: string) => page.locator('.help-report').filter({ hasText: code });
-    await expect(item(pending.code)).toContainText('待处理');
-    await expect(item(processing.code)).toContainText('已受理，正在处理');
-    await expect(item(resolved.code)).toContainText('已处理');
-    await expect(item(rejected.code)).toContainText('举报不成立');
-
+    await page.goto('/#/support');
+    await expect(page.getByRole('heading', { name: '联系客服' })).toBeVisible();
+    await expect(page.getByRole('heading', { name: '我的举报' })).toHaveCount(0);
     await expect(page.getByText(hiddenNote)).toHaveCount(0);
-    // 只展示自己的举报：列表条数等于本人提交数。
-    await expect(page.locator('.help-report')).toHaveCount(4);
+
+    // 帮助与反馈已下线：旧深链对普通用户与管理员都落到不存在页。
+    await page.goto('/#/help');
+    await expect(page.getByRole('heading', { name: '行程不存在' })).toBeVisible();
+
+    await loginAsAdmin(page);
+    await expect(page.locator('.rail-link').filter({ hasText: '帮助与反馈' })).toHaveCount(0);
+    await page.goto('/#/admin');
+    await expect(page.locator('.admin-tab').filter({ hasText: '帮助与反馈' })).toHaveCount(0);
+    await page.goto('/#/help');
+    await expect(page.getByRole('heading', { name: '行程不存在' })).toBeVisible();
   });
 
   test('[C3] starts, reuses, chats in and reopens a service session', async ({ page }) => {
     const user = await createUserViaApi(page, `客服会话_${Date.now()}`);
 
     await loginAsAccount(page, user);
-    await page.goto('/#/help');
-    await page.getByRole('button', { name: '联系人工客服' }).click();
+    await page.goto('/#/support');
+    await page.getByRole('button', { name: '开始对话' }).click();
     await expect(page.locator('.help-chat-head')).toContainText('等待客服接入');
 
     const current = await page.request.get(`${API}/service/sessions/current`, {

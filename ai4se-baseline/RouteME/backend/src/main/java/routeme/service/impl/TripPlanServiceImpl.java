@@ -37,6 +37,7 @@ import routeme.request.TripCreateRequest;
 import routeme.request.TripCancelRequest;
 import routeme.request.TripMeetingRequest;
 import routeme.request.TripQuery;
+import routeme.service.AiItineraryService;
 import routeme.service.CreditRestrictionGuard;
 import routeme.service.DemoUserService;
 import routeme.service.TripCancelledEvent;
@@ -55,6 +56,7 @@ public class TripPlanServiceImpl extends AbstractServiceImpl<TripPlanMapper, Tri
     private static final int MAX_CANCEL_NOTE_LENGTH = 100;
 
     private final DemoUserService demoUserService;
+    private final AiItineraryService aiItineraryService;
     private final CreditRestrictionGuard creditRestrictionGuard;
     private final Clock clock;
     private final ApplicationEventPublisher events;
@@ -62,11 +64,13 @@ public class TripPlanServiceImpl extends AbstractServiceImpl<TripPlanMapper, Tri
 
     public TripPlanServiceImpl(
             DemoUserService demoUserService,
+            AiItineraryService aiItineraryService,
             CreditRestrictionGuard creditRestrictionGuard,
             Clock clock,
             ApplicationEventPublisher events,
             AccountStatusService accountStatusService) {
         this.demoUserService = demoUserService;
+        this.aiItineraryService = aiItineraryService;
         this.creditRestrictionGuard = creditRestrictionGuard;
         this.clock = clock;
         this.events = events;
@@ -79,6 +83,10 @@ public class TripPlanServiceImpl extends AbstractServiceImpl<TripPlanMapper, Tri
         accountStatusService.assertCanWrite(publisherId, WriteScopeEnum.BUSINESS);
         creditRestrictionGuard.requireNotRestricted(publisherId);
         Instant now = clock.instant();
+        // AI 链接校验：快照必须存在且归属发布人，否则 INVALID_INPUT（B9 / B10）。
+        if (request.aiItineraryId() != null) {
+            aiItineraryService.requireOwnedSnapshot(request.aiItineraryId(), publisherId);
+        }
         TripPlanDraft draft = new TripPlanDraft(
                 publisherId,
                 request.title(),
@@ -93,7 +101,8 @@ public class TripPlanServiceImpl extends AbstractServiceImpl<TripPlanMapper, Tri
                 request.budgetMinCents(),
                 request.budgetMaxCents(),
                 request.tags(),
-                request.capacity());
+                request.capacity(),
+                request.aiItineraryId());
         TripPlan validated = TripPlan.create(draft, now);
         TripPlan saved = validated.withId(nextId(TripPlanEntity::getId));
         save(TripPlanEntity.from(saved));

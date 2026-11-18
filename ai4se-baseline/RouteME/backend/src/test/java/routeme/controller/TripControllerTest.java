@@ -23,6 +23,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.jayway.jsonpath.JsonPath;
+
 import routeme.config.FixedClockTestConfig;
 
 @SpringBootTest
@@ -456,5 +458,90 @@ class TripControllerTest {
             request.header("X-User-Id", userId);
         }
         return mockMvc.perform(request);
+    }
+
+    /* ---------- AI 行程链接（B9 / B10，add-ai-itinerary） ---------- */
+
+    private static final String AI_SNAPSHOT = """
+            {
+              "origin": { "name": "广州南站", "lng": 113.269, "lat": 22.989 },
+              "destination": { "name": "广州市", "lng": 113.264, "lat": 23.129 },
+              "date": "2026-11-21",
+              "duration": "one_day",
+              "travel_mode": "transit",
+              "interests": ["美食"],
+              "pace": "moderate",
+              "budget_cents": 50000,
+              "stops": [
+                { "name": "广州塔", "lng": 113.3245, "lat": 23.1064, "order": 1,
+                  "reason": "地标", "arrival": "09:00", "stay_minutes": 120,
+                  "indoor": false, "resolved": true },
+                { "name": "海心沙", "lng": 113.3217, "lat": 23.1104, "order": 2,
+                  "reason": "江景", "arrival": "11:30", "stay_minutes": 60,
+                  "indoor": false, "resolved": true }
+              ],
+              "route": null,
+              "weather": null,
+              "tips": [],
+              "packing": [],
+              "ai_budget": { "transport_cents": 8000, "tickets_cents": 15000,
+                             "food_cents": 18000, "other_cents": 5000, "total_cents": 46000 }
+            }
+            """;
+
+    @Test
+    void in_ownAiItineraryLink_out_idInDetailAndSummary() throws Exception {
+        int snapshotId = saveAiSnapshot("1");
+        String body = withAiLink(VALID_TRIP, snapshotId);
+
+        String response = postTrip(body, "1")
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.status").value("recruiting"))
+                .andExpect(jsonPath("$.ai_itinerary_id").value(snapshotId))
+                .andReturn().getResponse().getContentAsString();
+        int tripId = JsonPath.read(response, "$.id");
+
+        mockMvc.perform(get("/api/trips/" + tripId).header("X-User-Id", "1"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.ai_itinerary_id").value(snapshotId));
+        mockMvc.perform(get("/api/me/trips").header("X-User-Id", "1"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.published[0].ai_itinerary_id").value(snapshotId));
+    }
+
+    @Test
+    void in_otherUsersAiLink_out_invalidInput() throws Exception {
+        int snapshotId = saveAiSnapshot("2");
+        postTrip(withAiLink(VALID_TRIP, snapshotId), "1")
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("INVALID_INPUT"));
+    }
+
+    @Test
+    void in_unknownAiLink_out_invalidInput() throws Exception {
+        postTrip(withAiLink(VALID_TRIP, 9999), "1")
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("INVALID_INPUT"));
+    }
+
+    @Test
+    void in_plainPublish_out_nullAiLink() throws Exception {
+        postTrip(VALID_TRIP, "1")
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.ai_itinerary_id").value(nullValue()));
+    }
+
+    private String withAiLink(String tripBody, int snapshotId) {
+        return tripBody.replace("\"capacity\": 4,", "\"capacity\": 4,\n  \"ai_itinerary_id\": " + snapshotId + ",");
+    }
+
+    private int saveAiSnapshot(String userId) throws Exception {
+        String response = mockMvc.perform(post("/api/ai/itineraries")
+                        .header("X-User-Id", userId)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(AI_SNAPSHOT))
+                .andExpect(status().isCreated())
+                .andReturn().getResponse().getContentAsString();
+        return JsonPath.read(response, "$.id");
     }
 }

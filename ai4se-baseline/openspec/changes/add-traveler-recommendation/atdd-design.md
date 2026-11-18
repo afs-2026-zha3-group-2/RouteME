@@ -89,20 +89,26 @@
 
 | id | 输入 | 期待 |
 |---|---|---|
-| F1 | `formatScore(90)` | `90 分` |
+| F1 | `formatScore(90)` | `匹配度 90%` |
 | F2 | `breakdownText([{label:'目的地相同',points:50},...])` | `目的地相同 +50 · ...` |
 | F3 | `referenceText({destination:'广州',start_date:'2026-11-20',...})` | 含「广州」「2026-11-20」 |
 | F4 | `emptyRecommendationText()` | 非空标题与说明 |
+| F5 | `reasonSentence(目的地 + 同日 + 摄影)` | `目的地和日期相同，并且都喜欢摄影` |
+| F6 | `reasonSentence(无共同兴趣)` | 不含「共同兴趣」/「都喜欢」 |
+| F7 | `reasonSentence(日期分项为「旅行日期相差 1 天」)` | 保留该文案 |
+| F8 | `recommendationReason(breakdown 缺失、reasons 存在)` | 返回 `reasons` 原文 |
+| F9 | `recommendationReason(两者都缺失)` | 空字符串 |
 
 ### 4.2 E2E（`e2e/tests/traveler-recommendation.spec.ts`，`page.route` 注入）
 
 | id | 场景 | 断言 |
 |---|---|---|
-| E1 | 成功列表 | 显示 2 条；第 1 条 90 分；文本含 `目的地相同 +50`、`共同兴趣摄影 +10`；不出现前端自算分数 |
+| E1 | 成功列表 | 显示 2 条；第 1 条「匹配度 90%」与原因句；展开分项后含 `目的地相同 +50`、`共同兴趣摄影 +10`；不出现前端自算分数 |
 | E2 | 空列表 | 显示 `data-testid="recommendation-empty"`；不显示任何推荐行 |
 | E3 | 加载中 | 延迟响应，显示 `data-testid="recommendation-loading"` |
 | E4 | 失败 + 重试 | 首次 500，显示错误与重试；点击重试后返回 200 并渲染列表；行程标题仍在 |
-| E5 | 后端分值优先 | mock 返回 42 分，页面显示 42 而不是任何常量 |
+| E5 | 后端分值优先 | mock 返回 42 分，页面显示「匹配度 42%」而不是任何常量 |
+| E8 | 相差一天 | 原因句含「旅行日期相差 1 天」，无共同兴趣时不出现兴趣原因 |
 | E6 | 切换行程 | 进入行程 A 后再进入行程 B，请求次数 +1 且显示 B 的参照 |
 | E7 | 390px 窄屏 | 推荐行可见且 `document.scrollWidth - clientWidth <= 1` |
 

@@ -13,6 +13,8 @@ public final class JsonListUtils {
     private static final ObjectMapper MAPPER = new ObjectMapper();
     private static final TypeReference<List<String>> STRING_LIST = new TypeReference<>() {
     };
+    private static final TypeReference<List<Integer>> INTEGER_LIST = new TypeReference<>() {
+    };
 
     private JsonListUtils() {
     }
@@ -30,6 +32,22 @@ public final class JsonListUtils {
             return MAPPER.writeValueAsString(values);
         } catch (RuntimeException exception) {
             throw new IllegalStateException("cannot serialize list to json", exception);
+        }
+    }
+
+    public static List<Integer> parseInts(String json) {
+        try {
+            return List.copyOf(MAPPER.readValue(json, INTEGER_LIST));
+        } catch (RuntimeException exception) {
+            throw new IllegalStateException("invalid json int list in database: " + json, exception);
+        }
+    }
+
+    public static String writeInts(List<Integer> values) {
+        try {
+            return MAPPER.writeValueAsString(values);
+        } catch (RuntimeException exception) {
+            throw new IllegalStateException("cannot serialize int list to json", exception);
         }
     }
 }

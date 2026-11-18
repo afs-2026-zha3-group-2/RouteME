@@ -3,9 +3,10 @@ import { Avatar } from '../shell/Avatar';
 import { EmptyState } from '../shell/EmptyState';
 import type { TravelerRecommendation } from '../types';
 import {
-  breakdownText,
+  breakdownLines,
   emptyRecommendationText,
   formatScore,
+  recommendationReason,
   referenceText,
 } from './recommendation';
 import type { RecommendationState } from './useRecommendations';
@@ -78,6 +79,11 @@ type RowProps = {
 };
 
 function RecommendationRow({ item, onOpenProfile }: RowProps) {
+  const interests = item.shared_interests ?? [];
+  const breakdown = item.breakdown ?? [];
+  const details = breakdownLines(breakdown);
+  const reason = recommendationReason(item);
+
   return (
     <li className="recommendation-row" data-testid="recommendation-row">
       <button
@@ -102,13 +108,30 @@ function RecommendationRow({ item, onOpenProfile }: RowProps) {
 
       <div className="recommendation-score">
         <span className="recommendation-score-value">{formatScore(item.score)}</span>
-        <span className="recommendation-reasons">{breakdownText(item.breakdown)}</span>
-        {item.shared_interests.length > 0 && (
+        {reason !== '' && (
+          <span className="recommendation-reasons" data-testid="recommendation-reason">
+            {reason}
+          </span>
+        )}
+        {interests.length > 0 && (
           <span className="recommendation-interest">
-            {item.shared_interests.map((interest) => (
+            {interests.map((interest) => (
               <Tag key={interest}>{interest}</Tag>
             ))}
           </span>
+        )}
+        {details.length > 0 && (
+          <details className="recommendation-breakdown" data-testid="recommendation-breakdown">
+            <summary>查看匹配明细</summary>
+            <ul className="recommendation-breakdown-list">
+              {breakdown.map((entry) => (
+                <li key={`${entry.dimension}-${entry.label}`}>
+                  <span>{entry.label}</span>{' '}
+                  <span className="recommendation-breakdown-points">{`+${entry.points}`}</span>
+                </li>
+              ))}
+            </ul>
+          </details>
         )}
       </div>
     </li>

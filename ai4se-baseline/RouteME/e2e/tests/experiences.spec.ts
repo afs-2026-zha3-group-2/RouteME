@@ -1,4 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
+import { loginAsAdmin } from './support';
 
 const API = '/api';
 
@@ -364,4 +365,49 @@ test('rejects experience sharing after the trip is cancelled', async ({ page }) 
     data: { content: '取消后不应该能发表体验。', intensity: 'relaxed', advice: '无' },
   });
   expect(rejected.status()).toBe(403);
+});
+
+test('admin removes any travel inspiration from the home list', async ({ page }) => {
+  const title = `E2E 管理员删除 ${Date.now()}`;
+  const trip = await createCompletedTrip(page, title);
+  const content = `管理员会删除这条旅行灵感 ${Date.now()}`;
+  const shared = await page.request.post(`${API}/trips/${trip.id}/experiences`, {
+    headers: { 'X-User-Id': '1', 'Content-Type': 'application/json' },
+    data: { content, intensity: 'relaxed', advice: '无' },
+  });
+  expect(shared.ok()).toBeTruthy();
+  const experience = (await shared.json()) as { id: number };
+
+  // 普通用户：看不到删除入口。
+  await loginAs(page, 1);
+  await page.goto('/');
+  await page.locator('.ant-segmented-item', { hasText: '旅行体验' }).click();
+  const card = page.locator('.exp-card').filter({ hasText: content });
+  await expect(card).toBeVisible();
+  await expect(card.getByRole('button', { name: /删除/ })).toHaveCount(0);
+
+  // 管理员：首页旅行灵感卡直接删除（二次确认）。
+  await loginAsAdmin(page);
+  await page.goto('/');
+  await page.locator('.ant-segmented-item', { hasText: '旅行体验' }).click();
+  const adminCard = page.locator('.exp-card').filter({ hasText: content });
+  await expect(adminCard).toBeVisible();
+  await adminCard.getByRole('button', { name: /删除/ }).click();
+  await page.getByRole('dialog').getByRole('button', { name: /删\s*除/ }).click();
+  await expect(adminCard).toHaveCount(0);
+  await expect(page.getByText('已删除该旅行灵感')).toBeVisible();
+
+  const list = await page.request.get(`${API}/experiences`, { headers: { 'X-User-Id': '1' } });
+  const items = ((await list.json()) as { items: { id: number }[] }).items;
+  expect(items.some((item) => item.id === experience.id)).toBe(false);
+
+  // 普通用户直接调用删除接口仍被拒绝。
+  const login = await page.request.post(`${API}/auth/login`, {
+    data: { username: 'linjianxia', password: '123456' },
+  });
+  const token = ((await login.json()) as { token: string }).token;
+  const forbidden = await page.request.delete(`${API}/admin/experiences/${experience.id}`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  expect(forbidden.status()).toBe(403);
 });

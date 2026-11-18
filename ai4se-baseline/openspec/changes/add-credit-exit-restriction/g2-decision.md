@@ -82,4 +82,5 @@
 
 - 用户验收发现退出后再次加入并被接受，第二次退出不生效；根因是幂等键只按 user + trip。改为按本次同行关系（application）幂等，同一行程可多次退出且每次计入当月；记录接口返回全部。
 - 契约 **0.23.0**；迁移 **V27**（`application_id`，旧数据回填）。复验：后端 516 / 前端 362 / E2E credit-exit 5/5；见 `docs/sdd/add-credit-exit-restriction/p4-verify.md` §12。
+- 合并 `origin/main` 时 0.23.0 / V26 / V27 已被占用，最终顺延为 **0.24.0 / V28 / V29**；合并后复验后端 607 / 前端 475 / E2E 5/5。
 - 仍未 pull / 未 push。

@@ -154,6 +154,6 @@ class CreditExitCalculatorTest {
         return new TripPlan(
                 1L, 1L, "trip", "440400", "珠海", startDate, startDate.plusDays(1),
                 List.of(), List.of(), meetingTime, null, null, null, null, List.of(), 3, 2,
-                null, NOW, NOW, null, null, null);
+                null, NOW, NOW, null, null, null, null);
     }
 }

@@ -90,6 +90,7 @@ public class TripController {
             @RequestHeader(value = "X-User-Id", required = false) Long userId,
             @RequestBody TripCreateRequest request) {
         DemoUser publisher = demoUserService.require(userId);
+        // 信用限制统一由 TripPlanServiceImpl.create 的 CreditRestrictionGuard 守卫（403 CREDIT_RESTRICTED）。
         TripPlan saved = tripPlanService.create(request, publisher.id());
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(TripDetailResponse.from(saved, publisher, List.of(publisher), clock.instant(), true));

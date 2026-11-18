@@ -1,14 +1,13 @@
 package routeme.pojo;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.List;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import org.junit.jupiter.api.Test;
 
 import routeme.enums.TripStatusEnum;
@@ -77,7 +76,7 @@ class TripPlanStatusTest {
         TripPlanDraft draft = new TripPlanDraft(
                 1L, "测试行程", "440400",
                 LocalDate.of(2026, 11, 15), LocalDate.of(2026, 11, 15),
-                List.of("香洲港", "情侣路"), null, null, null, null, null, null, List.of(), 3);
+                List.of("香洲港", "情侣路"), null, null, null, null, null, null, List.of(), 3, null);
 
         assertThrows(InvalidInputException.class,
                 () -> TripPlan.create(draft, at("2026-11-16T09:00:00Z"), LocalDate.of(2026, 11, 16)));
@@ -88,7 +87,7 @@ class TripPlanStatusTest {
         TripPlanDraft draft = new TripPlanDraft(
                 1L, "测试行程", "440400",
                 LocalDate.of(2026, 11, 16), LocalDate.of(2026, 11, 16),
-                List.of("香洲港", "情侣路"), null, null, null, null, null, null, List.of(), 3);
+                List.of("香洲港", "情侣路"), null, null, null, null, null, null, List.of(), 3, null);
 
         TripPlan created = TripPlan.create(draft, at("2026-11-16T09:00:00Z"), LocalDate.of(2026, 11, 16));
 
@@ -104,7 +103,7 @@ class TripPlanStatusTest {
         return new TripPlan(
                 1L, 1L, "测试行程", "440400", "珠海市", start, end,
                 List.of("香洲港", "情侣路"), null, null, null, null, null, null, List.of(),
-                capacity, joined, completedAt, CREATED, CREATED, null, null, null);
+                capacity, joined, completedAt, CREATED, CREATED, null, null, null, null);
     }
 
     private static TripPlan cancelledTrip(Instant cancelledAt) {
@@ -112,6 +111,6 @@ class TripPlanStatusTest {
                 1L, 1L, "测试行程", "440400", "珠海市",
                 LocalDate.of(2026, 11, 16), LocalDate.of(2026, 11, 16),
                 List.of("香洲港", "情侣路"), null, null, null, null, null, null, List.of(),
-                4, 1, null, CREATED, CREATED, cancelledAt, "personal", null);
+                4, 1, null, CREATED, CREATED, cancelledAt, "personal", null, null);
     }
 }

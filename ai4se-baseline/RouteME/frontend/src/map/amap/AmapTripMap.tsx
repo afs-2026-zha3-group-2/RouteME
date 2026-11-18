@@ -128,6 +128,7 @@ export function AmapTripMap({ city, stops, mode = 'walking', focusStop, onFocusS
         ariaLabel={`${city}行程路线地图`}
         onReady={setMap}
         className="amap-trip-container"
+        cursor="grab"
       >
         {loading && (
           <div className="amap-trip-status" role="status">
