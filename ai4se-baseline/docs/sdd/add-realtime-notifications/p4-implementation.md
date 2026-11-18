@@ -141,7 +141,7 @@
 | 八类扩围（D-8…D-15） | `2652bfe` feat(notifications): expand to the eight-type notification centre（含通知中心工件、前端通知中心与跳转页、E2E 13 + 4、浅色三档截图；编号与契约版本随后按 D-16 顺延） |
 | 合流 `origin/main`（D-16，第 1 次） | `72ff75d` merge: `add-travel-finance`（REQ-028 / S29 / 0.25.0 / `V30`）后按「后到者顺延」改为 REQ-029 / S30 / 0.26.0 / `V31`，解 `AppShell` / `openapi.yaml` / `OpenApiTest` / `registry` 冲突；后端 671/671、前端 530/530 |
 | 合流 `origin/main`（D-16，第 2 次） | `eab1d0a` merge: `refine-publish-route-map`（REQ-029 / S30）与 `add-report-credit-deduction`（REQ-030 / S31 / 0.26.0 / `V31`）后改为 REQ-031 / S32 / 0.27.0 / `V32`，解 `AppShell` / `App.tsx` / `ApplicationServiceImpl` / `registry` 冲突；后端 691/691、前端 532/532 |
-| 合流 `origin/main`（D-16，第 3 次） | `origin/main@ea5493a` merge: `add-route-completion`（REQ-031 / S32）与 `add-loan-interest-penalty`（`V32` / 0.28.0）后定为 **REQ-032 / S33 / 0.29.0 / `V33`**，解 `openapi.yaml` / `OpenApiTest` / `verification-commands` / `_LOG` 冲突；后端 712/712、前端 545/545、E2E 13/13 + 4/4 |
+| 合流 `origin/main`（D-16，第 3 次） | `e4ed85c` merge: `add-route-completion`（REQ-031 / S32）与 `add-loan-interest-penalty`（`V32` / 0.28.0）后定为 **REQ-032 / S33 / 0.29.0 / `V33`**，解 `openapi.yaml` / `OpenApiTest` / `verification-commands` / `_LOG` 冲突；后端 712/712、前端 545/545、E2E 13/13 + 4/4 |
 | 走查证据刷新 | `bf2fe23` test(notifications): 合流后重跑 `notifications.spec.ts` 13/13 与 `notifications-walkthrough.spec.ts` 4/4，重出浅色三档截图 |
 
 ## 9. 下一步
