@@ -557,6 +557,14 @@
 - **Change：** `add-report-credit-deduction`（`user-credit` ADDED + `admin-console` MODIFIED）
 - **口径：** 一条故事 = 举报成立表单（违规类型 + 违规原因）+ 一份信用扣分结算 + 一次低分联动；账号处罚动作从举报页移除（用户管理页保留）。
 - **编号说明：** 合并 `origin/main` 时 REQ-028 / S29 已被 `add-travel-finance` 占用、REQ-029 / S30 又由 `refine-publish-route-map` 占用，本需求按「后到者顺延」改为 **REQ-030 / S31**（change id 不变）。
+# Story list — REQ-034（issue #38 客服会话结束权交由用户）
+
+> 编号说明（2026-11-18 合并收口）：起草时登记 REQ-028 / S29；合并 main 时号段被 `add-travel-finance` 占用，按「后到者顺延」改为 **REQ-034 / S35**（契约并入 main 0.31.0 + V36（合并时 0.30.0，后随 growth 第五次顺延升版））。
+
+- **来源：** issue #38「客服服务BUG-客服无法结束会话」（无标签；P0 / 迭代 2 / 2 点，2026-11-18 经 IO 确认）
+- **Change：** `refine-service-close`（`customer-service` ADDED Requirement）
+- **口径：** 一条故事 = 一个会话状态机闭环（四态）+ 两个动作（客服标记完成、用户结束）+ 一次契约收敛（删 close、加两接口）
+- **范围：** 含用户结束（`WAITING` / `HANDLING` / `RESOLVED`）、客服标记处理完成、待确认发言回迁、管理端按钮与接口下线；客服评价、超时自动关闭、历史会话列表不在本故事内。
 - **更新时间：** 2026-11-18
 
 | Story | Title | 角色 | Priority | Iteration | Points | Page | Parent REQ | Change | Status |
@@ -580,6 +588,7 @@
 - **占位名边界：** 探索页不落库，坐标名只是临时显示；发布侧由提交校验承担，不改 `pointFallbackName` 本体。
 - **边界：** 路线持久化 / 收藏 / 分享、同行者匹配进发布页、AI 规划页改造均不在本故事。
 - 未接入外部 ALM；本表为仓库内权威故事清单，ALM Sync 状态记为 Pending。
+| S35 | 用户结束客服会话，客服只标记处理完成 | 普通用户 / 客服 | P0 | 迭代 2 | 2 | `#/support` / 管理端客户服务 | REQ-034 | `refine-service-close` | P0 Pass（2026-11-18）；P1 Pass（2026-11-18，WAYNE + Lewis Liu 签）；P2 Pass + G1（2026-11-18，Delta 3 Requirement / 31 Scenario，IO=WAYNE / SA=Jacky）；P3 Pass（2026-11-18，design / tasks 与评审报告已签）；P4 Pass（2026-11-18，后端 583 / 前端 475 / E2E 14，契约并入 0.30.0 + V36，原 0.25.0 + V30 顺延）；G2 Pass（附记录债务，VL=Neal / AO=Lewis Liu / IO=WAYNE / SA=Jacky）；P5 / 归档不执行 |
 
 ## Traceability（REQ-028）
 
@@ -661,3 +670,17 @@
 - **与信用分分离：** 不读写 `user_credit_account` / `credit_ledger`；展示并列但文案区分。
 - **保留边界：** 经验明细页、排行榜、通知、等级权益、管理端、中文头衔、存量回填、#45 路线完成度均排除。
 - **依赖：** 体验发布 / 点赞 / 举报成立的既有事件；配置 `routeme.growth.publish-exp`；契约 / 迁移 P3 排他（预计 0.31.0 + V35）。
+
+## Traceability（REQ-034）
+
+| Story | Requirement scenarios | Change spec | Story file |
+|---|---|---|---|
+| S35 | REQ-034 §4 U-1 ~ U-8 / A-1 ~ A-5 / M-1 ~ M-3 / D-1 ~ D-5 / G-1 ~ G-5 / S-1 ~ S-6 / R-1 ~ R-4（36 条） | `openspec/changes/refine-service-close/specs/customer-service/spec.md`（ADDED） | 无独立故事文件：以意图 + proposal + Delta 承接（与 REQ-012 / REQ-019 / REQ-027 同口径） |
+
+## Notes（REQ-034）
+
+- **不拆故事：** 「客服标记完成 → 用户看到待确认 → 用户结束」是同一状态机闭环；只做用户结束或只做标记完成都会留下不可验收的半成品。
+- **issue 缺陷的处置：** 「客服点击结束会话没反应」不单独修复；按用户 D1 彻底移除结束按钮，管理端 close 接口一并删除。
+- **规格归属：** `customer-service` 尚未进入 `openspec/specs/`，本 change 用 ADDED 追加并声明取代 `add-admin-console` Delta 的两条旧表述；归档 MUST 排在 `add-admin-console` 之后。
+- **行为边界：** 待用户确认不自动关闭（D6）；用户发消息回到 `HANDLING`（D4）；`closed_by` 只记用户（D8）。
+- 未接入外部 ALM；本表为仓库内权威故事清单，ALM Sync 状态记为 Pending。

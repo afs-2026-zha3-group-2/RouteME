@@ -4,6 +4,7 @@ import { loadCurrentServiceSession, openServiceSession } from '../api';
 import { adminErrorText } from '../admin/adminFormat';
 import { adminMessages } from '../i18n/adminMessages';
 import type { DemoUser, ServiceSessionDetail } from '../types';
+import { serviceChatHint } from './helpStatus';
 import { ServiceChat } from './ServiceChat';
 
 type Props = {
@@ -16,16 +17,6 @@ const TIPS = [
   { title: adminMessages.supportTipReportTitle, text: adminMessages.supportTipReportText },
   { title: adminMessages.supportTipAccountTitle, text: adminMessages.supportTipAccountText },
 ];
-
-function statusHint(status: ServiceSessionDetail['status']): string {
-  if (status === 'HANDLING') {
-    return adminMessages.helpHandling;
-  }
-  if (status === 'CLOSED') {
-    return adminMessages.helpClosed;
-  }
-  return adminMessages.helpWaiting;
-}
 
 /**
  * 用户侧独立客服入口：只承载「联系人工客服」一件事。
@@ -81,7 +72,7 @@ export function SupportPage({ currentUser, token }: Props) {
       ? adminMessages.supportSessionLoading
       : session === null
         ? adminMessages.supportSessionIdle
-        : statusHint(session.status);
+        : serviceChatHint(session.status);
 
   return (
     <main className="support-page">

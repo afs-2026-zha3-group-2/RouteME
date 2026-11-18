@@ -60,6 +60,14 @@ export function mvnwCommand() {
 }
 
 /**
+ * Vite entry point.
+ *
+ * The `npm` shim on some Windows machines resolves `npm-cli.js` against the local
+ * `node_modules`, which fails; calling Vite's own entry through `node` is portable.
+ */
+export const VITE_CLI = path.join(FRONTEND_DIR, 'node_modules', 'vite', 'bin', 'vite.js');
+
+/**
  * Start a long-running command and stream its output into a log file.
  *
  * Windows `.cmd` shims (mvnw / npm) can only be spawned through a shell, so the

@@ -2244,10 +2244,11 @@ paths:
           $ref: '#/components/responses/Conflict'
         '500':
           $ref: '#/components/responses/Unexpected'
-  /admin/service/sessions/{sessionId}/close:
+  /admin/service/sessions/{sessionId}/resolve:
     post:
-      operationId: closeAdminServiceSession
-      summary: 结束客服会话
+      operationId: resolveAdminServiceSession
+      summary: 标记处理完成
+      description: 仅 HANDLING 可标记；状态转为 RESOLVED 并记录 resolved_at / resolved_by；客服不再拥有结束会话能力。
       parameters:
         - $ref: '#/components/parameters/BearerToken'
         - name: sessionId
@@ -2258,7 +2259,7 @@ paths:
             format: int64
       responses:
         '200':
-          description: 会话已进入 CLOSED
+          description: 会话已进入 RESOLVED
           content:
             application/json:
               schema:
@@ -2396,12 +2397,12 @@ paths:
     get:
       operationId: loadCurrentServiceSession
       summary: 当前客服会话
-      description: 没有未结束会话时响应体为空。
+      description: 没有未结束会话时响应体为空；未结束包含 WAITING / HANDLING / RESOLVED。
       parameters:
         - $ref: '#/components/parameters/BearerToken'
       responses:
         '200':
-          description: 当前 WAITING / HANDLING 会话与消息；无则为空
+          description: 当前 WAITING / HANDLING / RESOLVED 会话与消息；无则为空
           content:
             application/json:
               schema:
@@ -2414,7 +2415,7 @@ paths:
     post:
       operationId: openServiceSession
       summary: 发起人工客服
-      description: 幂等：已有 WAITING / HANDLING 会话时返回原会话。
+      description: 幂等：已有 WAITING / HANDLING / RESOLVED 会话时返回原会话。
       parameters:
         - $ref: '#/components/parameters/BearerToken'
       responses:
@@ -2484,6 +2485,36 @@ paths:
                 $ref: '#/components/schemas/ServiceMessage'
         '400':
           $ref: '#/components/responses/InvalidInput'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/AccountRestricted'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '500':
+          $ref: '#/components/responses/Unexpected'
+  /service/sessions/{sessionId}/close:
+    post:
+      operationId: closeServiceSession
+      summary: 结束客服会话
+      description: 用户结束本人会话；WAITING / HANDLING / RESOLVED 均可结束；重复结束返回 409 SESSION_CLOSED。
+      parameters:
+        - $ref: '#/components/parameters/BearerToken'
+        - name: sessionId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: 会话已进入 CLOSED
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ServiceSessionDetail'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
@@ -4854,7 +4885,7 @@ components:
       enum: [SUSPEND, BAN, KEEP, UPDATE_BAN, REJECT]
     ServiceSessionStatus:
       type: string
-      enum: [WAITING, HANDLING, CLOSED]
+      enum: [WAITING, HANDLING, RESOLVED, CLOSED]
     AdminUserRef:
       type: object
       required: [id]
@@ -5310,7 +5341,7 @@ components:
           readOnly: true
         by_status:
           type: object
-          required: [WAITING, HANDLING, CLOSED]
+          required: [WAITING, HANDLING, RESOLVED, CLOSED]
           additionalProperties: false
           properties:
             WAITING:
@@ -5318,6 +5349,10 @@ components:
               minimum: 0
               readOnly: true
             HANDLING:
+              type: integer
+              minimum: 0
+              readOnly: true
+            RESOLVED:
               type: integer
               minimum: 0
               readOnly: true
@@ -5644,6 +5679,12 @@ components:
           type: string
           format: date-time
           nullable: true
+        resolved_at:
+          type: string
+          format: date-time
+          nullable: true
+          readOnly: true
+          description: 客服标记处理完成的时间；RESOLVED 与 CLOSED 会话可能有值
         last_message_at:
           type: string
           format: date-time

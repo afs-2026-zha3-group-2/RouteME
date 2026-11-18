@@ -79,27 +79,79 @@ class AdminServiceControllerTest {
     }
 
     @Test
-    void in_close_out_closed() throws Exception {
+    void in_resolve_out_resolved() throws Exception {
         String admin = login("admin", "admin12345");
-        String user = register("CsCloseUser");
+        String user = register("CsResolveUser");
         long sessionId = openSession(user);
         join(admin, sessionId).andExpect(status().isOk());
 
-        close(admin, sessionId)
+        resolve(admin, sessionId)
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.status").value("CLOSED"))
-                .andExpect(jsonPath("$.closed_at").value(FixedClockTestConfig.NOW.toString()));
+                .andExpect(jsonPath("$.status").value("RESOLVED"))
+                .andExpect(jsonPath("$.resolved_at").value(FixedClockTestConfig.NOW.toString()));
+
+        mockMvc.perform(get("/api/admin/service/sessions/" + sessionId)
+                        .header("Authorization", bearer(admin)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("RESOLVED"));
     }
 
     @Test
-    void in_closeWaiting_out_sessionNotHandling() throws Exception {
+    void in_resolveWaiting_out_sessionNotHandling() throws Exception {
         String admin = login("admin", "admin12345");
-        String user = register("CsCloseWaiting");
+        String user = register("CsResolveWaiting");
         long sessionId = openSession(user);
 
-        close(admin, sessionId)
+        resolve(admin, sessionId)
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.code").value("SESSION_NOT_HANDLING"));
+    }
+
+    @Test
+    void in_resolveTwice_out_sessionNotHandling() throws Exception {
+        String admin = login("admin", "admin12345");
+        String user = register("CsResolveTwice");
+        long sessionId = openSession(user);
+        join(admin, sessionId).andExpect(status().isOk());
+        resolve(admin, sessionId).andExpect(status().isOk());
+
+        resolve(admin, sessionId)
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.code").value("SESSION_NOT_HANDLING"));
+    }
+
+    @Test
+    void in_adminCloseEndpoint_out_notFound() throws Exception {
+        String admin = login("admin", "admin12345");
+        String user = register("CsAdminCloseGone");
+        long sessionId = openSession(user);
+
+        mockMvc.perform(post("/api/admin/service/sessions/" + sessionId + "/close")
+                        .header("Authorization", bearer(admin)))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    void in_resolvedMessage_out_backToHandling() throws Exception {
+        String admin = login("admin", "admin12345");
+        String user = register("CsResolvedReply");
+        long sessionId = openSession(user);
+        join(admin, sessionId).andExpect(status().isOk());
+        resolve(admin, sessionId).andExpect(status().isOk());
+
+        mockMvc.perform(post("/api/service/sessions/" + sessionId + "/messages")
+                        .header("Authorization", bearer(admin))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"content":"anything else?"}
+                                """))
+                .andExpect(status().isCreated());
+
+        mockMvc.perform(get("/api/admin/service/sessions/" + sessionId)
+                        .header("Authorization", bearer(admin)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("HANDLING"))
+                .andExpect(jsonPath("$.resolved_at").doesNotExist());
     }
 
     @Test
@@ -189,9 +241,9 @@ class AdminServiceControllerTest {
                 .header("Authorization", bearer(admin)));
     }
 
-    private org.springframework.test.web.servlet.ResultActions close(String admin, long sessionId)
+    private org.springframework.test.web.servlet.ResultActions resolve(String admin, long sessionId)
             throws Exception {
-        return mockMvc.perform(post("/api/admin/service/sessions/" + sessionId + "/close")
+        return mockMvc.perform(post("/api/admin/service/sessions/" + sessionId + "/resolve")
                 .header("Authorization", bearer(admin)));
     }
 

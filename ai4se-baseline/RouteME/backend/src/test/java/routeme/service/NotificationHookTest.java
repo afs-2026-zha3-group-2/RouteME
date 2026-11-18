@@ -107,7 +107,8 @@ class NotificationHookTest {
         // When
         customerService.join(session.id(), admin.id());
         customerService.sendAdminMessage(session.id(), admin.id(), "你好，这里是人工客服");
-        customerService.close(session.id(), admin.id());
+        customerService.resolve(session.id(), admin.id());
+        customerService.closeByUser(session.id(), user.id());
 
         // Then
         assertAll(

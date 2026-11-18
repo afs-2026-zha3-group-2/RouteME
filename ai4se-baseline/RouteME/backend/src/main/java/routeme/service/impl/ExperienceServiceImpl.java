@@ -73,9 +73,9 @@ public class ExperienceServiceImpl
     private final CreditRestrictionGuard creditRestrictionGuard;
     private final Clock clock;
     private final AccountStatusService accountStatusService;
+    private final StudentVerificationService studentVerificationService;
     private final GrowthService growthService;
     private final GrowthProperties growthProperties;
-    private final StudentVerificationService studentVerificationService;
 
     public ExperienceServiceImpl(
             TripPlanService tripPlanService,
@@ -88,9 +88,9 @@ public class ExperienceServiceImpl
             CreditRestrictionGuard creditRestrictionGuard,
             Clock clock,
             AccountStatusService accountStatusService,
+            StudentVerificationService studentVerificationService,
             GrowthService growthService,
-            GrowthProperties growthProperties,
-            StudentVerificationService studentVerificationService) {
+            GrowthProperties growthProperties) {
         this.tripPlanService = tripPlanService;
         this.demoUserService = demoUserService;
         this.photoMapper = photoMapper;
@@ -101,9 +101,9 @@ public class ExperienceServiceImpl
         this.creditRestrictionGuard = creditRestrictionGuard;
         this.clock = clock;
         this.accountStatusService = accountStatusService;
+        this.studentVerificationService = studentVerificationService;
         this.growthService = growthService;
         this.growthProperties = growthProperties;
-        this.studentVerificationService = studentVerificationService;
     }
 
     @Override

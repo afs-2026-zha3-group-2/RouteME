@@ -43,6 +43,10 @@ class AdminConsoleMigrationSqliteTest {
         List<String> reportColumns = jdbcClient.sql("SELECT name FROM pragma_table_info('reports')")
                 .query(String.class)
                 .list();
+        List<String> serviceColumns = jdbcClient.sql(
+                        "SELECT name FROM pragma_table_info('customer_service_sessions')")
+                .query(String.class)
+                .list();
         int serviceTables = jdbcClient.sql("""
                 SELECT COUNT(*) FROM sqlite_master
                  WHERE type = 'table'
@@ -79,6 +83,10 @@ class AdminConsoleMigrationSqliteTest {
                         "SELECT COUNT(*) FROM flyway_schema_history WHERE version = '22' AND success = 1")
                 .query(Integer.class)
                 .single();
+        int v30Applied = jdbcClient.sql(
+                        "SELECT COUNT(*) FROM flyway_schema_history WHERE version = '30' AND success = 1")
+                .query(Integer.class)
+                .single();
 
         // Then
         assertAll(
@@ -93,6 +101,9 @@ class AdminConsoleMigrationSqliteTest {
                                 "resolution_note", "resolution_action", "context_trip_id")),
                         "V19/V22 add report workflow and chat context columns"),
                 () -> assertEquals(2, serviceTables, "customer service tables exist"),
+                () -> assertTrue(
+                        serviceColumns.containsAll(List.of("resolved_at", "resolved_by")),
+                        "V30 adds resolve audit columns"),
                 () -> assertEquals(1, emailIndex, "email uniqueness index exists"),
                 () -> assertTrue(
                         PasswordUtils.matches("admin12345", adminHash),
@@ -102,7 +113,8 @@ class AdminConsoleMigrationSqliteTest {
                 () -> assertEquals(4, demoUsers, "existing demo users default to USER / ACTIVE"),
                 () -> assertEquals("PENDING", reportStatus, "new reports start at PENDING"),
                 () -> assertEquals(1, v19Applied, "V19 recorded in flyway history"),
-                () -> assertEquals(1, v22Applied, "V22 recorded in flyway history"));
+                () -> assertEquals(1, v22Applied, "V22 recorded in flyway history"),
+                () -> assertEquals(1, v30Applied, "V30 recorded in flyway history"));
     }
 
     private String toSqlitePath(Path path) {

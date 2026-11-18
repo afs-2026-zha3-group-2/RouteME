@@ -85,13 +85,22 @@ public interface CustomerService {
     Optional<ServiceSessionDetailResponse> join(long sessionId, long adminId);
 
     /**
-     * 结束会话：{@code HANDLING → CLOSED}。
+     * 用户结束本人会话：{@code WAITING / HANDLING / RESOLVED → CLOSED}。
+     *
+     * @param sessionId 会话 id
+     * @param userId    调用者 id
+     * @return 详情；会话不存在或不属于调用者时为空
+     */
+    Optional<ServiceSessionDetailResponse> closeByUser(long sessionId, long userId);
+
+    /**
+     * 客服标记处理完成：{@code HANDLING → RESOLVED}。
      *
      * @param sessionId 会话 id
      * @param adminId   管理员 id
      * @return 详情；会话不存在时为空
      */
-    Optional<ServiceSessionDetailResponse> close(long sessionId, long adminId);
+    Optional<ServiceSessionDetailResponse> resolve(long sessionId, long adminId);
 
     /**
      * 用户相关举报（该用户是举报人或被举报人）。

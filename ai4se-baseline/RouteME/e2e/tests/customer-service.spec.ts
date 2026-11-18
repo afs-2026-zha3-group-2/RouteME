@@ -199,11 +199,14 @@ test.describe('[C] customer service', () => {
     expect(partners.ok()).toBeTruthy();
     expect((await partners.json()) as unknown[]).toEqual([]);
 
-    const closed = await page.request.post(
-      `${API}/admin/service/sessions/${first.id}/close`,
-      { headers: bearer(token) },
-    );
-    expect(closed.ok()).toBeTruthy();
+    const closed = await page.request.post(`${API}/admin/service/sessions/${first.id}/close`, {
+      headers: bearer(token),
+    });
+    expect(closed.status()).toBe(404);
+
+    await page.getByRole('button', { name: '结束会话' }).click();
+    // 昵称 / 其他按钮的可见文案也可能含「确认」，限定到 Popconfirm 内的确认按钮。
+    await page.locator('.ant-popconfirm').getByRole('button', { name: /确\s*认/ }).click();
     await expect(page.locator('.help-chat-head')).toContainText('已结束', { timeout: 6000 });
     await expect(page.getByText('会话已结束，只能查看历史消息。')).toBeVisible();
     await expect(
@@ -230,7 +233,7 @@ test.describe('[C] customer service', () => {
     expect(((await history.json()) as { status: string }).status).toBe('CLOSED');
   });
 
-  test('[C4] keeps the user chat and the admin board in sync end to end', async ({ browser }) => {
+  test('[C5] keeps the user chat and the admin board in sync end to end', async ({ browser }) => {
     // 双端同时在线：两个独立 context，避免共享 localStorage 里的身份。
     test.setTimeout(120_000);
     // config 已把 ROUTEME_E2E_BASE_URL 折算进 use.baseURL，这里直接复用。
@@ -349,5 +352,72 @@ test.describe('[C] customer service', () => {
       await userContext.close();
       await adminContext.close();
     }
+  });
+
+  test('[C4] marks a session resolved and lets the user close it', async ({ page }) => {
+    const user = await createUserViaApi(page, `客服待确认_${Date.now()}`);
+
+    await loginAsAccount(page, user);
+    await page.goto('/#/support');
+    await page.getByRole('button', { name: '开始对话' }).click();
+    await expect(page.locator('.help-chat-head')).toContainText('等待客服接入');
+
+    const current = await page.request.get(`${API}/service/sessions/current`, {
+      headers: bearer(user.token),
+    });
+    const session = (await current.json()) as { id: number; status: string };
+
+    const token = await adminToken(page);
+    const joined = await page.request.post(
+      `${API}/admin/service/sessions/${session.id}/join`,
+      { headers: bearer(token) },
+    );
+    expect(joined.ok()).toBeTruthy();
+    const resolved = await page.request.post(
+      `${API}/admin/service/sessions/${session.id}/resolve`,
+      { headers: bearer(token) },
+    );
+    expect(resolved.ok()).toBeTruthy();
+
+    await expect(page.locator('.help-chat-head')).toContainText('待用户确认', { timeout: 6000 });
+    // 同一句提示同时出现在卡片头部与聊天头部，限定到聊天头部避免 strict mode。
+    await expect(
+      page.locator('.help-chat-head').getByText('客服已标记处理完成，如问题已解决请结束会话。'),
+    ).toBeVisible();
+
+    // 用户继续发言 → 回到处理中，resolved_* 清空。
+    const composer = page.getByPlaceholder('描述你遇到的问题（500 字以内）');
+    await composer.fill('问题还没解决');
+    await page.getByRole('button', { name: /发\s*送/ }).click();
+    await expect(page.locator('.help-chat-head')).toContainText('客服已接入', { timeout: 6000 });
+
+    const stillResolved = await page.request.get(`${API}/service/sessions/${session.id}/messages`, {
+      headers: bearer(user.token),
+    });
+    expect(stillResolved.ok()).toBeTruthy();
+
+    const resolvedAgain = await page.request.post(
+      `${API}/admin/service/sessions/${session.id}/resolve`,
+      { headers: bearer(token) },
+    );
+    expect(resolvedAgain.ok()).toBeTruthy();
+    await expect(page.locator('.help-chat-head')).toContainText('待用户确认', { timeout: 6000 });
+
+    await page.getByRole('button', { name: '结束会话' }).click();
+    // 昵称 / 其他按钮的可见文案也可能含「确认」，限定到 Popconfirm 内的确认按钮。
+    await page.locator('.ant-popconfirm').getByRole('button', { name: /确\s*认/ }).click();
+    await expect(page.locator('.help-chat-head')).toContainText('已结束', { timeout: 6000 });
+
+    const detail = await page.request.get(`${API}/admin/service/sessions/${session.id}`, {
+      headers: bearer(token),
+    });
+    const body = (await detail.json()) as {
+      status: string;
+      resolved_at?: string;
+      messages: { content: string }[];
+    };
+    expect(body.status).toBe('CLOSED');
+    expect(body.resolved_at).toBeTruthy();
+    expect(body.messages.some((message) => message.content === '问题还没解决')).toBe(true);
   });
 });

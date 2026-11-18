@@ -2177,3 +2177,101 @@ REQ-010：聊天页按原型重构、聊天准入与退出语义调整、集合�
 - **不并入 #45 / 明细页 / 排行榜 / 通知 / 权益 / 管理端：** 均为独立故事或独立 change，本 change 不预留端点。
 - **阶段：** 单阶段；无归档前置依赖（`user-growth` 全新能力），但需与 #45（REQ-032 / S33）协调契约版本与迁移号；#29 已并入 main，其 `AdminReportServiceImpl.resolve` 冲突点已消除。
 - **质量自检（split-heuristics）：** 子目标一句话可说明 ✓；端到端可观察（首次发布 +10 → 10 赞 +5 → 升级 / 展示 → 举报成立 −50）✓；可独立运行 ✓；capability 名真实（`user-growth`）✓；无依赖环 ✓；41 场景为 Ready 口径，P2 已复核合并评估结论。
+## 31. REQ-034 变更影响 — 客服会话结束权交由用户（issue #38）
+
+> 编号说明（2026-11-18 合并收口）：起草时登记 REQ-028 / S29，契约暂定 0.25.0 + 迁移 V30；合并 main 时号段被 `add-travel-finance` 占用，按「后到者顺延」落定 **REQ-034 / S35 / V36**，契约并入 main **0.31.0**（合并时 0.30.0，后随 growth 第五次顺延升版）。
+
+- **日期：** 2026-11-18 ｜ **触发：** issue #38 + 用户当次范围裁决（D1–D9）
+- **基线：** `origin/main@822471c`；分支 `feature/refine-service-close`（独立 worktree `.worktrees/refine-service-close`）
+- **粒度：** 应用架构（能力边界 / 状态机 / 数据所有权 / 契约 / 展示面），非代码设计
+
+### 31.1 Requirement set
+
+- `requirement-workspace/requirements/REQ-034-service-close.md`（六字段 + 36 场景 + OQ + DoR）
+- `requirement-workspace/intents/REQ-034-service-close.md`
+- 故事：S35（`stories.md`；无独立故事文件，与 REQ-012 / REQ-019 同口径）
+- 能力：`customer-service`（ADDED Requirement）；依赖 `user-support` / `user-auth` / `trip-companions`（只读不变量）。
+- **Delta：** `openspec/changes/refine-service-close/specs/customer-service/spec.md`（ADDED）。
+
+### 31.2 As-is asset inventory（evidence paths）
+
+| 资产 | 路径 | 现状 |
+|---|---|---|
+| 会话状态枚举 | `backend/.../enums/ServiceSessionStatusEnum.java` | 三态 `WAITING` / `HANDLING` / `CLOSED` |
+| 会话聚合 / 实体 | `pojo/CustomerServiceSession.java`、`entity/CustomerServiceSessionEntity.java` | `closed_at` / `closed_by`；无 `resolved_*` |
+| 会话服务 | `service/impl/CustomerServiceImpl.java` | `openSession` 只含 `WAITING`/`HANDLING`；`close` 仅 `HANDLING` 且写管理员 id；`appendMessage` 只拦 `CLOSED` |
+| 用户端接口 | `controller/ServiceController.java` | `current` / `create` / `messages`；无 close |
+| 管理端接口 | `controller/AdminServiceController.java` | 列表 / 详情 / `join` / `close` |
+| 用户端页面 | `help/SupportPage.tsx`、`help/ServiceChat.tsx` | 状态提示 + 消息区；`CLOSED` 后才出现「重新发起会话」；`reloadSession` 把空 `current` 当 `CLOSED` |
+| 管理端页面 | `admin/service/AdminServiceDetailPage.tsx`、`AdminServicePage.tsx` | `WAITING` 接入；`HANDLING` 结束（Popconfirm）；筛选三态；待接入徽标只统计 `WAITING` |
+| 共享消息区 | `admin/service/ServiceConversation.tsx` | 只读判定只看 `CLOSED` |
+| i18n | `i18n/adminMessages.ts` | `serviceClose` / `sessionNotHandling` / `helpWaiting` / `helpHandling` / `helpClosed` / `helpRestart` |
+| 表结构 | `db/migration/V21__admin_console.sql` | `status VARCHAR(12)`；`closed_at` / `closed_by`；索引 `(user_id, status)` 与 `(status, created_at)` |
+| 契约 | `RouteME/openapi.yaml` 0.24.0 | 状态枚举三态；管理端 close；错误码 `SESSION_NOT_HANDLING` / `SESSION_ALREADY_HANDLING` / `SESSION_CLOSED` |
+| 迁移头 | `db/migration` | `V29__credit_exit_application.sql` |
+| 测试 | `e2e/tests/customer-service.spec.ts` `[C3]`、`e2e/tests/admin.spec.ts` `[I3]` | 都依赖管理端 close |
+| 规格 | `openspec/changes/add-admin-console/specs/customer-service/spec.md`（未归档） | 「人工客服会话生命周期」写死「用户 MUST NOT 自行关闭会话」与「客服结束会话」 |
+| 原型 | `docs/prototype/v1` / `v2` | 无客服会话界面 |
+
+### 31.3 As-is → proposed delta
+
+| 资产 | As-is | Proposed delta |
+|---|---|---|
+| `customer-service` 规格 | 三态；结束权在客服 | ADDED Requirement「会话结束权与待用户确认」：四态、用户结束三态可用、客服只标记完成、待确认消息回迁、删除管理端 close；声明取代旧 Delta 两条表述 |
+| 状态枚举 | 三态 | 增加 `RESOLVED`（待用户确认） |
+| 会话表 | 无 `resolved_*` | `V36` 加 `resolved_at` / `resolved_by` 两列（可空） |
+| 用户端接口 | 无 close | 新增 `POST /api/service/sessions/{sessionId}/close` |
+| 管理端接口 | `close` 仅 HANDLING | 删除 close；新增「标记处理完成」端点（名称 P3 定） |
+| `openSession` | `WAITING` / `HANDLING` | 扩为 `WAITING` / `HANDLING` / `RESOLVED` |
+| 消息写入 | 只拦 `CLOSED` | `RESOLVED` 下发消息后回迁 `HANDLING` 并清空 `resolved_*`（同事务） |
+| 用户端页面 | 无结束按钮；`CLOSED` 才可重新发起 | 三态显示「结束会话」+ 二次确认；`RESOLVED` 提示待确认 |
+| 管理端页面 | 结束按钮 + 三态筛选 | 移除结束；新增「标记处理完成」；筛选四态；文案增「待用户确认」 |
+| 契约 | 0.24.0；三态；管理端 close | 升 `0.31.0`：状态增 `RESOLVED`；新增两个端点；删除 close；摘要 / 详情增 `resolved_at` |
+| 迁移 | V29 | `V36__add_service_session_resolve.sql` |
+| E2E | 管理端 close 两处 | 改写为「客服标记完成 → 用户结束」全链路 |
+
+### 31.4 Blast radius（应用架构）
+
+- **客服域：** 状态机、会话服务、消息写入、用户端与管理端接口、共享消息区只读判定、i18n。
+- **用户侧入口：** `#/support` 会话头新增动作；`current` 语义扩展影响 SupportPage 初始加载与轮询。
+- **管理端：** 客服面板动作区、队列筛选、页签徽标（口径不变但需验证）、会话详情展示 `resolved_at`。
+- **契约 / 客户端：** 删除路径会使旧客户端 404；状态枚举新增值影响筛选参数校验与前端映射。
+- **数据：** 两列迁移；SQLite 与 H2 双引擎；旧库升级与全新库重放都要覆盖。
+- **测试：** 两条既有 E2E 必须改写；新增客服域单测与契约测试；前端纯函数 / 组件测试（结束按钮状态派生）。
+
+### 31.5 Artifact impact
+
+- **OpenSpec：** 新增 `openspec/changes/refine-service-close/`（proposal + `customer-service` ADDED Delta + P2–P4 产物）。
+- **需求工作区：** 意图 / Ready / deep-dive 增补 / impact §25 / stories S35 / registry / handoff。
+- **代码：** 后端客服域（枚举、服务、两个控制器）；前端 `ServiceChat` / `SupportPage` / `AdminServiceDetailPage` / `AdminServicePage` / `adminMessages` / `api.ts` / `types.ts`。
+- **迁移：** `V36` 双引擎（SQLite + H2）。
+- **测试：** 后端会话状态机单测 / API 测试 / 迁移测试；前端纯函数单测；E2E `customer-service` / `admin` 改写。
+- **文档 / 知识库：** P0–P4 阶段记录、质量报告、评审报告；不更新 Living Spec（P5 不执行）。
+
+### 31.6 Dual-track notes（OpenSpec vs agile）
+
+- **OpenSpec 轨：** 单 change `refine-service-close`，单能力 `customer-service` 追加 ADDED；不改未归档 Delta；归档 MUST 排在 `add-admin-console` 之后。
+- **Agile 轨：** 单故事 S35（P0 / 迭代 2 / 2 点）；「用户结束」「客服标记完成」「待确认回迁」是同一状态机闭环，不拆故事。
+- **场景数量：** 36 条，单 change 可承载；P2 可按主题拆 Requirement 组，不拆 change。
+
+### 31.7 Risks & blockers
+
+| 级别 | 项 | 说明 / 缓解 |
+|---|---|---|
+| Risk | `customer-service` 未进入 Living Spec | 只能 ADDED；在 proposal / Delta 显式声明取代 `add-admin-console` 的两条旧表述；归档顺序排在 `add-admin-console` 之后 |
+| Risk | `openSession` 漏改导致待确认被误判为已结束 | P0 G-05 已列为必改点；P3 设计显式列出；E2E 补「待确认刷新仍可见」用例 |
+| Risk | 消息发送与状态回迁的并发 | 同事务；回迁用 `.eq(status, RESOLVED)` 条件更新；P3 给出顺序与并发测试 |
+| Risk | 删除管理端 close 使旧客户端 404 | 契约同步删除并升次版本；E2E 断言路径不存在；无外部客户端依赖 |
+| Risk | 状态枚举新增值影响前端映射 | 前端 `ServiceSessionStatus` union 与徽标 / 文案映射同步；typecheck 与单测门禁 |
+| Risk | E2E 既有两条用例依赖被删能力 | P4 必须改写；否则删除接口后直接红灯 |
+| Risk | 契约 / 迁移号撞号 | 暂定 0.31.0 + V36（合并时 0.30.0）；P3 排他确认 |
+| Risk | issue 「点击没反应」未单独修复 | 用户 D1 明确按钮下线；在 proposal 与交付说明记录该处置 |
+| Blocker | 无 | blocking OQ=0；DoR BLOCKER=0；A0 ⑨–⑫ 全过 |
+
+### 31.8 Suggested split boundaries（供 proposal-split / story-split）
+
+- **一个 change：** `refine-service-close` ← REQ-034（S35）。
+- **不拆：** 用户结束、客服标记完成、待确认回迁是同一状态机闭环；拆开会出现「能标记但不能结束」或「能结束但客服无处标记」的半成品。
+- **不并入：** 客服评价、超时自动关闭、历史会话列表、管理端统计。
+- **依赖：** `user-support`（入口）、`user-auth`（Bearer）、`trip-companions`（隔离不变量）。
+- **质量自检（split-heuristics）：** 子目标一句话 ✓；端到端可观察（客服标记 → 用户看到待确认 → 用户结束 → 双方只读）✓；可独立运行 ✓；capability 名真实（`customer-service`）✓；无依赖环 ✓；场景 36 条单 change 可承载 ✓。

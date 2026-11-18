@@ -1462,6 +1462,81 @@ MVP 无推送、无通知；以下为点赞与信用状态的展示面契约。
 | `user-auth` | 管理员角色与权限 | ✓ 只读复用 `requireAdmin` | REQ-018 |
 
 - **未收敛 ✗：** 无。
+## REQ-034 增补 — 客服会话结束权交由用户（issue #38）
+
+> 编号说明（2026-11-18 合并收口）：原 REQ-028 / S29 / V30 被 `add-travel-finance` 占用，按「后到者顺延」改为 **REQ-034 / S35 / V36**（契约并入 main 0.31.0（合并时 0.30.0，后随 growth 第五次顺延升版））。
+> 日期：2026-11-18 ｜ 基线 `origin/main@822471c` ｜ 需求 `requirements/REQ-034-service-close.md` ｜ 能力 `customer-service`
+
+### ① 数据契约（Data contract）
+
+| 实体 / 字段 | 现状 | 本需求变化 | 口径 / 约束 |
+|---|---|---|---|
+| `customer_service_sessions.status` | `VARCHAR(12)`，三态 `WAITING` / `HANDLING` / `CLOSED` | 增加 `RESOLVED`（待用户确认，8 字符） | 四态闭集；只允许 `WAITING→HANDLING`、`WAITING→CLOSED`、`HANDLING→RESOLVED`、`HANDLING→CLOSED`、`RESOLVED→HANDLING`、`RESOLVED→CLOSED` |
+| `resolved_at` | 不存在 | 新增可空时间列（迁移 `V36`） | `HANDLING→RESOLVED` 写入；`RESOLVED→HANDLING` 清空 |
+| `resolved_by` | 不存在 | 新增可空整数列（迁移 `V36`） | 记录标记完成的管理员 id；用户端不展示 |
+| `closed_at` / `closed_by` | 存在；仅客服 close 写入 | 语义改为「用户结束」；`closed_by` 记用户 id | 管理端任何路径都不再写 `closed_*` |
+| `current` / 幂等创建 | `openSession` 查 `WAITING` / `HANDLING` | 查询集合扩为 `WAITING` / `HANDLING` / `RESOLVED` | 否则待确认会被当成已结束 |
+| 契约 `ServiceSessionStatus` | 三态 | 增加 `RESOLVED` | 摘要 / 详情 / 筛选共用同一枚举 |
+| 契约摘要 / 详情 | 无 `resolved_at` | 增加可空 `resolved_at` | `resolved_by` 只在管理端详情按需返回（P3 定） |
+
+- **数据所有权：** 会话与会话状态归 `customer-service`；本需求不新增表，只加两列。
+- **留痕语义：** `resolved_*` 是「客服处理完成」的当前标记，不是不可变历史；回到 `HANDLING` 后清空，历史通过消息时间线追溯。
+
+### ② 边界归属（Boundary attribution）
+
+| 相邻能力 | 现状 | 本需求关系 | 归属 / 证据 |
+|---|---|---|---|
+| `customer-service` | 会话生命周期、消息、短轮询、管理端队列 | ✓ 本需求唯一修改点 | `add-admin-console` Delta + `refine-service-*` 增量 |
+| `user-support` | `#/support` 入口、访问控制、窄屏入口 | ✓ 不改；只消费会话状态 | `refine-user-support-entry`（未归档） |
+| `user-auth` | Bearer 会话与角色 | ✓ 不改 | Living Spec `user-auth` |
+| `trip-companions` | 行程聊天、同行关系 | ✓ 不改；隔离不变量保持 | Living Spec `trip-companions` |
+| 管理端 `admin-console` | 后台框架、权限、页签 | ✓ 不改框架；只改客服面板 | `add-admin-console` Delta |
+
+- **未收敛 ✗：** 无。
+
+### ③ 跨 REQ 一致性（Cross-REQ consistency）
+
+| 相关需求 | 口径 | 本需求是否一致 | 说明 |
+|---|---|---|---|
+| REQ-018（管理后台客服能力，未归档） | 「用户 MUST NOT 自行关闭会话」；「客服结束会话」 | ✗ 有意翻转 | 本需求取代该表述；Delta 与本表显式记录，G1 需 SA 确认 |
+| REQ-018 系列（`refine-service-workbench-live`） | 接入前可读消息、实时可见 | ✓ 一致 | 标记完成不改变消息可见性；`RESOLVED` 仍可读 |
+| REQ-018 系列（`refine-service-inbox-unread`） | 新消息置顶与气泡基于消息条数增长 | ✓ 一致 | 状态变化不参与未读判定；`RESOLVED` 下新消息仍会置顶 |
+| `refine-user-support-entry` | 用户侧只有客服入口 | ✓ 一致 | 结束按钮落在同一 `#/support` 页 |
+| REQ-003 / REQ-013（行程聊天） | 客服会话与行程聊天隔离 | ✓ 一致 | 不改消息表与查询范围 |
+| REQ-006（退出登录） | 401 `SESSION_INVALID` | ✓ 一致 | 结束接口沿用同一 Bearer 校验 |
+
+- **未收敛 ✗：** `add-admin-console` Delta 的两条旧表述由本需求取代，属有意变更。
+### ④ 通知 / 展示契约（Notification / display contract）
+
+| surface | recipient | content + display fields | channel | cardinality |
+|---|---|---|---|---|
+| 用户端会话头（`WAITING` / `HANDLING`） | 用户 | 状态徽标 + 「等待客服接入」/「客服已接入」+ 「结束会话」按钮 | 应用内 | 每会话 1 处 |
+| 用户端会话头（`RESOLVED`） | 用户 | 状态徽标「待用户确认」+ 「客服已标记处理完成，如问题已解决请结束会话」+ 「结束会话」按钮 | 应用内 | 每会话 1 处 |
+| 用户端结束确认弹窗 | 用户 | 确认文案按状态区分；`WAITING` 提示「结束后将取消本次排队」 | 应用内弹窗 | 每次操作 1 次 |
+| 用户端会话头（`CLOSED`） | 用户 | 「已结束」+ 只读提示 + 「重新发起会话」 | 应用内 | 每会话 1 处 |
+| 管理端动作区（`HANDLING`） | 客服 | 「标记处理完成」按钮（直接生效） | 应用内 | 每会话 1 处 |
+| 管理端动作区（`WAITING` / `RESOLVED` / `CLOSED`） | 客服 | 不显示「标记处理完成」；`WAITING` 仍显示「接入会话」 | 应用内 | 每会话 1 处 |
+| 管理端队列筛选 | 客服 | 全部 / 等待接入 / 处理中 / 待用户确认 / 已结束 | 应用内 | 每页 1 处 |
+| 管理端页签徽标 | 客服 | 只统计 `WAITING`；`RESOLVED` 不计入 | 应用内 | 每页 1 处 |
+| 管理端会话详情 | 客服 | 展示 `resolved_at` 与标记人（`resolved_by`）；`CLOSED` 后只读 | 应用内 | 每会话 1 处 |
+| 系统通知消息 | 任何人 | MUST NOT 插入消息流（OQ-5 默认） | — | 0 |
+| 推送 / 邮件 / 站内信 | 任何人 | 本需求不发送 | — | 0 |
+
+- **展示字段完整性：** 用户端每个未结束状态都有「状态 + 提示 + 结束按钮」三个元素；管理端每个未结束状态都有明确动作（接入 / 标记完成）或只读。
+- **无 notification：** 不新增站内信、推送、邮件与系统消息；状态变化只通过页面轮询与提示区可见。
+
+### 探针记录（REQ-034 客服结束权）
+
+- `ServiceChat.reloadSession` 把 `current === null` 直接映射为 `CLOSED`；新增 `RESOLVED` 后必须同步扩 `openSession`，否则用户看到待确认会话时会被误判为已结束。
+- `CustomerServiceImpl.close` 的条件更新用 `.eq(status, HANDLING)` 做 CAS；用户结束要覆盖三态，条件应为 `.in(status, WAITING, HANDLING, RESOLVED)`，并用 `CLOSED` 前置校验区分「不存在 / 不是本人 / 已结束」。
+- `appendMessage` 目前只拦 `CLOSED`；在 `RESOLVED` 下发送消息需要先写消息再回迁状态，或先条件更新再写消息，二者需同事务；回迁条件为 `.eq(status, RESOLVED)`，避免并发覆盖管理端的重复标记。
+- `openSession` 用 `in(status, WAITING, HANDLING)` 且按创建时间倒序取第一条；扩为三态后仍保持「最多一条未结束」的既有幂等语义。
+- `AdminServicePage` 的待接入徽标单独请求 `status=WAITING`；新增 `RESOLVED` 不会自动被计入，口径天然不变。
+- `ServiceSessionStatusEnum.of(...)` 对未知状态抛 `InvalidInputException`；新增 `RESOLVED` 后，筛选与契约示例都要同步，否则旧客户端传值会 400。
+- E2E `customer-service.spec.ts` `[C3]` 直接请求管理端 close；删除路径后必须改为「用户结束」，并补客服「标记处理完成」的前置动作。
+- 契约删除路径要同步删除 `operationId: closeAdminServiceSession` 与相关响应引用；Redocly 对悬空 `$ref` 会报 error。
+- `docs/prototype` 无客服会话界面；本需求无原型先行，但需在 P4 走查 1440 / 1024 / 768 / 390 与浅 / 深色，确认新增按钮与提示不溢出。
+- **{TBD}：** 无 blocking；文案、队列排序位置、`resolved_by` 是否入用户端契约为 non-blocking（OQ-2 / OQ-4 / OQ-6），P3 定稿。
 
 ### ④ 通知 / 展示契约（Notification / display contract）
 

@@ -25,7 +25,7 @@ export function ReportStatusBadge({ status }: { status: ReportStatus }) {
   return <span className={`badge ${reportStatusTone(status)}`}>{adminStatusLabel(status)}</span>;
 }
 
-/** 客服会话三态徽标。 */
+/** 客服会话四态徽标。 */
 export function ServiceStatusBadge({ status }: { status: ServiceSessionStatus }) {
   return (
     <span className={`badge ${serviceStatusTone(status)}`}>{serviceStatusLabel(status)}</span>

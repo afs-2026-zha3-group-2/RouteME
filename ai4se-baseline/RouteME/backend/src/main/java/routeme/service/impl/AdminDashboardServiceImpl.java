@@ -54,7 +54,8 @@ public class AdminDashboardServiceImpl implements AdminDashboardService {
     private static final List<String> APPLICATION_STATUS_KEYS =
             List.of("pending", "accepted", "rejected", "cancelled", "left");
     private static final List<String> REPORT_STATUS_KEYS = List.of("PENDING", "PROCESSING", "RESOLVED", "REJECTED");
-    private static final List<String> SERVICE_SESSION_STATUS_KEYS = List.of("WAITING", "HANDLING", "CLOSED");
+    private static final List<String> SERVICE_SESSION_STATUS_KEYS =
+            List.of("WAITING", "HANDLING", "RESOLVED", "CLOSED");
 
     private final UserMapper userMapper;
     private final TripPlanMapper tripPlanMapper;
