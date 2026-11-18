@@ -21,8 +21,8 @@
 
 | Artifact | Path | Result |
 |---|---|---|
-| Proposal | [`proposal.md`](proposal.md) | 问题、In/Out scope、影响面、D1–D12 与残余风险齐全；`travel-finance` ADDED；理赔 / 退保 / 罚息 / 管理后台 / 真实机构对接显式排除；**待 WAYNE 重签** |
-| Delta Spec — `travel-finance` | [`specs/travel-finance/spec.md`](specs/travel-finance/spec.md) | 10 Requirement / 40 Scenario；ADDED；`openspec validate --strict` valid；**待 WAYNE 重签** |
+| Proposal | [`proposal.md`](proposal.md) | 问题、In/Out scope、影响面、D1–D12 与残余风险齐全；`travel-finance` ADDED；理赔 / 退保 / 罚息 / 管理后台 / 真实机构对接显式排除；**WAYNE 2026-11-18 复审通过** |
+| Delta Spec — `travel-finance` | [`specs/travel-finance/spec.md`](specs/travel-finance/spec.md) | 10 Requirement / 40 Scenario；ADDED；`openspec validate --strict` valid；**WAYNE 2026-11-18 复审通过** |
 | AC / DoV review | [`dov-ac-review.md`](dov-ac-review.md) | AC 4/4 Pass；DoV 5/5 Pass；REQ-028 §4 全覆盖（含 5 条收敛说明）；基线保留 N/A；无阻塞 |
 | Consistency lint | [`consistency-lint.md`](consistency-lint.md) | Pass；BLOCKER 0 / WARNING 0 / SUGGESTION 7 / N/A 1 |
 | P1 artifact review | `docs/reviews/20261117-add-travel-finance-proposal-review.md` | Pass 结论保留；签名槽位重置为待复审（2026-11-18 返工） |
@@ -66,16 +66,16 @@
 
 | 角色 | 姓名 | 状态 |
 |---|---|---|
-| IO | WAYNE | 待重签（2026-11-18 返工） |
-| SA | Jacky | 待重签（2026-11-18 返工） |
+| IO | WAYNE | 已批准（2026-11-18 保险返工后复审通过） |
+| SA | Jacky | 已批准（2026-11-18 保险返工后复审通过） |
 | 当前开发者 | Karena | 已确认（2026-11-18 复审） |
 | VL | Neal | 不适用（G1 签署矩阵为 IO + SA） |
 | SM | Lewis | 不适用（G1 签署矩阵为 IO + SA） |
 
-签署来源：发起人 2026-11-17 确认「G1 = WAYNE + Jacky，全部批准」；2026-11-18 保险返工后需重新确认。本记录不代替后续 G2 / G3 的独立签署。
+签署来源：发起人 2026-11-17 确认「G1 = WAYNE + Jacky，全部批准」；2026-11-18 保险返工后由发起人确认「WAYNE 与 Jacky 已于 2026-11-18 复审通过」。本记录不代替后续 G2 / G3 的独立签署。
 
 ## Next
 
-- IO / SA 重签后 → P4 报告重审 → verify 提交 / PR / CI → G2。
+- G1 已闭环 → P4 报告已于 2026-11-18 复审通过 → PR #42 已提交且 CI 2/2 通过 → 待 VL 签署 G2。
 - C1–C6 已在 P3 / P4 完成；C7 留待文档窗口。
 - 归档在 P5；契约 / 迁移号已在合并 `origin/main` 后确认。

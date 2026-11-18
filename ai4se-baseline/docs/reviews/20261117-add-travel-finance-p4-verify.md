@@ -1,12 +1,12 @@
 # 本地验证报告 — add-travel-finance（P4）
 
-- **Verdict: Pass with documented debt（change scope，待重签）**
+- **Verdict: Pass with documented debt（change scope；2026-11-18 复审通过，PR #42 CI 2/2 绿）**
 - **Change：** `add-travel-finance`（REQ-028 / S29 旅行保障与小额借款）
 - **阶段：** P4（Apply & verify）｜ **日期：** 2026-11-17（2026-11-18 保险返工后重跑）｜ **记录人：** Karena（当前开发者）
 - **分支 / 基点：** `feature/add-travel-finance` ← `origin/main@822471c`
 - **契约 / 迁移：** `RouteME/openapi.yaml` 0.25.0 ｜ `V30__add_travel_finance.sql`
 - **输入：** Delta（`travel-finance`，10 Requirement / 40 Scenario）、`design.md` D1–D12、`atdd-design.md` E1–E40、`tasks.md` T0–T12
-- **范围：** 本地实现 + 本地验证；未执行 PR / CI / CD / G2，本报告不是 Gate 结论
+- **范围：** 本地实现 + 本地验证；2026-11-18 已提交 PR #42 且 CI 2/2 通过；CD / G2 未执行（G2 由 VL 签署），本报告不是 Gate 结论
 - **编号顺延：** rebase 到 `origin/main@822471c` 后，REQ-024 / S25 → REQ-028 / S29，契约 0.19.0 → 0.24.0 → 0.25.0，迁移 `V25` → `V28` → `V30`（两轮 rebase）
 
 ## 0. 复审说明（2026-11-18）
@@ -18,7 +18,7 @@
 - 金融 E2E **3/3**，余额链改为 `¥10,000.00` → `¥10,950.00` → `¥9,950.00`；
 - Redocly **0 error / 26 warning**；
 - 场景覆盖由 E1–E38 扩展为 E1–E40；
-- 原 2026-11-18 的签署因返工失效，两位签署人需重新批准。
+- 原 2026-11-18 的签署因返工失效；2026-11-18 返工后经 WAYNE 与 Karena 复审通过。
 
 ## 1. 环境
 
@@ -119,13 +119,27 @@ E2E 余额链：`¥10,000.00` → 借 1,000 元 / 14 天（净额 950）`¥10,95
 
 ## 8. 结论
 
-**Overall: Pass with documented debt（change scope，待重签）。** 后端 618、前端 482、金融 E2E 3/3、契约 0 error、OpenSpec valid；40 个 Delta Scenario 均有实现与测试落点；Non-goals 反向验证通过；未发现本 change 引入的失败。PR / CI / CD / G2 未执行。
+**Overall: Pass with documented debt（change scope；2026-11-18 复审通过）。** 后端 618、前端 482、金融 E2E 3/3、契约 0 error、OpenSpec valid；40 个 Delta Scenario 均有实现与测试落点；Non-goals 反向验证通过；未发现本 change 引入的失败。PR #42 已提交且 CI 2/2 通过（见 §9）；CD / G2 未执行。
 
-## 9. 签署记录
+## 9. 提交与 CI（2026-11-18）
+
+| 项 | 结果 |
+|---|---|
+| PR | [#42](https://github.com/afs-2026-zha3-group-2/RouteME/pull/42) → `main` |
+| 提交 | `24ae282`（1 commit，104 files，+9,221 / −13） |
+| 基点 | 提交前 rebase 到 `origin/main@5cb67ff`；唯一冲突 `frontend/src/styles.css`（main 的 AI 规划样式块与本 change 的金融样式块在同一位置追加），解决方式为保留 main 块后追加本 change 的 459 行，`git diff origin/main` 为纯新增 |
+| CI / Backend (Java 21) | 通过 |
+| CI / Frontend (Node 22) | 通过（42s） |
+| 合并状态 | 无冲突，可自动合并 |
+| rebase 后本地复验 | `npm run build` 通过；前端 62 文件 / 493 tests passed（main 新增 2 个测试文件）；后端未受 main 改动影响，仍为 618 |
+
+E2E 不在 CI（`.github/workflows/ci.yml` 只跑后端 `verify` 与前端 `build && test`），金融 E2E 仍以本地 3/3 为证据。
+
+## 10. 签署记录
 
 | 对象 | 签署位 | 批准人 | 批准时间 | 批准来源 | 批准范围 |
 |---|---|---|---|---|---|
-| 本报告 | 报告 1 / 2（WAYNE） | WAYNE（IO） | 待重签 | 2026-11-18 保险返工后需重新确认 | 结论、偏差与残余风险 |
+| 本报告 | 报告 1 / 2（WAYNE） | WAYNE（IO） | 2026-11-18 | 2026-11-18 保险返工后复审通过（发起人确认） | 结论、偏差与残余风险 |
 | 本报告 | 报告 2 / 2（当前开发者） | Karena | 2026-11-18 | 当前开发者返工后复审 | 结论、偏差与残余风险 |
 
-> 两个签署位需 WAYNE 重新批准；下一步：提交 / PR / CI → VL 签署 G2 → P5 归档（归档摘要需写入 PR 链接）。
+> 两个签署位已于 2026-11-18 复审通过；PR #42 已提交且 CI 2/2 通过；下一步：VL 签署 G2 → 合并 PR #42 → P5 归档（归档摘要需写入 PR 链接）。

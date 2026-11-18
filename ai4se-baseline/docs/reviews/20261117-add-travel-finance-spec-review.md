@@ -4,7 +4,7 @@
 - **Scope:** focus=spec（`@rule:artifact-review-gate` 的 P2 Delta Spec 工件评审）；root=`ai4se-baseline`；timestamp=2026-11-17（2026-11-18 保险返工后复审）
 - **Artifact under review:** [`specs/travel-finance/spec.md`](../../openspec/changes/add-travel-finance/specs/travel-finance/spec.md)
 - **Supporting inputs:**
-  - [`proposal.md`](../../openspec/changes/add-travel-finance/proposal.md)（2026-11-18 返工，待 WAYNE 重签）
+  - [`proposal.md`](../../openspec/changes/add-travel-finance/proposal.md)（2026-11-18 返工，WAYNE 已复审通过）
   - [`requirements/REQ-028-travel-finance.md`](../../requirement-workspace/requirements/REQ-028-travel-finance.md)（33 场景 S29-1 ~ S29-33）
   - [`intents/REQ-028-travel-finance.md`](../../requirement-workspace/intents/REQ-028-travel-finance.md)（D1–D12）
   - [`deep-dive.md`](../../requirement-workspace/deep-dive.md)「REQ-028 增补」
@@ -68,8 +68,8 @@
 
 | 对象 | 签署位 | 批准人 | 批准时间 | 批准来源 | 批准范围 |
 |---|---|---|---|---|---|
-| `specs/travel-finance/spec.md` | 1 / 1（WAYNE） | WAYNE（IO） | 待重签 | 2026-11-18 保险返工后需重新确认 | 全文 |
-| 本评审报告 | 1 / 2（WAYNE） | WAYNE（IO） | 待重签 | 同上 | 结论与签署位 |
+| `specs/travel-finance/spec.md` | 1 / 1（WAYNE） | WAYNE（IO） | 2026-11-18 | 2026-11-18 保险返工后复审通过（发起人确认） | 全文 |
+| 本评审报告 | 1 / 2（WAYNE） | WAYNE（IO） | 2026-11-18 | 同上 | 结论与签署位 |
 | 本评审报告 | 2 / 2（当前开发者） | Karena | 2026-11-18 | 当前开发者复审（Karena） | 结论与签署位 |
 
-> 2026-11-17 的原签署（WAYNE + Karena）因保险返工失效；本报告需 WAYNE 重新审阅签署后 P2 阶段关闭。
+> 2026-11-17 的原签署（WAYNE + Karena）因保险返工失效；2026-11-18 返工后经 WAYNE 与 Karena 复审通过，P2 阶段关闭。

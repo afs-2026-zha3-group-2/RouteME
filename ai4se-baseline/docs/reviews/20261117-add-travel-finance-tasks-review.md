@@ -4,7 +4,7 @@
 - **Scope:** focus=tasks（`@rule:artifact-review-gate` 的 P3 任务清单评审）；root=`ai4se-baseline`；timestamp=2026-11-17（2026-11-18 保险返工后复审）
 - **Artifact under review:** [`tasks.md`](../../openspec/changes/add-travel-finance/tasks.md)（T0–T12 + 对齐自检）
 - **Supporting inputs:**
-  - [`design.md`](../../openspec/changes/add-travel-finance/design.md)（D1–D12，待重签）
+  - [`design.md`](../../openspec/changes/add-travel-finance/design.md)（D1–D12；Karena / WAYNE 已复审通过 2026-11-18，Lewis Liu 待签）
   - [`atdd-design.md`](../../openspec/changes/add-travel-finance/atdd-design.md)（E1–E40）
   - [`specs/travel-finance/spec.md`](../../openspec/changes/add-travel-finance/specs/travel-finance/spec.md)（10 Requirement / 40 Scenario）
   - [`20261117-add-travel-finance-design-review.md`](20261117-add-travel-finance-design-review.md)（Pass 建议）
@@ -68,9 +68,9 @@
 
 | 对象 | 签署位 | 批准人 | 批准时间 | 批准来源 | 批准范围 |
 |---|---|---|---|---|---|
-| `tasks.md` | 工件 1 / 2（当前开发者） | Karena | 待重签 | 2026-11-18 保险返工后需重新确认 | T0–T12 + 对齐自检 |
-| `tasks.md` | 工件 2 / 2（非当前开发者且非 WAYNE） | Lewis Liu | 待重签 | 同上 | T0–T12 + 对齐自检 |
-| 本评审报告 | 报告 1 / 2（WAYNE） | WAYNE（IO） | 待重签 | 同上 | 结论与签署位 |
+| `tasks.md` | 工件 1 / 2（当前开发者） | Karena | 2026-11-18 | 2026-11-18 保险返工后复审通过（当前开发者） | T0–T12 + 对齐自检 |
+| `tasks.md` | 工件 2 / 2（非当前开发者且非 WAYNE） | Lewis Liu | 待重签 | 待 Lewis Liu 复审确认（尚未回收） | T0–T12 + 对齐自检 |
+| 本评审报告 | 报告 1 / 2（WAYNE） | WAYNE（IO） | 2026-11-18 | 2026-11-18 保险返工后复审通过（发起人确认） | 结论与签署位 |
 | 本评审报告 | 报告 2 / 2（当前开发者） | Karena | 2026-11-18 | 当前开发者复审（Karena） | 结论与签署位 |
 
-> 2026-11-17 的原签署因保险返工失效；4 个签署位需重新批准后 P3 阶段关闭。
+> 2026-11-17 的原签署因保险返工失效；2026-11-18 返工后已回收 Karena（3 处）与 WAYNE（1 处）的复审通过；`tasks.md` 工件 2（Lewis Liu）签署位仍未回收，P3 正式关闭需先补齐该签署位。
