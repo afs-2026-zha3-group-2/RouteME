@@ -62,7 +62,7 @@ export function itineraryToMarkdown(input: ExportInput): string {
     }
     lines.push('');
   }
-  lines.push('## 预算（AI 估算，无真实价格来源）', '');
+  lines.push('## 预算（参考估算，不含往返大交通）', '');
   lines.push(`- 交通：${centsToYuan(input.budget.transport_cents)} 元`);
   lines.push(`- 门票：${centsToYuan(input.budget.tickets_cents)} 元`);
   lines.push(`- 餐饮：${centsToYuan(input.budget.food_cents)} 元`);
