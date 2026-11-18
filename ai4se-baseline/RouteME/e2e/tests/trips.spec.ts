@@ -595,7 +595,8 @@ test.describe('date pickers under reduced motion', () => {
   });
 
   // 同一个「减少动态效果」缺陷也会把 Select 下拉层钉到 -1000vw / -1000vh：
-  // 同行设置（招募人数 / 出行方式 / 难度强度）点开后看不见任何选项，等于无法编辑。
+  // 同行设置（招募人数 / 难度强度）点开后看不见任何选项，等于无法编辑。
+  // 出行方式由路线编辑器独占，同行设置卡片里不再有第三个 Select。
   test('opens the companions select dropdowns instead of rendering them off-screen', async ({
     page,
   }) => {
@@ -607,8 +608,7 @@ test.describe('date pickers under reduced motion', () => {
 
     for (const [index, label, option] of [
       [0, '招募人数', '9 人'],
-      [1, '出行方式', '骑行'],
-      [2, '难度强度', '挑战'],
+      [1, '难度强度', '挑战'],
     ] as const) {
       // 弹层挂在字段容器内（appSelectProps），因此按字段定位，避开上一个弹层的收起动画。
       const field = settings.locator('.form-field').nth(index);
@@ -629,9 +629,8 @@ test.describe('date pickers under reduced motion', () => {
       await expect(settings).toContainText(option);
     }
 
-    // 三项都进到预览里，改动真的生效。
+    // 两项都进到预览里，改动真的生效。
     await expect(page.locator('.ppc-people')).toContainText('1 / 9');
-    await expect(page.locator('.ppc-facts')).toContainText('骑行');
     await expect(page.locator('.ppc-facts')).toContainText('挑战');
   });
 });
