@@ -358,6 +358,7 @@ unmount / 登出 → source.close()，清空状态
 ### 6.5 面板与直达
 
 - `NotificationBell` 用 antd `Popover`（`trigger="click"`、`placement="bottomRight"`）承载 `NotificationPanel`；面板 `role="dialog"`、`aria-label="通知"`。
+  - **G2 后修订（D-7）：** 实测 `Popover` 的入场动画在 rAF 被节流的标签页里会停在 `ant-zoom-big-appear-prepare`（`opacity: 0`），点击铃铛看不到面板。实现改为 `createPortal` + `position: fixed`，按铃铛的视口矩形定位（与 `.rail-menu` 账号菜单同构），不依赖入场动画；同时给条目补上类型标签（同行申请 / 申请通过 / 申请未通过 / 聊天消息），让四类事件不只靠正文措辞区分。详见 `docs/sdd/add-realtime-notifications/p4-implementation.md` §5 D-7。
 - 面板内容：标题 + 「全部已读」（`counts.total === 0` 时禁用）+ 条目列表（动作人昵称、`text`、`formatChatTime(created_at)`（来自 `frontend/src/utils/chatTime.ts`，见 §10 R-10）、未读文字标记「未读」）。
 - 无通知 → 空态文案；加载失败 → 一行可读提示 + 重试，不弹阻塞对话框。
 - 条目点击：先 `markOneRead(id)`（乐观 + 服务端计数覆盖）→ `window.location.hash = notificationHref(item)` → 关闭面板。
