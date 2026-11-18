@@ -34,6 +34,8 @@ export function StudentVerificationPage({ currentUser, token, onVerified }: Prop
   const [formOpen, setFormOpen] = useState(!verified);
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [justVerifiedSchool, setJustVerifiedSchool] = useState<string | null>(null);
+  const [justVerifiedAt, setJustVerifiedAt] = useState<string | null>(null);
+  const [profileVersion, setProfileVersion] = useState(0);
 
   useEffect(() => {
     if (!verified) {
@@ -55,7 +57,7 @@ export function StudentVerificationPage({ currentUser, token, onVerified }: Prop
     return () => {
       active = false;
     };
-  }, [currentUser.id, verified]);
+  }, [currentUser.id, verified, profileVersion]);
 
   const update = (patch: Partial<StudentVerificationFormValues>) => {
     setValues((previous) => ({ ...previous, ...patch }));
@@ -76,8 +78,11 @@ export function StudentVerificationPage({ currentUser, token, onVerified }: Prop
     try {
       const user = await verifyStudentIdentity(token, toStudentVerificationRequest(values));
       setJustVerifiedSchool(user.student_verified ? values.school.trim() : null);
+      setJustVerifiedAt(user.student_verified ? new Date().toISOString() : null);
       onVerified(user);
       setFormOpen(false);
+      // 重新认证时 verified 不会变化，主动重拉一次资料，避免认证院校/时间停留在旧值。
+      setProfileVersion((version) => version + 1);
       message.success(tripMessages.studentVerifySuccess);
     } catch (caught: unknown) {
       if (caught instanceof ApiError) {
@@ -103,8 +108,8 @@ export function StudentVerificationPage({ currentUser, token, onVerified }: Prop
   };
 
   const verifiedSchool =
-    profile?.student_verified_school ?? justVerifiedSchool ?? currentUser.school ?? '';
-  const verifiedAt = profile?.student_verified_at ?? null;
+    justVerifiedSchool ?? profile?.student_verified_school ?? currentUser.school ?? '';
+  const verifiedAt = justVerifiedAt ?? profile?.student_verified_at ?? null;
 
   return (
     <main className="form-page chsi-page">
