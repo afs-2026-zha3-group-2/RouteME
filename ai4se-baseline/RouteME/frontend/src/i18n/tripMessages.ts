@@ -272,7 +272,7 @@ export const tripMessages = {
   reportEntryUser: '举报这位用户',
   reportTargetPrefix: '举报对象：',
   reportPrivacyNote: '我们不会向对方透露你的身份。',
-  reportEmergencyNote: '如果你正处于危险中，请先联系当地警方或学校保卫处。平台举报不能替代紧急求助。',
+  reportEmergencyNote: '如果你正处于危险中，请立即拨打 110 报警；平台举报不能替代紧急求助。',
   reportReasonLabel: '举报原因',
   reportReasonHarassment: '骚扰或不当言行',
   reportReasonFake: '虚假信息',

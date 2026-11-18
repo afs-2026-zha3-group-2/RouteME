@@ -123,7 +123,7 @@ test('shows the target, four reasons, confidentiality and emergency text', async
   await expect(dialog.getByText('我们不会向对方透露你的身份。')).toBeVisible();
   await expect(
     dialog.getByText(
-      '如果你正处于危险中，请先联系当地警方或学校保卫处。平台举报不能替代紧急求助。',
+      '如果你正处于危险中，请立即拨打 110 报警；平台举报不能替代紧急求助。',
     ),
   ).toBeVisible();
   await expect(dialog.getByText('补充说明（选填，200 字以内）')).toBeVisible();
