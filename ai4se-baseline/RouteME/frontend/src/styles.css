@@ -5528,52 +5528,66 @@ svg {
 
 .route-strip {
   display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
+  align-items: flex-start;
+  gap: 0;
   margin: 0;
-  padding: 0;
+  padding: 6px 2px 2px;
   list-style: none;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: thin;
+  -webkit-overflow-scrolling: touch;
 }
 
+/* 横向连接点：编号圆点 + 站点名，圆点之间用细线相连。 */
 .route-strip-item {
+  position: relative;
   display: flex;
-  align-items: center;
-  gap: 6px;
+  flex: 1 1 0;
+  min-width: 96px;
+}
+
+.route-strip-item::after {
+  content: '';
+  position: absolute;
+  top: 13px;
+  left: calc(50% + 17px);
+  right: calc(-50% + 17px);
+  border-top: 2px solid var(--line-2);
+}
+
+.route-strip-item:last-child::after {
+  display: none;
 }
 
 .route-strip-card {
   display: flex;
+  flex-direction: column;
   align-items: center;
-  gap: 8px;
-  min-width: 132px;
-  padding: 8px 10px;
-  border: 1px solid var(--line);
-  border-radius: 12px;
-  background: var(--surface);
-  box-shadow: var(--sh-1);
+  gap: 7px;
+  width: 100%;
+  padding: 0 2px;
+  border: 0;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: center;
   cursor: pointer;
-  text-align: left;
-}
-
-.route-strip-card.off {
-  cursor: default;
-  opacity: 0.7;
-}
-
-.route-strip-card:not(.off):hover {
-  border-color: var(--map-route);
 }
 
 .route-strip-index {
   display: grid;
   place-items: center;
-  width: 20px;
-  height: 20px;
+  width: 26px;
+  height: 26px;
   border-radius: 50%;
   color: #fff;
-  font-size: 11px;
+  font-size: 11.5px;
   font-weight: 800;
   flex: none;
+  /* 用底色描边，让连接线在圆点边缘整齐断开。 */
+  box-shadow: 0 0 0 4px var(--surface);
+  transition: transform 0.16s var(--ease);
 }
 
 .route-strip-index.tone-0 { background: #f0503c; }
@@ -5584,17 +5598,21 @@ svg {
 .route-strip-name {
   font-size: 12.5px;
   font-weight: 700;
+  line-height: 1.35;
 }
 
-.route-strip-off {
-  font-size: 10px;
-  color: var(--ink-3);
+.route-strip-card:hover .route-strip-index {
+  transform: scale(1.08);
 }
 
-.route-strip-leg {
-  font-size: 10.5px;
-  color: var(--ink-3);
-  white-space: nowrap;
+.route-strip-card:hover .route-strip-name {
+  color: var(--t-lagoon);
+}
+
+.route-strip-card:focus-visible {
+  outline: none;
+  border-radius: 10px;
+  box-shadow: var(--ring);
 }
 
 @media (max-width: 700px) {
@@ -5602,8 +5620,8 @@ svg {
     display: none;
   }
 
-  .route-strip-card {
-    min-width: 112px;
+  .route-strip-item {
+    min-width: 84px;
   }
 }
 
