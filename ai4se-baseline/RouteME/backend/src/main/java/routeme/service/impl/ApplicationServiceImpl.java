@@ -34,6 +34,7 @@ import routeme.service.AccountStatusService;
 import routeme.service.CreditRestrictionGuard;
 import routeme.service.DemoUserService;
 import routeme.service.NotificationService;
+import routeme.service.StudentVerificationService;
 import routeme.service.TripCompletedEvent;
 import routeme.service.TripCancelledEvent;
 import routeme.service.TripPlanService;
@@ -55,6 +56,7 @@ public class ApplicationServiceImpl
     private final Clock clock;
     private final AccountStatusService accountStatusService;
     private final NotificationService notificationService;
+    private final StudentVerificationService studentVerificationService;
 
     public ApplicationServiceImpl(
             TripPlanService tripPlanService,
@@ -62,13 +64,15 @@ public class ApplicationServiceImpl
             CreditRestrictionGuard creditRestrictionGuard,
             Clock clock,
             AccountStatusService accountStatusService,
-            NotificationService notificationService) {
+            NotificationService notificationService,
+            StudentVerificationService studentVerificationService) {
         this.tripPlanService = tripPlanService;
         this.demoUserService = demoUserService;
         this.creditRestrictionGuard = creditRestrictionGuard;
         this.clock = clock;
         this.accountStatusService = accountStatusService;
         this.notificationService = notificationService;
+        this.studentVerificationService = studentVerificationService;
     }
 
     @Override
@@ -76,6 +80,7 @@ public class ApplicationServiceImpl
     public TripApplication apply(long tripId, long applicantId, ApplicationCreateRequest request) {
         accountStatusService.assertCanWrite(applicantId, WriteScopeEnum.BUSINESS);
         creditRestrictionGuard.requireNotRestricted(applicantId);
+        studentVerificationService.requireVerified(applicantId);
         TripPlan trip = tripPlanService.requireCurrent(tripId);
         if (trip.publisherId() == applicantId) {
             throw new ForbiddenActionException("publisher cannot apply to own trip " + tripId);

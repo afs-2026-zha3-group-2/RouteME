@@ -3,8 +3,9 @@ package routeme.pojo;
 import java.util.List;
 
 /**
- * User summary rendered by the front end. {@code role} and {@code status} are read-only and always
- * come from {@code app_users}; clients never supply them.
+ * User summary rendered by the front end. {@code studentVerified} is the write gate for core
+ * actions; {@code role} and {@code status} are read-only and always come from {@code app_users};
+ * clients never supply them.
  */
 public record DemoUser(
         long id,
@@ -18,6 +19,7 @@ public record DemoUser(
         String bio,
         List<String> interests,
         boolean profileComplete,
+        boolean studentVerified,
         String role,
         String status) {
 }

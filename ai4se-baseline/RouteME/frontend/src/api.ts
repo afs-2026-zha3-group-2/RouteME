@@ -44,6 +44,7 @@ LoanCreateRequest,
   ServiceMessage,
   ServiceSessionDetail,
   ServiceSessionSummary,
+  StudentVerificationRequest,
   TravelLoan,
   TripApplication,
   TripCancelRequest,
@@ -133,6 +134,22 @@ export async function logoutAccount(token: string): Promise<void> {
     method: 'POST',
     headers: { Authorization: `Bearer ${token}` },
   });
+}
+
+/** 提交学信网学籍认证（演示核验）；响应返回更新后的用户摘要。 */
+export async function verifyStudentIdentity(
+  token: string,
+  body: StudentVerificationRequest,
+): Promise<DemoUser> {
+  const response = await request('/users/me/student-verification', {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${token}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(body),
+  });
+  return (await response.json()) as DemoUser;
 }
 
 /** 批量读取信用状态；用于行程卡、申请列表与详情页发布者行。 */

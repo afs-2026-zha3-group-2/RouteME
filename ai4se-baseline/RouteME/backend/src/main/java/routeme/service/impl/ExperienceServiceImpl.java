@@ -47,6 +47,7 @@ import routeme.service.ExperienceEligibility;
 import routeme.service.ExperienceLikeService;
 import routeme.service.ExperiencePhotoService;
 import routeme.service.ExperienceService;
+import routeme.service.StudentVerificationService;
 import routeme.service.TripPlanService;
 import routeme.utils.ExperiencePhotoStorage;
 
@@ -69,6 +70,7 @@ public class ExperienceServiceImpl
     private final CreditRestrictionGuard creditRestrictionGuard;
     private final Clock clock;
     private final AccountStatusService accountStatusService;
+    private final StudentVerificationService studentVerificationService;
 
     public ExperienceServiceImpl(
             TripPlanService tripPlanService,
@@ -80,7 +82,8 @@ public class ExperienceServiceImpl
             ExperienceLikeService experienceLikeService,
             CreditRestrictionGuard creditRestrictionGuard,
             Clock clock,
-            AccountStatusService accountStatusService) {
+            AccountStatusService accountStatusService,
+            StudentVerificationService studentVerificationService) {
         this.tripPlanService = tripPlanService;
         this.demoUserService = demoUserService;
         this.photoMapper = photoMapper;
@@ -91,6 +94,7 @@ public class ExperienceServiceImpl
         this.creditRestrictionGuard = creditRestrictionGuard;
         this.clock = clock;
         this.accountStatusService = accountStatusService;
+        this.studentVerificationService = studentVerificationService;
     }
 
     @Override
@@ -98,6 +102,7 @@ public class ExperienceServiceImpl
     public ExperienceSaveResponse upsert(long tripId, long authorId, ExperienceWriteRequest request) {
         accountStatusService.assertCanWrite(authorId, WriteScopeEnum.BUSINESS);
         creditRestrictionGuard.requireNotRestricted(authorId);
+        studentVerificationService.requireVerified(authorId);
         TripPlan trip = tripPlanService.requireCurrent(tripId);
         eligibility.requireCanShare(trip, authorId);
         List<Long> photoIds = normalizePhotoIds(request.photoIdsOrDefault());

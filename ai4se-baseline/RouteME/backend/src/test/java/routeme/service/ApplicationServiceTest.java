@@ -113,8 +113,8 @@ class ApplicationServiceTest {
 
             private void insertExtraUser(long id) {
                 jdbcClient.sql("""
-                                INSERT INTO app_users (id, nickname, avatar_initial, school, bio, interests, created_at)
-                                VALUES (:id, :nickname, '测', '大一 · 测试', '满员场景用户', '["摄影"]', '2026-11-15T00:00:00Z')
+                                INSERT INTO app_users (id, nickname, avatar_initial, school, bio, interests, created_at, student_verified)
+                                VALUES (:id, :nickname, '测', '大一 · 测试', '满员场景用户', '["摄影"]', '2026-11-15T00:00:00Z', 1)
                                 """)
                         .param("id", id)
                         .param("nickname", "测试用户" + id)

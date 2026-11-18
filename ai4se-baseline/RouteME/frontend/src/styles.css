@@ -12194,3 +12194,430 @@ a.admin-metric-card:focus-visible {
     grid-template-columns: minmax(0, 1fr);
   }
 }
+
+/* ---------- 学信网学籍认证（演示核验） ---------- */
+.chsi-page {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.chsi-hero {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1.55fr) minmax(240px, 0.8fr);
+  gap: 22px;
+  padding: 32px 34px;
+  border-radius: var(--r-xl);
+  background: var(--grad-tide);
+  color: var(--on-deep);
+  box-shadow: var(--sh-3);
+  overflow: hidden;
+}
+
+.chsi-hero::after {
+  content: '';
+  position: absolute;
+  right: -80px;
+  bottom: -140px;
+  width: 340px;
+  height: 340px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(255, 194, 61, 0.3), transparent 66%);
+  pointer-events: none;
+}
+
+.chsi-hero-main {
+  position: relative;
+  z-index: 1;
+}
+
+.chsi-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  color: var(--on-deep-accent);
+}
+
+.chsi-eyebrow .chsi-shield.small {
+  background: rgba(255, 255, 255, 0.16);
+  color: var(--on-deep-accent);
+}
+
+.chsi-hero h1 {
+  margin: 14px 0 10px;
+  font-size: clamp(25px, 3.2vw, 36px);
+  line-height: 1.2;
+  color: var(--on-deep);
+}
+
+.chsi-hero p {
+  max-width: 640px;
+  margin: 0;
+  color: rgba(244, 251, 255, 0.84);
+  line-height: 1.78;
+}
+
+.chsi-perks {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 18px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.chsi-perks li {
+  padding: 6px 12px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.12);
+  font-size: 12.5px;
+}
+
+.chsi-status-card {
+  position: relative;
+  z-index: 1;
+  align-self: start;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 22px;
+  border-radius: var(--r-lg);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  background: rgba(9, 32, 54, 0.4);
+  backdrop-filter: blur(8px);
+}
+
+.chsi-status-card.verified {
+  border-color: rgba(255, 194, 61, 0.55);
+}
+
+.chsi-status-card .chsi-shield {
+  background: rgba(255, 255, 255, 0.16);
+  color: var(--on-deep-accent);
+}
+
+.chsi-status-card b {
+  font-size: 18px;
+  color: var(--on-deep);
+}
+
+.chsi-status-card small {
+  color: rgba(244, 251, 255, 0.72);
+  font-size: 12.5px;
+  line-height: 1.65;
+}
+
+.chsi-shield {
+  display: inline-grid;
+  place-items: center;
+  flex: none;
+  width: 44px;
+  height: 44px;
+  border-radius: 14px;
+  background: var(--lagoon-soft);
+  color: var(--t-lagoon);
+}
+
+.chsi-shield svg {
+  width: 24px;
+  height: 24px;
+}
+
+.chsi-shield.small {
+  width: 26px;
+  height: 26px;
+  border-radius: 8px;
+}
+
+.chsi-shield.small svg {
+  width: 16px;
+  height: 16px;
+}
+
+.chsi-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1.1fr);
+  gap: 18px;
+  align-items: start;
+}
+
+.chsi-card {
+  padding: 24px 26px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-lg);
+  background: var(--surface);
+  box-shadow: var(--sh-2);
+}
+
+.chsi-card h2 {
+  margin: 0 0 14px;
+  font-size: 18px;
+  color: var(--ink);
+}
+
+.chsi-guide ol {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.chsi-guide li {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+}
+
+.chsi-guide li > span {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: var(--lagoon-soft);
+  color: var(--t-lagoon);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.chsi-guide li p {
+  margin: 2px 0 0;
+  color: var(--ink-2);
+  font-size: 13.5px;
+  line-height: 1.7;
+}
+
+.chsi-demo-hint {
+  margin: 18px 0 0;
+  padding: 12px 14px;
+  border: 1px dashed var(--line);
+  border-radius: var(--r-sm);
+  background: var(--surface-2);
+  color: var(--ink-2);
+  font-size: 12.5px;
+  line-height: 1.7;
+}
+
+.chsi-form .form-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 0 0 14px;
+}
+
+.chsi-form .form-label {
+  font-size: 13px;
+  font-weight: 650;
+  color: var(--ink);
+}
+
+.chsi-form .ant-alert {
+  margin-bottom: 14px;
+}
+
+.chsi-verified {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.chsi-verified-head {
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+}
+
+.chsi-verified-head h2 {
+  margin: 2px 0 6px;
+}
+
+.chsi-verified-head p {
+  margin: 0;
+  color: var(--ink-2);
+  line-height: 1.7;
+}
+
+.chsi-facts {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 12px;
+  margin: 0;
+}
+
+.chsi-facts > div {
+  padding: 14px 16px;
+  border: 1px solid var(--line);
+  border-radius: var(--r);
+  background: var(--surface-2);
+}
+
+.chsi-facts dt {
+  margin-bottom: 6px;
+  color: var(--ink-3);
+  font-size: 12px;
+  letter-spacing: 0.06em;
+}
+
+.chsi-facts dd {
+  margin: 0;
+  color: var(--ink);
+  font-weight: 650;
+}
+
+.chsi-verified-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.chsi-banner {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin: 10px 0 0;
+  padding: 12px 16px;
+  border: 1px solid rgba(217, 134, 19, 0.36);
+  border-radius: var(--r);
+  background: linear-gradient(100deg, rgba(255, 183, 3, 0.14), rgba(255, 122, 69, 0.1));
+}
+
+.chsi-banner-text {
+  display: flex;
+  flex: 1;
+  min-width: 0;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.chsi-banner-text b {
+  font-size: 13px;
+  color: var(--ink);
+}
+
+.chsi-banner-text span {
+  color: var(--ink-2);
+  font-size: 12px;
+  line-height: 1.55;
+}
+
+.chsi-banner-action {
+  flex: none;
+  padding: 8px 14px;
+  border-radius: 999px;
+  background: var(--lagoon);
+  color: #fff;
+  font-size: 12.5px;
+  font-weight: 650;
+  text-decoration: none;
+  transition: transform 0.16s ease, box-shadow 0.16s ease;
+}
+
+.chsi-banner-action:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 8px 18px -10px rgba(14, 128, 116, 0.7);
+}
+
+.chsi-gate-body {
+  display: flex;
+  gap: 14px;
+  align-items: flex-start;
+}
+
+.chsi-gate-body p {
+  margin: 0;
+  color: var(--ink-2);
+  line-height: 1.75;
+}
+
+.chsi-required-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  max-width: 560px;
+  margin: 56px auto;
+  padding: 44px 34px;
+  border: 1px solid var(--line);
+  border-radius: var(--r-xl);
+  background: var(--surface);
+  box-shadow: var(--sh-3);
+  text-align: center;
+}
+
+.chsi-required-card h1 {
+  margin: 0;
+  font-size: 24px;
+  color: var(--ink);
+}
+
+.chsi-required-card p {
+  margin: 0;
+  color: var(--ink-2);
+  line-height: 1.8;
+}
+
+.chsi-required-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px;
+  margin-top: 4px;
+}
+
+.chsi-required-user {
+  color: var(--ink-3);
+  font-size: 12px;
+}
+
+.rail-menu-badge {
+  margin-left: auto;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: rgba(255, 183, 3, 0.18);
+  color: var(--t-warn);
+  font-size: 11px;
+  font-style: normal;
+}
+
+@media (max-width: 900px) {
+  .chsi-hero,
+  .chsi-grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .chsi-status-card {
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+}
+
+@media (max-width: 560px) {
+  .chsi-hero {
+    padding: 24px 20px;
+  }
+
+  .chsi-card {
+    padding: 20px 18px;
+  }
+
+  .chsi-banner {
+    flex-wrap: wrap;
+  }
+
+  .chsi-required-card {
+    margin: 24px auto;
+    padding: 32px 22px;
+  }
+}

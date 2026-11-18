@@ -3,6 +3,7 @@ import { Alert, Button, Card, Input, Radio, Skeleton, Space, Typography, message
 import { loadTrip, loadTripExperiences, shareExperience, uploadExperiencePhoto } from '../api';
 import { CreditRestrictedNotice } from '../credit/CreditRestrictedNotice';
 import { useMyCredit } from '../credit/CreditContext';
+import { useStudentGate } from '../identity/StudentVerificationGate';
 import { tripMessages } from '../i18n/tripMessages';
 import { SafetyNote } from '../safety/SafetyNote';
 import { cityPhoto } from '../trips/cityPhotos';
@@ -45,6 +46,7 @@ export function ShareExperiencePage({ currentUser, tripId }: Props) {
   const [photoError, setPhotoError] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
   const photoInputRef = useRef<HTMLInputElement | null>(null);
+  const studentGate = useStudentGate(currentUser);
 
   useEffect(() => {
     let active = true;
@@ -156,6 +158,10 @@ export function ShareExperiencePage({ currentUser, tripId }: Props) {
     if (hasExperienceErrors(nextErrors)) {
       return;
     }
+    if (!studentGate.allowed) {
+      studentGate.requireVerified(() => undefined);
+      return;
+    }
     setSubmitting(true);
     setActionError(null);
     try {
@@ -235,6 +241,7 @@ export function ShareExperiencePage({ currentUser, tripId }: Props) {
 
   return (
     <main className="form-page share-page">
+      {studentGate.prompt}
       <a className="detail-back" href={`#/trips/${tripId}`}>
         <ShareIcon name="left" />
         {tripMessages.detailTitle}

@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Alert, Button, Skeleton, Typography } from 'antd';
 import { loadChatPartners, loadMessages, loadTrip, sendMessage } from '../api';
 import { useMyCredit } from '../credit/CreditContext';
+import { useStudentGate } from '../identity/StudentVerificationGate';
 import { tripMessages } from '../i18n/tripMessages';
 import { conversationKey } from '../notifications/notificationModel';
 import { useNotifications } from '../notifications/NotificationContext';
@@ -44,6 +45,7 @@ const {
   const [reportOpen, setReportOpen] = useState(false);
   const [leaveOpen, setLeaveOpen] = useState(false);
   const [reloadToken, setReloadToken] = useState(0);
+  const studentGate = useStudentGate(currentUser);
 
   const partner = useMemo(() => {
     if (partners === null) {
@@ -158,6 +160,10 @@ const {
     if (!canSendMessage(content) || sending || partner === null) {
       return;
     }
+    if (!studentGate.allowed) {
+      studentGate.requireVerified(() => undefined);
+      return;
+    }
     setSending(true);
     setMessagesError(null);
     try {
@@ -250,6 +256,7 @@ const {
 
   return (
     <main className="chat-page">
+      {studentGate.prompt}
       <div className="page-head">
         <div>
           <Typography.Title level={2} className="page-title">

@@ -58,6 +58,18 @@ public class UserEntity {
 
     private String createdAt;
 
+    /** 学信网学籍认证状态：1 表示已通过演示核验。 */
+    private Boolean studentVerified;
+
+    /** 认证时填写的真实姓名，只作留痕，不下发给他人。 */
+    private String studentVerifiedName;
+
+    /** 认证院校，可公开展示。 */
+    private String studentVerifiedSchool;
+
+    /** 认证通过时间，ISO-8601 文本。 */
+    private String studentVerifiedAt;
+
     /** Optional unique registration email; lower-cased on write. */
     private String email;
 
@@ -218,6 +230,38 @@ public class UserEntity {
         this.createdAt = createdAt;
     }
 
+    public Boolean getStudentVerified() {
+        return studentVerified;
+    }
+
+    public void setStudentVerified(Boolean studentVerified) {
+        this.studentVerified = studentVerified;
+    }
+
+    public String getStudentVerifiedName() {
+        return studentVerifiedName;
+    }
+
+    public void setStudentVerifiedName(String studentVerifiedName) {
+        this.studentVerifiedName = studentVerifiedName;
+    }
+
+    public String getStudentVerifiedSchool() {
+        return studentVerifiedSchool;
+    }
+
+    public void setStudentVerifiedSchool(String studentVerifiedSchool) {
+        this.studentVerifiedSchool = studentVerifiedSchool;
+    }
+
+    public String getStudentVerifiedAt() {
+        return studentVerifiedAt;
+    }
+
+    public void setStudentVerifiedAt(String studentVerifiedAt) {
+        this.studentVerifiedAt = studentVerifiedAt;
+    }
+
     public String getEmail() {
         return email;
     }
@@ -308,6 +352,7 @@ public class UserEntity {
                 bio,
                 parsedInterests,
                 ProfileRules.complete(nickname, birthday, gender, city, parsedInterests, travelStyle, clock),
+                Boolean.TRUE.equals(studentVerified),
                 role,
                 status);
     }
@@ -315,6 +360,7 @@ public class UserEntity {
     public UserAccount toUserAccount() {
         return new UserAccount(
                 id, username, passwordHash, nickname, avatarInitial, school, bio, JsonListUtils.parse(interests),
-                avatarUrl, birthday, gender, city, major, job, mbti, travelStyle, email, role, status);
+                avatarUrl, birthday, gender, city, major, job, mbti, travelStyle, email, role, status,
+                Boolean.TRUE.equals(studentVerified));
     }
 }

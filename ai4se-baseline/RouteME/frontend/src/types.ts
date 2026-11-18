@@ -60,6 +60,8 @@ export type DemoUser = {
   major?: string | null;
   job?: string | null;
   profile_complete: boolean;
+  /** 学信网学籍认证状态：未认证时核心动作（发布 / 申请 / 聊天 / 分享体验）被拦截。 */
+  student_verified: boolean;
   role?: AccountRole | null;
   status?: AccountStatus | null;
 };
@@ -94,6 +96,12 @@ export type UserProfile = {
   travel_style?: string | null;
   bio?: string | null;
   profile_complete: boolean;
+  /** 学信网学籍认证状态，任意视角均返回。 */
+  student_verified: boolean;
+  /** 认证院校；未认证时省略。 */
+  student_verified_school?: string | null;
+  /** 认证通过时间，UTC；未认证时省略。 */
+  student_verified_at?: string | null;
   /** 信用分，0–100；本人与他人视角均返回。 */
   credit_score: number;
   credit_level: CreditLevel;
@@ -139,6 +147,13 @@ export type AuthRegisterRequest = {
   password: string;
   nickname: string;
   email?: string | null;
+};
+
+/** 学信网学籍认证请求（演示核验）：验证码只做格式校验，不落库。 */
+export type StudentVerificationRequest = {
+  name: string;
+  school: string;
+  code: string;
 };
 
 export type TripStatus = 'recruiting' | 'full' | 'ongoing' | 'completed' | 'cancelled';

@@ -1,5 +1,5 @@
 import { expect, test, type Page } from '@playwright/test';
-import { applyViaApi, createTripViaApi, loginAs } from './support';
+import { applyViaApi, createTripViaApi, loginAs, verifyStudentViaApi } from './support';
 
 const API = process.env.ROUTEME_E2E_API_BASE ? `${process.env.ROUTEME_E2E_API_BASE}/api` : '/api';
 const PASSWORD = 'credit-pass-123';
@@ -20,6 +20,7 @@ async function registerViaApi(page: Page): Promise<Account> {
   });
   expect(response.status()).toBe(201);
   const session = (await response.json()) as { token: string; user: { id: number } };
+  await verifyStudentViaApi(page, session);
   return { username, userId: session.user.id, token: session.token };
 }
 

@@ -21,6 +21,9 @@ import { SupportPage } from './help/SupportPage';
 import { HomePage } from './home/HomePage';
 import { tripMessages } from './i18n/tripMessages';
 import { IdentityGate } from './identity/IdentityGate';
+import { StudentVerificationPage } from './identity/StudentVerificationPage';
+import { StudentVerificationRequiredNotice } from './identity/StudentVerificationGate';
+import { canUseCoreActions } from './identity/studentVerification';
 import { MyTripsPage } from './mine/MyTripsPage';
 import { NotificationProvider } from './notifications/NotificationContext';
 import { NotificationCenterPage } from './notifications/NotificationCenterPage';
@@ -136,6 +139,10 @@ export function App() {
     setUsers((previous) => mergeUser(previous, profileToUser(profile)));
   };
 
+  const handleVerified = (user: DemoUser) => {
+    setUsers((previous) => mergeUser(previous, user));
+  };
+
   const logout = () => {
     const token = authToken;
     window.localStorage.removeItem(AUTH_TOKEN_KEY);
@@ -195,17 +202,23 @@ export function App() {
             {route.name === 'home' && (
               <HomePage currentUser={currentUser} token={authToken} />
             )}
-            {route.name === 'create' && (
-              <TripCreatePage
-                currentUser={currentUser}
-                fromTripId={route.fromTripId}
-                aiItineraryId={route.aiItineraryId}
-              />
-            )}
+            {route.name === 'create' &&
+              (canUseCoreActions(currentUser) ? (
+                <TripCreatePage
+                  currentUser={currentUser}
+                  fromTripId={route.fromTripId}
+                  aiItineraryId={route.aiItineraryId}
+                />
+              ) : (
+                <StudentVerificationRequiredNotice currentUser={currentUser} />
+              ))}
             {route.name === 'aiPlanner' && <AiPlannerPage currentUser={currentUser} />}
-            {route.name === 'share' && (
-              <ShareExperiencePage currentUser={currentUser} tripId={route.tripId} />
-            )}
+            {route.name === 'share' &&
+              (canUseCoreActions(currentUser) ? (
+                <ShareExperiencePage currentUser={currentUser} tripId={route.tripId} />
+              ) : (
+                <StudentVerificationRequiredNotice currentUser={currentUser} />
+              ))}
             {route.name === 'detail' && (
               <TripDetailPage currentUser={currentUser} tripId={route.tripId} />
             )}
@@ -228,6 +241,13 @@ export function App() {
                 currentUser={currentUser}
                 token={authToken}
                 onSaved={handleProfileSaved}
+              />
+            )}
+            {route.name === 'studentVerification' && (
+              <StudentVerificationPage
+                currentUser={currentUser}
+                token={authToken}
+                onVerified={handleVerified}
               />
             )}
             {route.name === 'userProfile' && (

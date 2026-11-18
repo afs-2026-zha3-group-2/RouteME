@@ -37,6 +37,7 @@ function trip(id: number, overrides: Partial<TripSummary> = {}): TripSummary {
       bio: '',
       interests: [],
       profile_complete: true,
+      student_verified: true,
     },
     created_at: '2026-11-01T00:00:00Z',
     ...overrides,
