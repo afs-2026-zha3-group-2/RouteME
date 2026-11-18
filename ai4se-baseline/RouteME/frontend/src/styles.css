@@ -10008,7 +10008,11 @@ a.admin-metric-card:focus-visible {
   display: flex;
   flex-direction: column;
   border-radius: var(--r-lg);
-  min-height: calc(100vh - var(--topbar-h) - 150px);
+  /* 高度锁在可视区：对话在卡片内部滚动，输入框永远贴在卡片底部可见。 */
+  height: calc(100vh - var(--topbar-h) - 132px);
+  min-height: 420px;
+  max-height: calc(100vh - var(--topbar-h) - 132px);
+  overflow: hidden;
 }
 
 .ai-chat-card .ant-card-body {
@@ -10026,6 +10030,13 @@ a.admin-metric-card:focus-visible {
   justify-content: space-between;
   gap: 10px;
   flex-wrap: wrap;
+}
+
+.ai-chat-toolbar-title {
+  font-size: 13.5px;
+  font-weight: 800;
+  color: var(--ink);
+  letter-spacing: 0.01em;
 }
 
 .ai-mode-tabs.ant-segmented {
@@ -10080,9 +10091,11 @@ a.admin-metric-card:focus-visible {
   display: flex;
   flex-direction: column;
   gap: 16px;
-  flex: 1;
-  min-height: 260px;
+  flex: 1 1 auto;
+  /* min-height:0 是 flex 子项能收缩（从而内部滚动）的前提；否则整张卡片被撑高。 */
+  min-height: 0;
   overflow-y: auto;
+  overscroll-behavior: contain;
   padding: 6px 6px 2px 2px;
 }
 
@@ -11966,28 +11979,10 @@ a.admin-metric-card:focus-visible {
 
 /* ============================================================
    AI 规划体验优化（2026-11-18）
-   - 对话历史 / 新建对话 / 条件下沉为常驻摘要
-   - 灵感生成、行程优化页签有独立内容
+   - 规划条件 / 灵感 / 行程优化统一进同一段对话流（无页签）
    - 景点行可拖拽排序（含拖拽预览），并显示插入位置
    - 更换地点改为大搜索框 + 地图选点的弹窗
    ============================================================ */
-
-.ai-chat-toolbar-actions {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  flex-wrap: wrap;
-  justify-content: flex-end;
-}
-
-.ai-session-select {
-  min-width: 128px;
-  max-width: 190px;
-}
-
-.ai-session-select .ant-select-selector {
-  border-radius: 999px !important;
-}
 
 /* 规划条件：常驻可见的高对比摘要 */
 .ai-condition-summary {
@@ -12036,78 +12031,8 @@ a.admin-metric-card:focus-visible {
   font-weight: 700;
 }
 
-/* 灵感生成 / 行程优化页签 */
-.ai-tab-panel {
-  display: grid;
-  gap: 8px;
-  max-height: 196px;
-  overflow-y: auto;
-  padding: 10px 12px;
-  border: 1px dashed color-mix(in srgb, var(--lagoon) 26%, var(--line));
-  border-radius: 12px;
-  background: color-mix(in srgb, var(--lagoon) 4%, var(--surface));
-}
-
-.ai-tab-panel-title {
-  margin: 0;
-  font-size: 12px;
-  font-weight: 800;
-  color: var(--t-lagoon);
-}
-
-.ai-inspire-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-  gap: 8px;
-}
-
-.ai-inspire-card,
-.ai-optimize-card {
-  display: grid;
-  gap: 3px;
-  padding: 9px 11px;
-  border: 1px solid var(--line);
-  border-radius: 10px;
-  background: var(--surface);
-  text-align: left;
-  cursor: pointer;
-  transition: border-color 0.16s var(--ease), box-shadow 0.16s var(--ease);
-}
-
-.ai-inspire-card:hover:not(:disabled),
-.ai-optimize-card:hover:not(:disabled) {
-  border-color: color-mix(in srgb, var(--lagoon) 45%, transparent);
-  box-shadow: var(--sh-1);
-}
-
-.ai-inspire-card:disabled,
-.ai-optimize-card:disabled {
-  opacity: 0.55;
-  cursor: not-allowed;
-}
-
-.ai-inspire-card strong,
-.ai-optimize-card strong {
-  font-size: 12.5px;
-  color: var(--ink);
-}
-
-.ai-inspire-card span,
-.ai-optimize-card span {
-  font-size: 11px;
-  line-height: 1.55;
-  color: var(--ink-3);
-}
-
-.ai-optimize-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
-  gap: 8px;
-}
-
 /* 对话区：气泡更宽、输入区更舒展 */
 .ai-thread {
-  min-height: 300px;
   padding: 8px 10px 4px 4px;
 }
 
@@ -12226,6 +12151,14 @@ a.admin-metric-card:focus-visible {
   border-radius: 10px;
 }
 
+@media (max-width: 1180px) {
+  /* 单列布局下不再锁死高度，交给页面自然滚动 */
+  .ai-chat-card.ant-card {
+    height: min(720px, calc(100vh - 220px));
+    max-height: min(720px, calc(100vh - 220px));
+  }
+}
+
 @media (max-width: 768px) {
   .ai-stop-row {
     grid-template-columns: 14px 46px minmax(0, 1fr);
@@ -12233,6 +12166,12 @@ a.admin-metric-card:focus-visible {
 
   .ai-stop-row .ai-stop-actions {
     grid-column: 2 / -1;
+  }
+
+  .ai-chat-card.ant-card {
+    height: calc(100vh - 230px);
+    max-height: calc(100vh - 230px);
+    min-height: 440px;
   }
 
   .ai-condition-summary {
