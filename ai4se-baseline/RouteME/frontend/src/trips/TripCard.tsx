@@ -24,8 +24,6 @@ type Props = {
   growth?: UserGrowthEntry;
   /** 发布页实时预览：不跳详情、不打开资料弹窗。 */
   preview?: boolean;
-  /** 首页推荐匹配度（前端启发式）；缺失时不展示徽标。 */
-  matchScore?: number;
   /** 首页收藏态；与 onToggleFavorite 同时提供时才渲染心形按钮。 */
   favorited?: boolean;
   onToggleFavorite?: (trip: TripSummary) => void;
@@ -38,7 +36,6 @@ export function TripCard({
   credit,
   growth,
   preview = false,
-  matchScore,
   favorited = false,
   onToggleFavorite,
   detailAction = false,
@@ -49,11 +46,7 @@ export function TripCard({
   const isFull = trip.status === 'full' || (trip.capacity > 0 && trip.joined_count >= trip.capacity);
   const destination = cityLabel(trip.destination_code) || trip.destination;
   const photo = cityPhoto(destination, trip.destination);
-  const cardClass = [
-    'trip-card',
-    isFull ? 'is-full' : '',
-    matchScore !== undefined ? 'has-match' : '',
-  ]
+  const cardClass = ['trip-card', isFull ? 'is-full' : '']
     .filter(Boolean)
     .join(' ');
 
@@ -69,11 +62,6 @@ export function TripCard({
           <img className="tc-photo" src={photo} alt={`${destination}城市照片`} loading="lazy" />
         )}
         <span className="tc-cover-shade" aria-hidden="true" />
-        {matchScore !== undefined && (
-          <span className="tc-match">
-            {tripMessages.homeMatchLabel} {matchScore}%
-          </span>
-        )}
         <StatusBadge status={trip.status} />
         {!preview && onToggleFavorite !== undefined && (
           <button
