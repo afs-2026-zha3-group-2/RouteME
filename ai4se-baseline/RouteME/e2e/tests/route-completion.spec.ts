@@ -74,7 +74,7 @@ async function openProfile(page: Page, userId: number): Promise<void> {
   await expect(page.getByRole('heading', { level: 2 })).toBeVisible();
 }
 
-test('real data shows the insufficient row for self and other views', async ({ page }) => {
+test('real data shows the dash row for self and other views', async ({ page }) => {
   const publisher = await registerViaApi(page);
   await completeProfileViaApi(page, publisher);
   const viewer = await registerViaApi(page);
@@ -82,14 +82,14 @@ test('real data shows the insufficient row for self and other views', async ({ p
   await useAccount(page, viewer);
   await openProfile(page, publisher.id);
   const otherRow = page.locator('.profile-completion');
-  await expect(otherRow).toHaveText('暂无足够完成记录');
+  await expect(otherRow).toHaveText('路线完成度 -');
   await expect(otherRow).toHaveClass(/is-muted/);
   await expect(otherRow).not.toContainText('%');
 
   // 本人视角同一口径：无样本就没有百分比，也没有编辑 / 隐藏开关。
   await openProfile(page, viewer.id);
   const selfRow = page.locator('.profile-completion');
-  await expect(selfRow).toHaveText('暂无足够完成记录');
+  await expect(selfRow).toHaveText('路线完成度 -');
   await expect(selfRow).toHaveClass(/is-muted/);
   await expect(selfRow).not.toContainText('%');
 });

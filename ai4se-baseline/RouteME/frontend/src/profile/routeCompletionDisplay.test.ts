@@ -17,23 +17,23 @@ describe('routeCompletionLine', () => {
     expect(line.text).not.toMatch(/骗子|危险用户|不可信/);
   });
 
-  it('renders the fixed insufficient copy and ignores the rate', () => {
-    expect(routeCompletionLine('insufficient', null)).toEqual({ text: '暂无足够完成记录', tone: 'is-muted' });
-    expect(routeCompletionLine('insufficient', 85)).toEqual({ text: '暂无足够完成记录', tone: 'is-muted' });
+  it('renders the dash instead of a percent when there is no experience', () => {
+    expect(routeCompletionLine('insufficient', null)).toEqual({ text: '路线完成度 -', tone: 'is-muted' });
+    expect(routeCompletionLine('insufficient', 85)).toEqual({ text: '路线完成度 -', tone: 'is-muted' });
   });
 
-  it('degrades a missing or unknown state to insufficient', () => {
-    expect(routeCompletionLine(undefined, 85).text).toBe('暂无足够完成记录');
-    expect(routeCompletionLine(null, 85).text).toBe('暂无足够完成记录');
-    expect(routeCompletionLine('unknown', 85).text).toBe('暂无足够完成记录');
+  it('degrades a missing or unknown state to the dash', () => {
+    expect(routeCompletionLine(undefined, 85).text).toBe('路线完成度 -');
+    expect(routeCompletionLine(null, 85).text).toBe('路线完成度 -');
+    expect(routeCompletionLine('unknown', 85).text).toBe('路线完成度 -');
   });
 
   it('degrades a missing or out-of-range rate instead of inventing a percent', () => {
-    expect(routeCompletionLine('good', undefined)).toEqual({ text: '暂无足够完成记录', tone: 'is-muted' });
-    expect(routeCompletionLine('neutral', null).text).toBe('暂无足够完成记录');
-    expect(routeCompletionLine('watch', -5).text).toBe('暂无足够完成记录');
-    expect(routeCompletionLine('good', 101).text).toBe('暂无足够完成记录');
-    expect(routeCompletionLine('good', Number.NaN).text).toBe('暂无足够完成记录');
+    expect(routeCompletionLine('good', undefined)).toEqual({ text: '路线完成度 -', tone: 'is-muted' });
+    expect(routeCompletionLine('neutral', null).text).toBe('路线完成度 -');
+    expect(routeCompletionLine('watch', -5).text).toBe('路线完成度 -');
+    expect(routeCompletionLine('good', 101).text).toBe('路线完成度 -');
+    expect(routeCompletionLine('good', Number.NaN).text).toBe('路线完成度 -');
   });
 
   it('formats fractional values as integers only', () => {

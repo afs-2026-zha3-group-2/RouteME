@@ -26,7 +26,7 @@ import routeme.config.FixedClockTestConfig;
 /**
  * 路线完成度最小闭环：发布者结束行程时声明实际完成的途经点，同事务落库；
  * 个人主页按途经点加权聚合（Σ完成点数 / Σ计划点数），阈值口径复用 RouteCompletionPolicy。
- * 到期自动完成不产生声明，不计入样本。
+ * 到期自动完成不产生声明，此时按历史已结束行程数兜底给分。
  */
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -131,8 +131,12 @@ class TripRouteCompletionApiTest {
         assertEquals("[0]", declarationIndexes(tripId), "second attempt does not overwrite the declaration");
     }
 
+    /**
+     * 到期自动完成不写声明；无声明时回落兜底口径：种子行程 1 条 + 本次到期 1 条
+     * = 2 条已结束行程 → 70 + 5×2 = 80 good。
+     */
     @Test
-    void in_expiredAutoComplete_out_noDeclarationSample() throws Exception {
+    void in_expiredAutoComplete_out_noDeclarationButFallbackScore() throws Exception {
         long tripId = 97;
         insertExpiredTrip(tripId);
 
@@ -143,8 +147,8 @@ class TripRouteCompletionApiTest {
         assertEquals(0, declarationCount(tripId), "auto materialization writes no declaration");
         mockMvc.perform(get("/api/users/{userId}/profile", PUBLISHER).header("X-User-Id", PUBLISHER))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.route_completion_state").value("insufficient"))
-                .andExpect(jsonPath("$.route_completion_rate").doesNotExist());
+                .andExpect(jsonPath("$.route_completion_state").value("good"))
+                .andExpect(jsonPath("$.route_completion_rate").value(80));
     }
 
     private org.springframework.test.web.servlet.ResultActions complete(long tripId, String body) throws Exception {

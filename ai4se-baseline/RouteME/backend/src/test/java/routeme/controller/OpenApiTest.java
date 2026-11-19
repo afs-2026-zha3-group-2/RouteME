@@ -25,7 +25,7 @@ class OpenApiTest {
 
     // Single source for version assertions: bump openapi.yaml info.version and this
     // constant together (one edit point instead of five scattered literals).
-    private static final String CONTRACT_VERSION = "0.34.0";
+    private static final String CONTRACT_VERSION = "0.35.0";
 
     private static final List<String> HTTP_METHODS = List.of("get", "post", "put", "patch", "delete");
 

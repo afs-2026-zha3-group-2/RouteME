@@ -1735,11 +1735,11 @@ export interface components {
             stats?: components["schemas"]["ProfileStats"];
             readonly growth?: components["schemas"]["UserGrowth"] | null;
             /**
-             * @description 路线完成度信誉状态，恒返回：good ≥80 / neutral 70–79 / watch <70 / insufficient 数据不足
+             * @description 路线完成度信誉状态，恒返回：good ≥80 / neutral 70–79 / watch <70 / insufficient 没有任何已结束行程（前端展示为 -）
              * @enum {string}
              */
             readonly route_completion_state: "good" | "neutral" | "watch" | "insufficient";
-            /** @description 路线完成度百分比 0–100；仅数据足够时出现，数据不足时省略该字段 */
+            /** @description 路线完成度百分比 0–100；有声明按声明加权，无声明时按历史已结束行程数派生；insufficient 时省略该字段 */
             readonly route_completion_rate?: number | null;
         };
         UserCreditEntry: {

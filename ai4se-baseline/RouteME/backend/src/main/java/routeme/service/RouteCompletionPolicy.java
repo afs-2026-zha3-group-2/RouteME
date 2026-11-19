@@ -6,9 +6,9 @@ import routeme.pojo.RouteCompletion;
 /**
  * 路线完成度派生单点：阈值只在这里实现，前端只做状态码 → 文案映射。
  *
- * <p>数据源为结束行程时的完成度声明（trip_route_completions），由
- * {@link TripRouteCompletionService#evaluate} 聚合后传入；无声明时传 {@code null} + 0，
- * 得 {@link RouteCompletionState#INSUFFICIENT}。
+ * <p>数据源由 {@link TripRouteCompletionService#evaluate} 提供：优先为结束行程时落库的
+ * 完成度声明（trip_route_completions）；无声明时回落到历史已结束行程数的演示分。
+ * 两者皆无时传 {@code null} + 0，得 {@link RouteCompletionState#INSUFFICIENT}（前端展示为「-」）。
  *
  * <p>失败安全：非法数值（负数、大于 100、空值）一律降级为数据不足，
  * 不得落入 {@link RouteCompletionState#GOOD}。
