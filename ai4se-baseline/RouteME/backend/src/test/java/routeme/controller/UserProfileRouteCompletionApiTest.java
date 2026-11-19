@@ -2,7 +2,6 @@ package routeme.controller;
 
 import static org.junit.jupiter.api.Assertions.assertAll;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
@@ -32,8 +31,9 @@ import tools.jackson.databind.ObjectMapper;
 import routeme.config.FixedClockTestConfig;
 
 /**
- * 路线完成度的只读契约：数据不足恒为 {@code insufficient} 且省略数值，
- * 与信用分、资料统计完全独立；没有任何写入入口。
+ * 路线完成度的只读契约：样本取「发布者 + 已接受同行者」的已结束行程数，
+ * 完成率按演示口径派生（1 条 → 75 neutral，2 条 → 80 good），无样本回落 insufficient；
+ * 与信用分、资料统计完全独立，没有任何写入入口。
  */
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -56,22 +56,34 @@ class UserProfileRouteCompletionApiTest {
     private JdbcClient jdbcClient;
 
     @Test
-    void in_selfProfile_out_insufficientWithoutRate() throws Exception {
+    void in_selfProfile_out_completionFromCompletedTrips() throws Exception {
         mockMvc.perform(get("/api/users/{userId}/profile", 1L).header("X-User-Id", 1L))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.route_completion_state").value("good"))
+                .andExpect(jsonPath("$.route_completion_rate").value(80));
+    }
+
+    /** 固定时钟 2026-11-16 下：用户1、2 各有 2 条已结束行程样本，用户 3 只有 1 条，用户 4 没有。 */
+    @Test
+    void in_seededUsers_out_completionBySampleCount() throws Exception {
+        for (long userId : new long[] {1L, 2L}) {
+            mockMvc.perform(get("/api/users/{userId}/profile", userId).header("X-User-Id", 1L))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.route_completion_state").value("good"))
+                    .andExpect(jsonPath("$.route_completion_rate").value(80));
+        }
+        mockMvc.perform(get("/api/users/{userId}/profile", 3L).header("X-User-Id", 1L))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.route_completion_state").value("neutral"))
+                .andExpect(jsonPath("$.route_completion_rate").value(75));
+    }
+
+    @Test
+    void in_seededUserWithoutCompletedTrips_out_insufficient() throws Exception {
+        mockMvc.perform(get("/api/users/{userId}/profile", 4L).header("X-User-Id", 1L))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.route_completion_state").value("insufficient"))
                 .andExpect(jsonPath("$.route_completion_rate").doesNotExist());
-    }
-
-    /** 演示用户与「已有已结束行程」的种子用户：本期一律数据不足，不伪造百分比。 */
-    @Test
-    void in_seededUsersWithCompletedTrips_out_stillInsufficient() throws Exception {
-        for (long userId : new long[] {1L, 2L, 4L}) {
-            mockMvc.perform(get("/api/users/{userId}/profile", userId).header("X-User-Id", 1L))
-                    .andExpect(status().isOk())
-                    .andExpect(jsonPath("$.route_completion_state").value("insufficient"))
-                    .andExpect(jsonPath("$.route_completion_rate").doesNotExist());
-        }
     }
 
     @Test
@@ -81,8 +93,8 @@ class UserProfileRouteCompletionApiTest {
 
         assertAll(
                 () -> assertEquals(self, other, "self and other views agree on completion fields"),
-                () -> assertEquals("insufficient", self.get("route_completion_state").asText()),
-                () -> assertFalse(self.containsKey("route_completion_rate"), "insufficient data omits the rate"));
+                () -> assertEquals("good", self.get("route_completion_state").asText()),
+                () -> assertEquals(80, self.get("route_completion_rate").asInt(), "sample-derived rate"));
     }
 
     @Test
@@ -94,7 +106,7 @@ class UserProfileRouteCompletionApiTest {
                 .andExpect(jsonPath("$.credit_score").value(80))
                 .andExpect(jsonPath("$.credit_level").value("good"))
                 .andExpect(jsonPath("$.credit_restricted").value(false))
-                .andExpect(jsonPath("$.route_completion_state").value("insufficient"));
+                .andExpect(jsonPath("$.route_completion_state").value("good"));
 
         assertEquals(ledgerBefore, ledgerRows(), "profile read must not write credit_ledger");
     }
@@ -109,7 +121,7 @@ class UserProfileRouteCompletionApiTest {
                 .andExpect(jsonPath("$.stats.shared").value(1))
                 .andExpect(jsonPath("$.growth_level").doesNotExist())
                 .andExpect(jsonPath("$.lv").doesNotExist())
-                .andExpect(jsonPath("$.route_completion_state").value("insufficient"));
+                .andExpect(jsonPath("$.route_completion_state").value("good"));
     }
 
     @Test

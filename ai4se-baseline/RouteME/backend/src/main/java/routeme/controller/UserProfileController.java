@@ -33,7 +33,7 @@ import routeme.service.AuthService;
 import routeme.service.CreditService;
 import routeme.service.DemoUserService;
 import routeme.service.GrowthService;
-import routeme.service.RouteCompletionPolicy;
+import routeme.service.RouteCompletionService;
 import routeme.service.UserProfileService;
 import routeme.service.UserProfileStatsService;
 
@@ -56,6 +56,7 @@ public class UserProfileController {
     private final AuthService authService;
     private final CreditService creditService;
     private final GrowthService growthService;
+    private final RouteCompletionService routeCompletionService;
 
     public UserProfileController(
             UserProfileService userProfileService,
@@ -63,13 +64,15 @@ public class UserProfileController {
             DemoUserService demoUserService,
             AuthService authService,
             CreditService creditService,
-            GrowthService growthService) {
+            GrowthService growthService,
+            RouteCompletionService routeCompletionService) {
         this.userProfileService = userProfileService;
         this.userProfileStatsService = userProfileStatsService;
         this.demoUserService = demoUserService;
         this.authService = authService;
         this.creditService = creditService;
         this.growthService = growthService;
+        this.routeCompletionService = routeCompletionService;
     }
 
     @GetMapping("/{userId}/profile")
@@ -87,7 +90,7 @@ public class UserProfileController {
                 target.getCreatedAt(),
                 userProfileStatsService.stats(userId),
                 UserGrowthResponse.from(growth, self, self ? growthService.positiveExpToday(userId) : null),
-                RouteCompletionPolicy.evaluate(null, 0));
+                routeCompletionService.evaluate(userId));
     }
 
     /**
@@ -163,7 +166,7 @@ public class UserProfileController {
         return UserProfileResponse.from(
                 userProfileService.save(user.id(), request),
                 true,
-                RouteCompletionPolicy.evaluate(null, 0));
+                routeCompletionService.evaluate(user.id()));
     }
 
     @PostMapping("/me/avatar")
@@ -174,7 +177,7 @@ public class UserProfileController {
         return UserProfileResponse.from(
                 userProfileService.uploadAvatar(user.id(), file),
                 true,
-                RouteCompletionPolicy.evaluate(null, 0));
+                routeCompletionService.evaluate(user.id()));
     }
 
     @GetMapping("/{userId}/avatar")
