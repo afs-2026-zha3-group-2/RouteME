@@ -93,6 +93,8 @@
 
   --topbar-h: 66px;
   --rail-w: 246px;
+  /* 全站页面内容宽度：所有页面容器共用，保证与导航栏的左右边距一致。 */
+  --page-max: 1600px;
   --ease: cubic-bezier(0.22, 0.68, 0.32, 1);
   --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
 
@@ -974,7 +976,6 @@ svg {
   margin-left: var(--rail-w);
   padding: calc(var(--topbar-h) + 26px) 30px 70px;
   min-height: 100vh;
-  max-width: 1520px;
 }
 
 .view:focus {
@@ -1614,13 +1615,13 @@ button.notification-row:hover {
 /* ---------- 页面容器 ---------- */
 .trip-page {
   width: 100%;
-  max-width: 1120px;
+  max-width: var(--page-max);
   margin: 0 auto;
 }
 
 .form-page {
   width: 100%;
-  max-width: 1120px;
+  max-width: var(--page-max);
   margin: 0 auto;
   padding-bottom: 88px;
 }
@@ -6785,7 +6786,7 @@ button.notification-row:hover {
 /* ---------- 聊天页两栏（对齐原型 UI.chat） ---------- */
 .chat-page {
   width: 100%;
-  max-width: 1120px;
+  max-width: var(--page-max);
   margin: 0 auto;
   padding-bottom: 20px;
 }
@@ -7182,7 +7183,7 @@ button.notification-row:hover {
   display: grid;
   gap: 18px;
   width: 100%;
-  max-width: 1280px;
+  max-width: var(--page-max);
   margin: 0 auto;
 }
 
@@ -8082,7 +8083,7 @@ button.notification-row:hover {
   display: grid;
   gap: 18px;
   width: 100%;
-  max-width: 1120px;
+  max-width: var(--page-max);
   margin: 0 auto;
 }
 
@@ -8168,7 +8169,7 @@ button.notification-row:hover {
   display: grid;
   gap: 18px;
   width: 100%;
-  max-width: 1100px;
+  max-width: var(--page-max);
   margin: 0 auto;
 }
 
@@ -8692,7 +8693,7 @@ button.notification-row:hover {
    ============================================================ */
 .ai-page {
   width: 100%;
-  max-width: 1440px;
+  max-width: var(--page-max);
   margin: 0 auto;
   padding-bottom: 88px;
 }
@@ -11933,7 +11934,7 @@ a.admin-metric-card:focus-visible {
   display: grid;
   gap: 18px;
   width: 100%;
-  max-width: 1120px;
+  max-width: var(--page-max);
   margin: 0 auto;
   padding-bottom: 88px;
 }
@@ -12898,7 +12899,7 @@ a.admin-metric-card:focus-visible {
 
 /* ---------- 布局骨架 ---------- */
 .home-page {
-  max-width: 1400px;
+  max-width: var(--page-max);
 }
 
 .home-layout {
