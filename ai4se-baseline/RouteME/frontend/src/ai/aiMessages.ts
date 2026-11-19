@@ -108,6 +108,8 @@ export const aiMessages = {
   /** 没提出发地时的交代：agent 不静默替用户决定，明说默认口径。 */
   originAssumed: (name: string) =>
     `你没有说从哪里出发，我先按「${name}」同城出发来排；直接补一句「从 XX 出发」我就会重排。`,
+  destinationAssumed: (name: string) =>
+    `你没有说要去哪里，我先按在「${name}」同城游玩来排；直接补一句「去 XX」，我就会重排。`,
   agentAskDestination:
     '还需要知道你想去哪：直接告诉我城市就行，比如「珠海两天一夜，偏美食和拍照」。',
   intentBudget: (yuan: string) => `预算 ${yuan} 元`,

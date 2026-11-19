@@ -630,12 +630,19 @@ export function AiPlannerPage({ currentUser }: Props) {
         return;
       }
 
-      // 没提出发地：默认从目的地同城出发，并在消息里说明（agent 不静默替用户决定）。
+      // 没提出发地：默认从目的地同城出发；没提目的地：默认在出发地同城游玩。
+      // 两种兜底都在对话里说明（agent 不静默替用户决定）。
       let originNote: string | null = null;
       if (nextForm.origin === null && nextForm.destination !== null) {
         const assumed = nextForm.destination;
         nextForm = { ...nextForm, origin: assumed };
         originNote = aiMessages.originAssumed(assumed.name);
+      }
+      let destinationNote: string | null = null;
+      if (nextForm.destination === null && nextForm.origin !== null) {
+        const assumed = nextForm.origin;
+        nextForm = { ...nextForm, destination: assumed };
+        destinationNote = aiMessages.destinationAssumed(assumed.name);
       }
 
       const summary = aiMessages.intentSummary([
@@ -661,6 +668,9 @@ export function AiPlannerPage({ currentUser }: Props) {
       await generate(false, nextForm, summary === '' ? undefined : summary);
       if (originNote !== null) {
         pushMessage({ role: 'assistant', tone: 'default', text: originNote });
+      }
+      if (destinationNote !== null) {
+        pushMessage({ role: 'assistant', tone: 'default', text: destinationNote });
       }
     } finally {
       setSending(false);
@@ -1305,12 +1315,10 @@ export function AiPlannerPage({ currentUser }: Props) {
               <div className="ai-preview-empty">
                 <p className="ai-preview-empty-text">{aiMessages.emptyResult}</p>
                 <dl className="ai-preview-facts">
-                  {form.origin !== null && (
-                    <div>
-                      <dt>{aiMessages.originLabel}</dt>
-                      <dd>{form.origin.name}</dd>
-                    </div>
-                  )}
+                  <div>
+                    <dt>{aiMessages.originLabel}</dt>
+                    <dd>{form.origin?.name ?? form.destination?.name ?? '—'}</dd>
+                  </div>
                   <div>
                     <dt>{aiMessages.destinationLabel}</dt>
                     <dd>{form.destination?.name ?? '—'}</dd>
