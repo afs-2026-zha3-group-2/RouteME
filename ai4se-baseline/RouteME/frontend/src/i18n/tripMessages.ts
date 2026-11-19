@@ -43,7 +43,6 @@ export const tripMessages = {
   homeRecTitle: '为你推荐的同行路线',
   homeRecSub: '基于你的兴趣和行程偏好 · 找到最合适的旅伴',
   homeViewAll: '查看全部',
-  homeMatchLabel: '匹配度',
   homeFavoriteAdd: '收藏这条行程',
   homeFavoriteRemove: '取消收藏',
   homeDetailAction: '查看详情',

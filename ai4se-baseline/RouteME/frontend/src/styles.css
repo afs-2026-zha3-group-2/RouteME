@@ -13395,32 +13395,6 @@ a.admin-metric-card:focus-visible {
   align-self: end;
 }
 
-.tc-match {
-  position: absolute;
-  top: 10px;
-  left: 10px;
-  z-index: 2;
-  padding: 3px 10px;
-  border-radius: 999px;
-  background: var(--forest);
-  color: #f6f1e4;
-  font-size: 11px;
-  font-weight: 750;
-  letter-spacing: 0.02em;
-  box-shadow: 0 4px 10px -4px rgba(10, 30, 22, 0.6);
-}
-
-.trip-card.has-match .tc-cover .badge {
-  position: absolute;
-  top: 10px;
-  right: 10px;
-  margin: 0;
-}
-
-.trip-card.has-match .tc-dest {
-  margin-top: auto;
-}
-
 .tc-fav {
   position: absolute;
   right: 10px;
@@ -14036,11 +14010,6 @@ a.admin-metric-card:focus-visible {
 
 [data-theme="dark"] .home-weather-advice {
   background: color-mix(in srgb, var(--lagoon) 16%, var(--surface));
-}
-
-[data-theme="dark"] .tc-match {
-  background: color-mix(in srgb, var(--lagoon) 34%, var(--surface));
-  color: var(--t-lagoon);
 }
 
 [data-theme="dark"] .tc-detail {

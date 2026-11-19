@@ -29,9 +29,8 @@ import { appDatePickerProps } from '../utils/datePickerProps';
 import { dayjsToIso, isoToDayjs } from '../utils/dates';
 import { greetingForHour } from './greeting';
 import { useFavorites } from './favorites';
-import { matchScore } from './matchScore';
 import { HeroScene } from './HomeScene';
-import { HomeAiCard, HomeHotDestinations, HomeUserCard, HomeWeatherCard } from './HomeSide';
+import { HomeUserCard } from './HomeSide';
 import type { DemoUser, Experience, TripSummary } from '../types';
 
 type Props = {
@@ -204,23 +203,6 @@ export function HomePage({ currentUser, token }: Props) {
     </Button>
   );
 
-  /* 右栏天气：优先跟随筛选目的地，其次常驻城市，最后兜底广州；日期跟随出发筛选。 */
-  const weatherCode =
-    filters.destinationCode !== ''
-      ? filters.destinationCode
-      : cityCodeByName(currentUser.city ?? '') || '440100';
-  const weatherDate =
-    filters.dateFrom !== '' ? filters.dateFrom : dayjsToIso(dayjs().add(3, 'day'));
-
-  const bannerStats =
-    state.status === 'ready'
-      ? {
-          total: state.total,
-          destinations: new Set(state.trips.map((trip) => trip.destination_code)).size,
-          joined: state.trips.reduce((sum, trip) => sum + trip.joined_count, 0),
-        }
-      : null;
-
   return (
     <main className="trip-page home-page">
       {studentGate.prompt}
@@ -273,28 +255,6 @@ export function HomePage({ currentUser, token }: Props) {
               <br />
               {tripMessages.homeHeroNote2}
             </p>
-          </section>
-
-          <section className="home-banner">
-            <p className="home-banner-script">
-              {tripMessages.homeBannerLine1}
-              <br />
-              {tripMessages.homeBannerLine2}
-            </p>
-            <dl className="home-banner-stats">
-              <div>
-                <dd>{bannerStats === null ? '—' : bannerStats.total}</dd>
-                <dt>{tripMessages.homeStatTrips}</dt>
-              </div>
-              <div>
-                <dd>{bannerStats === null ? '—' : bannerStats.destinations}</dd>
-                <dt>{tripMessages.homeStatDests}</dt>
-              </div>
-              <div>
-                <dd>{bannerStats === null ? '—' : bannerStats.joined}</dd>
-                <dt>{tripMessages.homeStatJoined}</dt>
-              </div>
-            </dl>
           </section>
 
           <section className="filters home-filters" aria-label="筛选行程">
@@ -492,7 +452,6 @@ export function HomePage({ currentUser, token }: Props) {
                     trip={trip}
                     credit={credits[trip.publisher.id]}
                     growth={growth[trip.publisher.id]}
-                    matchScore={matchScore(trip, currentUser)}
                     favorited={favorites.has(trip.id)}
                     onToggleFavorite={(target) => favorites.toggle(target.id)}
                     detailAction
@@ -590,15 +549,6 @@ export function HomePage({ currentUser, token }: Props) {
 
         <aside className="home-side" aria-label="旅途助手">
           <HomeUserCard currentUser={currentUser} />
-          <HomeWeatherCard destinationCode={weatherCode} date={weatherDate} />
-          <HomeAiCard />
-          <HomeHotDestinations
-            onPick={(code) => {
-              update({ destinationCode: code });
-              setView('plans');
-              scrollToResults();
-            }}
-          />
         </aside>
       </div>
     </main>
