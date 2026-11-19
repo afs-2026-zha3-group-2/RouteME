@@ -76,7 +76,7 @@ async function prepare(page: Page) {
   await page.getByRole('button', { name: '目的地', exact: true }).click();
   await page.locator('[data-area-province="440000"]').click();
   await page.locator('[data-area-city="440400"]').click();
-  await expect(page.locator('.area-trigger').first()).toContainText('珠海市');
+  await expect(page.locator('#trip-destination')).toContainText('珠海市');
 
   await addStop(page, '香洲港');
   await addStop(page, '情侣路');
