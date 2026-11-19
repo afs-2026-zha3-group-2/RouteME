@@ -50,6 +50,12 @@ class ReportCreditConcurrencyTest {
         if (reportId != null) {
             jdbcClient.sql("DELETE FROM credit_ledger WHERE related_id = :id AND related_type = 'REPORT'")
                     .param("id", String.valueOf(reportId)).update();
+            // 举报处理还会写成长扣分流水与站内通知；两者均为真实提交，须一并清理，
+            // 否则共享 H2 库的后续测试（成长全表计数、通知基线）会因残留行而失败。
+            jdbcClient.sql("DELETE FROM growth_exp_ledger WHERE related_type = 'REPORT' AND related_id = :id")
+                    .param("id", String.valueOf(reportId)).update();
+            jdbcClient.sql("DELETE FROM notifications WHERE report_id = :id")
+                    .param("id", reportId).update();
             jdbcClient.sql("DELETE FROM reports WHERE id = :id")
                     .param("id", reportId).update();
         }
