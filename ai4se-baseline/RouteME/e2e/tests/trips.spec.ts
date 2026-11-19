@@ -573,7 +573,8 @@ test.describe('date pickers under reduced motion', () => {
     await expect(page.getByLabel('出发日期')).toHaveValue(todayIso());
 
     await page.goto('/');
-    await page.getByLabel('出发不早于').click();
+    // 首页日期筛选已改为「出发时间」区间双控件（id=filter-date-from / filter-date-to）。
+    await page.locator('#filter-date-from').click();
     await expect(page.locator('.app-date-popup')).toBeVisible();
   });
 

@@ -295,17 +295,19 @@ test('guides an empty filter state to publish from both views', async ({ page })
   await loginAs(page, 1);
   await page.goto('/');
 
-  // 搜索已移除；用未来日期筛选制造空态。
-  await page.getByLabel('出发不早于').fill('2099-01-01');
-  await page.getByLabel('出发不早于').press('Enter');
+  // 搜索已移除；用未来日期筛选制造空态（首页日期筛选为「出发时间」区间，起点框 id=filter-date-from）。
+  await page.locator('#filter-date-from').click();
+  await page.locator('#filter-date-from').fill('2099-01-01');
+  await page.locator('#filter-date-from').press('Enter');
   await expect(page.getByText('还没有符合条件的行程')).toBeVisible();
   await expect(page.getByRole('button', { name: '清除全部条件' }).first()).toBeVisible();
   await page.getByRole('button', { name: '去发布行程' }).click();
   await expect(page).toHaveURL(/#\/trips\/new$/);
 
   await page.goto('/');
-  await page.getByLabel('出发不早于').fill('2099-01-01');
-  await page.getByLabel('出发不早于').press('Enter');
+  await page.locator('#filter-date-from').click();
+  await page.locator('#filter-date-from').fill('2099-01-01');
+  await page.locator('#filter-date-from').press('Enter');
   await page.locator('.ant-segmented-item', { hasText: '旅行体验' }).click();
   await expect(page.getByText('还没有符合的旅行体验')).toBeVisible();
   await page.getByRole('button', { name: '去发布行程' }).click();
