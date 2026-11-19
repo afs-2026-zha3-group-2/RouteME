@@ -36,7 +36,7 @@
       "title": "shares an experience and reuses it to publish a new plan",
       "observed": "expect(locator).toBeVisible() failed",
       "recordedAt": "2026-11-18",
-      "ownerChange": "unscheduled: spec drift after the 2026-11-18 growth/notifications merge"
+      "ownerChange": "environment 2026-11-19: outbound TLS untrusted (SELF_SIGNED_CERT_IN_CHAIN) breaks amap加载, .amap-waypoint-text never renders; earlier drift attribution superseded"
     },
     {
       "file": "tests/route-completion.spec.ts",
@@ -78,7 +78,91 @@
       "title": "route strip click focuses the map and read-only pins carry no add action",
       "observed": "expect(locator).toHaveCount(3) got 0; map stuck at 正在解析途经点并规划路线…",
       "recordedAt": "2026-11-19",
-      "ownerChange": "flaky: route resolution timing/network; the sibling map case passes in the same run and this one passed in earlier runs"
+      "ownerChange": "environment 2026-11-19: outbound TLS untrusted (SELF_SIGNED_CERT_IN_CHAIN) blocks amap/route upstream; same cluster as the other .amap-* reds below"
+    },
+    {
+      "file": "tests/trips.spec.ts",
+      "title": "publishes a trip and finds it in the home list",
+      "observed": ".amap-search-item 香洲港 not found",
+      "recordedAt": "2026-11-19",
+      "ownerChange": "environment: outbound TLS untrusted (SELF_SIGNED_CERT_IN_CHAIN), amap POI search unavailable; fails solo too, unrelated to UI changes"
+    },
+    {
+      "file": "tests/trips.spec.ts",
+      "title": "publishes with a meeting time and edits it from the detail page",
+      "observed": ".amap-search-item 香洲港 not found",
+      "recordedAt": "2026-11-19",
+      "ownerChange": "environment: same outbound TLS cluster as the previous entry"
+    },
+    {
+      "file": "tests/trips.spec.ts",
+      "title": "rejects a meeting time after the end date on the publish form",
+      "observed": ".amap-search-item 香洲港 not found",
+      "recordedAt": "2026-11-19",
+      "ownerChange": "environment: same outbound TLS cluster as the previous entry"
+    },
+    {
+      "file": "tests/trips.spec.ts",
+      "title": "publishes a single meeting area and replaces it from the edit dialog",
+      "observed": ".amap-search-item 香洲港 not found",
+      "recordedAt": "2026-11-19",
+      "ownerChange": "environment: same outbound TLS cluster as the previous entry"
+    },
+    {
+      "file": "tests/trips.spec.ts",
+      "title": "detail page renders the route map with numbered pins and a route strip",
+      "observed": ".amap-overlay-marker count 0",
+      "recordedAt": "2026-11-19",
+      "ownerChange": "environment: same outbound TLS cluster; amap JS API cannot load"
+    },
+    {
+      "file": "tests/trips.spec.ts",
+      "title": "detail page keeps the map and warns when a stop is off the gazetteer",
+      "observed": ".amap-overlay-marker count 0",
+      "recordedAt": "2026-11-19",
+      "ownerChange": "environment: same outbound TLS cluster; amap JS API cannot load"
+    },
+    {
+      "file": "tests/trips.spec.ts",
+      "title": "shows the identity gate with login form and the unfinished trip list",
+      "observed": "seed trip-card 佛山祖庙与岭南天地一日 not on first page",
+      "recordedAt": "2026-11-19",
+      "ownerChange": "structural: earlier specs in the same shard leave recruiting trips that push seed cards past page 1 (e2e README); passes when trips.spec runs solo"
+    },
+    {
+      "file": "tests/trips.spec.ts",
+      "title": "filters the list by interest tag and keeps the filters visible",
+      "observed": "seed trip-card 深圳大鹏半岛海岸线徒步 not on first page",
+      "recordedAt": "2026-11-19",
+      "ownerChange": "structural: same home pagination pollution as the previous entry"
+    },
+    {
+      "file": "tests/trips.spec.ts",
+      "title": "distinguishes full trips from recruiting trips without color alone",
+      "observed": "seed full trip-card not on first page",
+      "recordedAt": "2026-11-19",
+      "ownerChange": "structural: same home pagination pollution as the previous entry"
+    },
+    {
+      "file": "tests/trips.spec.ts",
+      "title": "filters by province and city without a search box",
+      "observed": "seed trip-card 深圳大鹏半岛海岸线徒步 not on first page",
+      "recordedAt": "2026-11-19",
+      "ownerChange": "structural: same home pagination pollution as the previous entry"
+    },
+    {
+      "file": "tests/mine.spec.ts",
+      "title": "leaves a matched trip from my trips",
+      "observed": "applyViaApi response not ok (seed applicant credit restricted by earlier specs)",
+      "recordedAt": "2026-11-19",
+      "ownerChange": "structural: cross-spec seed credit pollution in shared DB; mine.spec solo in a clean shard passes 9/9"
+    },
+    {
+      "file": "tests/mine.spec.ts",
+      "title": "opens the experience form for a completed trip",
+      "observed": "acceptViaApi response not ok (seed publisher credit restricted in shared dev DB)",
+      "recordedAt": "2026-11-19",
+      "ownerChange": "structural: same seed credit pollution; passes in clean shard solo run"
     }
   ],
   "skipped": [
