@@ -30,7 +30,7 @@ async function openEditor(page: Page) {
   await page.getByRole('button', { name: '目的地', exact: true }).click();
   await page.locator('[data-area-province="440000"]').click();
   await page.locator('[data-area-city="440400"]').click();
-  await expect(page.locator('.area-trigger').first()).toContainText('珠海市');
+  await expect(page.locator('#trip-destination')).toContainText('珠海市');
 }
 
 /** 用编辑器内的关键字搜索加一个途经点（搜索有 320ms 防抖）。 */

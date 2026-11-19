@@ -155,7 +155,8 @@ await expect(page.getByRole('heading', { name: '集合与预算' })).toBeVisible
   await expect(page.locator('.publish-route-editor')).toBeVisible();
   await expect(page.getByText('用搜索或点击地图加入途经点；至少两个才能生成路线。')).toBeVisible();
 
-  const cascader = page.locator('.area-trigger').first();
+  // 发布页新增「出发地」选择器后，.area-trigger 的首项不再固定是目的地，用字段 id 定位。
+  const cascader = page.locator('#trip-destination');
   const cascaderWidth = await cascader.evaluate((node) => node.getBoundingClientRect().width);
   const fieldWidth = await cascader.evaluate(
     (node) => node.parentElement?.getBoundingClientRect().width ?? 0,
@@ -245,7 +246,7 @@ test('keeps the route editor usable for a destination without offline coverage',
   // 路线编辑器不再依赖离线景点库：拉萨这类无覆盖目的地同样能用搜索 / 地图点选。
   await pickDestinationByCode(page, '540000', '540100');
 
-  await expect(page.locator('.area-trigger').first()).toContainText('拉萨市');
+  await expect(page.locator('#trip-destination')).toContainText('拉萨市');
   await expect(page.locator('.publish-route-editor .amap-container')).toBeVisible();
   await expect(page.getByText('用搜索或点击地图加入途经点；至少两个才能生成路线。')).toBeVisible();
   await expect(
@@ -381,7 +382,7 @@ test('picking the destination does not write stops', async ({ page }) => {
   // 目的地与路线分开录入：选城市只影响搜索范围与地图视野，不凭空写途经点。
   await expect(page.locator('.publish-route-editor')).toBeVisible();
   await pickDestinationByCode(page, '440000', '440100');
-  await expect(page.locator('.area-trigger').first()).toContainText('广州市');
+  await expect(page.locator('#trip-destination')).toContainText('广州市');
   await expect(page.locator('.publish-route-editor .amap-waypoint-text b')).toHaveCount(0);
   await expect(
     page.locator('.publish-route-editor [data-testid="amap-route-generate"]'),
