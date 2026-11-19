@@ -1,6 +1,6 @@
 /**
  * 行程详情只读地图：按途经点名称做高德地理编码，再按行程的出行方式绘制路线
- * （旧行程没有 travel_mode 时回退步行，与既有口径一致）。
+ * （旧行程没有 travel_mode 时回退步行；公共交通带上城市限定换乘范围）。
  *
  * 与发布/探索页共用 AmapContainer + RouteLayer；不修改行程数据，也不提供
  * 编辑操作。高德服务不可用时依次降级：离线地名库定位 → 直线估算路线，
@@ -98,7 +98,7 @@ export function AmapTripMap({
 
       if (resolved.length >= 2) {
         try {
-          const plan = await planRoute(mode, resolved);
+          const plan = await planRoute(mode, resolved, city);
           if (active) {
             setRoute(plan);
           }

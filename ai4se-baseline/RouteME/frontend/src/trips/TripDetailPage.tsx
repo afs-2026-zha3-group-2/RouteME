@@ -40,7 +40,7 @@ import { ExperienceLikeButton } from '../experiences/ExperienceLikeButton';
 import { ShareIcon } from '../experiences/shareIcons';
 import { meetingAreaText, meetingTimeText } from '../chat/chatMeeting';
 import { AmapTripMap } from '../map/amap/AmapTripMap';
-import { formatDistance, formatDuration, type RoutePlan } from '../map/amap/AmapService';
+import { formatDistance, formatDuration, type RoutePlan, type TravelMode } from '../map/amap/AmapService';
 import { AmapPlacePicker } from '../map/amap/AmapPlacePicker';
 import { shareEligibility } from '../experiences/shareEligibility';
 import { GrowthBadge } from '../growth/GrowthBadge';
@@ -128,12 +128,15 @@ function legMeta(leg: RoutePlan['legs'][number] | undefined, modeLabel: string):
   return `约 ${formatDistance(leg.distanceMeters)} · ${modeLabel} ${formatDuration(leg.durationSeconds)}`;
 }
 
-/** 出行方式展示名：详情页地图把公共交通与未填写按步行示意。 */
-function routeModeLabel(mode: string): string {
+/** 出行方式展示名：与路线规划实际使用的口径一致。 */
+function routeModeLabel(mode: TravelMode): string {
   if (mode === 'driving') {
     return '驾车';
   }
-  return mode === 'bicycling' ? '骑行' : '步行';
+  if (mode === 'bicycling') {
+    return '骑行';
+  }
+  return mode === 'transit' ? '公共交通' : '步行';
 }
 
 export function TripDetailPage({ currentUser, tripId }: Props) {
@@ -382,9 +385,13 @@ export function TripDetailPage({ currentUser, tripId }: Props) {
   const mapCity = findCity(trip.destination_code)?.cityDisplayName.replace(/市$/, '') ?? trip.destination;
   const cityForSearch = mapCity.replace(/市$/, '');
   const hasStops = trip.stops.length > 0;
-  // 高德路线封装在本基线只支持步行 / 驾车 / 骑行：公共交通与未填写按步行折线示意。
-  const mapTravelMode =
-    trip.travel_mode === 'driving' || trip.travel_mode === 'bicycling' ? trip.travel_mode : 'walking';
+  // 公共交通按公交口径规划（地图组件会带上城市限定换乘范围）；未填写的旧行程回退步行。
+  const mapTravelMode: TravelMode =
+    trip.travel_mode === 'driving' ||
+    trip.travel_mode === 'bicycling' ||
+    trip.travel_mode === 'transit'
+      ? trip.travel_mode
+      : 'walking';
   const mapModeLabel = routeModeLabel(mapTravelMode);
   const focusPlace = (name: string) => {
     setFocusStop(name);
