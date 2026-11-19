@@ -63,9 +63,12 @@ export const aiMessages = {
   replaceMapEmpty: '附近没有找到地点，换个位置点击试试',
   closeCandidates: '关闭候选地点',
   welcomeTitle: '你好！我是 RouteMe AI 旅行助手 ✨',
-  welcomeIntro: '我可以帮你快速规划专属的旅行路线，包括景点、美食、交通、预算和实用建议。',
-  welcomePrompt: '你可以这样告诉我你的需求：',
-  welcomeDetail: '或者直接输入你的想法，越详细越好哦～',
+  welcomeIntro:
+    '告诉我你想怎么玩，我会结合目的地当天真实天气与高德路线，直接给出一份能照着走的完整行程：逐站到达时间、停留时长、景点顺序、美食推荐、交通耗时与预算估算。',
+  welcomePrompt:
+    '想让方案够完整，一次把这几件事说清就行：出发地 · 目的地 · 出行日期 · 游玩时长 · 预算 · 偏好（美食 / 拍照 / 亲子 / 自然…）与节奏 · 出行方式。',
+  welcomeDetail:
+    '下面是几条「条件给全」的示例，点一下就能生成完整行程；也可以直接输入你的想法，条件越全，方案越贴合。生成后可拖动调整顺序、更换景点，确认后一键发布为行程。',
   composerLabel: '告诉我你的旅行想法',
   composerPlaceholder: '继续问我，或者告诉我你的新需求…',
   send: '发送',
