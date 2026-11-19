@@ -30,8 +30,20 @@ describe('parsePlanIntent', () => {
 
   it('detects travel mode and pace keywords', () => {
     const intent = parsePlanIntent('自驾去惠州，行程紧凑一点');
+    expect(intent.destinationName).toBe('惠州');
     expect(intent.travelMode).toBe('driving');
     expect(intent.pace).toBe('compact');
+  });
+
+  it('keeps the city after 去/到 as the destination instead of the origin city', () => {
+    const intent = parsePlanIntent('从北京出发去天津玩一天');
+    expect(intent.originName).toBe('北京');
+    expect(intent.destinationName).toBe('天津');
+    expect(intent.duration).toBe('one_day');
+  });
+
+  it('reads the destination from a bare "A 到 B" sentence', () => {
+    expect(parsePlanIntent('北京到天津一日游').destinationName).toBe('天津');
   });
 
   it('leaves every field open when the text has no condition', () => {

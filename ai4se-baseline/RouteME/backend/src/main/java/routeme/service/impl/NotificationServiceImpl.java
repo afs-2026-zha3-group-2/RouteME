@@ -32,8 +32,10 @@ import routeme.mapper.NotificationMapper;
 import routeme.mapper.ReportMapper;
 import routeme.pojo.ChatMessage;
 import routeme.pojo.DemoUser;
+import routeme.pojo.GroupMessage;
 import routeme.pojo.Notification;
 import routeme.response.ChatMessageResponse;
+import routeme.response.GroupMessageResponse;
 import routeme.response.NotificationCountsResponse;
 import routeme.response.NotificationEventResponse;
 import routeme.response.NotificationListResponse;
@@ -178,6 +180,40 @@ public class NotificationServiceImpl
     }
 
     @Override
+    public void notifyTripRouteUpdated(long recipientId, long actorId, long tripId, Instant updatedAt) {
+        write(
+                recipientId,
+                NotificationEventEnum.TRIP_ROUTE_UPDATED,
+                NotificationPriorityEnum.NORMAL,
+                actorId,
+                tripId,
+                null,
+                null,
+                null,
+                null,
+                "trip_route_updated:" + tripId + ":" + updatedAt.toEpochMilli(),
+                NotificationTextUtils.tripRouteUpdated(titleOf(tripId)),
+                null);
+    }
+
+    @Override
+    public void notifyTripGroupOpened(long recipientId, long actorId, long tripId) {
+        write(
+                recipientId,
+                NotificationEventEnum.TRIP_GROUP_OPENED,
+                NotificationPriorityEnum.NORMAL,
+                actorId,
+                tripId,
+                null,
+                null,
+                null,
+                null,
+                "trip_group_opened:" + tripId,
+                NotificationTextUtils.tripGroupOpened(titleOf(tripId)),
+                null);
+    }
+
+    @Override
     public void notifyTripOngoing(long recipientId, long tripId) {
         write(
                 recipientId,
@@ -245,6 +281,24 @@ public class NotificationServiceImpl
                 null,
                 "message:" + message.id(),
                 NotificationTextUtils.chatMessage(nicknameOf(actorId), titleOf(message.tripId())),
+                message);
+    }
+
+    @Override
+    public void notifyGroupMessage(long recipientId, long actorId, GroupMessage message) {
+        write(
+                recipientId,
+                NotificationEventEnum.GROUP_MESSAGE,
+                NotificationPriorityEnum.NORMAL,
+                actorId,
+                message.tripId(),
+                null,
+                message.id(),
+                null,
+                null,
+                "group_message:" + message.id(),
+                NotificationTextUtils.groupMessage(nicknameOf(actorId), titleOf(message.tripId())),
+                null,
                 message);
     }
 
@@ -523,6 +577,19 @@ public class NotificationServiceImpl
         return counts(recipientId);
     }
 
+    @Override
+    public NotificationCountsResponse markGroupConversationRead(long recipientId, long tripId) {
+        lambdaUpdate()
+                .eq(NotificationEntity::getRecipientId, recipientId)
+                .isNull(NotificationEntity::getReadAt)
+                .eq(NotificationEntity::getType, NotificationTypeEnum.CHAT.wireValue())
+                .eq(NotificationEntity::getTripId, tripId)
+                .eq(NotificationEntity::getEvent, NotificationEventEnum.GROUP_MESSAGE.wireValue())
+                .set(NotificationEntity::getReadAt, clock.instant().toString())
+                .update();
+        return counts(recipientId);
+    }
+
     // ---------- 写入与描述 ----------
 
     private void write(
@@ -538,6 +605,24 @@ public class NotificationServiceImpl
             String dedupeKey,
             Draft draft,
             ChatMessage message) {
+        write(recipientId, event, priority, actorId, tripId, applicationId, messageId,
+                reportId, sessionId, dedupeKey, draft, message, null);
+    }
+
+    private void write(
+            long recipientId,
+            NotificationEventEnum event,
+            NotificationPriorityEnum priority,
+            Long actorId,
+            Long tripId,
+            Long applicationId,
+            Long messageId,
+            Long reportId,
+            Long sessionId,
+            String dedupeKey,
+            Draft draft,
+            ChatMessage message,
+            GroupMessage groupMessage) {
         if (actorId != null && actorId == recipientId) {
             return;
         }
@@ -566,7 +651,12 @@ public class NotificationServiceImpl
             publish(
                     recipientId,
                     new NotificationEventResponse(
-                            describe(notification), message == null ? null : ChatMessageResponse.from(message)));
+                            describe(notification),
+                            message == null ? null : ChatMessageResponse.from(message),
+                            groupMessage == null
+                                    ? null
+                                    : GroupMessageResponse.from(
+                                            groupMessage, demoUserService.require(groupMessage.senderId()))));
         } catch (DuplicateKeyException exception) {
             // 并发重复事件：唯一索引兜底，静默跳过。
             log.debug("notification deduplicated: recipient={}, key={}", recipientId, dedupeKey);
@@ -638,7 +728,10 @@ public class NotificationServiceImpl
         Long tripId = notification.tripId();
         return switch (notification.type()) {
             case TRIP -> new NotificationTargetResponse(
-                    NotificationTargetKindEnum.TRIP.wireValue(), tripId, null, null, null, null);
+                    NotificationEventEnum.TRIP_GROUP_OPENED.wireValue().equals(notification.event())
+                            ? NotificationTargetKindEnum.GROUP_CHAT.wireValue()
+                            : NotificationTargetKindEnum.TRIP.wireValue(),
+                    tripId, null, null, null, null);
             case APPLICATION -> new NotificationTargetResponse(
                     NotificationEventEnum.APPLICATION_RECEIVED.wireValue().equals(notification.event())
                             ? NotificationTargetKindEnum.APPLICATIONS.wireValue()
@@ -649,9 +742,13 @@ public class NotificationServiceImpl
                     null,
                     null);
             case CHAT -> new NotificationTargetResponse(
-                    NotificationTargetKindEnum.CHAT.wireValue(),
+                    NotificationEventEnum.GROUP_MESSAGE.wireValue().equals(notification.event())
+                            ? NotificationTargetKindEnum.GROUP_CHAT.wireValue()
+                            : NotificationTargetKindEnum.CHAT.wireValue(),
                     tripId,
-                    notification.actorId(),
+                    NotificationEventEnum.GROUP_MESSAGE.wireValue().equals(notification.event())
+                            ? null
+                            : notification.actorId(),
                     null,
                     null,
                     null);

@@ -155,6 +155,7 @@ describe('toTripPrefill', () => {
     const prefill = toTripPrefill(snapshot);
 
     expect(prefill.title).toBe('广州市 1 日游 · AI 推荐');
+    expect(prefill.departureCode).toBe('440100');
     expect(prefill.destinationCode).toBe('440100');
     expect(prefill.startDate).toBe('2026-11-21');
     expect(prefill.endDate).toBe('2026-11-21');
@@ -182,6 +183,22 @@ describe('toTripPrefill', () => {
       destination: { ...snapshot.destination, name: '神秘城市' },
     });
     expect(prefill.destinationCode).toBe('');
+  });
+
+  it('maps a station-style origin name back to its city code', () => {
+    const prefill = toTripPrefill({
+      ...snapshot,
+      origin: { ...snapshot.origin, name: '上海虹桥站' },
+    });
+    expect(prefill.departureCode).toBe('310100');
+  });
+
+  it('leaves departureCode empty when the origin is not a known city', () => {
+    const prefill = toTripPrefill({
+      ...snapshot,
+      origin: { ...snapshot.origin, name: '神秘出发地' },
+    });
+    expect(prefill.departureCode).toBe('');
   });
 
   it('labels half-day and two-day plans', () => {

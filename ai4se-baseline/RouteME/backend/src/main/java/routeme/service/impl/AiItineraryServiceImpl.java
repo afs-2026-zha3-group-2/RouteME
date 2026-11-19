@@ -55,6 +55,9 @@ public class AiItineraryServiceImpl extends AbstractServiceImpl<AiItineraryMappe
     private static final Set<String> TRAVEL_MODES = Set.of("transit", "walking", "driving");
     private static final Set<String> PACES = Set.of("relaxed", "moderate", "compact");
 
+    /** 单次输出 token 上限（DeepSeek chat 最大 8192）；6000 为长行程留足余量。 */
+    private static final int MAX_OUTPUT_TOKENS = 6000;
+
     /** 时长档位 → 景点数量口径（E2E 只断言 ≥2）。 */
     private static final Map<String, String> DURATION_GUIDE = Map.of(
             "half_day", "半天，推荐 2–3 个景点",
@@ -126,9 +129,37 @@ public class AiItineraryServiceImpl extends AbstractServiceImpl<AiItineraryMappe
             throw new InvalidInputException("date is outside the forecast window");
         }
 
-        String content = callAi(buildUserPrompt(request, weather, duration, travelMode, pace));
-        AiPlan plan = parseAndValidate(content);
+        String prompt = buildUserPrompt(request, weather, duration, travelMode, pace);
+        AiPlan plan = generatePlanWithRetry(prompt);
         return new AiGenerateResponse(plan, weather);
+    }
+
+    /**
+     * 调用模型并把输出解析成计划；输出不合法（截断 / 非 JSON / 字段缺失）时自动重试一次。
+     * 日志记录 finish_reason、字符数与片段，便于区分「到 token 上限」与「上游读断」。
+     */
+    private AiPlan generatePlanWithRetry(String prompt) {
+        AiCall first = callAi(prompt);
+        try {
+            return parseAndValidate(first.content());
+        } catch (AiInvalidOutputException invalid) {
+            log.warn("AI output rejected on first attempt (finish_reason={}, chars={}): {}; retrying once. snippet={}",
+                    first.finishReason(), first.content().length(), invalid.getMessage(), snippet(first.content()));
+        }
+        AiCall retry = callAi(prompt);
+        try {
+            return parseAndValidate(retry.content());
+        } catch (AiInvalidOutputException invalid) {
+            log.warn("AI output rejected after retry (finish_reason={}, chars={}): {}; snippet={}",
+                    retry.finishReason(), retry.content().length(), invalid.getMessage(), snippet(retry.content()));
+            throw invalid;
+        }
+    }
+
+    /** 日志用输出片段：压平空白后截断，避免日志被整段 JSON 撑满。 */
+    private static String snippet(String content) {
+        String flat = content == null ? "" : content.replaceAll("\\s+", " ").trim();
+        return flat.length() <= 500 ? flat : flat.substring(0, 500) + "…";
     }
 
     private String normalizeEnum(String value, Set<String> allowed, String defaultValue, String field) {
@@ -226,10 +257,12 @@ public class AiItineraryServiceImpl extends AbstractServiceImpl<AiItineraryMappe
         return BigDecimal.valueOf(cents).movePointLeft(2).stripTrailingZeros().toPlainString();
     }
 
-    private String callAi(String userPrompt) {
+    private AiCall callAi(String userPrompt) {
         Map<String, Object> body = new LinkedHashMap<>();
         body.put("model", properties.model());
         body.put("stream", false);
+        // 显式抬高输出上限：默认 4096 在长行程/长理由时容易截断成不完整 JSON。
+        body.put("max_tokens", MAX_OUTPUT_TOKENS);
         body.put("messages", List.of(
                 Map.of("role", "system", "content", SYSTEM_PROMPT),
                 Map.of("role", "user", "content", userPrompt)));
@@ -261,7 +294,7 @@ public class AiItineraryServiceImpl extends AbstractServiceImpl<AiItineraryMappe
         if (content == null || content.isBlank()) {
             throw new AiInvalidOutputException("AI upstream returned empty content");
         }
-        return content;
+        return new AiCall(content, completion.choices().get(0).finishReason());
     }
 
     private AiPlan parseAndValidate(String rawContent) {
@@ -269,7 +302,7 @@ public class AiItineraryServiceImpl extends AbstractServiceImpl<AiItineraryMappe
         try {
             plan = MAPPER.readValue(stripFence(rawContent), AiPlan.class);
         } catch (JacksonException exception) {
-            log.warn("AI output is not valid JSON (no auto-retry)", exception);
+            log.warn("AI output is not valid JSON", exception);
             throw new AiInvalidOutputException("AI output is not valid JSON");
         }
         validate(plan);
@@ -338,14 +371,18 @@ public class AiItineraryServiceImpl extends AbstractServiceImpl<AiItineraryMappe
         }
     }
 
-    /** OpenAI 兼容响应只取 choices[0].message.content。 */
+    /** OpenAI 兼容响应：只取 choices[0].message.content 与结束原因。 */
     private record ChatCompletion(List<Choice> choices) {
     }
 
-    private record Choice(Message message) {
+    private record Choice(Message message, String finishReason) {
     }
 
     private record Message(String role, String content) {
+    }
+
+    /** 一次模型调用的结果。 */
+    private record AiCall(String content, String finishReason) {
     }
 
     /* ---------- 快照整存整取（B7 / B8） ---------- */

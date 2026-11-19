@@ -7,6 +7,7 @@ public enum NotificationTargetKindEnum {
     TRIP("trip"),
     APPLICATIONS("applications"),
     CHAT("chat"),
+    GROUP_CHAT("group_chat"),
     CREDIT("credit"),
     REPORT("report"),
     ACCOUNT("account"),

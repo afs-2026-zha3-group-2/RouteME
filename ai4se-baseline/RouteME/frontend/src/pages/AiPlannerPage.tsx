@@ -1305,6 +1305,12 @@ export function AiPlannerPage({ currentUser }: Props) {
               <div className="ai-preview-empty">
                 <p className="ai-preview-empty-text">{aiMessages.emptyResult}</p>
                 <dl className="ai-preview-facts">
+                  {form.origin !== null && (
+                    <div>
+                      <dt>{aiMessages.originLabel}</dt>
+                      <dd>{form.origin.name}</dd>
+                    </div>
+                  )}
                   <div>
                     <dt>{aiMessages.destinationLabel}</dt>
                     <dd>{form.destination?.name ?? '—'}</dd>
@@ -1327,6 +1333,16 @@ export function AiPlannerPage({ currentUser }: Props) {
               <div className="ai-preview-body">
                 <h4 className="ai-preview-title">{planMeta.title}</h4>
                 <div className="ai-preview-meta">
+                  {form.origin !== null && (
+                    <>
+                      <span>
+                        {aiMessages.departureFrom(form.origin.name.replace(/市$/, ''))}
+                      </span>
+                      <span className="ai-preview-meta-dot" aria-hidden="true">
+                        ·
+                      </span>
+                    </>
+                  )}
                   <span>
                     {formatMonthDay(form.date)}
                     {planMeta.dayCount > 1

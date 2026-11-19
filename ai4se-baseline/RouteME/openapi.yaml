@@ -1,7 +1,7 @@
 openapi: 3.0.3
 info:
   title: RouteME API
-  version: 0.32.0
+  version: 0.33.0
   description: |
     RouteME 后端对外契约。本文件是前后端唯一事实源，字段名、类型、状态码与错误码只在这里定稿。
         当前包含：脚手架问候语、演示账户与账号认证（注册/登录/会话/退出）、旅行计划（浏览/筛选/发布/详情/结束），同行匹配、申请、退出、聊天、我的旅行与举报，游后体验分享与参考发布所需数据，管理后台（用户管理 / 举报处置 / 人工客服）与用户侧帮助入口，AI 智能行程推荐（生成/快照保存与读取，天气复用目的地天气接口），以及目的地天气提醒与信用分账户、安全学习恢复信用分的考试会话与判分，旅行保障（演示钱包 / 保险 / 借款 / 还款），学信网学籍认证（演示核验）与核心动作门槛。
@@ -1085,6 +1085,71 @@ paths:
                 unexpected:
                   value:
                     code: INTERNAL_ERROR
+  /trips/{tripId}/stops:
+    put:
+      operationId: saveTripStops
+      summary: 发布者编辑途经点
+      description: |
+        仅行程发布者可调用，且只在招募中与已满员（出发前）可用。
+        整体替换 stops，校验与发布同口径（至少 2 个，去空白去重）；
+        保存后通知全体已接受同行者，群已开时同步一条群消息。
+      parameters:
+        - $ref: '#/components/parameters/DemoUserId'
+        - name: tripId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TripStopsRequest'
+            examples:
+              success:
+                value:
+                  stops: [陈家祠, 永庆坊, 沙面]
+              rejected:
+                value:
+                  stops: [陈家祠]
+      responses:
+        '200':
+          description: 更新后的行程详情
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TripDetail'
+        '400':
+          $ref: '#/components/responses/InvalidInput'
+        '401':
+          $ref: '#/components/responses/DemoUserRequired'
+        '403':
+          description: 非发布者不能编辑途经点，或发布者信用受限
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                forbidden:
+                  value:
+                    code: FORBIDDEN
+                creditRestricted:
+                  value:
+                    code: CREDIT_RESTRICTED
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: 行程已出发 / 已结束 / 已取消，不可编辑
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                notOpen:
+                  value:
+                    code: TRIP_NOT_OPEN
   /trips/{tripId}/applications:
     get:
       operationId: loadTripApplications
@@ -1549,6 +1614,86 @@ paths:
           $ref: '#/components/responses/NotFound'
         '409':
           $ref: '#/components/responses/Conflict'
+  /trips/{tripId}/group-messages:
+    get:
+      operationId: loadGroupMessages
+      summary: 读取行程群聊消息
+      description: |
+        群在满员成行时自动开设，一旦开设永久保留；
+        仅发布者与当前已接受同行者可读，行程结束 / 取消后仍可回放。
+      parameters:
+        - $ref: '#/components/parameters/DemoUserId'
+        - name: tripId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      responses:
+        '200':
+          description: 群消息列表，按发送时间升序，附发送者资料
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/GroupMessage'
+        '401':
+          $ref: '#/components/responses/DemoUserRequired'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          description: 行程不存在或群未开设
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                notFound:
+                  value:
+                    code: TRIP_NOT_FOUND
+    post:
+      operationId: sendGroupMessage
+      summary: 发送群聊文字消息
+      description: 仅群成员可发；行程已结束 / 已取消时只读，返回 409。
+      parameters:
+        - $ref: '#/components/parameters/DemoUserId'
+        - name: tripId
+          in: path
+          required: true
+          schema:
+            type: integer
+            format: int64
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/GroupMessageRequest'
+            examples:
+              success:
+                value:
+                  content: 那我把第二站改成永庆坊，大家觉得怎么样？
+              rejected:
+                value:
+                  content: ''
+      responses:
+        '201':
+          description: 已保存的群消息
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/GroupMessage'
+        '400':
+          $ref: '#/components/responses/InvalidInput'
+        '401':
+          $ref: '#/components/responses/DemoUserRequired'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
   /me/chat-partners:
     get:
       operationId: loadChatPartners
@@ -1564,6 +1709,26 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/ChatPartner'
+        '401':
+          $ref: '#/components/responses/DemoUserRequired'
+  /me/group-chats:
+    get:
+      operationId: loadMyGroups
+      summary: 我的群聊列表
+      description: |
+        我是发布者或已接受同行者且群已开设的行程；
+        按最后一条消息时间倒序，无消息的群排末尾。
+      parameters:
+        - $ref: '#/components/parameters/DemoUserId'
+      responses:
+        '200':
+          description: 群会话列表
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/GroupChatSummary'
         '401':
           $ref: '#/components/responses/DemoUserRequired'
   /me/trips:
@@ -4195,6 +4360,18 @@ components:
         title:
           type: string
           maxLength: 40
+        departure:
+          type: string
+          maxLength: 20
+          nullable: true
+          description: 出发城市展示名（由字典生成）；未填写时为 null
+          example: 广州市
+        departure_code:
+          type: string
+          pattern: '^[0-9]{6}$'
+          nullable: true
+          description: 出发地 6 位行政区划代码（二级，选填）
+          example: '440100'
         destination:
           type: string
           maxLength: 40
@@ -4292,7 +4469,7 @@ components:
       allOf:
         - $ref: '#/components/schemas/TripPlan'
         - type: object
-          required: [participants]
+          required: [participants, group_open]
           properties:
             meeting_areas:
               type: array
@@ -4352,6 +4529,12 @@ components:
               maxLength: 100
               readOnly: true
               description: 取消说明；仅「其他原因」必填，仅发布者与已接受同行者可见
+            group_open:
+              type: boolean
+              readOnly: true
+              description: |
+                行程群是否已开设：当前满员，或已存在群消息。
+                群一旦开设永久保留，有人退出不再满员也保留；结束 / 取消后只读。
     TripCreateRequest:
       type: object
       required: [title, destination_code, start_date, end_date, stops, capacity]
@@ -4359,6 +4542,12 @@ components:
         title:
           type: string
           maxLength: 40
+        departure_code:
+          type: string
+          pattern: '^[0-9]{6}$'
+          nullable: true
+          description: 出发地 6 位行政区划代码（二级，选填）；名称由后端按字典生成
+          example: '440100'
         destination_code:
           type: string
           pattern: '^[0-9]{6}$'
@@ -4433,6 +4622,16 @@ components:
           pattern: '^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$'
           description: 集合时间，本地墙上时间（无时区），日期部分不得晚于结束日期；未传或传 null 视为清空
           example: '2026-11-20T08:30'
+    TripStopsRequest:
+      type: object
+      required: [stops]
+      properties:
+        stops:
+          type: array
+          minItems: 2
+          items:
+            type: string
+          description: 更新后的完整途经点列表，整体替换；去空白去重后至少 2 个，与发布同口径
     TripCancelRequest:
       type: object
       required: [reason]
@@ -4715,6 +4914,64 @@ components:
         message_count:
           type: integer
           minimum: 0
+    GroupMessage:
+      type: object
+      required: [id, trip_id, sender, content, sent_at]
+      properties:
+        id:
+          type: integer
+          format: int64
+          readOnly: true
+        trip_id:
+          type: integer
+          format: int64
+          readOnly: true
+        sender:
+          allOf:
+            - $ref: '#/components/schemas/DemoUser'
+          readOnly: true
+          description: 发送者资料，供群气泡展示昵称与头像
+        content:
+          type: string
+          maxLength: 500
+        sent_at:
+          type: string
+          format: date-time
+          readOnly: true
+    GroupMessageRequest:
+      type: object
+      required: [content]
+      properties:
+        content:
+          type: string
+          maxLength: 500
+          description: 去空白后 1–500 字
+    GroupChatSummary:
+      type: object
+      required: [trip, member_count, message_count, left]
+      properties:
+        trip:
+          $ref: '#/components/schemas/TripPlan'
+        member_count:
+          type: integer
+          minimum: 1
+          readOnly: true
+          description: 当前群成员数：发布者 + 已接受同行者
+        last_message:
+          type: object
+          allOf:
+            - $ref: '#/components/schemas/GroupMessage'
+          nullable: true
+          description: 最后一条群消息；无消息时为 null
+        message_count:
+          type: integer
+          minimum: 0
+        left:
+          type: boolean
+          readOnly: true
+          description: |
+            当前用户是否已退出该行程：退出后仍可回看历史消息，但不能继续发送，
+            发送返回 403 `CHAT_LEFT`。
     MyTrips:
       type: object
       required: [published, applied, matched, completed, pending_application_count]
@@ -6633,7 +6890,7 @@ components:
           enum:
             [GREETING_NOT_FOUND, INVALID_INPUT, DEMO_USER_REQUIRED, FORBIDDEN, USER_NOT_FOUND, TRIP_NOT_FOUND, TRIP_NOT_OPEN,
              APPLICATION_NOT_FOUND, APPLICATION_NOT_PENDING, DUPLICATE_APPLICATION, CHAT_NOT_ALLOWED, CHAT_READ_ONLY,
-             EXPERIENCE_NOT_ALLOWED, EXPERIENCE_NOT_FOUND, USERNAME_TAKEN, INVALID_CREDENTIALS, SESSION_INVALID, WEATHER_UPSTREAM_ERROR,
+             CHAT_LEFT, EXPERIENCE_NOT_ALLOWED, EXPERIENCE_NOT_FOUND, USERNAME_TAKEN, INVALID_CREDENTIALS, SESSION_INVALID, WEATHER_UPSTREAM_ERROR,
              AI_NOT_CONFIGURED, AI_UPSTREAM_ERROR, AI_INVALID_OUTPUT, INTERNAL_ERROR, ADMIN_REQUIRED, ACCOUNT_SUSPENDED,
              ACCOUNT_BANNED, INVALID_STATUS_TRANSITION, CANNOT_TARGET_SELF, REPORT_NOT_FOUND, REPORT_NOT_PENDING,
              REPORT_NOT_PROCESSING, EMAIL_TAKEN, SESSION_ALREADY_HANDLING, SESSION_NOT_HANDLING, SESSION_CLOSED,
@@ -6697,11 +6954,14 @@ components:
         - trip_ongoing
         - trip_cancelled
         - trip_completed
+        - trip_route_updated
+        - trip_group_opened
         - application_received
         - application_accepted
         - application_rejected
         - application_closed
         - message
+        - group_message
         - credit_changed
         - credit_recovered
         - report_submitted
@@ -6726,7 +6986,7 @@ components:
     NotificationTargetKind:
       type: string
       description: 跳转目标种类；前端按 kind 组装路由
-      enum: [trip, applications, chat, credit, report, account, support, identity]
+      enum: [trip, applications, chat, group_chat, credit, report, account, support, identity]
     NotificationTarget:
       type: object
       required: [kind]
@@ -6744,7 +7004,7 @@ components:
           format: int64
           nullable: true
           readOnly: true
-          description: 仅 `kind=chat`，会话另一方 id
+          description: 仅 `kind=chat`，会话另一方 id；`kind=group_chat` 时为 null
         application_id:
           type: integer
           format: int64
@@ -6894,12 +7154,14 @@ components:
       properties:
         scope:
           type: string
-          enum: [all, conversation]
+          enum: [all, conversation, group_conversation]
         trip_id:
           type: integer
           format: int64
           nullable: true
-          description: 仅 `scope=conversation` 使用；与 `other_user_id` 同时必填
+          description: |
+            `scope=conversation` 时与 `other_user_id` 同时必填；
+            `scope=group_conversation` 时单独必填，只清该行程的群聊消息通知
         other_user_id:
           type: integer
           format: int64
@@ -6916,4 +7178,10 @@ components:
           allOf:
             - $ref: '#/components/schemas/ChatMessage'
           nullable: true
-          description: 仅 `type=CHAT` 的推送出现，内容为刚保存的消息
+          description: 仅一对一聊天推送出现，内容为刚保存的消息
+        group_message:
+          type: object
+          allOf:
+            - $ref: '#/components/schemas/GroupMessage'
+          nullable: true
+          description: 仅 `event=group_message` 的推送出现，内容为刚保存的群消息

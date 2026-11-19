@@ -6,6 +6,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -37,6 +38,7 @@ import routeme.service.NotificationService;
 import routeme.service.StudentVerificationService;
 import routeme.service.TripCompletedEvent;
 import routeme.service.TripCancelledEvent;
+import routeme.service.TripFullEvent;
 import routeme.service.TripPlanService;
 
 /**
@@ -57,6 +59,7 @@ public class ApplicationServiceImpl
     private final AccountStatusService accountStatusService;
     private final NotificationService notificationService;
     private final StudentVerificationService studentVerificationService;
+    private final ApplicationEventPublisher events;
 
     public ApplicationServiceImpl(
             TripPlanService tripPlanService,
@@ -65,7 +68,8 @@ public class ApplicationServiceImpl
             Clock clock,
             AccountStatusService accountStatusService,
             NotificationService notificationService,
-            StudentVerificationService studentVerificationService) {
+            StudentVerificationService studentVerificationService,
+            ApplicationEventPublisher events) {
         this.tripPlanService = tripPlanService;
         this.demoUserService = demoUserService;
         this.creditRestrictionGuard = creditRestrictionGuard;
@@ -73,6 +77,7 @@ public class ApplicationServiceImpl
         this.accountStatusService = accountStatusService;
         this.notificationService = notificationService;
         this.studentVerificationService = studentVerificationService;
+        this.events = events;
     }
 
     @Override
@@ -172,6 +177,14 @@ public class ApplicationServiceImpl
     @Override
     public boolean isAccepted(long tripId, long userId) {
         return findAccepted(tripId, userId).isPresent();
+    }
+
+    @Override
+    public boolean hasLeft(long tripId, long userId) {
+        return count(Wrappers.<TripApplicationEntity>lambdaQuery()
+                .eq(TripApplicationEntity::getTripId, tripId)
+                .eq(TripApplicationEntity::getApplicantId, userId)
+                .eq(TripApplicationEntity::getStatus, ApplicationStatusEnum.LEFT.name())) > 0;
     }
 
     @Override
@@ -291,6 +304,8 @@ public class ApplicationServiceImpl
                 for (DemoUser participant : participants(trip.id())) {
                     notificationService.notifyTripFull(participant.id(), publisherId, trip.id());
                 }
+                // 满员成行：群聊能力监听后同事务建群（幂等）。
+                events.publishEvent(new TripFullEvent(trip.id(), publisherId, now));
             }
         } else {
             notificationService.notifyApplicationRejected(

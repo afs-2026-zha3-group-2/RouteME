@@ -7111,6 +7111,130 @@ button.notification-row:hover {
   text-align: right;
 }
 
+/* 群聊：群头像、群徽标与气泡发送者名；颜色全走令牌，亮暗色自动跟随。 */
+.chat-group-avatar {
+  --hue: 152;
+}
+
+.chat-group-badge {
+  flex: none;
+  align-self: center;
+  padding: 1px 7px;
+  border-radius: 999px;
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: var(--t-lagoon);
+  background: var(--lagoon-soft);
+}
+
+/* 群成员：头部下方常显成员条（头像胶囊，群主带徽标，点击看资料） */
+.chat-group-members {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 8px 18px;
+  background: var(--surface-2);
+  border-bottom: 1px solid var(--line);
+}
+
+.chat-group-members-title {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: var(--ink-3);
+}
+
+.chat-group-members-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.chat-group-member {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 4px 10px 4px 5px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: var(--surface);
+  font: inherit;
+  cursor: pointer;
+  transition: border-color 0.16s, background 0.16s;
+}
+
+.chat-group-member:hover {
+  border-color: color-mix(in srgb, var(--lagoon) 45%, transparent);
+  background: var(--lagoon-soft);
+}
+
+.chat-group-member:focus-visible {
+  outline: 2px solid var(--lagoon);
+  outline-offset: 2px;
+}
+
+.chat-group-member-name {
+  font-size: 12.5px;
+  font-weight: 620;
+  color: var(--ink);
+}
+
+.msg-sender {
+  margin-bottom: 2px;
+  font-size: 11px;
+  font-weight: 650;
+  color: var(--ink-3);
+}
+
+.msg.me .msg-sender {
+  text-align: right;
+}
+
+/* 路线编辑弹窗：有序途经点行（序号 + 输入 + 上移/下移/删除），令牌随亮暗色 */
+.route-edit-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin: 0 0 12px;
+  padding: 0;
+  list-style: none;
+}
+
+.route-edit-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.route-edit-index {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: var(--lagoon-soft);
+  color: var(--t-lagoon);
+  font-size: 12px;
+  font-weight: 650;
+}
+
+.route-edit-row .ant-input {
+  flex: 1;
+  min-width: 0;
+}
+
+.route-edit-tools {
+  flex: none;
+  display: inline-flex;
+  gap: 4px;
+}
+
 .composer {
   display: flex;
   align-items: flex-end;
@@ -7135,6 +7259,19 @@ button.notification-row:hover {
 
 .composer-input {
   flex: 1;
+}
+
+/* 已退出的群：列表里用中性色标记，提示只剩历史回看。 */
+.chat-group-left-badge {
+  flex: none;
+  align-self: center;
+  padding: 1px 7px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--ink-3) 12%, transparent);
+  color: var(--ink-3);
+  font-size: 10.5px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
 }
 
 .composer-closed {
@@ -10603,6 +10740,11 @@ a.admin-metric-card:focus-visible {
 
 .publish-field-row.is-two {
   grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+/* 两列成对字段（出发地 + 目的地、出发 + 结束日期）。 */
+.publish-field-row.is-pair {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
 .publish-tag-row {

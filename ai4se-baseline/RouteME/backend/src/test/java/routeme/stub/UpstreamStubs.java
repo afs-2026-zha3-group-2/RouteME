@@ -58,6 +58,8 @@ public final class UpstreamStubs {
             """;
 
     public static volatile String aiContent = DEFAULT_AI_CONTENT;
+    /** 按调用顺序返回的输出；消耗完后回退到 {@link #aiContent}（用于验证解析失败后的重试）。 */
+    public static volatile List<String> aiContentSequence = List.of();
     public static volatile int aiStatus = 200;
     public static volatile long aiDelayMs = 0;
     public static volatile String weatherBody = DEFAULT_WEATHER_BODY;
@@ -101,6 +103,7 @@ public final class UpstreamStubs {
     /** 每个用例前恢复默认夹具，避免失败注入串扰。 */
     public static void reset() {
         aiContent = DEFAULT_AI_CONTENT;
+        aiContentSequence = List.of();
         aiStatus = 200;
         aiDelayMs = 0;
         weatherBody = DEFAULT_WEATHER_BODY;
@@ -113,7 +116,7 @@ public final class UpstreamStubs {
     private static void handleAi(HttpExchange exchange) throws IOException {
         String body = new String(exchange.getRequestBody().readAllBytes(), StandardCharsets.UTF_8);
         AI_BODIES.add(body);
-        AI_CALLS.incrementAndGet();
+        int callIndex = AI_CALLS.getAndIncrement();
         if (aiDelayMs > 0) {
             try {
                 Thread.sleep(aiDelayMs);
@@ -125,8 +128,11 @@ public final class UpstreamStubs {
             respond(exchange, aiStatus, "{\"error\":\"stub upstream failure\"}");
             return;
         }
+        String content = callIndex < aiContentSequence.size()
+                ? aiContentSequence.get(callIndex)
+                : aiContent;
         String response = MAPPER.writeValueAsString(
-                Map.of("choices", List.of(Map.of("message", Map.of("role", "assistant", "content", aiContent)))));
+                Map.of("choices", List.of(Map.of("message", Map.of("role", "assistant", "content", content)))));
         respond(exchange, 200, response);
     }
 

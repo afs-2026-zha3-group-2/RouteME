@@ -13,6 +13,7 @@ import routeme.request.TripCreateRequest;
 import routeme.request.TripCancelRequest;
 import routeme.request.TripMeetingRequest;
 import routeme.request.TripQuery;
+import routeme.request.TripStopsRequest;
 
 /**
  * 行程能力：发布、浏览、详情、结束与同行人数联动。
@@ -127,6 +128,19 @@ public interface TripPlanService extends IService<TripPlanEntity> {
      * @return 更新后的行程
      */
     TripPlan updateMeeting(long tripId, long publisherId, TripMeetingRequest request);
+
+    /**
+     * 发布者编辑途经点：只改 stops，仅招募中 / 已满员（出发前）可用。
+     *
+     * <p>整体替换，校验与发布同口径；成功后发布 {@link TripRouteUpdatedEvent}
+     * 由监听方通知同行者并在群内同步。</p>
+     *
+     * @param tripId      行程 id
+     * @param publisherId 当前身份 id，必须等于发布者
+     * @param request     更新后的完整途经点列表
+     * @return 更新后的行程
+     */
+    TripPlan updateStops(long tripId, long publisherId, TripStopsRequest request);
 
     /**
      * 接受同行后人数 +1；达上限时状态自动转为 full。

@@ -20,6 +20,8 @@ import type {
   ExperienceLikeResult,
   ExperiencePhoto,
   ExperienceWriteRequest,
+  GroupChatSummary,
+  GroupMessage,
   HelpReports,
   InsurancePolicy,
   InsuranceRedirect,
@@ -53,6 +55,7 @@ LoanCreateRequest,
   TripFilters,
   TripFinance,
   TripMeetingRequest,
+  TripStopsRequest,
   TripSummary,
   UserCreditEntry,
   UserGrowthEntry,
@@ -301,6 +304,24 @@ export async function saveTripMeeting(
   return (await response.json()) as TripDetail;
 }
 
+/** 发布者编辑途经点；仅招募中 / 已满员可用，保存后后端通知同行者。 */
+export async function updateTripStops(
+  userId: number,
+  tripId: number,
+  body: TripStopsRequest,
+): Promise<TripDetail> {
+  const response = await request(
+    `/trips/${tripId}/stops`,
+    {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    },
+    userId,
+  );
+  return (await response.json()) as TripDetail;
+}
+
 export async function loadTripApplications(userId: number, tripId: number): Promise<TripApplication[]> {
   const response = await request(`/trips/${tripId}/applications`, undefined, userId);
   return (await response.json()) as TripApplication[];
@@ -429,6 +450,36 @@ export async function sendMessage(
     userId,
   );
   return (await response.json()) as ChatMessage;
+}
+
+/** 我的群聊列表：群已开设的行程，按最后消息时间倒序。 */
+export async function loadMyGroups(userId: number): Promise<GroupChatSummary[]> {
+  const response = await request('/me/group-chats', undefined, userId);
+  return (await response.json()) as GroupChatSummary[];
+}
+
+/** 读取行程群消息，按发送时间升序；群未开设时后端 404。 */
+export async function loadGroupMessages(userId: number, tripId: number): Promise<GroupMessage[]> {
+  const response = await request(`/trips/${tripId}/group-messages`, undefined, userId);
+  return (await response.json()) as GroupMessage[];
+}
+
+/** 发送一条群消息（1–500 字）；行程结束 / 取消后后端 409 只读。 */
+export async function sendGroupMessage(
+  userId: number,
+  tripId: number,
+  content: string,
+): Promise<GroupMessage> {
+  const response = await request(
+    `/trips/${tripId}/group-messages`,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ content }),
+    },
+    userId,
+  );
+  return (await response.json()) as GroupMessage;
 }
 
 /**

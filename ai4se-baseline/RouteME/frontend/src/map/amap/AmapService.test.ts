@@ -435,6 +435,18 @@ describe('offline gazetteer fallback', () => {
     expect(place?.lng).toBeCloseTo(113.586, 3);
     expect(place?.lat).toBeCloseTo(22.2572, 3);
   });
+
+  it('resolves a patched city outside the map index and its stops', () => {
+    const city = catalogPlaceResult('天津');
+    expect(city).toMatchObject({ name: '天津', city: '天津', type: 'offline' });
+    expect(city?.lng).toBeCloseTo(117.201, 3);
+
+    const stop = catalogPlaceResult('天津古文化街', '天津');
+    expect(stop).toMatchObject({ name: '天津古文化街', city: '天津' });
+
+    // 同城限定仍需生效：外地地名不能在天津池里误命中。
+    expect(matchCatalogPlace('大鹏所城', '天津')).toBeNull();
+  });
 });
 
 describe('straight-line route fallback', () => {

@@ -56,6 +56,7 @@ export function parseTripDraft(raw: string | null): TripDraft | null {
     values: {
       ...emptyTripForm,
       title: text('title', emptyTripForm.title),
+      departureCode: text('departureCode', emptyTripForm.departureCode),
       destinationCode: text('destinationCode', emptyTripForm.destinationCode),
       startDate: text('startDate', emptyTripForm.startDate),
       endDate: text('endDate', emptyTripForm.endDate),

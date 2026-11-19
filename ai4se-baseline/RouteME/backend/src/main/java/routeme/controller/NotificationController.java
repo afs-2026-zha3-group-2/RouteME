@@ -89,6 +89,12 @@ public class NotificationController {
                 yield notificationService.markConversationRead(
                         reader.id(), request.tripId(), request.otherUserId());
             }
+            case "group_conversation" -> {
+                if (request.tripId() == null) {
+                    throw new InvalidInputException("trip_id is required for scope=group_conversation");
+                }
+                yield notificationService.markGroupConversationRead(reader.id(), request.tripId());
+            }
             default -> throw new InvalidInputException("unsupported scope: " + request.scope());
         };
     }

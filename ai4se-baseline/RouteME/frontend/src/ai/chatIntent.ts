@@ -135,6 +135,44 @@ export function findCityInText(text: string): string | null {
   return best === null ? null : best.city;
 }
 
+function escapeRegExp(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+/** 「去/到/前往…」后面的城市：区分「从北京出发去天津」里的出发地与目的地。 */
+function findCityAfterDirection(text: string): string | null {
+  let best: { city: string; index: number } | null = null;
+  for (const city of SORTED_CITIES) {
+    const pattern = new RegExp(
+      `(?:去|到|前往|飞往|抵达|目的地(?:是|定在)?)[^，,。；;、\\s]{0,4}?${escapeRegExp(city)}`,
+    );
+    const match = pattern.exec(text);
+    if (match === null) {
+      continue;
+    }
+    if (best === null || match.index < best.index) {
+      best = { city, index: match.index };
+    }
+  }
+  return best === null ? null : best.city;
+}
+
+/**
+ * 文本里的目的地：先看「去/到/前往」短语，再剔除「从 X 出发」片段后找城市。
+ * 否则「从北京出发去天津」会把出发地北京误当成目的地。
+ */
+function findDestinationInText(text: string): string | null {
+  const afterDirection = findCityAfterDirection(text);
+  if (afterDirection !== null) {
+    return afterDirection;
+  }
+  const withoutOrigin = text.replace(
+    /(?:从|由|在)\s*[^，,。；;、\s]{2,12}?\s*(?:出发|开始|启程|走|出发地)/g,
+    '',
+  );
+  return findCityInText(withoutOrigin) ?? findCityInText(text);
+}
+
 /** 本地日期 yyyy-MM-dd：不用 toISOString，避免 UTC 偏移把日期推前一天。 */
 function toIsoDate(date: Date): string {
   const pad = (value: number) => String(value).padStart(2, '0');
@@ -220,7 +258,7 @@ export function parseOriginName(text: string): string | null {
 /** 自然语言 → 规划条件；未提到的字段保持 null，调用方按需合并。 */
 export function parsePlanIntent(text: string, now: Date = new Date()): PlanIntent {
   return {
-    destinationName: findCityInText(text),
+    destinationName: findDestinationInText(text),
     originName: parseOriginName(text),
     date: parseDateInText(text, now),
     duration: parseDuration(text),

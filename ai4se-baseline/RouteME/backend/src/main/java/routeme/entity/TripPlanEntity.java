@@ -24,6 +24,11 @@ public class TripPlanEntity {
 
     private String title;
 
+    /** V40 出发地：城市代码与展示名；旧行与未填写时为 null。 */
+    private String departureCode;
+
+    private String departure;
+
     private String destinationCode;
 
     private String destination;
@@ -76,6 +81,8 @@ public class TripPlanEntity {
         entity.setId(trip.id());
         entity.setPublisherId(trip.publisherId());
         entity.setTitle(trip.title());
+        entity.setDepartureCode(trip.departureCode());
+        entity.setDeparture(trip.departure());
         entity.setDestinationCode(trip.destinationCode());
         entity.setDestination(trip.destination());
         entity.setStartDate(trip.startDate().toString());
@@ -105,6 +112,8 @@ public class TripPlanEntity {
                 id,
                 publisherId,
                 title,
+                departureCode,
+                departure,
                 destinationCode,
                 destination,
                 LocalDate.parse(startDate),
@@ -150,6 +159,22 @@ public class TripPlanEntity {
 
     public void setTitle(String title) {
         this.title = title;
+    }
+
+    public String getDepartureCode() {
+        return departureCode;
+    }
+
+    public void setDepartureCode(String departureCode) {
+        this.departureCode = departureCode;
+    }
+
+    public String getDeparture() {
+        return departure;
+    }
+
+    public void setDeparture(String departure) {
+        this.departure = departure;
     }
 
     public String getDestinationCode() {

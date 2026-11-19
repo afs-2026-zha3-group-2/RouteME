@@ -124,6 +124,8 @@ export const aiMessages = {
   routeFailed: '路线计算失败，请稍后重试。',
 
   originLabel: '出发地',
+  /** 结果预览里的出发地摘要（名称已去「市」后缀）。 */
+  departureFrom: (name: string) => `${name} 出发`,
   destinationLabel: '目的地',
   dateLabel: '旅行日期',
   durationLabel: '游玩时间',

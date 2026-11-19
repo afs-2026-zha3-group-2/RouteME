@@ -70,6 +70,7 @@ import { TRIP_TRAVEL_MODE_LABELS } from './tripOptions';
 import { statusColor, statusLabel } from './tripStatus';
 import { TripCancelModal } from './TripCancelModal';
 import { TripLeaveModal } from './TripLeaveModal';
+import { TripRouteModal } from './TripRouteModal';
 import { leaveResultText } from './leavePreview';
 import { cancelReasonLabel } from './tripCancel';
 import { useTrip } from './useTrip';
@@ -78,6 +79,16 @@ import { appDateTimePickerProps } from '../utils/datePickerProps';
 import { dayjsToLocalDateTime, localDateTimeToDayjs } from '../utils/dates';
 
 const MAX_MESSAGE_LENGTH = 120;
+
+/** 详情头部徽标：有出发地时显示「出发 → 目的地」（均去「市」简称），否则只显示目的地。 */
+function destinationTagText(trip: { departure?: string | null; destination: string; destination_code: string }): string {
+  const destination = findCity(trip.destination_code)?.cityDisplayName ?? trip.destination;
+  const departure = (trip.departure ?? '').replace(/市$/, '');
+  if (departure === '') {
+    return destinationLabel(trip.destination_code) || trip.destination;
+  }
+  return `${departure} → ${destination.replace(/市$/, '')}`;
+}
 
 type Props = {
   currentUser: DemoUser;
@@ -168,6 +179,7 @@ export function TripDetailPage({ currentUser, tripId }: Props) {
   const [meetingDraft, setMeetingDraft] = useState('');
   const [meetingDraftError, setMeetingDraftError] = useState<string | null>(null);
   const [cancelOpen, setCancelOpen] = useState(false);
+  const [routeOpen, setRouteOpen] = useState(false);
   const [focusStop, setFocusStop] = useState<string | null>(null);
   const [aiSummary, setAiSummary] = useState<AiItinerarySnapshot | null>(null);
   const mapSectionRef = useRef<HTMLDivElement | null>(null);
@@ -455,7 +467,7 @@ export function TripDetailPage({ currentUser, tripId }: Props) {
           <header className="detail-head">
             <div className="detail-badges">
               <Tag color={statusColor(trip.status)}>{statusLabel(trip.status)}</Tag>
-              <Tag>{destinationLabel(trip.destination_code) || trip.destination}</Tag>
+              <Tag>{destinationTagText(trip)}</Tag>
               {trip.ai_itinerary_id != null && (
                 <Tag className="ai-source-badge" data-testid="ai-source-badge">
                   {aiMessages.sourceBadge}
@@ -637,6 +649,28 @@ export function TripDetailPage({ currentUser, tripId }: Props) {
                   onClick={() => openMeeting(trip.meeting_areas ?? [], trip.meeting_time ?? null)}
                 >
                   {tripMessages.meetingEdit}
+                </Button>
+                {(trip.status === 'recruiting' || trip.status === 'full') && (
+                  <Button
+                    size="small"
+                    data-testid="trip-route-edit"
+                    disabled={restricted}
+                    onClick={() => setRouteOpen(true)}
+                  >
+                    {tripMessages.routeEdit}
+                  </Button>
+                )}
+              </div>
+            )}
+            {(isPublisher || participant) && trip.group_open === true && (
+              <div className="detail-actions">
+                <Button
+                  type="primary"
+                  size="small"
+                  data-testid="trip-group-entry"
+                  onClick={() => (window.location.hash = `#/chat/${trip.id}/group`)}
+                >
+                  {tripMessages.enterGroupChat}
                 </Button>
               </div>
             )}
@@ -1063,6 +1097,16 @@ export function TripDetailPage({ currentUser, tripId }: Props) {
         trip={trip}
         onClose={() => setCancelOpen(false)}
         onCancelled={() => {
+          reload();
+        }}
+      />
+
+      <TripRouteModal
+        open={routeOpen}
+        userId={currentUser.id}
+        trip={trip}
+        onClose={() => setRouteOpen(false)}
+        onSaved={() => {
           reload();
         }}
       />

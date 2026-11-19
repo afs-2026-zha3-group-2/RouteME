@@ -81,6 +81,7 @@ export function buildSnapshot(input: SnapshotInput): AiItinerarySnapshot {
 /** 发布页预填值（TripCreatePage 表单口径：预算 / 人数为字符串）。 */
 export type TripPrefill = {
   title: string;
+  departureCode: string;
   destinationCode: string;
   startDate: string;
   endDate: string;
@@ -102,6 +103,28 @@ for (const province of AREA_OPTIONS) {
       cityCodeByName.set(short, city.value);
     }
   }
+}
+
+/**
+ * 地点名 → 城市代码：先精确匹配，再按「包含城市名」取最长匹配。
+ * 出发地常是「广州南站」「上海虹桥站」这类站点名，需容忍城市名前后缀。
+ */
+function cityCodeOfPlaceName(name: string): string {
+  const raw = name.trim();
+  const exact = cityCodeByName.get(raw);
+  if (exact !== undefined) {
+    return exact;
+  }
+  let best: { code: string; length: number } | null = null;
+  for (const [label, code] of cityCodeByName) {
+    if (label.length < 2 || !raw.includes(label)) {
+      continue;
+    }
+    if (best === null || label.length > best.length) {
+      best = { code, length: label.length };
+    }
+  }
+  return best?.code ?? '';
 }
 
 export function toTripPrefill(snapshot: AiItinerarySnapshot): TripPrefill {
@@ -140,6 +163,7 @@ export function toTripPrefill(snapshot: AiItinerarySnapshot): TripPrefill {
 
   return {
     title,
+    departureCode: cityCodeOfPlaceName(snapshot.origin.name),
     destinationCode: cityCodeByName.get(snapshot.destination.name) ?? '',
     startDate: snapshot.date,
     endDate: snapshot.date,

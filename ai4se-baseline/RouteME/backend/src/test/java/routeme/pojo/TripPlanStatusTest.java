@@ -74,7 +74,7 @@ class TripPlanStatusTest {
     @Test
     void in_pastStartDate_out_publishRejected() {
         TripPlanDraft draft = new TripPlanDraft(
-                1L, "测试行程", "440400",
+                1L, "测试行程", "440100", "440400",
                 LocalDate.of(2026, 11, 15), LocalDate.of(2026, 11, 15),
                 List.of("香洲港", "情侣路"), null, null, null, null, null, null, List.of(), 3, null);
 
@@ -85,7 +85,7 @@ class TripPlanStatusTest {
     @Test
     void in_todayStartDate_out_publishOngoing() {
         TripPlanDraft draft = new TripPlanDraft(
-                1L, "测试行程", "440400",
+                1L, "测试行程", "440100", "440400",
                 LocalDate.of(2026, 11, 16), LocalDate.of(2026, 11, 16),
                 List.of("香洲港", "情侣路"), null, null, null, null, null, null, List.of(), 3, null);
 
@@ -101,14 +101,14 @@ class TripPlanStatusTest {
     private static TripPlan trip(
             LocalDate start, LocalDate end, int joined, int capacity, Instant completedAt) {
         return new TripPlan(
-                1L, 1L, "测试行程", "440400", "珠海市", start, end,
+                1L, 1L, "测试行程", "440100", "广州市", "440400", "珠海市", start, end,
                 List.of("香洲港", "情侣路"), null, null, null, null, null, null, List.of(),
                 capacity, joined, completedAt, CREATED, CREATED, null, null, null, null);
     }
 
     private static TripPlan cancelledTrip(Instant cancelledAt) {
         return new TripPlan(
-                1L, 1L, "测试行程", "440400", "珠海市",
+                1L, 1L, "测试行程", "440100", "广州市", "440400", "珠海市",
                 LocalDate.of(2026, 11, 16), LocalDate.of(2026, 11, 16),
                 List.of("香洲港", "情侣路"), null, null, null, null, null, null, List.of(),
                 4, 1, null, CREATED, CREATED, cancelledAt, "personal", null, null);

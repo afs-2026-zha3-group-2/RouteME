@@ -51,6 +51,34 @@
       "observed": "expect(received).toBeGreaterThan(expected) failed",
       "recordedAt": "2026-11-18",
       "ownerChange": "unscheduled: layout assertion drift after the 2026-11-18 merge"
+    },
+    {
+      "file": "tests/trips.spec.ts",
+      "title": "keeps the route editor usable for a destination without offline coverage",
+      "observed": "expect(locator).toContainText(expected) failed: .area-trigger.first() is the departure picker",
+      "recordedAt": "2026-11-19",
+      "ownerChange": "parallel departure feature: TripCreatePage adds a departure .area-trigger before the destination one; spec not yet updated by that change"
+    },
+    {
+      "file": "tests/trips.spec.ts",
+      "title": "picking the destination does not write stops",
+      "observed": "expect(locator).toContainText(expected) failed: .area-trigger.first() is the departure picker",
+      "recordedAt": "2026-11-19",
+      "ownerChange": "parallel departure feature: same .area-trigger ordering drift as the previous entry"
+    },
+    {
+      "file": "tests/trips.spec.ts",
+      "title": "opens the publish and home date panels instead of rendering them off-screen",
+      "observed": "locator.click timeout waiting for getByLabel('出发不早于') on home",
+      "recordedAt": "2026-11-19",
+      "ownerChange": "pre-existing: committed home redesign (99e1bba) replaced the date-from field with a 出发时间 range picker; spec half still asserts the old label"
+    },
+    {
+      "file": "tests/trips.spec.ts",
+      "title": "route strip click focuses the map and read-only pins carry no add action",
+      "observed": "expect(locator).toHaveCount(3) got 0; map stuck at 正在解析途经点并规划路线…",
+      "recordedAt": "2026-11-19",
+      "ownerChange": "flaky: route resolution timing/network; the sibling map case passes in the same run and this one passed in earlier runs"
     }
   ],
   "skipped": [

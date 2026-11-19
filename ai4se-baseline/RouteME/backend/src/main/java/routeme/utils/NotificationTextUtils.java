@@ -53,6 +53,16 @@ public final class NotificationTextUtils {
         return new Draft("行程已满员", "「" + tripTitle + "」已满员，同行名单已确定。");
     }
 
+    public static Draft tripRouteUpdated(String tripTitle) {
+        return new Draft(
+                "路线已更新", "「" + tripTitle + "」的途经点有调整，请查看最新安排。");
+    }
+
+    public static Draft tripGroupOpened(String tripTitle) {
+        return new Draft(
+                "行程群聊已开通", "「" + tripTitle + "」已满员成行，群聊已开通，可在群内共同协商路线。");
+    }
+
     public static Draft tripOngoing(String tripTitle) {
         return new Draft("行程已开始", "「" + tripTitle + "」已进入旅行中，祝你旅途愉快。");
     }
@@ -70,6 +80,10 @@ public final class NotificationTextUtils {
 
     public static Draft chatMessage(String actorNickname, String tripTitle) {
         return new Draft("新的同行消息", "「" + actorNickname + "」发来一条消息（「" + tripTitle + "」）。");
+    }
+
+    public static Draft groupMessage(String actorNickname, String tripTitle) {
+        return new Draft("新的群聊消息", "「" + actorNickname + "」在「" + tripTitle + "」群聊发来一条消息。");
     }
 
     // ---------- 信用 ----------

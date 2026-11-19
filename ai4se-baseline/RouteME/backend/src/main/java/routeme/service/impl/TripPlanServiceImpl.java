@@ -35,6 +35,7 @@ import routeme.request.TripCreateRequest;
 import routeme.request.TripCancelRequest;
 import routeme.request.TripMeetingRequest;
 import routeme.request.TripQuery;
+import routeme.request.TripStopsRequest;
 import routeme.service.AiItineraryService;
 import routeme.service.CreditRestrictionGuard;
 import routeme.service.DemoUserService;
@@ -43,6 +44,7 @@ import routeme.service.AccountStatusService;
 import routeme.service.StudentVerificationService;
 import routeme.service.TripCompletedEvent;
 import routeme.service.TripPlanService;
+import routeme.service.TripRouteUpdatedEvent;
 
 /**
  * 行程的业务实现：发布校验、分页查询、结束行程与同行人数联动。
@@ -93,6 +95,7 @@ public class TripPlanServiceImpl extends AbstractServiceImpl<TripPlanMapper, Tri
         TripPlanDraft draft = new TripPlanDraft(
                 publisherId,
                 request.title(),
+                request.departureCode(),
                 request.destinationCode(),
                 request.startDate(),
                 request.endDate(),
@@ -338,6 +341,25 @@ public class TripPlanServiceImpl extends AbstractServiceImpl<TripPlanMapper, Tri
         TripMeetingRules.requireWithinEndDate(trip.endDate(), meetingTime);
         TripPlan updated = trip.withMeetingInfo(meetingAreas, meetingTime, clock.instant());
         updateById(TripPlanEntity.from(updated));
+        return updated;
+    }
+
+    @Override
+    @Transactional
+    public TripPlan updateStops(long tripId, long publisherId, TripStopsRequest request) {
+        creditRestrictionGuard.requireNotRestricted(publisherId);
+        TripPlan trip = require(tripId);
+        if (trip.publisherId() != publisherId) {
+            throw new ForbiddenActionException("only the publisher can edit stops of trip " + tripId);
+        }
+        Instant now = clock.instant();
+        TripStatusEnum status = trip.status(now);
+        if (status != TripStatusEnum.RECRUITING && status != TripStatusEnum.FULL) {
+            throw new TripNotOpenException(tripId);
+        }
+        TripPlan updated = trip.withStops(request == null ? null : request.stops(), now);
+        updateById(TripPlanEntity.from(updated));
+        events.publishEvent(new TripRouteUpdatedEvent(tripId, publisherId, updated.stops(), now));
         return updated;
     }
 

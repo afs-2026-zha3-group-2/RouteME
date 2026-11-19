@@ -67,6 +67,17 @@ public interface ApplicationService extends IService<TripApplicationEntity> {
     boolean isAccepted(long tripId, long userId);
 
     /**
+     * 判断某个用户在该行程上是否曾加入后又退出（申请状态 left）。
+     *
+     * <p>用于群聊的只读判定：退出后仍可回看历史，但不能再发送。</p>
+     *
+     * @param tripId 行程 id
+     * @param userId 待判断的用户 id
+     * @return 存在 left 申请时为 true
+     */
+    boolean hasLeft(long tripId, long userId);
+
+    /**
      * 判断某个用户在该行程上是否可参与一对一聊天：申请状态为已接受或已退出。
      *
      * <p>已退出（left）仍保留会话与读写能力，因此与 {@link #isAccepted} 区分。</p>

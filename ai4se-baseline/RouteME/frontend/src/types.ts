@@ -187,6 +187,10 @@ export type TripTravelMode = 'driving' | 'bicycling' | 'transit';
 export type TripSummary = {
   id: number;
   title: string;
+  /** 出发城市展示名；未填写时为 null（旧行程与部分自建行程）。 */
+  departure?: string | null;
+  /** 出发城市 6 位代码；未填写时为 null。 */
+  departure_code?: string | null;
   destination: string;
   destination_code: string;
   province_code: string;
@@ -220,6 +224,8 @@ export type TripDetail = TripSummary & {
   cancel_reason: TripCancelReason | null;
   /** 仅「其他原因」必填；仅发布者与已接受同行者可见。 */
   cancel_note: string | null;
+  /** 行程群是否已开设；旧后端缺省，前端按未开设处理。 */
+  group_open?: boolean;
 };
 
 export type TripCancelReason =
@@ -315,6 +321,8 @@ export type LeaveRecord = {
 
 export type TripCreateRequest = {
   title: string;
+  /** 出发地 6 位行政区划代码（选填）；名称由后端按字典生成。 */
+  departure_code?: string | null;
   destination_code: string;
   start_date: string;
   end_date: string;
@@ -334,6 +342,11 @@ export type TripCreateRequest = {
 export type TripMeetingRequest = {
   meeting_areas?: string[] | null;
   meeting_time?: string | null;
+};
+
+/** 发布者编辑途经点：整体替换，去空白去重后至少 2 个。 */
+export type TripStopsRequest = {
+  stops: string[];
 };
 
 export type TripFilters = {
@@ -391,6 +404,25 @@ export type ChatPartner = {
   other: DemoUser;
   last_message: ChatMessage | null;
   message_count: number;
+};
+
+/** 群聊消息：附发送者资料，供群气泡展示昵称与头像。 */
+export type GroupMessage = {
+  id: number;
+  trip_id: number;
+  sender: DemoUser;
+  content: string;
+  sent_at: string;
+};
+
+/** 我的群聊列表条目：行程摘要 + 成员数 + 最后一条消息。 */
+export type GroupChatSummary = {
+  trip: TripSummary;
+  member_count: number;
+  last_message: GroupMessage | null;
+  message_count: number;
+  /** 已退出该行程：历史可看、不能再发送（旧后端缺省为 false）。 */
+  left?: boolean;
 };
 
 export type MyTrips = {
@@ -771,11 +803,14 @@ export type NotificationEventName =
   | 'trip_ongoing'
   | 'trip_cancelled'
   | 'trip_completed'
+  | 'trip_route_updated'
+  | 'trip_group_opened'
   | 'application_received'
   | 'application_accepted'
   | 'application_rejected'
   | 'application_closed'
   | 'message'
+  | 'group_message'
   | 'credit_changed'
   | 'credit_recovered'
   | 'report_submitted'
@@ -801,6 +836,7 @@ export type NotificationTargetKind =
   | 'trip'
   | 'applications'
   | 'chat'
+  | 'group_chat'
   | 'credit'
   | 'report'
   | 'account'
@@ -852,16 +888,18 @@ export type NotificationList = {
   counts: NotificationCounts;
 };
 
-/** SSE 推送载荷；message 只在消息类事件出现。 */
+/** SSE 推送载荷；message 只在一对一消息事件、group_message 只在群消息事件出现。 */
 export type NotificationEvent = {
   notification: AppNotification;
   message: ChatMessage | null;
+  group_message?: GroupMessage | null;
 };
 
-/** 标读请求：全部，或按「行程 + 对方」定位单个会话。 */
+/** 标读请求：全部、按「行程 + 对方」定位单个会话，或按行程定位群会话。 */
 export type NotificationReadRequest =
   | { scope: 'all' }
-  | { scope: 'conversation'; trip_id: number; other_user_id: number };
+  | { scope: 'conversation'; trip_id: number; other_user_id: number }
+  | { scope: 'group_conversation'; trip_id: number };
 
 /** 安全学习题库的四类题材，与契约 `LearningQuestion.category` 同值。 */
 export type LearningCategory = 'travel_safety' | 'stranger_companion' | 'platform_rules' | 'privacy';

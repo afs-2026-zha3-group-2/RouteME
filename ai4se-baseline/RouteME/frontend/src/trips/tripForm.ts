@@ -14,6 +14,7 @@ import {
 
 export type TripFormValues = {
   title: string;
+  departureCode: string;
   destinationCode: string;
   startDate: string;
   endDate: string;
@@ -33,6 +34,7 @@ export type TripFieldErrors = Partial<Record<'title' | 'destination' | 'startDat
 
 export const emptyTripForm: TripFormValues = {
   title: '',
+  departureCode: '',
   destinationCode: '',
   startDate: '',
   endDate: '',
@@ -127,6 +129,7 @@ export function validateTripForm(values: TripFormValues): TripFieldErrors {
 export function toCreateRequest(values: TripFormValues, aiItineraryId?: number): TripCreateRequest {
   return {
     title: values.title.trim(),
+    departure_code: blankToNull(values.departureCode),
     destination_code: values.destinationCode.trim(),
     start_date: values.startDate,
     end_date: values.endDate,

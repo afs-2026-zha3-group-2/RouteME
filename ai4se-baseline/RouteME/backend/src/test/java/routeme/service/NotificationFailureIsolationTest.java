@@ -83,7 +83,7 @@ class NotificationFailureIsolationTest {
         publisher = users.get(0);
         applicant = users.get(1);
         trip = tripPlanService.create(new TripCreateRequest(
-                        "通知失败隔离行程", "440100",
+                        "通知失败隔离行程", "440100", "440100",
                         LocalDate.parse("2026-11-20"), LocalDate.parse("2026-11-20"),
                         List.of("陈家祠地铁站集合", "永庆坊"), List.of("陈家祠地铁站 D 口"),
                         null, null, "失败隔离", null, null, List.of("摄影"), 3, null),

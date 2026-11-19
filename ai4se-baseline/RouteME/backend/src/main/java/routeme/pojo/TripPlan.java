@@ -25,11 +25,16 @@ import routeme.exception.InvalidInputException;
  * 旅行计划（领域对象）。状态不存储，由 completedAt 与人数推导。
  * {@code aiItineraryId} 可空：来自 AI 推荐快照的行程携带链接，普通发布为 null。
  * {@code travelMode} 可空：仅 0.15.0 起发布时可选（driving / bicycling / transit），旧行程为 null。
+ *
+ * @param departureCode 出发城市代码（可空，如 440100）
+ * @param departure 出发城市展示名（由字典生成，可为 null）
  */
 public record TripPlan(
         long id,
         long publisherId,
         String title,
+        String departureCode,
+        String departure,
         String destinationCode,
         String destination,
         LocalDate startDate,
@@ -93,7 +98,7 @@ public record TripPlan(
     }
 
     public TripPlan withId(long newId) {
-        return new TripPlan(newId, publisherId, title, destinationCode, destination, startDate, endDate, stops, meetingAreas,
+        return new TripPlan(newId, publisherId, title, departureCode, departure, destinationCode, destination, startDate, endDate, stops, meetingAreas,
                 meetingTime, travelMode, note, budgetMinCents, budgetMaxCents, tags, capacity, joinedCount, completedAt, createdAt, updatedAt,
                 cancelledAt, cancelReason, cancelNote, aiItineraryId);
     }
@@ -102,9 +107,27 @@ public record TripPlan(
      * 只替换集合区域与集合时间，并刷新更新时间。
      */
     public TripPlan withMeetingInfo(List<String> newMeetingAreas, String newMeetingTime, Instant now) {
-        return new TripPlan(id, publisherId, title, destinationCode, destination, startDate, endDate, stops,
+        return new TripPlan(id, publisherId, title, departureCode, departure, destinationCode, destination, startDate, endDate, stops,
                 newMeetingAreas, newMeetingTime, travelMode, note, budgetMinCents, budgetMaxCents, tags, capacity, joinedCount,
                 completedAt, createdAt, now, cancelledAt, cancelReason, cancelNote, aiItineraryId);
+    }
+
+    /**
+     * 只替换途经点，并刷新更新时间；校验与发布同口径。
+     */
+    public TripPlan withStops(List<String> newStops, Instant now) {
+        return new TripPlan(id, publisherId, title, departureCode, departure, destinationCode, destination, startDate, endDate, cleanStops(newStops),
+                meetingAreas, meetingTime, travelMode, note, budgetMinCents, budgetMaxCents, tags, capacity, joinedCount,
+                completedAt, createdAt, now, cancelledAt, cancelReason, cancelNote, aiItineraryId);
+    }
+
+    /** 途经点清洗：trim 去重保序，至少 {@value routeme.constant.TripCatalogConstant#MIN_STOPS} 个。 */
+    public static List<String> cleanStops(List<String> values) {
+        List<String> stops = cleanList(values);
+        if (stops.size() < MIN_STOPS) {
+            throw new InvalidInputException("at least " + MIN_STOPS + " stops are required");
+        }
+        return stops;
     }
 
     public static TripPlan create(TripPlanDraft draft, Instant now) {
@@ -124,6 +147,14 @@ public record TripPlan(
             throw new InvalidInputException("destination_code is not a supported city");
         }
         String destination = AreaNames.cityDisplayNameOf(destinationCode);
+        String departureCode = trimToNull(draft.departureCode());
+        String departure = null;
+        if (departureCode != null) {
+            if (!AreaNames.isValidCityCode(departureCode)) {
+                throw new InvalidInputException("departure_code is not a supported city");
+            }
+            departure = AreaNames.cityDisplayNameOf(departureCode);
+        }
         if (draft.startDate() == null) {
             throw new InvalidInputException("start date is required");
         }
@@ -161,7 +192,7 @@ public record TripPlan(
         if (note != null && note.length() > MAX_NOTE_LENGTH) {
             throw new InvalidInputException("note is too long");
         }
-        return new TripPlan(0, draft.publisherId(), title, destinationCode, destination, draft.startDate(), draft.endDate(),
+        return new TripPlan(0, draft.publisherId(), title, departureCode, departure, destinationCode, destination, draft.startDate(), draft.endDate(),
                 stops, meetingAreas, meetingTime, travelMode, note, budgetMin, budgetMax, tags, capacity, 1, null, now, now,
                 null, null, null, draft.aiItineraryId());
     }

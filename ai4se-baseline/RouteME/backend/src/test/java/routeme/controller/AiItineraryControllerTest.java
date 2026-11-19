@@ -132,12 +132,24 @@ class AiItineraryControllerTest {
     }
 
     @Test
-    void in_nonJsonOutput_out_invalidOutputWithoutRetry() throws Exception {
+    void in_nonJsonOutput_out_invalidOutputAfterOneRetry() throws Exception {
         UpstreamStubs.aiContent = "这不是 JSON";
         generate(GENERATE, "1")
                 .andExpect(status().isBadGateway())
                 .andExpect(jsonPath("$.code").value("AI_INVALID_OUTPUT"));
-        assertEquals(1, UpstreamStubs.AI_CALLS.get(), "invalid output must not auto-retry");
+        assertEquals(2, UpstreamStubs.AI_CALLS.get(), "invalid output retries exactly once");
+    }
+
+    @Test
+    void in_truncatedThenValidOutput_out_retryRecovers() throws Exception {
+        // 模拟上游输出被截断（数组未闭合）：第一次不合法，重试后拿到完整 JSON。
+        UpstreamStubs.aiContentSequence = java.util.List.of(
+                UpstreamStubs.DEFAULT_AI_CONTENT.substring(0, UpstreamStubs.DEFAULT_AI_CONTENT.length() / 2),
+                UpstreamStubs.DEFAULT_AI_CONTENT);
+        generate(GENERATE, "1")
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.plan.days[0].stops.length()").value(4));
+        assertEquals(2, UpstreamStubs.AI_CALLS.get(), "retry should recover the plan");
     }
 
     @Test

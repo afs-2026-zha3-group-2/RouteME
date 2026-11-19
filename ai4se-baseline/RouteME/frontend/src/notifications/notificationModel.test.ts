@@ -6,9 +6,11 @@ import {
   badgeLabel,
   conversationKey,
   emptyCounts,
+  groupConversationKey,
   isUnread,
   markAllLocal,
   markConversationLocal,
+  markGroupConversationLocal,
   markOneLocal,
   notificationAvailable,
   notificationHref,
@@ -611,5 +613,86 @@ describe('railBadgeCounts', () => {
       support: 0,
       account: 4,
     });
+  });
+});
+
+describe('group chat notifications', () => {
+  const groupNotification = (
+    overrides: Partial<AppNotification> & { id: number },
+  ): AppNotification =>
+    notification({
+      event: 'group_message',
+      title: '新的群消息',
+      content: '「用户2」在「周末去珠海骑行」群里发了一条消息。',
+      message_id: 55,
+      target: target({ kind: 'group_chat', trip_id: 3, other_user_id: null }),
+      ...overrides,
+    });
+
+  it('uses a trip-scoped group key that cannot collide with direct keys', () => {
+    expect(groupConversationKey(3)).toBe('3:group');
+    expect(groupConversationKey(3)).not.toBe(conversationKey(3, 2));
+  });
+
+  it('groups unread group messages by trip while direct messages stay per partner', () => {
+    const items = [
+      groupNotification({ id: 1 }),
+      groupNotification({ id: 2, actor: demoUser(4) }),
+      notification({ id: 3 }),
+      groupNotification({ id: 4, status: 'READ', read_at: '2026-11-17T09:05:00Z' }),
+    ];
+
+    const unread = unreadByConversation(items);
+
+    expect(unread.get('3:group')).toBe(2);
+    expect(unread.get('3:2')).toBe(1);
+  });
+
+  it('links group targets to the group chat route', () => {
+    expect(notificationHref(groupNotification({ id: 1 }))).toBe('#/chat/3/group');
+    expect(
+      notificationHref(
+        groupNotification({ id: 1, target: target({ kind: 'group_chat', trip_id: null }) }),
+      ),
+    ).toBe('#/notifications');
+  });
+
+  it('toasts group messages unless the group conversation is active', () => {
+    const item = groupNotification({ id: 1 });
+
+    expect(shouldToast(item, null)).toBe(true);
+    expect(shouldToast(item, conversationKey(3, 2))).toBe(true);
+    expect(shouldToast(item, groupConversationKey(3))).toBe(false);
+  });
+
+  it('stores an incoming group event as read when the group is active', () => {
+    const item = groupNotification({ id: 9 });
+
+    const active = applyEvent(state([], counts()), event(item), groupConversationKey(3));
+    expect(isUnread(active.items[0]!)).toBe(false);
+    expect(active.counts).toEqual(counts());
+
+    const elsewhere = applyEvent(state([], counts()), event(item), conversationKey(3, 2));
+    expect(isUnread(elsewhere.items[0]!)).toBe(true);
+    expect(elsewhere.counts).toEqual(counts({ CHAT: 1 }));
+  });
+
+  it('marks only the trip group read, leaving direct and other trips untouched', () => {
+    const initial = state(
+      [
+        groupNotification({ id: 1 }),
+        groupNotification({ id: 2, trip_id: 5, target: target({ kind: 'group_chat', trip_id: 5 }) }),
+        notification({ id: 3 }),
+      ],
+      counts({ CHAT: 3 }),
+    );
+
+    const next = markGroupConversationLocal(initial, 3);
+
+    expect(isUnread(next.items.find((item) => item.id === 1)!)).toBe(false);
+    expect(isUnread(next.items.find((item) => item.id === 2)!)).toBe(true);
+    expect(isUnread(next.items.find((item) => item.id === 3)!)).toBe(true);
+    expect(next.counts).toEqual(counts({ CHAT: 2 }));
+    expect(markGroupConversationLocal(next, 3)).toBe(next);
   });
 });

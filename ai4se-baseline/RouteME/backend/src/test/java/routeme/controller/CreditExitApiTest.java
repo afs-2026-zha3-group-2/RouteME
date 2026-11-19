@@ -463,6 +463,7 @@ class CreditExitApiTest {
     private long createTripAndAccept(LocalDate start, LocalDate end, LocalDateTime meeting) {
         TripPlan trip = tripPlanService.create(new TripCreateRequest(
                 "信用验收 " + System.nanoTime(),
+                "440100",
                 "440400",
                 start,
                 end,

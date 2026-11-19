@@ -263,6 +263,7 @@ export function App() {
                 currentUser={currentUser}
                 tripId={route.tripId}
                 otherUserId={route.userId}
+                group={route.group}
               />
             )}
             {route.name === 'support' && (

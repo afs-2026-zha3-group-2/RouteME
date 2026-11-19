@@ -20,6 +20,7 @@ import org.springframework.web.bind.annotation.RestController;
 import routeme.request.TripCreateRequest;
 import routeme.request.TripCancelRequest;
 import routeme.request.TripMeetingRequest;
+import routeme.request.TripStopsRequest;
 import routeme.response.PageResponse;
 import routeme.response.TripDetailResponse;
 import routeme.request.TripQuery;
@@ -31,6 +32,7 @@ import routeme.param.PageParam;
 import routeme.param.TripQueryParam;
 import routeme.service.ApplicationService;
 import routeme.service.DemoUserService;
+import routeme.service.GroupChatService;
 import routeme.service.TripPlanService;
 import routeme.service.impl.NotificationLifecycleService;
 
@@ -41,6 +43,7 @@ public class TripController {
     private final DemoUserService demoUserService;
     private final TripPlanService tripPlanService;
     private final ApplicationService applicationService;
+    private final GroupChatService groupChatService;
     private final NotificationLifecycleService notificationLifecycleService;
     private final Clock clock;
 
@@ -48,11 +51,13 @@ public class TripController {
             DemoUserService demoUserService,
             TripPlanService tripPlanService,
             ApplicationService applicationService,
+            GroupChatService groupChatService,
             NotificationLifecycleService notificationLifecycleService,
             Clock clock) {
         this.demoUserService = demoUserService;
         this.tripPlanService = tripPlanService;
         this.applicationService = applicationService;
+        this.groupChatService = groupChatService;
         this.notificationLifecycleService = notificationLifecycleService;
         this.clock = clock;
     }
@@ -87,7 +92,8 @@ public class TripController {
         boolean includeCancelDetail = trip.publisherId() == userId
                 || applicationService.isAccepted(tripId, userId);
         return TripDetailResponse.from(
-                trip, publisher, applicationService.participants(tripId), clock.instant(), includeCancelDetail);
+                trip, publisher, applicationService.participants(tripId), clock.instant(), includeCancelDetail,
+                groupChatService.isOpen(tripId));
     }
 
     @PostMapping
@@ -98,7 +104,7 @@ public class TripController {
         // 信用限制统一由 TripPlanServiceImpl.create 的 CreditRestrictionGuard 守卫（403 CREDIT_RESTRICTED）。
         TripPlan saved = tripPlanService.create(request, publisher.id());
         return ResponseEntity.status(HttpStatus.CREATED)
-                .body(TripDetailResponse.from(saved, publisher, List.of(publisher), clock.instant(), true));
+                .body(TripDetailResponse.from(saved, publisher, List.of(publisher), clock.instant(), true, false));
     }
 
     @PostMapping("/{tripId}/cancel")
@@ -109,7 +115,8 @@ public class TripController {
         DemoUser publisher = demoUserService.require(userId);
         TripPlan cancelled = tripPlanService.cancel(tripId, publisher.id(), request);
         return TripDetailResponse.from(
-                cancelled, publisher, applicationService.participants(tripId), clock.instant(), true);
+                cancelled, publisher, applicationService.participants(tripId), clock.instant(), true,
+                groupChatService.isOpen(tripId));
     }
 
     @PostMapping("/{tripId}/complete")
@@ -119,7 +126,8 @@ public class TripController {
         DemoUser publisher = demoUserService.require(userId);
         TripPlan completed = tripPlanService.complete(tripId, publisher.id());
         return TripDetailResponse.from(
-                completed, publisher, applicationService.participants(tripId), clock.instant(), true);
+                completed, publisher, applicationService.participants(tripId), clock.instant(), true,
+                groupChatService.isOpen(tripId));
     }
 
     @PutMapping("/{tripId}/meeting")
@@ -130,6 +138,19 @@ public class TripController {
         DemoUser publisher = demoUserService.require(userId);
         TripPlan updated = tripPlanService.updateMeeting(tripId, publisher.id(), request);
         return TripDetailResponse.from(
-                updated, publisher, applicationService.participants(tripId), clock.instant(), true);
+                updated, publisher, applicationService.participants(tripId), clock.instant(), true,
+                groupChatService.isOpen(tripId));
+    }
+
+    @PutMapping("/{tripId}/stops")
+    public TripDetailResponse updateStops(
+            @RequestHeader(value = "X-User-Id", required = false) Long userId,
+            @PathVariable long tripId,
+            @RequestBody TripStopsRequest request) {
+        DemoUser publisher = demoUserService.require(userId);
+        TripPlan updated = tripPlanService.updateStops(tripId, publisher.id(), request);
+        return TripDetailResponse.from(
+                updated, publisher, applicationService.participants(tripId), clock.instant(), true,
+                groupChatService.isOpen(tripId));
     }
 }

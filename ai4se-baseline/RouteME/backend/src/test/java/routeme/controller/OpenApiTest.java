@@ -25,7 +25,7 @@ class OpenApiTest {
 
     // Single source for version assertions: bump openapi.yaml info.version and this
     // constant together (one edit point instead of five scattered literals).
-    private static final String CONTRACT_VERSION = "0.32.0";
+    private static final String CONTRACT_VERSION = "0.33.0";
 
     private static final List<String> HTTP_METHODS = List.of("get", "post", "put", "patch", "delete");
 
@@ -538,6 +538,54 @@ class OpenApiTest {
                                         "CHAT_NOT_ALLOWED",
                                         "CHAT_READ_ONLY")),
                         "companion error codes")
+        );
+    }
+
+    @Test
+    void in_openApiFile_out_groupChatAndRouteEditContractDeclared() throws IOException {
+        // Given
+        Map<String, Object> document = loadYaml(SPEC_PATH);
+
+        // When
+        Map<String, Object> putStops = operation(document, "/trips/{tripId}/stops", "put");
+        Map<String, Object> getGroupMessages = operation(document, "/trips/{tripId}/group-messages", "get");
+        Map<String, Object> postGroupMessage = operation(document, "/trips/{tripId}/group-messages", "post");
+        Map<String, Object> stopsRequest = schema(document, "TripStopsRequest");
+        Map<String, Object> groupMessage = schema(document, "GroupMessage");
+        Map<String, Object> groupSummary = schema(document, "GroupChatSummary");
+        Map<String, Map<String, Object>> tripDetailProps = allOfProperties(document, "TripDetail");
+        Map<String, Object> event = schema(document, "NotificationEvent");
+
+        // Then
+        assertAll(
+                () -> assertTrue(
+                        paths(document).containsKey("/me/group-chats"),
+                        "my group chats path declared"),
+                () -> assertTrue(responses(putStops).containsKey("200"), "stops edit returns 200"),
+                () -> assertTrue(responses(putStops).containsKey("403"), "non-publisher rejected"),
+                () -> assertTrue(responses(putStops).containsKey("409"), "departed trip rejected"),
+                () -> assertTrue(responses(getGroupMessages).containsKey("404"), "closed group returns 404"),
+                () -> assertTrue(responses(postGroupMessage).containsKey("201"), "group send returns 201"),
+                () -> assertTrue(responses(postGroupMessage).containsKey("409"), "group read-only conflict"),
+                () -> assertTrue(required(stopsRequest).contains("stops"), "stops request required"),
+                () -> assertEquals(
+                        2,
+                        properties(stopsRequest).get("stops").get("minItems"),
+                        "stops keep the publish-time minimum"),
+                () -> assertTrue(
+                        required(groupMessage).containsAll(List.of("id", "trip_id", "sender", "content", "sent_at")),
+                        "group message fields"),
+                () -> assertEquals(500, properties(groupMessage).get("content").get("maxLength"), "group content cap"),
+                () -> assertTrue(
+                        required(groupSummary).containsAll(List.of("trip", "member_count", "message_count")),
+                        "group summary fields"),
+                () -> assertEquals("boolean", tripDetailProps.get("group_open").get("type"), "group_open type"),
+                () -> assertEquals(Boolean.TRUE, tripDetailProps.get("group_open").get("readOnly"), "group_open readOnly"),
+                () -> assertTrue(
+                        enums(schema(document, "NotificationEventName")).containsAll(List.of(
+                                "trip_route_updated", "trip_group_opened", "group_message")),
+                        "group and route event names"),
+                () -> assertTrue(properties(event).containsKey("group_message"), "group message SSE payload")
         );
     }
 
@@ -1386,7 +1434,7 @@ class OpenApiTest {
                         enums(schema(document, "NotificationStatus")),
                         "statuses"),
                 () -> assertEquals(
-                        List.of("trip", "applications", "chat", "credit",
+                        List.of("trip", "applications", "chat", "group_chat", "credit",
                                 "report", "account", "support", "identity"),
                         enums(schema(document, "NotificationTargetKind")),
                         "target kinds"),
@@ -1412,7 +1460,7 @@ class OpenApiTest {
                         "notification list required fields"),
                 () -> assertEquals(50, items.get("maxItems"), "notification list maxItems"),
                 () -> assertEquals(
-                        List.of("all", "conversation"),
+                        List.of("all", "conversation", "group_conversation"),
                         enums(properties(readRequest).get("scope")),
                         "read scopes"),
                 () -> assertTrue(required(event).contains("notification"), "notification event payload"),

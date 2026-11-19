@@ -48,7 +48,7 @@ class ChatControllerTest {
     }
 
     @Test
-    void in_leftCompanion_out_canStillReadAndSend() throws Exception {
+    void in_leftCompanion_out_canStillReadButSendRejected() throws Exception {
         mockMvc.perform(post("/api/trips/4/leave")
                         .header("X-User-Id", "1")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -56,6 +56,7 @@ class ChatControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.credit_score").isNumber());
 
+        // 历史记录保留：双方都仍可读。
         mockMvc.perform(get("/api/trips/4/messages").header("X-User-Id", "1").param("with", "3"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.length()").value(4));
@@ -64,12 +65,20 @@ class ChatControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.length()").value(4));
 
+        // 退出后自动退群：一对一与群聊都不能再发送。
         mockMvc.perform(post("/api/trips/4/messages")
                         .header("X-User-Id", "1")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"receiver_id\":3,\"content\":\"退出后还能继续聊。\"}"))
-                .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.content").value("退出后还能继续聊。"));
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.code").value("CHAT_LEFT"));
+
+        // 发布者不受影响，仍可发送。
+        mockMvc.perform(post("/api/trips/4/messages")
+                        .header("X-User-Id", "3")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"receiver_id\":1,\"content\":\"路上注意安全。\"}"))
+                .andExpect(status().isCreated());
     }
 
     @Test

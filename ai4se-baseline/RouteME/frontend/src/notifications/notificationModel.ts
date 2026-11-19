@@ -80,6 +80,22 @@ export function conversationKey(tripId: number, otherId: number): string {
   return `${tripId}:${otherId}`;
 }
 
+/** 群会话键 `"${tripId}:group"`；与一对一会话键同域混排，不会碰撞。 */
+export function groupConversationKey(tripId: number): string {
+  return `${tripId}:group`;
+}
+
+/** 聊天类通知归属的会话键；群消息按行程归群，其余按「行程 + 对方」。 */
+function chatItemKey(item: AppNotification): string | null {
+  if (item.trip_id === null) {
+    return null;
+  }
+  if (item.event === 'group_message') {
+    return groupConversationKey(item.trip_id);
+  }
+  return item.actor === null ? null : conversationKey(item.trip_id, item.actor.id);
+}
+
 /** 按 `created_at DESC, id DESC` 排序并截断，顺序与后端列表一致。 */
 function normalize(items: AppNotification[]): AppNotification[] {
   return [...items]
@@ -176,9 +192,7 @@ export function applyEvent(
   const inActiveConversation =
     item.type === 'CHAT'
     && activeKey !== null
-    && item.trip_id !== null
-    && item.actor !== null
-    && activeKey === conversationKey(item.trip_id, item.actor.id);
+    && chatItemKey(item) === activeKey;
   const stored = inActiveConversation
     ? { ...item, status: 'READ' as const, read_at: item.read_at ?? item.created_at }
     : item;
@@ -257,14 +271,50 @@ export function markConversationLocal(
   };
 }
 
-/** 每个会话的未读消息数；键为 `"${tripId}:${otherId}"`。 */
+/** 群会话标读：只清该行程的群消息条目，一对一与其他类型不动。 */
+export function markGroupConversationLocal(
+  state: NotificationState,
+  tripId: number,
+): NotificationState {
+  let cleared = 0;
+  const items = state.items.map((item) => {
+    const matches =
+      isUnread(item)
+      && item.type === 'CHAT'
+      && item.trip_id === tripId
+      && item.event === 'group_message';
+    if (!matches) {
+      return item;
+    }
+    cleared += 1;
+    return { ...item, status: 'READ' as const, read_at: item.read_at ?? item.created_at };
+  });
+  if (cleared === 0) {
+    return state;
+  }
+  const byType = { ...state.counts.by_type };
+  byType.CHAT = Math.max(0, byType.CHAT - cleared);
+  return {
+    ...state,
+    items,
+    counts: {
+      total: Math.max(0, state.counts.total - cleared),
+      by_type: byType,
+    },
+  };
+}
+
+/** 每个会话的未读消息数；键为 `"${tripId}:${otherId}"` 或群键 `"${tripId}:group"`。 */
 export function unreadByConversation(items: AppNotification[]): Map<string, number> {
   const unread = new Map<string, number>();
   items.forEach((item) => {
-    if (!isUnread(item) || item.type !== 'CHAT' || item.trip_id === null || item.actor === null) {
+    if (!isUnread(item) || item.type !== 'CHAT') {
       return;
     }
-    const key = conversationKey(item.trip_id, item.actor.id);
+    const key = chatItemKey(item);
+    if (key === null) {
+      return;
+    }
     unread.set(key, (unread.get(key) ?? 0) + 1);
   });
   return unread;
@@ -291,6 +341,8 @@ export function notificationHref(item: AppNotification, viewerId?: number): stri
       return target.trip_id === null || target.other_user_id === null
         ? '#/notifications'
         : `#/chat/${target.trip_id}/${target.other_user_id}`;
+    case 'group_chat':
+      return target.trip_id === null ? '#/notifications' : `#/chat/${target.trip_id}/group`;
     case 'credit':
       return '#/credit/records';
     case 'report':
@@ -311,15 +363,16 @@ export function notificationAvailable(item: AppNotification): boolean {
   return item.related_available !== false;
 }
 
-/** 提示条条件：聊天类仅在对应会话未打开时提示；其余类型恒提示（D14）。 */
+/** 提示条条件：聊天类仅在对应会话（含群）未打开时提示；其余类型恒提示（D14）。 */
 export function shouldToast(item: AppNotification, activeKey: string | null): boolean {
   if (item.type !== 'CHAT') {
     return true;
   }
-  if (item.trip_id === null || item.actor === null) {
+  const key = chatItemKey(item);
+  if (key === null) {
     return true;
   }
-  return activeKey === null || activeKey !== conversationKey(item.trip_id, item.actor.id);
+  return activeKey === null || activeKey !== key;
 }
 
 /** 徽标文本：0 隐藏，其余显示原始数字（不截断成 99+）。 */

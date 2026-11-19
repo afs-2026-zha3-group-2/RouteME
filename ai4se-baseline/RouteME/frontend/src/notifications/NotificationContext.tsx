@@ -1,7 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { message } from 'antd';
 import { loadNotifications, notificationStreamUrl, readNotification, readNotifications } from '../api';
-import type { AppNotification, ChatMessage, NotificationCounts, NotificationEvent } from '../types';
+import type { AppNotification, ChatMessage, GroupMessage, NotificationCounts, NotificationEvent } from '../types';
 import {
   applyCounts,
   applyEvent,
@@ -9,6 +9,7 @@ import {
   emptyCounts,
   markAllLocal,
   markConversationLocal,
+  markGroupConversationLocal,
   markOneLocal,
   shouldToast,
   unreadByConversation,
@@ -20,7 +21,7 @@ type NotificationContextValue = {
   currentUserId: number;
   items: AppNotification[];
   counts: NotificationCounts;
-  /** 每个会话的未读消息数，键为 `"${tripId}:${otherId}"`。 */
+  /** 每个会话的未读消息数，键为 `"${tripId}:${otherId}"` 或群键 `"${tripId}:group"`。 */
   unreadConversations: Map<string, number>;
   /** 当前打开的会话键；消息类提示与「不累计未读」都只看它。 */
   activeConversation: string | null;
@@ -28,6 +29,8 @@ type NotificationContextValue = {
   markOneRead: (id: number) => void;
   markAllRead: () => void;
   markConversationRead: (tripId: number, otherId: number) => void;
+  /** 群会话标读：只清该行程的群消息通知。 */
+  markGroupConversationRead: (tripId: number) => void;
   /** 首次 / 重连快照失败；只用于面板内的一行提示，不阻塞页面。 */
   loadFailed: boolean;
   reload: () => void;
@@ -36,6 +39,11 @@ type NotificationContextValue = {
     tripId: number;
     otherId: number;
     message: ChatMessage;
+  } | null;
+  /** 最近一条群消息推送；群会话打开时即时追加。 */
+  lastGroupMessageEvent: {
+    tripId: number;
+    message: GroupMessage;
   } | null;
 };
 
@@ -69,6 +77,8 @@ export function NotificationProvider({ currentUser, children }: Props) {
   const [activeConversation, setActiveConversationState] = useState<string | null>(null);
   const [loadFailed, setLoadFailed] = useState(false);
   const [lastMessageEvent, setLastMessageEvent] = useState<NotificationContextValue['lastMessageEvent']>(null);
+  const [lastGroupMessageEvent, setLastGroupMessageEvent] =
+    useState<NotificationContextValue['lastGroupMessageEvent']>(null);
 
   const seqRef = useRef(0);
   const activeRef = useRef<string | null>(null);
@@ -98,6 +108,7 @@ export function NotificationProvider({ currentUser, children }: Props) {
     setState(initialState());
     setLoadFailed(false);
     setLastMessageEvent(null);
+    setLastGroupMessageEvent(null);
     reload();
 
     const source = new EventSource(notificationStreamUrl(currentUser.id));
@@ -122,6 +133,17 @@ export function NotificationProvider({ currentUser, children }: Props) {
             tripId: event.notification.trip_id,
             otherId: event.notification.actor.id,
             message: event.message,
+          });
+        }
+        if (
+          event.group_message !== null
+          && event.group_message !== undefined
+          && event.notification.type === 'CHAT'
+          && event.notification.trip_id !== null
+        ) {
+          setLastGroupMessageEvent({
+            tripId: event.notification.trip_id,
+            message: event.group_message,
           });
         }
         if (shouldToast(event.notification, activeRef.current)) {
@@ -189,6 +211,21 @@ export function NotificationProvider({ currentUser, children }: Props) {
     [currentUser.id],
   );
 
+  const markGroupConversationRead = useCallback(
+    (tripId: number) => {
+      setState((previous) => markGroupConversationLocal(previous, tripId));
+      readNotifications(currentUser.id, { scope: 'group_conversation', trip_id: tripId })
+        .then((counts) => {
+          const seq = ++seqRef.current;
+          setState((previous) => applyCounts(previous, counts, seq));
+        })
+        .catch(() => {
+          // 同单会话标读：保留乐观结果，等待对账。
+        });
+    },
+    [currentUser.id],
+  );
+
   const unreadConversations = useMemo(() => unreadByConversation(state.items), [state.items]);
 
   const value = useMemo<NotificationContextValue>(
@@ -202,9 +239,11 @@ export function NotificationProvider({ currentUser, children }: Props) {
       markOneRead,
       markAllRead,
       markConversationRead,
+      markGroupConversationRead,
       loadFailed,
       reload,
       lastMessageEvent,
+      lastGroupMessageEvent,
     }),
     [
       currentUser.id,
@@ -216,9 +255,11 @@ export function NotificationProvider({ currentUser, children }: Props) {
       markOneRead,
       markAllRead,
       markConversationRead,
+      markGroupConversationRead,
       loadFailed,
       reload,
       lastMessageEvent,
+      lastGroupMessageEvent,
     ],
   );
 

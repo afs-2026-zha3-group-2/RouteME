@@ -11,6 +11,8 @@ import routeme.pojo.TripPlan;
 public record TripDetailResponse(
         long id,
         String title,
+        String departure,
+        String departureCode,
         String destination,
         String destinationCode,
         String provinceCode,
@@ -36,14 +38,17 @@ public record TripDetailResponse(
         String cancelReason,
         String cancelNote,
         Instant createdAt,
-        Long aiItineraryId) {
+        Long aiItineraryId,
+        boolean groupOpen) {
 
     public static TripDetailResponse from(
             TripPlan trip, DemoUser publisher, List<DemoUser> participants, Instant now,
-            boolean includeCancelDetail) {
+            boolean includeCancelDetail, boolean groupOpen) {
         return new TripDetailResponse(
                 trip.id(),
                 trip.title(),
+                trip.departure(),
+                trip.departureCode(),
                 trip.destination(),
                 trip.destinationCode(),
                 AreaNames.provinceCodeOf(trip.destinationCode()),
@@ -69,6 +74,7 @@ public record TripDetailResponse(
                 includeCancelDetail ? trip.cancelReason() : null,
                 includeCancelDetail ? trip.cancelNote() : null,
                 trip.createdAt(),
-                trip.aiItineraryId());
+                trip.aiItineraryId(),
+                groupOpen);
     }
 }

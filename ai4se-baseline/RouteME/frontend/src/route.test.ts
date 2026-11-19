@@ -23,6 +23,13 @@ describe('parseRoute', () => {
       expect(parseRoute('#/share/12')).toEqual({ name: 'share', tripId: 12 });
     });
 
+    it('maps the group chat path without confusing it with a partner id', () => {
+      expect(parseRoute('#/chat/12/group')).toEqual({ name: 'chat', tripId: 12, group: true });
+      expect(parseRoute('#/chat/12/group/3')).toEqual({ name: 'notFound' });
+      expect(parseRoute('#/chat/abc/group')).toEqual({ name: 'notFound' });
+      expect(routeToHash({ name: 'chat', tripId: 12, group: true })).toBe('#/chat/12/group');
+    });
+
     it('keeps the reference source when creating from a trip', () => {
       expect(parseRoute('#/trips/new?from=7')).toEqual({ name: 'create', fromTripId: 7 });
       expect(parseRoute('#/trips/new')).toEqual({ name: 'create' });
@@ -109,6 +116,7 @@ describe('parseRoute', () => {
         { name: 'applications' as const, tripId: 7 },
         { name: 'mine' as const },
         { name: 'chat' as const, tripId: 7, userId: 2 },
+        { name: 'chat' as const, tripId: 7, group: true },
         { name: 'chat' as const },
         { name: 'share' as const, tripId: 7 },
         { name: 'profileSetup' as const },

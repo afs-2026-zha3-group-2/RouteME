@@ -135,6 +135,10 @@ public class ChatServiceImpl extends AbstractServiceImpl<ChatMessageMapper, Chat
         TripPlan trip = tripPlanService.requireCurrent(tripId);
         long receiverId = request == null ? 0 : request.receiverId();
         requireAccess(trip, senderId, receiverId);
+        // 已退出行程：一对一聊天也只保留历史回看，与群聊同口径。
+        if (trip.publisherId() != senderId && applicationService.hasLeft(trip.id(), senderId)) {
+            throw new routeme.exception.ChatLeftException(tripId, senderId);
+        }
         creditRestrictionGuard.requireNotRestricted(senderId);
         if (trip.status(clock.instant()) == TripStatusEnum.COMPLETED
                 || trip.status(clock.instant()) == TripStatusEnum.CANCELLED) {

@@ -451,6 +451,25 @@ const DEMO_PLACES: Array<Omit<Place, 'kind'>> = [
 
 PLACES.push(...DEMO_PLACES.map((place) => ({ ...place, kind: 'poi' as const })));
 
+/**
+ * 离线城市补丁：只并入 {@link PLACES}（搜索 / 校验 / AI 对话解析），不进
+ * `CITY_INDEX`（地图页的 SVG 构图仍只覆盖 MVP 城与广东）。
+ *
+ * <p>AI 规划常提到非 MVP 城市（如「北京→天津」）；高德不可用时靠这些条目
+ * 把城市名和热门景点解析成真实坐标，避免目的地被默默忽略。
+ */
+const EXTRA_CITY_PLACES: Place[] = [
+  { id: '天津', name: '天津', city: '天津', kind: 'city', lat: 39.0842, lng: 117.201, aliases: ['天津市'] },
+  { id: '天津-古文化街', name: '天津古文化街', city: '天津', kind: 'poi', lat: 39.1445, lng: 117.1938, aliases: ['古文化街'] },
+  { id: '天津-五大道', name: '五大道', city: '天津', kind: 'poi', lat: 39.1175, lng: 117.2036, aliases: ['五大道文化旅游区'] },
+  { id: '天津-瓷房子', name: '瓷房子', city: '天津', kind: 'poi', lat: 39.1266, lng: 117.1996, aliases: [] },
+  { id: '天津-南市食品街', name: '南市食品街', city: '天津', kind: 'poi', lat: 39.1334, lng: 117.1883, aliases: [] },
+  { id: '天津-意式风情区', name: '意式风情区', city: '天津', kind: 'poi', lat: 39.1392, lng: 117.2058, aliases: ['意大利风情区'] },
+  { id: '天津-天津之眼', name: '天津之眼', city: '天津', kind: 'poi', lat: 39.1532, lng: 117.1804, aliases: ['永乐桥摩天轮'] },
+];
+
+PLACES.push(...EXTRA_CITY_PLACES);
+
 export const CITY_NAMES: string[] = CITY_INDEX.map((city) => city.name);
 
 function normalize(value: string): string {

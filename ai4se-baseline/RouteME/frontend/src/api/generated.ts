@@ -87,6 +87,28 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/users/growth": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * 批量读取用户成长等级
+         * @description 需携带 `X-User-Id`。供行程卡、申请列表与详情同行者一次取数；
+         *     `ids` 为逗号分隔的用户 id，最多 50 个；只返回等级，不含经验值或流水。
+         *     任一 id 不存在时返回 404 `USER_NOT_FOUND`，不创建孤立账户。
+         */
+        get: operations["loadUserGrowthLevels"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/users/{userId}/profile": {
         parameters: {
             query?: never;
@@ -144,6 +166,28 @@ export interface paths {
          *     文件名由服务端生成，响应返回带缓存版本的 `avatar_url`。
          */
         post: operations["uploadMyAvatar"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/users/me/student-verification": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * 提交学信网学籍认证
+         * @description 需要登录会话。演示核验：姓名、院校与 12 位学信网在线验证码通过格式校验后即置为已认证，
+         *     验证码不落库。认证是发布行程、申请同行、发送消息与分享体验的前置门槛；管理员账号豁免。
+         *     重复提交会刷新认证院校与认证时间。
+         */
+        post: operations["verifyStudentIdentity"];
         delete?: never;
         options?: never;
         head?: never;
@@ -354,6 +398,28 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/trips/{tripId}/stops": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        /**
+         * 发布者编辑途经点
+         * @description 仅行程发布者可调用，且只在招募中与已满员（出发前）可用。
+         *     整体替换 stops，校验与发布同口径（至少 2 个，去空白去重）；
+         *     保存后通知全体已接受同行者，群已开时同步一条群消息。
+         */
+        put: operations["saveTripStops"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/trips/{tripId}/applications": {
         parameters: {
             query?: never;
@@ -543,6 +609,31 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/trips/{tripId}/group-messages": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * 读取行程群聊消息
+         * @description 群在满员成行时自动开设，一旦开设永久保留；
+         *     仅发布者与当前已接受同行者可读，行程结束 / 取消后仍可回放。
+         */
+        get: operations["loadGroupMessages"];
+        put?: never;
+        /**
+         * 发送群聊文字消息
+         * @description 仅群成员可发；行程已结束 / 已取消时只读，返回 409。
+         */
+        post: operations["sendGroupMessage"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/me/chat-partners": {
         parameters: {
             query?: never;
@@ -552,6 +643,27 @@ export interface paths {
         };
         /** 我的聊天对象 */
         get: operations["loadChatPartners"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/me/group-chats": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * 我的群聊列表
+         * @description 我是发布者或已接受同行者且群已开设的行程；
+         *     按最后一条消息时间倒序，无消息的群排末尾。
+         */
+        get: operations["loadMyGroups"];
         put?: never;
         post?: never;
         delete?: never;
@@ -887,6 +999,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/admin/service/sessions/{sessionId}/close": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * 结束客服会话
+         * @description 客服可直接结束 WAITING / HANDLING / RESOLVED 会话；状态转为 CLOSED 并记录 closed_at / closed_by；结束后双方只读。
+         */
+        post: operations["closeAdminServiceSession"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/admin/service/sessions/{sessionId}/join": {
         parameters: {
             query?: never;
@@ -904,7 +1036,7 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/admin/service/sessions/{sessionId}/close": {
+    "/admin/service/sessions/{sessionId}/resolve": {
         parameters: {
             query?: never;
             header?: never;
@@ -913,8 +1045,11 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** 结束客服会话 */
-        post: operations["closeAdminServiceSession"];
+        /**
+         * 标记处理完成
+         * @description 仅 HANDLING 可标记；状态转为 RESOLVED 并记录 resolved_at / resolved_by；客服也可直接结束会话。
+         */
+        post: operations["resolveAdminServiceSession"];
         delete?: never;
         options?: never;
         head?: never;
@@ -990,7 +1125,7 @@ export interface paths {
         };
         /**
          * 当前客服会话
-         * @description 没有未结束会话时响应体为空。
+         * @description 没有未结束会话时响应体为空；未结束包含 WAITING / HANDLING / RESOLVED。
          */
         get: operations["loadCurrentServiceSession"];
         put?: never;
@@ -1012,7 +1147,7 @@ export interface paths {
         put?: never;
         /**
          * 发起人工客服
-         * @description 幂等：已有 WAITING / HANDLING 会话时返回原会话。
+         * @description 幂等：已有 WAITING / HANDLING / RESOLVED 会话时返回原会话。
          */
         post: operations["openServiceSession"];
         delete?: never;
@@ -1036,6 +1171,26 @@ export interface paths {
          * @description 用户只能写入本人会话；管理员写入任意未结束会话，sender_type 由服务端判定。
          */
         post: operations["sendServiceMessage"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/service/sessions/{sessionId}/close": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * 结束客服会话
+         * @description 用户结束本人会话；WAITING / HANDLING / RESOLVED 均可结束；重复结束返回 409 SESSION_CLOSED。
+         */
+        post: operations["closeServiceSession"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1354,6 +1509,111 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/reports/mine": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * 我提交过的举报
+         * @description 通知中心跳转的举报详情页使用。只返回举报人已经知道的业务事实：编号、对象类型、
+         *     原因、状态与时间；不返回管理员备注、处理人 id 或他人的处罚细节。
+         */
+        get: operations["listMyReports"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/notifications": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * 最新通知与未读计数
+         * @description 返回当前用户最新 50 条通知与按类型拆分的未读计数（`total` + 八类 `by_type`）。
+         *     未读定义为 `read_at` 为空，状态派生为 `UNREAD` / `READ`；列表按创建时间倒序。
+         *     每条通知带 `target` 跳转目标与 `related_available`（关联业务是否仍可访问）。REST 列表不含消息正文。
+         */
+        get: operations["listNotifications"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/notifications/stream": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * 通知推送通道（SSE）
+         * @description 该用户的服务器推送通道，事件名固定 `notification`，`data` 为单行 `NotificationEvent` JSON。
+         *     连接期间约每 20 秒发送一次 `: ping` 心跳；不发送 `id:` 字段，重连正确性由客户端 REST 对账保证。
+         */
+        get: operations["streamNotifications"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/notifications/{notificationId}/read": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * 单条通知标读
+         * @description 只把本人且未读的该条记录标记为已读；重复标读计数不变。标读不改变业务状态。返回最新计数。
+         */
+        post: operations["readNotification"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/notifications/read": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * 全部或单会话标读
+         * @description `scope=all` 把本人全部未读标读并忽略定位字段；`scope=conversation` 需同时提供
+         *     `trip_id` 与 `other_user_id`，只清该会话的聊天类通知，缺一返回 400。返回最新计数。
+         */
+        post: operations["readNotifications"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -1390,6 +1650,8 @@ export interface components {
             readonly interests: string[];
             /** @description 由必填字段派生的资料完善状态，不落库 */
             readonly profile_complete: boolean;
+            /** @description 学信网学籍认证状态；未认证时发布 / 申请 / 聊天 / 分享体验返回 403 `STUDENT_VERIFICATION_REQUIRED` */
+            readonly student_verified: boolean;
             role: components["schemas"]["AccountRole"];
             status: components["schemas"]["AccountStatus"];
         };
@@ -1432,6 +1694,15 @@ export interface components {
             bio?: string | null;
             /** @description 六项必填同时成立时为 true；NULL / 空串 / 非法日期都算缺失 */
             readonly profile_complete: boolean;
+            /** @description 学信网学籍认证状态，任意视角均返回 */
+            readonly student_verified: boolean;
+            /** @description 认证院校；未认证时省略 */
+            readonly student_verified_school?: string | null;
+            /**
+             * Format: date-time
+             * @description 认证通过时间，UTC；未认证时省略
+             */
+            readonly student_verified_at?: string | null;
             /** @description 当前信用分，0–100 闭区间；本人与他人视角均返回，不可由客户端修改 */
             readonly credit_score: number;
             /**
@@ -1460,6 +1731,7 @@ export interface components {
              */
             readonly ban_expires_at?: string | null;
             stats?: components["schemas"]["ProfileStats"];
+            readonly growth?: components["schemas"]["UserGrowth"] | null;
             /**
              * @description 路线完成度信誉状态，恒返回：good ≥80 / neutral 70–79 / watch <70 / insufficient 数据不足
              * @enum {string}
@@ -1480,6 +1752,26 @@ export interface components {
             readonly credit_level: "excellent" | "good" | "fair" | "low" | "risk";
             /** @description 当前信用分低于 60 时为 true；列表展示「限制中」徽标 */
             readonly credit_restricted: boolean;
+        };
+        UserGrowth: {
+            /** @description 由总经验实时派生：LV1 0–99 / LV2 100–199 / LV3 200–299 / LV4 300–399 / LV5 400+ */
+            readonly level: number;
+            /** @description 当前总经验；仅本人在个人主页读取时返回 */
+            readonly exp?: number;
+            /** @description 距下一级所需经验；LV5 时省略 */
+            readonly exp_to_next?: number | null;
+            /** @description 是否已达 LV5；仅本人在个人主页读取时返回 */
+            readonly max_level?: boolean;
+            /** @description 当日（Asia/Shanghai 自然日）已实发的正向经验；仅本人读取时返回 */
+            readonly daily_exp?: number;
+            /** @description 每日正向经验上限；仅本人读取时返回 */
+            readonly daily_limit?: number;
+        };
+        UserGrowthEntry: {
+            /** Format: int64 */
+            readonly user_id: number;
+            /** @description 由总经验实时派生：LV1 0–99 / LV2 100–199 / LV3 200–299 / LV4 300–399 / LV5 400+ */
+            readonly level: number;
         };
         ProfileStats: {
             /** @description 发布的行程数 */
@@ -1518,6 +1810,14 @@ export interface components {
             travel_style: "特种兵" | "休闲游" | "深度游" | "随性游";
             /** @description 选填 */
             bio?: string;
+        };
+        StudentVerificationRequest: {
+            /** @description 学信网学籍上的真实姓名；只作核验留痕，不下发给他人 */
+            name: string;
+            /** @description 认证院校 */
+            school: string;
+            /** @description 学信网学籍在线验证报告的 12 位在线验证码；只做格式校验，不落库 */
+            code: string;
         };
         AuthRegisterRequest: {
             /** @description 登录用户名；不区分大小写，唯一 */
@@ -1670,6 +1970,11 @@ export interface components {
             readonly cancel_reason?: "personal" | "time_changed" | "plan_changed" | "not_enough_people" | "weather" | "illness" | "safety" | "other" | "credit_restricted" | null;
             /** @description 取消说明；仅「其他原因」必填，仅发布者与已接受同行者可见 */
             readonly cancel_note?: string | null;
+            /**
+             * @description 行程群是否已开设：当前满员，或已存在群消息。
+             *     群一旦开设永久保留，有人退出不再满员也保留；结束 / 取消后只读。
+             */
+            readonly group_open: boolean;
         };
         TripCreateRequest: {
             title: string;
@@ -1711,6 +2016,10 @@ export interface components {
              * @example 2026-11-20T08:30
              */
             meeting_time?: string | null;
+        };
+        TripStopsRequest: {
+            /** @description 更新后的完整途经点列表，整体替换；去空白去重后至少 2 个，与发布同口径 */
+            stops: string[];
         };
         TripCancelRequest: {
             /**
@@ -1884,6 +2193,29 @@ export interface components {
             last_message?: components["schemas"]["ChatMessage"];
             message_count: number;
         };
+        GroupMessage: {
+            /** Format: int64 */
+            readonly id: number;
+            /** Format: int64 */
+            readonly trip_id: number;
+            /** @description 发送者资料，供群气泡展示昵称与头像 */
+            readonly sender: components["schemas"]["DemoUser"];
+            content: string;
+            /** Format: date-time */
+            readonly sent_at: string;
+        };
+        GroupMessageRequest: {
+            /** @description 去空白后 1–500 字 */
+            content: string;
+        };
+        GroupChatSummary: {
+            trip: components["schemas"]["TripPlan"];
+            /** @description 当前群成员数：发布者 + 已接受同行者 */
+            readonly member_count: number;
+            /** @description 最后一条群消息；无消息时为 null */
+            last_message?: components["schemas"]["GroupMessage"] | null;
+            message_count: number;
+        };
         MyTrips: {
             published: components["schemas"]["TripPlan"][];
             applied: components["schemas"]["TripApplication"][];
@@ -1998,7 +2330,7 @@ export interface components {
         /** @enum {string} */
         ReportResolutionAction: "SUSPEND" | "BAN" | "KEEP" | "UPDATE_BAN" | "REJECT";
         /** @enum {string} */
-        ServiceSessionStatus: "WAITING" | "HANDLING" | "CLOSED";
+        ServiceSessionStatus: "WAITING" | "HANDLING" | "RESOLVED" | "CLOSED";
         AdminUserRef: {
             /** Format: int64 */
             readonly id: number;
@@ -2176,6 +2508,7 @@ export interface components {
             by_status: {
                 readonly WAITING: number;
                 readonly HANDLING: number;
+                readonly RESOLVED: number;
                 readonly CLOSED: number;
             };
         };
@@ -2334,6 +2667,11 @@ export interface components {
             joined_at?: string | null;
             /** Format: date-time */
             closed_at?: string | null;
+            /**
+             * Format: date-time
+             * @description 客服标记处理完成的时间；RESOLVED 与 CLOSED 会话可能有值
+             */
+            readonly resolved_at?: string | null;
             /** Format: date-time */
             last_message_at?: string | null;
             /** Format: int64 */
@@ -2849,14 +3187,152 @@ export interface components {
              * @description 大写下划线错误码，前端按原值判断
              * @enum {string}
              */
-            code: "GREETING_NOT_FOUND" | "INVALID_INPUT" | "DEMO_USER_REQUIRED" | "FORBIDDEN" | "USER_NOT_FOUND" | "TRIP_NOT_FOUND" | "TRIP_NOT_OPEN" | "APPLICATION_NOT_FOUND" | "APPLICATION_NOT_PENDING" | "DUPLICATE_APPLICATION" | "CHAT_NOT_ALLOWED" | "CHAT_READ_ONLY" | "EXPERIENCE_NOT_ALLOWED" | "EXPERIENCE_NOT_FOUND" | "USERNAME_TAKEN" | "INVALID_CREDENTIALS" | "SESSION_INVALID" | "WEATHER_UPSTREAM_ERROR" | "AI_NOT_CONFIGURED" | "AI_UPSTREAM_ERROR" | "AI_INVALID_OUTPUT" | "INTERNAL_ERROR" | "ADMIN_REQUIRED" | "ACCOUNT_SUSPENDED" | "ACCOUNT_BANNED" | "INVALID_STATUS_TRANSITION" | "CANNOT_TARGET_SELF" | "REPORT_NOT_FOUND" | "REPORT_NOT_PENDING" | "REPORT_NOT_PROCESSING" | "EMAIL_TAKEN" | "SESSION_ALREADY_HANDLING" | "SESSION_NOT_HANDLING" | "SESSION_CLOSED" | "CREDIT_RESTRICTED" | "LEARNING_NOT_ELIGIBLE" | "LEARNING_EXAM_QUOTA_EXCEEDED" | "LEARNING_RECOVERY_QUOTA_EXCEEDED" | "LEARNING_NOT_COMPLETED" | "LEARNING_SESSION_NOT_FOUND" | "LEAVE_RECORD_NOT_FOUND" | "INSUFFICIENT_BALANCE" | "ACTIVE_LOAN_EXISTS" | "LOAN_NOT_ACTIVE";
+            code: "GREETING_NOT_FOUND" | "INVALID_INPUT" | "DEMO_USER_REQUIRED" | "FORBIDDEN" | "USER_NOT_FOUND" | "TRIP_NOT_FOUND" | "TRIP_NOT_OPEN" | "APPLICATION_NOT_FOUND" | "APPLICATION_NOT_PENDING" | "DUPLICATE_APPLICATION" | "CHAT_NOT_ALLOWED" | "CHAT_READ_ONLY" | "EXPERIENCE_NOT_ALLOWED" | "EXPERIENCE_NOT_FOUND" | "USERNAME_TAKEN" | "INVALID_CREDENTIALS" | "SESSION_INVALID" | "WEATHER_UPSTREAM_ERROR" | "AI_NOT_CONFIGURED" | "AI_UPSTREAM_ERROR" | "AI_INVALID_OUTPUT" | "INTERNAL_ERROR" | "ADMIN_REQUIRED" | "ACCOUNT_SUSPENDED" | "ACCOUNT_BANNED" | "INVALID_STATUS_TRANSITION" | "CANNOT_TARGET_SELF" | "REPORT_NOT_FOUND" | "REPORT_NOT_PENDING" | "REPORT_NOT_PROCESSING" | "EMAIL_TAKEN" | "SESSION_ALREADY_HANDLING" | "SESSION_NOT_HANDLING" | "SESSION_CLOSED" | "CREDIT_RESTRICTED" | "LEARNING_NOT_ELIGIBLE" | "LEARNING_EXAM_QUOTA_EXCEEDED" | "LEARNING_RECOVERY_QUOTA_EXCEEDED" | "LEARNING_NOT_COMPLETED" | "LEARNING_SESSION_NOT_FOUND" | "LEAVE_RECORD_NOT_FOUND" | "NOTIFICATION_NOT_FOUND" | "INSUFFICIENT_BALANCE" | "ACTIVE_LOAN_EXISTS" | "LOAN_NOT_ACTIVE" | "STUDENT_VERIFICATION_REQUIRED";
             /**
-             * @description 仅资料校验失败（400 `INVALID_INPUT`）时出现：字段名 → 原因码。
+             * @description 仅资料校验与学信网认证校验失败（400 `INVALID_INPUT`）时出现：字段名 → 原因码。
              *     其他错误不携带该键。
              */
             fields?: {
                 [key: string]: "REQUIRED" | "TOO_LONG" | "INVALID_DATE" | "OUT_OF_RANGE" | "TOO_FEW" | "TOO_MANY" | "DUPLICATE" | "INVALID_OPTION";
             };
+        };
+        /** @description 举报人视角的举报；不含管理员备注、处理人 id 与他人的处罚细节 */
+        MyReport: {
+            /** Format: int64 */
+            readonly id: number;
+            /** @description 举报编号，形如 `R-42` */
+            readonly code: string;
+            /** @enum {string} */
+            target_type: "trip" | "user" | "experience";
+            /** @enum {string} */
+            reason: "harassment" | "fake" | "safety" | "other";
+            status: components["schemas"]["ReportStatus"];
+            /** Format: date-time */
+            readonly created_at: string;
+            /** Format: date-time */
+            readonly processing_at?: string | null;
+            /** Format: date-time */
+            readonly resolved_at?: string | null;
+        };
+        /**
+         * @description 通知业务域类型；wire 值固定，前端按原值分组与计数
+         * @enum {string}
+         */
+        NotificationType: "TRIP" | "APPLICATION" | "CHAT" | "CREDIT" | "REPORT" | "ACCOUNT" | "SERVICE" | "SYSTEM";
+        /**
+         * @description 类型下的具体事件；wire 值固定，前端只做展示与断言
+         * @enum {string}
+         */
+        NotificationEventName: "trip_full" | "trip_ongoing" | "trip_cancelled" | "trip_completed" | "trip_route_updated" | "trip_group_opened" | "application_received" | "application_accepted" | "application_rejected" | "application_closed" | "message" | "group_message" | "credit_changed" | "credit_recovered" | "report_submitted" | "report_processing" | "report_resolved" | "account_suspended" | "account_banned" | "account_restored" | "service_joined" | "service_reply" | "service_closed" | "safety_reminder" | "identity_verified";
+        /**
+         * @description 优先级；信用分低于 60 等需要立即关注的事件为 HIGH
+         * @enum {string}
+         */
+        NotificationPriority: "NORMAL" | "HIGH";
+        /**
+         * @description 状态由 `read_at` 派生；READ 不再计入未读
+         * @enum {string}
+         */
+        NotificationStatus: "UNREAD" | "READ";
+        /**
+         * @description 跳转目标种类；前端按 kind 组装路由
+         * @enum {string}
+         */
+        NotificationTargetKind: "trip" | "applications" | "chat" | "group_chat" | "credit" | "report" | "account" | "support" | "identity";
+        /** @description 跳转定位字段；与 kind 无关的字段为 null */
+        NotificationTarget: {
+            kind: components["schemas"]["NotificationTargetKind"];
+            /** Format: int64 */
+            readonly trip_id?: number | null;
+            /**
+             * Format: int64
+             * @description 仅 `kind=chat`，会话另一方 id；`kind=group_chat` 时为 null
+             */
+            readonly other_user_id?: number | null;
+            /** Format: int64 */
+            readonly application_id?: number | null;
+            /** Format: int64 */
+            readonly report_id?: number | null;
+            /** Format: int64 */
+            readonly session_id?: number | null;
+        };
+        Notification: {
+            /** Format: int64 */
+            readonly id: number;
+            type: components["schemas"]["NotificationType"];
+            event: components["schemas"]["NotificationEventName"];
+            /** @description 后端生成的标题，唯一来源是后端通知文案函数 */
+            readonly title: string;
+            /**
+             * @description 后端生成的正文，含取消原因 / 分数变化 / 恢复时间等业务事实；
+             *     不含管理员自由文本备注或他人的隐私信息
+             */
+            readonly content: string;
+            priority: components["schemas"]["NotificationPriority"];
+            status: components["schemas"]["NotificationStatus"];
+            /** Format: date-time */
+            readonly created_at: string;
+            /** Format: date-time */
+            readonly read_at?: string | null;
+            /** @description 动作人；系统 / 信用 / 客服 / 认证类通知为 null */
+            actor?: components["schemas"]["DemoUser"] | null;
+            /** Format: int64 */
+            readonly trip_id?: number | null;
+            readonly trip_title?: string | null;
+            /** Format: int64 */
+            readonly application_id?: number | null;
+            /** Format: int64 */
+            readonly message_id?: number | null;
+            /** Format: int64 */
+            readonly report_id?: number | null;
+            /** Format: int64 */
+            readonly session_id?: number | null;
+            target: components["schemas"]["NotificationTarget"];
+            /**
+             * @description 关联业务当前是否仍可访问。false 时通知内容照常展示，
+             *     前端提示「相关内容当前不可查看」而不是报错
+             */
+            readonly related_available: boolean;
+        };
+        NotificationCounts: {
+            readonly total: number;
+            /** @description 按八类拆分的未读计数；八类始终齐备，零值不省略 */
+            by_type: {
+                TRIP: number;
+                APPLICATION: number;
+                CHAT: number;
+                CREDIT: number;
+                REPORT: number;
+                ACCOUNT: number;
+                SERVICE: number;
+                SYSTEM: number;
+            };
+        };
+        NotificationList: {
+            items: components["schemas"]["Notification"][];
+            counts: components["schemas"]["NotificationCounts"];
+        };
+        NotificationReadRequest: {
+            /** @enum {string} */
+            scope: "all" | "conversation" | "group_conversation";
+            /**
+             * Format: int64
+             * @description `scope=conversation` 时与 `other_user_id` 同时必填；
+             *     `scope=group_conversation` 时单独必填，只清该行程的群聊消息通知
+             */
+            trip_id?: number | null;
+            /**
+             * Format: int64
+             * @description 仅 `scope=conversation` 使用；与 `trip_id` 同时必填
+             */
+            other_user_id?: number | null;
+        };
+        NotificationEvent: {
+            notification: components["schemas"]["Notification"];
+            /** @description 仅一对一聊天推送出现，内容为刚保存的消息 */
+            message?: components["schemas"]["ChatMessage"] | null;
+            /** @description 仅 `event=group_message` 的推送出现，内容为刚保存的群消息 */
+            group_message?: components["schemas"]["GroupMessage"] | null;
         };
     };
     responses: {
@@ -3125,6 +3601,59 @@ export interface operations {
             };
         };
     };
+    loadUserGrowthLevels: {
+        parameters: {
+            query: {
+                /** @description 逗号分隔的用户 id，最多 50 个 */
+                ids: string;
+            };
+            header: {
+                /** @description 演示身份标识（app_users.id）。演示环境无真实鉴权，生产前必须替换。 */
+                "X-User-Id": components["parameters"]["DemoUserId"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 按请求顺序返回的成长等级 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UserGrowthEntry"][];
+                };
+            };
+            /** @description ids 缺失、非数字或超过 50 个 */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description 缺失或未知的 X-User-Id */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description 任一用户不存在 */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
     loadUserProfile: {
         parameters: {
             query?: never;
@@ -3248,6 +3777,52 @@ export interface operations {
                 };
             };
             403: components["responses"]["Forbidden"];
+            500: components["responses"]["Unexpected"];
+        };
+    };
+    verifyStudentIdentity: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description 登录会话，格式 `Bearer <token>`。 */
+                Authorization: components["parameters"]["BearerToken"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["StudentVerificationRequest"];
+            };
+        };
+        responses: {
+            /** @description 认证通过后的用户摘要 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DemoUser"];
+                };
+            };
+            /** @description 字段校验失败，`fields` 为字段名 → 原因码 */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            /** @description 缺少有效会话 */
+            401: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
             500: components["responses"]["Unexpected"];
         };
     };
@@ -3844,6 +4419,56 @@ export interface operations {
             };
         };
     };
+    saveTripStops: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description 演示身份标识（app_users.id）。演示环境无真实鉴权，生产前必须替换。 */
+                "X-User-Id": components["parameters"]["DemoUserId"];
+            };
+            path: {
+                tripId: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TripStopsRequest"];
+            };
+        };
+        responses: {
+            /** @description 更新后的行程详情 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TripDetail"];
+                };
+            };
+            400: components["responses"]["InvalidInput"];
+            401: components["responses"]["DemoUserRequired"];
+            /** @description 非发布者不能编辑途经点，或发布者信用受限 */
+            403: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            404: components["responses"]["NotFound"];
+            /** @description 行程已出发 / 已结束 / 已取消，不可编辑 */
+            409: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
     loadTripApplications: {
         parameters: {
             query?: never;
@@ -4247,6 +4872,76 @@ export interface operations {
             409: components["responses"]["Conflict"];
         };
     };
+    loadGroupMessages: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description 演示身份标识（app_users.id）。演示环境无真实鉴权，生产前必须替换。 */
+                "X-User-Id": components["parameters"]["DemoUserId"];
+            };
+            path: {
+                tripId: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 群消息列表，按发送时间升序，附发送者资料 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GroupMessage"][];
+                };
+            };
+            401: components["responses"]["DemoUserRequired"];
+            403: components["responses"]["Forbidden"];
+            /** @description 行程不存在或群未开设 */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+        };
+    };
+    sendGroupMessage: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description 演示身份标识（app_users.id）。演示环境无真实鉴权，生产前必须替换。 */
+                "X-User-Id": components["parameters"]["DemoUserId"];
+            };
+            path: {
+                tripId: number;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["GroupMessageRequest"];
+            };
+        };
+        responses: {
+            /** @description 已保存的群消息 */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GroupMessage"];
+                };
+            };
+            400: components["responses"]["InvalidInput"];
+            401: components["responses"]["DemoUserRequired"];
+            403: components["responses"]["Forbidden"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+        };
+    };
     loadChatPartners: {
         parameters: {
             query?: never;
@@ -4266,6 +4961,30 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ChatPartner"][];
+                };
+            };
+            401: components["responses"]["DemoUserRequired"];
+        };
+    };
+    loadMyGroups: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description 演示身份标识（app_users.id）。演示环境无真实鉴权，生产前必须替换。 */
+                "X-User-Id": components["parameters"]["DemoUserId"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 群会话列表 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GroupChatSummary"][];
                 };
             };
             401: components["responses"]["DemoUserRequired"];
@@ -4906,6 +5625,36 @@ export interface operations {
             500: components["responses"]["Unexpected"];
         };
     };
+    closeAdminServiceSession: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description 登录会话，格式 `Bearer <token>`。 */
+                Authorization: components["parameters"]["BearerToken"];
+            };
+            path: {
+                sessionId: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 会话已进入 CLOSED */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ServiceSessionDetail"];
+                };
+            };
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["AdminRequired"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            500: components["responses"]["Unexpected"];
+        };
+    };
     joinAdminServiceSession: {
         parameters: {
             query?: never;
@@ -4936,7 +5685,7 @@ export interface operations {
             500: components["responses"]["Unexpected"];
         };
     };
-    closeAdminServiceSession: {
+    resolveAdminServiceSession: {
         parameters: {
             query?: never;
             header: {
@@ -4950,7 +5699,7 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description 会话已进入 CLOSED */
+            /** @description 会话已进入 RESOLVED */
             200: {
                 headers: {
                     [name: string]: unknown;
@@ -5058,7 +5807,7 @@ export interface operations {
         };
         requestBody?: never;
         responses: {
-            /** @description 当前 WAITING / HANDLING 会话与消息；无则为空 */
+            /** @description 当前 WAITING / HANDLING / RESOLVED 会话与消息；无则为空 */
             200: {
                 headers: {
                     [name: string]: unknown;
@@ -5153,6 +5902,36 @@ export interface operations {
                 };
             };
             400: components["responses"]["InvalidInput"];
+            401: components["responses"]["Unauthorized"];
+            403: components["responses"]["AccountRestricted"];
+            404: components["responses"]["NotFound"];
+            409: components["responses"]["Conflict"];
+            500: components["responses"]["Unexpected"];
+        };
+    };
+    closeServiceSession: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description 登录会话，格式 `Bearer <token>`。 */
+                Authorization: components["parameters"]["BearerToken"];
+            };
+            path: {
+                sessionId: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 会话已进入 CLOSED */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ServiceSessionDetail"];
+                };
+            };
             401: components["responses"]["Unauthorized"];
             403: components["responses"]["AccountRestricted"];
             404: components["responses"]["NotFound"];
@@ -5665,6 +6444,153 @@ export interface operations {
                     "application/json": components["schemas"]["Error"];
                 };
             };
+            500: components["responses"]["Unexpected"];
+        };
+    };
+    listMyReports: {
+        parameters: {
+            query?: {
+                /** @description 返回条数上限，默认与最大值为 50 */
+                limit?: number;
+            };
+            header: {
+                /** @description 演示身份标识（app_users.id）。演示环境无真实鉴权，生产前必须替换。 */
+                "X-User-Id": components["parameters"]["DemoUserId"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 当前用户提交的举报，最新在前 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MyReport"][];
+                };
+            };
+            401: components["responses"]["DemoUserRequired"];
+            500: components["responses"]["Unexpected"];
+        };
+    };
+    listNotifications: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description 演示身份标识（app_users.id）。演示环境无真实鉴权，生产前必须替换。 */
+                "X-User-Id": components["parameters"]["DemoUserId"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 最新通知与计数 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NotificationList"];
+                };
+            };
+            401: components["responses"]["DemoUserRequired"];
+            500: components["responses"]["Unexpected"];
+        };
+    };
+    streamNotifications: {
+        parameters: {
+            query: {
+                /** @description 接收推送的演示用户 id（app_users.id）；缺省或用户不存在返回 401 */
+                user_id: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description SSE 事件流 */
+            200: {
+                headers: {
+                    /** @description 固定 `no-cache` */
+                    "Cache-Control"?: string;
+                    /** @description 固定 `no`，禁止代理缓冲 */
+                    "X-Accel-Buffering"?: string;
+                    [name: string]: unknown;
+                };
+                content: {
+                    "text/event-stream": string;
+                };
+            };
+            401: components["responses"]["DemoUserRequired"];
+        };
+    };
+    readNotification: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description 演示身份标识（app_users.id）。演示环境无真实鉴权，生产前必须替换。 */
+                "X-User-Id": components["parameters"]["DemoUserId"];
+            };
+            path: {
+                notificationId: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description 最新未读计数 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NotificationCounts"];
+                };
+            };
+            401: components["responses"]["DemoUserRequired"];
+            /** @description 通知不存在或不属于当前用户（不暴露他人通知存在性） */
+            404: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
+                };
+            };
+            500: components["responses"]["Unexpected"];
+        };
+    };
+    readNotifications: {
+        parameters: {
+            query?: never;
+            header: {
+                /** @description 演示身份标识（app_users.id）。演示环境无真实鉴权，生产前必须替换。 */
+                "X-User-Id": components["parameters"]["DemoUserId"];
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["NotificationReadRequest"];
+            };
+        };
+        responses: {
+            /** @description 最新未读计数 */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NotificationCounts"];
+                };
+            };
+            400: components["responses"]["InvalidInput"];
+            401: components["responses"]["DemoUserRequired"];
             500: components["responses"]["Unexpected"];
         };
     };

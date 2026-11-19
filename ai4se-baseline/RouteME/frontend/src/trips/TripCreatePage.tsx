@@ -108,6 +108,7 @@ export function TripCreatePage({ currentUser, fromTripId, aiItineraryId }: Props
         }
         setValues({
           ...emptyTripForm,
+          departureCode: source.departure_code ?? '',
           destinationCode: source.destination_code,
           stops: source.stops.slice(0, MAX_STOPS),
           tags: source.tags.slice(0, MAX_TAGS),
@@ -228,6 +229,8 @@ export function TripCreatePage({ currentUser, fromTripId, aiItineraryId }: Props
   const previewTrip: TripSummary = {
     id: 0,
     title: values.title.trim() === '' ? '你的行程标题' : values.title,
+    departure: values.departureCode === '' ? null : cityLabel(values.departureCode),
+    departure_code: values.departureCode === '' ? null : values.departureCode,
     destination,
     destination_code: values.destinationCode,
     province_code: '',
@@ -360,7 +363,16 @@ export function TripCreatePage({ currentUser, fromTripId, aiItineraryId }: Props
                 />
               </Field>
 
-              <div className="publish-field-row">
+              <div className="publish-field-row is-pair">
+                <Field label={tripMessages.fieldDeparture} htmlFor="trip-departure" optional>
+                  <AreaCascader
+                    id="trip-departure"
+                    ariaLabel={tripMessages.fieldDeparture}
+                    value={values.departureCode}
+                    onChange={(code) => update({ departureCode: code })}
+                    placeholder="请选择出发城市（选填）"
+                  />
+                </Field>
                 <Field
                   label={tripMessages.fieldDestination}
                   htmlFor="trip-destination"
@@ -379,6 +391,9 @@ export function TripCreatePage({ currentUser, fromTripId, aiItineraryId }: Props
                     placeholder="请选择省 / 市"
                   />
                 </Field>
+              </div>
+
+              <div className="publish-field-row is-pair">
                 <Field
                   label={tripMessages.fieldStartDate}
                   htmlFor="trip-start-date"

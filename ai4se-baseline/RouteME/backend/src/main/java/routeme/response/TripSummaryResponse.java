@@ -11,6 +11,8 @@ import routeme.pojo.TripPlan;
 public record TripSummaryResponse(
         long id,
         String title,
+        String departure,
+        String departureCode,
         String destination,
         String destinationCode,
         String provinceCode,
@@ -34,6 +36,8 @@ public record TripSummaryResponse(
         return new TripSummaryResponse(
                 trip.id(),
                 trip.title(),
+                trip.departure(),
+                trip.departureCode(),
                 trip.destination(),
                 trip.destinationCode(),
                 AreaNames.provinceCodeOf(trip.destinationCode()),

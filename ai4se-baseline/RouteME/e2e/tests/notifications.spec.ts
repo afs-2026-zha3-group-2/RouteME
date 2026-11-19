@@ -606,7 +606,7 @@ test('[N2] type-specific notifications jump to their target pages', async ({ bro
   const [publisher, companion] = await createAccounts(a.page, '发布者', '同行');
   const title = `E2E 跳转 ${Date.now()}`;
   // 容量 2：接受唯一一名同行者即满员。满员通知发给同行者（发布者是接受动作的本人，
-  // 自事件不通知）；同行者因此同时有「申请已通过」与「行程已满员」两类。
+  // 自事件不通知）；满员同时自动开群，同行者因此有「申请已通过」「行程已满员」「群聊已开通」三类。
   const trip = await createTripViaApi(a.page, publisher.id, title, {
     daysFromToday: 1,
     capacity: 2,
@@ -615,15 +615,15 @@ test('[N2] type-specific notifications jump to their target pages', async ({ bro
   await acceptApplicationViaApi(a.page, publisher.id, trip.id, companion.id);
 
   await openShell(b.page, companion);
-  await expect(b.page.getByTestId('notification-badge')).toHaveText('2', { timeout: 3000 });
+  await expect(b.page.getByTestId('notification-badge')).toHaveText('3', { timeout: 3000 });
   await b.page.goto('/#/notifications');
 
   await expect(
     b.page.getByTestId('notification-filter-TRIP').locator('.notification-filter-count'),
-  ).toHaveText('1');
+  ).toHaveText('2');
   await b.page.getByTestId('notification-filter-TRIP').click();
-  const tripItem = b.page.getByTestId('notification-center-item');
-  await expect(tripItem).toContainText('行程已满员');
+  const tripItem = b.page.getByTestId('notification-center-item').filter({ hasText: '行程已满员' });
+  await expect(tripItem).toHaveCount(1);
   await tripItem.click();
   await expect(b.page).toHaveURL(new RegExp(`#/trips/${trip.id}$`));
   await expect(b.page.getByText(title).first()).toBeVisible();

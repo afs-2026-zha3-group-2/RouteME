@@ -1,10 +1,13 @@
 package routeme.service;
 
+import java.time.Instant;
+
 import com.baomidou.mybatisplus.spring.service.IService;
 
 import routeme.entity.NotificationEntity;
 import routeme.enums.AccountStatusEnum;
 import routeme.pojo.ChatMessage;
+import routeme.pojo.GroupMessage;
 import routeme.response.NotificationCountsResponse;
 import routeme.response.NotificationListResponse;
 
@@ -32,6 +35,12 @@ public interface NotificationService extends IService<NotificationEntity> {
     /** 行程满员：通知发布者与已接受同行者。 */
     void notifyTripFull(long recipientId, Long actorId, long tripId);
 
+    /** 发布者更新途经点：通知已接受同行者；updatedAt 参与去重，每次编辑唯一。 */
+    void notifyTripRouteUpdated(long recipientId, long actorId, long tripId, Instant updatedAt);
+
+    /** 满员自动建群：通知发布者与已接受同行者。 */
+    void notifyTripGroupOpened(long recipientId, long actorId, long tripId);
+
     /** 行程进入旅行中：通知发布者与已接受同行者。 */
     void notifyTripOngoing(long recipientId, long tripId);
 
@@ -43,6 +52,9 @@ public interface NotificationService extends IService<NotificationEntity> {
 
     /** 新聊天消息：通知接收方；自己发给自己时不写行。 */
     void notifyMessage(long recipientId, long actorId, ChatMessage message);
+
+    /** 新群聊消息：通知其他群成员；发送者本人不写行。 */
+    void notifyGroupMessage(long recipientId, long actorId, GroupMessage message);
 
     /**
      * 信用分变化：正文展示变化分数、原因与变更后分数；低于 60 时高优先级。
@@ -104,4 +116,7 @@ public interface NotificationService extends IService<NotificationEntity> {
 
     /** 单会话标读：只清该会话的聊天类通知。 */
     NotificationCountsResponse markConversationRead(long recipientId, long tripId, long otherUserId);
+
+    /** 群会话标读：只清该行程的群聊消息通知。 */
+    NotificationCountsResponse markGroupConversationRead(long recipientId, long tripId);
 }

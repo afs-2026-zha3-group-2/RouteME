@@ -7,7 +7,7 @@ export type Route =
   | { name: 'finance' }
   | { name: 'applications'; tripId: number }
   | { name: 'mine' }
-  | { name: 'chat'; tripId?: number; userId?: number }
+  | { name: 'chat'; tripId?: number; userId?: number; group?: boolean }
   | { name: 'share'; tripId: number }
   | { name: 'profileSetup' }
   | { name: 'studentVerification' }
@@ -119,6 +119,10 @@ export function parseRoute(hash: string): Route {
   if (path === '/chat') {
     return { name: 'chat' };
   }
+  const groupChat = /^\/chat\/(\d+)\/group$/.exec(path);
+  if (groupChat) {
+    return { name: 'chat', tripId: Number(groupChat[1]), group: true };
+  }
   const chat = /^\/chat\/(\d+)\/(\d+)$/.exec(path);
   if (chat) {
     return { name: 'chat', tripId: Number(chat[1]), userId: Number(chat[2]) };
@@ -152,6 +156,9 @@ export function routeToHash(route: Route): string {
     return '#/mine';
   }
   if (route.name === 'chat') {
+    if (route.group === true && route.tripId !== undefined) {
+      return `#/chat/${route.tripId}/group`;
+    }
     return route.tripId === undefined || route.userId === undefined
       ? '#/chat'
       : `#/chat/${route.tripId}/${route.userId}`;

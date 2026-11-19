@@ -9,6 +9,7 @@ import java.util.List;
 public record TripPlanDraft(
         long publisherId,
         String title,
+        String departureCode,
         String destinationCode,
         LocalDate startDate,
         LocalDate endDate,
