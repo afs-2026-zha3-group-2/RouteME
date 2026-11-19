@@ -108,13 +108,14 @@ public class GroupChatServiceImpl
         studentVerificationService.requireVerified(senderId);
         TripPlan trip = tripPlanService.requireCurrent(tripId);
         requireOpen(trip);
+        // 与一对一聊天同口径：信用受限是账号级守卫，先于成员/退出状态判定。
+        creditRestrictionGuard.requireNotRestricted(senderId);
         if (!isMember(trip, senderId)) {
             if (isFormerMember(trip, senderId)) {
                 throw new ChatLeftException(tripId, senderId);
             }
             throw new ChatNotAllowedException(tripId, senderId);
         }
-        creditRestrictionGuard.requireNotRestricted(senderId);
         if (trip.status(clock.instant()) == TripStatusEnum.COMPLETED
                 || trip.status(clock.instant()) == TripStatusEnum.CANCELLED) {
             throw new ChatReadOnlyException(tripId);
