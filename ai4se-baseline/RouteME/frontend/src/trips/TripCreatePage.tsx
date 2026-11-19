@@ -577,7 +577,6 @@ invalid={errors.stops !== undefined}
                 label={tripMessages.fieldMeetingArea}
                 htmlFor="trip-meeting-area"
                 optional
-                hint={tripMessages.hintMeeting}
                 error={errors.meetingArea}
               >
                 <Space.Compact style={{ width: '100%' }}>
@@ -625,7 +624,6 @@ invalid={errors.stops !== undefined}
                   value={values.meetingAreas}
                   onChange={(next) => update({ meetingAreas: next })}
                   placeholder="搜索集合地点"
-                  emptyHint="只填一个集合地点；再选或再输入会替换原来的地点。"
                   showMap
                   city={cityForSearch}
                 />

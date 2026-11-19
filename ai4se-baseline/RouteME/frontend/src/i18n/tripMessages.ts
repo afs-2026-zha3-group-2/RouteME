@@ -148,7 +148,6 @@ routeSectionHint: '在地图上添加并排序途经点，实时查看路线与�
   fieldCapacity: '计划人数',
   hintCapacity: '含你自己，2–12 人；招满后自动停止接受新申请。',
   hintStops: '按顺序写出途经点，最后一个点作为收尾。不需要精确到分钟。',
-  hintMeeting: '只写一个公共区域，不要写宿舍或家庭住址。',
   fieldMeetingArea: '集合区域',
   fieldMeetingTime: '集合时间',
   fieldBudgetMin: '预算下限（元）',
