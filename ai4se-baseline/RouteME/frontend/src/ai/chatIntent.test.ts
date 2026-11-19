@@ -3,6 +3,7 @@ import {
   applyIntent,
   findCityInText,
   intentHasCondition,
+  PLANNER_INSPIRATIONS,
   parseDateInText,
   parseOriginName,
   parsePlanIntent,
@@ -98,6 +99,38 @@ describe('parseDateInText', () => {
 
   it('returns null when the text carries no date', () => {
     expect(parseDateInText('去珠海玩两天', now)).toBeNull();
+  });
+});
+
+describe('PLANNER_INSPIRATIONS', () => {
+  const now = new Date(2026, 10, 19, 10, 0);
+
+  it('every demo prompt carries a complete set of conditions', () => {
+    for (const suggestion of PLANNER_INSPIRATIONS) {
+      const intent = parsePlanIntent(suggestion.text, now);
+      expect(intent.destinationName, `${suggestion.id}: destination`).not.toBeNull();
+      expect(intent.originName, `${suggestion.id}: origin`).not.toBeNull();
+      expect(intent.date, `${suggestion.id}: date`).not.toBeNull();
+      expect(intent.duration, `${suggestion.id}: duration`).not.toBeNull();
+      expect(intent.budgetYuan, `${suggestion.id}: budget`).not.toBeNull();
+      expect(intent.pace, `${suggestion.id}: pace`).not.toBeNull();
+      expect(intent.travelMode, `${suggestion.id}: travel mode`).not.toBeNull();
+      expect(intent.interests.length, `${suggestion.id}: interests`).toBeGreaterThan(0);
+    }
+  });
+
+  it('never mistakes the origin for the destination', () => {
+    for (const suggestion of PLANNER_INSPIRATIONS) {
+      const intent = parsePlanIntent(suggestion.text, now);
+      expect(intent.destinationName, `${suggestion.id}: destination differs from origin`).not.toBe(
+        intent.originName,
+      );
+    }
+  });
+
+  it('keeps every demo prompt distinct so the chips do not collapse into one plan', () => {
+    const texts = PLANNER_INSPIRATIONS.map((suggestion) => suggestion.text);
+    expect(new Set(texts).size).toBe(texts.length);
   });
 });
 
