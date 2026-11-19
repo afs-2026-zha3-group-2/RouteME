@@ -82,6 +82,11 @@ jobs:
   e2e-smoke:
     name: E2E smoke (fresh DB)
     runs-on: ubuntu-latest
+    env:
+      # 后端业务日期固定 Asia/Shanghai，而 runner 默认 UTC：北京时间 00:00–08:00 之间
+      # 两个日历不一致，用例造的「今天」行程会被 start-date 校验拒绝、种子行程也会翻篇。
+      # 让 runner / Node / Chromium 的本地日期与后端业务时区同口径。
+      TZ: Asia/Shanghai
     steps:
       - uses: actions/checkout@v4
       - name: Set up JDK 21
