@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Alert, Button, Modal, Segmented, Skeleton, Typography, message } from 'antd';
 import { cityLabel } from '../area/areaOptions';
-import { cancelApplication, completeTrip, loadMyExperiences, loadMyTrips } from '../api';
+import { cancelApplication, completeTrip, loadMyExperiences, loadMyTrips, loadTrip } from '../api';
 import { mineMeetingNote } from '../chat/chatMeeting';
 import { tripMessages } from '../i18n/tripMessages';
 import { useMyCredit } from '../credit/CreditContext';
@@ -10,6 +10,8 @@ import { applicationLabel } from '../trips/applicationStatus';
 import { cityPhoto } from '../trips/cityPhotos';
 import { coverTone } from '../trips/coverTone';
 import { StatusBadge } from '../trips/StatusBadge';
+import { StopCompletionPicker } from '../trips/StopCompletionPicker';
+import { allChecked } from '../trips/stopCompletion';
 import { TripCancelModal } from '../trips/TripCancelModal';
 import { TripRecordModal } from '../trips/LeaveRecordModal';
 import { TripLeaveModal } from '../trips/TripLeaveModal';
@@ -37,7 +39,7 @@ type Props = {
   currentUser: DemoUser;
 };
 
-type ConfirmAction = { kind: 'complete'; trip: TripSummary };
+type ConfirmAction = { kind: 'complete'; trip: TripSummary; stops: string[] };
 
 function pendingHint(count: number): string {
   return count > 0
@@ -72,6 +74,7 @@ export function MyTripsPage({ currentUser }: Props) {
   const [error, setError] = useState<string | null>(null);
   const [busyKey, setBusyKey] = useState<string | null>(null);
   const [confirmAction, setConfirmAction] = useState<ConfirmAction | null>(null);
+  const [completeChecked, setCompleteChecked] = useState<number[]>([]);
   const [leaveTarget, setLeaveTarget] = useState<TripSummary | null>(null);
   const [recordTarget, setRecordTarget] = useState<{
     trip: TripSummary;
@@ -162,7 +165,17 @@ export function MyTripsPage({ currentUser }: Props) {
       return;
     }
     if (action === 'complete') {
-      setConfirmAction({ kind: 'complete', trip });
+      // 摘要卡不带途经点：先拉详情再开弹窗，默认全选。
+      setBusyKey(`complete-${trip.id}`);
+      try {
+        const detail = await loadTrip(currentUser.id, trip.id);
+        setCompleteChecked(allChecked(detail.stops));
+        setConfirmAction({ kind: 'complete', trip, stops: detail.stops });
+      } catch (caught: unknown) {
+        handleActionError(caught instanceof Error ? caught.message : 'UNKNOWN_ERROR');
+      } finally {
+        setBusyKey(null);
+      }
       return;
     }
     if (action === 'leave') {
@@ -194,7 +207,7 @@ export function MyTripsPage({ currentUser }: Props) {
     const { trip } = confirmAction;
     setBusyKey(`complete-${trip.id}`);
     try {
-      await completeTrip(currentUser.id, trip.id);
+      await completeTrip(currentUser.id, trip.id, completeChecked);
       message.success(tripMessages.detailEndedToast);
       setConfirmAction(null);
       await reload(true);
@@ -530,6 +543,13 @@ export function MyTripsPage({ currentUser }: Props) {
         onCancel={() => setConfirmAction(null)}
       >
         <Typography.Paragraph>{tripMessages.detailCompleteHint}</Typography.Paragraph>
+        {confirmAction !== null && (
+          <StopCompletionPicker
+            stops={confirmAction.stops}
+            checked={completeChecked}
+            onChange={setCompleteChecked}
+          />
+        )}
       </Modal>
 
       <TripLeaveModal

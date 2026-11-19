@@ -30,6 +30,7 @@ import routeme.pojo.PageResult;
 import routeme.pojo.TripMeetingRules;
 import routeme.pojo.TripPlan;
 import routeme.pojo.TripPlanDraft;
+import routeme.pojo.TripRouteCompletion;
 import routeme.entity.TripPlanEntity;
 import routeme.request.TripCreateRequest;
 import routeme.request.TripCancelRequest;
@@ -44,6 +45,7 @@ import routeme.service.AccountStatusService;
 import routeme.service.StudentVerificationService;
 import routeme.service.TripCompletedEvent;
 import routeme.service.TripPlanService;
+import routeme.service.TripRouteCompletionService;
 import routeme.service.TripRouteUpdatedEvent;
 
 /**
@@ -63,6 +65,7 @@ public class TripPlanServiceImpl extends AbstractServiceImpl<TripPlanMapper, Tri
     private final ApplicationEventPublisher events;
     private final AccountStatusService accountStatusService;
     private final StudentVerificationService studentVerificationService;
+    private final TripRouteCompletionService tripRouteCompletionService;
 
     public TripPlanServiceImpl(
             DemoUserService demoUserService,
@@ -71,7 +74,8 @@ public class TripPlanServiceImpl extends AbstractServiceImpl<TripPlanMapper, Tri
             Clock clock,
             ApplicationEventPublisher events,
             AccountStatusService accountStatusService,
-            StudentVerificationService studentVerificationService) {
+            StudentVerificationService studentVerificationService,
+            TripRouteCompletionService tripRouteCompletionService) {
         this.demoUserService = demoUserService;
         this.aiItineraryService = aiItineraryService;
         this.creditRestrictionGuard = creditRestrictionGuard;
@@ -79,6 +83,7 @@ public class TripPlanServiceImpl extends AbstractServiceImpl<TripPlanMapper, Tri
         this.events = events;
         this.accountStatusService = accountStatusService;
         this.studentVerificationService = studentVerificationService;
+        this.tripRouteCompletionService = tripRouteCompletionService;
     }
 
     @Override
@@ -273,6 +278,12 @@ public class TripPlanServiceImpl extends AbstractServiceImpl<TripPlanMapper, Tri
     @Override
     @Transactional
     public TripPlan complete(long tripId, long userId) {
+        return complete(tripId, userId, null);
+    }
+
+    @Override
+    @Transactional
+    public TripPlan complete(long tripId, long userId, List<Integer> completedStopIndexes) {
         creditRestrictionGuard.requireNotRestricted(userId);
         TripPlan trip = requireCurrent(tripId);
         if (trip.publisherId() != userId) {
@@ -282,6 +293,8 @@ public class TripPlanServiceImpl extends AbstractServiceImpl<TripPlanMapper, Tri
         if (trip.status(now) != TripStatusEnum.ONGOING) {
             throw new TripNotOpenException(tripId);
         }
+        // 先校验完成点下标，非法输入不得写 completed_at。
+        List<Integer> indexes = TripRouteCompletion.cleanIndexes(completedStopIndexes, trip.stops().size());
         boolean updated = lambdaUpdate()
                 .eq(TripPlanEntity::getId, tripId)
                 .isNull(TripPlanEntity::getCompletedAt)
@@ -290,6 +303,7 @@ public class TripPlanServiceImpl extends AbstractServiceImpl<TripPlanMapper, Tri
                 .set(TripPlanEntity::getUpdatedAt, now.toString())
                 .update();
         if (updated) {
+            tripRouteCompletionService.record(tripId, userId, indexes, trip.stops().size());
             events.publishEvent(new TripCompletedEvent(tripId, now));
         }
         return require(tripId);

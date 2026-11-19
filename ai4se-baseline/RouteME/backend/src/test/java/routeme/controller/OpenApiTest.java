@@ -25,7 +25,7 @@ class OpenApiTest {
 
     // Single source for version assertions: bump openapi.yaml info.version and this
     // constant together (one edit point instead of five scattered literals).
-    private static final String CONTRACT_VERSION = "0.33.0";
+    private static final String CONTRACT_VERSION = "0.34.0";
 
     private static final List<String> HTTP_METHODS = List.of("get", "post", "put", "patch", "delete");
 
@@ -203,6 +203,12 @@ class OpenApiTest {
                 () -> assertTrue(responses(postTrips).containsKey("400"), "create returns 400"),
                 () -> assertTrue(responses(completeTrip).containsKey("403"), "complete returns 403"),
                 () -> assertTrue(responses(completeTrip).containsKey("409"), "complete returns 409"),
+                () -> assertTrue(responses(completeTrip).containsKey("400"), "complete returns 400 for illegal indexes"),
+                () -> assertEquals(Boolean.FALSE, asMap(completeTrip.get("requestBody")).get("required"),
+                        "complete body is optional"),
+                () -> assertTrue(
+                        properties(schema(document, "TripCompleteRequest")).containsKey("completed_stop_indexes"),
+                        "TripCompleteRequest declares completed_stop_indexes"),
                 () -> assertTrue(
                         required(createRequest)
                                 .containsAll(List.of("title", "destination_code", "start_date", "end_date", "stops", "capacity")),

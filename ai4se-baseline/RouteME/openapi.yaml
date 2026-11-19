@@ -1,7 +1,7 @@
 openapi: 3.0.3
 info:
   title: RouteME API
-  version: 0.33.0
+  version: 0.34.0
   description: |
     RouteME 后端对外契约。本文件是前后端唯一事实源，字段名、类型、状态码与错误码只在这里定稿。
         当前包含：脚手架问候语、演示账户与账号认证（注册/登录/会话/退出）、旅行计划（浏览/筛选/发布/详情/结束），同行匹配、申请、退出、聊天、我的旅行与举报，游后体验分享与参考发布所需数据，管理后台（用户管理 / 举报处置 / 人工客服）与用户侧帮助入口，AI 智能行程推荐（生成/快照保存与读取，天气复用目的地天气接口），以及目的地天气提醒与信用分账户、安全学习恢复信用分的考试会话与判分，旅行保障（演示钱包 / 保险 / 借款 / 还款），学信网学籍认证（演示核验）与核心动作门槛。
@@ -818,7 +818,10 @@ paths:
     post:
       operationId: completeTrip
       summary: 结束行程
-      description: 仅行程发布者且行程为 ongoing（旅行中）时可调用。手动结束后 completed_at 写入，待处理申请自动取消，行程不再出现在默认列表；COMPLETED 为终态。
+      description: |
+        仅行程发布者且行程为 ongoing（旅行中）时可调用。手动结束后 completed_at 写入，待处理申请自动取消，行程不再出现在默认列表；COMPLETED 为终态。
+        可选 body 声明实际完成的途经点下标，同事务落库完成度声明（每行程每用户一条，结束后不可修改）；
+        缺省 body 或字段视为全部完成。个人主页路线完成度按途经点加权聚合这些声明。
       parameters:
         - $ref: '#/components/parameters/DemoUserId'
         - name: tripId
@@ -827,6 +830,12 @@ paths:
           schema:
             type: integer
             format: int64
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TripCompleteRequest'
       responses:
         '200':
           description: 已结束的行程详情
@@ -834,6 +843,16 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/TripDetail'
+        '400':
+          description: 完成点下标非法（负数、越界、重复、空值）
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                invalidIndexes:
+                  value:
+                    code: INVALID_INPUT
         '401':
           description: 缺少或未知的演示身份
           content:
@@ -4632,6 +4651,16 @@ components:
           items:
             type: string
           description: 更新后的完整途经点列表，整体替换；去空白去重后至少 2 个，与发布同口径
+    TripCompleteRequest:
+      type: object
+      properties:
+        completed_stop_indexes:
+          type: array
+          nullable: true
+          items:
+            type: integer
+            minimum: 0
+          description: 实际完成的途经点下标（0 起）；缺省或 null 视为全部完成；负数、越界、重复、空值返回 400
     TripCancelRequest:
       type: object
       required: [reason]

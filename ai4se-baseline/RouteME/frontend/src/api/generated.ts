@@ -346,6 +346,8 @@ export interface paths {
         /**
          * 结束行程
          * @description 仅行程发布者且行程为 ongoing（旅行中）时可调用。手动结束后 completed_at 写入，待处理申请自动取消，行程不再出现在默认列表；COMPLETED 为终态。
+         *     可选 body 声明实际完成的途经点下标，同事务落库完成度声明（每行程每用户一条，结束后不可修改）；
+         *     缺省 body 或字段视为全部完成。个人主页路线完成度按途经点加权聚合这些声明。
          */
         post: operations["completeTrip"];
         delete?: never;
@@ -1869,6 +1871,16 @@ export interface components {
             /** Format: int64 */
             readonly id: number;
             title: string;
+            /**
+             * @description 出发城市展示名（由字典生成）；未填写时为 null
+             * @example 广州市
+             */
+            departure?: string | null;
+            /**
+             * @description 出发地 6 位行政区划代码（二级，选填）
+             * @example 440100
+             */
+            departure_code?: string | null;
             /** @description 目的地标准名称（直辖市为省级名，港澳台为“省级简称 · 二级名”） */
             destination: string;
             /**
@@ -1978,6 +1990,11 @@ export interface components {
         };
         TripCreateRequest: {
             title: string;
+            /**
+             * @description 出发地 6 位行政区划代码（二级，选填）；名称由后端按字典生成
+             * @example 440100
+             */
+            departure_code?: string | null;
             /** @description 目的地 6 位行政区划代码（二级，必须选到市，含港澳台）；名称由后端按字典生成 */
             destination_code: string;
             /** Format: date */
@@ -2020,6 +2037,10 @@ export interface components {
         TripStopsRequest: {
             /** @description 更新后的完整途经点列表，整体替换；去空白去重后至少 2 个，与发布同口径 */
             stops: string[];
+        };
+        TripCompleteRequest: {
+            /** @description 实际完成的途经点下标（0 起）；缺省或 null 视为全部完成；负数、越界、重复、空值返回 400 */
+            completed_stop_indexes?: number[] | null;
         };
         TripCancelRequest: {
             /**
@@ -2215,6 +2236,11 @@ export interface components {
             /** @description 最后一条群消息；无消息时为 null */
             last_message?: components["schemas"]["GroupMessage"] | null;
             message_count: number;
+            /**
+             * @description 当前用户是否已退出该行程：退出后仍可回看历史消息，但不能继续发送，
+             *     发送返回 403 `CHAT_LEFT`。
+             */
+            readonly left: boolean;
         };
         MyTrips: {
             published: components["schemas"]["TripPlan"][];
@@ -3187,7 +3213,7 @@ export interface components {
              * @description 大写下划线错误码，前端按原值判断
              * @enum {string}
              */
-            code: "GREETING_NOT_FOUND" | "INVALID_INPUT" | "DEMO_USER_REQUIRED" | "FORBIDDEN" | "USER_NOT_FOUND" | "TRIP_NOT_FOUND" | "TRIP_NOT_OPEN" | "APPLICATION_NOT_FOUND" | "APPLICATION_NOT_PENDING" | "DUPLICATE_APPLICATION" | "CHAT_NOT_ALLOWED" | "CHAT_READ_ONLY" | "EXPERIENCE_NOT_ALLOWED" | "EXPERIENCE_NOT_FOUND" | "USERNAME_TAKEN" | "INVALID_CREDENTIALS" | "SESSION_INVALID" | "WEATHER_UPSTREAM_ERROR" | "AI_NOT_CONFIGURED" | "AI_UPSTREAM_ERROR" | "AI_INVALID_OUTPUT" | "INTERNAL_ERROR" | "ADMIN_REQUIRED" | "ACCOUNT_SUSPENDED" | "ACCOUNT_BANNED" | "INVALID_STATUS_TRANSITION" | "CANNOT_TARGET_SELF" | "REPORT_NOT_FOUND" | "REPORT_NOT_PENDING" | "REPORT_NOT_PROCESSING" | "EMAIL_TAKEN" | "SESSION_ALREADY_HANDLING" | "SESSION_NOT_HANDLING" | "SESSION_CLOSED" | "CREDIT_RESTRICTED" | "LEARNING_NOT_ELIGIBLE" | "LEARNING_EXAM_QUOTA_EXCEEDED" | "LEARNING_RECOVERY_QUOTA_EXCEEDED" | "LEARNING_NOT_COMPLETED" | "LEARNING_SESSION_NOT_FOUND" | "LEAVE_RECORD_NOT_FOUND" | "NOTIFICATION_NOT_FOUND" | "INSUFFICIENT_BALANCE" | "ACTIVE_LOAN_EXISTS" | "LOAN_NOT_ACTIVE" | "STUDENT_VERIFICATION_REQUIRED";
+            code: "GREETING_NOT_FOUND" | "INVALID_INPUT" | "DEMO_USER_REQUIRED" | "FORBIDDEN" | "USER_NOT_FOUND" | "TRIP_NOT_FOUND" | "TRIP_NOT_OPEN" | "APPLICATION_NOT_FOUND" | "APPLICATION_NOT_PENDING" | "DUPLICATE_APPLICATION" | "CHAT_NOT_ALLOWED" | "CHAT_READ_ONLY" | "CHAT_LEFT" | "EXPERIENCE_NOT_ALLOWED" | "EXPERIENCE_NOT_FOUND" | "USERNAME_TAKEN" | "INVALID_CREDENTIALS" | "SESSION_INVALID" | "WEATHER_UPSTREAM_ERROR" | "AI_NOT_CONFIGURED" | "AI_UPSTREAM_ERROR" | "AI_INVALID_OUTPUT" | "INTERNAL_ERROR" | "ADMIN_REQUIRED" | "ACCOUNT_SUSPENDED" | "ACCOUNT_BANNED" | "INVALID_STATUS_TRANSITION" | "CANNOT_TARGET_SELF" | "REPORT_NOT_FOUND" | "REPORT_NOT_PENDING" | "REPORT_NOT_PROCESSING" | "EMAIL_TAKEN" | "SESSION_ALREADY_HANDLING" | "SESSION_NOT_HANDLING" | "SESSION_CLOSED" | "CREDIT_RESTRICTED" | "LEARNING_NOT_ELIGIBLE" | "LEARNING_EXAM_QUOTA_EXCEEDED" | "LEARNING_RECOVERY_QUOTA_EXCEEDED" | "LEARNING_NOT_COMPLETED" | "LEARNING_SESSION_NOT_FOUND" | "LEAVE_RECORD_NOT_FOUND" | "NOTIFICATION_NOT_FOUND" | "INSUFFICIENT_BALANCE" | "ACTIVE_LOAN_EXISTS" | "LOAN_NOT_ACTIVE" | "STUDENT_VERIFICATION_REQUIRED";
             /**
              * @description 仅资料校验与学信网认证校验失败（400 `INVALID_INPUT`）时出现：字段名 → 原因码。
              *     其他错误不携带该键。
@@ -4195,7 +4221,11 @@ export interface operations {
             };
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["TripCompleteRequest"];
+            };
+        };
         responses: {
             /** @description 已结束的行程详情 */
             200: {
@@ -4204,6 +4234,15 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["TripDetail"];
+                };
+            };
+            /** @description 完成点下标非法（负数、越界、重复、空值） */
+            400: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["Error"];
                 };
             };
             /** @description 缺少或未知的演示身份 */

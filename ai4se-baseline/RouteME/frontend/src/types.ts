@@ -247,6 +247,11 @@ export type TripCancelRequest = {
   note?: string | null;
 };
 
+/** 结束行程声明：实际完成的途经点下标（0 起）；缺省视为全部完成，结束后不可修改。 */
+export type TripCompleteRequest = {
+  completed_stop_indexes?: number[] | null;
+};
+
 /** 退出同行的原因。 */
 export type LeaveReason = 'personal' | 'force_majeure' | 'safety';
 

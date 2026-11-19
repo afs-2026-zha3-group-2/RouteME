@@ -109,13 +109,24 @@ public interface TripPlanService extends IService<TripPlanEntity> {
      */
     void cancelUnfinishedByPublisher(long publisherId, java.time.Instant now);
 
-    /** 发布者把自己的行程标记为已结束（写 completed_at）。
+    /** 发布者把自己的行程标记为已结束（写 completed_at），视为全部途经点完成。
      *
      * @param tripId 行程 id
      * @param userId 当前身份 id，必须等于发布者
      * @return 结束后的行程（状态 completed）
      */
     TripPlan complete(long tripId, long userId);
+
+    /**
+     * 发布者结束行程并声明实际完成的途经点，同事务落库完成度声明。
+     *
+     * @param tripId               行程 id
+     * @param userId               当前身份 id，必须等于发布者
+     * @param completedStopIndexes 实际完成的途经点下标；null 视为全部完成；
+     *                             负数、越界、重复、空值一律 INVALID_INPUT
+     * @return 结束后的行程（状态 completed）
+     */
+    TripPlan complete(long tripId, long userId, List<Integer> completedStopIndexes);
 
     /**
      * 发布者维护集合区域与集合时间：只改这两个字段，招募中与已满员可用。

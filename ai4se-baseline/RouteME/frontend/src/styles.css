@@ -14280,3 +14280,37 @@ a.admin-metric-card:focus-visible {
     gap: 6px;
   }
 }
+
+/* 结束行程弹窗：实际完成途经点勾选 */
+.stop-completion {
+  display: grid;
+  gap: 8px;
+  padding: 12px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--surface);
+}
+
+.stop-completion-label {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.stop-completion-list {
+  display: grid;
+  gap: 6px;
+}
+
+.stop-completion-list .ant-checkbox-wrapper {
+  color: var(--ink-2);
+  font-size: 13px;
+}
+
+.stop-completion .hint {
+  margin: 0;
+  font-size: 11.5px;
+  line-height: 1.5;
+  color: var(--ink-3);
+}

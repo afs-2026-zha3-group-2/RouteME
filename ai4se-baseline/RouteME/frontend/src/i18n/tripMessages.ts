@@ -188,6 +188,8 @@ routeSectionHint: '在地图上添加并排序途经点，实时查看路线与�
   applyEntryOwn: '这是你发布的行程',
   detailCompleteTrip: '结束行程',
   detailCompleteHint: '结束后不可恢复；同行申请将关闭，待处理申请会自动取消。',
+  completeStopsLabel: '实际完成的途经点',
+  completeStopsHint: '勾选实际走完的途经点，计入你的路线完成度；结束后不可修改。',
   detailEndingSoon: '行程即将结束',
   mineCompleteTrip: '结束行程',
   applicationsClosed: '行程已结束，申请处理已关闭',

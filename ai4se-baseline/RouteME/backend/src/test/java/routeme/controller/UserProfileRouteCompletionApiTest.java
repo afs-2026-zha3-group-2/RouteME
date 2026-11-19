@@ -32,8 +32,9 @@ import tools.jackson.databind.ObjectMapper;
 import routeme.config.FixedClockTestConfig;
 
 /**
- * 路线完成度的只读契约：数据不足恒为 {@code insufficient} 且省略数值，
- * 与信用分、资料统计完全独立；没有任何写入入口。
+ * 路线完成度的只读契约：无声明记录时恒为 {@code insufficient} 且省略数值，
+ * 与信用分、资料统计完全独立；唯一写入入口是结束行程（见 TripRouteCompletionApiTest），
+ * 资料保存不得伪造完成度。
  */
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -63,7 +64,7 @@ class UserProfileRouteCompletionApiTest {
                 .andExpect(jsonPath("$.route_completion_rate").doesNotExist());
     }
 
-    /** 演示用户与「已有已结束行程」的种子用户：本期一律数据不足，不伪造百分比。 */
+    /** 演示用户与「已有已结束行程」的种子用户：无声明记录一律数据不足，不伪造百分比。 */
     @Test
     void in_seededUsersWithCompletedTrips_out_stillInsufficient() throws Exception {
         for (long userId : new long[] {1L, 2L, 4L}) {

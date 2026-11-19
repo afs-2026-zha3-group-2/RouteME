@@ -19,6 +19,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import routeme.request.TripCreateRequest;
 import routeme.request.TripCancelRequest;
+import routeme.request.TripCompleteRequest;
 import routeme.request.TripMeetingRequest;
 import routeme.request.TripStopsRequest;
 import routeme.response.PageResponse;
@@ -122,9 +123,11 @@ public class TripController {
     @PostMapping("/{tripId}/complete")
     public TripDetailResponse complete(
             @RequestHeader(value = "X-User-Id", required = false) Long userId,
-            @PathVariable long tripId) {
+            @PathVariable long tripId,
+            @RequestBody(required = false) TripCompleteRequest request) {
         DemoUser publisher = demoUserService.require(userId);
-        TripPlan completed = tripPlanService.complete(tripId, publisher.id());
+        TripPlan completed = tripPlanService.complete(
+                tripId, publisher.id(), request == null ? null : request.completedStopIndexes());
         return TripDetailResponse.from(
                 completed, publisher, applicationService.participants(tripId), clock.instant(), true,
                 groupChatService.isOpen(tripId));

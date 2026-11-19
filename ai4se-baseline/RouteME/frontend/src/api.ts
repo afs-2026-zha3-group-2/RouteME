@@ -50,6 +50,7 @@ LoanCreateRequest,
   TravelLoan,
   TripApplication,
   TripCancelRequest,
+  TripCompleteRequest,
   TripCreateRequest,
   TripDetail,
   TripFilters,
@@ -265,8 +266,18 @@ export async function createTrip(userId: number, body: TripCreateRequest): Promi
   return (await response.json()) as TripDetail;
 }
 
-export async function completeTrip(userId: number, tripId: number): Promise<TripDetail> {
-  const response = await request(`/trips/${tripId}/complete`, { method: 'POST' }, userId);
+export async function completeTrip(
+  userId: number,
+  tripId: number,
+  completedStopIndexes?: number[],
+): Promise<TripDetail> {
+  const init: RequestInit = { method: 'POST' };
+  if (completedStopIndexes !== undefined) {
+    const body: TripCompleteRequest = { completed_stop_indexes: completedStopIndexes };
+    init.headers = { 'Content-Type': 'application/json' };
+    init.body = JSON.stringify(body);
+  }
+  const response = await request(`/trips/${tripId}/complete`, init, userId);
   return (await response.json()) as TripDetail;
 }
 

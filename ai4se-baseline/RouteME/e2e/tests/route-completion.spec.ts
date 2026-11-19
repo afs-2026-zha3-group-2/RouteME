@@ -54,14 +54,18 @@ async function useAccount(page: Page, account: Account): Promise<void> {
 /** 只改写完成度两字段，其余资料透传真实响应，避免夹具漂移。 */
 async function stubCompletion(page: Page, state: string, rate: number | null): Promise<void> {
   await page.route('**/api/users/*/profile', async (route) => {
-    const response = await route.fetch();
-    const payload = (await response.json()) as Record<string, unknown>;
-    delete payload.route_completion_rate;
-    payload.route_completion_state = state;
-    if (rate !== null) {
-      payload.route_completion_rate = rate;
+    try {
+      const response = await route.fetch();
+      const payload = (await response.json()) as Record<string, unknown>;
+      delete payload.route_completion_rate;
+      payload.route_completion_state = state;
+      if (rate !== null) {
+        payload.route_completion_rate = rate;
+      }
+      await route.fulfill({ response, json: payload });
+    } catch {
+      // 测试收尾时仍在途的 profile 请求：忽略竞态；真实失败仍由页面断言暴露。
     }
-    await route.fulfill({ response, json: payload });
   });
 }
 
@@ -188,4 +192,56 @@ test('keeps the completion row off the home list, cards, modal and trip detail',
   await page.goto(`/#/trips/${tripId}`);
   await expect(page.locator('#main-content')).toBeVisible();
   await expect(page.locator('#main-content')).not.toContainText('路线完成度');
+});
+
+test('publisher declares completed stops and the profile aggregates real rates', async ({ page }) => {
+  const account = await registerViaApi(page);
+  await completeProfileViaApi(page, account);
+  await useAccount(page, account);
+
+  const today = new Date().toISOString().slice(0, 10);
+  const createOngoingTrip = async (title: string): Promise<number> => {
+    const response = await page.request.post(`${API}/trips`, {
+      headers: { 'X-User-Id': String(account.id) },
+      data: {
+        title,
+        destination_code: '440400',
+        start_date: today,
+        end_date: today,
+        stops: ['香洲港集合', '情侣路骑行'],
+        capacity: 3,
+      },
+    });
+    expect(response.status()).toBe(201);
+    return ((await response.json()) as { id: number }).id;
+  };
+  const endTrip = async (tripId: number, uncheckStop?: string): Promise<void> => {
+    await page.goto(`/#/trips/${tripId}`);
+    await page.getByRole('button', { name: '结束行程' }).click();
+    const modal = page.locator('.ant-modal', { hasText: '实际完成的途经点' });
+    await expect(modal).toBeVisible();
+    await expect(modal.locator('.ant-checkbox-wrapper')).toHaveCount(2);
+    // 默认全选；可选取消某个途经点。
+    await expect(modal.locator('.ant-checkbox-checked')).toHaveCount(2);
+    if (uncheckStop !== undefined) {
+      await modal.locator('.ant-checkbox-wrapper', { hasText: uncheckStop }).click();
+    }
+    await modal.locator('.ant-modal-footer button', { hasText: '结束行程' }).click();
+    await expect(modal).toBeHidden();
+  };
+
+  // 第一程只完成 1/2 → 50% watch。
+  const first = await createOngoingTrip(`完成度闭环一 ${uniqueSuffix()}`);
+  await endTrip(first, '情侣路骑行');
+  await openProfile(page, account.id);
+  const row = page.locator('.profile-completion');
+  await expect(row).toHaveText('路线完成度 50% · 请留意行程完成情况');
+  await expect(row).toHaveClass(/is-watch/);
+
+  // 第二程全部完成 → (1+2)/(2+2) = 75% neutral。
+  const second = await createOngoingTrip(`完成度闭环二 ${uniqueSuffix()}`);
+  await endTrip(second);
+  await openProfile(page, account.id);
+  await expect(row).toHaveText('路线完成度 75%');
+  await expect(row).toHaveClass(/is-fair/);
 });

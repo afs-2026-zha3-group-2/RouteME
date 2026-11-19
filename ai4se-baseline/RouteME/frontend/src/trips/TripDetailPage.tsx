@@ -68,6 +68,8 @@ import {
 } from './meetingForm';
 import { TRIP_TRAVEL_MODE_LABELS } from './tripOptions';
 import { statusColor, statusLabel } from './tripStatus';
+import { StopCompletionPicker } from './StopCompletionPicker';
+import { allChecked } from './stopCompletion';
 import { TripCancelModal } from './TripCancelModal';
 import { TripLeaveModal } from './TripLeaveModal';
 import { TripRouteModal } from './TripRouteModal';
@@ -159,6 +161,7 @@ export function TripDetailPage({ currentUser, tripId }: Props) {
   const [cancelling, setCancelling] = useState(false);
   const [leaveOpen, setLeaveOpen] = useState(false);
   const [confirmAction, setConfirmAction] = useState<'complete' | 'cancelApply' | null>(null);
+  const [completeChecked, setCompleteChecked] = useState<number[]>([]);
   const [reportOpen, setReportOpen] = useState(false);
   const [experiences, setExperiences] = useState<Experience[] | null>(null);
   const [insurance, setInsurance] = useState<InsuranceSummary | null>(null);
@@ -277,7 +280,7 @@ export function TripDetailPage({ currentUser, tripId }: Props) {
     setCompleting(true);
     setFeedback(null);
     try {
-      await completeTrip(currentUser.id, tripId);
+      await completeTrip(currentUser.id, tripId, completeChecked);
       reload();
     } catch (error: unknown) {
       const code = error instanceof Error ? error.message : 'UNKNOWN_ERROR';
@@ -969,7 +972,10 @@ export function TripDetailPage({ currentUser, tripId }: Props) {
                 <Button
                   loading={completing}
                   disabled={restricted}
-                  onClick={() => setConfirmAction('complete')}
+                  onClick={() => {
+                    setCompleteChecked(allChecked(trip.stops));
+                    setConfirmAction('complete');
+                  }}
                 >
                   {tripMessages.detailCompleteTrip}
                 </Button>
@@ -1002,6 +1008,13 @@ export function TripDetailPage({ currentUser, tripId }: Props) {
         onCancel={() => setConfirmAction(null)}
       >
         <Typography.Paragraph>{confirmHint}</Typography.Paragraph>
+        {confirmAction === 'complete' && (
+          <StopCompletionPicker
+            stops={trip.stops}
+            checked={completeChecked}
+            onChange={setCompleteChecked}
+          />
+        )}
       </Modal>
       <Modal
         open={meetingOpen}
