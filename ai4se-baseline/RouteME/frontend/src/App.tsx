@@ -196,7 +196,6 @@ export function App() {
 <NotificationProvider currentUser={currentUser}>
             <AppShell
               currentUser={currentUser}
-              isAuthenticated={authToken !== null}
               onLogout={logout}
               route={route}
             >
