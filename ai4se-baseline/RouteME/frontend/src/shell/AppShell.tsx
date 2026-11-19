@@ -200,7 +200,6 @@ function NavIcon({ name }: { name: NavKey }) {
 
 type Props = {
   currentUser: DemoUser;
-  isAuthenticated: boolean;
   onLogout: () => void;
   route: Route;
   children: ReactNode;
@@ -208,7 +207,6 @@ type Props = {
 
 export function AppShell({
   currentUser,
-  isAuthenticated,
   onLogout,
   route,
   children,
@@ -576,18 +574,14 @@ export function AppShell({
                   <a
                     className="rail-menu-item"
                     role="menuitem"
-                    href="#/profile/setup"
+                    href={`#/users/${currentUser.id}`}
                     onClick={() => setAccountOpen(false)}
                   >
                     <svg viewBox="0 0 20 20" aria-hidden="true" fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M13.4 3.6a1.6 1.6 0 0 1 2.3 0l.7.7a1.6 1.6 0 0 1 0 2.3l-8 8-3.4.7.7-3.4z" />
-                      <path d="M11.6 5.4 14 7.8" />
+                      <path d="M2 10s2.8-4.8 8-4.8 8 4.8 8 4.8-2.8 4.8-8 4.8S2 10 2 10z" />
+                      <circle cx="10" cy="10" r="2.2" />
                     </svg>
-                    <span>
-                      {isAuthenticated
-                        ? tripMessages.accountMenuEditProfile
-                        : tripMessages.accountMenuViewProfile}
-                    </span>
+                    <span>{tripMessages.accountMenuViewProfile}</span>
                   </a>
                 )}
                 <a

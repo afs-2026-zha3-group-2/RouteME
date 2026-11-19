@@ -465,7 +465,6 @@ routeSectionHint: '在地图上添加并排序途经点，实时查看路线与�
   authRegisterSubmit: '注册并进入',
   authLoggedIn: '已登录',
   authLogout: '退出登录',
-  accountMenuEditProfile: '编辑我的资料',
   accountMenuViewProfile: '查看我的资料',
   authLogoutWarning: '已退出本机，会话可能仍有效',
   authFailed: '操作失败',
