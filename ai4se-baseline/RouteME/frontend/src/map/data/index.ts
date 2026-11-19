@@ -432,11 +432,21 @@ const DEMO_PLACES: Array<Omit<Place, 'kind'>> = [
   { id: '珠海-海滨泳场', name: '海滨泳场', city: '珠海', lat: 22.2572, lng: 113.586, aliases: ['海滨泳场沙滩'] },
   { id: '珠海-野狸岛', name: '野狸岛', city: '珠海', lat: 22.2812, lng: 113.5841, aliases: ['名亭公园'] },
   { id: '珠海-情侣北路', name: '情侣北路', city: '珠海', lat: 22.31, lng: 113.585, aliases: [] },
+  { id: '珠海-湾仔海鲜街', name: '湾仔海鲜街', city: '珠海', lat: 22.2218, lng: 113.5306, aliases: ['湾仔海鲜市场'] },
+  // 清远英西峰林（行程 2）。
+  { id: '清远-英德西站', name: '英德西站', city: '清远', lat: 24.1348, lng: 113.3714, aliases: ['英德西'] },
+  { id: '清远-英西峰林', name: '英西峰林', city: '清远', lat: 24.035, lng: 112.985, aliases: ['峰林走廊', '英西峰林走廊'] },
+  { id: '清远-英西峰林营地', name: '英西峰林营地', city: '清远', lat: 24.018, lng: 112.996, aliases: [] },
+  { id: '清远-峰林日出观景台', name: '峰林日出观景台', city: '清远', lat: 24.006, lng: 113.008, aliases: [] },
   // 广州老城（行程 4）。
   { id: '广州-上下九步行街', name: '上下九步行街', city: '广州', lat: 23.1177, lng: 113.2427, aliases: ['上下九'] },
   { id: '广州-宝华面店', name: '宝华面店', city: '广州', lat: 23.1181, lng: 113.2465, aliases: [] },
   // 佛山禅城（行程 6）。
   { id: '佛山-梁园', name: '梁园', city: '佛山', lat: 23.0406, lng: 113.1076, aliases: ['佛山梁园'] },
+  // 上海梧桐区（行程 7）。
+  { id: '上海-武康大楼', name: '武康大楼', city: '上海', lat: 31.2029, lng: 121.4374, aliases: ['武康大厦'] },
+  { id: '上海-安福路', name: '安福路', city: '上海', lat: 31.2166, lng: 121.4444, aliases: [] },
+  { id: '上海-五原路', name: '五原路', city: '上海', lat: 31.2116, lng: 121.4436, aliases: [] },
 ];
 
 PLACES.push(...DEMO_PLACES.map((place) => ({ ...place, kind: 'poi' as const })));
