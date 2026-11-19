@@ -68,12 +68,9 @@ jobs:
           cd ai4se-baseline/RouteME/frontend
           zip -qr "$GITHUB_WORKSPACE/dist-out/routeme-frontend-dist.zip" dist
 
-      - name: Upload artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: routeme-${{ github.event.workflow_run.head_sha || github.sha }}
-          if-no-files-found: error
-          path: dist-out/*
+      # 不上传 Actions artifact：Release 附件（下方 gh release create）已包含同样的 jar 与 zip，
+      # 且 Release 附件不计入 Actions 存储配额；每次 run 都传 ~90MB artifact 会把免费额度（500MB）
+      # 在几天内耗尽，随后所有 CD 都会在 Upload artifacts 步骤失败（quota has been hit）。
 
       - name: Publish GitHub release
         env:
