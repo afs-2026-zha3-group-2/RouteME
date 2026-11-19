@@ -26,6 +26,8 @@ export function ApplicationsPage({ currentUser, tripId }: Props) {
   const applicantIds = applications?.map((application) => application.applicant.id) ?? [];
   const credits = useUserCredits(applicantIds, currentUser.id);
   const growth = useGrowthLevels(applicantIds, currentUser.id);
+  // 终态行程只读：与后端 decide 的 TRIP_NOT_OPEN 口径一致，隐藏接受 / 拒绝。
+  const closed = trip !== null && (trip.status === 'completed' || trip.status === 'cancelled');
 
   const reload = useCallback(() => {
     setError(null);
@@ -113,6 +115,9 @@ export function ApplicationsPage({ currentUser, tripId }: Props) {
             {trip?.status === 'completed' && (
               <Alert type="info" showIcon title={tripMessages.applicationsClosed} />
             )}
+            {trip?.status === 'cancelled' && (
+              <Alert type="info" showIcon title={tripMessages.applicationsClosedCancelled} />
+            )}
 
             {restricted && <CreditRestrictedNotice />}
 
@@ -159,7 +164,7 @@ export function ApplicationsPage({ currentUser, tripId }: Props) {
                       <Typography.Text className="application-message">
                         {application.message ?? tripMessages.applicationsNoMessage}
                       </Typography.Text>
-                      {application.status === 'pending' && trip?.status !== 'completed' && (
+                      {application.status === 'pending' && !closed && (
                         <Space size="small">
                           <Button
                             type="primary"

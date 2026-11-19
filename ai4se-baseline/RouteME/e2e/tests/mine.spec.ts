@@ -160,6 +160,31 @@ test('opens the experience form for a completed trip', async ({ page }) => {
   await expect(page).toHaveURL(new RegExp(`#/share/${trip.id}$`));
 });
 
+test('completed trips stay read-only without application handling', async ({ page }) => {
+  const title = `E2E 结束只读 ${Date.now()}`;
+  const trip = await createTripViaApi(page, 2, title);
+  await applyViaApi(page, 1, trip.id, '想一起走。');
+  await completeViaApi(page, 2, trip.id);
+
+  await loginAs(page, 2);
+  await page.goto('/#/mine');
+  const row = page.locator('.mine-row', { hasText: title });
+  await expect(row.locator('[data-status="completed"]')).toContainText('已结束');
+  await expect(row.getByRole('button', { name: /查\s*看/ })).toBeVisible();
+  await expect(row.getByRole('button', { name: /处理申请/ })).toHaveCount(0);
+
+  // 详情页发布者操作区不再有申请入口。
+  await page.goto(`/#/trips/${trip.id}`);
+  await expect(page.getByRole('button', { name: '查看同行的申请' })).toHaveCount(0);
+
+  // 直链申请页：只读名单 + 关闭提示，无接受 / 拒绝。
+  await page.goto(`/#/trips/${trip.id}/applications`);
+  await expect(page.getByText('行程已结束，申请处理已关闭')).toBeVisible();
+  await expect(page.locator('.application-list li', { hasText: '想一起走。' })).toBeVisible();
+  await expect(page.getByRole('button', { name: /^接\s*受$/ })).toHaveCount(0);
+  await expect(page.getByRole('button', { name: /^拒\s*绝$/ })).toHaveCount(0);
+});
+
 test('refreshes the groups when the page becomes visible again', async ({ page }) => {
   const title = `E2E 重新可见 ${Date.now()}`;
   const trip = await createTripViaApi(page, 2, title);

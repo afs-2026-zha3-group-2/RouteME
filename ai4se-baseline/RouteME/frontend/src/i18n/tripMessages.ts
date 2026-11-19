@@ -191,6 +191,7 @@ routeSectionHint: '在地图上添加并排序途经点，实时查看路线与�
   detailEndingSoon: '行程即将结束',
   mineCompleteTrip: '结束行程',
   applicationsClosed: '行程已结束，申请处理已关闭',
+  applicationsClosedCancelled: '行程已取消，申请处理已关闭',
   detailCompleted: '这条行程已结束',
   detailCancelled: '这条行程已取消',
   detailCancelTrip: '取消行程',

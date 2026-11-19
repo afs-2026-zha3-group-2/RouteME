@@ -198,6 +198,7 @@ describe('actionsFor', () => {
       'complete',
     ]);
     expect(actionsFor({ group: 'published', trip: trip(1, { status: 'cancelled' }) })).toEqual(['view']);
+    expect(actionsFor({ group: 'published', trip: trip(1, { status: 'completed' }) })).toEqual(['view']);
   });
 
   it('offers cancel only for pending applications', () => {

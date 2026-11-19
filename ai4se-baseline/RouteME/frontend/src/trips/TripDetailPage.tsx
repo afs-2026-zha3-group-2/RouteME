@@ -974,7 +974,7 @@ export function TripDetailPage({ currentUser, tripId }: Props) {
                   {tripMessages.detailCompleteTrip}
                 </Button>
               )}
-              {!isCancelled && (
+              {!isCancelled && trip.status !== 'completed' && (
                 <Button onClick={() => (window.location.hash = `#/trips/${trip.id}/applications`)}>
                   {tripMessages.applicationsEntry}
                   {pendingCount > 0 ? `（${pendingCount}）` : ''}

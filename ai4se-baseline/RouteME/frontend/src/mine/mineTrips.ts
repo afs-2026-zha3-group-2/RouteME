@@ -129,7 +129,8 @@ export function dayLabel(iso: string): string {
 export function actionsFor(context: MineActionContext): MineAction[] {
   const { group, trip, application } = context;
   if (group === 'published') {
-    if (trip.status === 'cancelled') {
+    // 终态行程只读：与后端 decide 的 TRIP_NOT_OPEN 口径一致，不再提供处理申请入口。
+    if (trip.status === 'cancelled' || trip.status === 'completed') {
       return ['view'];
     }
     const actions: MineAction[] = ['view', 'applications'];
