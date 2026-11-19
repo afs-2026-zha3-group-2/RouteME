@@ -13339,6 +13339,61 @@ a.admin-metric-card:focus-visible {
   border-radius: 999px;
 }
 
+/* ---------- 首页体验卡：横向单条，左封面右正文 ---------- */
+.home-main .experience-grid {
+  grid-template-columns: minmax(0, 1fr);
+  gap: 14px;
+  margin-top: 14px;
+}
+
+.home-main .exp-card {
+  display: grid;
+  grid-template-columns: 220px minmax(0, 1fr);
+  grid-template-rows: auto auto auto 1fr;
+  grid-template-areas:
+    "cover head"
+    "cover quote"
+    "cover advice"
+    "cover foot";
+  column-gap: 18px;
+  row-gap: 10px;
+  padding: 16px 18px;
+}
+
+.home-main .exp-cover {
+  grid-area: cover;
+  height: 100%;
+  min-height: 208px;
+  padding: 12px 14px;
+}
+
+.home-main .exp-cover-dest {
+  font-size: 18px;
+  letter-spacing: 0.06em;
+}
+
+.home-main .exp-head {
+  grid-area: head;
+}
+
+.home-main .exp-quote {
+  grid-area: quote;
+  font-size: 13.5px;
+  -webkit-line-clamp: 3;
+  line-clamp: 3;
+}
+
+.home-main .exp-advice {
+  grid-area: advice;
+  font-size: 12px;
+}
+
+.home-main .exp-foot {
+  grid-area: foot;
+  margin-top: 0;
+  align-self: end;
+}
+
 .tc-match {
   position: absolute;
   top: 10px;
@@ -14043,6 +14098,27 @@ a.admin-metric-card:focus-visible {
   /* 窄屏单条卡回退为上图下文，避免左图挤掉正文 */
   .home-main .trip-card {
     flex-direction: column;
+  }
+
+  .home-main .exp-card {
+    display: flex;
+    flex-direction: column;
+    padding: 16px;
+  }
+
+  .home-main .exp-cover {
+    height: 64px;
+    min-height: 0;
+  }
+
+  .home-main .exp-quote {
+    font-size: 14px;
+    -webkit-line-clamp: 5;
+    line-clamp: 5;
+  }
+
+  .home-main .exp-foot {
+    align-self: stretch;
   }
 
   .home-main .tc-cover {
